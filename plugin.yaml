@@ -1,0 +1,4 @@
+name: "dev" 
+shortDesc: "ocdev plugin"
+longDesc: "ocdev plugin to use ocdev as a plugin in OpenShift"
+command: "ocdev"
