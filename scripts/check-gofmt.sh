@@ -1,4 +1,10 @@
-GO_FILES=$(find . -path ./vendor -prune -o -name '*.go' -print )
+#!/bin/bash
+
+# Why we are wrapping gofmt?
+# - ignore files in vendor direcotry
+# - gofmt doesn't exit with error code when there are errors
+
+GO_FILES=$(find . -path ./vendor -prune -o -name '*.go' -print)
 
 for file in $GO_FILES; do
 	gofmtOutput=$(gofmt -l "$file")
