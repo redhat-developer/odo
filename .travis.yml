@@ -19,3 +19,21 @@ script:
 after_success:
   # submit coverage.txt to codecov.io 
   - bash <(curl -s https://codecov.io/bash)
+
+before_deploy:
+  - make cross
+  - ./scripts/generate-bintray-json.sh
+
+deploy:
+  provider: bintray
+  repo: ocdev/ocdev
+  file: ./.bintray.json
+  user:
+    secure: L3AL5N1UKoztNJA2methw6ChS0JmO8lkRmuHjNHS7ICWUFhWulzPubk6zApuGUxIeIpzOaY25p7gWdj7yHNQ3q622KwFKwM+zHPA0eOgl2IL2SEH6d0CJvOKze7LP+B6A+weht4T+WbSbD/kQS7WcZAT0oc1KbxYBfEtD11yLd9G11AlRC1TNO9uKvhgR941qFTNm+nwQrVQ74T11ILXv2nRh3i5IjzC+tfr39CyDVD61/p2p9J3KUf5oV4m9iYC9J2NTBakpmefwxZQM7Gkb/qubmojBWFyP2rGGuilTpvPnou6Qs9Gn2kx6+Xr6I3NPVMsJqsWFl1aiTnzRUP23hXNSlKKmjAvOY8X8+TNeh6kTDE0TT580k02Xgwd8F5FdDfAQsCW5Nb9MjK0t9wSrnZA72yXI1b/hGB0XllVfG58Ep49o720af0IN2v44rclPqxCIGXZp5bCKSujeiAGpmSuxrDpl3+4Iiba8aoNdKgtRbryAWxu1Roy1pj57EUJ7cgkWOACAcm7Jb2BZe9yivkFrrI3K2EeH4eWzFv/jjHmoVInYacO7DL0DurI4B1GEs3K+nmEzODWHt8yYhTuNv2LWxvrMqe1I4KMvnzKoowv2nc+pxWBEQ27Fsa+t/ZmQmOm+RH+uVSD7YY2UneFCBBOc0YuMADi+BzXB30aXc0=
+  key:
+    secure: HVlwXufcjEVXCKeEwZyHe0y8IP7ins0B3t1+hLLiHPA5RVVm3FH0o60+GDAzP4vWsJ5MCdey/Y6pJ5F6UNH9TByt0D+pBubwZEd+OGKJMO0VCdVx6Ca9pBMfsLbP5v74Z8nws5c6aBRE6WICgiQfosXUPNzZNL0czhQNFGwcMhcKCM9WfOSEY0d5KhxwMS2x4ORwCovJw06qRMSQarIvCXDDPUzopbN44zxxtlMjsFtsFEqPfFxuY9xYBUZDs9AkSwh5og9rXDLi97zQs+ojeF9tf7IN0FFEkvXReuLqQL6+t2hfEV+ykMRSDmwM+CXbqrIPRO3USTEGLVfUVbuRJYHCUCvATcnt5wy16xlYOhB9bwt1SpcSx9INZH6BHQyrKoT8gSRONUBkOKMpYEDINveuhHN7ucmLTKYXThU9aqxWHa4+p0xXqEhuJXNq84vjU43wGnZRaWguSKJWDZRQ2AvQmGnskKTJOpXQTMEfMxBltMnp/zcxsw05wT0aRpeUDZpdrNjB/bzgzZL5tjuNU0jX5TrGVR05m+LKHs0ac3XQ1+c8+Se5N2hbVzskAH9csWl6dcodmSUqyoJqqUNQU97UVgAAjyGDlXjzLk6MQJDP9Pk5b6LIh7oNk1vZ7R2YdrEU2u1fCQHZx/QcLNXSWRKtTj75DtRVKjKrJ86oDPs=
+  skip_cleanup: true
+  on:
+    on: master
+    go: 1.9
+

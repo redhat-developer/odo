@@ -35,8 +35,14 @@ vet:
 goget-tools:
 	go get -u github.com/golang/dep/cmd/dep
 	go get -u github.com/golang/lint/golint
+	go get -u github.com/mitchellh/gox
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage
 test-coverage:
 	./scripts/generate-coverage.sh
+
+# compile for multiple platforms
+.PHONY: cross
+cross:
+	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="bin/kedge-{{.OS}}-{{.Arch}}" $(BUILD_FLAGS)
