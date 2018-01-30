@@ -14,3 +14,8 @@ install:
 script:
   - make
   - make validate
+  - make test-coverage
+
+after_success:
+  # submit coverage.txt to codecov.io 
+  - bash <(curl -s https://codecov.io/bash)

@@ -1,5 +1,5 @@
 # ocdev
-[![Build Status](https://travis-ci.org/redhat-developer/ocdev.svg?branch=master)](https://travis-ci.org/redhat-developer/ocdev)
+[![Build Status](https://travis-ci.org/redhat-developer/ocdev.svg?branch=master)](https://travis-ci.org/redhat-developer/ocdev) [![codecov](https://codecov.io/gh/kadel/ocdev/branch/master/graph/badge.svg)](https://codecov.io/gh/kadel/ocdev)
 
 ## What is ocdev?
 OpenShift Command line for Developers
