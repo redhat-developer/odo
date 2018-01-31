@@ -16,6 +16,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -35,6 +37,17 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of ocdev",
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// If verbose mode is enabled, dump all KUBECLT_* env variables
+		// this is usefull for debuging oc plugin integration
+		if GlobalVerbose {
+			for _, v := range os.Environ() {
+				if strings.HasPrefix(v, "KUBECTL_") {
+					fmt.Println(v)
+				}
+			}
+		}
+
 		fmt.Println(VERSION + " (" + GITCOMMIT + ")")
 	},
 }
