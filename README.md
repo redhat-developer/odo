@@ -1,4 +1,7 @@
 # ocdev
+[![Build Status](https://travis-ci.org/redhat-developer/ocdev.svg?branch=master)](https://travis-ci.org/redhat-developer/ocdev)
+
+## What is ocdev?
 OpenShift Command line for Developers
 
 ### How to use ocdev as an oc plugin?
