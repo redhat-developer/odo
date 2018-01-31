@@ -45,4 +45,4 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="bin/kedge-{{.OS}}-{{.Arch}}" $(BUILD_FLAGS)
+	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="bin/{{.OS}}-{{.Arch}}/ocdev" $(BUILD_FLAGS)
