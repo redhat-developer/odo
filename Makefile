@@ -36,3 +36,7 @@ goget-tools:
 	go get -u github.com/golang/dep/cmd/dep
 	go get -u github.com/golang/lint/golint
 
+# Run unit tests and collect coverage
+.PHONY: test-coverage
+test-coverage:
+	./scripts/generate-coverage.sh
