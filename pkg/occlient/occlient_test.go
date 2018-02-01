@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestNewOcClient(t *testing.T) {
+func TestGetOcBinary(t *testing.T) {
 
 	// test setup
 	// test shouldn't have external dependency, so we are faking oc binary with empty tmpfile
@@ -16,45 +16,82 @@ func TestNewOcClient(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name()) // clean up
+	tmpfile1, err := ioutil.TempFile("", "fake-oc")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+	defer os.Remove(tmpfile1.Name())
 
 	type args struct {
 		oc string
 	}
 	tests := []struct {
 		name    string
-		args    args
-		want    *OcClient
+		envs    map[string]string
+		want    string
 		wantErr bool
 	}{
 		{
-			name: "oc path exists",
-			args: args{
-				oc: tmpfile.Name(),
+			name: "set via KUBECTL_PLUGINS_CALLER exists",
+			envs: map[string]string{
+				"KUBECTL_PLUGINS_CALLER": tmpfile.Name(),
 			},
-			want: &OcClient{
-				oc: tmpfile.Name(),
-			},
+			want:    tmpfile.Name(),
 			wantErr: false,
 		},
 		{
-			name: "oc path doesn't exists",
-			args: args{
-				oc: "/non/existing",
+			name: "set via KUBECTL_PLUGINS_CALLER (invalid file)",
+			envs: map[string]string{
+				"KUBECTL_PLUGINS_CALLER": "invalid",
 			},
-			want:    nil,
+			want:    "",
 			wantErr: true,
+		},
+		{
+			name: "set via OC_BIN exists",
+			envs: map[string]string{
+				"OC_BIN": tmpfile.Name(),
+			},
+			want:    tmpfile.Name(),
+			wantErr: false,
+		},
+		{
+			name: "set via OC_BIN (invalid file)",
+			envs: map[string]string{
+				"OC_BIN": "invalid",
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "bot OC_BIN and KUBECTL_PLUGINS_CALLER set",
+			envs: map[string]string{
+				"OC_BIN":                 tmpfile.Name(),
+				"KUBECTL_PLUGINS_CALLER": tmpfile1.Name(),
+			},
+			want:    tmpfile1.Name(),
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewOcClient(tt.args.oc)
+			// cleanup variables before running test
+			os.Unsetenv("OC_BIN")
+			os.Unsetenv("KUBECTL_PLUGINS_CALLER")
+
+			for k, v := range tt.envs {
+				if err := os.Setenv(k, v); err != nil {
+					t.Error(err)
+				}
+			}
+			got, err := getOcBinary()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewOcClient() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getOcBinary() unexpected error \n%v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewOcClient() = %v, want %v", got, tt.want)
+				t.Errorf("getOcBinary() \ngot: %v \nwant: %v", got, tt.want)
 			}
 		})
 	}
