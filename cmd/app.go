@@ -16,20 +16,31 @@ package cmd
 
 import (
 	"fmt"
-
+	"github.com/redhat-developer/ocdev/pkg/application"
 	"github.com/spf13/cobra"
+	"os"
 )
 
-// appCmd represents the app command
-var appCmd = &cobra.Command{
-	Use:   "app",
-	Short: "Create Application",
-	Long:  `-`,
+// applicationCmd represents the app command
+var applicationCmd = &cobra.Command{
+	Use:     "application",
+	Short:   "application",
+	Aliases: []string{"app"},
+}
+
+var createCmd = &cobra.Command{
+	Use:   "create",
+	Short: "create an application",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("app called")
+		if err := application.Create(args[0]); err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(appCmd)
+	applicationCmd.AddCommand(createCmd)
+	rootCmd.AddCommand(applicationCmd)
 }
