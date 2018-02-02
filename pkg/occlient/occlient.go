@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -50,22 +51,29 @@ func getOcBinary() (string, error) {
 	return ocPath, nil
 }
 
+type OcCommand struct {
+	args   []string
+	data   *string
+	format string
+}
+
 // runOcCommands executes oc
 // args - command line arguments to be passed to oc ('-o json' is added by default if data is not nil)
 // data - is a pointer to a string, if set than data is given to command to stdin ('-f -' is added to args as default)
-func runOcComamnd(args []string, data *string) ([]byte, error) {
+func runOcComamnd(command *OcCommand) ([]byte, error) {
 
 	ocpath, err := getOcBinary()
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(ocpath, args...)
+	cmd := exec.Command(ocpath, command.args...)
 
 	// if data is not set assume that it is get command
-	if data == nil {
-		cmd.Args = append(cmd.Args, "-o", "json")
-	} else {
+	if len(command.format) > 0 {
+		cmd.Args = append(cmd.Args, "-o", command.format)
+	}
+	if command.data != nil {
 		// data is given, assume this is crate or apply command
 		// that takes data from stdin
 		cmd.Args = append(cmd.Args, "-f", "-")
@@ -79,7 +87,7 @@ func runOcComamnd(args []string, data *string) ([]byte, error) {
 		// Write to stdin
 		go func() {
 			defer stdin.Close()
-			_, err := io.WriteString(stdin, *data)
+			_, err := io.WriteString(stdin, *command.data)
 			if err != nil {
 				fmt.Printf("can't write to stdin %v\n", err)
 			}
@@ -115,6 +123,27 @@ func runOcComamnd(args []string, data *string) ([]byte, error) {
 
 	return stdOut.Bytes(), nil
 
+}
+
+func GetCurrentProjectName() (string, error) {
+	// We need to run `oc project` because it returns an error when project does
+	// not exist, while `oc project -q` does not return an error, it simply
+	// returns the project name
+	_, err := runOcComamnd(&OcCommand{
+		args: []string{"project"},
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get current project info")
+	}
+
+	output, err := runOcComamnd(&OcCommand{
+		args: []string{"project", "-q"},
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get current project name")
+	}
+
+	return string(output), nil
 }
 
 // // GetDeploymentConfig returns information about DeploymentConfig
