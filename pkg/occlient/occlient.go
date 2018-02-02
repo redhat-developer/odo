@@ -6,32 +6,61 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
-type OcClient struct {
-	// full path to oc binary
-	oc string
-}
+// getOcBinary returns full path to oc binary
+// first it looks for env variable KUBECTL_PLUGINS_CALLER (run as oc plugin)
+// than looks for env variable OC_BIN (set manualy by user)
+// at last it tries to find oc in default PATH
+func getOcBinary() (string, error) {
+	log.Debug("getOcBinary - searching for oc binary")
 
-// NewOcClient creates new instance of OcClient
-// parameters oc is full path to oc client binary
-func NewOcClient(oc string) (*OcClient, error) {
-	if _, err := os.Stat(oc); err != nil {
-		return nil, err
+	var ocPath string
+
+	envKubectlPluginCaller := os.Getenv("KUBECTL_PLUGINS_CALLER")
+	envOcBin := os.Getenv("OC_BIN")
+
+	log.Debugf("envKubectlPluginCaller = %s\n", envKubectlPluginCaller)
+	log.Debugf("envOcBin = %s\n", envOcBin)
+
+	if len(envKubectlPluginCaller) > 0 {
+		log.Debug("using path from KUBECTL_PLUGINS_CALLER")
+		ocPath = envKubectlPluginCaller
+	} else if len(envOcBin) > 0 {
+		log.Debug("using path from OC_BIN")
+		ocPath = envOcBin
+	} else {
+		path, err := exec.LookPath("oc")
+		if err != nil {
+			log.Debug("oc binary not found in PATH")
+			return "", err
+		}
+		log.Debug("using oc from PATH")
+		ocPath = path
+	}
+	log.Debug("using oc from %s", ocPath)
+
+	if _, err := os.Stat(ocPath); err != nil {
+		return "", err
 	}
 
-	return &OcClient{
-		oc: oc,
-	}, nil
-
+	return ocPath, nil
 }
 
 // runOcCommands executes oc
 // args - command line arguments to be passed to oc ('-o json' is added by default if data is not nil)
 // data - is a pointer to a string, if set than data is given to command to stdin ('-f -' is added to args as default)
-func (occlient *OcClient) runOcComamnd(args []string, data *string) ([]byte, error) {
+func runOcComamnd(args []string, data *string) ([]byte, error) {
 
-	cmd := exec.Command(occlient.oc, args...)
+	ocpath, err := getOcBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	cmd := exec.Command(ocpath, args...)
 
 	// if data is not set assume that it is get command
 	if data == nil {
@@ -62,7 +91,9 @@ func (occlient *OcClient) runOcComamnd(args []string, data *string) ([]byte, err
 	cmd.Stdout = &stdOut
 	cmd.Stderr = &stdErr
 
-	err := cmd.Run()
+	log.Debugf("running oc command with arguments: %s\n", strings.Join(cmd.Args, " "))
+
+	err = cmd.Run()
 	if err != nil {
 		outputMessage := ""
 		if stdErr.Len() != 0 {
