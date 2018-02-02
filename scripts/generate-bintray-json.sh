@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 DATE=`date --iso-8601=date`
 TIME=`date --iso-8601=seconds`
@@ -17,9 +17,9 @@ commit_id: ${commit_id}
 files:
 EOF
 
-for f in $(ls -1 ./bin/* | grep -v info.txt); do
+for f in $(ls -1 ./bin/*/* | grep -v info.txt); do
   sha256sum=$(sha256sum $f | cut -d ' ' -f 1);
-  name=$(basename $f)
+  name=$(echo $f | sed "s/^\.\/bin\///")
   updated_on=$(stat -c %y $f)
   cat >> "./bin/info.txt" <<EOF
   - name: ${name}"
@@ -64,8 +64,12 @@ cat > "./.bintray.json" <<EOF
 
     "files":
         [
-            {"includePattern": "bin/(.*)",
-             "uploadPattern": "./latest/\$1", 
+            {"includePattern": "bin\/([^\/]+)\/(.*)",
+             "uploadPattern": "./latest/\$1/\$2", 
+             "matrixParams": {"override": 1 }
+            },
+            {"includePattern": "bin/info.txt",
+             "uploadPattern": "./latest/info.txt",
              "matrixParams": {"override": 1 }
             }
         ],
