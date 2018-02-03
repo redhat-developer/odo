@@ -96,3 +96,60 @@ func TestGetOcBinary(t *testing.T) {
 		})
 	}
 }
+
+func TestAddLabelsToArgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		argsIn  []string
+		labels  map[string]string
+		argsOut []string
+	}{
+		{
+			name:   "one label in empty args",
+			argsIn: []string{},
+			labels: map[string]string{
+				"label1": "value1",
+			},
+			argsOut: []string{
+				"--labels", "label1=value1",
+			},
+		},
+		{
+			name: "one label with existing args",
+			argsIn: []string{
+				"--foo", "bar",
+			},
+			labels: map[string]string{
+				"label1": "value1",
+			},
+			argsOut: []string{
+				"--foo", "bar",
+				"--labels", "label1=value1",
+			},
+		},
+		{
+			name: "multiple label with existing args",
+			argsIn: []string{
+				"--foo", "bar",
+			},
+			labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+			},
+			argsOut: []string{
+				"--foo", "bar",
+				"--labels", "label1=value1,label2=value2",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			argsGot := addLabelsToArgs(tt.labels, tt.argsIn)
+
+			if !reflect.DeepEqual(argsGot, tt.argsOut) {
+				t.Errorf("addLabelsToArgs() \ngot:  %#v \nwant: %#v", argsGot, tt.argsOut)
+			}
+		})
+	}
+}
