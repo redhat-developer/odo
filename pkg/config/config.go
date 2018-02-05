@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"reflect"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
