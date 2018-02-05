@@ -16,10 +16,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/ocdev/pkg/application"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/redhat-developer/ocdev/pkg/application"
+	"github.com/spf13/cobra"
 )
 
 // applicationCmd represents the app command
@@ -41,6 +41,7 @@ var createCmd = &cobra.Command{
 	},
 }
 
+var isQuiet bool
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "get the active application",
@@ -51,11 +52,17 @@ var getCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(-1)
 		}
-		log.Infof("The current application is: %v", app)
+		if isQuiet {
+			fmt.Print(app)
+		} else {
+			fmt.Printf("The current application is: %v", app)
+		}
 	},
 }
 
 func init() {
+	getCmd.Flags().BoolVarP(&isQuiet, "short", "q", false, "If true, display only the application name")
+
 	applicationCmd.AddCommand(getCmd)
 	applicationCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(applicationCmd)
