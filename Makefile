@@ -46,3 +46,7 @@ test-coverage:
 .PHONY: cross
 cross:
 	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="bin/{{.OS}}-{{.Arch}}/ocdev" $(BUILD_FLAGS)
+
+.PHONY: generate-cli-docs
+generate-cli-docs:
+	go run scripts/generate-cli-documentation.go
