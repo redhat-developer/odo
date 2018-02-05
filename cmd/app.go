@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/redhat-developer/ocdev/pkg/application"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -40,7 +41,22 @@ var createCmd = &cobra.Command{
 	},
 }
 
+var getCmd = &cobra.Command{
+	Use:   "get",
+	Short: "get the active application",
+	Args:  cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		app, err := application.GetCurrent()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+		log.Infof("The current application is: %v", app)
+	},
+}
+
 func init() {
+	applicationCmd.AddCommand(getCmd)
 	applicationCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(applicationCmd)
 }

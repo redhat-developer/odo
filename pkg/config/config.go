@@ -16,14 +16,8 @@ const (
 	configFileName = "ocdev"
 )
 
-type Application struct {
-	Name    string `json:"name"`
-	Project string `json:"project"`
-}
-
 type Config struct {
-	Applications       []Application `json:"applications"`
-	CurrentApplication string        `json:"currentApplication"`
+	ActiveComponents map[string]string `json:"activeComponents"`
 }
 
 type ConfigInfo struct {
@@ -97,22 +91,5 @@ func (c *ConfigInfo) set() error {
 		return errors.Wrapf(err, "unable to write config to file %v", c.Filename)
 	}
 
-	return nil
-}
-
-func (c *ConfigInfo) ApplicationExists(inputApp *Application) bool {
-	for _, app := range c.Applications {
-		if reflect.DeepEqual(inputApp, &app) {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *ConfigInfo) AddApplication(app *Application) error {
-	c.Applications = append(c.Applications, *app)
-	if err := c.set(); err != nil {
-		return errors.Wrap(err, "unable to set config data")
-	}
 	return nil
 }
