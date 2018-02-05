@@ -146,6 +146,16 @@ func GetCurrentProjectName() (string, error) {
 	return string(output), nil
 }
 
+func CreateNewProject(name string) error {
+	_, err := runOcComamnd(&OcCommand{
+		args: []string{"new-project", name},
+	})
+	if err != nil {
+		return errors.Wrap(err, "unable to create new project")
+	}
+	return nil
+}
+
 // // GetDeploymentConfig returns information about DeploymentConfig
 // func (occlient *OcClient) GetDeploymentConfig(name string) (*ov1.DeploymentConfig, error) {
 // 	args := []string{
