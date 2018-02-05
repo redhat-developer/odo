@@ -16,6 +16,7 @@ const (
 )
 
 type Config struct {
+	// key - project name, value - component name
 	ActiveComponents map[string]string `json:"activeComponents"`
 }
 
@@ -79,7 +80,7 @@ func (c *ConfigInfo) get() error {
 	return nil
 }
 
-func (c *ConfigInfo) set() error {
+func (c *ConfigInfo) writeToFile() error {
 	data, err := yaml.Marshal(&c.Config)
 	if err != nil {
 		return errors.Wrap(err, "unable to marshal ocdev config data")
@@ -91,4 +92,25 @@ func (c *ConfigInfo) set() error {
 	}
 
 	return nil
+}
+
+func (c *ConfigInfo) SetActiveComponent(component string, project string) error {
+	if c.ActiveComponents == nil {
+		c.ActiveComponents = make(map[string]string)
+	}
+	c.ActiveComponents[project] = component
+	err := c.writeToFile()
+	if err != nil {
+		return errors.Wrap(err, "unable to set current component")
+	}
+	return nil
+}
+
+// GetCurrentComponet if no component is set as current returns empty string
+func (c *ConfigInfo) GetActiveComponent(project string) string {
+	if c.ActiveComponents != nil {
+		return c.ActiveComponents[project]
+	}
+	return ""
+
 }

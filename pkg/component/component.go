@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/ocdev/pkg/application"
+	"github.com/redhat-developer/ocdev/pkg/config"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 )
 
@@ -23,6 +24,10 @@ func CreateFromGit(name string, ctype string, url string) (string, error) {
 		return "", err
 	}
 
+	SetCurrent(name)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
+	}
 	return output, nil
 }
 
@@ -36,19 +41,18 @@ func CreateEmpty(name string, ctype string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	SetCurrent(name)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to activate empty component %s", name)
+	}
 
 	return output, nil
 }
 
 func CreateFromDir(name string, ctype, dir string) (string, error) {
-	currentAppliction, err := application.GetCurrent()
+	output, err := CreateEmpty(name, ctype)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get current application")
-	}
-
-	output, err := occlient.NewAppS2IEmpty(name, ctype, map[string]string{applicationLabel: currentAppliction, componentLabel: name})
-	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "unable to get create empty component")
 	}
 
 	// TODO: it might not be ideal to print to stdout here
@@ -69,7 +73,7 @@ func CreateFromDir(name string, ctype, dir string) (string, error) {
 func Delete(name string) (string, error) {
 	currentAppliction, err := application.GetCurrent()
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get current application")
+		return "", errors.Wrap(err, "unable to get active application")
 	}
 
 	output, err := occlient.Delete("all", "", map[string]string{applicationLabel: currentAppliction, componentLabel: name})
@@ -78,4 +82,41 @@ func Delete(name string) (string, error) {
 	}
 
 	return output, nil
+}
+
+func SetCurrent(name string) error {
+	cfg, err := config.New()
+	if err != nil {
+		return errors.Wrap(err, "unable to get config")
+	}
+
+	currentAppliction, err := application.GetCurrent()
+	if err != nil {
+		return errors.Wrap(err, "unable to get current application")
+	}
+
+	cfg.SetActiveComponent(name, currentAppliction)
+	if err != nil {
+		return errors.Wrapf(err, "unable to set current component %s", name)
+	}
+
+	return nil
+}
+
+func GetCurrent() (string, error) {
+	cfg, err := config.New()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get config")
+	}
+	currentAppliction, err := application.GetCurrent()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get active application")
+	}
+
+	currentComponent := cfg.GetActiveComponent(currentAppliction)
+	if currentAppliction == "" {
+		return "", errors.Wrap(err, "no component is set as active")
+	}
+	return currentComponent, nil
+
 }

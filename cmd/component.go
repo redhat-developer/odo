@@ -28,6 +28,7 @@ var (
 	componentBinary string
 	componentGit    string
 	componentDir    string
+	justName        bool
 )
 
 // componentCmd represents the component command
@@ -132,13 +133,37 @@ var componentDeleteCmd = &cobra.Command{
 	},
 }
 
+var componentGetCmd = &cobra.Command{
+	Use:   "get",
+	Short: "component get",
+	Long:  "get current component",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("component get called")
+
+		component, err := component.GetCurrent()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+		if justName {
+			fmt.Print(component)
+		} else {
+			fmt.Printf("The current component is: %v", component)
+		}
+	},
+}
+
 func init() {
 	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "binary artifact")
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
 	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
 
+	componentGetCmd.Flags().BoolVarP(&justName, "short", "", false, "If true, display only the component name")
+
 	componentCmd.AddCommand(componentCreateCmd)
 	componentCmd.AddCommand(componentDeleteCmd)
+	componentCmd.AddCommand(componentGetCmd)
 
 	rootCmd.AddCommand(componentCmd)
 }
