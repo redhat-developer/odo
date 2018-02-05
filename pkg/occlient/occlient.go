@@ -279,3 +279,13 @@ func Delete(kind string, name string, labels map[string]string) (string, error) 
 	return string(output[:]), nil
 
 }
+
+func DeleteProject(name string) error {
+	_, err := runOcComamnd(&OcCommand{
+		args: []string{"delete", "project", name},
+	})
+	if err != nil {
+		return errors.Wrap(err, "unable to delete project")
+	}
+	return nil
+}

@@ -36,6 +36,14 @@ func List() (string, error) {
 	return project, nil
 }
 
+// Delete deletes the given application
+func Delete(name string) error {
+	if err := occlient.DeleteProject(name); err != nil {
+		return errors.Wrapf(err, "unable to delete application: %v", name)
+	}
+	return nil
+}
+
 func GetCurrent() (string, error) {
 	app, err := occlient.GetCurrentProjectName()
 	if err != nil {
