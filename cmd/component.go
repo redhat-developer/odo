@@ -105,11 +105,40 @@ var componentCreateCmd = &cobra.Command{
 	},
 }
 
+var componentDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "component delete <component_name>",
+	Long:  "delete existing component",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("Please specify component name")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("component delete called")
+		log.Debugf("args: %#v", strings.Join(args, " "))
+
+		componentName := args[0]
+
+		// no flag was set, create empty component
+		output, err := component.Delete(componentName)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(output)
+
+	},
+}
+
 func init() {
 	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "binary artifact")
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
 	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
 
 	componentCmd.AddCommand(componentCreateCmd)
+	componentCmd.AddCommand(componentDeleteCmd)
+
 	rootCmd.AddCommand(componentCmd)
 }

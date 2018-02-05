@@ -64,3 +64,18 @@ func CreateFromDir(name string, ctype, dir string) (string, error) {
 	return "", nil
 
 }
+
+// Delete whole component
+func Delete(name string) (string, error) {
+	currentAppliction, err := application.GetCurrent()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get current application")
+	}
+
+	output, err := occlient.Delete("all", "", map[string]string{applicationLabel: currentAppliction, componentLabel: name})
+	if err != nil {
+		return "", errors.Wrap(err, "unable to delete component")
+	}
+
+	return output, nil
+}

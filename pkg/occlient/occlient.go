@@ -157,7 +157,7 @@ func CreateNewProject(name string) error {
 	return nil
 }
 
-// addLabelsToArgs adds labels from map to args slice as a new argument in format that oc requires
+// addLabelsToArgs adds labels from map to args as a new argument in format that oc requires
 // --labels label1=value1,label2=value2
 func addLabelsToArgs(labels map[string]string, args []string) []string {
 	if labels != nil {
@@ -227,6 +227,39 @@ func StartBuildFromDir(name string, dir string) (string, error) {
 	}
 
 	// TODO: build progress is not shown
+	output, err := runOcComamnd(&OcCommand{args: args})
+	if err != nil {
+		return "", err
+	}
+
+	return string(output[:]), nil
+
+}
+
+// Delete calls oc delete
+// kind is always required (can be set to 'all')
+// name can be omitted if labels are set, in that case set name to ''
+// if you want to delete object just by its name set labels to nil
+func Delete(kind string, name string, labels map[string]string) (string, error) {
+
+	args := []string{
+		"delete",
+		kind,
+	}
+
+	if len(name) > 0 {
+		args = append(args, name)
+	}
+
+	if labels != nil {
+		var labelsString []string
+		for key, value := range labels {
+			labelsString = append(labelsString, fmt.Sprintf("%s=%s", key, value))
+		}
+		args = append(args, "--selector")
+		args = append(args, strings.Join(labelsString, ","))
+	}
+
 	output, err := runOcComamnd(&OcCommand{args: args})
 	if err != nil {
 		return "", err
