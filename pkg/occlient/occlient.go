@@ -144,7 +144,7 @@ func GetCurrentProjectName() (string, error) {
 		return "", errors.Wrap(err, "unable to get current project name")
 	}
 
-	return string(output), nil
+	return strings.TrimSpace(string(output)), nil
 }
 
 func CreateNewProject(name string) error {
