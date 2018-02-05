@@ -27,3 +27,11 @@ func Create(name string) error {
 	log.Infof("Switching to application: %v", name)
 	return nil
 }
+
+func GetCurrent() (string, error) {
+	app, err := occlient.GetCurrentProjectName()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get the active application")
+	}
+	return app, nil
+}
