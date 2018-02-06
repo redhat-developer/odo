@@ -88,7 +88,7 @@ var deleteCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(-1)
 		}
-		fmt.Printf("Deleted application: %v\n", args[0])
+		fmt.Printf("Deleting application: %v\n", args[0])
 	},
 }
 
