@@ -22,6 +22,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const defaultApplication = "app"
+
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
 	Use:     "application",
@@ -32,12 +34,21 @@ var applicationCmd = &cobra.Command{
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create an application",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := application.Create(args[0]); err != nil {
+		var name string
+		// Set default application name if not set
+		if len(args) == 0 {
+			name = defaultApplication
+		} else {
+			name = args[0]
+		}
+		fmt.Printf("Creating application: %v\n", name)
+		if err := application.Create(name); err != nil {
 			fmt.Println(err)
 			os.Exit(-1)
 		}
+		fmt.Printf("Switched to application: %v\n", name)
 	},
 }
 
