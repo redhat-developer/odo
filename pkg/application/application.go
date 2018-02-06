@@ -28,6 +28,14 @@ func Create(name string) error {
 	return nil
 }
 
+func List() (string, error) {
+	project, err := occlient.GetProjects()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to list applications")
+	}
+	return project, nil
+}
+
 func GetCurrent() (string, error) {
 	app, err := occlient.GetCurrentProjectName()
 	if err != nil {

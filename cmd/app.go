@@ -60,9 +60,24 @@ var getCmd = &cobra.Command{
 	},
 }
 
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "lists all the applications",
+	Args:  cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		app, err := application.List()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+		fmt.Print(app)
+	},
+}
+
 func init() {
 	getCmd.Flags().BoolVarP(&isQuiet, "short", "q", false, "If true, display only the application name")
 
+	applicationCmd.AddCommand(listCmd)
 	applicationCmd.AddCommand(getCmd)
 	applicationCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(applicationCmd)

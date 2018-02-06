@@ -147,6 +147,17 @@ func GetCurrentProjectName() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+func GetProjects() (string, error) {
+	output, err := runOcComamnd(&OcCommand{
+		args:   []string{"get", "project"},
+		format: "custom-columns=NAME:.metadata.name",
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get projects")
+	}
+	return string(output), nil
+}
+
 func CreateNewProject(name string) error {
 	_, err := runOcComamnd(&OcCommand{
 		args: []string{"new-project", name},
