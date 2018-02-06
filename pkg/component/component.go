@@ -24,8 +24,7 @@ func CreateFromGit(name string, ctype string, url string) (string, error) {
 		return "", err
 	}
 
-	SetCurrent(name)
-	if err != nil {
+	if err = SetCurrent(name); err != nil {
 		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
 	}
 	return output, nil
@@ -41,8 +40,7 @@ func CreateEmpty(name string, ctype string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	SetCurrent(name)
-	if err != nil {
+	if err = SetCurrent(name); err != nil {
 		return "", errors.Wrapf(err, "unable to activate empty component %s", name)
 	}
 
