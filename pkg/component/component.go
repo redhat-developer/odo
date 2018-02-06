@@ -112,8 +112,8 @@ func GetCurrent() (string, error) {
 	}
 
 	currentComponent := cfg.GetActiveComponent(currentAppliction)
-	if currentAppliction == "" {
-		return "", errors.Wrap(err, "no component is set as active")
+	if currentComponent == "" {
+		return "", errors.New("no component is set as active")
 	}
 	return currentComponent, nil
 

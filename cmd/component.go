@@ -22,6 +22,7 @@ import (
 	"github.com/redhat-developer/ocdev/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -143,13 +144,13 @@ var componentGetCmd = &cobra.Command{
 
 		component, err := component.GetCurrent()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(errors.Wrap(err, "unable to get current component"))
 			os.Exit(-1)
 		}
 		if justName {
 			fmt.Print(component)
 		} else {
-			fmt.Printf("The current component is: %v", component)
+			fmt.Printf("The current component is: %v\n", component)
 		}
 	},
 }
