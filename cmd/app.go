@@ -56,7 +56,7 @@ var getCmd = &cobra.Command{
 		if isQuiet {
 			fmt.Print(app)
 		} else {
-			fmt.Printf("The current application is: %v", app)
+			fmt.Printf("The current application is: %v\n", app)
 		}
 	},
 }
