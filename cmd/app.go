@@ -19,6 +19,7 @@ import (
 	"os"
 
 	"github.com/redhat-developer/ocdev/pkg/application"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -60,6 +61,20 @@ var getCmd = &cobra.Command{
 	},
 }
 
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "delete the given application",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		err := application.Delete(args[0])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+		log.Infof("Deleted application: %v", args[0])
+	},
+}
+
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "lists all the applications",
@@ -78,6 +93,7 @@ func init() {
 	getCmd.Flags().BoolVarP(&isQuiet, "short", "q", false, "If true, display only the application name")
 
 	applicationCmd.AddCommand(listCmd)
+	applicationCmd.AddCommand(deleteCmd)
 	applicationCmd.AddCommand(getCmd)
 	applicationCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(applicationCmd)
