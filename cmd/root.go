@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +37,7 @@ var rootCmd = &cobra.Command{
 		// Add extra logging when verbosity is passed
 		if GlobalVerbose {
 			//TODO
-			//log.SetLevel(log.DebugLevel)
+			log.SetLevel(log.DebugLevel)
 		}
 
 	},

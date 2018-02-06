@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -143,7 +144,7 @@ func GetCurrentProjectName() (string, error) {
 		return "", errors.Wrap(err, "unable to get current project name")
 	}
 
-	return string(output), nil
+	return strings.TrimSpace(string(output)), nil
 }
 
 func CreateNewProject(name string) error {
@@ -156,47 +157,114 @@ func CreateNewProject(name string) error {
 	return nil
 }
 
-// // GetDeploymentConfig returns information about DeploymentConfig
-// func (occlient *OcClient) GetDeploymentConfig(name string) (*ov1.DeploymentConfig, error) {
-// 	args := []string{
-// 		"get",
-// 		"deploymentconfig",
-// 		name,
-// 	}
+// addLabelsToArgs adds labels from map to args as a new argument in format that oc requires
+// --labels label1=value1,label2=value2
+func addLabelsToArgs(labels map[string]string, args []string) []string {
+	if labels != nil {
+		var labelsString []string
+		for key, value := range labels {
+			labelsString = append(labelsString, fmt.Sprintf("%s=%s", key, value))
+		}
+		args = append(args, "--labels")
+		args = append(args, strings.Join(labelsString, ","))
+	}
 
-// 	output, err := occlient.runOcComamnd(args, nil)
+	return args
+}
 
-// 	if err != nil {
-// 		return nil, err
-// 	}
+// NewAppS2I create new application  using S2I with source in git repository
+func NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string) (string, error) {
+	args := []string{
+		"new-app",
+		fmt.Sprintf("%s~%s", builderImage, gitUrl),
+		"--name", name,
+	}
 
-// 	dc := &ov1.DeploymentConfig{}
+	args = addLabelsToArgs(labels, args)
 
-// 	err = json.Unmarshal(output, dc)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	output, err := runOcComamnd(&OcCommand{args: args})
+	if err != nil {
+		return "", err
+	}
+	return string(output[:]), nil
 
-// 	return dc, nil
-// }
+}
 
-// // CreateDeploymentConfig creates new DeploymentConfig
-// func (occlient *OcClient) CreateDeploymentConfig(dc *ov1.DeploymentConfig) error {
-// 	data, err := json.Marshal(dc)
-// 	if err != nil {
-// 		return err
-// 	}
+// NewAppS2I create new application  using S2I from local directory
+func NewAppS2IEmpty(name string, builderImage string, labels map[string]string) (string, error) {
 
-// 	args := []string{
-// 		"create",
-// 	}
+	// there is no way to create binary builds using 'oc new-app' other than passing it directory that is not a git repository
+	// this is why we are creating empty directory and using is a a source
 
-// 	stringData := string(data[:])
-// 	output, err := occlient.runOcComamnd(args, &stringData)
-// 	if err != nil {
-// 		return err
-// 	}
+	tmpDir, err := ioutil.TempDir("", "fakeSource")
+	if err != nil {
+		return "", errors.Wrap(err, "unable to create tmp directory to use it as a source for build")
+	}
+	defer os.Remove(tmpDir)
 
-// 	fmt.Println(string(output[:]))
-// 	return nil
-// }
+	args := []string{
+		"new-app",
+		fmt.Sprintf("%s~%s", builderImage, tmpDir),
+		"--name", name,
+	}
+
+	args = addLabelsToArgs(labels, args)
+
+	output, err := runOcComamnd(&OcCommand{args: args})
+	if err != nil {
+		return "", err
+	}
+
+	return string(output[:]), nil
+}
+
+func StartBuildFromDir(name string, dir string) (string, error) {
+	args := []string{
+		"start-build",
+		name,
+		"--from-dir", dir,
+		"--follow",
+	}
+
+	// TODO: build progress is not shown
+	output, err := runOcComamnd(&OcCommand{args: args})
+	if err != nil {
+		return "", err
+	}
+
+	return string(output[:]), nil
+
+}
+
+// Delete calls oc delete
+// kind is always required (can be set to 'all')
+// name can be omitted if labels are set, in that case set name to ''
+// if you want to delete object just by its name set labels to nil
+func Delete(kind string, name string, labels map[string]string) (string, error) {
+
+	args := []string{
+		"delete",
+		kind,
+	}
+
+	if len(name) > 0 {
+		args = append(args, name)
+	}
+
+	if labels != nil {
+		var labelsString []string
+		for key, value := range labels {
+			labelsString = append(labelsString, fmt.Sprintf("%s=%s", key, value))
+		}
+		args = append(args, "--selector")
+		args = append(args, strings.Join(labelsString, ","))
+	}
+
+	output, err := runOcComamnd(&OcCommand{args: args})
+	if err != nil {
+		return "", err
+	}
+
+	return string(output[:]), nil
+
+}
