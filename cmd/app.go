@@ -19,7 +19,6 @@ import (
 	"os"
 
 	"github.com/redhat-developer/ocdev/pkg/application"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -64,14 +63,21 @@ var getCmd = &cobra.Command{
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "delete the given application",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			fmt.Println("Error: specify the application to delete")
+			os.Exit(-1)
+		}
+		if len(args) > 1 {
+			fmt.Println("Error: delete accepts only 1 argument")
+			os.Exit(-1)
+		}
 		err := application.Delete(args[0])
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(-1)
 		}
-		log.Infof("Deleted application: %v", args[0])
+		fmt.Printf("Deleted application: %v\n", args[0])
 	},
 }
 
