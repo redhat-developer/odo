@@ -136,7 +136,7 @@ func GetProjects() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get projects")
 	}
-	return string(output), nil
+	return strings.Join(strings.Split(string(output), "\n")[1:], "\n"), nil
 }
 
 func CreateNewProject(name string) error {
