@@ -1,7 +1,6 @@
 package occlient
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -95,35 +94,17 @@ func runOcComamnd(command *OcCommand) ([]byte, error) {
 		}()
 	}
 
-	// Execute the actual command
-	var stdOut, stdErr bytes.Buffer
-	cmd.Stdout = &stdOut
-	cmd.Stderr = &stdErr
-
 	log.Debugf("running oc command with arguments: %s\n", strings.Join(cmd.Args, " "))
 
-	err = cmd.Run()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		outputMessage := ""
-		if stdErr.Len() != 0 {
-			outputMessage = stdErr.String()
+		if _, ok := err.(*exec.ExitError); ok {
+			return nil, errors.Wrapf(err, "command: %v failed to run:\n%v", cmd.Args, string(output))
 		}
-		if stdOut.Len() != 0 {
-			outputMessage = fmt.Sprintf("\n%s", stdErr.String())
-		}
-
-		if outputMessage != "" {
-			return nil, fmt.Errorf("failed to execute oc command\n %s", outputMessage)
-		}
-		return nil, err
+		return nil, errors.Wrap(err, "unable to get combined output")
 	}
 
-	if stdErr.Len() != 0 {
-		return nil, fmt.Errorf("Error output:\n%s", stdErr.String())
-	}
-
-	return stdOut.Bytes(), nil
-
+	return output, nil
 }
 
 func GetCurrentProjectName() (string, error) {
