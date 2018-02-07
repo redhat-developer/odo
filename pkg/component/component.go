@@ -57,7 +57,7 @@ func CreateFromDir(name string, ctype, dir string) (string, error) {
 	fmt.Println(output)
 	fmt.Println("please wait, building application...")
 
-	output, err = occlient.StartBuildFromDir(name, dir)
+	output, err = occlient.StartBuild(name, &dir)
 	if err != nil {
 		return "", err
 	}
@@ -117,4 +117,12 @@ func GetCurrent() (string, error) {
 	}
 	return currentComponent, nil
 
+}
+
+func Push(name string, dir *string) (string, error) {
+	output, err := occlient.StartBuild(name, dir)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to start build")
+	}
+	return output, nil
 }

@@ -155,13 +155,41 @@ var componentGetCmd = &cobra.Command{
 	},
 }
 
+var componentPushCmd = &cobra.Command{
+	Use:   "push",
+	Short: "component push",
+	Long:  "push changes to component",
+	Args:  cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("component push called")
+		var componentName string
+		if len(args) == 0 {
+			var err error
+			log.Debug("No component name passed, assuming current component")
+			componentName, err = component.GetCurrent()
+			if err != nil {
+				fmt.Println(errors.Wrap(err, "unable to get current component"))
+				os.Exit(-1)
+			}
+		}
+		fmt.Printf("pushing changes to component: %v\n", componentName)
+		if _, err := component.Push(componentName, &componentDir); err != nil {
+			fmt.Printf("failed to push component: %v", componentName)
+			os.Exit(-1)
+		}
+		fmt.Printf("changes successfully pushed to component: %v\n", componentName)
+	},
+}
+
 func init() {
 	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "binary artifact")
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
 	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
 
 	componentGetCmd.Flags().BoolVarP(&justName, "short", "", false, "If true, display only the component name")
+	componentPushCmd.Flags().StringVar(&componentDir, "dir", "", "specify directory to push changes from")
 
+	componentCmd.AddCommand(componentPushCmd)
 	componentCmd.AddCommand(componentCreateCmd)
 	componentCmd.AddCommand(componentDeleteCmd)
 	componentCmd.AddCommand(componentGetCmd)
