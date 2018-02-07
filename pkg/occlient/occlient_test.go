@@ -99,10 +99,11 @@ func TestGetOcBinary(t *testing.T) {
 
 func TestAddLabelsToArgs(t *testing.T) {
 	tests := []struct {
-		name    string
-		argsIn  []string
-		labels  map[string]string
-		argsOut []string
+		name     string
+		argsIn   []string
+		labels   map[string]string
+		argsOut1 []string
+		argsOut2 []string
 	}{
 		{
 			name:   "one label in empty args",
@@ -110,7 +111,7 @@ func TestAddLabelsToArgs(t *testing.T) {
 			labels: map[string]string{
 				"label1": "value1",
 			},
-			argsOut: []string{
+			argsOut1: []string{
 				"--labels", "label1=value1",
 			},
 		},
@@ -122,7 +123,7 @@ func TestAddLabelsToArgs(t *testing.T) {
 			labels: map[string]string{
 				"label1": "value1",
 			},
-			argsOut: []string{
+			argsOut1: []string{
 				"--foo", "bar",
 				"--labels", "label1=value1",
 			},
@@ -136,9 +137,13 @@ func TestAddLabelsToArgs(t *testing.T) {
 				"label1": "value1",
 				"label2": "value2",
 			},
-			argsOut: []string{
+			argsOut1: []string{
 				"--foo", "bar",
 				"--labels", "label1=value1,label2=value2",
+			},
+			argsOut2: []string{
+				"--foo", "bar",
+				"--labels", "label2=value2,label1=value1",
 			},
 		},
 	}
@@ -147,8 +152,8 @@ func TestAddLabelsToArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			argsGot := addLabelsToArgs(tt.labels, tt.argsIn)
 
-			if !reflect.DeepEqual(argsGot, tt.argsOut) {
-				t.Errorf("addLabelsToArgs() \ngot:  %#v \nwant: %#v", argsGot, tt.argsOut)
+			if !reflect.DeepEqual(argsGot, tt.argsOut1) && !reflect.DeepEqual(argsGot, tt.argsOut2) {
+				t.Errorf("addLabelsToArgs() \ngot:  %#v \nwant: %#v or %#v", argsGot, tt.argsOut1, tt.argsOut2)
 			}
 		})
 	}
