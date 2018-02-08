@@ -33,8 +33,8 @@ var storageCmd = &cobra.Command{
 	Long:  "perform storage operations",
 }
 
-var storageCreateCmd = &cobra.Command{
-	Use:   "create",
+var storageAddCmd = &cobra.Command{
+	Use:   "add",
 	Short: "create storage and mount to component",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -45,7 +45,7 @@ var storageCreateCmd = &cobra.Command{
 		} else {
 			storageName = args[0]
 		}
-		_, err := storage.Create(&occlient.VolumeConfig{
+		_, err := storage.Add(&occlient.VolumeConfig{
 			Name:             storageName,
 			DeploymentConfig: cmpnt,
 			Path:             storagePath,
@@ -55,18 +55,18 @@ var storageCreateCmd = &cobra.Command{
 			fmt.Printf("Failed to create storage: %v\n", err)
 			os.Exit(-1)
 		}
-		fmt.Printf("Create and attached storage to %v\n", cmpnt)
+		fmt.Printf("Added storage to %v\n", cmpnt)
 	},
 }
 
 func init() {
-	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "size of storage to add")
-	storageCreateCmd.MarkFlagRequired("size")
-	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "path to mount the storage on")
-	storageCreateCmd.MarkFlagRequired("path")
+	storageAddCmd.Flags().StringVar(&storageSize, "size", "", "size of storage to add")
+	storageAddCmd.MarkFlagRequired("size")
+	storageAddCmd.Flags().StringVar(&storagePath, "path", "", "path to mount the storage on")
+	storageAddCmd.MarkFlagRequired("path")
 
 	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "component to add storage to, defaults to active component")
-	storageCmd.AddCommand(storageCreateCmd)
+	storageCmd.AddCommand(storageAddCmd)
 
 	rootCmd.AddCommand(storageCmd)
 }
