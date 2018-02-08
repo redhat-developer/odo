@@ -272,3 +272,40 @@ func DeleteProject(name string) error {
 	}
 	return nil
 }
+
+type VolumeConfig struct {
+	Name             string
+	Size             string
+	DeploymentConfig string
+	Path             string
+}
+
+type VolumeOpertaions struct {
+	Add    bool
+	Remove bool
+}
+
+func SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, error) {
+	args := []string{
+		"set",
+		"volumes",
+		fmt.Sprintf("dc/%s", config.DeploymentConfig),
+		"--name", config.Name,
+		"--type", "pvc",
+		"--claim-size", config.Size,
+		"--mount-path", config.Path,
+	}
+	if operations.Add {
+		args = append(args, "--add")
+	}
+	if operations.Remove {
+		args = append(args, "--remove")
+	}
+	output, err := runOcComamnd(&OcCommand{
+		args: args,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "unable to perform volume operations")
+	}
+	return string(output), nil
+}
