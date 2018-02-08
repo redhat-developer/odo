@@ -5,7 +5,7 @@ import (
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 )
 
-func Create(config *occlient.VolumeConfig) (string, error) {
+func Add(config *occlient.VolumeConfig) (string, error) {
 	output, err := occlient.SetVolumes(config,
 		&occlient.VolumeOpertaions{
 			Add: true,
