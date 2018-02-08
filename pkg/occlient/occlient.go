@@ -274,10 +274,10 @@ func DeleteProject(name string) error {
 }
 
 type VolumeConfig struct {
-	Name             string
-	Size             string
+	Name             *string
+	Size             *string
 	DeploymentConfig string
-	Path             string
+	Path             *string
 }
 
 type VolumeOpertaions struct {
@@ -290,16 +290,22 @@ func SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, err
 		"set",
 		"volumes",
 		fmt.Sprintf("dc/%s", config.DeploymentConfig),
-		"--name", config.Name,
 		"--type", "pvc",
-		"--claim-size", config.Size,
-		"--mount-path", config.Path,
+	}
+	if config.Name != nil {
+		args = append(args, "--name", *config.Name)
+	}
+	if config.Size != nil {
+		args = append(args, "--claim-size", *config.Size)
+	}
+	if config.Path != nil {
+		args = append(args, "--mount-path", *config.Path)
 	}
 	if operations.Add {
 		args = append(args, "--add")
 	}
 	if operations.Remove {
-		args = append(args, "--remove")
+		args = append(args, "--remove", "--confirm")
 	}
 	output, err := runOcComamnd(&OcCommand{
 		args: args,

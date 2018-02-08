@@ -36,26 +36,48 @@ var storageCmd = &cobra.Command{
 var storageAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "create storage and mount to component",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		cmpnt := getComponent()
+		_, err := storage.Add(&occlient.VolumeConfig{
+			Name:             &args[0],
+			DeploymentConfig: cmpnt,
+			Path:             &storagePath,
+			Size:             &storageSize,
+		})
+		if err != nil {
+			fmt.Printf("Failed to add storage: %v\n", err)
+			os.Exit(-1)
+		}
+		fmt.Printf("Added storage %v to %v\n", args[0], cmpnt)
+	},
+}
+
+var storageRemoveCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "remove storage from component",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		cmpnt := getComponent()
-		var storageName string
+		var storageName *string
 		if len(args) == 0 {
-			storageName = cmpnt
+			storageName = nil
 		} else {
-			storageName = args[0]
+			storageName = &args[0]
 		}
-		_, err := storage.Add(&occlient.VolumeConfig{
+		_, err := storage.Remove(&occlient.VolumeConfig{
 			Name:             storageName,
 			DeploymentConfig: cmpnt,
-			Path:             storagePath,
-			Size:             storageSize,
 		})
 		if err != nil {
-			fmt.Printf("Failed to create storage: %v\n", err)
+			fmt.Printf("Failed to remove storage: %v\n", err)
 			os.Exit(-1)
 		}
-		fmt.Printf("Added storage to %v\n", cmpnt)
+		if len(args) == 0 {
+			fmt.Printf("Removed all storage from %v\n", cmpnt)
+		} else {
+			fmt.Printf("Removed %v from %v\n", *storageName, cmpnt)
+		}
 	},
 }
 
@@ -65,8 +87,9 @@ func init() {
 	storageAddCmd.Flags().StringVar(&storagePath, "path", "", "path to mount the storage on")
 	storageAddCmd.MarkFlagRequired("path")
 
-	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "component to add storage to, defaults to active component")
 	storageCmd.AddCommand(storageAddCmd)
+	storageCmd.AddCommand(storageRemoveCmd)
 
+	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "component to add storage to, defaults to active component")
 	rootCmd.AddCommand(storageCmd)
 }
