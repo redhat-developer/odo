@@ -26,3 +26,14 @@ func Remove(config *occlient.VolumeConfig) (string, error) {
 	}
 	return output, nil
 }
+
+func List(config *occlient.VolumeConfig) (string, error) {
+	output, err := occlient.SetVolumes(config,
+		&occlient.VolumeOpertaions{
+			List: true,
+		})
+	if err != nil {
+		return "", errors.Wrap(err, "unable to list storage")
+	}
+	return output, nil
+}

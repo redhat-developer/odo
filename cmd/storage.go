@@ -41,7 +41,7 @@ var storageAddCmd = &cobra.Command{
 		cmpnt := getComponent()
 		_, err := storage.Add(&occlient.VolumeConfig{
 			Name:             &args[0],
-			DeploymentConfig: cmpnt,
+			DeploymentConfig: &cmpnt,
 			Path:             &storagePath,
 			Size:             &storageSize,
 		})
@@ -67,7 +67,7 @@ var storageRemoveCmd = &cobra.Command{
 		}
 		_, err := storage.Remove(&occlient.VolumeConfig{
 			Name:             storageName,
-			DeploymentConfig: cmpnt,
+			DeploymentConfig: &cmpnt,
 		})
 		if err != nil {
 			fmt.Printf("Failed to remove storage: %v\n", err)
@@ -81,6 +81,23 @@ var storageRemoveCmd = &cobra.Command{
 	},
 }
 
+var storageListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list storage attached to a component",
+	Args:  cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		cmpnt := getComponent()
+		output, err := storage.List(&occlient.VolumeConfig{
+			DeploymentConfig: &cmpnt,
+		})
+		if err != nil {
+			fmt.Printf("Failed to list storage: %v\n", err)
+			os.Exit(-1)
+		}
+		fmt.Println(output)
+	},
+}
+
 func init() {
 	storageAddCmd.Flags().StringVar(&storageSize, "size", "", "size of storage to add")
 	storageAddCmd.MarkFlagRequired("size")
@@ -89,6 +106,7 @@ func init() {
 
 	storageCmd.AddCommand(storageAddCmd)
 	storageCmd.AddCommand(storageRemoveCmd)
+	storageCmd.AddCommand(storageListCmd)
 
 	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "component to add storage to, defaults to active component")
 	rootCmd.AddCommand(storageCmd)
