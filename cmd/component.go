@@ -173,7 +173,12 @@ var componentPushCmd = &cobra.Command{
 			}
 		}
 		fmt.Printf("pushing changes to component: %v\n", componentName)
-		if _, err := component.Push(componentName, &componentDir); err != nil {
+
+		if len(componentDir) == 0 {
+			componentDir = "."
+		}
+
+		if _, err := component.Push(componentName, componentDir); err != nil {
 			fmt.Printf("failed to push component: %v", componentName)
 			os.Exit(-1)
 		}

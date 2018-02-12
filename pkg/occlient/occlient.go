@@ -210,14 +210,14 @@ func NewAppS2IEmpty(name string, builderImage string, labels map[string]string) 
 	return string(output[:]), nil
 }
 
-func StartBuild(name string, dir *string) (string, error) {
+func StartBuild(name string, dir string) (string, error) {
 	args := []string{
 		"start-build",
 		name,
 		"--follow",
 	}
-	if dir != nil {
-		args = append(args, "--from-dir", *dir)
+	if len(dir) > 0 {
+		args = append(args, "--from-dir", dir)
 	}
 
 	// TODO: build progress is not shown
