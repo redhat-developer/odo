@@ -45,8 +45,12 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="bin/{{.OS}}-{{.Arch}}/ocdev" $(BUILD_FLAGS)
+	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/ocdev" $(BUILD_FLAGS)
 
 .PHONY: generate-cli-docs
 generate-cli-docs:
 	go run scripts/generate-cli-documentation.go
+
+.PHONY: prepare-release
+prepare-release: cross
+	./scripts/prepare-release.sh
