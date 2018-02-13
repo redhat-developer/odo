@@ -15,7 +15,7 @@ You can [download](https://dl.bintray.com/ocdev/ocdev/latest/) latest binaries (
 ### Concepts
 
 - An **_application_** is, well, your application! It consists of multiple microservices or components, that work individually to build the entire application.
-- A **_component_** can be thought of as a microservice. Mutliple components will make up an application. A component will have different attributes like storage, etc.
+- A **_component_** can be thought of as a microservice. Multiple components will make up an application. A component will have different attributes like storage, etc.
 Multiple component types are currently supported, like nodejs, perl, php, python, ruby, etc.
 
 ### Getting Started
