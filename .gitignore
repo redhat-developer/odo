@@ -4,6 +4,8 @@
 
 # Ignore compiled files
 ocdev
+dist
+bin
 
 # Ignore coverage report
 coverage.txt
