@@ -9,7 +9,7 @@ mkdir -p $RELEASE_DIR
 if [[ -n $TRAVIS_TAG ]]; then
     echo "Checking if ocdev version was set to the same version as current tag"
     # use sed to get only semver part
-    bin_version=$(${BIN_DIR}/darwin-amd64/ocdev version | sed 's/ .*//g')
+    bin_version=$(${BIN_DIR}/linux-amd64/ocdev version | sed 's/ .*//g')
     if [ "$TRAVIS_TAG" == "v${bin_version}" ]; then
         echo "OK: ocdev version output is matching current tag"
     else
