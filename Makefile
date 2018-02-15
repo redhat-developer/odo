@@ -67,3 +67,10 @@ test:
 .PHONY: packages
 packages:
 	./scripts/create-packages.sh
+	./scripts/create-packages.
+
+# upload packages greated by 'make packages' to bintray repositories
+# run 'make cross' and 'make packages' before this!
+.PHONY: upload-packages
+upload-packages:
+	./scripts/upload-packages.sh
