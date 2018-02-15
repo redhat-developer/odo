@@ -56,7 +56,6 @@ func TestNew(t *testing.T) {
 }
 
 func TestSetActiveComponent(t *testing.T) {
-
 	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
 	if err != nil {
 		t.Fatal(err)
@@ -68,13 +67,13 @@ func TestSetActiveComponent(t *testing.T) {
 		name           string
 		existingConfig Config
 		setComponent   string
-		project        string
+		application    string
 	}{
 		{
 			name:           "activeComponents nil",
 			existingConfig: Config{},
 			setComponent:   "foo",
-			project:        "bar",
+			application:    "bar",
 		},
 		{
 			name: "activeComponents empty",
@@ -82,7 +81,7 @@ func TestSetActiveComponent(t *testing.T) {
 				ActiveComponents: make(map[string]string),
 			},
 			setComponent: "foo",
-			project:      "bar",
+			application:  "bar",
 		},
 		{
 			name: "activeComponents existing",
@@ -92,7 +91,7 @@ func TestSetActiveComponent(t *testing.T) {
 				},
 			},
 			setComponent: "foo",
-			project:      "bar",
+			application:  "bar",
 		},
 		{
 			name: "overwrite existing active component",
@@ -102,7 +101,7 @@ func TestSetActiveComponent(t *testing.T) {
 				},
 			},
 			setComponent: "foo",
-			project:      "bar",
+			application:  "bar",
 		},
 	}
 
@@ -112,19 +111,19 @@ func TestSetActiveComponent(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			err = cfg.SetActiveComponent(tt.setComponent, tt.project)
+			err = cfg.SetActiveComponent(tt.setComponent, tt.application)
 			if err != nil {
 				t.Error(err)
 			}
 
 			found := false
-			for aproj, acomp := range cfg.ActiveComponents {
-				if aproj == tt.project && acomp == tt.setComponent {
+			for app, acomp := range cfg.ActiveComponents {
+				if app == tt.application && acomp == tt.setComponent {
 					found = true
 				}
 			}
 			if !found {
-				t.Errorf("component %s/%s was not set as current", tt.project, tt.setComponent)
+				t.Errorf("component %s/%s was not set as current", tt.application, tt.setComponent)
 			}
 
 		})
@@ -132,7 +131,6 @@ func TestSetActiveComponent(t *testing.T) {
 }
 
 func TestGetActiveComponent(t *testing.T) {
-
 	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
 	if err != nil {
 		t.Fatal(err)
@@ -141,24 +139,24 @@ func TestGetActiveComponent(t *testing.T) {
 	os.Setenv(configEnvName, tempConfigFile.Name())
 
 	tests := []struct {
-		name            string
-		existingConfig  Config
-		activeProject   string
-		activeComponent string
+		name              string
+		existingConfig    Config
+		activeApplication string
+		activeComponent   string
 	}{
 		{
-			name:            "no component active",
-			existingConfig:  Config{},
-			activeProject:   "test",
-			activeComponent: "",
+			name:              "no component active",
+			existingConfig:    Config{},
+			activeApplication: "test",
+			activeComponent:   "",
 		},
 		{
 			name: "activeComponents empty",
 			existingConfig: Config{
 				ActiveComponents: make(map[string]string),
 			},
-			activeProject:   "test",
-			activeComponent: "",
+			activeApplication: "test",
+			activeComponent:   "",
 		},
 		{
 			name: "no activeComponet record for given project",
@@ -167,8 +165,8 @@ func TestGetActiveComponent(t *testing.T) {
 					"a": "b",
 				},
 			},
-			activeProject:   "test",
-			activeComponent: "",
+			activeApplication: "test",
+			activeComponent:   "",
 		},
 		{
 			name: "activeComponents for one project",
@@ -177,8 +175,8 @@ func TestGetActiveComponent(t *testing.T) {
 					"a": "b",
 				},
 			},
-			activeProject:   "a",
-			activeComponent: "b",
+			activeApplication: "a",
+			activeComponent:   "b",
 		},
 		{
 			name: "multiple projects",
@@ -188,8 +186,8 @@ func TestGetActiveComponent(t *testing.T) {
 					"a":   "b",
 				},
 			},
-			activeProject:   "a",
-			activeComponent: "b",
+			activeApplication: "a",
+			activeComponent:   "b",
 		},
 	}
 
@@ -198,10 +196,162 @@ func TestGetActiveComponent(t *testing.T) {
 			cfg := ConfigInfo{
 				Config: tt.existingConfig,
 			}
-			output := cfg.GetActiveComponent(tt.activeProject)
+			output := cfg.GetActiveComponent(tt.activeApplication)
 
 			if output != tt.activeComponent {
 				t.Errorf("active component doesn't match expected \ngot: %s \nexpected: %s\n", output, tt.activeComponent)
+			}
+
+		})
+	}
+}
+
+func TestSetActiveApplication(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(configEnvName, tempConfigFile.Name())
+
+	tests := []struct {
+		name           string
+		existingConfig Config
+		setApplication string
+		project        string
+	}{
+		{
+			name:           "activeApplication nil",
+			existingConfig: Config{},
+			setApplication: "foo",
+			project:        "bar",
+		},
+		{
+			name: "activeApplication empty",
+			existingConfig: Config{
+				ActiveApplications: make(map[string]string),
+			},
+			setApplication: "foo",
+			project:        "bar",
+		},
+		{
+			name: "activeApplication existing",
+			existingConfig: Config{
+				ActiveApplications: map[string]string{
+					"a": "b",
+				},
+			},
+			setApplication: "foo",
+			project:        "bar",
+		},
+		{
+			name: "overwrite existing active Application",
+			existingConfig: Config{
+				ActiveApplications: map[string]string{
+					"foo": "foo",
+				},
+			},
+			setApplication: "foo",
+			project:        "bar",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := New()
+			if err != nil {
+				t.Error(err)
+			}
+			err = cfg.SetActiveApplication(tt.setApplication, tt.project)
+			if err != nil {
+				t.Error(err)
+			}
+
+			found := false
+			for proj, app := range cfg.ActiveApplications {
+				if proj == tt.project && app == tt.setApplication {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("application %s/%s was not set as current", tt.project, tt.setApplication)
+			}
+
+		})
+	}
+}
+
+func TestGetActiveApplication(t *testing.T) {
+
+	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(configEnvName, tempConfigFile.Name())
+
+	tests := []struct {
+		name              string
+		existingConfig    Config
+		activeProject     string
+		activeApplication string
+	}{
+		{
+			name:              "no application active",
+			existingConfig:    Config{},
+			activeProject:     "test",
+			activeApplication: "",
+		},
+		{
+			name: "activeApplications empty",
+			existingConfig: Config{
+				ActiveApplications: make(map[string]string),
+			},
+			activeProject:     "test",
+			activeApplication: "",
+		},
+		{
+			name: "no activeApplication record for given project",
+			existingConfig: Config{
+				ActiveApplications: map[string]string{
+					"a": "b",
+				},
+			},
+			activeProject:     "test",
+			activeApplication: "",
+		},
+		{
+			name: "activeApplication for one project",
+			existingConfig: Config{
+				ActiveApplications: map[string]string{
+					"a": "b",
+				},
+			},
+			activeProject:     "a",
+			activeApplication: "b",
+		},
+		{
+			name: "multiple application",
+			existingConfig: Config{
+				ActiveApplications: map[string]string{
+					"foo": "foo",
+					"a":   "b",
+				},
+			},
+			activeProject:     "a",
+			activeApplication: "b",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := ConfigInfo{
+				Config: tt.existingConfig,
+			}
+			output := cfg.GetActiveApplication(tt.activeProject)
+
+			if output != tt.activeApplication {
+				t.Errorf("active application doesn't match expected \ngot: %s \nexpected: %s\n", output, tt.activeApplication)
 			}
 
 		})

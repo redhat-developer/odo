@@ -10,16 +10,39 @@ import (
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 )
 
-const applicationLabel = "app.ocdev.developers.redhat.com"
-const componentLabel = "component.ocdev.developers.redhat.com"
+// componentLabel is a label key used to identify component
+const componentLabel = "app.kubernetes.io/component-name"
 
-func CreateFromGit(name string, ctype string, url string) (string, error) {
-	currentAppliction, err := application.GetCurrent()
+// getComponentLabels return labels that should be applied to every object
+// additional labels are used only for creating object
+// if you are creating something use additional=true
+// if you need labels to filter component that use additional=false
+func getComponentLabels(componentName string, additional bool) (map[string]string, error) {
+	currentApplication, err := application.GetCurrent()
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get current application")
+		return nil, errors.Wrap(err, "unable to get current application")
+	}
+	labels := map[string]string{
+		application.ApplicationLabel: currentApplication,
+		componentLabel:               componentName,
 	}
 
-	output, err := occlient.NewAppS2I(name, ctype, url, map[string]string{applicationLabel: currentAppliction, componentLabel: name})
+	if additional {
+		for _, additionalLabel := range application.AdditionalApplicationLabels {
+			labels[additionalLabel] = currentApplication
+		}
+	}
+
+	return labels, nil
+}
+
+func CreateFromGit(name string, ctype string, url string) (string, error) {
+	labels, err := getComponentLabels(name, true)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
+	}
+
+	output, err := occlient.NewAppS2I(name, ctype, url, labels)
 	if err != nil {
 		return "", err
 	}
@@ -31,12 +54,12 @@ func CreateFromGit(name string, ctype string, url string) (string, error) {
 }
 
 func CreateEmpty(name string, ctype string) (string, error) {
-	currentAppliction, err := application.GetCurrent()
+	labels, err := getComponentLabels(name, true)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get current application")
+		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
 	}
 
-	output, err := occlient.NewAppS2IEmpty(name, ctype, map[string]string{applicationLabel: currentAppliction, componentLabel: name})
+	output, err := occlient.NewAppS2IEmpty(name, ctype, labels)
 	if err != nil {
 		return "", err
 	}
@@ -69,12 +92,12 @@ func CreateFromDir(name string, ctype, dir string) (string, error) {
 
 // Delete whole component
 func Delete(name string) (string, error) {
-	currentAppliction, err := application.GetCurrent()
+	labels, err := getComponentLabels(name, false)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get active application")
+		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
 	}
 
-	output, err := occlient.Delete("all", "", map[string]string{applicationLabel: currentAppliction, componentLabel: name})
+	output, err := occlient.Delete("all", "", labels)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to delete component")
 	}

@@ -2,7 +2,6 @@ package occlient
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -14,11 +13,11 @@ func TestGetOcBinary(t *testing.T) {
 	// test shouldn't have external dependency, so we are faking oc binary with empty tmpfile
 	tmpfile, err := ioutil.TempFile("", "fake-oc")
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	tmpfile1, err := ioutil.TempFile("", "fake-oc")
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	defer os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile1.Name())

@@ -319,3 +319,41 @@ func SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, err
 	}
 	return string(output), nil
 }
+
+// GetLabelValues get label values from all object that are labeled with given label
+// returns slice of uniq label values
+func GetLabelValues(project string, label string) ([]string, error) {
+	// get all object that have given label
+	// and show just label values separated by ,
+	args := []string{
+		"get", "all",
+		"--selector", label,
+		"--namespace", project,
+		"-o", "go-template={{range .items}}{{range $key, $value := .metadata.labels}}{{if eq $key \"" + label + "\"}}{{$value}},{{end}}{{end}}{{end}}",
+	}
+
+	output, err := runOcComamnd(&OcCommand{args: args})
+	if err != nil {
+		return nil, err
+	}
+
+	values := []string{}
+	// deduplicate label values
+	for _, val := range strings.Split(string(output), ",") {
+		val = strings.TrimSpace(val)
+		if val != "" {
+			// check if this is the first time we see this value
+			found := false
+			for _, existing := range values {
+				if val == existing {
+					found = true
+				}
+			}
+			if !found {
+				values = append(values, val)
+			}
+		}
+	}
+
+	return values, nil
+}

@@ -16,7 +16,19 @@ const (
 )
 
 type Config struct {
-	// key - project name, value - component name
+	// remember active applications and components per project
+	// when project or applications is switched we can go back to last active app/component
+
+	// Currently active application
+	// key - project name
+	// value - application name
+	ActiveApplications map[string]string `json:"activeApplications"`
+
+	// TODO: situation when there is multiple applications with the same name in different projects is not handled currently
+
+	// Currently active component
+	// key - application name
+	// value - component name
 	ActiveComponents map[string]string `json:"activeComponents"`
 }
 
@@ -94,11 +106,11 @@ func (c *ConfigInfo) writeToFile() error {
 	return nil
 }
 
-func (c *ConfigInfo) SetActiveComponent(component string, project string) error {
+func (c *ConfigInfo) SetActiveComponent(component string, application string) error {
 	if c.ActiveComponents == nil {
 		c.ActiveComponents = make(map[string]string)
 	}
-	c.ActiveComponents[project] = component
+	c.ActiveComponents[application] = component
 	err := c.writeToFile()
 	if err != nil {
 		return errors.Wrap(err, "unable to set current component")
@@ -106,11 +118,32 @@ func (c *ConfigInfo) SetActiveComponent(component string, project string) error 
 	return nil
 }
 
-// GetCurrentComponet if no component is set as current returns empty string
-func (c *ConfigInfo) GetActiveComponent(project string) string {
+// GetActiveComponent if no component is set as current returns empty string
+func (c *ConfigInfo) GetActiveComponent(application string) string {
 	if c.ActiveComponents != nil {
-		return c.ActiveComponents[project]
+		return c.ActiveComponents[application]
 	}
 	return ""
+}
 
+// GetActiveApplication get currently active application for given project
+// if no application is active return empty string
+func (c *ConfigInfo) GetActiveApplication(project string) string {
+	if c.ActiveApplications != nil {
+		return c.ActiveApplications[project]
+	}
+	return ""
+}
+
+// SetActiveApplication set application as active for given project
+func (c *ConfigInfo) SetActiveApplication(application string, project string) error {
+	if c.ActiveApplications == nil {
+		c.ActiveApplications = make(map[string]string)
+	}
+	c.ActiveApplications[project] = application
+	err := c.writeToFile()
+	if err != nil {
+		return errors.Wrap(err, "unable to set current component")
+	}
+	return nil
 }

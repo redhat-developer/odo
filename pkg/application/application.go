@@ -1,42 +1,124 @@
 package application
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
+
+	"github.com/redhat-developer/ocdev/pkg/config"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 )
 
-// Create creates a new application and switches to it.
+const defaultApplication = "app"
 
+// ApplicationLabel is label key that is used to group all object that belong to one application
+// It should be save to use just this label to filter application
+const ApplicationLabel = "app.kubernetes.io/name"
+
+// AdditionalApplicationLabels additional labels that are applied to all objects belonging to one application
+// Those labels are not used for filtering or grouping, they are used just when creating and they are mend to be used by other tools
+var AdditionalApplicationLabels = []string{
+	// OpenShift Web console uses this label for grouping
+	"app",
+}
+
+// ApplicationInfo holds all important information about applications
+type ApplicationInfo struct {
+	// name of the application
+	Name string
+	// is this application active? Only one application can be active at the time
+	Active bool
+	// name of the openshift project this application belongs to
+	Project string
+}
+
+// Create a new application and set is as active.
 // If application already exists, this errors out.
-
 // If no project is set, this errors out.
 func Create(name string) error {
-	if err := occlient.CreateNewProject(name); err != nil {
-		return errors.Wrapf(err, "unable to create application: %v", name)
+	// TODO: right now this assumes that there is a current project in openshift
+	// when we have project support in ocdev, this should call project.GetCurrent()
+	// TODO: use project abstraction
+	project, err := occlient.GetCurrentProjectName()
+	if err != nil {
+		return errors.Wrap(err, "unable to create new application")
 	}
+
+	cfg, err := config.New()
+	if err != nil {
+		return errors.Wrap(err, "unable to create new application")
+	}
+
+	err = cfg.SetActiveApplication(name, project)
+	if err != nil {
+		return errors.Wrap(err, "unable to create new application")
+	}
+
 	return nil
 }
 
-func List() (string, error) {
-	project, err := occlient.GetProjects()
+// List all application in current project
+func List() ([]ApplicationInfo, error) {
+	// TODO: use project abstaction
+	project, err := occlient.GetCurrentProjectName()
 	if err != nil {
-		return "", errors.Wrap(err, "unable to list applications")
+		return nil, errors.Wrap(err, "unable to list applications")
 	}
-	return project, nil
+
+	appNames, err := occlient.GetLabelValues(project, ApplicationLabel)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list applications")
+	}
+
+	activeApplication, err := GetCurrent()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list applications")
+	}
+
+	applications := []ApplicationInfo{}
+
+	for _, name := range appNames {
+		active := false
+		if activeApplication == name {
+			active = true
+		}
+		applications = append(applications, ApplicationInfo{
+			Name:    name,
+			Active:  active,
+			Project: project,
+		})
+	}
+
+	return applications, nil
 }
 
 // Delete deletes the given application
 func Delete(name string) error {
-	if err := occlient.DeleteProject(name); err != nil {
-		return errors.Wrapf(err, "unable to delete application: %v", name)
-	}
-	return nil
+	// if err := occlient.DeleteProject(name); err != nil {
+	// 	return errors.Wrapf(err, "unable to delete application: %v", name)
+	// }
+	// TODO: implement
+	return fmt.Errorf("NOT IMPLEMENTED")
 }
 
+// GetCurrent application if no application is active it returns defaultApplication name
 func GetCurrent() (string, error) {
-	app, err := occlient.GetCurrentProjectName()
+	// TODO: use project abstaction
+	project, err := occlient.GetCurrentProjectName()
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get the active application")
+		return "", errors.Wrap(err, "unable to get active application")
 	}
+
+	cfg, err := config.New()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get active application")
+	}
+
+	app := cfg.GetActiveApplication(project)
+	// if no Application is active use default
+	if app == "" {
+		app = defaultApplication
+	}
+
 	return app, nil
 }
