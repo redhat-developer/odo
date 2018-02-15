@@ -15,6 +15,7 @@ jobs:
       script:
         - make bin
         - make validate
+        - make test
 
     - <<: *base-test
       go: 1.9
