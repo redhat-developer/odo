@@ -71,8 +71,11 @@ func runOcComamnd(command *OcCommand) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !IsServerUp() {
+	if !isServerUp() {
 		return nil, errors.New("server is down")
+	}
+	if !isLoggedIn() {
+		return nil, errors.New("please log in to the cluster")
 	}
 
 	cmd := exec.Command(ocpath, command.args...)
@@ -115,7 +118,24 @@ func runOcComamnd(command *OcCommand) ([]byte, error) {
 	return output, nil
 }
 
-func IsServerUp() bool {
+func isLoggedIn() bool {
+	ocpath, err := getOcBinary()
+	if err != nil {
+		log.Debug(errors.Wrap(err, "unable to find oc binary"))
+		return false
+	}
+
+	cmd := exec.Command(ocpath, "whoami")
+	output, err := cmd.CombinedOutput()
+	if err != nil && strings.Contains(string(output), "system:anonymous") {
+		log.Debug(errors.Wrap(err, "error running command"))
+		log.Debugf("Output is: %v", output)
+		return false
+	}
+	return true
+}
+
+func isServerUp() bool {
 
 	ocpath, err := getOcBinary()
 	if err != nil {
