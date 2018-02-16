@@ -40,17 +40,16 @@ var componentCmd = &cobra.Command{
 }
 
 var componentCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "component create <component_type> [component_name]",
-	Long:  "create new component",
+	Use:     "create",
+	Short:   "create a new component",
+	Long:    "create a new component",
+	Example: "ocdev component create <component type> <component name, optional>",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			// TODO: improve this message. It should say something about requiring component name
-			return fmt.Errorf("At least one argument is required")
+			return fmt.Errorf("no component type has been provided")
 		}
 		if len(args) > 2 {
-			// TODO: Improve this message
-			return fmt.Errorf("Invalid arguments, maximum 2 arguments possible")
+			return fmt.Errorf("extra arguments provided, accepted maximum 2: component create <type> <name>")
 		}
 		return nil
 	},
@@ -70,6 +69,11 @@ var componentCreateCmd = &cobra.Command{
 		//We don't have to check it anymore, Args check made sure that args has at least one item
 		// and no more than two
 		componentType := args[0]
+		if component.ValidateType(componentType) != nil {
+			fmt.Printf("Unsupported component type: %v\n", componentType)
+			os.Exit(-1)
+		}
+
 		componentName := args[0]
 		if len(args) == 2 {
 			componentName = args[1]

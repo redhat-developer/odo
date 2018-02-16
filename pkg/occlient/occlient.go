@@ -210,6 +210,23 @@ func NewAppS2IEmpty(name string, builderImage string, labels map[string]string) 
 	return string(output[:]), nil
 }
 
+func NewAppSearch(query string) (string, error) {
+	args := []string{
+		"new-app",
+		"--search",
+		"--image-stream",
+		query,
+	}
+	// TODO: Since we only support ImageStreams right now, it's okay to use
+	// TODO: --image-stream. Later on we need to parse this better.
+
+	output, err := runOcComamnd(&OcCommand{args: args})
+	if err != nil {
+		return "", errors.Wrap(err, "unable to run command")
+	}
+	return string(output[:]), nil
+}
+
 func StartBuild(name string, dir string) (string, error) {
 	args := []string{
 		"start-build",

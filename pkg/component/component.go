@@ -126,3 +126,8 @@ func Push(name string, dir string) (string, error) {
 	}
 	return output, nil
 }
+
+func ValidateType(componentType string) error {
+	_, err := occlient.NewAppSearch(componentType)
+	return err
+}
