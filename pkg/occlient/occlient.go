@@ -4,13 +4,18 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
+
+const ocRequestTimeout = 1 * time.Second
 
 // getOcBinary returns full path to oc binary
 // first it looks for env variable KUBECTL_PLUGINS_CALLER (run as oc plugin)
@@ -66,6 +71,9 @@ func runOcComamnd(command *OcCommand) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if !IsServerUp() {
+		return nil, errors.New("server is down")
+	}
 
 	cmd := exec.Command(ocpath, command.args...)
 
@@ -105,6 +113,38 @@ func runOcComamnd(command *OcCommand) ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+func IsServerUp() bool {
+
+	ocpath, err := getOcBinary()
+	if err != nil {
+		log.Debug(errors.Wrap(err, "unable to find oc binary"))
+		return false
+	}
+
+	cmd := exec.Command(ocpath, "whoami", "--show-server")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Debug(errors.Wrap(err, "error running command"))
+		return false
+	}
+
+	server := strings.TrimSpace(string(output))
+	u, err := url.Parse(server)
+	if err != nil {
+		log.Debug(errors.Wrap(err, "unable to parse url"))
+		return false
+	}
+
+	log.Debugf("Trying to connect to server %v - %v", u.Host)
+	_, connectionError := net.DialTimeout("tcp", u.Host, time.Duration(ocRequestTimeout))
+	if connectionError != nil {
+		log.Debug(errors.Wrap(connectionError, "unable to connect to server"))
+		return false
+	}
+	log.Debugf("Server %v is up", server)
+	return true
 }
 
 func GetCurrentProjectName() (string, error) {
