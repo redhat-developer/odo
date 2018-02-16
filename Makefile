@@ -54,3 +54,7 @@ generate-cli-docs:
 .PHONY: prepare-release
 prepare-release: cross
 	./scripts/prepare-release.sh
+
+.PHONY: test
+test:
+	go test -race $(PKGS)
