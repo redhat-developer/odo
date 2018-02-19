@@ -36,6 +36,7 @@ jobs:
       go: 1.9
       install:
         - make goget-tools
+        - gem install fpm
       script: skip
       before_deploy:
         - make cross
