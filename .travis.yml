@@ -39,12 +39,13 @@ jobs:
         - gem install fpm
         - sudo apt-get -qq update
         - sudo apt-get install -y rpm
-      script: skip
-      before_deploy:
+        # Ideally following commands should be in before_deploy section
+        # but travis-ci runs before_deploy for every provider. We don't want that.
         - make cross
+        - ./scripts/generate-bintray-json.sh
         - make prepare-release
         - make packages
-        - ./scripts/generate-bintray-json.sh
+      script: skip
       deploy:
         # upload binaries to bintray
         - provider: bintray
