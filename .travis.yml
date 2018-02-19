@@ -74,4 +74,11 @@ jobs:
             - make upload-packages
           on:
             tags: true
+        - provider: script
+          skip_cleanup: true
+          script:
+            - make upload-packages
+          on:
             branch: master
+
+
