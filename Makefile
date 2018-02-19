@@ -51,6 +51,9 @@ cross:
 generate-cli-docs:
 	go run scripts/generate-cli-documentation.go
 
+# create gzipped binaries in ./dist/release/
+# for uploading to GitHub release page
+# run make cross before this!
 .PHONY: prepare-release
 prepare-release: cross
 	./scripts/prepare-release.sh
@@ -58,3 +61,16 @@ prepare-release: cross
 .PHONY: test
 test:
 	go test -race $(PKGS)
+
+# create deb and rpm packages using fpm in ./dist/pkgs/
+# run make cross before this!
+.PHONY: packages
+packages:
+	./scripts/create-packages.sh
+	./scripts/create-packages.
+
+# upload packages greated by 'make packages' to bintray repositories
+# run 'make cross' and 'make packages' before this!
+.PHONY: upload-packages
+upload-packages:
+	./scripts/upload-packages.sh

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# this script assumes that runs on linux
+
 BIN_DIR="./dist/bin/"
 RELEASE_DIR="./dist/release/"
 
@@ -18,10 +20,15 @@ if [[ -n $TRAVIS_TAG ]]; then
     fi
 fi
 
+# gziped binaries
 for arch in `ls -1 $BIN_DIR/`;do
     suffix=""
     if [[ $arch == windows-* ]]; then
         suffix=".exe"
     fi
-    gzip --keep --to-stdout $BIN_DIR/$arch/ocdev$suffix > $RELEASE_DIR/ocdev-$arch$suffix.gz
+    source_file=$BIN_DIR/$arch/ocdev$suffix
+    target_file=$RELEASE_DIR/ocdev-$arch$suffix.gz
+
+    echo "gzipping binary $source_file as $target_file"
+    gzip --keep --to-stdout $source_file > $target_file
 done
