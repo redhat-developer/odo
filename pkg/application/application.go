@@ -58,6 +58,8 @@ func Create(name string) error {
 }
 
 // List all application in current project
+// shows also empty applications (empty applications are those that are just
+//  mentioned in config but don't have any object associated with it on cluster)
 func List() ([]ApplicationInfo, error) {
 	// TODO: use project abstaction
 	project, err := occlient.GetCurrentProjectName()
@@ -85,6 +87,23 @@ func List() ([]ApplicationInfo, error) {
 		applications = append(applications, ApplicationInfo{
 			Name:    name,
 			Active:  active,
+			Project: project,
+		})
+	}
+
+	cfg, err := config.New()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create new application")
+	}
+
+	// Application can be created but empty.
+	// In that case it won't show in the list above, as there are no objects with application
+	// label in the cluster. Only place where this application is mentioned is local config.
+	activeApp := cfg.GetActiveApplication(project)
+	if activeApp != "" {
+		applications = append(applications, ApplicationInfo{
+			Name:    activeApp,
+			Active:  true,
 			Project: project,
 		})
 	}
