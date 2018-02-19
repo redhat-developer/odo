@@ -1,5 +1,5 @@
 dist: trusty
-sudo: false
+sudo: required
 
 language: go
 
@@ -37,6 +37,8 @@ jobs:
       install:
         - make goget-tools
         - gem install fpm
+        - sudo apt-get -qq update
+        - sudo apt-get install -y rpmbuild
       script: skip
       before_deploy:
         - make cross
