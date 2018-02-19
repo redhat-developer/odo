@@ -1,17 +1,3 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package cmd
 
 import (
@@ -22,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultApplication = "app"
-
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
 	Use:     "application",
@@ -31,18 +15,19 @@ var applicationCmd = &cobra.Command{
 	Aliases: []string{"app"},
 }
 
-var createCmd = &cobra.Command{
+var applicationCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create an application",
-	Args:  cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		var name string
-		// Set default application name if not set
-		if len(args) == 0 {
-			name = defaultApplication
-		} else {
-			name = args[0]
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("Please provide name for the new application")
 		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		// Args validation makes sure that there is exactly one argument
+		name := args[0]
+
 		fmt.Printf("Creating application: %v\n", name)
 		if err := application.Create(name); err != nil {
 			fmt.Println(err)
@@ -97,12 +82,19 @@ var listCmd = &cobra.Command{
 	Short: "lists all the applications",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		app, err := application.List()
+		apps, err := application.List()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(-1)
 		}
-		fmt.Print(app)
+		fmt.Printf("ACTIVE   NAME\n")
+		for _, app := range apps {
+			activeMark := " "
+			if app.Active {
+				activeMark = "*"
+			}
+			fmt.Printf("  %s      %s\n", activeMark, app.Name)
+		}
 	},
 }
 
@@ -112,6 +104,6 @@ func init() {
 	applicationCmd.AddCommand(listCmd)
 	applicationCmd.AddCommand(deleteCmd)
 	applicationCmd.AddCommand(getCmd)
-	applicationCmd.AddCommand(createCmd)
+	applicationCmd.AddCommand(applicationCreateCmd)
 	rootCmd.AddCommand(applicationCmd)
 }
