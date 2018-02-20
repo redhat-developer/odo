@@ -7,7 +7,7 @@ OpenShift Command line for Developers
 ## Pre-requisites
 - OpenShift version 3.7.0 and up
 
-To use ocdev you need access to an OpenShift instance and OpenShift CLI installed on your local machine (`oc` should be in your $PATH).
+To use ocdev you need access to an OpenShift instance and have OpenShift CLI installed on your local machine (`oc` should be in your $PATH).
 
 
 ### OpenShift instance
@@ -41,21 +41,21 @@ builds for released versions from [GitHub releases page](https://github.com/redh
 #### Debian/Ubuntu and other distributions using deb
 1. First you need to add gpg [public key](https://bintray.com/user/downloadSubjectPublicKey?username=bintray) used to sign repositories.
     ```sh
-    curl https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
+    curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
     ```
 2. Add ocdev repository to your `/etc/apt/sources.list`
-    - If you want to use latest master builds add  `deb https://dl.bintray.com/ocdev/ocdev-deb-dev strech main` repository.
+    - If you want to use latest master builds add  `deb https://dl.bintray.com/ocdev/ocdev-deb-dev stretch main` repository.
       ```sh
-      echo "deb https://dl.bintray.com/ocdev/ocdev-deb-releases strech main" | sudo tee -a /etc/apt/sources.list
+      echo "deb https://dl.bintray.com/ocdev/ocdev-deb-dev stretch main" | sudo tee -a /etc/apt/sources.list
       ```
-    - If you want to use latest released version add  `deb https://dl.bintray.com/ocdev/ocdev-deb-releases strech main` repository.
+    - If you want to use latest released version add  `deb https://dl.bintray.com/ocdev/ocdev-deb-releases stretch main` repository.
       ```sh
-      echo "deb https://dl.bintray.com/ocdev/ocdev-deb-dev strech main" | sudo tee -a /etc/apt/sources.list
+      echo "deb https://dl.bintray.com/ocdev/ocdev-deb-releases stretch main" | sudo tee -a /etc/apt/sources.list
       ```
 3. Now you can install `ocdev` and you would install any other package.
    ```sh
-   yum install ocdev
-   # or 'dnf install ocdev'
+   apt-get update
+   apt-get install ocdev
    ```
 
 
@@ -73,7 +73,7 @@ builds for released versions from [GitHub releases page](https://github.com/redh
         ```
         Or you can download it using following command:
         ```sh
-        sudo wget https://bintray.com/ocdev/ocdev-rpm-dev/rpm -O /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-dev.repo
+        sudo curl -L https://bintray.com/ocdev/ocdev-rpm-dev/rpm -o /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-dev.repo
         ```
     - If you want to use latest released version save following text to `/etc/yum.repos.d/bintray-ocdev-ocdev-rpm-releases.repo`
         ```
@@ -87,7 +87,7 @@ builds for released versions from [GitHub releases page](https://github.com/redh
         ```
         Or you can download it using following command:
         ```sh
-        sudo wget https://bintray.com/ocdev/ocdev-rpm-releases/rpm -O /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-releases.repo
+        sudo curl -L https://bintray.com/ocdev/ocdev-rpm-releases/rpm -o /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-releases.repo
         ```
 3. Now you can install `ocdev` and you would install any other package.
    ```sh
