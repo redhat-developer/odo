@@ -129,12 +129,17 @@ func GetCurrent() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get config")
 	}
-	currentAppliction, err := application.GetCurrent()
+	currentApplication, err := application.GetCurrent()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
 
-	currentComponent := cfg.GetActiveComponent(currentAppliction)
+	currentProject, err := occlient.GetCurrentProjectName()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get current  component")
+	}
+
+	currentComponent := cfg.GetActiveComponent(currentApplication, currentProject)
 	if currentComponent == "" {
 		return "", errors.New("no component is set as active")
 	}

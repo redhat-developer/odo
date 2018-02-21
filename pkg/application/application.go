@@ -22,36 +22,13 @@ var AdditionalApplicationLabels = []string{
 	"app",
 }
 
-// ApplicationInfo holds all important information about applications
-type ApplicationInfo struct {
-	// name of the application
-	Name string
-	// is this application active? Only one application can be active at the time
-	Active bool
-	// name of the openshift project this application belongs to
-	Project string
-}
-
 // Create a new application and set is as active.
 // If application already exists, this errors out.
 // If no project is set, this errors out.
 func Create(name string) error {
-	// TODO: right now this assumes that there is a current project in openshift
-	// when we have project support in ocdev, this should call project.GetCurrent()
-	// TODO: use project abstraction
-	project, err := occlient.GetCurrentProjectName()
+	err := SetCurrent(name)
 	if err != nil {
-		return errors.Wrap(err, "unable to create new application")
-	}
-
-	cfg, err := config.New()
-	if err != nil {
-		return errors.Wrap(err, "unable to create new application")
-	}
-
-	err = cfg.SetActiveApplication(name, project)
-	if err != nil {
-		return errors.Wrap(err, "unable to create new application")
+		return errors.Wrapf(err, "unable to create new application")
 	}
 
 	return nil
@@ -59,36 +36,14 @@ func Create(name string) error {
 
 // List all application in current project
 // shows also empty applications (empty applications are those that are just
-//  mentioned in config but don't have any object associated with it on cluster)
-func List() ([]ApplicationInfo, error) {
+// mentioned in config but don't have any object associated with it on cluster)
+func List() ([]config.ApplicationInfo, error) {
+	applications := []config.ApplicationInfo{}
+
 	// TODO: use project abstaction
 	project, err := occlient.GetCurrentProjectName()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications")
-	}
-
-	appNames, err := occlient.GetLabelValues(project, ApplicationLabel)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list applications")
-	}
-
-	activeApplication, err := GetCurrent()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list applications")
-	}
-
-	applications := []ApplicationInfo{}
-
-	for _, name := range appNames {
-		active := false
-		if activeApplication == name {
-			active = true
-		}
-		applications = append(applications, ApplicationInfo{
-			Name:    name,
-			Active:  active,
-			Project: project,
-		})
 	}
 
 	cfg, err := config.New()
@@ -96,16 +51,31 @@ func List() ([]ApplicationInfo, error) {
 		return nil, errors.Wrap(err, "unable to create new application")
 	}
 
-	// Application can be created but empty.
-	// In that case it won't show in the list above, as there are no objects with application
-	// label in the cluster. Only place where this application is mentioned is local config.
-	activeApp := cfg.GetActiveApplication(project)
-	if activeApp != "" {
-		applications = append(applications, ApplicationInfo{
-			Name:    activeApp,
-			Active:  true,
-			Project: project,
-		})
+	// All applications from config file
+	applications = append(applications, cfg.ActiveApplications...)
+
+	// Get applications from cluster
+	appNames, err := occlient.GetLabelValues(project, ApplicationLabel)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list applications")
+	}
+
+	for _, name := range appNames {
+		// skip applications that are already in the list (they were mentioned in config file)
+		found := false
+		for _, app := range applications {
+			if app.Project == project && app.Name == name {
+				found = true
+			}
+		}
+		if !found {
+			applications = append(applications, config.ApplicationInfo{
+				Name: name,
+				// if this application is not in config file, it can't be active
+				Active:  false,
+				Project: project,
+			})
+		}
 	}
 
 	return applications, nil
@@ -140,4 +110,27 @@ func GetCurrent() (string, error) {
 	}
 
 	return app, nil
+}
+
+// SetCurrent set application as active
+func SetCurrent(name string) error {
+	// TODO: right now this assumes that there is a current project in openshift
+	// when we have project support in ocdev, this should call project.GetCurrent()
+	// TODO: use project abstraction
+	project, err := occlient.GetCurrentProjectName()
+	if err != nil {
+		return errors.Wrap(err, "unable to get active application")
+	}
+
+	cfg, err := config.New()
+	if err != nil {
+		return errors.Wrap(err, "unable to get active application")
+	}
+
+	err = cfg.SetActiveApplication(name, project)
+	if err != nil {
+		return errors.Wrap(err, "unable to create new application")
+	}
+
+	return nil
 }
