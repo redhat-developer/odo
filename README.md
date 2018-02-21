@@ -22,7 +22,7 @@ Please follow [OpenShift documentation](https://docs.openshift.org/latest/cli_re
 You can download latest master builds from [Bintray](https://dl.bintray.com/ocdev/ocdev/latest/) or 
 builds for released versions from [GitHub releases page](https://github.com/redhat-developer/ocdev/releases).
 
-### MacOS
+### macOS
 1. First you need enable `kadel/ocdev` Homebrew Tap:
     ```sh
     brew tap kadel/ocdev
