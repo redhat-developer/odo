@@ -1,12 +1,10 @@
 package application
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
-
 	"github.com/redhat-developer/ocdev/pkg/config"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
+	log "github.com/sirupsen/logrus"
 )
 
 const defaultApplication = "app"
@@ -20,6 +18,24 @@ const ApplicationLabel = "app.kubernetes.io/name"
 var AdditionalApplicationLabels = []string{
 	// OpenShift Web console uses this label for grouping
 	"app",
+}
+
+// GetLabels return labels that indetificates given application
+// additional labels are used only when creating object
+// if you are creating something use additional=true
+// if you need labels to filter component than use additional=false
+func GetLabels(application string, additional bool) (map[string]string, error) {
+	labels := map[string]string{
+		ApplicationLabel: application,
+	}
+
+	if additional {
+		for _, additionalLabel := range AdditionalApplicationLabels {
+			labels[additionalLabel] = application
+		}
+	}
+
+	return labels, nil
 }
 
 // Create a new application and set is as active.
@@ -83,11 +99,36 @@ func List() ([]config.ApplicationInfo, error) {
 
 // Delete deletes the given application
 func Delete(name string) error {
-	// if err := occlient.DeleteProject(name); err != nil {
-	// 	return errors.Wrapf(err, "unable to delete application: %v", name)
-	// }
-	// TODO: implement
-	return fmt.Errorf("NOT IMPLEMENTED")
+	log.Debug("Deleting application %s", name)
+
+	labels, err := GetLabels(name, false)
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete application %s", name)
+	}
+
+	// delete application from cluster
+	output, err := occlient.Delete("all", "", labels)
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete application %s", name)
+	}
+	log.Debug("deleted from cluster: \n", output)
+
+	// delete from config
+	cfg, err := config.New()
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete application %s", name)
+	}
+	project, err := occlient.GetCurrentProjectName()
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete application %s", name)
+	}
+	err = cfg.DeleteApplication(name, project)
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete application %s", name)
+	}
+	log.Debug("deleted from config: \n", output)
+
+	return nil
 }
 
 // GetCurrent application if no application is active it returns defaultApplication name
@@ -106,7 +147,12 @@ func GetCurrent() (string, error) {
 	app := cfg.GetActiveApplication(project)
 	// if no Application is active use default
 	if app == "" {
-		app = defaultApplication
+		err = SetCurrent(defaultApplication)
+		if err != nil {
+			return "", errors.Wrap(err, "unable to get active application")
+		}
+		return defaultApplication, nil
+
 	}
 
 	return app, nil

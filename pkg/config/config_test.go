@@ -547,6 +547,151 @@ func TestGetActiveApplication(t *testing.T) {
 	}
 }
 
+func TestDeleteApplication(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(configEnvName, tempConfigFile.Name())
+
+	tests := []struct {
+		name           string
+		existingConfig Config
+		application    string
+		project        string
+		wantErr        bool
+		result         []ApplicationInfo
+	}{
+		{
+			name:           "empty config",
+			existingConfig: Config{},
+			application:    "foo",
+			project:        "bar",
+			wantErr:        true,
+			result:         nil,
+		},
+		{
+			name: "delete not existing application",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:    "a",
+						Active:  true,
+						Project: "test",
+					},
+				},
+			},
+			application: "b",
+			project:     "test",
+			wantErr:     false,
+			result: []ApplicationInfo{
+				ApplicationInfo{},
+			},
+		},
+		{
+			name: "delete existing application",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "b",
+					},
+				},
+			},
+			application: "a",
+			project:     "test",
+			wantErr:     false,
+			result:      []ApplicationInfo{},
+		},
+		{
+			name: "delete application (apps with same name in different projects)",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          true,
+						Project:         "test",
+						ActiveComponent: "old",
+					},
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test2",
+						ActiveComponent: "old2",
+					},
+				},
+			},
+			application: "a",
+			project:     "test",
+			wantErr:     false,
+			result: []ApplicationInfo{
+				ApplicationInfo{
+					Name:            "a",
+					Active:          false,
+					Project:         "test2",
+					ActiveComponent: "old2",
+				},
+			},
+		},
+		{
+			name: "delete application (different apps in the same project)",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          true,
+						Project:         "test",
+						ActiveComponent: "comp",
+					},
+					ApplicationInfo{
+						Name:            "b",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "comp2",
+					},
+				},
+			},
+			application: "b",
+			project:     "test",
+			wantErr:     false,
+			result: []ApplicationInfo{
+				ApplicationInfo{
+					Name:            "a",
+					Active:          true,
+					Project:         "test",
+					ActiveComponent: "comp",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := New()
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.Config = tt.existingConfig
+
+			err = cfg.DeleteApplication(tt.application, tt.project)
+			if tt.wantErr {
+				if (err != nil) != tt.wantErr {
+					t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
+				}
+			}
+			if err == nil {
+				if !reflect.DeepEqual(cfg.ActiveApplications, tt.result) {
+					t.Errorf("expected output doesn't match what was returned: \n expected:\n%#v\n returned:\n%#v\n", tt.result, cfg.ActiveApplications)
+				}
+			}
+
+		})
+	}
+}
+
 //
 //func TestGet(t *testing.T) {
 //

@@ -197,3 +197,31 @@ func (c *ConfigInfo) SetActiveApplication(application string, project string) er
 	}
 	return nil
 }
+
+// DeleteApplication deletes application from given project from config file
+func (c *ConfigInfo) DeleteApplication(application string, project string) error {
+	if c.ActiveApplications == nil {
+		c.ActiveApplications = []ApplicationInfo{}
+	}
+
+	found := false
+	for i, app := range c.ActiveApplications {
+		// if application exists set is as Active
+		if app.Name == application && app.Project == project {
+			// remove current item from array
+			c.ActiveApplications = append(c.ActiveApplications[:i], c.ActiveApplications[i+1:]...)
+			found = true
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("application %s doesn't exists", application)
+
+	}
+
+	err := c.writeToFile()
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete application %s", application)
+	}
+	return nil
+}

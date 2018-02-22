@@ -13,31 +13,27 @@ import (
 // componentLabel is a label key used to identify component
 const componentLabel = "app.kubernetes.io/component-name"
 
-// getComponentLabels return labels that should be applied to every object
+// GetLabels return labels that should be applied to every object for given component in active application
 // additional labels are used only for creating object
 // if you are creating something use additional=true
 // if you need labels to filter component that use additional=false
-func getComponentLabels(componentName string, additional bool) (map[string]string, error) {
+func GetLabels(componentName string, additional bool) (map[string]string, error) {
 	currentApplication, err := application.GetCurrent()
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get current application")
-	}
-	labels := map[string]string{
-		application.ApplicationLabel: currentApplication,
-		componentLabel:               componentName,
+		return nil, errors.Wrapf(err, "unable to get get labels for  component %s", componentName)
 	}
 
-	if additional {
-		for _, additionalLabel := range application.AdditionalApplicationLabels {
-			labels[additionalLabel] = currentApplication
-		}
+	labels, err := application.GetLabels(currentApplication, additional)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get get labels for  component %s", componentName)
 	}
+	labels[componentLabel] = componentName
 
 	return labels, nil
 }
 
 func CreateFromGit(name string, ctype string, url string) (string, error) {
-	labels, err := getComponentLabels(name, true)
+	labels, err := GetLabels(name, true)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
 	}
@@ -54,7 +50,7 @@ func CreateFromGit(name string, ctype string, url string) (string, error) {
 }
 
 func CreateEmpty(name string, ctype string) (string, error) {
-	labels, err := getComponentLabels(name, true)
+	labels, err := GetLabels(name, true)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
 	}
@@ -92,7 +88,7 @@ func CreateFromDir(name string, ctype, dir string) (string, error) {
 
 // Delete whole component
 func Delete(name string) (string, error) {
-	labels, err := getComponentLabels(name, false)
+	labels, err := GetLabels(name, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
 	}
@@ -111,12 +107,12 @@ func SetCurrent(name string) error {
 		return errors.Wrap(err, "unable to get config")
 	}
 
-	currentAppliction, err := application.GetCurrent()
+	currentApplication, err := application.GetCurrent()
 	if err != nil {
 		return errors.Wrap(err, "unable to get current application")
 	}
 
-	cfg.SetActiveComponent(name, currentAppliction)
+	err = cfg.SetActiveComponent(name, currentApplication)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set current component %s", name)
 	}
@@ -124,6 +120,8 @@ func SetCurrent(name string) error {
 	return nil
 }
 
+// GetCurrent component in active application
+// returns "" if there is no active component
 func GetCurrent() (string, error) {
 	cfg, err := config.New()
 	if err != nil {
@@ -140,9 +138,7 @@ func GetCurrent() (string, error) {
 	}
 
 	currentComponent := cfg.GetActiveComponent(currentApplication, currentProject)
-	if currentComponent == "" {
-		return "", errors.New("no component is set as active")
-	}
+
 	return currentComponent, nil
 
 }
