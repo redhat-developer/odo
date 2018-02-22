@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/redhat-developer/ocdev/pkg/notify"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -60,4 +61,16 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolVarP(&GlobalVerbose, "verbose", "v", false, "verbose output")
 
+	newTag, err := notify.CheckLatestReleaseTag(VERSION)
+	if err != nil {
+		// The error is intentionally not being handled because we don't want
+		// to stop the execution of the program because of this failure
+		log.Infof("Error checking if newer ocdev release is available: %v", err)
+	}
+	if len(newTag) > 0 {
+		fmt.Printf("A newer version of ocdev (version: " + fmt.Sprint(newTag) + ") is available.\n" +
+			"Update using your package manager, or run\n" +
+			"curl " + notify.InstallScriptURL + " | sh\n" +
+			"to update manually, or visit https://github.com/redhat-developer/ocdev/releases\n")
+	}
 }

@@ -40,3 +40,11 @@
 [[constraint]]
   name = "github.com/ghodss/yaml"
   version = "1.0.0"
+
+[[constraint]]
+  name = "github.com/google/go-github"
+  version = "v15.0.0"
+
+[[constraint]]
+  name = "github.com/blang/semver"
+  version = "v3.5.1"
