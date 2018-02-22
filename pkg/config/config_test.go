@@ -66,42 +66,130 @@ func TestSetActiveComponent(t *testing.T) {
 	tests := []struct {
 		name           string
 		existingConfig Config
-		setComponent   string
-		application    string
+		component      string
+		project        string
+		wantErr        bool
+		result         []ApplicationInfo
 	}{
 		{
 			name:           "activeComponents nil",
 			existingConfig: Config{},
-			setComponent:   "foo",
-			application:    "bar",
+			component:      "foo",
+			project:        "bar",
+			wantErr:        true,
+			result:         nil,
 		},
 		{
 			name: "activeComponents empty",
 			existingConfig: Config{
-				ActiveComponents: make(map[string]string),
-			},
-			setComponent: "foo",
-			application:  "bar",
-		},
-		{
-			name: "activeComponents existing",
-			existingConfig: Config{
-				ActiveComponents: map[string]string{
-					"a": "b",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:    "a",
+						Active:  true,
+						Project: "test",
+					},
 				},
 			},
-			setComponent: "foo",
-			application:  "bar",
-		},
-		{
-			name: "overwrite existing active component",
-			existingConfig: Config{
-				ActiveComponents: map[string]string{
-					"foo": "foo",
+			component: "foo",
+			project:   "test",
+			wantErr:   false,
+			result: []ApplicationInfo{
+				ApplicationInfo{
+					Name:            "a",
+					Active:          true,
+					Project:         "test",
+					ActiveComponent: "foo",
 				},
 			},
-			setComponent: "foo",
-			application:  "bar",
+		},
+		{
+			name: "no project active",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "b",
+					},
+				},
+			},
+			component: "foo",
+			project:   "test",
+			wantErr:   true,
+			result:    nil,
+		},
+		{
+			name: "overwrite existing active component (apps with same name in different projects)",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          true,
+						Project:         "test",
+						ActiveComponent: "old",
+					},
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test2",
+						ActiveComponent: "old2",
+					},
+				},
+			},
+			component: "new",
+			project:   "test",
+			wantErr:   false,
+			result: []ApplicationInfo{
+				ApplicationInfo{
+					Name:            "a",
+					Active:          true,
+					Project:         "test",
+					ActiveComponent: "new",
+				},
+				ApplicationInfo{
+					Name:            "a",
+					Active:          false,
+					Project:         "test2",
+					ActiveComponent: "old2",
+				},
+			},
+		},
+		{
+			name: "overwrite existing active component (different apps in the same project)",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          true,
+						Project:         "test",
+						ActiveComponent: "old",
+					},
+					ApplicationInfo{
+						Name:            "b",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "old2",
+					},
+				},
+			},
+			component: "new",
+			project:   "test",
+			wantErr:   false,
+			result: []ApplicationInfo{
+				ApplicationInfo{
+					Name:            "a",
+					Active:          true,
+					Project:         "test",
+					ActiveComponent: "new",
+				},
+				ApplicationInfo{
+					Name:            "b",
+					Active:          false,
+					Project:         "test",
+					ActiveComponent: "old2",
+				},
+			},
 		},
 	}
 
@@ -111,19 +199,18 @@ func TestSetActiveComponent(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			err = cfg.SetActiveComponent(tt.setComponent, tt.application)
-			if err != nil {
-				t.Error(err)
-			}
+			cfg.Config = tt.existingConfig
 
-			found := false
-			for app, acomp := range cfg.ActiveComponents {
-				if app == tt.application && acomp == tt.setComponent {
-					found = true
+			err = cfg.SetActiveComponent(tt.component, tt.project)
+			if tt.wantErr {
+				if (err != nil) != tt.wantErr {
+					t.Errorf("SetActiveComponent() unexpected error %v, wantErr %v", err, tt.wantErr)
 				}
 			}
-			if !found {
-				t.Errorf("component %s/%s was not set as current", tt.application, tt.setComponent)
+			if err == nil {
+				if !reflect.DeepEqual(cfg.ActiveApplications, tt.result) {
+					t.Errorf("expected output doesn't match what was returned: \n expected:\n%#v\n, returned:\n%#v\n", tt.result, cfg.ActiveApplications)
+				}
 			}
 
 		})
@@ -142,52 +229,93 @@ func TestGetActiveComponent(t *testing.T) {
 		name              string
 		existingConfig    Config
 		activeApplication string
+		activeProject     string
 		activeComponent   string
 	}{
 		{
-			name:              "no component active",
+			name:              "empty config",
 			existingConfig:    Config{},
 			activeApplication: "test",
+			activeProject:     "test",
 			activeComponent:   "",
 		},
 		{
-			name: "activeComponents empty",
+			name: "ActiveApplications empty",
 			existingConfig: Config{
-				ActiveComponents: make(map[string]string),
+				ActiveApplications: []ApplicationInfo{},
 			},
 			activeApplication: "test",
+			activeProject:     "test",
 			activeComponent:   "",
 		},
 		{
-			name: "no activeComponet record for given project",
+			name: "no active component record for given application",
 			existingConfig: Config{
-				ActiveComponents: map[string]string{
-					"a": "b",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:    "a",
+						Active:  false,
+						Project: "test",
+					},
 				},
 			},
 			activeApplication: "test",
+			activeProject:     "test",
 			activeComponent:   "",
 		},
 		{
 			name: "activeComponents for one project",
 			existingConfig: Config{
-				ActiveComponents: map[string]string{
-					"a": "b",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          true,
+						Project:         "test",
+						ActiveComponent: "b",
+					},
 				},
 			},
 			activeApplication: "a",
+			activeProject:     "test",
 			activeComponent:   "b",
+		},
+		{
+			name: "inactive project",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "b",
+					},
+				},
+			},
+			activeApplication: "a",
+			activeProject:     "test",
+			activeComponent:   "",
 		},
 		{
 			name: "multiple projects",
 			existingConfig: Config{
-				ActiveComponents: map[string]string{
-					"foo": "foo",
-					"a":   "b",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "a",
+						Active:          true,
+						Project:         "test2",
+						ActiveComponent: "b2",
+					},
 				},
 			},
 			activeApplication: "a",
-			activeComponent:   "b",
+			activeProject:     "test2",
+			activeComponent:   "b2",
 		},
 	}
 
@@ -196,7 +324,7 @@ func TestGetActiveComponent(t *testing.T) {
 			cfg := ConfigInfo{
 				Config: tt.existingConfig,
 			}
-			output := cfg.GetActiveComponent(tt.activeApplication)
+			output := cfg.GetActiveComponent(tt.activeApplication, tt.activeProject)
 
 			if output != tt.activeComponent {
 				t.Errorf("active component doesn't match expected \ngot: %s \nexpected: %s\n", output, tt.activeComponent)
@@ -223,36 +351,72 @@ func TestSetActiveApplication(t *testing.T) {
 		{
 			name:           "activeApplication nil",
 			existingConfig: Config{},
-			setApplication: "foo",
-			project:        "bar",
+			setApplication: "app",
+			project:        "proj",
 		},
 		{
 			name: "activeApplication empty",
 			existingConfig: Config{
-				ActiveApplications: make(map[string]string),
+				ActiveApplications: []ApplicationInfo{},
 			},
-			setApplication: "foo",
-			project:        "bar",
+			setApplication: "app",
+			project:        "proj",
 		},
 		{
-			name: "activeApplication existing",
+			name: "no Active value",
 			existingConfig: Config{
-				ActiveApplications: map[string]string{
-					"a": "b",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
 				},
 			},
-			setApplication: "foo",
-			project:        "bar",
+			setApplication: "app",
+			project:        "proj",
 		},
 		{
-			name: "overwrite existing active Application",
+			name: "multiple apps in the same project",
 			existingConfig: Config{
-				ActiveApplications: map[string]string{
-					"foo": "foo",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "app2",
+						Active:          false,
+						Project:         "proj",
+						ActiveComponent: "b2",
+					},
 				},
 			},
-			setApplication: "foo",
-			project:        "bar",
+			setApplication: "app2",
+			project:        "proj",
+		},
+		{
+			name: "same app name in different projects",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "app",
+						Active:          false,
+						Project:         "proj2",
+						ActiveComponent: "b2",
+					},
+				},
+			},
+			setApplication: "app",
+			project:        "proj2",
 		},
 	}
 
@@ -268,8 +432,8 @@ func TestSetActiveApplication(t *testing.T) {
 			}
 
 			found := false
-			for proj, app := range cfg.ActiveApplications {
-				if proj == tt.project && app == tt.setApplication {
+			for _, aa := range cfg.ActiveApplications {
+				if aa.Project == tt.project && aa.Name == tt.setApplication {
 					found = true
 				}
 			}
@@ -297,49 +461,74 @@ func TestGetActiveApplication(t *testing.T) {
 		activeApplication string
 	}{
 		{
-			name:              "no application active",
+			name:              "activeApplication nil",
 			existingConfig:    Config{},
-			activeProject:     "test",
 			activeApplication: "",
+			activeProject:     "proj",
 		},
 		{
-			name: "activeApplications empty",
+			name: "activeApplication empty",
 			existingConfig: Config{
-				ActiveApplications: make(map[string]string),
+				ActiveApplications: []ApplicationInfo{},
 			},
-			activeProject:     "test",
 			activeApplication: "",
+			activeProject:     "proj",
 		},
 		{
-			name: "no activeApplication record for given project",
+			name: "no Active value",
 			existingConfig: Config{
-				ActiveApplications: map[string]string{
-					"a": "b",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
 				},
 			},
-			activeProject:     "test",
 			activeApplication: "",
+			activeProject:     "proj",
 		},
 		{
-			name: "activeApplication for one project",
+			name: "multiple apps in the same project",
 			existingConfig: Config{
-				ActiveApplications: map[string]string{
-					"a": "b",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "app2",
+						Active:          false,
+						Project:         "proj",
+						ActiveComponent: "b2",
+					},
 				},
 			},
-			activeProject:     "a",
-			activeApplication: "b",
+			activeApplication: "app",
+			activeProject:     "proj",
 		},
 		{
-			name: "multiple application",
+			name: "same app name in different projects",
 			existingConfig: Config{
-				ActiveApplications: map[string]string{
-					"foo": "foo",
-					"a":   "b",
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "app",
+						Active:          false,
+						Project:         "proj2",
+						ActiveComponent: "b2",
+					},
 				},
 			},
-			activeProject:     "a",
-			activeApplication: "b",
+			activeApplication: "app",
+			activeProject:     "proj",
 		},
 	}
 
@@ -352,6 +541,151 @@ func TestGetActiveApplication(t *testing.T) {
 
 			if output != tt.activeApplication {
 				t.Errorf("active application doesn't match expected \ngot: %s \nexpected: %s\n", output, tt.activeApplication)
+			}
+
+		})
+	}
+}
+
+func TestDeleteApplication(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(configEnvName, tempConfigFile.Name())
+
+	tests := []struct {
+		name           string
+		existingConfig Config
+		application    string
+		project        string
+		wantErr        bool
+		result         []ApplicationInfo
+	}{
+		{
+			name:           "empty config",
+			existingConfig: Config{},
+			application:    "foo",
+			project:        "bar",
+			wantErr:        true,
+			result:         nil,
+		},
+		{
+			name: "delete not existing application",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:    "a",
+						Active:  true,
+						Project: "test",
+					},
+				},
+			},
+			application: "b",
+			project:     "test",
+			wantErr:     false,
+			result: []ApplicationInfo{
+				ApplicationInfo{},
+			},
+		},
+		{
+			name: "delete existing application",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "b",
+					},
+				},
+			},
+			application: "a",
+			project:     "test",
+			wantErr:     false,
+			result:      []ApplicationInfo{},
+		},
+		{
+			name: "delete application (apps with same name in different projects)",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          true,
+						Project:         "test",
+						ActiveComponent: "old",
+					},
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test2",
+						ActiveComponent: "old2",
+					},
+				},
+			},
+			application: "a",
+			project:     "test",
+			wantErr:     false,
+			result: []ApplicationInfo{
+				ApplicationInfo{
+					Name:            "a",
+					Active:          false,
+					Project:         "test2",
+					ActiveComponent: "old2",
+				},
+			},
+		},
+		{
+			name: "delete application (different apps in the same project)",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          true,
+						Project:         "test",
+						ActiveComponent: "comp",
+					},
+					ApplicationInfo{
+						Name:            "b",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "comp2",
+					},
+				},
+			},
+			application: "b",
+			project:     "test",
+			wantErr:     false,
+			result: []ApplicationInfo{
+				ApplicationInfo{
+					Name:            "a",
+					Active:          true,
+					Project:         "test",
+					ActiveComponent: "comp",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := New()
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.Config = tt.existingConfig
+
+			err = cfg.DeleteApplication(tt.application, tt.project)
+			if tt.wantErr {
+				if (err != nil) != tt.wantErr {
+					t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
+				}
+			}
+			if err == nil {
+				if !reflect.DeepEqual(cfg.ActiveApplications, tt.result) {
+					t.Errorf("expected output doesn't match what was returned: \n expected:\n%#v\n returned:\n%#v\n", tt.result, cfg.ActiveApplications)
+				}
 			}
 
 		})
