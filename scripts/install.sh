@@ -2,9 +2,14 @@
 set -e
 
 # The version of ocdev to install. Possible values - "master" and "latest"
+# master - builds from git master branch
+# latest - released versions specified by LATEST_VERSION variable
 OCDEV_VERSION="latest"
 
-GITHUB_RELEASES_URL="https://github.com/redhat-developer/ocdev/releases/download/v0.0.1"
+# Latest released ocdev version
+LATEST_VERSION="v0.0.1"
+
+GITHUB_RELEASES_URL="https://github.com/redhat-developer/ocdev/releases/download/${LATEST_VERSION}"
 BINTRAY_URL="https://dl.bintray.com/ocdev/ocdev/latest"
 
 INSTALLATION_PATH="/usr/local/bin/"
@@ -38,7 +43,7 @@ check_platform() {
         arch="amd64"
     fi
 
-    platform_type="${kernel,,}-$arch"
+    platform_type=$(echo "${kernel}-${arch}" | tr '[:upper:]' '[:lower:]')
 
     if ! echo "# $SUPPORTED_PLATFORMS" | grep "$platform_type" > /dev/null; then
         echo_stderr "
@@ -132,7 +137,7 @@ Aborting now!
     ubuntu|debian)
         echo "# Installing pre-requisites..."
         $PRIVILEGED_EXECUTION "apt-get update"
-        $PRIVILEGED_EXECUTION "apt-get install -y gnupg apt-transport-https"
+        $PRIVILEGED_EXECUTION "apt-get install -y gnupg apt-transport-https curl"
 
         echo "# "Adding GPG public key...
         $PRIVILEGED_EXECUTION "curl -L \"$DEBIAN_GPG_PUBLIC_KEY\" |  apt-key add -"
@@ -184,28 +189,30 @@ Aborting now!
         echo "# Could not identify distribution, proceeding with a binary install..."
 
         BINARY_URL=""
+        TMP_DIR=$(mktemp -d)
         case "$OCDEV_VERSION" in
         master)
             BINARY_URL="$BINTRAY_URL/$platform/ocdev"
             echo "# Downloading ocdev from $BINARY_URL"
-            curl -Lo ocdev "$BINARY_URL"
+            curl -Lo $TMP_DIR/ocdev "$BINARY_URL"
             ;;
         latest)
             BINARY_URL="$GITHUB_RELEASES_URL/ocdev-$platform.gz"
             echo "# Downloading ocdev from $BINARY_URL"
-            curl -Lo ocdev.gz "$BINARY_URL"
+            curl -Lo $TMP_DIR/ocdev.gz "$BINARY_URL"
             echo "# Extracting ocdev.gz"
-            gunzip -d ocdev.gz
+            gunzip -d $TMP_DIR/ocdev.gz
             ;;
         *)
             invalid_ocdev_version_error
         esac
 
         echo "# Setting execute permissions on ocdev"
-        chmod +x ocdev
+        chmod +x $TMP_DIR/ocdev
         echo "# Moving ocdev binary to $INSTALLATION_PATH"
-        $PRIVILEGED_EXECUTION "mv ocdev $INSTALLATION_PATH"
+        $PRIVILEGED_EXECUTION "mv $TMP_DIR/ocdev $INSTALLATION_PATH"
         echo "# ocdev has been successfully installed on your machine"
+        rm -r $TMP_DIR
         ;;
     esac
 }

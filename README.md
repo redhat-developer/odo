@@ -21,7 +21,7 @@ Please follow [OpenShift documentation](https://docs.openshift.org/latest/cli_re
 ## Installation
 - Run the following command to install the latest ocdev release on Linux or macOS -
 
-`curl -L https://github.com/redhat-developer/ocdev/raw/master/scripts/install.sh | sh`
+`curl -L https://github.com/redhat-developer/ocdev/raw/master/scripts/install.sh | bash`
 
 You can download latest master builds from [Bintray](https://dl.bintray.com/ocdev/ocdev/latest/) or 
 builds for released versions from [GitHub releases page](https://github.com/redhat-developer/ocdev/releases).
