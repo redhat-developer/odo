@@ -47,9 +47,20 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+
+	updateInfo := make(chan string)
+	go getLatestReleaseInfo(updateInfo)
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+
+	select {
+	case message := <-updateInfo:
+		fmt.Printf(message)
+	default:
+		log.Debug("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 	}
 }
 
@@ -60,17 +71,21 @@ func init() {
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.ocdev.yaml)")
 
 	rootCmd.PersistentFlags().BoolVarP(&GlobalVerbose, "verbose", "v", false, "verbose output")
+}
 
+func getLatestReleaseInfo(info chan<- string) {
 	newTag, err := notify.CheckLatestReleaseTag(VERSION)
 	if err != nil {
 		// The error is intentionally not being handled because we don't want
 		// to stop the execution of the program because of this failure
-		log.Infof("Error checking if newer ocdev release is available: %v", err)
+		log.Debugf("Error checking if newer ocdev release is available: %v", err)
 	}
 	if len(newTag) > 0 {
-		fmt.Printf("A newer version of ocdev (version: " + fmt.Sprint(newTag) + ") is available.\n" +
+		info <- "---\n" +
+			"A newer version of ocdev (version: " + fmt.Sprint(newTag) + ") is available.\n" +
 			"Update using your package manager, or run\n" +
 			"curl " + notify.InstallScriptURL + " | sh\n" +
-			"to update manually, or visit https://github.com/redhat-developer/ocdev/releases\n")
+			"to update manually, or visit https://github.com/redhat-developer/ocdev/releases\n" +
+			"---\n"
 	}
 }

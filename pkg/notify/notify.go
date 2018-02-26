@@ -2,10 +2,11 @@ package notify
 
 import (
 	"context"
+	"strings"
+
 	"github.com/blang/semver"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 const (
@@ -19,16 +20,19 @@ const (
 
 // getLatestReleaseTag polls ocdev's upstream GitHub repository to get the
 // tag of the latest release
-func getLatestReleaseTag() (string, error) {
+func getLatestReleaseTag() (tag string, err error) {
 	client := github.NewClient(nil)
 	release, response, err := client.Repositories.GetLatestRelease(context.Background(), ghorg, ghrepo)
-	defer func() {
-		if err = response.Body.Close(); err != nil {
-			err = errors.Wrap(err, "closing response body failed")
-		}
-	}()
-
-	return *release.TagName, nil
+	if response != nil {
+		defer func() {
+			if err = response.Body.Close(); err != nil {
+				err = errors.Wrap(err, "closing response body failed")
+			}
+		}()
+		tag = *release.TagName
+		return
+	}
+	return
 }
 
 // CheckLatestReleaseTag returns the latest release tag if a newer latest
