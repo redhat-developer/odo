@@ -7,7 +7,9 @@
 Making artifacts for new release is automated. 
 When new git tag is created, Travis-ci deploy job automatically builds binaries and uploads it to GitHub release page.
 
-1. Create PR with updated version in `cmd/version.go`
+1. Create PR with updated version in following files:
+    - `cmd/version.go`
+    - `scripts/install.sh`
 2. When PR is merged create and push new git tag for version.
     ```
     git tag v0.0.1

@@ -31,6 +31,22 @@ jobs:
         # submit coverage.txt to codecov.io 
         - bash <(curl -s https://codecov.io/bash)
 
+    # test installation script on linux
+    - stage: test
+      services:
+        - docker
+      install:
+        - true
+      script:
+        ./scripts/test-install.sh
+    # test installation script on macOS
+    - state: test
+      os: osx
+      install:
+        - true
+      script:
+        ./scripts/install.sh
+
     - stage: deploy
       go_import_path:  github.com/redhat-developer/ocdev
       go: 1.9
@@ -81,5 +97,3 @@ jobs:
             - make upload-packages
           on:
             branch: master
-
-
