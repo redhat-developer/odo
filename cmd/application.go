@@ -102,6 +102,27 @@ var applicationListCmd = &cobra.Command{
 	},
 }
 
+var applicationSetCmd = &cobra.Command{
+	Use:   "set",
+	Short: "Set application as active.",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("Please provide application name")
+		}
+		if len(args) > 1 {
+			return fmt.Errorf("Only one argument (application name) is allowed")
+		}
+		return nil
+	}, Run: func(cmd *cobra.Command, args []string) {
+		err := application.SetCurrent(args[0])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Printf("Switched to application: %v\n", args[0])
+	},
+}
+
 func init() {
 	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
 
@@ -109,6 +130,7 @@ func init() {
 	applicationCmd.AddCommand(applicationDeleteCmd)
 	applicationCmd.AddCommand(applicationGetCmd)
 	applicationCmd.AddCommand(applicationCreateCmd)
+	applicationCmd.AddCommand(applicationSetCmd)
 
 	rootCmd.AddCommand(applicationCmd)
 }
