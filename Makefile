@@ -73,3 +73,8 @@ packages:
 .PHONY: upload-packages
 upload-packages:
 	./scripts/upload-packages.sh
+
+# Run e2e tests
+.PHONY: test-e2e
+test-e2e:
+	go test -v github.com/redhat-developer/ocdev/tests/e2e
