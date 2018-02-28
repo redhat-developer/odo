@@ -8,6 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	applicationShortFlag bool
+)
+
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
 	Use:     "application",
@@ -40,8 +44,7 @@ var applicationCreateCmd = &cobra.Command{
 	},
 }
 
-var isQuiet bool
-var getCmd = &cobra.Command{
+var applicationGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "get the active application",
 	Args:  cobra.ExactArgs(0),
@@ -51,7 +54,7 @@ var getCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(-1)
 		}
-		if isQuiet {
+		if applicationShortFlag {
 			fmt.Print(app)
 		} else {
 			fmt.Printf("The current application is: %v\n", app)
@@ -59,7 +62,7 @@ var getCmd = &cobra.Command{
 	},
 }
 
-var deleteCmd = &cobra.Command{
+var applicationDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "delete the given application",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -78,7 +81,7 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
-var listCmd = &cobra.Command{
+var applicationListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "lists all the applications",
 	Args:  cobra.ExactArgs(0),
@@ -100,11 +103,12 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
-	getCmd.Flags().BoolVarP(&isQuiet, "short", "q", false, "If true, display only the application name")
+	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
 
-	applicationCmd.AddCommand(listCmd)
-	applicationCmd.AddCommand(deleteCmd)
-	applicationCmd.AddCommand(getCmd)
+	applicationCmd.AddCommand(applicationListCmd)
+	applicationCmd.AddCommand(applicationDeleteCmd)
+	applicationCmd.AddCommand(applicationGetCmd)
 	applicationCmd.AddCommand(applicationCreateCmd)
+
 	rootCmd.AddCommand(applicationCmd)
 }
