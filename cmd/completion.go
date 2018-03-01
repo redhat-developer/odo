@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var completion = &cobra.Command{
+var completionCmd = &cobra.Command{
 	Use:   "completion SHELL",
 	Short: "Output shell completion code",
 	Long: `Generates shell completion code.
@@ -74,7 +74,7 @@ func Generate(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	rootCmd.AddCommand(completion)
+	rootCmd.AddCommand(completionCmd)
 }
 
 /*

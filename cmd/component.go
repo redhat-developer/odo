@@ -26,10 +26,10 @@ import (
 )
 
 var (
-	componentBinary string
-	componentGit    string
-	componentDir    string
-	justName        bool
+	componentBinary    string
+	componentGit       string
+	componentDir       string
+	componentShortFlag bool
 )
 
 // componentCmd represents the component command
@@ -147,7 +147,7 @@ var componentGetCmd = &cobra.Command{
 			fmt.Println(errors.Wrap(err, "unable to get current component"))
 			os.Exit(-1)
 		}
-		if justName {
+		if componentShortFlag {
 			fmt.Print(component)
 		} else {
 			fmt.Printf("The current component is: %v\n", component)
@@ -191,11 +191,11 @@ func init() {
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
 	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
 
-	componentGetCmd.Flags().BoolVarP(&justName, "short", "", false, "If true, display only the component name")
+	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
+
 	componentPushCmd.Flags().StringVar(&componentDir, "dir", "", "specify directory to push changes from")
 
 	componentCmd.AddCommand(componentPushCmd)
-	componentCmd.AddCommand(componentCreateCmd)
 	componentCmd.AddCommand(componentDeleteCmd)
 	componentCmd.AddCommand(componentGetCmd)
 
