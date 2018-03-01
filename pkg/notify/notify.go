@@ -20,19 +20,16 @@ const (
 
 // getLatestReleaseTag polls ocdev's upstream GitHub repository to get the
 // tag of the latest release
-func getLatestReleaseTag() (tag string, err error) {
+func getLatestReleaseTag() (string, error) {
 	client := github.NewClient(nil)
 	release, response, err := client.Repositories.GetLatestRelease(context.Background(), ghorg, ghrepo)
 	if response != nil {
-		defer func() {
-			if err = response.Body.Close(); err != nil {
-				err = errors.Wrap(err, "closing response body failed")
-			}
-		}()
-		tag = *release.TagName
-		return
+		defer response.Body.Close()
 	}
-	return
+	if err != nil {
+		return "", errors.Wrap(err, "error getting latest release")
+	}
+	return *release.TagName, nil
 }
 
 // CheckLatestReleaseTag returns the latest release tag if a newer latest
