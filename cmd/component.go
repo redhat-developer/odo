@@ -184,6 +184,7 @@ func init() {
 	componentCmd.AddCommand(componentPushCmd)
 	componentCmd.AddCommand(componentDeleteCmd)
 	componentCmd.AddCommand(componentGetCmd)
+	componentCmd.AddCommand(componentCreateCmd)
 
 	rootCmd.AddCommand(componentCmd)
 }
