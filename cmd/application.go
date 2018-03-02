@@ -17,6 +17,8 @@ var applicationCmd = &cobra.Command{
 	Use:     "application",
 	Short:   "application",
 	Aliases: []string{"app"},
+	// 'ocdev application' is the same as 'ocdev application get'
+	Run: applicationGetCmd.Run,
 }
 
 var applicationCreateCmd = &cobra.Command{
@@ -125,6 +127,8 @@ var applicationSetCmd = &cobra.Command{
 
 func init() {
 	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
+	// add flags from 'get' to application command
+	applicationCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
 
 	applicationCmd.AddCommand(applicationListCmd)
 	applicationCmd.AddCommand(applicationDeleteCmd)

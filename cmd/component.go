@@ -23,6 +23,8 @@ var componentCmd = &cobra.Command{
 	Use:   "component",
 	Short: "components of application",
 	Long:  "components of application",
+	// 'ocdev component' is the same as 'ocdev component get'
+	Run: componentGetCmd.Run,
 }
 
 var componentCreateCmd = &cobra.Command{
@@ -168,6 +170,8 @@ func init() {
 	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
 
 	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
+	// add flags from 'get' to component command
+	componentCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
 
 	componentCmd.AddCommand(componentDeleteCmd)
 	componentCmd.AddCommand(componentGetCmd)
