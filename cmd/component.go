@@ -141,39 +141,6 @@ var componentGetCmd = &cobra.Command{
 	},
 }
 
-var componentPushCmd = &cobra.Command{
-	Use:   "push",
-	Short: "component push",
-	Long:  "push changes to component",
-	Args:  cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("component push called")
-		var componentName string
-		if len(args) == 0 {
-			var err error
-			log.Debug("No component name passed, assuming current component")
-			componentName, err = component.GetCurrent()
-			if err != nil {
-				fmt.Println(errors.Wrap(err, "unable to get current component"))
-				os.Exit(-1)
-			}
-		} else {
-			componentName = args[0]
-		}
-		fmt.Printf("pushing changes to component: %v\n", componentName)
-
-		if len(componentDir) == 0 {
-			componentDir = "."
-		}
-
-		if _, err := component.Push(componentName, componentDir); err != nil {
-			fmt.Printf("failed to push component: %v", componentName)
-			os.Exit(-1)
-		}
-		fmt.Printf("changes successfully pushed to component: %v\n", componentName)
-	},
-}
-
 var componentSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Set component as active.",
@@ -202,9 +169,6 @@ func init() {
 
 	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
 
-	componentPushCmd.Flags().StringVar(&componentDir, "dir", "", "specify directory to push changes from")
-
-	componentCmd.AddCommand(componentPushCmd)
 	componentCmd.AddCommand(componentDeleteCmd)
 	componentCmd.AddCommand(componentGetCmd)
 	componentCmd.AddCommand(componentCreateCmd)
