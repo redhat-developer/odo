@@ -157,6 +157,8 @@ var componentPushCmd = &cobra.Command{
 				fmt.Println(errors.Wrap(err, "unable to get current component"))
 				os.Exit(-1)
 			}
+		} else {
+			componentName = args[0]
 		}
 		fmt.Printf("pushing changes to component: %v\n", componentName)
 
