@@ -90,12 +90,27 @@ func CreateFromDir(name string, ctype, dir string) (string, error) {
 func Delete(name string) (string, error) {
 	labels, err := GetLabels(name, false)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
+		return "", errors.Wrapf(err, "unable to delete component %s", name)
+	}
+
+	currentApplication, err := application.GetCurrent()
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to delete component %s", name)
+	}
+
+	cfg, err := config.New()
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
 	output, err := occlient.Delete("all", "", labels)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to delete component")
+		return "", errors.Wrapf(err, "unable to delete component %s", name)
+	}
+
+	err = cfg.SetActiveComponent("", currentApplication)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
 	return output, nil
