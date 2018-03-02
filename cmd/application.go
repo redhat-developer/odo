@@ -38,7 +38,7 @@ var applicationCreateCmd = &cobra.Command{
 		fmt.Printf("Creating application: %v\n", name)
 		if err := application.Create(name); err != nil {
 			fmt.Println(err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		fmt.Printf("Switched to application: %v\n", name)
 	},
@@ -52,7 +52,7 @@ var applicationGetCmd = &cobra.Command{
 		app, err := application.GetCurrent()
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		if applicationShortFlag {
 			fmt.Print(app)
@@ -75,7 +75,7 @@ var applicationDeleteCmd = &cobra.Command{
 		err := application.Delete(args[0])
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		fmt.Printf("Deleted application: %s\n", args[0])
 	},
@@ -89,7 +89,7 @@ var applicationListCmd = &cobra.Command{
 		apps, err := application.List()
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		fmt.Printf("ACTIVE   NAME\n")
 		for _, app := range apps {

@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/redhat-developer/ocdev/pkg/component"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 	"github.com/redhat-developer/ocdev/pkg/storage"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -20,7 +21,7 @@ func getComponent() string {
 		c, err := component.GetCurrent()
 		if err != nil {
 			fmt.Printf("Could not get current component: %v\n", err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		return c
 	}
@@ -47,7 +48,7 @@ var storageAddCmd = &cobra.Command{
 		})
 		if err != nil {
 			fmt.Printf("Failed to add storage: %v\n", err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		fmt.Printf("Added storage %v to %v\n", args[0], cmpnt)
 	},
@@ -71,7 +72,7 @@ var storageRemoveCmd = &cobra.Command{
 		})
 		if err != nil {
 			fmt.Printf("Failed to remove storage: %v\n", err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		if len(args) == 0 {
 			fmt.Printf("Removed all storage from %v\n", cmpnt)
@@ -92,7 +93,7 @@ var storageListCmd = &cobra.Command{
 		})
 		if err != nil {
 			fmt.Printf("Failed to list storage: %v\n", err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		fmt.Println(output)
 	},

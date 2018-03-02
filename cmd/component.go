@@ -131,7 +131,7 @@ var componentGetCmd = &cobra.Command{
 		component, err := component.GetCurrent()
 		if err != nil {
 			fmt.Println(errors.Wrap(err, "unable to get current component"))
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		if componentShortFlag {
 			fmt.Print(component)
