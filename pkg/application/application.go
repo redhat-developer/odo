@@ -1,8 +1,6 @@
 package application
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/ocdev/pkg/config"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
@@ -171,24 +169,6 @@ func SetCurrent(name string) error {
 		return errors.Wrap(err, "unable to get active application")
 	}
 
-	apps, err := List()
-	if err != nil {
-		return errors.Wrap(err, "unable to get active application")
-
-	}
-	// check if application exists
-	found := false
-	for _, app := range apps {
-
-		if app.Name == name {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("application %s doesn't exist", name)
-	}
-
 	cfg, err := config.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to get active application")
@@ -200,4 +180,18 @@ func SetCurrent(name string) error {
 	}
 
 	return nil
+}
+
+func Exists(name string) (bool, error) {
+	apps, err := List()
+	if err != nil {
+		return false, errors.Wrap(err, "unable to list applications")
+
+	}
+	for _, app := range apps {
+		if app.Name == name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
