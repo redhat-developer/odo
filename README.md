@@ -50,19 +50,12 @@ You can also download latest master builds from [Bintray](https://dl.bintray.com
 Multiple component types are currently supported, like nodejs, perl, php, python, ruby, etc.
 
 ## Getting Started
+Developing applications using ocdev is as simple as -
+- `ocdev application create <name>`
+- `ocdev component create <name>`
+- `ocdev component push`
 
-1. Create and start working on a new application:
-`ocdev application create <application name>`
-
-2. Deploy code in current directory:
-`ocdev component create <component type> --dir=.`
-
-3. Test your application and make changes to the code
-
-4. Deploy changes to the application:
-`ocdev component push`
-
-5. Go back to 3.
+Check out our [Getting Started](docs/getting-started.md) guide and get going!
 
 ## CLI Structure
 ```
