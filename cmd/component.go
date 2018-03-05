@@ -23,6 +23,8 @@ var componentCmd = &cobra.Command{
 	Use:   "component",
 	Short: "components of application",
 	Long:  "components of application",
+	// 'ocdev component' is the same as 'ocdev component get'
+	Run: componentGetCmd.Run,
 }
 
 var componentCreateCmd = &cobra.Command{
@@ -131,46 +133,13 @@ var componentGetCmd = &cobra.Command{
 		component, err := component.GetCurrent()
 		if err != nil {
 			fmt.Println(errors.Wrap(err, "unable to get current component"))
-			os.Exit(-1)
+			os.Exit(1)
 		}
 		if componentShortFlag {
 			fmt.Print(component)
 		} else {
 			fmt.Printf("The current component is: %v\n", component)
 		}
-	},
-}
-
-var componentPushCmd = &cobra.Command{
-	Use:   "push",
-	Short: "component push",
-	Long:  "push changes to component",
-	Args:  cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("component push called")
-		var componentName string
-		if len(args) == 0 {
-			var err error
-			log.Debug("No component name passed, assuming current component")
-			componentName, err = component.GetCurrent()
-			if err != nil {
-				fmt.Println(errors.Wrap(err, "unable to get current component"))
-				os.Exit(-1)
-			}
-		} else {
-			componentName = args[0]
-		}
-		fmt.Printf("pushing changes to component: %v\n", componentName)
-
-		if len(componentDir) == 0 {
-			componentDir = "."
-		}
-
-		if _, err := component.Push(componentName, componentDir); err != nil {
-			fmt.Printf("failed to push component: %v", componentName)
-			os.Exit(-1)
-		}
-		fmt.Printf("changes successfully pushed to component: %v\n", componentName)
 	},
 }
 
@@ -201,10 +170,9 @@ func init() {
 	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
 
 	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
+	// add flags from 'get' to component command
+	componentCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
 
-	componentPushCmd.Flags().StringVar(&componentDir, "dir", "", "specify directory to push changes from")
-
-	componentCmd.AddCommand(componentPushCmd)
 	componentCmd.AddCommand(componentDeleteCmd)
 	componentCmd.AddCommand(componentGetCmd)
 	componentCmd.AddCommand(componentCreateCmd)
