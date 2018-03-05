@@ -174,6 +174,27 @@ var componentPushCmd = &cobra.Command{
 	},
 }
 
+var componentSetCmd = &cobra.Command{
+	Use:   "set",
+	Short: "Set component as active.",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return fmt.Errorf("Please provide component name")
+		}
+		if len(args) > 1 {
+			return fmt.Errorf("Only one argument (component name) is allowed")
+		}
+		return nil
+	}, Run: func(cmd *cobra.Command, args []string) {
+		err := component.SetCurrent(args[0])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Printf("Switched to component: %v\n", args[0])
+	},
+}
+
 func init() {
 	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "binary artifact")
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
@@ -187,6 +208,7 @@ func init() {
 	componentCmd.AddCommand(componentDeleteCmd)
 	componentCmd.AddCommand(componentGetCmd)
 	componentCmd.AddCommand(componentCreateCmd)
+	componentCmd.AddCommand(componentSetCmd)
 
 	rootCmd.AddCommand(componentCmd)
 }
