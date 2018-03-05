@@ -116,7 +116,19 @@ var applicationSetCmd = &cobra.Command{
 		}
 		return nil
 	}, Run: func(cmd *cobra.Command, args []string) {
-		err := application.SetCurrent(args[0])
+		appName := args[0]
+		// error if application does not exist
+		exists, err := application.Exists(appName)
+		if err != nil {
+			fmt.Printf("Unable to check if application exists: %v\n", err)
+			os.Exit(1)
+		}
+		if !exists {
+			fmt.Printf("Application %v does not exist\n", appName)
+			os.Exit(1)
+		}
+
+		err = application.SetCurrent(appName)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
