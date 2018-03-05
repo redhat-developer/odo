@@ -9,102 +9,42 @@ OpenShift Command line for Developers
 
 To use ocdev you need access to an OpenShift instance and have OpenShift CLI installed on your local machine (`oc` should be in your $PATH).
 
-
 ### OpenShift instance
 You can use [Minishift](https://docs.openshift.org/latest/minishift/index.html) to get a local instance of OpenShift. However ocdev can be used with any instance of OpenShift.
 
-### OpenShift CLI 
+### OpenShift CLI
 There are different ways to install OpenShift CLI. 
 Please follow [OpenShift documentation](https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli).
 
-
 ## Installation
-- Run the following command to install the latest ocdev release on Linux or macOS -
+To install `ocdev` on your system, you cat use the fully automated [install.sh](./scripts/install.sh) script.
+This script will enable ocdev repository on your system and install ocdev using package manager depending on your system.
+Supported systems are Debian, Ubuntu, Fedora, CentOS and macOS. You can find more information about package repositories in 
+[Advanced installation guide](./docs/advanced-installation-guide.md)
 
-`curl -L https://github.com/redhat-developer/ocdev/raw/master/scripts/install.sh | bash`
-
-You can download latest master builds from [Bintray](https://dl.bintray.com/ocdev/ocdev/latest/) or 
-builds for released versions from [GitHub releases page](https://github.com/redhat-developer/ocdev/releases).
-
-### macOS
-1. First you need enable `kadel/ocdev` Homebrew Tap:
-    ```sh
-    brew tap kadel/ocdev
-    ```
-2. 
-    - If you want to install latest master build
-    ```sh
-    brew install kadel/ocdev/ocdev -- HEAD
-    ```
-    - If you want to install latest released version
-    ```sh
-    brew install kadel/ocdev/ocdev
-    ```
-
-### Linux
-#### Debian/Ubuntu and other distributions using deb
-1. First you need to add gpg [public key](https://bintray.com/user/downloadSubjectPublicKey?username=bintray) used to sign repositories.
-    ```sh
-    curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
-    ```
-2. Add ocdev repository to your `/etc/apt/sources.list`
-    - If you want to use latest master builds add  `deb https://dl.bintray.com/ocdev/ocdev-deb-dev stretch main` repository.
-      ```sh
-      echo "deb https://dl.bintray.com/ocdev/ocdev-deb-dev stretch main" | sudo tee -a /etc/apt/sources.list
-      ```
-    - If you want to use latest released version add  `deb https://dl.bintray.com/ocdev/ocdev-deb-releases stretch main` repository.
-      ```sh
-      echo "deb https://dl.bintray.com/ocdev/ocdev-deb-releases stretch main" | sudo tee -a /etc/apt/sources.list
-      ```
-3. Now you can install `ocdev` and you would install any other package.
-   ```sh
-   apt-get update
-   apt-get install ocdev
-   ```
+```
+curl -L https://github.com/redhat-developer/ocdev/raw/master/scripts/install.sh | bash
+```
 
 
-#### Fedora/Centos/RHEL and other distribution using rpm
-1. Add ocdev repository to your `/etc/yum.repos.d/`
-    - If you want to use latest master builds save following text to `/etc/yum.repos.d/bintray-ocdev-ocdev-rpm-dev.repo`
-        ```
-        # /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-dev.repo
-        [bintraybintray-ocdev-ocdev-rpm-dev]
-        name=bintray-ocdev-ocdev-rpm-dev
-        baseurl=https://dl.bintray.com/ocdev/ocdev-rpm-dev
-        gpgcheck=0
-        repo_gpgcheck=0
-        enabled=1
-        ```
-        Or you can download it using following command:
-        ```sh
-        sudo curl -L https://bintray.com/ocdev/ocdev-rpm-dev/rpm -o /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-dev.repo
-        ```
-    - If you want to use latest released version save following text to `/etc/yum.repos.d/bintray-ocdev-ocdev-rpm-releases.repo`
-        ```
-        # /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-releases.repo
-        [bintraybintray-ocdev-ocdev-rpm-releases]
-        name=bintray-ocdev-ocdev-rpm-releases
-        baseurl=https://dl.bintray.com/ocdev/ocdev-rpm-releases
-        gpgcheck=0
-        repo_gpgcheck=0
-        enabled=1
-        ```
-        Or you can download it using following command:
-        ```sh
-        sudo curl -L https://bintray.com/ocdev/ocdev-rpm-releases/rpm -o /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-releases.repo
-        ```
-3. Now you can install `ocdev` and you would install any other package.
-   ```sh
-   yum install ocdev
-   # or 'dnf install ocdev'
-   ```
+If you don't want to add extra package repositories to your system you can just extract  `ocdev` binary from [GitHub releases page](https://github.com/redhat-developer/ocdev/releases) to one of the directories that are in your `$PATH`.
 
-### Windows
-Download latest master builds from Bintray [ocdev.exe](https://dl.bintray.com/ocdev/ocdev/latest/windows-amd64/:ocdev.exe) or 
-builds for released versions from [GitHub releases page](https://github.com/kadel/ocdev/releases).
+For macOS:
+
+```
+sudo curl -L  "https://github.com/redhat-developer/ocdev/releases/download/v0.0.1/ocdev-darwin-amd64.gz" | gzip -d > /usr/local/bin/ocdev; chmod +x /usr/local/bin/ocdev
+```
+
+For Linux:
+```
+sudo curl -L  "https://github.com/redhat-developer/ocdev/releases/download/v0.0.1/ocdev-linux-amd64.gz" | gzip -d > /usr/local/bin/ocdev; chmod +x /usr/local/bin/ocdev
+```
+
+You can also download latest master builds from [Bintray](https://dl.bintray.com/ocdev/ocdev/latest/). This is updated every time there is a change in master git branch.
+
+
 
 ## Concepts
-
 - An **_application_** is, well, your application! It consists of multiple microservices or components, that work individually to build the entire application.
 - A **_component_** can be thought of as a microservice. Multiple components will make up an application. A component will have different attributes like storage, etc.
 Multiple component types are currently supported, like nodejs, perl, php, python, ruby, etc.
