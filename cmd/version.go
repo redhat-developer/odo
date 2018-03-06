@@ -10,7 +10,7 @@ import (
 
 var (
 	// VERSION  is version number that will be displayed when running ./ocdev version
-	VERSION = "v0.0.1"
+	VERSION = "v0.0.2"
 
 	// GITCOMMIT is hash of the commit that wil be displayed when running ./ocdev version
 	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/redhat-developer/ocdev/cmd.GITCOMMIT=$(GITCOMMIT)"

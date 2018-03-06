@@ -7,7 +7,7 @@ set -e
 OCDEV_VERSION="latest"
 
 # Latest released ocdev version
-LATEST_VERSION="v0.0.1"
+LATEST_VERSION="v0.0.2"
 
 GITHUB_RELEASES_URL="https://github.com/redhat-developer/ocdev/releases/download/${LATEST_VERSION}"
 BINTRAY_URL="https://dl.bintray.com/ocdev/ocdev/latest"
