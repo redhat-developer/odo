@@ -57,9 +57,8 @@ jobs:
         - sudo apt-get install -y rpm
         # Ideally following commands should be in before_deploy section
         # but travis-ci runs before_deploy for every provider. We don't want that.
-        - make cross
-        - ./scripts/generate-bintray-json.sh
         - make prepare-release
+        - ./scripts/generate-bintray-json.sh
         - make packages
       script: skip
       deploy:
