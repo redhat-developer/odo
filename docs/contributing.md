@@ -8,19 +8,23 @@ Making artifacts for new release is automated.
 When new git tag is created, Travis-ci deploy job automatically builds binaries and uploads it to GitHub release page.
 
 1. Create PR with updated version in following files:
-    - `cmd/version.go`
-    - `scripts/install.sh`
+    - [cmd/version.go](/cmd/version.go)
+    - [scripts/install.sh](/scripts/install.sh)
+    - [README.md](/README.md)
+    - [ocdev.rb](https://github.com/kadel/homebrew-ocdev/blob/master/Formula/ocdev.rb) in [kadel/homebrew-ocdev](https://github.com/kadel/homebrew-ocdev)
+
+    There is a helper script [scripts/bump-version.sh](/scripts/bump-version.sh) that should change version number in all files listed above (expect ocdev.rb).
 2. When PR is merged create and push new git tag for version.
     ```
     git tag v0.0.1
     git push upstream v0.0.1
     ```
-    Or create new release using GitHub site (this has to be proper release not just draft). 
+    Or create new release using GitHub site (this has to be a proper release not just draft). 
     Do not upload any binaries for release
     When new tag is created Travis-CI starts a special deploy job.
     This job builds binaries automatically (via `make prepare-release`) and then uploads it to GitHub release page (done using ocdev-bot user).
 3. When job fishes you should see binaries on GitHub release page. Release is now marked as a draft. Update descriptions and publish release.
-
+4. Verify that packages has been uploaded to rpm and deb repositories.
 
 ## ocdev-bot
 This is GitHub user that does all the automation.
