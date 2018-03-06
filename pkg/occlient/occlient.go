@@ -17,6 +17,29 @@ import (
 
 const ocRequestTimeout = 1 * time.Second
 
+// ocpath stores the path to oc binary
+var ocpath string
+
+func initialize() error {
+	// don't execute further if ocpath was already set
+	if ocpath != "" {
+		return nil
+	}
+
+	var err error
+	ocpath, err = getOcBinary()
+	if err != nil {
+		return errors.Wrap(err, "unable to get oc binary")
+	}
+	if !isServerUp() {
+		return errors.New("server is down")
+	}
+	if !isLoggedIn() {
+		return errors.New("please log in to the cluster")
+	}
+	return nil
+}
+
 // getOcBinary returns full path to oc binary
 // first it looks for env variable KUBECTL_PLUGINS_CALLER (run as oc plugin)
 // than looks for env variable OC_BIN (set manualy by user)
@@ -66,16 +89,8 @@ type OcCommand struct {
 // args - command line arguments to be passed to oc ('-o json' is added by default if data is not nil)
 // data - is a pointer to a string, if set than data is given to command to stdin ('-f -' is added to args as default)
 func runOcComamnd(command *OcCommand) ([]byte, error) {
-
-	ocpath, err := getOcBinary()
-	if err != nil {
-		return nil, err
-	}
-	if !isServerUp() {
-		return nil, errors.New("server is down")
-	}
-	if !isLoggedIn() {
-		return nil, errors.New("please log in to the cluster")
+	if err := initialize(); err != nil {
+		return nil, errors.Wrap(err, "unable to perform oc initializations")
 	}
 
 	cmd := exec.Command(ocpath, command.args...)
@@ -119,12 +134,6 @@ func runOcComamnd(command *OcCommand) ([]byte, error) {
 }
 
 func isLoggedIn() bool {
-	ocpath, err := getOcBinary()
-	if err != nil {
-		log.Debug(errors.Wrap(err, "unable to find oc binary"))
-		return false
-	}
-
 	cmd := exec.Command(ocpath, "whoami")
 	output, err := cmd.CombinedOutput()
 	log.Debugf("isLoggedIn err:  %#v \n output: %#v", err, string(output))
@@ -137,13 +146,6 @@ func isLoggedIn() bool {
 }
 
 func isServerUp() bool {
-
-	ocpath, err := getOcBinary()
-	if err != nil {
-		log.Debug(errors.Wrap(err, "unable to find oc binary"))
-		return false
-	}
-
 	cmd := exec.Command(ocpath, "whoami", "--show-server")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
