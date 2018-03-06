@@ -12,7 +12,7 @@ if [[ -n $TRAVIS_TAG ]]; then
     echo "Checking if ocdev version was set to the same version as current tag"
     # use sed to get only semver part
     bin_version=$(${BIN_DIR}/linux-amd64/ocdev version | sed 's/ .*//g')
-    if [ "$TRAVIS_TAG" == "v${bin_version}" ]; then
+    if [ "$TRAVIS_TAG" == "${bin_version}" ]; then
         echo "OK: ocdev version output is matching current tag"
     else
         echo "ERR: TRAVIS_TAG ($TRAVIS_TAG) is not matching 'ocdev version' (v${bin_version})"
