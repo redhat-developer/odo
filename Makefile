@@ -60,7 +60,7 @@ prepare-release: cross
 
 .PHONY: test
 test:
-	go test -race $(PKGS)
+	go test -v -race $(PKGS)
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
