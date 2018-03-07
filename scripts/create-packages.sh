@@ -22,7 +22,7 @@ if [[ -n $TRAVIS_TAG ]]; then
         exit 1
     fi
     # this is build from tag, that means it is proper relase, use version for PKG_VERSION
-    PKG_VERSION="${bin_version}"
+    PKG_VERSION=$(echo ${bin_version} | sed "s/^v\(.*\)$/\1/")
 fi
 
 # create packages using fpm
