@@ -138,6 +138,10 @@ var componentGetCmd = &cobra.Command{
 		if componentShortFlag {
 			fmt.Print(component)
 		} else {
+			if component == "" {
+				fmt.Printf("No component is set as current\n")
+				return
+			}
 			fmt.Printf("The current component is: %v\n", component)
 		}
 	},

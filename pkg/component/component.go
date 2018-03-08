@@ -17,13 +17,8 @@ const componentLabel = "app.kubernetes.io/component-name"
 // additional labels are used only for creating object
 // if you are creating something use additional=true
 // if you need labels to filter component that use additional=false
-func GetLabels(componentName string, additional bool) (map[string]string, error) {
-	currentApplication, err := application.GetCurrent()
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get get labels for  component %s", componentName)
-	}
-
-	labels, err := application.GetLabels(currentApplication, additional)
+func GetLabels(componentName string, applicationName string, additional bool) (map[string]string, error) {
+	labels, err := application.GetLabels(applicationName, additional)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get get labels for  component %s", componentName)
 	}
@@ -33,24 +28,60 @@ func GetLabels(componentName string, additional bool) (map[string]string, error)
 }
 
 func CreateFromGit(name string, ctype string, url string) (string, error) {
-	labels, err := GetLabels(name, true)
+	// if current application doesn't exist, create it
+	// this can happen when ocdev is started form clean state
+	// and default application is used (first command run is ocdev create)
+	currentApplication, err := application.GetCurrentOrDefault()
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
+		return "", errors.Wrapf(err, "unable to create git component %s", name)
+	}
+	exists, err := application.Exists(currentApplication)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create git component %s", name)
+	}
+	if !exists {
+		err = application.Create(currentApplication)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to create git component %s", name)
+		}
+	}
+
+	labels, err := GetLabels(name, currentApplication, true)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create git component %s", name)
 	}
 
 	output, err := occlient.NewAppS2I(name, ctype, url, labels)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "unable to create git component %s", name)
 	}
 
 	if err = SetCurrent(name); err != nil {
-		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
+		return "", errors.Wrapf(err, "unable to create git component %s", name)
 	}
 	return output, nil
 }
 
 func CreateEmpty(name string, ctype string) (string, error) {
-	labels, err := GetLabels(name, true)
+	// if current application doesn't exist, create it
+	// this can happen when ocdev is started form clean state
+	// and default application is used (first command run is ocdev create)
+	currentApplication, err := application.GetCurrentOrDefault()
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create git component %s", name)
+	}
+	exists, err := application.Exists(currentApplication)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create git component %s", name)
+	}
+	if !exists {
+		err = application.Create(currentApplication)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to create git component %s", name)
+		}
+	}
+
+	labels, err := GetLabels(name, currentApplication, true)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to activate component %s created from git", name)
 	}
@@ -88,12 +119,12 @@ func CreateFromDir(name string, ctype, dir string) (string, error) {
 
 // Delete whole component
 func Delete(name string) (string, error) {
-	labels, err := GetLabels(name, false)
+	currentApplication, err := application.GetCurrentOrDefault()
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
-	currentApplication, err := application.GetCurrent()
+	currentProject, err := occlient.GetCurrentProjectName()
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
@@ -103,12 +134,17 @@ func Delete(name string) (string, error) {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
+	labels, err := GetLabels(name, currentApplication, false)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to delete component %s", name)
+	}
+
 	output, err := occlient.Delete("all", "", labels)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
-	err = cfg.SetActiveComponent("", currentApplication)
+	err = cfg.SetActiveComponent("", currentProject, currentApplication)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
@@ -127,7 +163,12 @@ func SetCurrent(name string) error {
 		return errors.Wrapf(err, "unable to set current component %s", name)
 	}
 
-	err = cfg.SetActiveComponent(name, currentProject)
+	currentApplication, err := application.GetCurrent()
+	if err != nil {
+		return errors.Wrapf(err, "unable to set current component %s", name)
+	}
+
+	err = cfg.SetActiveComponent(name, currentApplication, currentProject)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set current component %s", name)
 	}

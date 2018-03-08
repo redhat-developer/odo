@@ -68,6 +68,7 @@ func TestSetActiveComponent(t *testing.T) {
 		existingConfig Config
 		component      string
 		project        string
+		application    string
 		wantErr        bool
 		result         []ApplicationInfo
 	}{
@@ -76,6 +77,7 @@ func TestSetActiveComponent(t *testing.T) {
 			existingConfig: Config{},
 			component:      "foo",
 			project:        "bar",
+			application:    "app",
 			wantErr:        true,
 			result:         nil,
 		},
@@ -90,9 +92,10 @@ func TestSetActiveComponent(t *testing.T) {
 					},
 				},
 			},
-			component: "foo",
-			project:   "test",
-			wantErr:   false,
+			component:   "foo",
+			project:     "test",
+			application: "a",
+			wantErr:     false,
 			result: []ApplicationInfo{
 				ApplicationInfo{
 					Name:            "a",
@@ -103,7 +106,7 @@ func TestSetActiveComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "no project active",
+			name: "project doesn't exists",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
 					ApplicationInfo{
@@ -114,10 +117,29 @@ func TestSetActiveComponent(t *testing.T) {
 					},
 				},
 			},
-			component: "foo",
-			project:   "test",
-			wantErr:   true,
-			result:    nil,
+			component:   "foo",
+			project:     "nonexisting",
+			application: "a",
+			wantErr:     true,
+			result:      nil,
+		},
+		{
+			name: "application doesn't exists",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "a",
+						Active:          false,
+						Project:         "test",
+						ActiveComponent: "b",
+					},
+				},
+			},
+			component:   "foo",
+			project:     "test",
+			application: "nonexisting",
+			wantErr:     true,
+			result:      nil,
 		},
 		{
 			name: "overwrite existing active component (apps with same name in different projects)",
@@ -137,9 +159,10 @@ func TestSetActiveComponent(t *testing.T) {
 					},
 				},
 			},
-			component: "new",
-			project:   "test",
-			wantErr:   false,
+			component:   "new",
+			project:     "test",
+			application: "a",
+			wantErr:     false,
 			result: []ApplicationInfo{
 				ApplicationInfo{
 					Name:            "a",
@@ -173,9 +196,10 @@ func TestSetActiveComponent(t *testing.T) {
 					},
 				},
 			},
-			component: "new",
-			project:   "test",
-			wantErr:   false,
+			component:   "new",
+			project:     "test",
+			application: "a",
+			wantErr:     false,
 			result: []ApplicationInfo{
 				ApplicationInfo{
 					Name:            "a",
@@ -201,7 +225,7 @@ func TestSetActiveComponent(t *testing.T) {
 			}
 			cfg.Config = tt.existingConfig
 
-			err = cfg.SetActiveComponent(tt.component, tt.project)
+			err = cfg.SetActiveComponent(tt.component, tt.application, tt.project)
 			if tt.wantErr {
 				if (err != nil) != tt.wantErr {
 					t.Errorf("SetActiveComponent() unexpected error %v, wantErr %v", err, tt.wantErr)

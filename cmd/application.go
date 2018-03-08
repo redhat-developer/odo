@@ -58,9 +58,13 @@ var applicationGetCmd = &cobra.Command{
 		}
 		if applicationShortFlag {
 			fmt.Print(app)
-		} else {
-			fmt.Printf("The current application is: %v\n", app)
+			return
 		}
+		if app == "" {
+			fmt.Printf("There's no active application.\nYou can create one by running 'ocdev application create <name>'.")
+			return
+		}
+		fmt.Printf("The current application is: %v\n", app)
 	},
 }
 

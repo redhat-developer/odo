@@ -112,12 +112,13 @@ func (c *ConfigInfo) writeToFile() error {
 	return nil
 }
 
-// SetActiveComponent sets active component of currently active application
-func (c *ConfigInfo) SetActiveComponent(component string, project string) error {
+// SetActiveComponent sets active component for given project and application.
+// application must exist
+func (c *ConfigInfo) SetActiveComponent(component string, application string, project string) error {
 	found := false
 	if c.ActiveApplications != nil {
 		for i, app := range c.ActiveApplications {
-			if app.Project == project && app.Active == true {
+			if app.Project == project && app.Name == application {
 				c.ActiveApplications[i].ActiveComponent = component
 				found = true
 				break
@@ -126,12 +127,12 @@ func (c *ConfigInfo) SetActiveComponent(component string, project string) error 
 	}
 
 	if !found {
-		return fmt.Errorf("no active application in %s project, unable to set active componet", project)
+		return fmt.Errorf("unable to set %s component as active, application %s in %s project doesn't exists", component, application, project)
 	}
 
 	err := c.writeToFile()
 	if err != nil {
-		return errors.Wrap(err, "unable to set current component")
+		return errors.Wrapf(err, "unable to set %s as active component", component)
 	}
 	return nil
 }
