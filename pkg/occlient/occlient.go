@@ -127,7 +127,8 @@ func isLoggedIn() bool {
 
 	cmd := exec.Command(ocpath, "whoami")
 	output, err := cmd.CombinedOutput()
-	if err != nil && strings.Contains(string(output), "system:anonymous") {
+	log.Debugf("isLoggedIn err:  %#v \n output: %#v", err, string(output))
+	if err != nil {
 		log.Debug(errors.Wrap(err, "error running command"))
 		log.Debugf("Output is: %v", output)
 		return false
