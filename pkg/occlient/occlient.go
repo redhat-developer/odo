@@ -383,14 +383,14 @@ func SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, err
 	return string(output), nil
 }
 
-// GetLabelValues get label values from all object that are labeled with given label
+// GetLabelValues get label values of given label from objects in project that are matching selector
 // returns slice of uniq label values
-func GetLabelValues(project string, label string) ([]string, error) {
+func GetLabelValues(project string, label string, selector string) ([]string, error) {
 	// get all object that have given label
 	// and show just label values separated by ,
 	args := []string{
 		"get", "all",
-		"--selector", label,
+		"--selector", selector,
 		"--namespace", project,
 		"-o", "go-template={{range .items}}{{range $key, $value := .metadata.labels}}{{if eq $key \"" + label + "\"}}{{$value}},{{end}}{{end}}{{end}}",
 	}
