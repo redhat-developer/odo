@@ -6,10 +6,12 @@ import (
 
 	"github.com/redhat-developer/ocdev/pkg/application"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 var (
-	applicationShortFlag bool
+	applicationShortFlag       bool
+	applicationForceDeleteFlag bool
 )
 
 // applicationCmd represents the app command
@@ -78,12 +80,26 @@ var applicationDeleteCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		err := application.Delete(args[0])
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+		appName := args[0]
+		var confirmDeletion string
+
+		if applicationForceDeleteFlag {
+			confirmDeletion = "y"
+		} else {
+			fmt.Printf("Are you sure you want to delete the application: %v? [y/N] ", appName)
+			fmt.Scanln(&confirmDeletion)
 		}
-		fmt.Printf("Deleted application: %s\n", args[0])
+
+		if strings.ToLower(confirmDeletion) == "y" {
+			err := application.Delete(appName)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			fmt.Printf("Deleted application: %s\n", args[0])
+		} else {
+			fmt.Printf("Aborting deletion of application: %v\n", appName)
+		}
 	},
 }
 
@@ -142,6 +158,8 @@ var applicationSetCmd = &cobra.Command{
 }
 
 func init() {
+	applicationDeleteCmd.Flags().BoolVarP(&applicationForceDeleteFlag, "force", "f", false, "Delete application without prompting")
+
 	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
 	// add flags from 'get' to application command
 	applicationCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
