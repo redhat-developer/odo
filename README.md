@@ -60,17 +60,20 @@ Check out our [Getting Started](docs/getting-started.md) guide and get going!
 ## CLI Structure
 ```
 ocdev --verbose : OpenShift CLI for Developers
-    application : application
+    application --short : application
         create : create an application
         delete : delete the given application
         get --short : get the active application
         list : lists all the applications
+        set : Set application as active.
     completion : Output shell completion code
-    component : components of application
+    component --short : components of application
         create --binary --dir --git : component create <component_type> [component_name]
         delete : component delete <component_name>
         get --short : component get
-        push --dir : component push
+        set : Set component as active.
+    create --binary --dir --git : component create <component_type> [component_name]
+    push --dir : Push source code to component
     storage --component : storage
         add --path --size : create storage and mount to component
         list : list storage attached to a component
