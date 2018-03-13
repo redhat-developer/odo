@@ -174,6 +174,7 @@ func (c *ConfigInfo) SetActiveApplication(application string, project string) er
 		if app.Name == application && app.Project == project {
 			c.ActiveApplications[i].Active = true
 			found = true
+			break
 		}
 	}
 
