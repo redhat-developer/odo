@@ -7,8 +7,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const defaultApplication = "app"
-
 // ApplicationLabel is label key that is used to group all object that belong to one application
 // It should be save to use just this label to filter application
 const ApplicationLabel = "app.kubernetes.io/name"
@@ -18,6 +16,12 @@ const ApplicationLabel = "app.kubernetes.io/name"
 var AdditionalApplicationLabels = []string{
 	// OpenShift Web console uses this label for grouping
 	"app",
+}
+
+// getDefaultAppName returns application name to be used as a default name in the case where users doesn't provide a name
+// In future this function should generate name with uniq suffix (app-xy1h), because there might be multiple applications.
+func getDefaultAppName() string {
+	return "app"
 }
 
 // GetLabels return labels that identifies given application
@@ -132,7 +136,8 @@ func Delete(name string) error {
 	return nil
 }
 
-// GetCurrent application if no application is active it returns defaultApplication name
+// GetCurrent returns currently active application.
+// If no application is active this functions returns empty string
 func GetCurrent() (string, error) {
 	// TODO: use project abstaction
 	project, err := occlient.GetCurrentProjectName()
@@ -146,17 +151,21 @@ func GetCurrent() (string, error) {
 	}
 
 	app := cfg.GetActiveApplication(project)
-	// if no Application is active use default
-	if app == "" {
-		err = SetCurrent(defaultApplication)
-		if err != nil {
-			return "", errors.Wrap(err, "unable to get active application")
-		}
-		return defaultApplication, nil
-
-	}
-
 	return app, nil
+}
+
+// GetCurrentOrDefault returns currently active application.
+// If no application is active returns defaultApplication name
+func GetCurrentOrDefault() (string, error) {
+	currentApp, err := GetCurrent()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get active application")
+	}
+	// if no Application is active use default
+	if currentApp == "" {
+		currentApp = getDefaultAppName()
+	}
+	return currentApp, nil
 }
 
 // SetCurrent set application as active
@@ -164,6 +173,8 @@ func SetCurrent(name string) error {
 	// TODO: right now this assumes that there is a current project in openshift
 	// when we have project support in ocdev, this should call project.GetCurrent()
 	// TODO: use project abstraction
+	log.Debugf("Setting application %s as current.\n", name)
+
 	project, err := occlient.GetCurrentProjectName()
 	if err != nil {
 		return errors.Wrap(err, "unable to get active application")
