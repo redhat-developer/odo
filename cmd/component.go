@@ -83,8 +83,8 @@ var componentCreateCmd = &cobra.Command{
 			}
 			fmt.Println(output)
 		} else {
-			// no flag was set, create empty component
-			output, err := component.CreateEmpty(componentName, componentType)
+			// no flag was set, use current directory
+			output, err := component.CreateFromDir(componentName, componentType, "./")
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
