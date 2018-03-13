@@ -42,6 +42,11 @@ var applicationCreateCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		err := application.SetCurrent(name)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		fmt.Printf("Switched to application: %v\n", name)
 	},
 }
