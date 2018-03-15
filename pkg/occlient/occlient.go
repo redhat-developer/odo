@@ -327,6 +327,16 @@ func (c *Client) CreateNewProject(name string) error {
 	return nil
 }
 
+func (c *Client) SetCurrentProject(project string) error {
+	_, err := c.runOcComamnd(&OcCommand{
+		args: []string{"project", project},
+	})
+	if err != nil {
+		return errors.Wrap(err, "unable to set current project to "+project)
+	}
+	return nil
+}
+
 // addLabelsToArgs adds labels from map to args as a new argument in format that oc requires
 // --labels label1=value1,label2=value2
 func addLabelsToArgs(labels map[string]string, args []string) []string {
