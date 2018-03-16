@@ -1,0 +1,18 @@
+package: github.com/openshift/client-go
+import:
+- package: k8s.io/gengo
+  repo:    git@github.com:openshift/kubernetes-gengo
+  version: openshift-3.9
+- package: k8s.io/code-generator
+  repo:    git@github.com:openshift/kubernetes-code-generator
+  version: release-1.9.1
+- package: k8s.io/apimachinery
+  version: kubernetes-1.9.1
+- package: k8s.io/api
+  version: kubernetes-1.9.1
+- package: k8s.io/client-go
+  version: kubernetes-1.9.1
+- package: github.com/openshift/api
+  version: release-3.9
+- package: github.com/golang/glog
+- package: github.com/spf13/pflag
