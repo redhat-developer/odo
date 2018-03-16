@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -153,6 +154,70 @@ func TestAddLabelsToArgs(t *testing.T) {
 
 			if !reflect.DeepEqual(argsGot, tt.argsOut1) && !reflect.DeepEqual(argsGot, tt.argsOut2) {
 				t.Errorf("addLabelsToArgs() \ngot:  %#v \nwant: %#v or %#v", argsGot, tt.argsOut1, tt.argsOut2)
+			}
+		})
+	}
+}
+
+func Test_parseImageName(t *testing.T) {
+
+	tests := []struct {
+		arg     string
+		want1   string
+		want2   string
+		want3   string
+		wantErr bool
+	}{
+		{
+			arg:     "nodejs:8",
+			want1:   "nodejs",
+			want2:   "8",
+			want3:   "",
+			wantErr: false,
+		},
+		{
+			arg:     "nodejs@sha256:7e56ca37d1db225ebff79dd6d9fd2a9b8f646007c2afc26c67962b85dd591eb2",
+			want1:   "nodejs",
+			want2:   "",
+			want3:   "sha256:7e56ca37d1db225ebff79dd6d9fd2a9b8f646007c2afc26c67962b85dd591eb2",
+			wantErr: false,
+		},
+		{
+			arg:     "nodejs@sha256:asdf@",
+			wantErr: true,
+		},
+		{
+			arg:     "nodejs@@",
+			wantErr: true,
+		},
+		{
+			arg:     "nodejs::",
+			wantErr: true,
+		},
+		{
+			arg:     "nodejs",
+			want1:   "nodejs",
+			want2:   "latest",
+			want3:   "",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		name := fmt.Sprintf("image name: %s", tt.arg)
+		t.Run(name, func(t *testing.T) {
+			got1, got2, got3, err := parseImageName(tt.arg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseImageName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got1 != tt.want1 {
+				t.Errorf("parseImageName() got1 = %v, want %v", got1, tt.want1)
+			}
+			if got2 != tt.want2 {
+				t.Errorf("parseImageName() got2 = %v, want %v", got2, tt.want2)
+			}
+			if got3 != tt.want3 {
+				t.Errorf("parseImageName() got3 = %v, want %v", got3, tt.want3)
 			}
 		})
 	}
