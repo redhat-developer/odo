@@ -1,0 +1,26 @@
+package: github.com/redhat-developer/ocdev
+
+
+import:
+- package: github.com/blang/semver
+  version: v3.5.1
+
+- package: github.com/ghodss/yaml
+  version: v1.0.0
+
+- package: github.com/google/go-github
+  version: v15.0.0
+  subpackages:
+  - github
+
+- package: github.com/pkg/errors
+  version: v0.8.0
+
+- package: github.com/sirupsen/logrus
+  version: v1.0.5
+
+- package: github.com/spf13/cobra
+  version: v0.0.1
+
+- package: github.com/spf13/pflag
+  version: v1.0.0
