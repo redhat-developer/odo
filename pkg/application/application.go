@@ -42,15 +42,23 @@ func GetLabels(application string, additional bool) (map[string]string, error) {
 	return labels, nil
 }
 
-// Create a new application and set is as active.
-// If application already exists, this errors out.
-// If no project is set, this errors out.
-func Create(name string) error {
-	err := SetCurrent(name)
+// Create a new application
+func Create(applicationName string) error {
+	// TODO: use project abstraction
+	project, err := occlient.GetCurrentProjectName()
 	if err != nil {
-		return errors.Wrapf(err, "unable to create new application")
+		return errors.Wrap(err, "unable to create new application")
 	}
 
+	cfg, err := config.New()
+	if err != nil {
+		return errors.Wrap(err, "unable to create new application")
+	}
+
+	err = cfg.AddApplication(applicationName, project)
+	if err != nil {
+		return errors.Wrap(err, "unable to create new application")
+	}
 	return nil
 }
 

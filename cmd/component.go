@@ -92,6 +92,11 @@ var componentCreateCmd = &cobra.Command{
 			}
 			fmt.Println(output)
 		}
+		// after component is successfully created, set is as active
+		if err := component.SetCurrent(componentName); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
 	},
 }

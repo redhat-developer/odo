@@ -67,10 +67,6 @@ func CreateFromGit(name string, ctype string, url string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create git component %s", name)
 	}
-
-	if err = SetCurrent(name); err != nil {
-		return "", errors.Wrapf(err, "unable to create git component %s", name)
-	}
 	return output, nil
 }
 
@@ -104,9 +100,6 @@ func CreateEmpty(name string, ctype string) (string, error) {
 	output, err := occlient.NewAppS2IEmpty(name, ctype, labels)
 	if err != nil {
 		return "", err
-	}
-	if err = SetCurrent(name); err != nil {
-		return "", errors.Wrapf(err, "unable to activate empty component %s", name)
 	}
 
 	return output, nil

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -359,24 +360,19 @@ func TestGetActiveComponent(t *testing.T) {
 }
 
 func TestSetActiveApplication(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
-
 	tests := []struct {
 		name           string
 		existingConfig Config
 		setApplication string
 		project        string
+		wantErr        bool
 	}{
 		{
 			name:           "activeApplication nil",
 			existingConfig: Config{},
 			setApplication: "app",
 			project:        "proj",
+			wantErr:        true,
 		},
 		{
 			name: "activeApplication empty",
@@ -385,6 +381,7 @@ func TestSetActiveApplication(t *testing.T) {
 			},
 			setApplication: "app",
 			project:        "proj",
+			wantErr:        true,
 		},
 		{
 			name: "no Active value",
@@ -442,6 +439,22 @@ func TestSetActiveApplication(t *testing.T) {
 			setApplication: "app",
 			project:        "proj2",
 		},
+		{
+			name: "nonexisting application",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+				},
+			},
+			setApplication: "app-non-existing",
+			project:        "proj",
+			wantErr:        true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -450,19 +463,213 @@ func TestSetActiveApplication(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
+			cfg.Config = tt.existingConfig
+
 			err = cfg.SetActiveApplication(tt.setApplication, tt.project)
-			if err != nil {
-				t.Error(err)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, but there was no error returned")
+				} else {
+					return
+				}
+			} else {
+				if err != nil {
+					t.Error(err)
+				}
 			}
 
 			found := false
 			for _, aa := range cfg.ActiveApplications {
+				fmt.Printf("%#v\n", aa)
 				if aa.Project == tt.project && aa.Name == tt.setApplication {
 					found = true
 				}
 			}
 			if !found {
 				t.Errorf("application %s/%s was not set as current", tt.project, tt.setApplication)
+			}
+
+		})
+	}
+}
+
+func TestAddApplication(t *testing.T) {
+	tests := []struct {
+		name           string
+		existingConfig Config
+		resultConfig   Config
+		addApplication string
+		project        string
+		wantErr        bool
+	}{
+		{
+			name:           "activeApplication nil",
+			existingConfig: Config{},
+			resultConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:    "app",
+						Project: "proj",
+						Active:  false,
+					},
+				},
+			},
+			addApplication: "app",
+			project:        "proj",
+			wantErr:        false,
+		},
+		{
+			name: "activeApplication empty",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{},
+			},
+			resultConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:    "app",
+						Project: "proj",
+						Active:  false,
+					},
+				},
+			},
+			addApplication: "app",
+			project:        "proj",
+			wantErr:        false,
+		},
+		{
+			name: "multiple apps in the same project",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "app2",
+						Active:          false,
+						Project:         "proj",
+						ActiveComponent: "b2",
+					},
+				},
+			},
+			resultConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "app2",
+						Active:          false,
+						Project:         "proj",
+						ActiveComponent: "b2",
+					},
+					ApplicationInfo{
+						Name:    "app3",
+						Project: "proj",
+						Active:  false,
+					},
+				},
+			},
+			addApplication: "app3",
+			project:        "proj",
+		},
+		{
+			name: "same app name in different projects",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "app",
+						Active:          false,
+						Project:         "proj2",
+						ActiveComponent: "b2",
+					},
+				},
+			},
+			resultConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+					ApplicationInfo{
+						Name:            "app",
+						Active:          false,
+						Project:         "proj2",
+						ActiveComponent: "b2",
+					},
+					ApplicationInfo{
+						Name:    "app2",
+						Project: "proj2",
+						Active:  false,
+					},
+				},
+			},
+			addApplication: "app2",
+			project:        "proj2",
+		},
+		{
+			name: "application already exist",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+				},
+			},
+			resultConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					ApplicationInfo{
+						Name:            "app",
+						Active:          true,
+						Project:         "proj",
+						ActiveComponent: "b",
+					},
+				},
+			},
+			addApplication: "app",
+			project:        "proj",
+			wantErr:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := New()
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.Config = tt.existingConfig
+
+			err = cfg.AddApplication(tt.addApplication, tt.project)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, but there was no error returned")
+				}
+				// if there is an error and we expected it, check if existingConfig matched resultedConfig anyway
+			} else {
+				if err != nil {
+					t.Error(err)
+				}
+			}
+
+			if !reflect.DeepEqual(cfg.Config, tt.resultConfig) {
+				t.Errorf("expected output doesn't match what was returned: \n expected:\n%#v\n returned:\n%#v\n", tt.resultConfig, cfg.Config)
 			}
 
 		})

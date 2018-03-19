@@ -180,12 +180,7 @@ func (c *ConfigInfo) SetActiveApplication(application string, project string) er
 
 	// if application doesn't exists, add it as Active
 	if !found {
-		c.ActiveApplications = append(c.ActiveApplications,
-			ApplicationInfo{
-				Name:    application,
-				Project: project,
-				Active:  true,
-			})
+		return fmt.Errorf("unable set application %s as active in config, it doesn't exist", application)
 	}
 	// make sure that no other application is active
 	for i, app := range c.ActiveApplications {
@@ -197,6 +192,35 @@ func (c *ConfigInfo) SetActiveApplication(application string, project string) er
 	err := c.writeToFile()
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
+	}
+	return nil
+}
+
+// AddApplication add  new application to the config file
+// Newly create application is NOT going to be se as Active.
+func (c *ConfigInfo) AddApplication(application string, project string) error {
+	if c.ActiveApplications == nil {
+		c.ActiveApplications = []ApplicationInfo{}
+	}
+
+	for _, app := range c.ActiveApplications {
+		// if application exists set is as Active
+		if app.Name == application && app.Project == project {
+			return fmt.Errorf("unable to add %s application, it already exists in config file", application)
+		}
+	}
+
+	// if application doesn't exists add it to slice
+	c.ActiveApplications = append(c.ActiveApplications,
+		ApplicationInfo{
+			Name:    application,
+			Project: project,
+			Active:  false,
+		})
+
+	err := c.writeToFile()
+	if err != nil {
+		return errors.Wrapf(err, "unable to set add %s application", application)
 	}
 	return nil
 }
