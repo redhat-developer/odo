@@ -1,0 +1,37 @@
+hash: 7c82e23d44be5e32f7008a7694176235562bbf5c639372ce0ae7bf0aef3c751a
+updated: 2018-03-16T14:54:38.172994+01:00
+imports:
+- name: github.com/blang/semver
+  version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
+- name: github.com/ghodss/yaml
+  version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
+- name: github.com/google/go-github
+  version: e48060a28fac52d0f1cb758bc8b87c07bac4a87d
+  subpackages:
+  - github
+- name: github.com/google/go-querystring
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  subpackages:
+  - query
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/sirupsen/logrus
+  version: c155da19408a8799da419ed3eeb0cb5db0ad5dbc
+- name: github.com/spf13/cobra
+  version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
+- name: github.com/spf13/pflag
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+- name: golang.org/x/crypto
+  version: b4956d363a8b14623cc81db401707679605930a3
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/sys
+  version: cc7307a45468e49eaf2997c890f14aa03a26917b
+  subpackages:
+  - unix
+  - windows
+- name: gopkg.in/yaml.v2
+  version: 7f97868eec74b32b0982dd158a51a446d1da7eb5
+testImports: []
