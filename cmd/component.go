@@ -16,6 +16,7 @@ var (
 	componentGit       string
 	componentDir       string
 	componentShortFlag bool
+	componentApp       string
 )
 
 // componentCmd represents the component command
@@ -168,12 +169,38 @@ var componentSetCmd = &cobra.Command{
 	},
 }
 
+var componentListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all component in current application.",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		components, err := component.List()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if len(components) == 0 {
+			fmt.Println("There are no components deployed.")
+			return
+		}
+
+		fmt.Println("You have deployed:")
+		for _, comp := range components {
+			fmt.Printf("%s using the %s component\n", comp.Name, comp.Type)
+		}
+
+	},
+}
+
 func init() {
 	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "binary artifact")
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
 	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
 
 	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
+
 	// add flags from 'get' to component command
 	componentCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
 
@@ -181,6 +208,7 @@ func init() {
 	componentCmd.AddCommand(componentGetCmd)
 	componentCmd.AddCommand(componentCreateCmd)
 	componentCmd.AddCommand(componentSetCmd)
+	componentCmd.AddCommand(componentListCmd)
 
 	rootCmd.AddCommand(componentCmd)
 }

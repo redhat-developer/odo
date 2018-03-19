@@ -76,7 +76,7 @@ func List() ([]config.ApplicationInfo, error) {
 	applications = append(applications, cfg.ActiveApplications...)
 
 	// Get applications from cluster
-	appNames, err := occlient.GetLabelValues(project, ApplicationLabel)
+	appNames, err := occlient.GetLabelValues(project, ApplicationLabel, ApplicationLabel)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications")
 	}
