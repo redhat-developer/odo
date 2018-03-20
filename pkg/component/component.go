@@ -96,8 +96,7 @@ func CreateEmpty(name string, ctype string) (string, error) {
 
 	// save component type as label
 	labels[componentTypeLabel] = ctype
-
-	output, err := occlient.NewAppS2IEmpty(name, ctype, labels)
+	output, err := occlient.NewAppS2I(name, ctype, "", labels)
 	if err != nil {
 		return "", err
 	}

@@ -1,41 +1,153 @@
 package occlient
 
 import (
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
+	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
+	imageclientset "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
+
+	appsv1 "github.com/openshift/api/apps/v1"
+	buildv1 "github.com/openshift/api/build/v1"
+	imagev1 "github.com/openshift/api/image/v1"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/openshift/source-to-image/pkg/tar"
+	s2ifs "github.com/openshift/source-to-image/pkg/util/fs"
+
+	dockerapiv10 "github.com/openshift/api/image/docker10"
 )
 
 const ocRequestTimeout = 1 * time.Second
 
-// ocpath stores the path to oc binary
-var ocpath string
+var (
+	// ocpath stores the path to oc binary
+	ocpath      string
+	kubeClient  *kubernetes.Clientset
+	imageClient *imageclientset.ImageV1Client
+	appsClient  *appsclientset.AppsV1Client
+	buildClient *buildclientset.BuildV1Client
+	namespace   string
+)
 
-func initialize() error {
-	// don't execute further if ocpath was already set
-	if ocpath != "" {
+// parseImageName parse image reference
+// returns (imageName, tag, digest, error)
+// if image is referenced by tag (name:tag)  than digest is ""
+// if image is referenced by digest (name@digest) than  tag is ""
+func parseImageName(image string) (string, string, string, error) {
+	digestParts := strings.Split(image, "@")
+	if len(digestParts) == 2 {
+		// image is references digest
+		return digestParts[0], "", digestParts[1], nil
+	} else if len(digestParts) == 1 {
+		tagParts := strings.Split(image, ":")
+		if len(tagParts) == 2 {
+			// image references tag
+			return tagParts[0], tagParts[1], "", nil
+		} else if len(tagParts) == 1 {
+			return tagParts[0], "latest", "", nil
+		}
+	}
+	return "", "", "", fmt.Errorf("invalid image reference %s", image)
+
+}
+
+// imageWithMetadata mutates the given image. It parses raw DockerImageManifest data stored in the image and
+// fills its DockerImageMetadata and other fields.
+// Copied from v3.7 github.com/openshift/origin/pkg/image/apis/image/v1/helpers.go
+func imageWithMetadata(image *imagev1.Image) error {
+	// Check if the metadata are already filled in for this image.
+	meta, hasMetadata := image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage)
+	if hasMetadata && meta.Size > 0 {
 		return nil
 	}
 
+	version := image.DockerImageMetadataVersion
+	if len(version) == 0 {
+		version = "1.0"
+	}
+
+	obj := &dockerapiv10.DockerImage{}
+	if len(image.DockerImageMetadata.Raw) != 0 {
+		if err := json.Unmarshal(image.DockerImageMetadata.Raw, obj); err != nil {
+			return err
+		}
+		image.DockerImageMetadata.Object = obj
+	}
+
+	image.DockerImageMetadataVersion = version
+
+	return nil
+}
+
+func initialize() error {
 	var err error
-	ocpath, err = getOcBinary()
-	if err != nil {
-		return errors.Wrap(err, "unable to get oc binary")
+
+	// initialize client-go clients
+	if namespace == "" {
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		configOverrides := &clientcmd.ConfigOverrides{}
+		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+
+		config, err := kubeConfig.ClientConfig()
+		if err != nil {
+			return err
+		}
+
+		kubeClient, err = kubernetes.NewForConfig(config)
+		if err != nil {
+			return err
+		}
+
+		imageClient, err = imageclientset.NewForConfig(config)
+		if err != nil {
+			return err
+		}
+
+		appsClient, err = appsclientset.NewForConfig(config)
+		if err != nil {
+			return err
+		}
+
+		buildClient, err = buildclientset.NewForConfig(config)
+		if err != nil {
+			return err
+		}
+		namespace, _, _ = kubeConfig.Namespace()
 	}
-	if !isServerUp() {
-		return errors.New("server is down")
-	}
-	if !isLoggedIn() {
-		return errors.New("please log in to the cluster")
+
+	// don't execute further if ocpath was already set
+	if ocpath == "" {
+
+		ocpath, err = getOcBinary()
+		if err != nil {
+			return errors.Wrap(err, "unable to get oc binary")
+		}
+		if !isServerUp() {
+			return errors.New("server is down")
+		}
+		if !isLoggedIn() {
+			return errors.New("please log in to the cluster")
+		}
 	}
 	return nil
 }
@@ -227,70 +339,318 @@ func addLabelsToArgs(labels map[string]string, args []string) []string {
 	return args
 }
 
-// NewAppS2I create new application  using S2I with source in git repository
-func NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string) (string, error) {
-	args := []string{
-		"new-app",
-		fmt.Sprintf("%s~%s", builderImage, gitUrl),
-		"--name", name,
+// getExposedPorts parse ImageStreamImage definition and return all exposed ports in form of ContainerPorts structs
+func getExposedPorts(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
+	// file DockerImageMetadata
+	imageWithMetadata(&image.Image)
+
+	var ports []corev1.ContainerPort
+
+	for exposedPort := range image.Image.DockerImageMetadata.Object.(*dockerapiv10.DockerImage).ContainerConfig.ExposedPorts {
+		splits := strings.Split(exposedPort, "/")
+		if len(splits) != 2 {
+			return nil, fmt.Errorf("invalid port %s", exposedPort)
+		}
+
+		portNumberI64, err := strconv.ParseInt(splits[0], 10, 32)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid port number %s", splits[0])
+		}
+		portNumber := int32(portNumberI64)
+
+		var portProto corev1.Protocol
+		switch strings.ToUpper(splits[1]) {
+		case "TCP":
+			portProto = corev1.ProtocolTCP
+		case "UDP":
+			portProto = corev1.ProtocolUDP
+		default:
+			return nil, fmt.Errorf("invalid port protocol %s", splits[1])
+		}
+
+		port := corev1.ContainerPort{
+			Name:          fmt.Sprintf("%d-%s", portNumber, strings.ToLower(string(portProto))),
+			ContainerPort: portNumber,
+			Protocol:      portProto,
+		}
+
+		ports = append(ports, port)
 	}
 
-	args = addLabelsToArgs(labels, args)
-
-	output, err := runOcComamnd(&OcCommand{args: args})
-	if err != nil {
-		return "", err
-	}
-	return string(output[:]), nil
-
+	return ports, nil
 }
 
-// NewAppS2I create new application  using S2I from local directory
-func NewAppS2IEmpty(name string, builderImage string, labels map[string]string) (string, error) {
+// NewAppS2I create new application using S2I
+// if gitUrl is ""  than it creates binary build otherwise uses gitUrl as buildSource
+func NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string) (string, error) {
+	openShiftNameSpace := "openshift"
 
-	// there is no way to create binary builds using 'oc new-app' other than passing it directory that is not a git repository
-	// this is why we are creating empty directory and using is a a source
-
-	tmpDir, err := ioutil.TempDir("", "fakeSource")
+	imageName, imageTag, _, err := parseImageName(builderImage)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to create tmp directory to use it as a source for build")
-	}
-	defer os.Remove(tmpDir)
-
-	args := []string{
-		"new-app",
-		fmt.Sprintf("%s~%s", builderImage, tmpDir),
-		"--name", name,
+		return "", errors.Wrap(err, "unable to create new s2i git build ")
 	}
 
-	args = addLabelsToArgs(labels, args)
+	var containerPorts []corev1.ContainerPort
 
-	output, err := runOcComamnd(&OcCommand{args: args})
+	log.Debugf("Checking for exact match of builderImage with ImageStream")
+	imageStream, err := imageClient.ImageStreams(openShiftNameSpace).Get(imageName, metav1.GetOptions{})
 	if err != nil {
-		return "", err
+		log.Debugf("No exact match found: %s", err.Error())
+		// TODO: search elsewhere
+		return "", errors.Wrapf(err, "unable to find matching builder image %s", imageName)
+	} else {
+		tagFound := false
+		for _, tag := range imageStream.Status.Tags {
+			// look for matching tag
+			if tag.Tag == imageTag {
+				tagFound = true
+				log.Debugf("Found exact image tag match for %s:%s", imageName, imageTag)
+				// ImageStream holds tag history
+				// first item is the latest one
+				tagDigest := tag.Items[0].Image
+				// look for imageStreamImage for given tag (reference by digest)
+				imageStreamImageName := fmt.Sprintf("%s@%s", imageName, tagDigest)
+				imageStreamImage, err := imageClient.ImageStreamImages("openshift").Get(imageStreamImageName, metav1.GetOptions{})
+				if err != nil {
+					return "", errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
+				}
+				// get ports that are exported by image
+				containerPorts, err = getExposedPorts(imageStreamImage)
+				if err != nil {
+					return "", errors.Wrapf(err, "unable to get exported ports from % image", builderImage)
+				}
+			}
+		}
+		if !tagFound {
+			return "", errors.Wrapf(err, "unable to find tag %s for image", imageTag, imageName)
+		}
+
 	}
 
-	return string(output[:]), nil
+	// generate and create ImageStream
+	is := imagev1.ImageStream{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+	}
+	_, err = imageClient.ImageStreams(namespace).Create(&is)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// generate BuildConfig
+	buildSource := buildv1.BuildSource{
+		Type:   "Binary",
+		Binary: &buildv1.BinaryBuildSource{},
+	}
+	// if gitUrl set change buildSource to git and use given repo
+	if gitUrl != "" {
+		buildSource = buildv1.BuildSource{
+			Git: &buildv1.GitBuildSource{
+				URI: gitUrl,
+			},
+			Type: "Git",
+		}
+	}
+
+	bc := buildv1.BuildConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+		Spec: buildv1.BuildConfigSpec{
+			CommonSpec: buildv1.CommonSpec{
+				Output: buildv1.BuildOutput{
+					To: &corev1.ObjectReference{
+						Kind: "ImageStreamTag",
+						Name: name + ":latest",
+					},
+				},
+				Source: buildSource,
+				Strategy: buildv1.BuildStrategy{
+					SourceStrategy: &buildv1.SourceBuildStrategy{
+						From: corev1.ObjectReference{
+							Kind:      "ImageStreamTag",
+							Name:      imageName + ":" + imageTag,
+							Namespace: openShiftNameSpace,
+						},
+					},
+				},
+			},
+			Triggers: []buildv1.BuildTriggerPolicy{
+				{
+					Type: "ConfigChange",
+				},
+				{
+					Type:        "ImageChange",
+					ImageChange: &buildv1.ImageChangeTrigger{},
+				},
+			},
+		},
+	}
+	_, err = buildClient.BuildConfigs(namespace).Create(&bc)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// generate  and create DeploymentConfig
+	dc := appsv1.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+		Spec: appsv1.DeploymentConfigSpec{
+			Replicas: 1,
+			Selector: map[string]string{
+				"deploymentconfig": name,
+			},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"deploymentconfig": name,
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Image: bc.Spec.Output.To.Name,
+							Name:  name,
+							Ports: containerPorts,
+						},
+					},
+				},
+			},
+			Triggers: []appsv1.DeploymentTriggerPolicy{
+				{
+					Type: "ConfigChange",
+				},
+				{
+					Type: "ImageChange",
+					ImageChangeParams: &appsv1.DeploymentTriggerImageChangeParams{
+						Automatic: true,
+						ContainerNames: []string{
+							name,
+						},
+						From: corev1.ObjectReference{
+							Kind: "ImageStreamTag",
+							Name: bc.Spec.Output.To.Name,
+						},
+					},
+				},
+			},
+		},
+	}
+	_, err = appsClient.DeploymentConfigs(namespace).Create(&dc)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// generate and create Service
+	var svcPorts []corev1.ServicePort
+	for _, containerPort := range dc.Spec.Template.Spec.Containers[0].Ports {
+		svcPort := corev1.ServicePort{
+
+			Name:       containerPort.Name,
+			Port:       containerPort.ContainerPort,
+			Protocol:   containerPort.Protocol,
+			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
+		}
+		svcPorts = append(svcPorts, svcPort)
+	}
+	svc := corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: svcPorts,
+			Selector: map[string]string{
+				"deploymentconfig": name,
+			},
+		},
+	}
+	_, err = kubeClient.CoreV1().Services(namespace).Create(&svc)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return "", nil
+
 }
 
 func StartBuild(name string, dir string) (string, error) {
-	args := []string{
-		"start-build",
-		name,
-		"--follow",
-	}
-	if len(dir) > 0 {
-		args = append(args, "--from-dir", dir)
+	var r io.Reader
+	pr, pw := io.Pipe()
+	go func() {
+		w := gzip.NewWriter(pw)
+		if err := tar.New(s2ifs.NewFileSystem()).CreateTarStream(dir, false, w); err != nil {
+			pw.CloseWithError(err)
+		} else {
+			w.Close()
+			pw.CloseWithError(io.EOF)
+		}
+	}()
+	r = pr
+
+	buildRequest := buildv1.BuildRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
 	}
 
-	// TODO: build progress is not shown
-	output, err := runOcComamnd(&OcCommand{args: args})
+	result := &buildv1.Build{}
+	// this should be  buildClient.BuildConfigs(namespace).Instantiate
+	// but there is no way to pass data using that call.
+	err := buildClient.RESTClient().Post().
+		Namespace(namespace).
+		Resource("buildconfigs").
+		Name(name).
+		SubResource("instantiatebinary").
+		Body(r).
+		VersionedParams(&buildRequest, buildschema.ParameterCodec).
+		Do().
+		Into(result)
+
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "unable to start build %s", name)
+	}
+	log.Debug("Build %s from %s directory triggered.", name, dir)
+
+	err = FollowBuildLog(result.Name)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to start build %s", name)
 	}
 
-	return string(output[:]), nil
+	return "", nil
+}
 
+// FollowBuildLog stream build log to stdout
+func FollowBuildLog(buildName string) error {
+	buildLogOpetions := buildv1.BuildLogOptions{
+		Follow: true,
+		NoWait: false,
+	}
+	rd, err := buildClient.RESTClient().Get().
+		Namespace(namespace).
+		Resource("builds").
+		Name(buildName).
+		SubResource("log").
+		VersionedParams(&buildLogOpetions, buildschema.ParameterCodec).
+		Stream()
+
+	if err != nil {
+		return errors.Wrapf(err, "unable get build log %s", buildName)
+	}
+	defer rd.Close()
+
+	stdout := os.Stdout
+
+	if _, err = io.Copy(stdout, rd); err != nil {
+		return errors.Wrapf(err, "error streaming logs for %s", buildName)
+	}
+
+	return nil
 }
 
 // Delete calls oc delete
@@ -400,7 +760,7 @@ func GetLabelValues(project string, label string, selector string) ([]string, er
 		return nil, err
 	}
 
-	values := []string{}
+	var values []string
 	// deduplicate label values
 	for _, val := range strings.Split(string(output), ",") {
 		val = strings.TrimSpace(val)

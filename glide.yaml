@@ -24,3 +24,11 @@ import:
 
 - package: github.com/spf13/pflag
   version: v1.0.0
+
+- package: github.com/openshift/client-go
+  version: release-3.9
+
+- package: github.com/openshift/source-to-image
+  subpackages:
+  - pkg/tar
+  - pkg/util/fs
