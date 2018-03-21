@@ -5,8 +5,8 @@ import (
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 )
 
-func Add(config *occlient.VolumeConfig) (string, error) {
-	output, err := occlient.SetVolumes(config,
+func Add(client *occlient.Client, config *occlient.VolumeConfig) (string, error) {
+	output, err := client.SetVolumes(config,
 		&occlient.VolumeOpertaions{
 			Add: true,
 		})
@@ -16,8 +16,8 @@ func Add(config *occlient.VolumeConfig) (string, error) {
 	return output, nil
 }
 
-func Remove(config *occlient.VolumeConfig) (string, error) {
-	output, err := occlient.SetVolumes(config,
+func Remove(client *occlient.Client, config *occlient.VolumeConfig) (string, error) {
+	output, err := client.SetVolumes(config,
 		&occlient.VolumeOpertaions{
 			Remove: true,
 		})
@@ -27,8 +27,8 @@ func Remove(config *occlient.VolumeConfig) (string, error) {
 	return output, nil
 }
 
-func List(config *occlient.VolumeConfig) (string, error) {
-	output, err := occlient.SetVolumes(config,
+func List(client *occlient.Client, config *occlient.VolumeConfig) (string, error) {
+	output, err := client.SetVolumes(config,
 		&occlient.VolumeOpertaions{
 			List: true,
 		})

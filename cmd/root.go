@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/redhat-developer/ocdev/pkg/notify"
+	"github.com/redhat-developer/ocdev/pkg/occlient"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -74,4 +75,13 @@ func getLatestReleaseInfo(info chan<- string) {
 			"to update manually, or visit https://github.com/redhat-developer/ocdev/releases\n" +
 			"---\n"
 	}
+}
+
+func getOcClient() *occlient.Client {
+	client, err := occlient.New()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return client
 }

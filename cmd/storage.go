@@ -16,9 +16,9 @@ var (
 	storagePath      string
 )
 
-func getComponent() string {
+func getComponent(client *occlient.Client) string {
 	if len(storageComponent) == 0 {
-		c, err := component.GetCurrent()
+		c, err := component.GetCurrent(client)
 		if err != nil {
 			fmt.Printf("Could not get current component: %v\n", err)
 			os.Exit(1)
@@ -39,13 +39,15 @@ var storageAddCmd = &cobra.Command{
 	Short: "create storage and mount to component",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmpnt := getComponent()
-		_, err := storage.Add(&occlient.VolumeConfig{
-			Name:             &args[0],
-			DeploymentConfig: &cmpnt,
-			Path:             &storagePath,
-			Size:             &storageSize,
-		})
+		client := getOcClient()
+		cmpnt := getComponent(client)
+		_, err := storage.Add(client,
+			&occlient.VolumeConfig{
+				Name:             &args[0],
+				DeploymentConfig: &cmpnt,
+				Path:             &storagePath,
+				Size:             &storageSize,
+			})
 		if err != nil {
 			fmt.Printf("Failed to add storage: %v\n", err)
 			os.Exit(1)
@@ -59,17 +61,19 @@ var storageRemoveCmd = &cobra.Command{
 	Short: "remove storage from component",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmpnt := getComponent()
+		client := getOcClient()
+		cmpnt := getComponent(client)
 		var storageName *string
 		if len(args) == 0 {
 			storageName = nil
 		} else {
 			storageName = &args[0]
 		}
-		_, err := storage.Remove(&occlient.VolumeConfig{
-			Name:             storageName,
-			DeploymentConfig: &cmpnt,
-		})
+		_, err := storage.Remove(client,
+			&occlient.VolumeConfig{
+				Name:             storageName,
+				DeploymentConfig: &cmpnt,
+			})
 		if err != nil {
 			fmt.Printf("Failed to remove storage: %v\n", err)
 			os.Exit(1)
@@ -87,10 +91,12 @@ var storageListCmd = &cobra.Command{
 	Short: "list storage attached to a component",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmpnt := getComponent()
-		output, err := storage.List(&occlient.VolumeConfig{
-			DeploymentConfig: &cmpnt,
-		})
+		client := getOcClient()
+		cmpnt := getComponent(client)
+		output, err := storage.List(client,
+			&occlient.VolumeConfig{
+				DeploymentConfig: &cmpnt,
+			})
 		if err != nil {
 			fmt.Printf("Failed to list storage: %v\n", err)
 			os.Exit(1)

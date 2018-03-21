@@ -39,15 +39,75 @@ import (
 
 const ocRequestTimeout = 1 * time.Second
 
-var (
-	// ocpath stores the path to oc binary
+type Client struct {
 	ocpath      string
 	kubeClient  *kubernetes.Clientset
 	imageClient *imageclientset.ImageV1Client
 	appsClient  *appsclientset.AppsV1Client
 	buildClient *buildclientset.BuildV1Client
 	namespace   string
-)
+}
+
+func New() (*Client, error) {
+	var client Client
+
+	// initialize client-go clients
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	configOverrides := &clientcmd.ConfigOverrides{}
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.kubeClient = kubeClient
+
+	imageClient, err := imageclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.imageClient = imageClient
+
+	appsClient, err := appsclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.appsClient = appsClient
+
+	buildClient, err := buildclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.buildClient = buildClient
+
+	namespace, _, err := kubeConfig.Namespace()
+	if err != nil {
+		return nil, err
+	}
+	client.namespace = namespace
+
+	// The following should go away once we're done with complete migration to
+	// client-go
+	ocpath, err := getOcBinary()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get oc binary")
+	}
+	client.ocpath = ocpath
+
+	if !isServerUp(client.ocpath) {
+		return nil, errors.New("server is down")
+	}
+	if !isLoggedIn(client.ocpath) {
+		return nil, errors.New("please log in to the cluster")
+	}
+
+	return &client, nil
+}
 
 // parseImageName parse image reference
 // returns (imageName, tag, digest, error)
@@ -99,59 +159,6 @@ func imageWithMetadata(image *imagev1.Image) error {
 	return nil
 }
 
-func initialize() error {
-	var err error
-
-	// initialize client-go clients
-	if namespace == "" {
-		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-		configOverrides := &clientcmd.ConfigOverrides{}
-		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-
-		config, err := kubeConfig.ClientConfig()
-		if err != nil {
-			return err
-		}
-
-		kubeClient, err = kubernetes.NewForConfig(config)
-		if err != nil {
-			return err
-		}
-
-		imageClient, err = imageclientset.NewForConfig(config)
-		if err != nil {
-			return err
-		}
-
-		appsClient, err = appsclientset.NewForConfig(config)
-		if err != nil {
-			return err
-		}
-
-		buildClient, err = buildclientset.NewForConfig(config)
-		if err != nil {
-			return err
-		}
-		namespace, _, _ = kubeConfig.Namespace()
-	}
-
-	// don't execute further if ocpath was already set
-	if ocpath == "" {
-
-		ocpath, err = getOcBinary()
-		if err != nil {
-			return errors.Wrap(err, "unable to get oc binary")
-		}
-		if !isServerUp() {
-			return errors.New("server is down")
-		}
-		if !isLoggedIn() {
-			return errors.New("please log in to the cluster")
-		}
-	}
-	return nil
-}
-
 // getOcBinary returns full path to oc binary
 // first it looks for env variable KUBECTL_PLUGINS_CALLER (run as oc plugin)
 // than looks for env variable OC_BIN (set manualy by user)
@@ -200,12 +207,8 @@ type OcCommand struct {
 // runOcCommands executes oc
 // args - command line arguments to be passed to oc ('-o json' is added by default if data is not nil)
 // data - is a pointer to a string, if set than data is given to command to stdin ('-f -' is added to args as default)
-func runOcComamnd(command *OcCommand) ([]byte, error) {
-	if err := initialize(); err != nil {
-		return nil, errors.Wrap(err, "unable to perform oc initializations")
-	}
-
-	cmd := exec.Command(ocpath, command.args...)
+func (c *Client) runOcComamnd(command *OcCommand) ([]byte, error) {
+	cmd := exec.Command(c.ocpath, command.args...)
 
 	// if data is not set assume that it is get command
 	if len(command.format) > 0 {
@@ -245,7 +248,7 @@ func runOcComamnd(command *OcCommand) ([]byte, error) {
 	return output, nil
 }
 
-func isLoggedIn() bool {
+func isLoggedIn(ocpath string) bool {
 	cmd := exec.Command(ocpath, "whoami")
 	output, err := cmd.CombinedOutput()
 	log.Debugf("isLoggedIn err:  %#v \n output: %#v", err, string(output))
@@ -257,7 +260,7 @@ func isLoggedIn() bool {
 	return true
 }
 
-func isServerUp() bool {
+func isServerUp(ocpath string) bool {
 	cmd := exec.Command(ocpath, "whoami", "--show-server")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -282,18 +285,18 @@ func isServerUp() bool {
 	return true
 }
 
-func GetCurrentProjectName() (string, error) {
+func (c *Client) GetCurrentProjectName() (string, error) {
 	// We need to run `oc project` because it returns an error when project does
 	// not exist, while `oc project -q` does not return an error, it simply
 	// returns the project name
-	_, err := runOcComamnd(&OcCommand{
+	_, err := c.runOcComamnd(&OcCommand{
 		args: []string{"project"},
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get current project info")
 	}
 
-	output, err := runOcComamnd(&OcCommand{
+	output, err := c.runOcComamnd(&OcCommand{
 		args: []string{"project", "-q"},
 	})
 	if err != nil {
@@ -303,8 +306,8 @@ func GetCurrentProjectName() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func GetProjects() (string, error) {
-	output, err := runOcComamnd(&OcCommand{
+func (c *Client) GetProjects() (string, error) {
+	output, err := c.runOcComamnd(&OcCommand{
 		args:   []string{"get", "project"},
 		format: "custom-columns=NAME:.metadata.name",
 	})
@@ -314,8 +317,8 @@ func GetProjects() (string, error) {
 	return strings.Join(strings.Split(string(output), "\n")[1:], "\n"), nil
 }
 
-func CreateNewProject(name string) error {
-	_, err := runOcComamnd(&OcCommand{
+func (c *Client) CreateNewProject(name string) error {
+	_, err := c.runOcComamnd(&OcCommand{
 		args: []string{"new-project", name},
 	})
 	if err != nil {
@@ -382,7 +385,7 @@ func getExposedPorts(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, e
 
 // NewAppS2I create new application using S2I
 // if gitUrl is ""  than it creates binary build otherwise uses gitUrl as buildSource
-func NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string) (string, error) {
+func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string) (string, error) {
 	openShiftNameSpace := "openshift"
 
 	imageName, imageTag, _, err := parseImageName(builderImage)
@@ -393,7 +396,7 @@ func NewAppS2I(name string, builderImage string, gitUrl string, labels map[strin
 	var containerPorts []corev1.ContainerPort
 
 	log.Debugf("Checking for exact match of builderImage with ImageStream")
-	imageStream, err := imageClient.ImageStreams(openShiftNameSpace).Get(imageName, metav1.GetOptions{})
+	imageStream, err := c.imageClient.ImageStreams(openShiftNameSpace).Get(imageName, metav1.GetOptions{})
 	if err != nil {
 		log.Debugf("No exact match found: %s", err.Error())
 		// TODO: search elsewhere
@@ -410,7 +413,7 @@ func NewAppS2I(name string, builderImage string, gitUrl string, labels map[strin
 				tagDigest := tag.Items[0].Image
 				// look for imageStreamImage for given tag (reference by digest)
 				imageStreamImageName := fmt.Sprintf("%s@%s", imageName, tagDigest)
-				imageStreamImage, err := imageClient.ImageStreamImages("openshift").Get(imageStreamImageName, metav1.GetOptions{})
+				imageStreamImage, err := c.imageClient.ImageStreamImages("openshift").Get(imageStreamImageName, metav1.GetOptions{})
 				if err != nil {
 					return "", errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
 				}
@@ -434,7 +437,7 @@ func NewAppS2I(name string, builderImage string, gitUrl string, labels map[strin
 			Labels: labels,
 		},
 	}
-	_, err = imageClient.ImageStreams(namespace).Create(&is)
+	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -489,7 +492,7 @@ func NewAppS2I(name string, builderImage string, gitUrl string, labels map[strin
 			},
 		},
 	}
-	_, err = buildClient.BuildConfigs(namespace).Create(&bc)
+	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -541,7 +544,7 @@ func NewAppS2I(name string, builderImage string, gitUrl string, labels map[strin
 			},
 		},
 	}
-	_, err = appsClient.DeploymentConfigs(namespace).Create(&dc)
+	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -570,7 +573,7 @@ func NewAppS2I(name string, builderImage string, gitUrl string, labels map[strin
 			},
 		},
 	}
-	_, err = kubeClient.CoreV1().Services(namespace).Create(&svc)
+	_, err = c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -579,7 +582,7 @@ func NewAppS2I(name string, builderImage string, gitUrl string, labels map[strin
 
 }
 
-func StartBuild(name string, dir string) (string, error) {
+func (c *Client) StartBuild(name string, dir string) (string, error) {
 	var r io.Reader
 	pr, pw := io.Pipe()
 	go func() {
@@ -602,8 +605,8 @@ func StartBuild(name string, dir string) (string, error) {
 	result := &buildv1.Build{}
 	// this should be  buildClient.BuildConfigs(namespace).Instantiate
 	// but there is no way to pass data using that call.
-	err := buildClient.RESTClient().Post().
-		Namespace(namespace).
+	err := c.buildClient.RESTClient().Post().
+		Namespace(c.namespace).
 		Resource("buildconfigs").
 		Name(name).
 		SubResource("instantiatebinary").
@@ -617,7 +620,7 @@ func StartBuild(name string, dir string) (string, error) {
 	}
 	log.Debug("Build %s from %s directory triggered.", name, dir)
 
-	err = FollowBuildLog(result.Name)
+	err = c.FollowBuildLog(result.Name)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to start build %s", name)
 	}
@@ -626,13 +629,13 @@ func StartBuild(name string, dir string) (string, error) {
 }
 
 // FollowBuildLog stream build log to stdout
-func FollowBuildLog(buildName string) error {
+func (c *Client) FollowBuildLog(buildName string) error {
 	buildLogOpetions := buildv1.BuildLogOptions{
 		Follow: true,
 		NoWait: false,
 	}
-	rd, err := buildClient.RESTClient().Get().
-		Namespace(namespace).
+	rd, err := c.buildClient.RESTClient().Get().
+		Namespace(c.namespace).
 		Resource("builds").
 		Name(buildName).
 		SubResource("log").
@@ -657,7 +660,7 @@ func FollowBuildLog(buildName string) error {
 // kind is always required (can be set to 'all')
 // name can be omitted if labels are set, in that case set name to ''
 // if you want to delete object just by its name set labels to nil
-func Delete(kind string, name string, labels map[string]string) (string, error) {
+func (c *Client) Delete(kind string, name string, labels map[string]string) (string, error) {
 
 	args := []string{
 		"delete",
@@ -677,7 +680,7 @@ func Delete(kind string, name string, labels map[string]string) (string, error) 
 		args = append(args, strings.Join(labelsString, ","))
 	}
 
-	output, err := runOcComamnd(&OcCommand{args: args})
+	output, err := c.runOcComamnd(&OcCommand{args: args})
 	if err != nil {
 		return "", err
 	}
@@ -686,8 +689,8 @@ func Delete(kind string, name string, labels map[string]string) (string, error) 
 
 }
 
-func DeleteProject(name string) error {
-	_, err := runOcComamnd(&OcCommand{
+func (c *Client) DeleteProject(name string) error {
+	_, err := c.runOcComamnd(&OcCommand{
 		args: []string{"delete", "project", name},
 	})
 	if err != nil {
@@ -709,7 +712,7 @@ type VolumeOpertaions struct {
 	List   bool
 }
 
-func SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, error) {
+func (c *Client) SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, error) {
 	args := []string{
 		"set",
 		"volumes",
@@ -734,7 +737,7 @@ func SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, err
 	if operations.List {
 		args = append(args, "--all")
 	}
-	output, err := runOcComamnd(&OcCommand{
+	output, err := c.runOcComamnd(&OcCommand{
 		args: args,
 	})
 	if err != nil {
@@ -745,7 +748,7 @@ func SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, err
 
 // GetLabelValues get label values of given label from objects in project that are matching selector
 // returns slice of uniq label values
-func GetLabelValues(project string, label string, selector string) ([]string, error) {
+func (c *Client) GetLabelValues(project string, label string, selector string) ([]string, error) {
 	// get all object that have given label
 	// and show just label values separated by ,
 	args := []string{
@@ -755,7 +758,7 @@ func GetLabelValues(project string, label string, selector string) ([]string, er
 		"-o", "go-template={{range .items}}{{range $key, $value := .metadata.labels}}{{if eq $key \"" + label + "\"}}{{$value}},{{end}}{{end}}{{end}}",
 	}
 
-	output, err := runOcComamnd(&OcCommand{args: args})
+	output, err := c.runOcComamnd(&OcCommand{args: args})
 	if err != nil {
 		return nil, err
 	}
