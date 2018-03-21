@@ -31,6 +31,18 @@ jobs:
         # submit coverage.txt to codecov.io 
         - bash <(curl -s https://codecov.io/bash)
 
+    # Run e2e tests
+    - <<: *base-test
+      stage: test
+      go: 1.9
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp ocdev /usr/bin
+        - go get -u github.com/onsi/ginkgo/ginkgo
+        - make test-e2e
+
+
     # test installation script on linux
     - stage: test
       services:
