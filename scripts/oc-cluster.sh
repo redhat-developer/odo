@@ -11,14 +11,10 @@ sudo cat /etc/default/docker
 sudo service docker start
 sudo service docker status
 
-## chmod needs sudo, so all other commands are with sudo
-sudo mkdir -p /home/travis/gopath/origin
-sudo chmod -R 766 /home/travis/gopath/origin
-
 ## download oc binaries
-sudo wget https://github.com/openshift/origin/releases/download/v3.7.2/openshift-origin-client-tools-v3.7.2-282e43f-linux-64bit.tar.gz -O /home/travis/gopath/origin/openshift-origin-client-tools.tar.gz 2> /dev/null > /dev/null
+sudo wget https://github.com/openshift/origin/releases/download/v3.7.2/openshift-origin-client-tools-v3.7.2-282e43f-linux-64bit.tar.gz -O /tmp/openshift-origin-client-tools.tar.gz 2> /dev/null > /dev/null
 
-sudo tar -xvzf /home/travis/gopath/origin/openshift-origin-client-tools.tar.gz --strip-components=1 -C /usr/local/bin
+sudo tar -xvzf /tmp/openshift-origin-client-tools.tar.gz --strip-components=1 -C /usr/local/bin
 
 ## Get oc version
 oc version

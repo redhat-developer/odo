@@ -39,7 +39,7 @@ jobs:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp ocdev /usr/bin
-        - go get -u github.com/onsi/ginkgo/ginkgo
+        - oc login -u developer 
         - make test-e2e
 
 

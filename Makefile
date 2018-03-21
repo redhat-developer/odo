@@ -69,7 +69,7 @@ test:
 # Run e2e tests
 .PHONY: test-e2e
 test-e2e:
-	go test -v github.com/redhat-developer/ocdev/tests/e2e
+	go test github.com/redhat-developer/ocdev/tests/e2e
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
