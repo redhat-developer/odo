@@ -43,9 +43,9 @@ func GetLabels(application string, additional bool) (map[string]string, error) {
 }
 
 // Create a new application
-func Create(applicationName string) error {
+func Create(client *occlient.Client, applicationName string) error {
 	// TODO: use project abstraction
-	project, err := occlient.GetCurrentProjectName()
+	project, err := client.GetCurrentProjectName()
 	if err != nil {
 		return errors.Wrap(err, "unable to create new application")
 	}
@@ -66,11 +66,11 @@ func Create(applicationName string) error {
 // Queries cluster and configfile.
 // Shows also empty applications (empty applications are those that are just
 // mentioned in config but don't have any object associated with it on cluster).
-func List() ([]config.ApplicationInfo, error) {
+func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 	applications := []config.ApplicationInfo{}
 
 	// TODO: use project abstaction
-	project, err := occlient.GetCurrentProjectName()
+	project, err := client.GetCurrentProjectName()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications")
 	}
@@ -84,7 +84,7 @@ func List() ([]config.ApplicationInfo, error) {
 	applications = append(applications, cfg.ActiveApplications...)
 
 	// Get applications from cluster
-	appNames, err := occlient.GetLabelValues(project, ApplicationLabel, ApplicationLabel)
+	appNames, err := client.GetLabelValues(project, ApplicationLabel, ApplicationLabel)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications")
 	}
@@ -111,7 +111,7 @@ func List() ([]config.ApplicationInfo, error) {
 }
 
 // Delete deletes the given application
-func Delete(name string) error {
+func Delete(client *occlient.Client, name string) error {
 	log.Debug("Deleting application %s", name)
 
 	labels, err := GetLabels(name, false)
@@ -120,7 +120,7 @@ func Delete(name string) error {
 	}
 
 	// delete application from cluster
-	output, err := occlient.Delete("all", "", labels)
+	output, err := client.Delete("all", "", labels)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
@@ -131,7 +131,7 @@ func Delete(name string) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
-	project, err := occlient.GetCurrentProjectName()
+	project, err := client.GetCurrentProjectName()
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
@@ -146,9 +146,9 @@ func Delete(name string) error {
 
 // GetCurrent returns currently active application.
 // If no application is active this functions returns empty string
-func GetCurrent() (string, error) {
+func GetCurrent(client *occlient.Client) (string, error) {
 	// TODO: use project abstaction
-	project, err := occlient.GetCurrentProjectName()
+	project, err := client.GetCurrentProjectName()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
@@ -164,8 +164,8 @@ func GetCurrent() (string, error) {
 
 // GetCurrentOrDefault returns currently active application.
 // If no application is active returns defaultApplication name
-func GetCurrentOrDefault() (string, error) {
-	currentApp, err := GetCurrent()
+func GetCurrentOrDefault(client *occlient.Client) (string, error) {
+	currentApp, err := GetCurrent(client)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
@@ -177,13 +177,13 @@ func GetCurrentOrDefault() (string, error) {
 }
 
 // SetCurrent set application as active
-func SetCurrent(name string) error {
+func SetCurrent(client *occlient.Client, name string) error {
 	// TODO: right now this assumes that there is a current project in openshift
 	// when we have project support in ocdev, this should call project.GetCurrent()
 	// TODO: use project abstraction
 	log.Debugf("Setting application %s as current.\n", name)
 
-	project, err := occlient.GetCurrentProjectName()
+	project, err := client.GetCurrentProjectName()
 	if err != nil {
 		return errors.Wrap(err, "unable to get active application")
 	}
@@ -201,11 +201,10 @@ func SetCurrent(name string) error {
 	return nil
 }
 
-func Exists(name string) (bool, error) {
-	apps, err := List()
+func Exists(client *occlient.Client, name string) (bool, error) {
+	apps, err := List(client)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to list applications")
-
 	}
 	for _, app := range apps {
 		if app.Name == name {

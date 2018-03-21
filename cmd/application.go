@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"strings"
+
 	"github.com/redhat-developer/ocdev/pkg/application"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 var (
@@ -38,13 +39,13 @@ var applicationCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Args validation makes sure that there is exactly one argument
 		name := args[0]
-
+		client := getOcClient()
 		fmt.Printf("Creating application: %v\n", name)
-		if err := application.Create(name); err != nil {
+		if err := application.Create(client, name); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		err := application.SetCurrent(name)
+		err := application.SetCurrent(client, name)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -58,7 +59,8 @@ var applicationGetCmd = &cobra.Command{
 	Short: "get the active application",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		app, err := application.GetCurrent()
+		client := getOcClient()
+		app, err := application.GetCurrent(client)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -85,6 +87,7 @@ var applicationDeleteCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
 		appName := args[0]
 		var confirmDeletion string
 
@@ -96,7 +99,7 @@ var applicationDeleteCmd = &cobra.Command{
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
-			err := application.Delete(appName)
+			err := application.Delete(client, appName)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -113,7 +116,8 @@ var applicationListCmd = &cobra.Command{
 	Short: "lists all the applications",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		apps, err := application.List()
+		client := getOcClient()
+		apps, err := application.List(client)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -141,9 +145,10 @@ var applicationSetCmd = &cobra.Command{
 		}
 		return nil
 	}, Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
 		appName := args[0]
 		// error if application does not exist
-		exists, err := application.Exists(appName)
+		exists, err := application.Exists(client, appName)
 		if err != nil {
 			fmt.Printf("Unable to check if application exists: %v\n", err)
 			os.Exit(1)
@@ -153,7 +158,7 @@ var applicationSetCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = application.SetCurrent(appName)
+		err = application.SetCurrent(client, appName)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

@@ -48,6 +48,7 @@ var componentCreateCmd = &cobra.Command{
 		log.Debugf("args: %#v", strings.Join(args, " "))
 		log.Debugf("flags: binary=%s, git=%s, dir=%s", componentBinary, componentGit, componentDir)
 
+		client := getOcClient()
 		if len(componentBinary) != 0 {
 			fmt.Printf("--binary is not implemented yet\n\n")
 			cmd.Help()
@@ -70,14 +71,14 @@ var componentCreateCmd = &cobra.Command{
 		}
 
 		if len(componentGit) != 0 {
-			output, err := component.CreateFromGit(componentName, componentType, componentGit)
+			output, err := component.CreateFromGit(client, componentName, componentType, componentGit)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
 			fmt.Println(output)
 		} else if len(componentDir) != 0 {
-			output, err := component.CreateFromDir(componentName, componentType, componentDir)
+			output, err := component.CreateFromDir(client, componentName, componentType, componentDir)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -85,7 +86,7 @@ var componentCreateCmd = &cobra.Command{
 			fmt.Println(output)
 		} else {
 			// no flag was set, use current directory
-			output, err := component.CreateFromDir(componentName, componentType, "./")
+			output, err := component.CreateFromDir(client, componentName, componentType, "./")
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -93,7 +94,7 @@ var componentCreateCmd = &cobra.Command{
 			fmt.Println(output)
 		}
 		// after component is successfully created, set is as active
-		if err := component.SetCurrent(componentName); err != nil {
+		if err := component.SetCurrent(client, componentName); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -114,11 +115,11 @@ var componentDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("component delete called")
 		log.Debugf("args: %#v", strings.Join(args, " "))
-
+		client := getOcClient()
 		componentName := args[0]
 
 		// no flag was set, create empty component
-		output, err := component.Delete(componentName)
+		output, err := component.Delete(client, componentName)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -135,8 +136,8 @@ var componentGetCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("component get called")
-
-		component, err := component.GetCurrent()
+		client := getOcClient()
+		component, err := component.GetCurrent(client)
 		if err != nil {
 			fmt.Println(errors.Wrap(err, "unable to get current component"))
 			os.Exit(1)
@@ -165,7 +166,8 @@ var componentSetCmd = &cobra.Command{
 		}
 		return nil
 	}, Run: func(cmd *cobra.Command, args []string) {
-		err := component.SetCurrent(args[0])
+		client := getOcClient()
+		err := component.SetCurrent(client, args[0])
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -179,8 +181,9 @@ var componentListCmd = &cobra.Command{
 	Short: "List all component in current application.",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
 
-		components, err := component.List()
+		components, err := component.List(client)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

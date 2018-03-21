@@ -24,11 +24,12 @@ var pushCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("component push called")
+		client := getOcClient()
 		var componentName string
 		if len(args) == 0 {
 			var err error
 			log.Debug("No component name passed, assuming current component")
-			componentName, err = component.GetCurrent()
+			componentName, err = component.GetCurrent(client)
 			if err != nil {
 				fmt.Println(errors.Wrap(err, "unable to get current component"))
 				os.Exit(1)
@@ -42,7 +43,7 @@ var pushCmd = &cobra.Command{
 			componentDir = "."
 		}
 
-		if _, err := component.Push(componentName, componentDir); err != nil {
+		if _, err := component.Push(client, componentName, componentDir); err != nil {
 			fmt.Printf("failed to push component: %v", componentName)
 			os.Exit(1)
 		}
