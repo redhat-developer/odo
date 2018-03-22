@@ -15,7 +15,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-vendor vet lint 
+validate: gofmt check-vendor vet lint
 
 .PHONY: gofmt
 gofmt:
@@ -65,6 +65,11 @@ prepare-release: cross
 .PHONY: test
 test:
 	go test -race $(PKGS)
+
+# Run e2e tests
+.PHONY: test-e2e
+test-e2e:
+	go test github.com/redhat-developer/ocdev/tests/e2e
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!

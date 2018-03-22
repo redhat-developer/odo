@@ -1,10 +1,11 @@
-hash: 6111e4852a5abf4f9af846074d4e45c6175b3baf4e428cec8e2c1def927de19b
-updated: 2018-03-16T15:30:25.460848+01:00
+hash: f02bbffb11dabd229bc3c10c7bb36adb08db83cdc3e888f8dab18d79c52974b3
+updated: 2018-03-21T14:28:21.616881216+05:30
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
 - name: github.com/docker/docker
   version: 4f3616fb1c112e206b88cb7a9922bf49067a7756
+  repo: git@github.com:openshift/moby-moby
   subpackages:
   - api
   - api/types
@@ -61,7 +62,7 @@ imports:
 - name: github.com/go-openapi/swag
   version: f3f9494671f93fcff853e3c6e9e948b3eb71e590
 - name: github.com/gogo/protobuf
-  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
+  version: 49944b4a4b085da44c43d4b233ea40787396371f
   subpackages:
   - proto
   - sortkeys
@@ -113,8 +114,42 @@ imports:
   - buffer
   - jlexer
   - jwriter
+- name: github.com/onsi/ginkgo
+  version: 9eda700730cba42af70d53180f9dcce9266bc2bc
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/containernode
+  - internal/failer
+  - internal/leafnodes
+  - internal/remote
+  - internal/spec
+  - internal/spec_iterator
+  - internal/specrunner
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - reporters/stenographer/support/go-colorable
+  - reporters/stenographer/support/go-isatty
+  - types
+- name: github.com/onsi/gomega
+  version: 003f63b7f4cff3fc95357005358af2de0f5fe152
+  subpackages:
+  - format
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/oraclematcher
+  - internal/testingtsupport
+  - matchers
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
+  - types
 - name: github.com/openshift/api
-  version: 0d921e363e951d89f583292c60d013c318df64dc
+  version: dca24d1902afee9d2be02425a2d7c9f910063631
   subpackages:
   - apps/v1
   - build/v1
@@ -131,7 +166,7 @@ imports:
   - image/clientset/versioned/scheme
   - image/clientset/versioned/typed/image/v1
 - name: github.com/openshift/source-to-image
-  version: 40ad911db82b8720f9956e8aa76371a8f185a6de
+  version: 2ed55639898dcbf3efb563b8a2003352ed840be7
   subpackages:
   - pkg/api
   - pkg/errors
@@ -158,7 +193,7 @@ imports:
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: golang.org/x/crypto
-  version: b4956d363a8b14623cc81db401707679605930a3
+  version: 80db560fac1fb3e6ac81dbc7f8ae4c061f5257bd
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
@@ -166,6 +201,9 @@ imports:
   subpackages:
   - context
   - context/ctxhttp
+  - html
+  - html/atom
+  - html/charset
   - http2
   - http2/hpack
   - idna
@@ -180,8 +218,19 @@ imports:
   version: b19bf474d317b857955b12035d2c5acb57ce8b01
   subpackages:
   - cases
+  - encoding
+  - encoding/charmap
+  - encoding/htmlindex
+  - encoding/internal
+  - encoding/internal/identifier
+  - encoding/japanese
+  - encoding/korean
+  - encoding/simplifiedchinese
+  - encoding/traditionalchinese
+  - encoding/unicode
   - internal
   - internal/tag
+  - internal/utf8internal
   - language
   - runes
   - secure/bidirule
