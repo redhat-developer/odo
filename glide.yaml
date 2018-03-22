@@ -26,3 +26,7 @@ import:
   version: v1.3.0
 - package: github.com/onsi/ginkgo
   version: v1.4.0
+- package: github.com/kubernetes-incubator/service-catalog
+  version: v0.1.9
+- package: github.com/satori/go.uuid
+  version: v1.1.0
