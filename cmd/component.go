@@ -6,17 +6,19 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/ocdev/pkg/application"
 	"github.com/redhat-developer/ocdev/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var (
-	componentBinary    string
-	componentGit       string
-	componentDir       string
-	componentShortFlag bool
-	componentApp       string
+	componentApp             string
+	componentBinary          string
+	componentGit             string
+	componentDir             string
+	componentShortFlag       bool
+	componentForceDeleteFlag bool
 )
 
 // componentCmd represents the component command
@@ -117,15 +119,31 @@ var componentDeleteCmd = &cobra.Command{
 		log.Debugf("args: %#v", strings.Join(args, " "))
 		client := getOcClient()
 		componentName := args[0]
+		var confirmDeletion string
 
-		// no flag was set, create empty component
-		output, err := component.Delete(client, componentName)
+		currentApp, err := application.GetCurrent(client)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Println(output)
 
+		if componentForceDeleteFlag {
+			confirmDeletion = "y"
+		} else {
+			fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", componentName, currentApp)
+			fmt.Scanln(&confirmDeletion)
+		}
+
+		if strings.ToLower(confirmDeletion) == "y" {
+			output, err := component.Delete(client, componentName)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			fmt.Println(output)
+		} else {
+			fmt.Printf("Aborting deletion of component: %v\n", componentName)
+		}
 	},
 }
 
@@ -203,6 +221,8 @@ var componentListCmd = &cobra.Command{
 }
 
 func init() {
+	componentDeleteCmd.Flags().BoolVarP(&componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
+
 	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "binary artifact")
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
 	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
