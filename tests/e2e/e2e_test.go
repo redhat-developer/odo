@@ -134,7 +134,7 @@ var _ = Describe("Usecase #5", func() {
 		Context("when application exists", func() {
 			It("should create a component", func() {
 				//runCmd("ocdev component create nodejs --git https://github.com/openshift/nodejs-ex.git")
-				runCmd("ocdev component create nodejs --dir " + tmpDir + "/nodejs-ex")
+				runCmd("ocdev component create nodejs --local " + tmpDir + "/nodejs-ex")
 				Expect(getCmp()).To(Equal("nodejs"))
 				time.Sleep(10)
 			})
@@ -164,7 +164,7 @@ var _ = Describe("Usecase #5", func() {
 				tmpDir + "/nodejs-ex/views/index.html")
 
 			// Push the changes
-			runCmd("ocdev push --dir " + tmpDir + "/nodejs-ex")
+			runCmd("ocdev push --local " + tmpDir + "/nodejs-ex")
 
 			// ping the ip
 			pingSvc(pingUrl)
