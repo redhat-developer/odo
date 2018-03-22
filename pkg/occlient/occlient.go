@@ -295,9 +295,8 @@ func isServerUp(ocpath string) bool {
 	return true
 }
 
-func (c *Client) GetCurrentProjectName() (string, error) {
-	// TODO: remove error from return values
-	return c.namespace, nil
+func (c *Client) GetCurrentProjectName() string {
+	return c.namespace
 }
 
 // GetProjects return list of existing projects that user has access to.
