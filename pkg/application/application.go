@@ -80,8 +80,12 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 		return nil, errors.Wrap(err, "unable to create new application")
 	}
 
-	// All applications from config file
-	applications = append(applications, cfg.ActiveApplications...)
+	// All applications of the current project from config file
+	for i := range cfg.ActiveApplications {
+		if cfg.ActiveApplications[i].Project == project {
+			applications = append(applications, cfg.ActiveApplications[i])
+		}
+	}
 
 	// Get applications from cluster
 	appNames, err := client.GetLabelValues(project, ApplicationLabel, ApplicationLabel)
