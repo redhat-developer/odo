@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/redhat-developer/ocdev/pkg/project"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
