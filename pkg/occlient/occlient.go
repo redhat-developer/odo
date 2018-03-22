@@ -21,11 +21,13 @@ import (
 	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
 	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 	imageclientset "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
+	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 
+	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -52,6 +54,7 @@ type Client struct {
 	appsClient           *appsclientset.AppsV1Client
 	buildClient          *buildclientset.BuildV1Client
 	serviceCatalogClient *servicecatalogclienset.ServicecatalogV1beta1Client
+	routeClient          *routeclientset.RouteV1Client
 	namespace            string
 }
 
@@ -97,6 +100,12 @@ func New() (*Client, error) {
 		return nil, err
 	}
 	client.serviceCatalogClient = serviceCatalogClient
+
+	routeClient, err := routeclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.routeClient = routeClient
 
 	namespace, _, err := kubeConfig.Namespace()
 	if err != nil {
@@ -914,4 +923,59 @@ func (c *Client) clusterServiceClassExists(name string) bool {
 	}
 
 	return false
+}
+
+// CreateRoute creates a route object for the given service and with the given
+// labels
+func (c *Client) CreateRoute(service string, labels map[string]string) (*routev1.Route, error) {
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   service,
+			Labels: labels,
+		},
+		Spec: routev1.RouteSpec{
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: service,
+			},
+		},
+	}
+	r, err := c.routeClient.Routes(c.namespace).Create(route)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating route")
+	}
+	return r, nil
+}
+
+// DeleteRoute deleted the given route
+func (c *Client) DeleteRoute(name string) error {
+	return errors.Wrap(c.routeClient.Routes(c.namespace).Delete(name, &metav1.DeleteOptions{}), "unable to delete route")
+}
+
+// ListRoutes lists all the routes based on the given label selector
+func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
+	routeList, err := c.routeClient.Routes(c.namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get route list")
+	}
+
+	return routeList.Items, nil
+}
+
+// ListRouteNames lists all the names of the routes based on the given label
+// selector
+func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
+	routes, err := c.ListRoutes(labelSelector)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list routes")
+	}
+
+	var routeNames []string
+	for _, r := range routes {
+		routeNames = append(routeNames, r.Name)
+	}
+
+	return routeNames, nil
 }
