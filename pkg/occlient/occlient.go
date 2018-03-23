@@ -447,6 +447,16 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 			Labels: labels,
 		},
 	}
+
+	// Check to see if the image already exists
+	info, err := c.imageClient.ImageStreams(c.namespace).Get(is.ObjectMeta.Name, metav1.GetOptions{})
+	log.Debugf("Checking image: %s", info)
+
+	// If err is nill (errors out if the image does not exist)
+	if err == nil {
+		return "", errors.Errorf("Component %s already exists", is.ObjectMeta.Name)
+	}
+
 	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
 	if err != nil {
 		panic(err.Error())
