@@ -52,7 +52,7 @@ var pushCmd = &cobra.Command{
 }
 
 func init() {
-	pushCmd.Flags().StringVar(&componentDir, "dir", "", "specify directory to push changes from")
+	pushCmd.Flags().StringVar(&componentDir, "dir", "", "Specify directory to push changes from")
 
 	rootCmd.AddCommand(pushCmd)
 }

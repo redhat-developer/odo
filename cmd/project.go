@@ -13,13 +13,13 @@ var (
 
 var projectCmd = &cobra.Command{
 	Use:   "project [options]",
-	Short: "project",
+	Short: "Perform project operations",
 	Run:   projectGetCmd.Run,
 }
 
 var projectSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "set the current active project",
+	Short: "Set the current active project",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
@@ -48,7 +48,7 @@ var projectSetCmd = &cobra.Command{
 
 var projectGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "get the active project",
+	Short: "Get the active project",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -67,7 +67,7 @@ var projectGetCmd = &cobra.Command{
 
 var projectCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create a new project",
+	Short: "Create a new project",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
