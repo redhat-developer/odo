@@ -30,11 +30,7 @@ var pushCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		// TODO: use project abstraction
-		projectName, err := client.GetCurrentProjectName()
-		if err != nil {
-			fmt.Println(errors.Wrap(err, "unable to get current project"))
-			os.Exit(1)
-		}
+		projectName := client.GetCurrentProjectName()
 
 		applicationName, err := application.GetCurrent(client)
 		if err != nil {

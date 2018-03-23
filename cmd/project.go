@@ -30,6 +30,7 @@ var projectSetCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
 		err = project.SetCurrent(client, projectName)
 		if err != nil {
 			fmt.Println(err)
@@ -58,6 +59,7 @@ var projectGetCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
 		if projectShortFlag {
 			fmt.Println(project)
 		} else {
@@ -78,7 +80,34 @@ var projectCreateCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		err = project.SetCurrent(client, projectName)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		fmt.Printf("New project created and now using project : %v\n", projectName)
+	},
+}
+
+var projectListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list all the projects",
+	Args:  cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
+		projects, err := project.ListProjects(client)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Printf("ACTIVE   NAME\n")
+		for _, app := range projects {
+			activeMark := " "
+			if app.Active {
+				activeMark = "*"
+			}
+			fmt.Printf("  %s      %s\n", activeMark, app.Name)
+		}
 	},
 }
 
@@ -89,5 +118,6 @@ func init() {
 	projectCmd.AddCommand(projectGetCmd)
 	projectCmd.AddCommand(projectSetCmd)
 	projectCmd.AddCommand(projectCreateCmd)
+	projectCmd.AddCommand(projectListCmd)
 	rootCmd.AddCommand(projectCmd)
 }

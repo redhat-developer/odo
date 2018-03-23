@@ -21,12 +21,13 @@ import (
 	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
 	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 	imageclientset "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
+	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	imagev1 "github.com/openshift/api/image/v1"
-
+	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,8 +54,10 @@ type Client struct {
 	imageClient          *imageclientset.ImageV1Client
 	appsClient           *appsclientset.AppsV1Client
 	buildClient          *buildclientset.BuildV1Client
+	projectClient        *projectclientset.ProjectV1Client
 	serviceCatalogClient *servicecatalogclienset.ServicecatalogV1beta1Client
 	routeClient          *routeclientset.RouteV1Client
+	kubeConfig           clientcmd.ClientConfig
 	namespace            string
 }
 
@@ -64,9 +67,9 @@ func New() (*Client, error) {
 	// initialize client-go clients
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	client.kubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	config, err := kubeConfig.ClientConfig()
+	config, err := client.kubeConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -101,13 +104,19 @@ func New() (*Client, error) {
 	}
 	client.serviceCatalogClient = serviceCatalogClient
 
+	projectClient, err := projectclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.projectClient = projectClient
+
 	routeClient, err := routeclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
 	client.routeClient = routeClient
 
-	namespace, _, err := kubeConfig.Namespace()
+	namespace, _, err := client.kubeConfig.Namespace()
 	if err != nil {
 		return nil, err
 	}
@@ -307,54 +316,48 @@ func isServerUp(ocpath string) bool {
 	return true
 }
 
-func (c *Client) GetCurrentProjectName() (string, error) {
-	// We need to run `oc project` because it returns an error when project does
-	// not exist, while `oc project -q` does not return an error, it simply
-	// returns the project name
-	_, err := c.runOcComamnd(&OcCommand{
-		args: []string{"project"},
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get current project info")
-	}
-
-	output, err := c.runOcComamnd(&OcCommand{
-		args: []string{"project", "-q"},
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get current project name")
-	}
-
-	return strings.TrimSpace(string(output)), nil
+func (c *Client) GetCurrentProjectName() string {
+	return c.namespace
 }
 
-func (c *Client) GetProjects() (string, error) {
-	output, err := c.runOcComamnd(&OcCommand{
-		args:   []string{"get", "project"},
-		format: "custom-columns=NAME:.metadata.name",
-	})
+// GetProjectNames return list of existing projects that user has access to.
+func (c *Client) GetProjectNames() ([]string, error) {
+	projects, err := c.projectClient.Projects().List(metav1.ListOptions{})
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get projects")
+		return nil, errors.Wrap(err, "unable to list projects")
 	}
-	return strings.Join(strings.Split(string(output), "\n")[1:], "\n"), nil
+
+	var projectNames []string
+	for _, p := range projects.Items {
+		projectNames = append(projectNames, p.Name)
+	}
+	return projectNames, nil
 }
 
 func (c *Client) CreateNewProject(name string) error {
-	_, err := c.runOcComamnd(&OcCommand{
-		args: []string{"new-project", name},
-	})
+	projectRequest := &projectv1.ProjectRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	_, err := c.projectClient.ProjectRequests().Create(projectRequest)
 	if err != nil {
-		return errors.Wrap(err, "unable to create new project")
+		return errors.Wrapf(err, "unable to create new project %s", name)
 	}
 	return nil
 }
 
 func (c *Client) SetCurrentProject(project string) error {
-	_, err := c.runOcComamnd(&OcCommand{
-		args: []string{"project", project},
-	})
+	rawConfig, err := c.kubeConfig.RawConfig()
 	if err != nil {
-		return errors.Wrap(err, "unable to set current project to "+project)
+		return errors.Wrapf(err, "unable to switch to %s project", project)
+	}
+
+	rawConfig.Contexts[rawConfig.CurrentContext].Namespace = project
+
+	err = clientcmd.ModifyConfig(clientcmd.NewDefaultClientConfigLoadingRules(), rawConfig, true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to switch to %s project", project)
 	}
 	return nil
 }
