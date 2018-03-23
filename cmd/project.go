@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/redhat-developer/ocdev/pkg/project"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -24,12 +25,9 @@ var projectSetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
 		client := getOcClient()
-		current, err := project.GetCurrent(client)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		err = project.SetCurrent(client, projectName)
+		current := project.GetCurrent(client)
+
+		err := project.SetCurrent(client, projectName)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -52,11 +50,8 @@ var projectGetCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		project, err := project.GetCurrent(client)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		project := project.GetCurrent(client)
+
 		if projectShortFlag {
 			fmt.Println(project)
 		} else {
