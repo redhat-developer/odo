@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -80,15 +81,26 @@ var componentCreateCmd = &cobra.Command{
 			}
 			fmt.Println(output)
 		} else if len(componentDir) != 0 {
-			output, err := component.CreateFromDir(client, componentName, componentType, componentDir)
+			// we want to use and save absolute path for component
+			dir, err := filepath.Abs(componentDir)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			output, err := component.CreateFromDir(client, componentName, componentType, dir)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
 			fmt.Println(output)
 		} else {
-			// no flag was set, use current directory
-			output, err := component.CreateFromDir(client, componentName, componentType, "./")
+			// we want to use and save absolute path for component
+			dir, err := filepath.Abs("./")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			output, err := component.CreateFromDir(client, componentName, componentType, dir)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)

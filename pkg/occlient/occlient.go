@@ -395,7 +395,7 @@ func getExposedPorts(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, e
 
 // NewAppS2I create new application using S2I
 // if gitUrl is ""  than it creates binary build otherwise uses gitUrl as buildSource
-func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string) (string, error) {
+func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string, annotations map[string]string) (string, error) {
 	openShiftNameSpace := "openshift"
 
 	imageName, imageTag, _, err := parseImageName(builderImage)
@@ -440,12 +440,16 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 
 	}
 
+	// ObjectMetadata are the same for all generated objects
+	commonObjectMeta := metav1.ObjectMeta{
+		Name:        name,
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
 	// generate and create ImageStream
 	is := imagev1.ImageStream{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
+		ObjectMeta: commonObjectMeta,
 	}
 	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
 	if err != nil {
@@ -454,7 +458,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 
 	// generate BuildConfig
 	buildSource := buildv1.BuildSource{
-		Type:   "Binary",
+		Type:   buildv1.BuildSourceBinary,
 		Binary: &buildv1.BinaryBuildSource{},
 	}
 	// if gitUrl set change buildSource to git and use given repo
@@ -463,15 +467,12 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 			Git: &buildv1.GitBuildSource{
 				URI: gitUrl,
 			},
-			Type: "Git",
+			Type: buildv1.BuildSourceGit,
 		}
 	}
 
 	bc := buildv1.BuildConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
+		ObjectMeta: commonObjectMeta,
 		Spec: buildv1.BuildConfigSpec{
 			CommonSpec: buildv1.CommonSpec{
 				Output: buildv1.BuildOutput{
@@ -509,10 +510,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 
 	// generate  and create DeploymentConfig
 	dc := appsv1.DeploymentConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
+		ObjectMeta: commonObjectMeta,
 		Spec: appsv1.DeploymentConfigSpec{
 			Replicas: 1,
 			Selector: map[string]string{
@@ -572,10 +570,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 		svcPorts = append(svcPorts, svcPort)
 	}
 	svc := corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
+		ObjectMeta: commonObjectMeta,
 		Spec: corev1.ServiceSpec{
 			Ports: svcPorts,
 			Selector: map[string]string{
@@ -592,7 +587,8 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 
 }
 
-func (c *Client) StartBuild(name string, dir string) (string, error) {
+// StartBinaryBuild starts new build and streams dir as source for build
+func (c *Client) StartBinaryBuild(name string, dir string) error {
 	var r io.Reader
 	pr, pw := io.Pipe()
 	go func() {
@@ -626,16 +622,37 @@ func (c *Client) StartBuild(name string, dir string) (string, error) {
 		Into(result)
 
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to start build %s", name)
+		return errors.Wrapf(err, "unable to start build %s", name)
 	}
-	log.Debug("Build %s from %s directory triggered.", name, dir)
+	log.Debugf("Build %s from %s directory triggered.", name, dir)
 
 	err = c.FollowBuildLog(result.Name)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to start build %s", name)
+		return errors.Wrapf(err, "unable to start build %s", name)
 	}
 
-	return "", nil
+	return nil
+}
+
+// StartBuild starts new build as it is
+func (c *Client) StartBuild(name string) error {
+	buildRequest := buildv1.BuildRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	result, err := c.buildClient.BuildConfigs(c.namespace).Instantiate(name, &buildRequest)
+	if err != nil {
+		return errors.Wrapf(err, "unable to start build %s", name)
+	}
+	log.Debugf("Build %s triggered.", name)
+
+	err = c.FollowBuildLog(result.Name)
+	if err != nil {
+		return errors.Wrapf(err, "unable to start build %s", name)
+	}
+
+	return nil
 }
 
 // FollowBuildLog stream build log to stdout
@@ -792,4 +809,14 @@ func (c *Client) GetLabelValues(project string, label string, selector string) (
 	}
 
 	return values, nil
+}
+
+// GetBuildConfig get BuildConfig by its name
+func (c *Client) GetBuildConfig(name string, project string) (*buildv1.BuildConfig, error) {
+	log.Debugf("Getting BuildConfig: %s", name)
+	bc, err := c.buildClient.BuildConfigs(c.namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
+	}
+	return bc, nil
 }
