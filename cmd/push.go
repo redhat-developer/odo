@@ -17,11 +17,14 @@ var pushCmd = &cobra.Command{
 	Use:   "push [component name]",
 	Short: "Push source code to component",
 	Long:  `Push source code to component.`,
-	Example: `  # Push source code in current directory to current component
+	Example: `  # Push source code to the to the current component
+  ocdev push
+
+  # Push data to the current component from original source.
   ocdev push
 
   # Push source code in ~/home/mycode to component called my-component
-  ocdev push my-component --dir ~/home/mycode
+  ocdev push my-component --local ~/home/mycode
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -56,7 +59,7 @@ var pushCmd = &cobra.Command{
 		} else {
 			componentName = args[0]
 		}
-		fmt.Printf("pushing changes to component: %v\n", componentName)
+		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
 		if err != nil {
@@ -67,8 +70,8 @@ var pushCmd = &cobra.Command{
 		switch sourceType {
 		case "local":
 			// use value of '--dir' as source if it was used
-			if len(componentDir) != 0 {
-				sourcePath = componentDir
+			if len(componentLocal) != 0 {
+				sourcePath = componentLocal
 			}
 			u, err := url.Parse(sourcePath)
 			if err != nil {
@@ -87,7 +90,7 @@ var pushCmd = &cobra.Command{
 		case "git":
 			// currently we don't support changing build type
 			// it doesn't make sense to use --dir with git build
-			if len(componentDir) != 0 {
+			if len(componentLocal) != 0 {
 				fmt.Println("unable to push local directory to component that uses git repository as source")
 				os.Exit(1)
 			}
@@ -103,7 +106,7 @@ var pushCmd = &cobra.Command{
 }
 
 func init() {
-	pushCmd.Flags().StringVar(&componentDir, "dir", "", "specify directory to push changes from")
+	pushCmd.Flags().StringVar(&componentLocal, "local", "", "Use given local directory as a source for component. (It must be a local component)")
 
 	rootCmd.AddCommand(pushCmd)
 }
