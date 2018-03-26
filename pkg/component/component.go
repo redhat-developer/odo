@@ -13,8 +13,8 @@ import (
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 )
 
-// componentLabel is a label key used to identify component
-const componentLabel = "app.kubernetes.io/component-name"
+// ComponentLabel is a label key used to identify component
+const ComponentLabel = "app.kubernetes.io/component-name"
 
 // componentTypeLabel is kubernetes that identifies type of a component
 const componentTypeLabel = "app.kubernetes.io/component-type"
@@ -38,7 +38,7 @@ func GetLabels(componentName string, applicationName string, additional bool) (m
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get get labels for  component %s", componentName)
 	}
-	labels[componentLabel] = componentName
+	labels[ComponentLabel] = componentName
 
 	return labels, nil
 }
@@ -193,7 +193,7 @@ func GetCurrent(client *occlient.Client) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get config")
 	}
-	currentApplication, err := application.GetCurrent(client)
+	currentApplication, err := application.GetCurrentOrDefault(client)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
@@ -229,7 +229,7 @@ func RebuildGit(client *occlient.Client, componentName string) error {
 // GetComponentType returns type of component in given application and project
 func GetComponentType(client *occlient.Client, componentName string, applicationName string, projectName string) (string, error) {
 	// filter according to component and application name
-	selector := fmt.Sprintf("%s=%s,%s=%s", componentLabel, componentName, application.ApplicationLabel, applicationName)
+	selector := fmt.Sprintf("%s=%s,%s=%s", ComponentLabel, componentName, application.ApplicationLabel, applicationName)
 	ctypes, err := client.GetLabelValues(projectName, componentTypeLabel, selector)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get type of %s component")
@@ -265,7 +265,7 @@ func List(client *occlient.Client) ([]ComponentInfo, error) {
 	}
 
 	applicationSelector := fmt.Sprintf("%s=%s", application.ApplicationLabel, currentApplication)
-	componentNames, err := client.GetLabelValues(currentProject, componentLabel, applicationSelector)
+	componentNames, err := client.GetLabelValues(currentProject, ComponentLabel, applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
