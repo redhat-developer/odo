@@ -18,7 +18,7 @@ var (
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
 	Use:     "application",
-	Short:   "application",
+	Short:   "Perform application operations",
 	Aliases: []string{"app"},
 	// 'ocdev application' is the same as 'ocdev application get'
 	Run: applicationGetCmd.Run,
@@ -26,7 +26,7 @@ var applicationCmd = &cobra.Command{
 
 var applicationCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create an application",
+	Short: "Create an application",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("Please provide name for the new application")
@@ -56,7 +56,7 @@ var applicationCreateCmd = &cobra.Command{
 
 var applicationGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "get the active application",
+	Short: "Get the active application",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -79,7 +79,7 @@ var applicationGetCmd = &cobra.Command{
 
 var applicationDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "delete the given application",
+	Short: "Delete the given application",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("Please provide application name")
@@ -113,7 +113,7 @@ var applicationDeleteCmd = &cobra.Command{
 
 var applicationListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "lists all the applications",
+	Short: "Lists all the applications",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -135,7 +135,7 @@ var applicationListCmd = &cobra.Command{
 
 var applicationSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "Set application as active.",
+	Short: "Set application as active",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("Please provide application name")

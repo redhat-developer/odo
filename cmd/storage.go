@@ -30,13 +30,13 @@ func getComponent(client *occlient.Client) string {
 
 var storageCmd = &cobra.Command{
 	Use:   "storage",
-	Short: "storage",
-	Long:  "perform storage operations",
+	Short: "Perform storage operations",
+	Long:  "Perform storage operations",
 }
 
 var storageAddCmd = &cobra.Command{
 	Use:   "add",
-	Short: "create storage and mount to component",
+	Short: "Create storage and mount to component",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -58,7 +58,7 @@ var storageAddCmd = &cobra.Command{
 
 var storageRemoveCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "remove storage from component",
+	Short: "Remove storage from component",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -88,7 +88,7 @@ var storageRemoveCmd = &cobra.Command{
 
 var storageListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list storage attached to a component",
+	Short: "List storage attached to a component",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -106,15 +106,15 @@ var storageListCmd = &cobra.Command{
 }
 
 func init() {
-	storageAddCmd.Flags().StringVar(&storageSize, "size", "", "size of storage to add")
+	storageAddCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
 	storageAddCmd.MarkFlagRequired("size")
-	storageAddCmd.Flags().StringVar(&storagePath, "path", "", "path to mount the storage on")
+	storageAddCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageAddCmd.MarkFlagRequired("path")
 
 	storageCmd.AddCommand(storageAddCmd)
 	storageCmd.AddCommand(storageRemoveCmd)
 	storageCmd.AddCommand(storageListCmd)
 
-	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "component to add storage to, defaults to active component")
+	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "Component to add storage to, defaults to active component")
 	rootCmd.AddCommand(storageCmd)
 }

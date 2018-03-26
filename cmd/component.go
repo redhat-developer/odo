@@ -25,16 +25,15 @@ var (
 // componentCmd represents the component command
 var componentCmd = &cobra.Command{
 	Use:   "component",
-	Short: "components of application",
-	Long:  "components of application",
+	Short: "Components of an application",
 	// 'ocdev component' is the same as 'ocdev component get'
 	Run: componentGetCmd.Run,
 }
 
 var componentCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "component create <component_type> [component_name]",
-	Long:  "create new component",
+	Short: "Component create <component_type> [component_name]",
+	Long:  "Create new component",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			// TODO: improve this message. It should say something about requiring component name
@@ -118,8 +117,8 @@ var componentCreateCmd = &cobra.Command{
 
 var componentDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "component delete <component_name>",
-	Long:  "delete existing component",
+	Short: "Component delete <component_name>",
+	Long:  "Delete existing component",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("Please specify component name")
@@ -161,8 +160,8 @@ var componentDeleteCmd = &cobra.Command{
 
 var componentGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "component get",
-	Long:  "get current component",
+	Short: "Component get",
+	Long:  "Get current components",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("component get called")
@@ -186,7 +185,7 @@ var componentGetCmd = &cobra.Command{
 
 var componentSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "Set component as active.",
+	Short: "Set component as active",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("Please provide component name")
@@ -208,7 +207,7 @@ var componentSetCmd = &cobra.Command{
 
 var componentListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all component in current application.",
+	Short: "List all components in the current application",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -235,9 +234,9 @@ var componentListCmd = &cobra.Command{
 func init() {
 	componentDeleteCmd.Flags().BoolVarP(&componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
 
-	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "binary artifact")
-	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
-	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "local directory as source")
+	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "Binary artifact")
+	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "Git source")
+	componentCreateCmd.Flags().StringVar(&componentDir, "dir", "", "Local directory as source")
 
 	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
 
