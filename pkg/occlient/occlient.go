@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
 	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
@@ -31,21 +32,27 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
+	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+
 	"github.com/openshift/source-to-image/pkg/tar"
 	s2ifs "github.com/openshift/source-to-image/pkg/util/fs"
 
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 )
 
-const ocRequestTimeout = 1 * time.Second
+const (
+	ocRequestTimeout   = 1 * time.Second
+	OpenShiftNameSpace = "openshift"
+)
 
 type Client struct {
-	ocpath      string
-	kubeClient  *kubernetes.Clientset
-	imageClient *imageclientset.ImageV1Client
-	appsClient  *appsclientset.AppsV1Client
-	buildClient *buildclientset.BuildV1Client
-	namespace   string
+	ocpath               string
+	kubeClient           *kubernetes.Clientset
+	imageClient          *imageclientset.ImageV1Client
+	appsClient           *appsclientset.AppsV1Client
+	buildClient          *buildclientset.BuildV1Client
+	serviceCatalogClient *servicecatalogclienset.ServicecatalogV1beta1Client
+	namespace            string
 }
 
 func New() (*Client, error) {
@@ -84,6 +91,12 @@ func New() (*Client, error) {
 		return nil, err
 	}
 	client.buildClient = buildClient
+
+	serviceCatalogClient, err := servicecatalogclienset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.serviceCatalogClient = serviceCatalogClient
 
 	namespace, _, err := kubeConfig.Namespace()
 	if err != nil {
@@ -393,10 +406,33 @@ func getExposedPorts(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, e
 	return ports, nil
 }
 
+// GetImageStreams returns the Image Stream objects in the given namespace
+func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error) {
+	imageStreamList, err := c.imageClient.ImageStreams(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list imagestreams")
+	}
+	return imageStreamList.Items, nil
+}
+
+// GetImageStreamsNames returns the names of the image streams in a given
+// namespace
+func (c *Client) GetImageStreamsNames(namespace string) ([]string, error) {
+	imageStreams, err := c.GetImageStreams(namespace)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get image streams")
+	}
+
+	var names []string
+	for _, imageStream := range imageStreams {
+		names = append(names, imageStream.Name)
+	}
+	return names, nil
+}
+
 // NewAppS2I create new application using S2I
 // if gitUrl is ""  than it creates binary build otherwise uses gitUrl as buildSource
 func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string, annotations map[string]string) (string, error) {
-	openShiftNameSpace := "openshift"
 
 	imageName, imageTag, _, err := parseImageName(builderImage)
 	if err != nil {
@@ -406,10 +442,9 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	var containerPorts []corev1.ContainerPort
 
 	log.Debugf("Checking for exact match of builderImage with ImageStream")
-	imageStream, err := c.imageClient.ImageStreams(openShiftNameSpace).Get(imageName, metav1.GetOptions{})
+	imageStream, err := c.imageClient.ImageStreams(OpenShiftNameSpace).Get(imageName, metav1.GetOptions{})
 	if err != nil {
 		log.Debugf("No exact match found: %s", err.Error())
-		// TODO: search elsewhere
 		return "", errors.Wrapf(err, "unable to find matching builder image %s", imageName)
 	} else {
 		tagFound := false
@@ -487,7 +522,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 						From: corev1.ObjectReference{
 							Kind:      "ImageStreamTag",
 							Name:      imageName + ":" + imageTag,
-							Namespace: openShiftNameSpace,
+							Namespace: OpenShiftNameSpace,
 						},
 					},
 				},
@@ -819,4 +854,64 @@ func (c *Client) GetBuildConfig(name string, project string) (*buildv1.BuildConf
 		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
 	}
 	return bc, nil
+}
+
+// GetClusterServiceClasses queries the service service catalog to get all the
+// currently available cluster service classes
+func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, error) {
+	classList, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list cluster service classes")
+	}
+	return classList.Items, nil
+}
+
+// GetClusterServiceClassExternalNames returns the names of all the cluster service
+// classes in the cluster
+func (c *Client) GetClusterServiceClassExternalNames() ([]string, error) {
+	var classNames []string
+
+	classes, err := c.GetClusterServiceClasses()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get cluster service classes")
+	}
+
+	for _, class := range classes {
+		classNames = append(classNames, class.Spec.ExternalName)
+	}
+	return classNames, nil
+}
+
+// imageStreamExists returns true if the given image stream exists in the given
+// namespace
+func (c *Client) imageStreamExists(name string, namespace string) bool {
+	imageStreams, err := c.GetImageStreamsNames(namespace)
+	if err != nil {
+		log.Debugf("unable to get image streams in the namespace: %v", namespace)
+		return false
+	}
+
+	for _, is := range imageStreams {
+		if is == name {
+			return true
+		}
+	}
+	return false
+}
+
+// clusterServiceClassExists returns true if the given external name of the
+// cluster service class exists in the cluster, and false otherwise
+func (c *Client) clusterServiceClassExists(name string) bool {
+	clusterServiceClasses, err := c.GetClusterServiceClassExternalNames()
+	if err != nil {
+		log.Debugf("unable to get cluster service classes' external names")
+	}
+
+	for _, class := range clusterServiceClasses {
+		if class == name {
+			return true
+		}
+	}
+
+	return false
 }
