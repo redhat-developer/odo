@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/redhat-developer/ocdev/pkg/project"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -35,7 +36,7 @@ var projectSetCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if projectShortFlag {
-			fmt.Println(projectName)
+			fmt.Print(projectName)
 		} else {
 			if current == projectName {
 				fmt.Printf("Already on project : %v\n", projectName)
