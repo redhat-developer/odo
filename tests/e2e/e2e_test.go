@@ -161,7 +161,7 @@ var _ = Describe("Usecase #5", func() {
 			Context("when all the components are listed", func() {
 				It("should list the components within the application", func() {
 					cmpList := runCmd("ocdev component list")
-					Ω(cmpList).Should(ContainSubstring("nodejs"))
+					Expect(cmpList).To(ContainSubstring("nodejs"))
 				})
 			})
 		})
@@ -188,31 +188,36 @@ var _ = Describe("Usecase #5", func() {
 			// Push the changes
 			runCmd("ocdev push --local " + tmpDir + "/nodejs-ex")
 
-			// ping the ip
-			pingSvc(pingUrl)
+			// Create route
+			runCmd("ocdev url create nodejs")
+			getRoute := runCmd("ocdev url list  | sed -n '1!p' | awk '{ print $3 }'")
+			getRoute = strings.TrimSpace(getRoute)
+			Expect(getRoute).To(ContainSubstring("nodejs-" + projName))
 
 			for {
-				pingCmd := "curl -s " + pingUrl + " | grep -i ocdev | wc -l | tr -d '\n'"
+				pingCmd := "curl -s " + getRoute + " | grep -i ocdev | wc -l | tr -d '\n'"
 				out, err := exec.Command("/bin/sh", "-c", pingCmd).Output()
 				if err != nil {
-					log.Print(err)
+					log.Fatal(err)
 				}
 
 				outInt, _ := strconv.Atoi(string(out))
 				if outInt > 0 {
-					grepAfterPush := runCmd("curl -s " + pingUrl + " | grep -i ocdev")
+					grepAfterPush := runCmd("curl -s " + getRoute + " | grep -i ocdev")
 					log.Printf("After change: %s", string(grepAfterPush))
 					break
 				}
-				time.Sleep(2)
+				time.Sleep(5)
 			}
 
 		})
 	})
 
-	Context("deleting the project", func() {
-		It("should delete project", func() {
-			runCmd("ocdev project delete " + projName)
+	Context("deleting the application", func() {
+		It("should delete application and component", func() {
+			runCmd("ocdev application delete usecase5 -f")
 		})
+
+		// TODO: `ocdev project delete` once implemented
 	})
 })
