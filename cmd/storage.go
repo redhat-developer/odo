@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/redhat-developer/ocdev/pkg/component"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
@@ -19,10 +18,7 @@ var (
 func getComponent(client *occlient.Client) string {
 	if len(storageComponent) == 0 {
 		c, err := component.GetCurrent(client)
-		if err != nil {
-			fmt.Printf("Could not get current component: %v\n", err)
-			os.Exit(1)
-		}
+		checkError(err, "Could not get current component")
 		return c
 	}
 	return storageComponent
@@ -48,10 +44,7 @@ var storageAddCmd = &cobra.Command{
 				Path:             &storagePath,
 				Size:             &storageSize,
 			})
-		if err != nil {
-			fmt.Printf("Failed to add storage: %v\n", err)
-			os.Exit(1)
-		}
+		checkError(err, "Failed to add storage")
 		fmt.Printf("Added storage %v to %v\n", args[0], cmpnt)
 	},
 }
@@ -74,10 +67,8 @@ var storageRemoveCmd = &cobra.Command{
 				Name:             storageName,
 				DeploymentConfig: &cmpnt,
 			})
-		if err != nil {
-			fmt.Printf("Failed to remove storage: %v\n", err)
-			os.Exit(1)
-		}
+		checkError(err, "Failed to remove storage")
+
 		if len(args) == 0 {
 			fmt.Printf("Removed all storage from %v\n", cmpnt)
 		} else {
@@ -97,10 +88,7 @@ var storageListCmd = &cobra.Command{
 			&occlient.VolumeConfig{
 				DeploymentConfig: &cmpnt,
 			})
-		if err != nil {
-			fmt.Printf("Failed to list storage: %v\n", err)
-			os.Exit(1)
-		}
+		checkError(err, "Failed to list storage")
 		fmt.Println(output)
 	},
 }

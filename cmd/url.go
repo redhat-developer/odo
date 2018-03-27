@@ -46,10 +46,7 @@ ocdev url create <component name>
 		case 0:
 			var err error
 			cmp, err = component.GetCurrent(client)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 		case 1:
 			cmp = args[0]
 		default:
@@ -59,10 +56,7 @@ ocdev url create <component name>
 
 		fmt.Printf("Adding URL to component: %v\n", cmp)
 		u, err := url.Create(client, cmp)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		fmt.Printf("URL created for component: %v\n\n"+
 			"%v - %v\n", cmp, u.Name, u.URL)
 	},
@@ -81,10 +75,8 @@ ocdev url delete <URL>
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		u := args[0]
-		if err := url.Delete(client, u); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		err := url.Delete(client, u)
+		checkError(err, "")
 		fmt.Printf("Deleted URL: %v\n", u)
 	},
 }
@@ -105,20 +97,14 @@ ocdev url list
 		if urlListApplication == "" {
 			var err error
 			app, err = application.GetCurrent(client)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 		} else {
 			app = urlListApplication
 		}
 
 		cmp := urlListComponent
 		urls, err := url.List(client, cmp, app)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 
 		if len(urls) == 0 {
 			fmt.Printf("No URLs found for component %v in application %v\n", cmp, app)

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/redhat-developer/ocdev/pkg/project"
 	"github.com/spf13/cobra"
@@ -28,10 +27,7 @@ var projectSetCmd = &cobra.Command{
 		current := project.GetCurrent(client)
 
 		err := project.SetCurrent(client, projectName)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		if projectShortFlag {
 			fmt.Print(projectName)
 		} else {
@@ -68,15 +64,9 @@ var projectCreateCmd = &cobra.Command{
 		projectName := args[0]
 		client := getOcClient()
 		err := project.Create(client, projectName)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		err = project.SetCurrent(client, projectName)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		fmt.Printf("New project created and now using project : %v\n", projectName)
 	},
 }
@@ -88,10 +78,7 @@ var projectListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		projects, err := project.List(client)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		fmt.Printf("ACTIVE   NAME\n")
 		for _, app := range projects {
 			activeMark := " "

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/redhat-developer/ocdev/pkg/notify"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 	log "github.com/sirupsen/logrus"
@@ -38,10 +39,7 @@ func Execute() {
 	updateInfo := make(chan string)
 	go getLatestReleaseInfo(updateInfo)
 
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	checkError(rootCmd.Execute(), "")
 
 	select {
 	case message := <-updateInfo:
@@ -79,9 +77,23 @@ func getLatestReleaseInfo(info chan<- string) {
 
 func getOcClient() *occlient.Client {
 	client, err := occlient.New()
+	checkError(err, "")
+	return client
+}
+
+// checkError prints the cause of the given error and exits the code with an
+// exit code of 1.
+// If the context is provided, then that is printed, if not, then the cause is
+// detected using errors.Cause(err)
+func checkError(err error, context string) {
 	if err != nil {
-		fmt.Println(err)
+		log.Debugf("Error:\n%v", err)
+		if context == "" {
+			fmt.Println(errors.Cause(err))
+		} else {
+			fmt.Println(context)
+		}
+
 		os.Exit(1)
 	}
-	return client
 }

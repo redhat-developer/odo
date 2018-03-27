@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/ocdev/pkg/catalog"
 	"github.com/spf13/cobra"
 )
@@ -24,10 +23,7 @@ ocdev catalog list
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		catalogList, err := catalog.List(client)
-		if err != nil {
-			fmt.Println(errors.Wrap(err, "unable to list components"))
-		}
-
+		checkError(err, "unable to list components")
 		switch len(catalogList) {
 		case 0:
 			fmt.Printf("No deployable components found\n")
@@ -56,9 +52,7 @@ ocdev catalog search pyt
 		client := getOcClient()
 		searchTerm := args[0]
 		components, err := catalog.Search(client, searchTerm)
-		if err != nil {
-			fmt.Println(errors.Wrap(err, "unable to search for components"))
-		}
+		checkError(err, "unable to search for components")
 
 		switch len(components) {
 		case 0:

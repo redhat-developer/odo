@@ -9,7 +9,6 @@ import (
 	"github.com/redhat-developer/ocdev/pkg/component"
 	"github.com/redhat-developer/ocdev/pkg/project"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -31,22 +30,15 @@ var pushCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		projectName := project.GetCurrent(client)
-
 		applicationName, err := application.GetCurrent(client)
-		if err != nil {
-			fmt.Println(errors.Wrap(err, "unable to get current application"))
-			os.Exit(1)
-		}
+		checkError(err, "unable to get current application")
 
 		var componentName string
 		if len(args) == 0 {
 			var err error
 			log.Debug("No component name passed, assuming current component")
 			componentName, err = component.GetCurrent(client)
-			if err != nil {
-				fmt.Println(errors.Wrap(err, "unable to get current component"))
-				os.Exit(1)
-			}
+			checkError(err, "unable to get current component")
 			if componentName == "" {
 				fmt.Println("No component is set as active.")
 				fmt.Println("Use 'ocdev component set <component name> to set and existing component as active or call this command with component name as and argument.")
@@ -58,10 +50,7 @@ var pushCmd = &cobra.Command{
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
-		if err != nil {
-			fmt.Println(errors.Wrap(err, "unable to get current component"))
-			os.Exit(1)
-		}
+		checkError(err, "unable to get current component")
 
 		switch sourceType {
 		case "local":
@@ -70,19 +59,15 @@ var pushCmd = &cobra.Command{
 				sourcePath = componentLocal
 			}
 			u, err := url.Parse(sourcePath)
-			if err != nil {
-				fmt.Printf("Unable to parse source %s from component %s", sourcePath, componentName)
-				os.Exit(1)
-			}
+			checkError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
+
 			if u.Scheme != "" && u.Scheme != "file" {
 				fmt.Printf("Component %s has invalid source path %s", componentName, u.Scheme)
 				os.Exit(1)
 			}
 
-			if err := component.PushLocal(client, componentName, u.Path); err != nil {
-				fmt.Printf("failed to push component: %v", componentName)
-				os.Exit(1)
-			}
+			err = component.PushLocal(client, componentName, u.Path)
+			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		case "git":
 			// currently we don't support changing build type
 			// it doesn't make sense to use --dir with git build
@@ -90,11 +75,8 @@ var pushCmd = &cobra.Command{
 				fmt.Println("unable to push local directory to component that uses git repository as source")
 				os.Exit(1)
 			}
-			if err := component.RebuildGit(client, componentName); err != nil {
-				fmt.Printf("failed to push component: %v", componentName)
-				os.Exit(1)
-			}
-
+			err := component.RebuildGit(client, componentName)
+			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
 		fmt.Printf("changes successfully pushed to component: %v\n", componentName)

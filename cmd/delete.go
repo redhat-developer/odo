@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/redhat-developer/ocdev/pkg/application"
@@ -32,10 +31,7 @@ var componentDeleteCmd = &cobra.Command{
 		var confirmDeletion string
 
 		currentApp, err := application.GetCurrent(client)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 
 		if componentForceDeleteFlag {
 			confirmDeletion = "y"
@@ -46,10 +42,7 @@ var componentDeleteCmd = &cobra.Command{
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			output, err := component.Delete(client, componentName)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			fmt.Println(output)
 		} else {
 			fmt.Printf("Aborting deletion of component: %v\n", componentName)

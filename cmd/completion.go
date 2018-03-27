@@ -25,9 +25,7 @@ Will load the shell completion code.
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		err := Generate(cmd, args)
-		if err != nil {
-			fmt.Printf("Error: %s", err)
-		}
+		checkError(err, "")
 
 		return nil
 	},
