@@ -300,3 +300,26 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 	log.Debugf("Component %s source type is %s (%s)", componentName, sourceType, sourcePath)
 	return sourceType, sourcePath, nil
 }
+
+// Update updates the requested component
+// Component name is the name component to be updated
+// to indicates what type of source type the component source is changing to e.g from git to local
+// source indicates dir or the git URL
+func Update(client *occlient.Client, componentName string, to string, source string) error {
+	var err error
+	projectName := client.GetCurrentProjectName()
+	// save source path as annotation
+	var annotations map[string]string
+	if to == "git" {
+		annotations = map[string]string{componentSourceURLAnnotation: source}
+		err = client.UpdateBuildConfig(componentName, projectName, source, annotations)
+	} else if to == "dir" {
+		sourceURL := url.URL{Scheme: "file", Path: source}
+		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+	}
+	if err != nil {
+		return errors.Wrap(err, "unable to update the component")
+	}
+	return nil
+}
