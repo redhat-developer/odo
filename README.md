@@ -32,12 +32,12 @@ If you don't want to add extra package repositories to your system you can just 
 For macOS:
 
 ```
-sudo curl -L  "https://github.com/redhat-developer/ocdev/releases/download/v0.0.2/ocdev-darwin-amd64.gz" | gzip -d > /usr/local/bin/ocdev; chmod +x /usr/local/bin/ocdev
+sudo curl -L  "https://github.com/redhat-developer/ocdev/releases/download/v0.0.3/ocdev-darwin-amd64.gz" | gzip -d > /usr/local/bin/ocdev; chmod +x /usr/local/bin/ocdev
 ```
 
 For Linux:
 ```
-sudo curl -L  "https://github.com/redhat-developer/ocdev/releases/download/v0.0.2/ocdev-linux-amd64.gz" | gzip -d > /usr/local/bin/ocdev; chmod +x /usr/local/bin/ocdev
+sudo curl -L  "https://github.com/redhat-developer/ocdev/releases/download/v0.0.3/ocdev-linux-amd64.gz" | gzip -d > /usr/local/bin/ocdev; chmod +x /usr/local/bin/ocdev
 ```
 
 You can also download latest master builds from [Bintray](https://dl.bintray.com/ocdev/ocdev/latest/). This is updated every time there is a change in master git branch.
