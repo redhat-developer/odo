@@ -76,6 +76,11 @@ var applicationDeleteCmd = &cobra.Command{
 		client := getOcClient()
 		appName := args[0]
 		var confirmDeletion string
+		// Project
+		currentProject := project.GetCurrent(client)
+		// Print App Information which will be deleted
+		err := printDeleteAppInfo(client, appName, currentProject)
+		checkError(err, "")
 
 		if applicationForceDeleteFlag {
 			confirmDeletion = "y"
