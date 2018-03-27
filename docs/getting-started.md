@@ -100,7 +100,7 @@ Switched to application: nodeapp
 Now that you have created an application, now add a component of type _nodejs_ to the application, from the current directory where our code lies.
 
 ```console
-$ ocdev component create nodejs --dir=.
+$ ocdev component create nodejs --local=.
 --> Found image 2809a54 (3 weeks old) in image stream "openshift/nodejs" under tag "6" for "nodejs"
 --> Creating resources with label app=nodeapp,app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=nodeapp ...
     imagestream "nodejs" created       
