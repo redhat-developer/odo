@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -45,6 +46,11 @@ func createApp(appName string) {
 	runCmd("ocdev application create " + appName)
 }
 
+func getProj() string {
+	proj := runCmd("ocdev project get --short")
+	return strings.TrimSpace(proj)
+}
+
 func getApp() string {
 	app := runCmd("ocdev application get --short")
 	return app
@@ -64,7 +70,6 @@ func pingSvc(url string) {
 		select {
 		case <-pingTimeout:
 			log.Fatal("could not ping the specific service in given time: 10 minutes")
-			runCmd("oc get all")
 			os.Exit(1)
 
 		case <-tick:
@@ -99,14 +104,6 @@ func TestOCdev(t *testing.T) {
 	RunSpecs(t, "ocdev test suite")
 }
 
-var _ = BeforeSuite(func() {
-	runCmd("oc new-project " + projName)
-})
-
-var _ = AfterSuite(func() {
-	runCmd("oc delete project " + projName)
-})
-
 var _ = Describe("Usecase #5", func() {
 
 	tmpDir, err := ioutil.TempDir("", "ocdev")
@@ -117,11 +114,29 @@ var _ = Describe("Usecase #5", func() {
 	runCmd("git clone https://github.com/openshift/nodejs-ex " + tmpDir + "/nodejs-ex")
 
 	// TODO: Create component without creating application
+	Context("ocdev project", func() {
+		It("should create a new project", func() {
+			runCmd("ocdev project create " + projName)
+			Expect(getProj()).To(Equal(projName))
+		})
+	})
 
 	Context("creating an application", func() {
 		Context("when application by the same name doesn't exist", func() {
 			It("should create an application", func() {
 				createApp("usecase5")
+				Expect(getApp()).To(Equal("usecase5"))
+			})
+
+			It("should be created within the project", func() {
+				Expect(getProj()).To(Equal(projName))
+			})
+
+			It("should be able to set an application as current", func() {
+				createApp("usecase5-2")
+				Expect(getApp()).To(Equal("usecase5-2"))
+
+				runCmd("ocdev application set usecase5")
 				Expect(getApp()).To(Equal("usecase5"))
 			})
 		})
@@ -133,7 +148,6 @@ var _ = Describe("Usecase #5", func() {
 
 		Context("when application exists", func() {
 			It("should create a component", func() {
-				//runCmd("ocdev component create nodejs --git https://github.com/openshift/nodejs-ex.git")
 				runCmd("ocdev component create nodejs --local " + tmpDir + "/nodejs-ex")
 				Expect(getCmp()).To(Equal("nodejs"))
 				time.Sleep(10)
@@ -141,6 +155,14 @@ var _ = Describe("Usecase #5", func() {
 
 			It("should create the component within the application", func() {
 				Expect(getApp()).To(Equal("usecase5"))
+
+			})
+
+			Context("when all the components are listed", func() {
+				It("should list the components within the application", func() {
+					cmpList := runCmd("ocdev component list")
+					Ω(cmpList).Should(ContainSubstring("nodejs"))
+				})
 			})
 		})
 
@@ -188,8 +210,9 @@ var _ = Describe("Usecase #5", func() {
 		})
 	})
 
-	It("delete application", func() {
-		runCmd("ocdev application delete usecase5 -f")
+	Context("deleting the project", func() {
+		It("should delete project", func() {
+			runCmd("ocdev project delete " + projName)
+		})
 	})
-
 })
