@@ -43,19 +43,7 @@ var describeCmd = &cobra.Command{
 
 		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, cmpnt, currentApplication, currentProject)
 		checkError(err, "")
-		// Source
-		if path != "" {
-			fmt.Println("Component", cmpnt, "of type", componentType, "with source in", path)
-		}
-		// URL
-		if componentURL != "" {
-			fmt.Println("This Component is externally exposed via", componentURL)
-		}
-		// Storage
-		for _, store := range appStore {
-			fmt.Println("This Component uses storage", store.Name, "of size", store.Size)
-		}
-
+		printComponentInfo(cmpnt, componentType, path, componentURL, appStore)
 	},
 }
 

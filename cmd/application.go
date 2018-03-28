@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -139,6 +141,49 @@ var applicationSetCmd = &cobra.Command{
 	},
 }
 
+var applicationDescribeCmd = &cobra.Command{
+	Use:   "describe [application_name]",
+	Short: "describe the given application",
+	Args:  cobra.MaximumNArgs(1),
+	Example: `  # Describe webapp application,
+  odo app describe webapp
+	`,
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
+		var currentApplication string
+		if len(args) == 0 {
+			var err error
+			currentApplication, err = application.GetCurrent(client)
+			checkError(err, "")
+		} else {
+			currentApplication = args[0]
+			//Check whether application exist or not
+			exists, err := application.Exists(client, currentApplication)
+			checkError(err, "")
+			if !exists {
+				fmt.Printf("Application with the name %s does not exist\n", currentApplication)
+				os.Exit(1)
+			}
+		}
+		//Project
+		currentProject := project.GetCurrent(client)
+		// List of Component
+		componentList, err := component.List(client, currentApplication, currentProject)
+		checkError(err, "")
+		if len(componentList) == 0 {
+			fmt.Printf("Application %s has no components deployed.\n", currentApplication)
+			os.Exit(1)
+		}
+		fmt.Printf("Application %s has:\n", currentApplication)
+
+		for _, cmpnt := range componentList {
+			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, cmpnt.Name, currentApplication, currentProject)
+			checkError(err, "")
+			printComponentInfo(cmpnt.Name, componentType, path, componentURL, appStore)
+		}
+	},
+}
+
 func init() {
 	applicationDeleteCmd.Flags().BoolVarP(&applicationForceDeleteFlag, "force", "f", false, "Delete application without prompting")
 
@@ -151,6 +196,7 @@ func init() {
 	applicationCmd.AddCommand(applicationGetCmd)
 	applicationCmd.AddCommand(applicationCreateCmd)
 	applicationCmd.AddCommand(applicationSetCmd)
+	applicationCmd.AddCommand(applicationDescribeCmd)
 
 	rootCmd.AddCommand(applicationCmd)
 }

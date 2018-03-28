@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	"os"
+	"github.com/redhat-developer/odo/pkg/storage"
 )
 
 // getComponent returns the component to be used for the operation. If an input
@@ -23,4 +25,20 @@ func getComponent(client *occlient.Client, inputComponent, applicationName, proj
 		os.Exit(1)
 	}
 	return inputComponent
+}
+
+// printComponentInfo prints Component Information like path, URL & storage
+func printComponentInfo(cmpntName string, componentType string, path string, componentURL string, appStore []storage.StorageInfo) {
+	// Source
+	if path != "" {
+		fmt.Println("Component", cmpntName, "of type", componentType, "with source in", path)
+	}
+	// URL
+	if componentURL != "" {
+		fmt.Println("This Component is externally exposed via", componentURL)
+	}
+	// Storage
+	for _, store := range appStore {
+		fmt.Println("This Component uses storage", store.Name, "of size", store.Size)
+	}
 }
