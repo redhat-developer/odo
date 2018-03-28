@@ -1,6 +1,8 @@
 package application
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/ocdev/pkg/config"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
@@ -180,12 +182,34 @@ func SetCurrent(client *occlient.Client, name string) error {
 
 	cfg, err := config.New()
 	if err != nil {
-		return errors.Wrap(err, "unable to get active application")
+		return errors.Wrap(err, "unable to set current application")
+	}
+
+	exists, err := Exists(client, name)
+	if err != nil {
+		return errors.Wrap(err, "unable to set current application")
+	}
+	if !exists {
+		return fmt.Errorf("application %s doesn't exist", name)
+	}
+
+	// There might be a situation where application is not defined in local config
+	// but it is present in OpenShift cluster. This situation can happen for example if user delted config file.
+	// In this case we need to add application back to the the config  before we set is as active.
+	found := false
+	for _, cfgApp := range cfg.ActiveApplications {
+		if cfgApp.Project == project && cfgApp.Name == name {
+			found = true
+			break
+		}
+	}
+	if !found {
+		cfg.AddApplication(name, project)
 	}
 
 	err = cfg.SetActiveApplication(name, project)
 	if err != nil {
-		return errors.Wrap(err, "unable to create new application")
+		return errors.Wrap(err, "unable to set current application")
 	}
 
 	return nil
