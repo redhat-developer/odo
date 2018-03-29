@@ -28,7 +28,7 @@ func getDefaultAppName() string {
 // additional labels are used only when creating object
 // if you are creating something use additional=true
 // if you need labels to filter component than use additional=false
-func GetLabels(application string, additional bool) (map[string]string, error) {
+func GetLabels(application string, additional bool) map[string]string {
 	labels := map[string]string{
 		ApplicationLabel: application,
 	}
@@ -39,7 +39,7 @@ func GetLabels(application string, additional bool) (map[string]string, error) {
 		}
 	}
 
-	return labels, nil
+	return labels
 }
 
 // Create a new application
@@ -112,10 +112,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 func Delete(client *occlient.Client, name string) error {
 	log.Debug("Deleting application %s", name)
 
-	labels, err := GetLabels(name, false)
-	if err != nil {
-		return errors.Wrapf(err, "unable to delete application %s", name)
-	}
+	labels := GetLabels(name, false)
 
 	// delete application from cluster
 	output, err := client.Delete("all", "", labels)
