@@ -45,10 +45,7 @@ func GetLabels(application string, additional bool) (map[string]string, error) {
 // Create a new application
 func Create(client *occlient.Client, applicationName string) error {
 	// TODO: use project abstraction
-	project, err := client.GetCurrentProjectName()
-	if err != nil {
-		return errors.Wrap(err, "unable to create new application")
-	}
+	project := client.GetCurrentProjectName()
 
 	cfg, err := config.New()
 	if err != nil {
@@ -70,10 +67,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 	applications := []config.ApplicationInfo{}
 
 	// TODO: use project abstaction
-	project, err := client.GetCurrentProjectName()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list applications")
-	}
+	project := client.GetCurrentProjectName()
 
 	cfg, err := config.New()
 	if err != nil {
@@ -135,10 +129,8 @@ func Delete(client *occlient.Client, name string) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
-	project, err := client.GetCurrentProjectName()
-	if err != nil {
-		return errors.Wrapf(err, "unable to delete application %s", name)
-	}
+	project := client.GetCurrentProjectName()
+
 	err = cfg.DeleteApplication(name, project)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
@@ -152,10 +144,7 @@ func Delete(client *occlient.Client, name string) error {
 // If no application is active this functions returns empty string
 func GetCurrent(client *occlient.Client) (string, error) {
 	// TODO: use project abstaction
-	project, err := client.GetCurrentProjectName()
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get active application")
-	}
+	project := client.GetCurrentProjectName()
 
 	cfg, err := config.New()
 	if err != nil {
@@ -187,10 +176,7 @@ func SetCurrent(client *occlient.Client, name string) error {
 	// TODO: use project abstraction
 	log.Debugf("Setting application %s as current.\n", name)
 
-	project, err := client.GetCurrentProjectName()
-	if err != nil {
-		return errors.Wrap(err, "unable to get active application")
-	}
+	project := client.GetCurrentProjectName()
 
 	cfg, err := config.New()
 	if err != nil {

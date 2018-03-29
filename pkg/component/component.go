@@ -134,10 +134,7 @@ func Delete(client *occlient.Client, name string) (string, error) {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
-	currentProject, err := client.GetCurrentProjectName()
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to delete component %s", name)
-	}
+	currentProject := client.GetCurrentProjectName()
 
 	cfg, err := config.New()
 	if err != nil {
@@ -168,10 +165,7 @@ func SetCurrent(client *occlient.Client, name string) error {
 		return errors.Wrapf(err, "unable to set current component %s", name)
 	}
 
-	currentProject, err := client.GetCurrentProjectName()
-	if err != nil {
-		return errors.Wrapf(err, "unable to set current component %s", name)
-	}
+	currentProject := client.GetCurrentProjectName()
 
 	currentApplication, err := application.GetCurrent(client)
 	if err != nil {
@@ -198,10 +192,7 @@ func GetCurrent(client *occlient.Client) (string, error) {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
 
-	currentProject, err := client.GetCurrentProjectName()
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get current  component")
-	}
+	currentProject := client.GetCurrentProjectName()
 
 	currentComponent := cfg.GetActiveComponent(currentApplication, currentProject)
 
@@ -254,10 +245,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 // List lists components in active application
 func List(client *occlient.Client) ([]ComponentInfo, error) {
 	// TODO: use project abstaction
-	currentProject, err := client.GetCurrentProjectName()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list components")
-	}
+	currentProject := client.GetCurrentProjectName()
 
 	currentApplication, err := application.GetCurrent(client)
 	if err != nil {
