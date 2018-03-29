@@ -14,7 +14,7 @@ var (
 
 var projectCmd = &cobra.Command{
 	Use:   "project [options]",
-	Short: "project",
+	Short: "Perform project operations",
 	Run:   projectGetCmd.Run,
 }
 

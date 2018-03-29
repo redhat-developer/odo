@@ -1,6 +1,40 @@
 package cmd
 
-// 'ocdev list' is just an alias for 'ocdev component list'
+import (
+	"fmt"
+	"os"
+
+	"github.com/redhat-developer/ocdev/pkg/component"
+	"github.com/spf13/cobra"
+)
+
+var componentListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all components in the current application",
+	Long:  "List all components in the current application.",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
+
+		components, err := component.List(client)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if len(components) == 0 {
+			fmt.Println("There are no components deployed.")
+			return
+		}
+
+		fmt.Println("You have deployed:")
+		for _, comp := range components {
+			fmt.Printf("%s using the %s component\n", comp.Name, comp.Type)
+		}
+
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(componentListCmd)
 }

@@ -19,7 +19,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "ocdev",
 	Short: "OpenShift CLI for Developers",
-	Long:  `-`,
+	Long:  `OpenShift CLI for Developers`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 
 		// Add extra logging when verbosity is passed
@@ -57,7 +57,7 @@ func init() {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.ocdev.yaml)")
 
-	rootCmd.PersistentFlags().BoolVarP(&GlobalVerbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&GlobalVerbose, "verbose", "v", false, "Verbose output")
 }
 
 func getLatestReleaseInfo(info chan<- string) {
