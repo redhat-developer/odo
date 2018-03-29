@@ -500,7 +500,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
 	if err != nil {
-		panic(err.Error())
+		return "", errors.Wrapf(err, "unable to create ImageStream for %s", name)
 	}
 
 	// generate BuildConfig
@@ -552,7 +552,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
 	if err != nil {
-		panic(err.Error())
+		return "", errors.Wrapf(err, "unable to create BuildConfig for %s", name)
 	}
 
 	// generate  and create DeploymentConfig
@@ -601,7 +601,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
 	if err != nil {
-		panic(err.Error())
+		return "", errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
 	}
 
 	// generate and create Service
@@ -627,7 +627,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 	_, err = c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
 	if err != nil {
-		panic(err.Error())
+		return "", errors.Wrapf(err, "unable to create Service for %s", name)
 	}
 
 	return "", nil
