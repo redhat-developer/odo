@@ -28,7 +28,7 @@ func SetCurrent(client *occlient.Client, project string) error {
 	return nil
 }
 
-func CreateProject(client *occlient.Client, projectName string) error {
+func Create(client *occlient.Client, projectName string) error {
 	err := client.CreateNewProject(projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to create new project")
@@ -36,7 +36,7 @@ func CreateProject(client *occlient.Client, projectName string) error {
 	return nil
 }
 
-func ListProjects(client *occlient.Client) ([]ProjectInfo, error) {
+func List(client *occlient.Client) ([]ProjectInfo, error) {
 	currentProject := client.GetCurrentProjectName()
 	allProjects, err := client.GetProjectNames()
 	if err != nil {
