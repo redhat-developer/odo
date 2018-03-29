@@ -85,7 +85,7 @@ Now we can move on to creating our application using `ocdev`.
 
 #### Create an application
 
-An application is the umbrella under which you will build all the components (microservices) of your entire application.
+An application is an umbrella under which you will build all the components (microservices) of your entire application.
 
 Let's create an application -
 
