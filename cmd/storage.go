@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/redhat-developer/ocdev/pkg/application"
 	"github.com/redhat-developer/ocdev/pkg/component"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 	"github.com/redhat-developer/ocdev/pkg/storage"
@@ -37,14 +38,10 @@ var storageAddCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		cmpnt := getComponent(client)
-		_, err := storage.Add(client,
-			&occlient.VolumeConfig{
-				Name:             &args[0],
-				DeploymentConfig: &cmpnt,
-				Path:             &storagePath,
-				Size:             &storageSize,
-			})
-		checkError(err, "Failed to add storage")
+		app, err := application.GetCurrent(client)
+		checkError(err, "")
+		_, err = storage.Add(client, args[0], storageSize, storagePath, cmpnt, app)
+		checkError(err, "")
 		fmt.Printf("Added storage %v to %v\n", args[0], cmpnt)
 	},
 }
@@ -55,24 +52,24 @@ var storageRemoveCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		cmpnt := getComponent(client)
-		var storageName *string
-		if len(args) == 0 {
-			storageName = nil
-		} else {
-			storageName = &args[0]
-		}
-		_, err := storage.Remove(client,
-			&occlient.VolumeConfig{
-				Name:             storageName,
-				DeploymentConfig: &cmpnt,
-			})
-		checkError(err, "Failed to remove storage")
 
-		if len(args) == 0 {
+		var storageName string
+		if len(args) != 0 {
+			storageName = args[0]
+		}
+
+		cmpnt := getComponent(client)
+		app, err := application.GetCurrent(client)
+		checkError(err, "")
+
+		err = storage.Remove(client, storageName, app, cmpnt)
+		checkError(err, "failed to remove storage")
+
+		switch storageName {
+		case "":
 			fmt.Printf("Removed all storage from %v\n", cmpnt)
-		} else {
-			fmt.Printf("Removed %v from %v\n", *storageName, cmpnt)
+		default:
+			fmt.Printf("Removed %v from %v\n", storageName, cmpnt)
 		}
 	},
 }
@@ -84,12 +81,20 @@ var storageListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		cmpnt := getComponent(client)
-		output, err := storage.List(client,
-			&occlient.VolumeConfig{
-				DeploymentConfig: &cmpnt,
-			})
-		checkError(err, "Failed to list storage")
-		fmt.Println(output)
+		app, err := application.GetCurrent(client)
+		checkError(err, "")
+
+		storageList, err := storage.List(client, app, cmpnt)
+		checkError(err, "failed to list storage")
+
+		if len(storageList) == 0 {
+			fmt.Printf("The component '%v' has no storage attached\n", cmpnt)
+		} else {
+			fmt.Printf("The component '%v' has the following storage attached -\n", cmpnt)
+			for _, strg := range storageList {
+				fmt.Printf("- %v - %v\n", strg.Name, strg.Size)
+			}
+		}
 	},
 }
 

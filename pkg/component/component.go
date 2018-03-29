@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
+	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -12,6 +13,7 @@ import (
 	"github.com/redhat-developer/ocdev/pkg/config"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
 	"github.com/redhat-developer/ocdev/pkg/project"
+	"github.com/redhat-developer/ocdev/pkg/util"
 )
 
 // ComponentLabel is a label key used to identify component
@@ -317,4 +319,27 @@ func Update(client *occlient.Client, componentName string, to string, source str
 		return errors.Wrap(err, "unable to update the component")
 	}
 	return nil
+}
+
+// GetComponentDeploymentConfig returns the Deployment Config object associated
+// with the given component.
+// An error is thrown when exactly one Deployment Config is not found for the
+// component.
+func GetComponentDeploymentConfig(client *occlient.Client, componentName string, applicationName string) (*appsv1.DeploymentConfig, error) {
+	labels := GetLabels(componentName, applicationName, false)
+	selector := util.ConvertLabelsToSelector(labels)
+
+	deploymentConfigs, err := client.GetDeploymentConfigsFromSelector(selector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get DeploymentConfigs for the selector: %v", selector)
+	}
+
+	numDC := len(deploymentConfigs)
+	if numDC == 0 {
+		return nil, fmt.Errorf("no Deployment Config was found for the selector: %v", selector)
+	} else if numDC > 1 {
+		return nil, fmt.Errorf("multiple Deployment Configs exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &deploymentConfigs[0], nil
 }
