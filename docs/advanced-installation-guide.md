@@ -6,7 +6,7 @@ Latest binaries build from git master are available at https://dl.bintray.com/oc
 Builds for latest released versions are at [GitHub releases page](https://github.com/redhat-developer/ocdev/releases/latest).
 
 ## macOS
-1. First you need enable `kadel/ocdev` Homebrew Tap:
+1. First, you need to enable `kadel/ocdev` Homebrew Tap:
     ```sh
     brew tap kadel/ocdev
     ```
@@ -22,7 +22,7 @@ Builds for latest released versions are at [GitHub releases page](https://github
 
 ## Linux
 ### Debian/Ubuntu and other distributions using deb
-1. First you need to add gpg [public key](https://bintray.com/user/downloadSubjectPublicKey?username=bintray) used to sign repositories.
+1. First, you need to add gpg [public key](https://bintray.com/user/downloadSubjectPublicKey?username=bintray) used to sign repositories.
     ```sh
     curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
     ```
