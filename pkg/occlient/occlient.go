@@ -634,6 +634,39 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 
 }
 
+// UpdateBuildConfig updates the BuildConfig file
+// buildConfigName is the name of the BuildConfig file to be updated
+// projectName is the name of the project
+// gitUrl equals to the git URL of the source and is equals to "" if the source is of type dir or binary
+// annotations contains the annotations for the BuildConfig file
+func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, gitUrl string, annotations map[string]string) error {
+	// generate BuildConfig
+	buildSource := buildv1.BuildSource{
+		Type:   buildv1.BuildSourceBinary,
+		Binary: &buildv1.BinaryBuildSource{},
+	}
+	// if gitUrl set change buildSource to git and use given repo
+	if gitUrl != "" {
+		buildSource = buildv1.BuildSource{
+			Git: &buildv1.GitBuildSource{
+				URI: gitUrl,
+			},
+			Type: buildv1.BuildSourceGit,
+		}
+	}
+	buildConfig, err := c.GetBuildConfig(buildConfigName, projectName)
+	if err != nil {
+		return errors.Wrap(err, "unable to get the BuildConfig file")
+	}
+	buildConfig.Spec.Source = buildSource
+	buildConfig.Annotations = annotations
+	_, err = c.buildClient.BuildConfigs(c.namespace).Update(buildConfig)
+	if err != nil {
+		return errors.Wrap(err, "unable to update the component")
+	}
+	return nil
+}
+
 // StartBinaryBuild starts new build and streams dir as source for build
 func (c *Client) StartBinaryBuild(name string, dir string) error {
 	var r io.Reader
@@ -861,7 +894,7 @@ func (c *Client) GetLabelValues(project string, label string, selector string) (
 // GetBuildConfig get BuildConfig by its name
 func (c *Client) GetBuildConfig(name string, project string) (*buildv1.BuildConfig, error) {
 	log.Debugf("Getting BuildConfig: %s", name)
-	bc, err := c.buildClient.BuildConfigs(c.namespace).Get(name, metav1.GetOptions{})
+	bc, err := c.buildClient.BuildConfigs(project).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
 	}
