@@ -148,7 +148,7 @@ var _ = Describe("Usecase #5", func() {
 
 		Context("when application exists", func() {
 			It("should create a component", func() {
-				runCmd("ocdev component create nodejs --local " + tmpDir + "/nodejs-ex")
+				runCmd("ocdev create nodejs --local " + tmpDir + "/nodejs-ex")
 				Expect(getCmp()).To(Equal("nodejs"))
 				time.Sleep(10)
 			})
@@ -160,7 +160,7 @@ var _ = Describe("Usecase #5", func() {
 
 			Context("when all the components are listed", func() {
 				It("should list the components within the application", func() {
-					cmpList := runCmd("ocdev component list")
+					cmpList := runCmd("ocdev list")
 					Expect(cmpList).To(ContainSubstring("nodejs"))
 				})
 			})

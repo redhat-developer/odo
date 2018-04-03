@@ -18,7 +18,7 @@ var (
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
 	Use:     "application",
-	Short:   "application",
+	Short:   "Perform application operations",
 	Aliases: []string{"app"},
 	// 'ocdev application' is the same as 'ocdev application get'
 	Run: applicationGetCmd.Run,

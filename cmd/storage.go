@@ -30,8 +30,8 @@ func getComponent(client *occlient.Client) string {
 
 var storageCmd = &cobra.Command{
 	Use:   "storage",
-	Short: "storage",
-	Long:  "perform storage operations",
+	Short: "Perform storage operations",
+	Long:  "Perform storage operations",
 }
 
 var storageAddCmd = &cobra.Command{
@@ -106,15 +106,15 @@ var storageListCmd = &cobra.Command{
 }
 
 func init() {
-	storageAddCmd.Flags().StringVar(&storageSize, "size", "", "size of storage to add")
+	storageAddCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
 	storageAddCmd.MarkFlagRequired("size")
-	storageAddCmd.Flags().StringVar(&storagePath, "path", "", "path to mount the storage on")
+	storageAddCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageAddCmd.MarkFlagRequired("path")
 
 	storageCmd.AddCommand(storageAddCmd)
 	storageCmd.AddCommand(storageRemoveCmd)
 	storageCmd.AddCommand(storageListCmd)
 
-	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "component to add storage to, defaults to active component")
+	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "Component to add storage to, defaults to active component")
 	rootCmd.AddCommand(storageCmd)
 }
