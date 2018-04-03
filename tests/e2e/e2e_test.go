@@ -36,9 +36,11 @@ func runCmd(cmdS string) string {
 	err := cmd.Run()
 
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+		os.Exit(1)
 	}
-	fmt.Print(string(out.Bytes()))
+
+	fmt.Println(string(out.Bytes()))
 	return string(out.Bytes())
 }
 
@@ -155,7 +157,6 @@ var _ = Describe("Usecase #5", func() {
 
 			It("should create the component within the application", func() {
 				Expect(getApp()).To(Equal("usecase5"))
-
 			})
 
 			Context("when all the components are listed", func() {
@@ -216,6 +217,10 @@ var _ = Describe("Usecase #5", func() {
 	Context("deleting the application", func() {
 		It("should delete application and component", func() {
 			runCmd("ocdev application delete usecase5 -f")
+			Expect(getApp()).To(Equal(""))
+
+			cmpList := runCmd("ocdev component list")
+			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
 		})
 
 		// TODO: `ocdev project delete` once implemented
