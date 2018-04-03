@@ -26,6 +26,7 @@ var t = strconv.FormatInt(time.Now().Unix(), 10)
 var projName = fmt.Sprintf("ocdev-%s", t)
 
 func runCmd(cmdS string) string {
+
 	var cmd *exec.Cmd
 	var out, stderr bytes.Buffer
 
@@ -61,6 +62,14 @@ func getApp() string {
 func getCmp() string {
 	cmp := runCmd("ocdev component get --short")
 	return cmp
+}
+
+func runOcAdmin(cmd string) string {
+	runCmd("oc login -u system:admin > /dev/null")
+	cmdOut := runCmd(cmd)
+	runCmd("oc login -u developer > /dev/null")
+
+	return cmdOut
 }
 
 func pingSvc(url string) {
@@ -138,8 +147,12 @@ var _ = Describe("Usecase #5", func() {
 				createApp("usecase5-2")
 				Expect(getApp()).To(Equal("usecase5-2"))
 
+				// Cleanup
+				runCmd("ocdev application delete usecase5-2 -f")
+
 				runCmd("ocdev application set usecase5")
 				Expect(getApp()).To(Equal("usecase5"))
+
 			})
 		})
 
@@ -165,6 +178,16 @@ var _ = Describe("Usecase #5", func() {
 					Expect(cmpList).To(ContainSubstring("nodejs"))
 				})
 			})
+
+			It("should be able to create multiple components within the same application", func() {
+				runCmd("ocdev create php")
+				Expect(getCmp()).To(Equal("php"))
+			})
+
+			It("should be able to set a component as active", func() {
+				runCmd("ocdev component set nodejs")
+				Expect(getCmp()).To(Equal("nodejs"))
+			})
 		})
 
 	})
@@ -180,7 +203,7 @@ var _ = Describe("Usecase #5", func() {
 			grepBeforePush := runCmd("curl -s " + pingUrl +
 				" | grep 'Welcome to your Node.js application on OpenShift'")
 
-			log.Printf("Text before change: %s", grepBeforePush)
+			log.Printf("Text before change: %s", strings.TrimSpace(grepBeforePush))
 
 			// Make changes to the html file
 			runCmd("sed -i 's/Welcome to your Node.js application on OpenShift/Welcome to your Node.js on OCDEV/g' " +
@@ -205,7 +228,7 @@ var _ = Describe("Usecase #5", func() {
 				outInt, _ := strconv.Atoi(string(out))
 				if outInt > 0 {
 					grepAfterPush := runCmd("curl -s " + getRoute + " | grep -i ocdev")
-					log.Printf("After change: %s", string(grepAfterPush))
+					log.Printf("After change: %s", strings.TrimSpace(grepAfterPush))
 					break
 				}
 				time.Sleep(5)
@@ -214,10 +237,63 @@ var _ = Describe("Usecase #5", func() {
 		})
 	})
 
+	Context("adding storage", func() {
+		It("should default to active component when no component name is passed", func() {
+			storAdd := runCmd("ocdev storage add pv1 --path /mnt/pv1 --size 5Gi")
+			Expect(storAdd).To(ContainSubstring("nodejs"))
+
+			getDc := runOcAdmin("oc get dc/nodejs -o go-template='" +
+				"{{range .spec.template.spec.containers}}" +
+				"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
+			Expect(getDc).To(Equal("pv1"))
+
+			// Check if the storage is added on the path provided
+			getMntPath := runOcAdmin("oc get dc/nodejs -o go-template='" +
+				"{{range .spec.template.spec.containers}}" +
+				"{{range .volumeMounts}}{{.mountPath}}{{end}}{{end}}'")
+			Expect(getMntPath).To(Equal("/mnt/pv1"))
+
+		})
+
+		It("should be able to list the storage added", func() {
+			storList := runCmd("ocdev storage list")
+			Expect(storList).To(ContainSubstring("pv1"))
+		})
+
+		// TODO: Verify if the storage removed using ocdev deletes pvc
+		It("should be able to delete the storage added", func() {
+			runCmd("ocdev storage remove pv1")
+			storList := runCmd("ocdev storage list")
+			Expect(storList).NotTo(ContainSubstring("pv1"))
+		})
+
+		It("should be able add storage to a component specified", func() {
+			runCmd("ocdev storage add pv2 --path /mnt/pv2 --size 5Gi --component php")
+			storList := runCmd("ocdev storage list --component php")
+			Expect(storList).To(ContainSubstring("pv2"))
+
+			// Verify with deploymentconfig
+			getDc := runOcAdmin("oc get dc/php -o go-template='" +
+				"{{range .spec.template.spec.containers}}" +
+				"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
+
+			Expect(getDc).To(Equal("pv2"))
+
+			// Check if the storage is added on the path provided
+			getMntPath := runOcAdmin("oc get dc/php -o go-template='" +
+				"{{range .spec.template.spec.containers}}" +
+				"{{range .volumeMounts}}{{.mountPath}}{{end}}{{end}}'")
+			Expect(getMntPath).To(Equal("/mnt/pv2"))
+		})
+	})
+
 	Context("deleting the application", func() {
 		It("should delete application and component", func() {
 			runCmd("ocdev application delete usecase5 -f")
 			Expect(getApp()).To(Equal(""))
+
+			appList := runCmd("ocdev application list")
+			Expect(appList).NotTo(ContainSubstring("usecase5"))
 
 			cmpList := runCmd("ocdev list")
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
