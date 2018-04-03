@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/ocdev/pkg/application"
 	"github.com/redhat-developer/ocdev/pkg/config"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
+	"github.com/redhat-developer/ocdev/pkg/project"
 )
 
 // ComponentLabel is a label key used to identify component
@@ -134,7 +135,7 @@ func Delete(client *occlient.Client, name string) (string, error) {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
-	currentProject := client.GetCurrentProjectName()
+	currentProject := project.GetCurrent(client)
 
 	cfg, err := config.New()
 	if err != nil {
@@ -165,7 +166,7 @@ func SetCurrent(client *occlient.Client, name string) error {
 		return errors.Wrapf(err, "unable to set current component %s", name)
 	}
 
-	currentProject := client.GetCurrentProjectName()
+	currentProject := project.GetCurrent(client)
 
 	currentApplication, err := application.GetCurrent(client)
 	if err != nil {
@@ -192,8 +193,7 @@ func GetCurrent(client *occlient.Client) (string, error) {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
 
-	currentProject := client.GetCurrentProjectName()
-
+	currentProject := project.GetCurrent(client)
 	currentComponent := cfg.GetActiveComponent(currentApplication, currentProject)
 
 	return currentComponent, nil
@@ -244,8 +244,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 
 // List lists components in active application
 func List(client *occlient.Client) ([]ComponentInfo, error) {
-	// TODO: use project abstaction
-	currentProject := client.GetCurrentProjectName()
+	currentProject := project.GetCurrent(client)
 
 	currentApplication, err := application.GetCurrent(client)
 	if err != nil {

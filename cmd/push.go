@@ -7,6 +7,7 @@ import (
 
 	"github.com/redhat-developer/ocdev/pkg/application"
 	"github.com/redhat-developer/ocdev/pkg/component"
+	"github.com/redhat-developer/ocdev/pkg/project"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -29,8 +30,7 @@ var pushCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		// TODO: use project abstraction
-		projectName := client.GetCurrentProjectName()
+		projectName := project.GetCurrent(client)
 
 		applicationName, err := application.GetCurrent(client)
 		if err != nil {

@@ -13,11 +13,9 @@ type ProjectInfo struct {
 	Active bool
 }
 
-func GetCurrent(client *occlient.Client) (string, error) {
-	// TODO: use project abstaction
+func GetCurrent(client *occlient.Client) string {
 	project := client.GetCurrentProjectName()
-
-	return project, nil
+	return project
 }
 
 func SetCurrent(client *occlient.Client, project string) error {

@@ -2,9 +2,11 @@ package application
 
 import (
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/redhat-developer/ocdev/pkg/config"
 	"github.com/redhat-developer/ocdev/pkg/occlient"
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-developer/ocdev/pkg/project"
 )
 
 // ApplicationLabel is label key that is used to group all object that belong to one application
@@ -44,8 +46,7 @@ func GetLabels(application string, additional bool) (map[string]string, error) {
 
 // Create a new application
 func Create(client *occlient.Client, applicationName string) error {
-	// TODO: use project abstraction
-	project := client.GetCurrentProjectName()
+	project := project.GetCurrent(client)
 
 	cfg, err := config.New()
 	if err != nil {
@@ -66,8 +67,7 @@ func Create(client *occlient.Client, applicationName string) error {
 func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 	applications := []config.ApplicationInfo{}
 
-	// TODO: use project abstaction
-	project := client.GetCurrentProjectName()
+	project := project.GetCurrent(client)
 
 	cfg, err := config.New()
 	if err != nil {
@@ -129,7 +129,8 @@ func Delete(client *occlient.Client, name string) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
-	project := client.GetCurrentProjectName()
+
+	project := project.GetCurrent(client)
 
 	err = cfg.DeleteApplication(name, project)
 	if err != nil {
@@ -143,8 +144,7 @@ func Delete(client *occlient.Client, name string) error {
 // GetCurrent returns currently active application.
 // If no application is active this functions returns empty string
 func GetCurrent(client *occlient.Client) (string, error) {
-	// TODO: use project abstaction
-	project := client.GetCurrentProjectName()
+	project := project.GetCurrent(client)
 
 	cfg, err := config.New()
 	if err != nil {
@@ -171,12 +171,9 @@ func GetCurrentOrDefault(client *occlient.Client) (string, error) {
 
 // SetCurrent set application as active
 func SetCurrent(client *occlient.Client, name string) error {
-	// TODO: right now this assumes that there is a current project in openshift
-	// when we have project support in ocdev, this should call project.GetCurrent()
-	// TODO: use project abstraction
 	log.Debugf("Setting application %s as current.\n", name)
 
-	project := client.GetCurrentProjectName()
+	project := project.GetCurrent(client)
 
 	cfg, err := config.New()
 	if err != nil {
