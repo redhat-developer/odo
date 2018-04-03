@@ -219,7 +219,7 @@ var _ = Describe("Usecase #5", func() {
 			runCmd("ocdev application delete usecase5 -f")
 			Expect(getApp()).To(Equal(""))
 
-			cmpList := runCmd("ocdev component list")
+			cmpList := runCmd("ocdev list")
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
 		})
 
