@@ -34,14 +34,10 @@ type ComponentInfo struct {
 // additional labels are used only for creating object
 // if you are creating something use additional=true
 // if you need labels to filter component that use additional=false
-func GetLabels(componentName string, applicationName string, additional bool) (map[string]string, error) {
-	labels, err := application.GetLabels(applicationName, additional)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get get labels for  component %s", componentName)
-	}
+func GetLabels(componentName string, applicationName string, additional bool) map[string]string {
+	labels := application.GetLabels(applicationName, additional)
 	labels[ComponentLabel] = componentName
-
-	return labels, nil
+	return labels
 }
 
 func CreateFromGit(client *occlient.Client, name string, ctype string, url string) (string, error) {
@@ -63,11 +59,7 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 		}
 	}
 
-	labels, err := GetLabels(name, currentApplication, true)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to create git component %s", name)
-	}
-
+	labels := GetLabels(name, currentApplication, true)
 	// save component type as label
 	labels[componentTypeLabel] = ctype
 
@@ -99,11 +91,7 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 		}
 	}
 
-	labels, err := GetLabels(name, currentApplication, true)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to create component %s from local path", name, dir)
-	}
-
+	labels := GetLabels(name, currentApplication, true)
 	// save component type as label
 	labels[componentTypeLabel] = ctype
 
@@ -142,10 +130,7 @@ func Delete(client *occlient.Client, name string) (string, error) {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
-	labels, err := GetLabels(name, currentApplication, false)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to delete component %s", name)
-	}
+	labels := GetLabels(name, currentApplication, false)
 
 	output, err := client.Delete("all", "", labels)
 	if err != nil {

@@ -28,10 +28,7 @@ func Create(client *occlient.Client, cmp string) (*URL, error) {
 		return nil, errors.Wrap(err, "unable to get current application")
 	}
 
-	labels, err := component.GetLabels(cmp, app, false)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get labels")
-	}
+	labels := component.GetLabels(cmp, app, false)
 
 	route, err := client.CreateRoute(cmp, labels)
 	if err != nil {
