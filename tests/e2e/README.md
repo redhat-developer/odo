@@ -21,7 +21,7 @@ Run `make test-e2e` to execute the tests.
 | `application get`  | Y  |
 | `application set` | Y |
 | `application delete` | Y |
-| `application list` | N |
+| `application list` | Y |
 | `catalog` | N |
 | `create --git` | N |
 | `create --local` | Y |
