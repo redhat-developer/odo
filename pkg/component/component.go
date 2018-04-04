@@ -40,22 +40,22 @@ func GetLabels(componentName string, applicationName string, additional bool) ma
 	return labels
 }
 
-func CreateFromGit(client *occlient.Client, name string, ctype string, url string) (string, error) {
+func CreateFromGit(client *occlient.Client, name string, ctype string, url string) error {
 	// if current application doesn't exist, create it
 	// this can happen when ocdev is started form clean state
 	// and default application is used (first command run is ocdev create)
 	currentApplication, err := application.GetCurrentOrDefault(client)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create git component %s", name)
+		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
 	exists, err := application.Exists(client, currentApplication)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create git component %s", name)
+		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
 	if !exists {
 		err = application.Create(client, currentApplication)
 		if err != nil {
-			return "", errors.Wrapf(err, "unable to create git component %s", name)
+			return errors.Wrapf(err, "unable to create git component %s", name)
 		}
 	}
 
@@ -66,28 +66,41 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 	// save source path as annotation
 	annotations := map[string]string{componentSourceURLAnnotation: url}
 
-	output, err := client.NewAppS2I(name, ctype, url, labels, annotations)
+	err = client.NewAppS2I(name, ctype, url, labels, annotations)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create git component %s", name)
+		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
-	return output, nil
+
+	fmt.Println("please wait, building component...")
+
+	//get the latest build name for following
+	buildName, err := client.GetLatestBuildName(name)
+	if err != nil {
+		return errors.Wrap(err, "unable to follow build logs")
+	}
+	err = client.FollowBuildLog(buildName)
+	if err != nil {
+		return errors.Wrap(err, "unable to follow build logs")
+	}
+
+	return nil
 }
 
 // CreateFromDir create new component with source from local directory
-func CreateFromDir(client *occlient.Client, name string, ctype string, dir string) (string, error) {
+func CreateFromDir(client *occlient.Client, name string, ctype string, dir string) error {
 	currentApplication, err := application.GetCurrentOrDefault(client)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create component %s from local path", name, dir)
+		return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
 	}
 
 	exists, err := application.Exists(client, currentApplication)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create component %s from local path", name, dir)
+		return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
 	}
 	if !exists {
 		err = application.Create(client, currentApplication)
 		if err != nil {
-			return "", errors.Wrapf(err, "unable to create component %s from local path", name, dir)
+			return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
 		}
 	}
 
@@ -99,20 +112,18 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 	sourceURL := url.URL{Scheme: "file", Path: dir}
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 
-	output, err := client.NewAppS2I(name, ctype, "", labels, annotations)
+	err = client.NewAppS2I(name, ctype, "", labels, annotations)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	// TODO: it might not be ideal to print to stdout here
-	fmt.Println(output)
-	fmt.Println("please wait, building application...")
+	fmt.Println("please wait, building component...")
 
 	err = client.StartBinaryBuild(name, dir)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return "", nil
+	return nil
 
 }
 

@@ -444,11 +444,11 @@ func (c *Client) GetImageStreamsNames(namespace string) ([]string, error) {
 
 // NewAppS2I create new application using S2I
 // if gitUrl is ""  than it creates binary build otherwise uses gitUrl as buildSource
-func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string, annotations map[string]string) (string, error) {
+func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string, annotations map[string]string) error {
 
 	imageName, imageTag, _, err := parseImageName(builderImage)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to create new s2i git build ")
+		return errors.Wrap(err, "unable to create new s2i git build ")
 	}
 
 	var containerPorts []corev1.ContainerPort
@@ -457,7 +457,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	imageStream, err := c.imageClient.ImageStreams(OpenShiftNameSpace).Get(imageName, metav1.GetOptions{})
 	if err != nil {
 		log.Debugf("No exact match found: %s", err.Error())
-		return "", errors.Wrapf(err, "unable to find matching builder image %s", imageName)
+		return errors.Wrapf(err, "unable to find matching builder image %s", imageName)
 	} else {
 		tagFound := false
 		for _, tag := range imageStream.Status.Tags {
@@ -472,17 +472,17 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 				imageStreamImageName := fmt.Sprintf("%s@%s", imageName, tagDigest)
 				imageStreamImage, err := c.imageClient.ImageStreamImages("openshift").Get(imageStreamImageName, metav1.GetOptions{})
 				if err != nil {
-					return "", errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
+					return errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
 				}
 				// get ports that are exported by image
 				containerPorts, err = getExposedPorts(imageStreamImage)
 				if err != nil {
-					return "", errors.Wrapf(err, "unable to get exported ports from % image", builderImage)
+					return errors.Wrapf(err, "unable to get exported ports from % image", builderImage)
 				}
 			}
 		}
 		if !tagFound {
-			return "", errors.Wrapf(err, "unable to find tag %s for image", imageTag, imageName)
+			return errors.Wrapf(err, "unable to find tag %s for image", imageTag, imageName)
 		}
 
 	}
@@ -500,7 +500,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create ImageStream for %s", name)
+		return errors.Wrapf(err, "unable to create ImageStream for %s", name)
 	}
 
 	// generate BuildConfig
@@ -552,7 +552,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create BuildConfig for %s", name)
+		return errors.Wrapf(err, "unable to create BuildConfig for %s", name)
 	}
 
 	// generate  and create DeploymentConfig
@@ -601,7 +601,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
+		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
 	}
 
 	// generate and create Service
@@ -627,10 +627,10 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 	_, err = c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create Service for %s", name)
+		return errors.Wrapf(err, "unable to create Service for %s", name)
 	}
 
-	return "", nil
+	return nil
 
 }
 
@@ -665,6 +665,17 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 		return errors.Wrap(err, "unable to update the component")
 	}
 	return nil
+}
+
+// GetLatestBuildName gets the name of the latest build
+// buildConfigName is the name of the buildConfig for which we are fetching the build name
+// returns the name of the latest build or the error
+func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
+	buildConfig, err := c.buildClient.BuildConfigs(c.namespace).Get(buildConfigName, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get the latest build name")
+	}
+	return fmt.Sprintf("%s-%d", buildConfigName, buildConfig.Status.LastVersion), nil
 }
 
 // StartBinaryBuild starts new build and streams dir as source for build
