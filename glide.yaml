@@ -30,3 +30,5 @@ import:
   version: v0.1.9
 - package: github.com/satori/go.uuid
   version: v1.1.0
+- package: github.com/fsnotify/fsnotify
+  version: v1.4.7
