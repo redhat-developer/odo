@@ -23,12 +23,7 @@ var componentDeleteCmd = &cobra.Command{
 	Example: `  # Delete component named 'frontend'. 
   ocdev delete frontend
 	`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Please specify component name to delete.")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("component delete called")
 		log.Debugf("args: %#v", strings.Join(args, " "))

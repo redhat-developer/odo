@@ -56,15 +56,8 @@ var componentSetCmd = &cobra.Command{
 	Example: `  # Set component named 'frontend' as active
   ocdev set component frontend
   `,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return fmt.Errorf("Please provide component name")
-		}
-		if len(args) > 1 {
-			return fmt.Errorf("Only one argument (component name) is allowed")
-		}
-		return nil
-	}, Run: func(cmd *cobra.Command, args []string) {
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		err := component.SetCurrent(client, args[0])
 		if err != nil {
