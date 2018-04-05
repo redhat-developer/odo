@@ -41,7 +41,7 @@ func runCmd(cmdS string) string {
 		os.Exit(1)
 	}
 
-	fmt.Println(string(out.Bytes()))
+	fmt.Printf("$ %s\n%s\n\n", cmdS, string(out.Bytes()))
 	return string(out.Bytes())
 }
 
@@ -132,7 +132,8 @@ var _ = Describe("Usecase #5", func() {
 		})
 	})
 
-	Context("creating an application", func() {
+	Describe("creating an application", func() {
+
 		Context("when application by the same name doesn't exist", func() {
 			It("should create an application", func() {
 				createApp("usecase5")
