@@ -9,14 +9,8 @@ import (
 )
 
 var updateCmd = &cobra.Command{
-	Use: "update",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) >= 2 {
-			// TODO: Improve this message
-			return fmt.Errorf("Invalid arguments, maximum 1 arguments possible")
-		}
-		return nil
-	},
+	Use:  "update",
+	Args: cobra.MaximumNArgs(1),
 	Example: `  # Change the source of a currently active component to local (use the current directory as a source)
   ocdev update --local
 

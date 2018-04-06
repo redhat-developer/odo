@@ -27,15 +27,7 @@ var applicationCmd = &cobra.Command{
 var applicationCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create an application",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return fmt.Errorf("Please provide name for the new application")
-		}
-		if len(args) > 1 {
-			return fmt.Errorf("Only one argument (application name) is allowed")
-		}
-		return nil
-	},
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Args validation makes sure that there is exactly one argument
 		name := args[0]

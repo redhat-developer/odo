@@ -32,17 +32,7 @@ If component name is not provided, component type value will be used for name.
   # Create new nodejs component with source from remote git repository.
   ocdev create nodejs --git https://github.com/openshift/nodejs-ex.git
 	`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			// TODO: improve this message. It should say something about requiring component name
-			return fmt.Errorf("At least one argument is required")
-		}
-		if len(args) > 2 {
-			// TODO: Improve this message
-			return fmt.Errorf("Invalid arguments, maximum 2 arguments possible")
-		}
-		return nil
-	},
+	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
 
