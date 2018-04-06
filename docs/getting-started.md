@@ -100,7 +100,7 @@ Switched to application: nodeapp
 Now that you have created an application, now add a component of type _nodejs_ to the application, from the current directory where our code lies.
 
 ```console
-$ ocdev component create nodejs --local=.
+$ ocdev create nodejs --local=.
 --> Found image 2809a54 (3 weeks old) in image stream "openshift/nodejs" under tag "6" for "nodejs"
 --> Creating resources with label app=nodeapp,app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=nodeapp ...
     imagestream "nodejs" created       
@@ -124,23 +124,13 @@ Great news! Your component has been deployed on OpenShift now. Let's quickly che
 
 ##### Connect to the component
 
-We need to expose the component as a route so we can connect to it.
-
-Get the name of the service by running -
-```console
-$ oc get services
-NAME      CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-nodejs    172.30.241.15   <none>        8080/TCP   9m
+We need create the URL so we can connect to it our application.
 ```
+$ ocdev url create
+Adding URL to component: nodejs
+URL created for component: nodejs
 
-Now we need to expose the service to create a route -
-```console
-$ oc expose service nodejs
-route "nodejs" exposed
-
-$ oc get route nodejs
-NAME      HOST/PORT                                PATH      SERVICES   PORT       TERMINATION   WILDCARD
-nodejs    nodejs-myproject.192.168.42.147.nip.io             nodejs     8080-tcp                 None
+nodejs - nodejs-myproject.192.168.42.147.nip.io
 ```
 
 Now just open the URL `nodejs-myproject.192.168.42.147.nip.io` in the browser and you will be able to view your deployed application.
