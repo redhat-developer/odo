@@ -17,7 +17,7 @@ There are different ways to install OpenShift CLI.
 Please follow [OpenShift documentation](https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli).
 
 ## Installation
-To install `ocdev` on your system, you cat use the fully automated [install.sh](./scripts/install.sh) script.
+To install `ocdev` on your system, you can use the fully automated [install.sh](./scripts/install.sh) script.
 This script will enable ocdev repository on your system and install ocdev using package manager depending on your system.
 Supported systems are Debian, Ubuntu, Fedora, CentOS and macOS. You can find more information about package repositories in 
 [Advanced installation guide](./docs/advanced-installation-guide.md)
