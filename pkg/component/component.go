@@ -343,3 +343,20 @@ func GetComponentDeploymentConfig(client *occlient.Client, componentName string,
 
 	return &deploymentConfigs[0], nil
 }
+
+// Checks whether a component with the given name exists in the current application or not
+// componentName is the component name to perform check for
+// The first returned parameter is a bool indicating if a component with the given name already exists or not
+// The second returned parameter is the error that might occurs while execution
+func Exists(client *occlient.Client, componentName string) (bool, error) {
+	componentList, err := List(client)
+	if err != nil {
+		return false, errors.Wrap(err, "unable to get the component list")
+	}
+	for _, component := range componentList {
+		if component.Name == componentName {
+			return true, nil
+		}
+	}
+	return false, nil
+}

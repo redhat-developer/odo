@@ -58,6 +58,15 @@ If component name is not provided, component type value will be used for name.
 			os.Exit(1)
 		}
 
+		exists, err := component.Exists(client, componentName)
+		if err != nil {
+			checkError(err, "")
+		}
+		if exists {
+			fmt.Printf("component with the name %s already exists in the current application\n", componentName)
+			os.Exit(1)
+		}
+
 		if len(componentGit) != 0 {
 			err := component.CreateFromGit(client, componentName, componentType, componentGit)
 			checkError(err, "")
@@ -75,7 +84,7 @@ If component name is not provided, component type value will be used for name.
 			checkError(err, "")
 		}
 		// after component is successfully created, set is as active
-		err := component.SetCurrent(client, componentName)
+		err = component.SetCurrent(client, componentName)
 		checkError(err, "")
 	},
 }
