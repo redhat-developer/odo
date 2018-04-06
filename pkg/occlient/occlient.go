@@ -1179,7 +1179,6 @@ func (c *Client) GetPVCNamesFromSelector(selector string) ([]string, error) {
 // An error is thrown when exactly one Deployment Config is not found for the
 // component.
 func (c *Client) GetOneDeploymentConfigFromSelector(selector string) (*appsv1.DeploymentConfig, error) {
-
 	deploymentConfigs, err := c.GetDeploymentConfigsFromSelector(selector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get DeploymentConfigs for the selector: %v", selector)
@@ -1193,4 +1192,45 @@ func (c *Client) GetOneDeploymentConfigFromSelector(selector string) (*appsv1.De
 	}
 
 	return &deploymentConfigs[0], nil
+}
+
+// GetOnePodFromSelector returns the Pod  object associated with the given selector.
+// An error is thrown when exactly one Pod is not found.
+func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
+
+	pods, err := c.kubeClient.CoreV1().Pods(c.namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get Pod for the selector: %v", selector)
+	}
+	numDC := len(pods.Items)
+	if numDC == 0 {
+		return nil, fmt.Errorf("no Pod was found for the selector: %v", selector)
+	} else if numDC > 1 {
+		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &pods.Items[0], nil
+}
+
+// SyncPath copies local directory to directory in running Pod.
+func (c *Client) SyncPath(localPath string, targetPodName string, targetPath string) (string, error) {
+	// TODO: do this without using 'oc' binary
+	args := []string{
+		"rsync",
+		localPath,
+		fmt.Sprintf("%s:%s", targetPodName, targetPath),
+		"--exclude", ".git",
+		"--no-perms",
+	}
+
+	output, err := c.runOcComamnd(&OcCommand{args: args})
+	if err != nil {
+		return "", err
+	}
+
+	log.Debugf("command output:\n %s \n", string(output[:]))
+	return string(output[:]), nil
+
 }
