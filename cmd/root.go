@@ -85,13 +85,13 @@ func getOcClient() *occlient.Client {
 // exit code of 1.
 // If the context is provided, then that is printed, if not, then the cause is
 // detected using errors.Cause(err)
-func checkError(err error, context string) {
+func checkError(err error, context string, a ...interface{}) {
 	if err != nil {
 		log.Debugf("Error:\n%v", err)
 		if context == "" {
 			fmt.Println(errors.Cause(err))
 		} else {
-			fmt.Println(context)
+			fmt.Printf(fmt.Sprintf("%s\n", context), a...)
 		}
 
 		os.Exit(1)
