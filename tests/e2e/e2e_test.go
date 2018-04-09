@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -37,8 +36,7 @@ func runCmd(cmdS string) string {
 	err := cmd.Run()
 
 	if err != nil {
-		fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
-		os.Exit(1)
+		Fail(fmt.Sprintf("runCmd failed: %s : %s ", err, stderr.String()))
 	}
 
 	fmt.Printf("$ %s\n%s\n\n", cmdS, string(out.Bytes()))
@@ -80,8 +78,7 @@ func pingSvc(url string) {
 	for {
 		select {
 		case <-pingTimeout:
-			log.Fatal("could not ping the specific service in given time: 10 minutes")
-			os.Exit(1)
+			Fail("could not ping the specific service in given time: 10 minutes")
 
 		case <-tick:
 			httpTimeout := time.Duration(10 * time.Second)
@@ -99,8 +96,7 @@ func pingSvc(url string) {
 				ep = true
 
 			} else {
-				log.Fatal("for service")
-				os.Exit(1)
+				Fail("for service")
 			}
 		}
 
@@ -119,7 +115,7 @@ var _ = Describe("Usecase #5", func() {
 
 	tmpDir, err := ioutil.TempDir("", "ocdev")
 	if err != nil {
-		log.Fatal(err)
+		Fail(err.Error())
 	}
 
 	runCmd("git clone https://github.com/openshift/nodejs-ex " + tmpDir + "/nodejs-ex")
@@ -223,7 +219,7 @@ var _ = Describe("Usecase #5", func() {
 				pingCmd := "curl -s " + getRoute + " | grep -i ocdev | wc -l | tr -d '\n'"
 				out, err := exec.Command("/bin/sh", "-c", pingCmd).Output()
 				if err != nil {
-					log.Fatal(err)
+					Fail(err.Error())
 				}
 
 				outInt, _ := strconv.Atoi(string(out))
