@@ -44,7 +44,7 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 	// if current application doesn't exist, create it
 	// this can happen when ocdev is started form clean state
 	// and default application is used (first command run is ocdev create)
-	currentApplication, err := application.GetCurrentOrDefault(client)
+	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
@@ -88,7 +88,7 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 
 // CreateFromDir create new component with source from local directory
 func CreateFromDir(client *occlient.Client, name string, ctype string, dir string) error {
-	currentApplication, err := application.GetCurrentOrDefault(client)
+	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
 	}
@@ -129,7 +129,7 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 
 // Delete whole component
 func Delete(client *occlient.Client, name string) (string, error) {
-	currentApplication, err := application.GetCurrentOrDefault(client)
+	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
@@ -184,7 +184,7 @@ func GetCurrent(client *occlient.Client) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get config")
 	}
-	currentApplication, err := application.GetCurrentOrDefault(client)
+	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}

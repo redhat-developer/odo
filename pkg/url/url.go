@@ -23,7 +23,7 @@ func Delete(client *occlient.Client, name string) error {
 // Create creates a URL
 func Create(client *occlient.Client, cmp string) (*URL, error) {
 
-	app, err := application.GetCurrentOrDefault(client)
+	app, err := application.GetCurrentOrGetAndSetDefault(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get current application")
 	}
