@@ -204,7 +204,6 @@ func (c *ConfigInfo) AddApplication(application string, project string) error {
 	}
 
 	for _, app := range c.ActiveApplications {
-		// if application exists set is as Active
 		if app.Name == application && app.Project == project {
 			return fmt.Errorf("unable to add %s application, it already exists in config file", application)
 		}

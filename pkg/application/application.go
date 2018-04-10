@@ -50,6 +50,14 @@ func GetLabels(application string, additional bool) map[string]string {
 func Create(client *occlient.Client, applicationName string) error {
 	project := project.GetCurrent(client)
 
+	exists, err := Exists(client, applicationName)
+	if err != nil {
+		return errors.Wrap(err, "unable to create new application")
+	}
+	if exists {
+		return fmt.Errorf("unable to create new application, application %s already exists", applicationName)
+	}
+
 	cfg, err := config.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to create new application")
