@@ -7,7 +7,7 @@ import (
 
 func Add(client *occlient.Client, config *occlient.VolumeConfig) (string, error) {
 	output, err := client.SetVolumes(config,
-		&occlient.VolumeOpertaions{
+		&occlient.VolumeOperations{
 			Add: true,
 		})
 	if err != nil {
@@ -18,7 +18,7 @@ func Add(client *occlient.Client, config *occlient.VolumeConfig) (string, error)
 
 func Remove(client *occlient.Client, config *occlient.VolumeConfig) (string, error) {
 	output, err := client.SetVolumes(config,
-		&occlient.VolumeOpertaions{
+		&occlient.VolumeOperations{
 			Remove: true,
 		})
 	if err != nil {
@@ -29,7 +29,7 @@ func Remove(client *occlient.Client, config *occlient.VolumeConfig) (string, err
 
 func List(client *occlient.Client, config *occlient.VolumeConfig) (string, error) {
 	output, err := client.SetVolumes(config,
-		&occlient.VolumeOpertaions{
+		&occlient.VolumeOperations{
 			List: true,
 		})
 	if err != nil {
