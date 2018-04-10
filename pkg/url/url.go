@@ -17,20 +17,32 @@ type URL struct {
 
 // Delete deletes a URL
 func Delete(client *occlient.Client, name string) error {
-	return client.DeleteRoute(name)
+
+	currentApplication, err := application.GetCurrentOrDefault(client)
+	if err != nil {
+		return errors.Wrap(err, "unable to get current application")
+	}
+
+	deploymentName := currentApplication + "-" + name
+
+	return client.DeleteRoute(deploymentName)
 }
 
 // Create creates a URL
-func Create(client *occlient.Client, cmp string) (*URL, error) {
+func Create(client *occlient.Client, name string) (*URL, error) {
 
-	app, err := application.GetCurrentOrDefault(client)
+	log.Debug("App: %s", name)
+
+	currentApplication, err := application.GetCurrentOrDefault(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get current application")
 	}
 
-	labels := component.GetLabels(cmp, app, false)
+	deploymentName := currentApplication + "-" + name
 
-	route, err := client.CreateRoute(cmp, labels)
+	labels := component.GetLabels(name, currentApplication, false)
+
+	route, err := client.CreateRoute(deploymentName, labels)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}
