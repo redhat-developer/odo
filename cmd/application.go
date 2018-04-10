@@ -33,15 +33,10 @@ var applicationCreateCmd = &cobra.Command{
 		name := args[0]
 		client := getOcClient()
 		fmt.Printf("Creating application: %v\n", name)
-		if err := application.Create(client, name); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		err := application.SetCurrent(client, name)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		err := application.Create(client, name)
+		checkError(err, "")
+		err = application.SetCurrent(client, name)
+		checkError(err, "")
 		fmt.Printf("Switched to application: %v\n", name)
 	},
 }
@@ -53,10 +48,7 @@ var applicationGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		app, err := application.GetCurrent(client)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		if applicationShortFlag {
 			fmt.Print(app)
 			return
@@ -92,10 +84,7 @@ var applicationDeleteCmd = &cobra.Command{
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := application.Delete(client, appName)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			fmt.Printf("Deleted application: %s\n", args[0])
 		} else {
 			fmt.Printf("Aborting deletion of application: %v\n", appName)
@@ -110,10 +99,7 @@ var applicationListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		apps, err := application.List(client)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		fmt.Printf("ACTIVE   NAME\n")
 		for _, app := range apps {
 			activeMark := " "
@@ -141,20 +127,14 @@ var applicationSetCmd = &cobra.Command{
 		appName := args[0]
 		// error if application does not exist
 		exists, err := application.Exists(client, appName)
-		if err != nil {
-			fmt.Printf("Unable to check if application exists: %v\n", err)
-			os.Exit(1)
-		}
+		checkError(err, "unable to check if application exists")
 		if !exists {
 			fmt.Printf("Application %v does not exist\n", appName)
 			os.Exit(1)
 		}
 
 		err = application.SetCurrent(client, appName)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		fmt.Printf("Switched to application: %v\n", args[0])
 	},
 }

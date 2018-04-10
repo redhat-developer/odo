@@ -55,45 +55,28 @@ var updateCmd = &cobra.Command{
 		)
 		if len(args) == 0 {
 			componentName, err = component.GetCurrent(client)
-			if err != nil {
-				fmt.Println("Unable to get current component")
-			}
+			checkError(err, "unable to get current component")
 		} else {
 			componentName = args[0]
 		}
 
 		if len(componentGit) != 0 {
 			err := component.Update(client, componentName, "git", componentGit)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			err = component.Update(client, componentName, "dir", dir)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			err = component.Update(client, componentName, "dir", dir)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		}
 	},

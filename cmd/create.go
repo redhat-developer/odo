@@ -60,44 +60,26 @@ If component name is not provided, component type value will be used for name.
 
 		if len(componentGit) != 0 {
 			output, err := component.CreateFromGit(client, componentName, componentType, componentGit)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			fmt.Println(output)
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			output, err := component.CreateFromDir(client, componentName, componentType, dir)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			fmt.Println(output)
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			output, err := component.CreateFromDir(client, componentName, componentType, dir)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			checkError(err, "")
 			fmt.Println(output)
 		}
 		// after component is successfully created, set is as active
-		if err := component.SetCurrent(client, componentName); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
+		err := component.SetCurrent(client, componentName)
+		checkError(err, "")
 	},
 }
 

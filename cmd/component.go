@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/ocdev/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -33,10 +30,7 @@ var componentGetCmd = &cobra.Command{
 		log.Debugf("component get called")
 		client := getOcClient()
 		component, err := component.GetCurrent(client)
-		if err != nil {
-			fmt.Println(errors.Wrap(err, "unable to get current component"))
-			os.Exit(1)
-		}
+		checkError(err, "unable to get current component")
 		if componentShortFlag {
 			fmt.Print(component)
 		} else {
@@ -60,10 +54,7 @@ var componentSetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		err := component.SetCurrent(client, args[0])
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 		fmt.Printf("Switched to component: %v\n", args[0])
 	},
 }

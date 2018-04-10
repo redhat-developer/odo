@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/redhat-developer/ocdev/pkg/component"
 	"github.com/spf13/cobra"
 )
@@ -17,10 +15,7 @@ var componentListCmd = &cobra.Command{
 		client := getOcClient()
 
 		components, err := component.List(client)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		checkError(err, "")
 
 		if len(components) == 0 {
 			fmt.Println("There are no components deployed.")
