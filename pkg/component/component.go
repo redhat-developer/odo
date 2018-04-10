@@ -66,7 +66,10 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 	// save source path as annotation
 	annotations := map[string]string{componentSourceURLAnnotation: url}
 
-	output, err := client.NewAppS2I(name, ctype, url, labels, annotations)
+	// Use application-componentName as the deployment name so deployments are "namespaced"
+	deploymentName := currentApplication + "-" + name
+
+	output, err := client.NewAppS2I(deploymentName, ctype, url, labels, annotations)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create git component %s", name)
 	}
@@ -99,7 +102,10 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 	sourceURL := url.URL{Scheme: "file", Path: dir}
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 
-	output, err := client.NewAppS2I(name, ctype, "", labels, annotations)
+	// Use application-componentName as the deployment name so deployments are "namespaced"
+	deploymentName := currentApplication + "-" + name
+
+	output, err := client.NewAppS2I(deploymentName, ctype, "", labels, annotations)
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +114,7 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 	fmt.Println(output)
 	fmt.Println("please wait, building application...")
 
-	err = client.StartBinaryBuild(name, dir)
+	err = client.StartBinaryBuild(deploymentName, dir)
 	if err != nil {
 		return "", err
 	}
@@ -187,7 +193,18 @@ func GetCurrent(client *occlient.Client) (string, error) {
 
 // PushLocal start new build and push local dir as a source for build
 func PushLocal(client *occlient.Client, componentName string, dir string) error {
-	err := client.StartBinaryBuild(componentName, dir)
+
+	currentApplication, err := application.GetCurrentOrDefault(client)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to retrieve current application name")
+	}
+
+	// Combine the currentApplication and componentName to retrieve the files
+	// since it's all namespaced.
+	deploymentName := currentApplication + "-" + componentName
+	log.Debugf("Push name: %s", deploymentName)
+
+	err = client.StartBinaryBuild(deploymentName, dir)
 	if err != nil {
 		return errors.Wrap(err, "unable to start build")
 	}
@@ -259,9 +276,14 @@ func List(client *occlient.Client) ([]ComponentInfo, error) {
 // The first returned string is component source type ("git" or "local")
 // The second returned string is a source (url to git repository or local path)
 func GetComponentSource(client *occlient.Client, componentName string, applicationName string, projectName string) (string, string, error) {
-	bc, err := client.GetBuildConfig(componentName, projectName)
+
+	// Combine the currentApplication and componentName to retrieve the files
+	// since it's all namespaced.
+	deploymentName := applicationName + "-" + componentName
+
+	bc, err := client.GetBuildConfig(deploymentName, projectName)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "unable to get source path for component %s", componentName)
+		return "", "", errors.Wrapf(err, "unable to get source path for component %s", deploymentName)
 	}
 
 	var sourceType string
@@ -281,7 +303,7 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		return "", "", fmt.Errorf("unsupported BuildConfig.Spec.Source.Type %s", bc.Spec.Source.Type)
 	}
 
-	log.Debugf("Component %s source type is %s (%s)", componentName, sourceType, sourcePath)
+	log.Debugf("Component %s source type is %s (%s)", deploymentName, sourceType, sourcePath)
 	return sourceType, sourcePath, nil
 }
 
@@ -290,20 +312,35 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 // to indicates what type of source type the component source is changing to e.g from git to local
 // source indicates dir or the git URL
 func Update(client *occlient.Client, componentName string, to string, source string) error {
+
 	var err error
+
+	// Get the project name and application name
 	projectName := client.GetCurrentProjectName()
+
+	currentApplication, err := application.GetCurrentOrDefault(client)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to retrieve current application name")
+	}
+
+	// Combine the currentApplication and componentName to retrieve the files
+	// since it's all namespaced.
+	deploymentName := currentApplication + "-" + componentName
+
 	// save source path as annotation
 	var annotations map[string]string
 	if to == "git" {
 		annotations = map[string]string{componentSourceURLAnnotation: source}
-		err = client.UpdateBuildConfig(componentName, projectName, source, annotations)
+		err = client.UpdateBuildConfig(deploymentName, projectName, source, annotations)
 	} else if to == "dir" {
 		sourceURL := url.URL{Scheme: "file", Path: source}
 		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+		err = client.UpdateBuildConfig(deploymentName, projectName, "", annotations)
 	}
+
 	if err != nil {
 		return errors.Wrap(err, "unable to update the component")
 	}
+
 	return nil
 }

@@ -813,13 +813,13 @@ type VolumeConfig struct {
 	Path             *string
 }
 
-type VolumeOpertaions struct {
+type VolumeOperations struct {
 	Add    bool
 	Remove bool
 	List   bool
 }
 
-func (c *Client) SetVolumes(config *VolumeConfig, operations *VolumeOpertaions) (string, error) {
+func (c *Client) SetVolumes(config *VolumeConfig, operations *VolumeOperations) (string, error) {
 	args := []string{
 		"set",
 		"volumes",
