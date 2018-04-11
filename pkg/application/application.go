@@ -162,16 +162,22 @@ func GetCurrent(client *occlient.Client) (string, error) {
 	return app, nil
 }
 
-// GetCurrentOrDefault returns currently active application.
-// If no application is active returns defaultApplication name
-func GetCurrentOrDefault(client *occlient.Client) (string, error) {
+// GetCurrentOrGetAndSetDefault returns currently active application.
+// If no application is active returns defaultApplication name and sets it as
+// default as well
+func GetCurrentOrGetAndSetDefault(client *occlient.Client) (string, error) {
 	currentApp, err := GetCurrent(client)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
 	// if no Application is active use default
 	if currentApp == "" {
+		// get default application name
 		currentApp = getDefaultAppName()
+		// set default application as the current application
+		if err := SetCurrent(client, currentApp); err != nil {
+			return "", errors.Wrapf(err, "unable to set %v as the current application", currentApp)
+		}
 	}
 	return currentApp, nil
 }
