@@ -137,10 +137,10 @@ func New() (*Client, error) {
 	client.ocpath = ocpath
 
 	if !isServerUp(client.ocpath) {
-		return nil, errors.New("server is down")
+		return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
 	}
 	if !isLoggedIn(client.ocpath) {
-		return nil, errors.New("please log in to the cluster")
+		return nil, errors.New("Please log in to the cluster")
 	}
 
 	return &client, nil
