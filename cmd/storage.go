@@ -31,8 +31,8 @@ var storageCmd = &cobra.Command{
 	Long:  "Perform storage operations",
 }
 
-var storageAddCmd = &cobra.Command{
-	Use:   "add",
+var storageCreateCmd = &cobra.Command{
+	Use:   "create",
 	Short: "create storage and mount to component",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -40,7 +40,7 @@ var storageAddCmd = &cobra.Command{
 		cmpnt := getComponent(client)
 		app, err := application.GetCurrent(client)
 		checkError(err, "")
-		_, err = storage.Add(client, args[0], storageSize, storagePath, cmpnt, app)
+		_, err = storage.Create(client, args[0], storageSize, storagePath, cmpnt, app)
 		checkError(err, "")
 		fmt.Printf("Added storage %v to %v\n", args[0], cmpnt)
 	},
@@ -99,12 +99,12 @@ var storageListCmd = &cobra.Command{
 }
 
 func init() {
-	storageAddCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
-	storageAddCmd.MarkFlagRequired("size")
-	storageAddCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
-	storageAddCmd.MarkFlagRequired("path")
+	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
+	storageCreateCmd.MarkFlagRequired("size")
+	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
+	storageCreateCmd.MarkFlagRequired("path")
 
-	storageCmd.AddCommand(storageAddCmd)
+	storageCmd.AddCommand(storageCreateCmd)
 	storageCmd.AddCommand(storageRemoveCmd)
 	storageCmd.AddCommand(storageListCmd)
 
