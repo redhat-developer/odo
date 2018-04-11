@@ -156,7 +156,7 @@ Now you can repeat this cycle over and over again. Keep on making changes and ke
 You need to add storage to your component, `ocdev` makes it very easy for you to do this.
 
 ```console
-$ ocdev storage add nodestorage --path=/opt/app-root/src/storage/ --size=1Gi 
+$ ocdev storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi 
 Added storage nodestorage to nodejs
 ```
 That just added 1Gi of storage to your nodejs component on the given path. Now your data will persist over application restarts.
