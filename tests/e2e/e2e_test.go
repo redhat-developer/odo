@@ -18,11 +18,11 @@ import (
 	"time"
 )
 
-// TODO: A neater way to provide ocdev path. Currently we assume \
-// ocdev and oc in $PATH already.
+// TODO: A neater way to provide odo path. Currently we assume \
+// odo and oc in $PATH already.
 
 var t = strconv.FormatInt(time.Now().Unix(), 10)
-var projName = fmt.Sprintf("ocdev-%s", t)
+var projName = fmt.Sprintf("odo-%s", t)
 
 func runCmd(cmdS string) string {
 	cmd := exec.Command("/bin/sh", "-c", cmdS)
@@ -74,25 +74,25 @@ func pingSvc(url string) {
 
 func TestOCdev(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ocdev test suite")
+	RunSpecs(t, "odo test suite")
 }
 
-var _ = Describe("ocdev", func() {
+var _ = Describe("odo", func() {
 
-	tmpDir, err := ioutil.TempDir("", "ocdev")
+	tmpDir, err := ioutil.TempDir("", "odo")
 	if err != nil {
 		Fail(err.Error())
 	}
 
 	// TODO: Create component without creating application
-	Context("ocdev project", func() {
+	Context("odo project", func() {
 		It("should create a new project", func() {
-			session := runCmd("ocdev project create " + projName)
+			session := runCmd("odo project create " + projName)
 			Expect(session).To(ContainSubstring(projName))
 		})
 
 		It("should get the project", func() {
-			getProj := runCmd("ocdev project get --short")
+			getProj := runCmd("odo project get --short")
 			Expect(strings.TrimSpace(getProj)).To(Equal(projName))
 		})
 	})
@@ -100,32 +100,32 @@ var _ = Describe("ocdev", func() {
 	Describe("creating an application", func() {
 		Context("when application by the same name doesn't exist", func() {
 			It("should create an application", func() {
-				appName := runCmd("ocdev application create usecase5")
+				appName := runCmd("odo application create usecase5")
 				Expect(appName).To(ContainSubstring("usecase5"))
 			})
 
 			It("should get the current application", func() {
-				appName := runCmd("ocdev application get --short")
+				appName := runCmd("odo application get --short")
 				Expect(appName).To(Equal("usecase5"))
 			})
 
 			It("should be created within the project", func() {
-				projName := runCmd("ocdev project get --short")
+				projName := runCmd("odo project get --short")
 				Expect(projName).To(ContainSubstring(projName))
 			})
 
 			It("should be able to create another application", func() {
-				appName := runCmd("ocdev application create usecase5-2")
+				appName := runCmd("odo application create usecase5-2")
 				Expect(appName).To(ContainSubstring("usecase5-2"))
 			})
 
 			It("should be able to delete an application", func() {
 				// Cleanup
-				runCmd("ocdev application delete usecase5-2 -f")
+				runCmd("odo application delete usecase5-2 -f")
 			})
 
 			It("should be able to set an application as current", func() {
-				appName := runCmd("ocdev application set usecase5")
+				appName := runCmd("odo application set usecase5")
 				Expect(appName).To(ContainSubstring("usecase5"))
 			})
 		})
@@ -140,40 +140,40 @@ var _ = Describe("ocdev", func() {
 					tmpDir + "/nodejs-ex")
 
 				// TODO: add tests for --git
-				runCmd("ocdev create nodejs --local " + tmpDir + "/nodejs-ex")
+				runCmd("odo create nodejs --local " + tmpDir + "/nodejs-ex")
 			})
 
 			It("should be the get the component created as active component", func() {
-				cmp := runCmd("ocdev component get --short")
+				cmp := runCmd("odo component get --short")
 				Expect(cmp).To(Equal("nodejs"))
 			})
 
 			It("should create the component within the application", func() {
-				getApp := runCmd("ocdev application get --short")
+				getApp := runCmd("odo application get --short")
 				Expect(getApp).To(Equal("usecase5"))
 			})
 
 			It("should list the components within the application", func() {
-				cmpList := runCmd("ocdev list")
+				cmpList := runCmd("odo list")
 				Expect(cmpList).To(ContainSubstring("nodejs"))
 			})
 
 			It("should be able to create multiple components within the same application", func() {
-				runCmd("ocdev create php")
+				runCmd("odo create php")
 			})
 
 			It("should list the newly created second component", func() {
-				cmpList := runCmd("ocdev list")
+				cmpList := runCmd("odo list")
 				Expect(cmpList).To(ContainSubstring("php"))
 			})
 
 			It("should get the application usecase5", func() {
-				appGet := runCmd("ocdev application get --short")
+				appGet := runCmd("odo application get --short")
 				Expect(appGet).To(Equal("usecase5"))
 			})
 
 			It("should be able to set a component as active", func() {
-				cmpSet := runCmd("ocdev component set nodejs")
+				cmpSet := runCmd("odo component set nodejs")
 				Expect(cmpSet).To(ContainSubstring("nodejs"))
 			})
 		})
@@ -198,25 +198,25 @@ var _ = Describe("ocdev", func() {
 				runCmd("sed -i 's/Welcome to your Node.js application on OpenShift/Welcome to your Node.js on OCDEV/g' " + tmpDir + "/nodejs-ex/views/index.html")
 
 				// Push the changes
-				runCmd("ocdev push --local " + tmpDir + "/nodejs-ex")
+				runCmd("odo push --local " + tmpDir + "/nodejs-ex")
 			})
 
 		})
 	})
 
 	Describe("Creating url", func() {
-		Context("using ocdev url", func() {
+		Context("using odo url", func() {
 			It("should create route", func() {
-				runCmd("ocdev url create nodejs")
+				runCmd("odo url create nodejs")
 			})
 
 			It("should be able to list the url", func() {
-				getRoute := runCmd("ocdev url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
 				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).To(ContainSubstring("nodejs-" + projName))
 
 				for {
-					pingCmd := "curl -s " + getRoute + " | grep -i ocdev | wc -l | tr -d '\n'"
+					pingCmd := "curl -s " + getRoute + " | grep -i odo | wc -l | tr -d '\n'"
 					out, err := exec.Command("/bin/sh", "-c", pingCmd).Output()
 					if err != nil {
 						Fail(err.Error())
@@ -224,7 +224,7 @@ var _ = Describe("ocdev", func() {
 
 					outInt, _ := strconv.Atoi(string(out))
 					if outInt > 0 {
-						grepAfterPush := runCmd("curl -s " + getRoute + " | grep -i ocdev")
+						grepAfterPush := runCmd("curl -s " + getRoute + " | grep -i odo")
 						log.Printf("After change: %s", strings.TrimSpace(grepAfterPush))
 						break
 					}
@@ -237,7 +237,7 @@ var _ = Describe("ocdev", func() {
 	Describe("Adding storage", func() {
 		Context("when storage is added", func() {
 			It("should default to active component when no component name is passed", func() {
-				storAdd := runCmd("ocdev storage create pv1 --path /mnt/pv1 --size 5Gi")
+				storAdd := runCmd("odo storage add pv1 --path /mnt/pv1 --size 5Gi")
 				Expect(storAdd).To(ContainSubstring("nodejs"))
 
 				// Check against path and name against dc
@@ -256,22 +256,22 @@ var _ = Describe("ocdev", func() {
 			})
 
 			It("should be able to list the storage added", func() {
-				storList := runCmd("ocdev storage list")
+				storList := runCmd("odo storage list")
 				Expect(storList).To(ContainSubstring("pv1"))
 			})
 
-			// TODO: Verify if the storage removed using ocdev deletes pvc
+			// TODO: Verify if the storage removed using odo deletes pvc
 			It("should be able to delete the storage added", func() {
-				runCmd("ocdev storage remove pv1")
+				runCmd("odo storage remove pv1")
 
-				storList := runCmd("ocdev storage list")
+				storList := runCmd("odo storage list")
 				Expect(storList).NotTo(ContainSubstring("pv1"))
 			})
 
 			It("should be able add storage to a component specified", func() {
-				runCmd("ocdev storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
+				runCmd("odo storage add pv2 --path /mnt/pv2 --size 5Gi --component php")
 
-				storList := runCmd("ocdev storage list --component php")
+				storList := runCmd("odo storage list --component php")
 				Expect(storList).To(ContainSubstring("pv2"))
 
 				// Verify with deploymentconfig
@@ -293,18 +293,18 @@ var _ = Describe("ocdev", func() {
 
 	Context("deleting the application", func() {
 		It("should delete application and component", func() {
-			runCmd("ocdev application delete usecase5 -f")
+			runCmd("odo application delete usecase5 -f")
 
-			appGet := runCmd("ocdev application get --short")
+			appGet := runCmd("odo application get --short")
 			Expect(appGet).To(Equal(""))
 
-			appList := runCmd("ocdev application list")
+			appList := runCmd("odo application list")
 			Expect(appList).NotTo(ContainSubstring("usecase5"))
 
-			cmpList := runCmd("ocdev list")
+			cmpList := runCmd("odo list")
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
 
-			// TODO: `ocdev project delete` once implemented
+			// TODO: `odo project delete` once implemented
 			runCmd("oc delete project " + projName)
 		})
 	})

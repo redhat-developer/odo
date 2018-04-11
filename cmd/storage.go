@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/redhat-developer/ocdev/pkg/application"
-	"github.com/redhat-developer/ocdev/pkg/component"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
-	"github.com/redhat-developer/ocdev/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 )
 

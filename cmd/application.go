@@ -6,7 +6,7 @@ import (
 
 	"strings"
 
-	"github.com/redhat-developer/ocdev/pkg/application"
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var applicationCmd = &cobra.Command{
 	Use:     "application",
 	Short:   "Perform application operations",
 	Aliases: []string{"app"},
-	// 'ocdev application' is the same as 'ocdev application get'
+	// 'odo application' is the same as 'odo application get'
 	Run: applicationGetCmd.Run,
 }
 
@@ -54,7 +54,7 @@ var applicationGetCmd = &cobra.Command{
 			return
 		}
 		if app == "" {
-			fmt.Printf("There's no active application.\nYou can create one by running 'ocdev application create <name>'.")
+			fmt.Printf("There's no active application.\nYou can create one by running 'odo application create <name>'.")
 			return
 		}
 		fmt.Printf("The current application is: %v\n", app)

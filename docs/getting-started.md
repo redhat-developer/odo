@@ -1,21 +1,21 @@
 # Getting Started
 
-This guide will get you started with developing your microservices iteratively on OpenShift using `ocdev`.
+This guide will get you started with developing your microservices iteratively on OpenShift using `odo`.
 
 We will be developing a nodejs application in this guide, you can try along by getting the code for the application by running: `git clone https://github.com/kadel/nodejs-ex`
 
 #### Running OpenShift
 
-The easiest way to get a single node OpenShift cluster is by using [minishift](https://docs.openshift.org/latest/minishift/index.html), but `ocdev` will work with any other OpenShift instance you are logged in to.
+The easiest way to get a single node OpenShift cluster is by using [minishift](https://docs.openshift.org/latest/minishift/index.html), but `odo` will work with any other OpenShift instance you are logged in to.
 
 - Install minishift using this [installation guide](https://docs.openshift.org/latest/minishift/getting-started/installing.html)
 - The `oc` binary can be installed `minishift oc-env` command as described [here](https://docs.openshift.org/latest/minishift/getting-started/quickstart.html#starting-minishift)
-- Install ocdev using this [installation guide](/README.md#installation)
+- Install odo using this [installation guide](/README.md#installation)
 
 Make sure that the commands exist by running -
 - `minishift version`
 - `oc version`
-- `ocdev version`
+- `odo version`
 
 The output should look something like -
 ```console
@@ -29,7 +29,7 @@ features: Basic-Auth GSSAPI Kerberos SPNEGO
 
 error: server took too long to respond with version information.
 
-$ ocdev version
+$ odo version
 v0.0.1 (HEAD)
 ```
 
@@ -81,7 +81,7 @@ Using project "myproject".
 
 Make sure you are logged in to the cluster by running `oc whoami` command.
 
-Now we can move on to creating our application using `ocdev`.
+Now we can move on to creating our application using `odo`.
 
 #### Create an application
 
@@ -90,7 +90,7 @@ An application is an umbrella under which you will build all the components (mic
 Let's create an application -
 
 ```console
-$ ocdev application create nodeapp 
+$ odo application create nodeapp 
 Creating application: nodeapp
 Switched to application: nodeapp
 ```
@@ -100,7 +100,7 @@ Switched to application: nodeapp
 Now that you have created an application, now add a component of type _nodejs_ to the application, from the current directory where our code lies.
 
 ```console
-$ ocdev create nodejs --local=.
+$ odo create nodejs --local=.
 --> Found image 2809a54 (3 weeks old) in image stream "openshift/nodejs" under tag "6" for "nodejs"
 --> Creating resources with label app=nodeapp,app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=nodeapp ...
     imagestream "nodejs" created       
@@ -126,7 +126,7 @@ Great news! Your component has been deployed on OpenShift now. Let's quickly che
 
 We need create the URL so we can connect to it our application.
 ```
-$ ocdev url create
+$ odo url create
 Adding URL to component: nodejs
 URL created for component: nodejs
 
@@ -139,24 +139,24 @@ Now just open the URL `nodejs-myproject.192.168.42.147.nip.io` in the browser an
 
 Well, your application looks great, but now you've made some changes in the code. Let's deploy these changes and see how it looks.
 
-The current component is already set to nodejs, which can confirm from `ocdev component get`, so all we need to do is -
+The current component is already set to nodejs, which can confirm from `odo component get`, so all we need to do is -
 
 ```console
-$ ocdev push
+$ odo push
 pushing changes to component: nodejs   
 changes successfully pushed to component: nodejs               
 ```
 
 And now simply refresh your application in the browser, and you'll be able to see the changes.
 
-Now you can repeat this cycle over and over again. Keep on making changes and keep pushing using `$ ocdev push nodejs`
+Now you can repeat this cycle over and over again. Keep on making changes and keep pushing using `$ odo push nodejs`
 
 #### Add storage to a component
 
-You need to add storage to your component, `ocdev` makes it very easy for you to do this.
+You need to add storage to your component, `odo` makes it very easy for you to do this.
 
 ```console
-$ ocdev storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi 
+$ odo storage add nodestorage --path=/opt/app-root/src/storage/ --size=1Gi 
 Added storage nodestorage to nodejs
 ```
 That just added 1Gi of storage to your nodejs component on the given path. Now your data will persist over application restarts.

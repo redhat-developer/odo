@@ -1,10 +1,10 @@
-# ocdev e2e tests
+# odo e2e tests
 
 ### Pre-requisites
 
 1. To run e2e tests, you need to have an OpenShift cluster running. You could either use [minishift](https://github.com/minishift/minishift) or [oc cluster up](https://github.com/openshift/origin/blob/master/docs/cluster_up_down.md) for the same.
 
-1. You need to have `ocdev` and `oc` binaries in $PATH
+1. You need to have `odo` and `oc` binaries in $PATH
 
 ### Running tests
 
@@ -12,7 +12,7 @@ Run `make test-e2e` to execute the tests.
 
 ### Test coverage
 
-| `ocdev` command  | Coverage (Y/N) |
+| `odo` command  | Coverage (Y/N) |
 | ------------- | ------------- |
 | `project create` | Y |
 | `project get` | Y |

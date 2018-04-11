@@ -1,26 +1,26 @@
 #!/bin/bash
 set -e
 
-# The version of ocdev to install. Possible values - "master" and "latest"
+# The version of odo to install. Possible values - "master" and "latest"
 # master - builds from git master branch
 # latest - released versions specified by LATEST_VERSION variable
 OCDEV_VERSION="latest"
 
-# Latest released ocdev version
+# Latest released odo version
 LATEST_VERSION="v0.0.3"
 
-GITHUB_RELEASES_URL="https://github.com/redhat-developer/ocdev/releases/download/${LATEST_VERSION}"
-BINTRAY_URL="https://dl.bintray.com/ocdev/ocdev/latest"
+GITHUB_RELEASES_URL="https://github.com/redhat-developer/odo/releases/download/${LATEST_VERSION}"
+BINTRAY_URL="https://dl.bintray.com/odo/odo/latest"
 
 INSTALLATION_PATH="/usr/local/bin/"
 PRIVILEGED_EXECUTION="sh -c"
 
 DEBIAN_GPG_PUBLIC_KEY="https://bintray.com/user/downloadSubjectPublicKey?username=bintray"
-DEBIAN_MASTER_REPOSITORY="https://dl.bintray.com/ocdev/ocdev-deb-dev"
-DEBIAN_LATEST_REPOSITORY="https://dl.bintray.com/ocdev/ocdev-deb-releases"
+DEBIAN_MASTER_REPOSITORY="https://dl.bintray.com/odo/odo-deb-dev"
+DEBIAN_LATEST_REPOSITORY="https://dl.bintray.com/odo/odo-deb-releases"
 
-RPM_MASTER_YUM_REPO="https://bintray.com/ocdev/ocdev-rpm-dev/rpm"
-RPM_LATEST_YUM_REPO="https://bintray.com/ocdev/ocdev-rpm-releases/rpm"
+RPM_MASTER_YUM_REPO="https://bintray.com/odo/odo-rpm-dev/rpm"
+RPM_LATEST_YUM_REPO="https://bintray.com/odo/odo-rpm-releases/rpm"
 
 SUPPORTED_PLATFORMS="
 darwin-amd64
@@ -51,7 +51,7 @@ check_platform() {
 # currently not supported by this installer script.
 
 # Please visit the following URL for detailed installation steps:
-# https://github.com/redhat-developer/ocdev/#installation
+# https://github.com/redhat-developer/odo/#installation
 
         "
         exit 1
@@ -85,21 +85,21 @@ This installer needs to run as root. The current user is not root, and we could 
 	fi
 }
 
-invalid_ocdev_version_error() {
-    echo_stderr "# Invalid value of ocdev version provided, provide master or latest."
+invalid_odo_version_error() {
+    echo_stderr "# Invalid value of odo version provided, provide master or latest."
     exit 1
 }
 
-install_ocdev() {
-    echo "# Starting ocdev installation..."
+install_odo() {
+    echo "# Starting odo installation..."
     echo "# Detecting distribution..."
 
     platform="$(check_platform)"
     echo "# Detected platform: $platform"
 
-    if command_exists ocdev; then
+    if command_exists odo; then
         echo_stderr "# 
-ocdev version \"$(ocdev version)\" is already installed on your system, running this installer script might case issues with your current installation. If you want to install ocdev using this script, please remove the current installation of ocdev from you system.
+odo version \"$(odo version)\" is already installed on your system, running this installer script might case issues with your current installation. If you want to install odo using this script, please remove the current installation of odo from you system.
 Aborting now!
 "
         exit 1
@@ -111,16 +111,16 @@ Aborting now!
             echo_stderr "# brew command does not exist. Please install and run the installer again."
         fi
 
-        echo "# Enabling kadel/ocdev... "
-        brew tap kadel/ocdev
+        echo "# Enabling kadel/odo... "
+        brew tap kadel/odo
 
-        echo "Installing ocdev..."
+        echo "Installing odo..."
         case "$OCDEV_VERSION" in
         master)
-            brew install kadel/ocdev/ocdev -- HEAD
+            brew install kadel/odo/odo -- HEAD
             ;;
         latest)
-            brew install kadel/ocdev/ocdev
+            brew install kadel/odo/odo
         esac
 
         return 0
@@ -130,7 +130,7 @@ Aborting now!
 
     distribution=$(get_distribution)
   	echo "# Detected distribution: $distribution"
-  	echo "# Installing ocdev version: $OCDEV_VERSION"
+  	echo "# Installing odo version: $OCDEV_VERSION"
 
     case "$distribution" in
 
@@ -151,11 +151,11 @@ Aborting now!
             $PRIVILEGED_EXECUTION "echo \"deb $DEBIAN_LATEST_REPOSITORY stretch main\" | tee -a /etc/apt/sources.list"
             ;;
         *)
-            invalid_ocdev_version_error
+            invalid_odo_version_error
         esac
 
         $PRIVILEGED_EXECUTION "apt-get update"
-        $PRIVILEGED_EXECUTION "apt-get install -y ocdev"
+        $PRIVILEGED_EXECUTION "apt-get install -y odo"
         ;;
 
     centos|fedora)
@@ -169,20 +169,20 @@ Aborting now!
             ;;
         esac
 
-        echo "# Adding ocdev repo under /etc/yum.repos.d/"
+        echo "# Adding odo repo under /etc/yum.repos.d/"
         case "$OCDEV_VERSION" in
 
         master)
-            $PRIVILEGED_EXECUTION "curl -L $RPM_MASTER_YUM_REPO -o /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-dev.repo"
+            $PRIVILEGED_EXECUTION "curl -L $RPM_MASTER_YUM_REPO -o /etc/yum.repos.d/bintray-odo-odo-rpm-dev.repo"
             ;;
         latest)
-            $PRIVILEGED_EXECUTION "curl -L $RPM_LATEST_YUM_REPO -o /etc/yum.repos.d/bintray-ocdev-ocdev-rpm-releases.repo"
+            $PRIVILEGED_EXECUTION "curl -L $RPM_LATEST_YUM_REPO -o /etc/yum.repos.d/bintray-odo-odo-rpm-releases.repo"
             ;;
         *)
-            invalid_ocdev_version_error
+            invalid_odo_version_error
         esac
 
-        $PRIVILEGED_EXECUTION "$package_manager install -y ocdev"
+        $PRIVILEGED_EXECUTION "$package_manager install -y odo"
         ;;
 
     *)
@@ -192,43 +192,43 @@ Aborting now!
         TMP_DIR=$(mktemp -d)
         case "$OCDEV_VERSION" in
         master)
-            BINARY_URL="$BINTRAY_URL/$platform/ocdev"
-            echo "# Downloading ocdev from $BINARY_URL"
-            curl -Lo $TMP_DIR/ocdev "$BINARY_URL"
+            BINARY_URL="$BINTRAY_URL/$platform/odo"
+            echo "# Downloading odo from $BINARY_URL"
+            curl -Lo $TMP_DIR/odo "$BINARY_URL"
             ;;
         latest)
-            BINARY_URL="$GITHUB_RELEASES_URL/ocdev-$platform.gz"
-            echo "# Downloading ocdev from $BINARY_URL"
-            curl -Lo $TMP_DIR/ocdev.gz "$BINARY_URL"
-            echo "# Extracting ocdev.gz"
-            gunzip -d $TMP_DIR/ocdev.gz
+            BINARY_URL="$GITHUB_RELEASES_URL/odo-$platform.gz"
+            echo "# Downloading odo from $BINARY_URL"
+            curl -Lo $TMP_DIR/odo.gz "$BINARY_URL"
+            echo "# Extracting odo.gz"
+            gunzip -d $TMP_DIR/odo.gz
             ;;
         *)
-            invalid_ocdev_version_error
+            invalid_odo_version_error
         esac
 
-        echo "# Setting execute permissions on ocdev"
-        chmod +x $TMP_DIR/ocdev
-        echo "# Moving ocdev binary to $INSTALLATION_PATH"
-        $PRIVILEGED_EXECUTION "mv $TMP_DIR/ocdev $INSTALLATION_PATH"
-        echo "# ocdev has been successfully installed on your machine"
+        echo "# Setting execute permissions on odo"
+        chmod +x $TMP_DIR/odo
+        echo "# Moving odo binary to $INSTALLATION_PATH"
+        $PRIVILEGED_EXECUTION "mv $TMP_DIR/odo $INSTALLATION_PATH"
+        echo "# odo has been successfully installed on your machine"
         rm -r $TMP_DIR
         ;;
     esac
 }
 
-verify_ocdev() {
-    if command_exists ocdev; then
+verify_odo() {
+    if command_exists odo; then
         echo "
 # Verification complete!
-# ocdev version \"$(ocdev version)\" has been installed at $(type -P ocdev)
+# odo version \"$(odo version)\" has been installed at $(type -P odo)
 "
     else
         echo_stderr "
-# Something is wrong with ocdev installation, please run the installaer script again. If the issue persists, please create an issue at https://github.com/redhat-developer/ocdev/issues"
+# Something is wrong with odo installation, please run the installaer script again. If the issue persists, please create an issue at https://github.com/redhat-developer/odo/issues"
         exit 1
     fi
 }
 
-install_ocdev
-verify_ocdev
+install_odo
+verify_odo

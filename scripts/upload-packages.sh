@@ -18,15 +18,15 @@ for pkg in `ls -1 $PKG_DIR/*.deb`; do
     # get version from filename
     version=$(expr "$filename" : '.*_\([^_]*\)_.*')
 
-    repo="ocdev-deb-dev"
+    repo="odo-deb-dev"
     # if version is semver format upload to releases
     if [[ $version =~ [0-9]+\.[0-9]+\.[0-9]+ ]] ; then 
-        repo="ocdev-deb-releases"
+        repo="odo-deb-releases"
     fi
     
     echo "Uploading DEB package $pkg version $version to Bintray $repo"
 
-    curl -T $pkg -u $BINTRAY_USER:$BINTRAY_KEY "https://api.bintray.com/content/ocdev/${repo}/ocdev/${version}/${filename};deb_distribution=stretch;deb_component=main;deb_architecture=amd64;publish=1"
+    curl -T $pkg -u $BINTRAY_USER:$BINTRAY_KEY "https://api.bintray.com/content/odo/${repo}/odo/${version}/${filename};deb_distribution=stretch;deb_component=main;deb_architecture=amd64;publish=1"
     echo ""
     echo ""
 done
@@ -37,14 +37,14 @@ for pkg in `ls -1 $PKG_DIR/*.rpm`; do
     # get version from filename
     version=$(expr "$filename" : '.*-\(.*-[0-9]*\)\.x86_64.*')
 
-    repo="ocdev-rpm-dev"
+    repo="odo-rpm-dev"
     # if version is semver format upload to releases
     if [[ $version =~ [0-9]+\.[0-9]+\.[0-9]+ ]] ; then 
-        repo="ocdev-rpm-releases"
+        repo="odo-rpm-releases"
     fi
     
     echo "Uploading RPM package $pkg version $version to Bintray $repo"
-    curl -T $pkg -u $BINTRAY_USER:$BINTRAY_KEY "https://api.bintray.com/content/ocdev/${repo}/ocdev/${version}/${filename};publish=1"
+    curl -T $pkg -u $BINTRAY_USER:$BINTRAY_KEY "https://api.bintray.com/content/odo/${repo}/odo/${version}/${filename};publish=1"
     echo ""
     echo ""
 done

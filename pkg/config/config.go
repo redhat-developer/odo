@@ -13,7 +13,7 @@ import (
 
 const (
 	configEnvName  = "OCDEVCONFIG"
-	configFileName = "ocdev"
+	configFileName = "odo"
 )
 
 // ApplicationInfo holds all important information about one application
@@ -66,7 +66,7 @@ func getOcdevConfigFile() (string, error) {
 func New() (*ConfigInfo, error) {
 	configFile, err := getOcdevConfigFile()
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get ocdev config file")
+		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
 
 	_, err = os.Stat(configFile)
@@ -92,7 +92,7 @@ func (c *ConfigInfo) get() error {
 
 	err = yaml.Unmarshal(configData, &c)
 	if err != nil {
-		return errors.Wrap(err, "unable to unmarshal ocdev config file")
+		return errors.Wrap(err, "unable to unmarshal odo config file")
 	}
 
 	return nil
@@ -101,7 +101,7 @@ func (c *ConfigInfo) get() error {
 func (c *ConfigInfo) writeToFile() error {
 	data, err := yaml.Marshal(&c.Config)
 	if err != nil {
-		return errors.Wrap(err, "unable to marshal ocdev config data")
+		return errors.Wrap(err, "unable to marshal odo config data")
 	}
 
 	err = ioutil.WriteFile(c.Filename, data, 0600)

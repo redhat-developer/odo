@@ -2,10 +2,11 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/ocdev/pkg/component"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
-	"github.com/redhat-developer/ocdev/pkg/util"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/util"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )

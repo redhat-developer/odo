@@ -41,7 +41,7 @@ import (
 	s2ifs "github.com/openshift/source-to-image/pkg/util/fs"
 
 	dockerapiv10 "github.com/openshift/api/image/docker10"
-	"github.com/redhat-developer/ocdev/pkg/util"
+	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/util/retry"
 )

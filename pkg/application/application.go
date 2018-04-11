@@ -6,9 +6,9 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/redhat-developer/ocdev/pkg/config"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
-	"github.com/redhat-developer/ocdev/pkg/project"
+	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/project"
 )
 
 // ApplicationLabel is label key that is used to group all object that belong to one application

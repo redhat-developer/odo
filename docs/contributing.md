@@ -11,9 +11,9 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
     - [cmd/version.go](/cmd/version.go)
     - [scripts/install.sh](/scripts/install.sh)
     - [README.md](/README.md)
-    - [ocdev.rb](https://github.com/kadel/homebrew-ocdev/blob/master/Formula/ocdev.rb) in [kadel/homebrew-ocdev](https://github.com/kadel/homebrew-ocdev)
+    - [odo.rb](https://github.com/kadel/homebrew-odo/blob/master/Formula/odo.rb) in [kadel/homebrew-odo](https://github.com/kadel/homebrew-odo)
 
-    There is a helper script [scripts/bump-version.sh](/scripts/bump-version.sh) that should change version number in all files listed above (expect ocdev.rb).
+    There is a helper script [scripts/bump-version.sh](/scripts/bump-version.sh) that should change version number in all files listed above (expect odo.rb).
 2. When PR is merged create and push new git tag for version.
     ```
     git tag v0.0.1
@@ -22,14 +22,14 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
     Or create new release using GitHub site (this has to be a proper release, not just draft). 
     Do not upload any binaries for release
     When new tag is created Travis-CI starts a special deploy job.
-    This job builds binaries automatically (via `make prepare-release`) and then uploads it to GitHub release page (done using ocdev-bot user).
+    This job builds binaries automatically (via `make prepare-release`) and then uploads it to GitHub release page (done using odo-bot user).
 3. When job fishes you should see binaries on GitHub release page. Release is now marked as a draft. Update descriptions and publish release.
 4. Verify that packages have been uploaded to rpm and deb repositories.
 
-## ocdev-bot
+## odo-bot
 This is GitHub user that does all the automation.
 
-### Scripts using ocdev-bot
+### Scripts using odo-bot
 
 | script | what it is doing | access via | 
 |-|-|-|

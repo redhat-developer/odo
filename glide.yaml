@@ -1,4 +1,4 @@
-package: github.com/redhat-developer/ocdev
+package: github.com/redhat-developer/odo
 import:
 - package: github.com/blang/semver
   version: v3.5.1

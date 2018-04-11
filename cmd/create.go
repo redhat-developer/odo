@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/redhat-developer/ocdev/pkg/component"
+	"github.com/redhat-developer/odo/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -24,13 +24,13 @@ var componentCreateCmd = &cobra.Command{
 If component name is not provided, component type value will be used for name.
 	`,
 	Example: `  # Create new nodejs component with the source in current directory. 
-  ocdev create nodejs
+  odo create nodejs
 
   # Create new nodejs component named 'frontend' with the source in './frontend' directory
-  ocdev create nodejs frontend --local ./frontend
+  odo create nodejs frontend --local ./frontend
 
   # Create new nodejs component with source from remote git repository.
-  ocdev create nodejs --git https://github.com/openshift/nodejs-ex.git
+  odo create nodejs --git https://github.com/openshift/nodejs-ex.git
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
