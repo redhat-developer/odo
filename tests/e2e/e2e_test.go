@@ -237,7 +237,7 @@ var _ = Describe("ocdev", func() {
 	Describe("Adding storage", func() {
 		Context("when storage is added", func() {
 			It("should default to active component when no component name is passed", func() {
-				storAdd := runCmd("ocdev storage add pv1 --path /mnt/pv1 --size 5Gi")
+				storAdd := runCmd("ocdev storage create pv1 --path /mnt/pv1 --size 5Gi")
 				Expect(storAdd).To(ContainSubstring("nodejs"))
 
 				// Check against path and name against dc
@@ -269,7 +269,7 @@ var _ = Describe("ocdev", func() {
 			})
 
 			It("should be able add storage to a component specified", func() {
-				runCmd("ocdev storage add pv2 --path /mnt/pv2 --size 5Gi --component php")
+				runCmd("ocdev storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
 
 				storList := runCmd("ocdev storage list --component php")
 				Expect(storList).To(ContainSubstring("pv2"))

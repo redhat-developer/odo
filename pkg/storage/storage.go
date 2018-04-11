@@ -18,8 +18,8 @@ type StorageInfo struct {
 	Path string
 }
 
-// Add adds storage to given component of given application
-func Add(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
+// Create adds storage to given component of given application
+func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
 
 	labels := GetLabels(name, componentName, applicationName, true)
 
