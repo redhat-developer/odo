@@ -245,7 +245,7 @@ var _ = Describe("ocdev", func() {
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
 
-				Expect(getDc).To(Equal("pv1"))
+				Expect(getDc).To(ContainSubstring("pv1"))
 
 				// Check if the storage is added on the path provided
 				getMntPath := runCmd("oc get dc/nodejs -o go-template='" +
@@ -279,7 +279,7 @@ var _ = Describe("ocdev", func() {
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
 
-				Expect(getDc).To(Equal("pv2"))
+				Expect(getDc).To(ContainSubstring("pv2"))
 
 				// Check if the storage is added on the path provided
 				getMntPath := runCmd("oc get dc/php -o go-template='" +
