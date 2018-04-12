@@ -34,7 +34,9 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	}
 
 	// Get DeploymentConfig for the given component
-	dc, err := component.GetComponentDeploymentConfig(client, componentName, applicationName)
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
@@ -53,7 +55,9 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 func Remove(client *occlient.Client, name string, applicationName string, componentName string) error {
 
 	// Get DeploymentConfig for the given component
-	dc, err := component.GetComponentDeploymentConfig(client, componentName, applicationName)
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
