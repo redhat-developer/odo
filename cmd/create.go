@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/redhat-developer/ocdev/pkg/catalog"
 	"github.com/redhat-developer/ocdev/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -48,6 +49,13 @@ If component name is not provided, component type value will be used for name.
 		//We don't have to check it anymore, Args check made sure that args has at least one item
 		// and no more than two
 		componentType := args[0]
+		exists, err := catalog.Exists(client, componentType)
+		checkError(err, "")
+		if !exists {
+			fmt.Printf("Invalid component type: %v\nRun 'ocdev catalog list' to see a list of supported components\n", componentType)
+			os.Exit(1)
+		}
+
 		componentName := args[0]
 		if len(args) == 2 {
 			componentName = args[1]
@@ -58,7 +66,7 @@ If component name is not provided, component type value will be used for name.
 			os.Exit(1)
 		}
 
-		exists, err := component.Exists(client, componentName)
+		exists, err = component.Exists(client, componentName)
 		if err != nil {
 			checkError(err, "")
 		}

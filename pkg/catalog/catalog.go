@@ -45,6 +45,21 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 	return result, nil
 }
 
+// Exists returns true if the given component type is valid, false if not
+func Exists(client *occlient.Client, componentType string) (bool, error) {
+	catalogList, err := List(client)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to list catalog")
+	}
+
+	for _, supported := range catalogList {
+		if componentType == supported {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // getDefaultBuilderImages returns the default builder images available in the
 // openshift namespace
 func getDefaultBuilderImages(client *occlient.Client) ([]string, error) {
