@@ -110,37 +110,77 @@ var _ = Describe("ocdev", func() {
 			})
 
 			It("should be created within the project", func() {
-				projName := runCmd("ocdev project get --short")
-				Expect(projName).To(ContainSubstring(projName))
+				projGet := runCmd("ocdev project get --short")
+				Expect(projGet).To(ContainSubstring(projName))
 			})
 
-			It("should be able to create another application", func() {
-				appName := runCmd("ocdev application create usecase5-2")
-				Expect(appName).To(ContainSubstring("usecase5-2"))
-			})
-
-			It("should be able to delete an application", func() {
-				// Cleanup
-				runCmd("ocdev application delete usecase5-2 -f")
-			})
-
-			It("should be able to set an application as current", func() {
-				appName := runCmd("ocdev application set usecase5")
-				Expect(appName).To(ContainSubstring("usecase5"))
-			})
 		})
 
 		// TODO: Check if the application with the same name can be created
 	})
 
 	Describe("creating a component", func() {
-		Context("when application exists", func() {
+		Context("when application exists, and local source is provided", func() {
+			It("should be able to create another application", func() {
+				appName := runCmd("ocdev application create nodejs-local")
+				Expect(appName).To(ContainSubstring("nodejs-local"))
+			})
+
+			// `ocdev project get --short` outputs a newline. Therefore using ContainsSubstring
+			It("should have created the application within the same project", func() {
+				projGet := runCmd("ocdev project get --short")
+				Expect(projGet).To(ContainSubstring(projName))
+			})
+
 			It("should create a component", func() {
 				runCmd("git clone https://github.com/openshift/nodejs-ex " +
 					tmpDir + "/nodejs-ex")
 
-				// TODO: add tests for --git
 				runCmd("ocdev create nodejs --local " + tmpDir + "/nodejs-ex")
+			})
+
+			It("should be the get the component created as active component", func() {
+				cmp := runCmd("ocdev component get --short")
+				Expect(cmp).To(Equal("nodejs"))
+			})
+
+			It("should be able to delete the application", func() {
+				runCmd("ocdev application delete nodejs-local -f")
+			})
+
+		})
+
+		Context("when application exists, and git source is provided", func() {
+			It("should be able that application as active", func() {
+				appName := runCmd("ocdev application set usecase5")
+				Expect(appName).To(ContainSubstring("usecase5"))
+			})
+
+			It("should create a component", func() {
+				runCmd("ocdev create nodejs  --git https://github.com/openshift/nodejs-ex")
+			})
+
+			It("should create the build", func() {
+
+				for {
+					var buildBool bool
+					buildStatus := "oc get build --template='{{ range .items }}" +
+						"{{ if (eq .metadata.name \"nodejs-1\") }}" +
+						"{{ eq .status.phase \"Complete\" }}{{end}}{{end}}'"
+
+					out, err := exec.Command("/bin/sh", "-c", buildStatus).Output()
+					if err != nil {
+						Fail(err.Error())
+					}
+
+					buildBool, _ = strconv.ParseBool(string(out))
+					if buildBool {
+						break
+					}
+					time.Sleep(5)
+				}
+
+				runCmd("oc logs -f bc/nodejs")
 			})
 
 			It("should be the get the component created as active component", func() {
@@ -176,6 +216,10 @@ var _ = Describe("ocdev", func() {
 				cmpSet := runCmd("ocdev component set nodejs")
 				Expect(cmpSet).To(ContainSubstring("nodejs"))
 			})
+
+			It("should be able to update the source of component", func() {
+				runCmd("ocdev update nodejs --local " + tmpDir + "/nodejs-ex")
+			})
 		})
 	})
 
@@ -200,7 +244,6 @@ var _ = Describe("ocdev", func() {
 				// Push the changes
 				runCmd("ocdev push --local " + tmpDir + "/nodejs-ex")
 			})
-
 		})
 	})
 
