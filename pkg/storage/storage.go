@@ -3,15 +3,16 @@ package storage
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/component"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/util"
-	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
-)
 
-const StorageLabel = "app.kubernetes.io/storage-name"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+)
 
 type StorageInfo struct {
 	Name string
@@ -22,7 +23,7 @@ type StorageInfo struct {
 // Create adds storage to given component of given application
 func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
 
-	labels := GetLabels(name, componentName, applicationName, true)
+	labels := storagelabels.GetLabels(name, componentName, applicationName, true)
 
 	log.Debugf("Got labels for PVC: %v", labels)
 
@@ -58,7 +59,7 @@ func Remove(client *occlient.Client, name string, applicationName string, compon
 	}
 
 	if name == "" {
-		labels := GetLabels("", componentName, applicationName, false)
+		labels := storagelabels.GetLabels("", componentName, applicationName, false)
 		selector := util.ConvertLabelsToSelector(labels)
 		pvcs, err := client.GetPVCNamesFromSelector(selector)
 		log.Debugf("Found PVC names\n%v\nfor selector\n%v", pvcs, selector)
@@ -86,7 +87,7 @@ func Remove(client *occlient.Client, name string, applicationName string, compon
 // List lists all the storage associated with the given component of the given
 // application
 func List(client *occlient.Client, applicationName string, componentName string) ([]StorageInfo, error) {
-	labels := GetLabels("", componentName, applicationName, false)
+	labels := storagelabels.GetLabels("", componentName, applicationName, false)
 	selector := util.ConvertLabelsToSelector(labels)
 
 	log.Debugf("Looking for PVCs with the selector: %v", selector)
@@ -115,20 +116,12 @@ func generatePVCNameFromStorageName(storage string) string {
 	return fmt.Sprintf("%v-pvc", storage)
 }
 
-// GetLabels gets the labels to be applied to the given storage besides the
-// component labels and application labels.
-func GetLabels(storageName string, componentName string, applicationName string, additional bool) map[string]string {
-	labels := component.GetLabels(componentName, applicationName, additional)
-	labels[StorageLabel] = storageName
-	return labels
-}
-
 // getStorageFromPVC returns the storage assocaited with the given PVC
 func getStorageFromPVC(pvc corev1.PersistentVolumeClaim) string {
-	if _, ok := pvc.Labels[StorageLabel]; !ok {
+	if _, ok := pvc.Labels[storagelabels.StorageLabel]; !ok {
 		return ""
 	}
-	return pvc.Labels[StorageLabel]
+	return pvc.Labels[storagelabels.StorageLabel]
 }
 
 // removeStorage removes the given PVC from the given Deployment Config and also
