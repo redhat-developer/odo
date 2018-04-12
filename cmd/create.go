@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
 	log "github.com/sirupsen/logrus"
@@ -61,6 +62,13 @@ A full list of component types that can be deployed is available using: 'odo com
 		//We don't have to check it anymore, Args check made sure that args has at least one item
 		// and no more than two
 		componentType := args[0]
+		exists, err := catalog.Exists(client, componentType)
+		checkError(err, "")
+		if !exists {
+			fmt.Printf("Invalid component type: %v\nRun 'ocdev catalog list' to see a list of supported components\n", componentType)
+			os.Exit(1)
+		}
+
 		componentName := args[0]
 		if len(args) == 2 {
 			componentName = args[1]
@@ -71,7 +79,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			os.Exit(1)
 		}
 
-		exists, err := component.Exists(client, componentName, applicationName, projectName)
+		exists, err = component.Exists(client, componentName, applicationName, projectName)
 		if err != nil {
 			checkError(err, "")
 		}
