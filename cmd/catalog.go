@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/ocdev/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ var catalogListCmd = &cobra.Command{
 	Long:  "List all available component types.",
 	Example: `
 # Get the supported components
-ocdev catalog list
+odo catalog list
 `,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -45,7 +45,7 @@ This searches for a partial match for the given search term in all the available
 components.
 `,
 	Example: `# Search for a component
-ocdev catalog search pyt
+odo catalog search pyt
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

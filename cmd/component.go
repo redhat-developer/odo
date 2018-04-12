@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/ocdev/pkg/component"
+	"github.com/redhat-developer/odo/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -11,7 +11,7 @@ import (
 var componentCmd = &cobra.Command{
 	Use:   "component",
 	Short: "Components of application.",
-	// 'ocdev component' is the same as 'ocdev component get'
+	// 'odo component' is the same as 'odo component get'
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 && args[0] != "get" && args[0] != "set" {
 			componentSetCmd.Run(cmd, args)
@@ -48,7 +48,7 @@ var componentSetCmd = &cobra.Command{
 	Short: "Set active component.",
 	Long:  "Set component as active.",
 	Example: `  # Set component named 'frontend' as active
-  ocdev set component frontend
+  odo set component frontend
   `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

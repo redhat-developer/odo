@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/redhat-developer/ocdev/pkg/project"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 

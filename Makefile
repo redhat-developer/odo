@@ -1,4 +1,4 @@
-PROJECT := github.com/redhat-developer/ocdev
+PROJECT := github.com/redhat-developer/odo
 GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor)
 BUILD_FLAGS := -ldflags="-w -X $(PROJECT)/cmd.GITCOMMIT=$(GITCOMMIT)"
@@ -7,7 +7,7 @@ default: bin
 
 .PHONY: bin
 bin:
-	go build ${BUILD_FLAGS} -o ocdev main.go
+	go build ${BUILD_FLAGS} -o odo main.go
 
 .PHONY: install
 install:
@@ -49,7 +49,7 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/ocdev" $(BUILD_FLAGS)
+	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS)
 
 .PHONY: generate-cli-docs
 generate-cli-docs:
@@ -69,7 +69,7 @@ test:
 # Run e2e tests
 .PHONY: test-e2e
 test-e2e:
-	go test github.com/redhat-developer/ocdev/tests/e2e
+	go test github.com/redhat-developer/odo/tests/e2e
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
