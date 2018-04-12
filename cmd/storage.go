@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var (
@@ -38,6 +39,41 @@ var storageCreateCmd = &cobra.Command{
 	},
 }
 
+var storageUnmountCmd = &cobra.Command{
+	Use:   "unmount [storage name]",
+	Short: "unmount storage from the current component",
+	Long: `unmount storage from the current component.
+  The storage and the contents are not deleted, the storage is only unmounted
+  from the component, and hence is no longer accessible by the component.`,
+	Example: `
+  # Unmount storage 'dbstorage' from current component
+  odo storage umount dbstorage
+
+  # Unmount storage 'database' from component 'mongodb'
+  odo storage umount database --component mongodb`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
+		applicationName, err := application.GetCurrent(client)
+		checkError(err, "")
+		projectName := project.GetCurrent(client)
+		componentName := getComponent(client, storageComponent, applicationName, projectName)
+
+		storageName := args[0]
+		exists, err := storage.IsMounted(client, storageName, componentName, applicationName)
+		checkError(err, "")
+		if !exists {
+			fmt.Printf("Storage %v does not exist in component %v\n", storageName, componentName)
+			os.Exit(1)
+		}
+
+		err = storage.Unmount(client, storageName, componentName, applicationName)
+		checkError(err, "Unable to unmount storage %v from component %v", storageName, componentName)
+
+		fmt.Printf("Unmounted storage %v from %v\n", storageName, componentName)
+	},
+}
+
 var storageDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "delete storage from component",
@@ -50,10 +86,20 @@ var storageDeleteCmd = &cobra.Command{
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
 		componentName := getComponent(client, storageComponent, applicationName, projectName)
+		exists, err := storage.Exists(client, storageName, applicationName)
+		checkError(err, "")
+		if !exists {
+			fmt.Printf("The storage %v does not exists in the application %v\n", storageName, applicationName)
+			os.Exit(1)
+		}
+		componentName, err = storage.Delete(client, storageName, applicationName)
+		checkError(err, "failed to remove storage")
 
-		err = storage.Remove(client, storageName, componentName, applicationName)
-		checkError(err, "failed to delete storage")
-		fmt.Printf("Deleted %v from %v\n", storageName, componentName)
+		if componentName != "" {
+			fmt.Printf("Deleted storage %v from %v\n", storageName, componentName)
+		} else {
+			fmt.Printf("Deleted storage %v\n", storageName)
+		}
 	},
 }
 
@@ -76,7 +122,7 @@ var storageListCmd = &cobra.Command{
 		} else {
 			fmt.Printf("The component '%v' has the following storage attached -\n", componentName)
 			for _, strg := range storageList {
-				fmt.Printf("- %v - %v\n", strg.Name, strg.Size)
+				fmt.Printf("- %v - %v - %v\n", strg.Name, strg.Size, strg.Path)
 			}
 		}
 	},
@@ -90,6 +136,7 @@ func init() {
 
 	storageCmd.AddCommand(storageCreateCmd)
 	storageCmd.AddCommand(storageDeleteCmd)
+	storageCmd.AddCommand(storageUnmountCmd)
 	storageCmd.AddCommand(storageListCmd)
 
 	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "Component to add storage to, defaults to active component")

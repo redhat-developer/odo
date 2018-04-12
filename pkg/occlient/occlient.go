@@ -1687,3 +1687,38 @@ func (c *Client) ExecCMDInContainer(podName string, cmd []string, stdout io.Writ
 
 	return nil
 }
+
+// GetVolumeMountsFromDC returns a list of all volume mounts in the given DC
+func (c *Client) GetVolumeMountsFromDC(dc *appsv1.DeploymentConfig) []corev1.VolumeMount {
+	var volumeMounts []corev1.VolumeMount
+	for _, container := range dc.Spec.Template.Spec.Containers {
+		volumeMounts = append(volumeMounts, container.VolumeMounts...)
+	}
+	return volumeMounts
+}
+
+// GetPVCNameFromVolumeMountName returns the PVC associated with the given volume
+// An empty string is returned if the volume is not found
+func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv1.DeploymentConfig) string {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			return volume.PersistentVolumeClaim.ClaimName
+		}
+	}
+	return ""
+}
+
+// GetPVCFromName returns the PVC of the given name
+func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error) {
+	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).Get(pvcName, metav1.GetOptions{})
+}
+
+// UpdatePVCLabels updates the given PVC with the given labels
+func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error {
+	pvc.Labels = labels
+	_, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).Update(pvc)
+	if err != nil {
+		return errors.Wrap(err, "unable to remove storage label from PVC")
+	}
+	return nil
+}
