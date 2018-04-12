@@ -16,8 +16,8 @@ var completionCmd = &cobra.Command{
 
 Auto completion supports both bash and zsh. Output is to STDOUT.
 
-source <(ocdev completion bash)
-source <(ocdev completion zsh)
+source <(odo completion bash)
+source <(odo completion zsh)
 
 Will load the shell completion code.
 	`,
@@ -36,10 +36,10 @@ func Generate(cmd *cobra.Command, args []string) error {
 
 	// Check the passed in arguments
 	if len(args) == 0 {
-		return fmt.Errorf("Shell not specified. ex. ocdev completion [bash|zsh]")
+		return fmt.Errorf("Shell not specified. ex. odo completion [bash|zsh]")
 	}
 	if len(args) > 1 {
-		return fmt.Errorf("Too many arguments. Expected only the shell type. ex. ocdev completion [bash|zsh]")
+		return fmt.Errorf("Too many arguments. Expected only the shell type. ex. odo completion [bash|zsh]")
 	}
 	shell := args[0]
 
@@ -66,10 +66,10 @@ func init() {
 	https://github.com/kubernetes/kubernetes/blob/ea18d5c32ee7c320fe96dda6b0c757476908e696/pkg/kubectl/cmd/completion.go
 	in order to generate ZSH completion support.
 */
-func runCompletionZsh(out io.Writer, ocdev *cobra.Command) error {
+func runCompletionZsh(out io.Writer, odo *cobra.Command) error {
 
 	zshInitialization := `
-__ocdev_bash_source() {
+__odo_bash_source() {
 	alias shopt=':'
 	alias _expand=_bash_expand
 	alias _complete=_bash_comp
@@ -77,7 +77,7 @@ __ocdev_bash_source() {
 	setopt kshglob noshglob braceexpand
 	source "$@"
 }
-__ocdev_type() {
+__odo_type() {
 	# -t is not supported by zsh
 	if [ "$1" == "-t" ]; then
 		shift
@@ -85,14 +85,14 @@ __ocdev_type() {
 		# "compopt +-o nospace" is used in the code to toggle trailing
 		# spaces. We don't support that, but leave trailing spaces on
 		# all the time
-		if [ "$1" = "__ocdev_compopt" ]; then
+		if [ "$1" = "__odo_compopt" ]; then
 			echo builtin
 			return 0
 		fi
 	fi
 	type "$@"
 }
-__ocdev_compgen() {
+__odo_compgen() {
 	local completions w
 	completions=( $(compgen "$@") ) || return $?
 	# filter by given word as prefix
@@ -109,17 +109,17 @@ __ocdev_compgen() {
 		fi
 	done
 }
-__ocdev_compopt() {
+__odo_compopt() {
 	true # don't do anything. Not supported by bashcompinit in zsh
 }
-__ocdev_declare() {
+__odo_declare() {
 	if [ "$1" == "-F" ]; then
 		whence -w "$@"
 	else
 		builtin declare "$@"
 	fi
 }
-__ocdev_ltrim_colon_completions()
+__odo_ltrim_colon_completions()
 {
 	if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
 		# Remove colon-word prefix from COMPREPLY items
@@ -130,13 +130,13 @@ __ocdev_ltrim_colon_completions()
 		done
 	fi
 }
-__ocdev_get_comp_words_by_ref() {
+__odo_get_comp_words_by_ref() {
 	cur="${COMP_WORDS[COMP_CWORD]}"
 	prev="${COMP_WORDS[${COMP_CWORD}-1]}"
 	words=("${COMP_WORDS[@]}")
 	cword=("${COMP_CWORD[@]}")
 }
-__ocdev_filedir() {
+__odo_filedir() {
 	local RET OLD_IFS w qw
 	__debug "_filedir $@ cur=$cur"
 	if [[ "$1" = \~* ]]; then
@@ -159,7 +159,7 @@ __ocdev_filedir() {
 			continue
 		fi
 		if eval "[[ \"\${w}\" = *.$1 || -d \"\${w}\" ]]"; then
-			qw="$(__ocdev_quote "${w}")"
+			qw="$(__odo_quote "${w}")"
 			if [ -d "${w}" ]; then
 				COMPREPLY+=("${qw}/")
 			else
@@ -168,7 +168,7 @@ __ocdev_filedir() {
 		fi
 	done
 }
-__ocdev_quote() {
+__odo_quote() {
     if [[ $1 == \'* || $1 == \"* ]]; then
         # Leave out first character
         printf %q "${1:1}"
@@ -184,31 +184,31 @@ if sed --help 2>&1 | grep -q GNU; then
 	LWORD='\<'
 	RWORD='\>'
 fi
-__ocdev_convert_bash_to_zsh() {
+__odo_convert_bash_to_zsh() {
 	sed \
 	-e 's/declare -F/whence -w/' \
 	-e 's/local \([a-zA-Z0-9_]*\)=/local \1; \1=/' \
 	-e 's/flags+=("\(--.*\)=")/flags+=("\1"); two_word_flags+=("\1")/' \
 	-e 's/must_have_one_flag+=("\(--.*\)=")/must_have_one_flag+=("\1")/' \
-	-e "s/${LWORD}_filedir${RWORD}/__ocdev_filedir/g" \
-	-e "s/${LWORD}_get_comp_words_by_ref${RWORD}/__ocdev_get_comp_words_by_ref/g" \
-	-e "s/${LWORD}__ltrim_colon_completions${RWORD}/__ocdev_ltrim_colon_completions/g" \
-	-e "s/${LWORD}compgen${RWORD}/__ocdev_compgen/g" \
-	-e "s/${LWORD}compopt${RWORD}/__ocdev_compopt/g" \
-	-e "s/${LWORD}declare${RWORD}/__ocdev_declare/g" \
-	-e "s/\\\$(type${RWORD}/\$(__ocdev_type/g" \
+	-e "s/${LWORD}_filedir${RWORD}/__odo_filedir/g" \
+	-e "s/${LWORD}_get_comp_words_by_ref${RWORD}/__odo_get_comp_words_by_ref/g" \
+	-e "s/${LWORD}__ltrim_colon_completions${RWORD}/__odo_ltrim_colon_completions/g" \
+	-e "s/${LWORD}compgen${RWORD}/__odo_compgen/g" \
+	-e "s/${LWORD}compopt${RWORD}/__odo_compopt/g" \
+	-e "s/${LWORD}declare${RWORD}/__odo_declare/g" \
+	-e "s/\\\$(type${RWORD}/\$(__odo_type/g" \
 	<<'BASH_COMPLETION_EOF'
 `
 	out.Write([]byte(zshInitialization))
 
 	buf := new(bytes.Buffer)
-	ocdev.GenBashCompletion(buf)
+	odo.GenBashCompletion(buf)
 	out.Write(buf.Bytes())
 
 	zshTail := `
 BASH_COMPLETION_EOF
 }
-__ocdev_bash_source <(__ocdev_convert_bash_to_zsh)
+__odo_bash_source <(__odo_convert_bash_to_zsh)
 `
 	out.Write([]byte(zshTail))
 	return nil

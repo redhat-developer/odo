@@ -9,11 +9,11 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/redhat-developer/ocdev/pkg/application"
-	"github.com/redhat-developer/ocdev/pkg/config"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
-	"github.com/redhat-developer/ocdev/pkg/project"
-	"github.com/redhat-developer/ocdev/pkg/util"
+	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // ComponentLabel is a label key used to identify component
@@ -44,8 +44,8 @@ func GetLabels(componentName string, applicationName string, additional bool) ma
 
 func CreateFromGit(client *occlient.Client, name string, ctype string, url string) error {
 	// if current application doesn't exist, create it
-	// this can happen when ocdev is started form clean state
-	// and default application is used (first command run is ocdev create)
+	// this can happen when odo is started form clean state
+	// and default application is used (first command run is odo create)
 	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", name)

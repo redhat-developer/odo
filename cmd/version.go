@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	// VERSION  is version number that will be displayed when running ./ocdev version
+	// VERSION  is version number that will be displayed when running ./odo version
 	VERSION = "v0.0.3"
 
-	// GITCOMMIT is hash of the commit that wil be displayed when running ./ocdev version
-	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/redhat-developer/ocdev/cmd.GITCOMMIT=$(GITCOMMIT)"
+	// GITCOMMIT is hash of the commit that wil be displayed when running ./odo version
+	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/redhat-developer/odo/cmd.GITCOMMIT=$(GITCOMMIT)"
 	// HEAD is default indicating that this was not set during build
 	GITCOMMIT = "HEAD"
 )
@@ -21,7 +21,7 @@ var (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version of ocdev",
+	Short: "Print the version of odo",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// If verbose mode is enabled, dump all KUBECLT_* env variables

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/redhat-developer/ocdev/cmd"
+	"github.com/redhat-developer/odo/cmd"
 )
 
 func main() {
