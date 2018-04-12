@@ -26,6 +26,7 @@ var projName = fmt.Sprintf("odo-%s", t)
 
 func runCmd(cmdS string) string {
 	cmd := exec.Command("/bin/sh", "-c", cmdS)
+	fmt.Fprintf(GinkgoWriter, "Running command: %s\n", cmdS)
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 
 	// wait for the command execution to complete
@@ -195,7 +196,7 @@ var _ = Describe("odo", func() {
 				log.Printf("Text before change: %s", strings.TrimSpace(grepBeforePush))
 
 				// Make changes to the html file
-				runCmd("sed -i 's/Welcome to your Node.js application on OpenShift/Welcome to your Node.js on OCDEV/g' " + tmpDir + "/nodejs-ex/views/index.html")
+				runCmd("sed -i 's/Welcome to your Node.js application on OpenShift/Welcome to your Node.js on ODO/g' " + tmpDir + "/nodejs-ex/views/index.html")
 
 				// Push the changes
 				runCmd("odo push --local " + tmpDir + "/nodejs-ex")
@@ -237,7 +238,7 @@ var _ = Describe("odo", func() {
 	Describe("Adding storage", func() {
 		Context("when storage is added", func() {
 			It("should default to active component when no component name is passed", func() {
-				storAdd := runCmd("odo storage add pv1 --path /mnt/pv1 --size 5Gi")
+				storAdd := runCmd("odo storage create pv1 --path /mnt/pv1 --size 5Gi")
 				Expect(storAdd).To(ContainSubstring("nodejs"))
 
 				// Check against path and name against dc
@@ -269,7 +270,7 @@ var _ = Describe("odo", func() {
 			})
 
 			It("should be able add storage to a component specified", func() {
-				runCmd("odo storage add pv2 --path /mnt/pv2 --size 5Gi --component php")
+				runCmd("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
 
 				storList := runCmd("odo storage list --component php")
 				Expect(storList).To(ContainSubstring("pv2"))
