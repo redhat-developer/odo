@@ -20,18 +20,25 @@ var (
 var componentCreateCmd = &cobra.Command{
 	Use:   "create <component_type> [component_name] [flags]",
 	Short: "Create new component",
-	Long: `Create new component.
-If component name is not provided, component type value will be used for name.
-	`,
-	Example: `  # Create new nodejs component with the source in current directory. 
+	Long: `Create new component to deploy on OpenShift.
+
+If component name is not provided, component type value will be used for the name.
+
+A full list of component types that can be deployed is available using: 'odo component list'`,
+	Example: `  # Create new Node.js component with the source in current directory. 
   odo create nodejs
 
-  # Create new nodejs component named 'frontend' with the source in './frontend' directory
+  # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
 
-  # Create new nodejs component with source from remote git repository.
+  # Create new Node.js component with source from remote git repository.
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
-	`,
+
+  # Create a Ruby component
+  odo create ruby
+	
+  # Create a Python component
+  odo create python`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
