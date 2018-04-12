@@ -1141,6 +1141,18 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 	return dcList.Items, nil
 }
 
+// GetServicesFromSelector returns an array of Service resources which match the
+// given selector
+func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, error) {
+	serviceList, err := c.kubeClient.CoreV1().Services(c.namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list Services")
+	}
+	return serviceList.Items, nil
+}
+
 // GetDeploymentConfigFromName returns the Deployment Config resource given
 // the Deployment Config name
 func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentConfig, error) {
@@ -1177,7 +1189,7 @@ func (c *Client) GetPVCNamesFromSelector(selector string) ([]string, error) {
 // GetOneDeploymentConfigFromSelector returns the Deployment Config object associated
 // with the given selector.
 // An error is thrown when exactly one Deployment Config is not found for the
-// component.
+// selector.
 func (c *Client) GetOneDeploymentConfigFromSelector(selector string) (*appsv1.DeploymentConfig, error) {
 	deploymentConfigs, err := c.GetDeploymentConfigsFromSelector(selector)
 	if err != nil {
@@ -1232,5 +1244,41 @@ func (c *Client) SyncPath(localPath string, targetPodName string, targetPath str
 
 	log.Debugf("command output:\n %s \n", string(output[:]))
 	return string(output[:]), nil
+}
 
+// GetOneServiceFromSelector returns the Service object associated with the
+// given selector.
+// An error is thrown when exactly one Service is not found for the selector
+func (c *Client) GetOneServiceFromSelector(selector string) (*corev1.Service, error) {
+	services, err := c.GetServicesFromSelector(selector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get services for the selector: %v", selector)
+	}
+
+	numServices := len(services)
+	if numServices == 0 {
+		return nil, fmt.Errorf("no Service was found for the selector: %v", selector)
+	} else if numServices > 1 {
+		return nil, fmt.Errorf("multiple Services exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &services[0], nil
+}
+
+// AddEnvironmentVariablesToDeploymentConfig adds the given environment
+// variables to the only container in the Deployment Config and updates in the
+// cluster
+func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar, dc *appsv1.DeploymentConfig) error {
+	numContainers := len(dc.Spec.Template.Spec.Containers)
+	if numContainers != 1 {
+		return fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
+	}
+
+	dc.Spec.Template.Spec.Containers[0].Env = append(dc.Spec.Template.Spec.Containers[0].Env, envs...)
+
+	_, err := c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update Deployment Config %v", dc.Name)
+	}
+	return nil
 }
