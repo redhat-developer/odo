@@ -12,7 +12,7 @@ jobs:
     # YAML alias, for settings shared across the tests
     - &base-test
       stage: test
-      go_import_path: github.com/redhat-developer/ocdev
+      go_import_path: github.com/redhat-developer/odo
       go: 1.8
       install:
         - make goget-tools
@@ -38,7 +38,7 @@ jobs:
       script:
         - ./scripts/oc-cluster.sh
         - make bin
-        - sudo cp ocdev /usr/bin
+        - sudo cp odo /usr/bin
         - oc login -u developer 
         - make test-e2e
 
@@ -52,15 +52,16 @@ jobs:
       script:
         ./scripts/test-install.sh
     # test installation script on macOS
-    - state: test
-      os: osx
-      install:
-        - true
-      script:
-        ./scripts/install.sh
+    # disabled after rename to odo, can be enabled after next release
+    # - state: test
+    #   os: osx
+    #   install:
+    #     - true
+    #   script:
+    #     ./scripts/install.sh
 
     - stage: deploy
-      go_import_path:  github.com/redhat-developer/ocdev
+      go_import_path:  github.com/redhat-developer/odo
       go: 1.9
       install:
         - make goget-tools
@@ -76,7 +77,7 @@ jobs:
       deploy:
         # upload binaries to bintray
         - provider: bintray
-          repo: ocdev/ocdev
+          repo: odo/odo
           file: ./.bintray.json
           user: $BINTRAY_USER
           key: $BINTRAY_KEY
@@ -94,7 +95,7 @@ jobs:
           skip_cleanup: true
           on:
             tags: true
-            repo: redhat-developer/ocdev
+            repo: redhat-developer/odo
         # upload packages to bintray repositories
         - provider: script
           skip_cleanup: true

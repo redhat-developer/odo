@@ -36,13 +36,13 @@ done
 cat > "./.bintray.json" <<EOF
 {
     "package": {
-        "name": "ocdev",
-        "repo": "ocdev",
-        "subject": "ocdev",
+        "name": "odo",
+        "repo": "odo",
+        "subject": "odo",
         "desc": "OpenShift Command line for Developers",
-        "website_url": "https://github.com/redhat-developer/ocdev",
-        "issue_tracker_url": "https://github.com/redhat-developer/ocdev/issues",
-        "vcs_url": "https://github.com/redhat-developer/ocdev.git",
+        "website_url": "https://github.com/redhat-developer/odo",
+        "issue_tracker_url": "https://github.com/redhat-developer/odo/issues",
+        "vcs_url": "https://github.com/redhat-developer/odo.git",
         "licenses": ["Apache-2.0"],
         "public_download_numbers": false,
         "public_stats": false
@@ -50,7 +50,7 @@ cat > "./.bintray.json" <<EOF
 
     "version": {
         "name": "latest",
-        "desc": "ocdev build from master branch",
+        "desc": "odo build from master branch",
         "released": "${DATE}",
         "vcs_tag": "${TRAVIS_COMMIT}",
         "attributes": [{"name": "TRAVIS_JOB_NUMBER", "values" : ["${TRAVIS_JOB_NUMBER}"], "type": "string"},

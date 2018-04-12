@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-# this scripts updates version number in ocdev source code
+# this scripts updates version number in odo source code
 # run this script from source root with new version as an argument (./scripts/bump-version.sh v0.0.2 )
 
 NEW_VERSION=$1
@@ -33,6 +33,6 @@ sed -i "s/\(LATEST_VERSION=\)\"v[0-9]*\.[0-9]*\.[0-9]*\"/\1\"${NEW_VERSION}\"/g"
 check_version scripts/install.sh
 
 echo "****************************************************************************************"
-echo "* Don't forget to update homebrew package at https://github.com/kadel/homebrew-ocdev ! *"
+echo "* Don't forget to update homebrew package at https://github.com/kadel/homebrew-odo ! *"
 echo "****************************************************************************************"
 

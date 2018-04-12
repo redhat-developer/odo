@@ -14,7 +14,7 @@ func TestGetOcDevConfigFile(t *testing.T) {
 
 func TestNew(t *testing.T) {
 
-	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestSetActiveComponent(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +243,7 @@ func TestSetActiveComponent(t *testing.T) {
 }
 
 func TestGetActiveComponent(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -678,7 +678,7 @@ func TestAddApplication(t *testing.T) {
 
 func TestGetActiveApplication(t *testing.T) {
 
-	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -779,7 +779,7 @@ func TestGetActiveApplication(t *testing.T) {
 }
 
 func TestDeleteApplication(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "ocdevconfig")
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
 	}

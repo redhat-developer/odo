@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/ocdev/pkg/notify"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/notify"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +18,7 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "ocdev",
+	Use:   "odo",
 	Short: "OpenShift CLI for Developers",
 	Long:  `OpenShift CLI for Developers`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -53,7 +53,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.ocdev.yaml)")
+	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
 	rootCmd.PersistentFlags().BoolVarP(&GlobalVerbose, "verbose", "v", false, "Verbose output")
 }
@@ -63,14 +63,14 @@ func getLatestReleaseInfo(info chan<- string) {
 	if err != nil {
 		// The error is intentionally not being handled because we don't want
 		// to stop the execution of the program because of this failure
-		log.Debugf("Error checking if newer ocdev release is available: %v", err)
+		log.Debugf("Error checking if newer odo release is available: %v", err)
 	}
 	if len(newTag) > 0 {
 		info <- "---\n" +
-			"A newer version of ocdev (version: " + fmt.Sprint(newTag) + ") is available.\n" +
+			"A newer version of odo (version: " + fmt.Sprint(newTag) + ") is available.\n" +
 			"Update using your package manager, or run\n" +
 			"curl " + notify.InstallScriptURL + " | sh\n" +
-			"to update manually, or visit https://github.com/redhat-developer/ocdev/releases\n" +
+			"to update manually, or visit https://github.com/redhat-developer/odo/releases\n" +
 			"---\n"
 	}
 }

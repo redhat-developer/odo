@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-developer/ocdev/pkg/application"
-	"github.com/redhat-developer/ocdev/pkg/component"
+	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +20,7 @@ var componentDeleteCmd = &cobra.Command{
 	Short: "Delete existing component",
 	Long:  "Delete existing component.",
 	Example: `  # Delete component named 'frontend'. 
-  ocdev delete frontend
+  odo delete frontend
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

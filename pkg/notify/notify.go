@@ -13,12 +13,12 @@ const (
 	// project GitHub organization name
 	ghorg = "redhat-developer"
 	// project GitHub repository name
-	ghrepo = "ocdev"
+	ghrepo = "odo"
 	// URL of the installation shell script
-	InstallScriptURL = "https://raw.githubusercontent.com/redhat-developer/ocdev/master/scripts/install.sh"
+	InstallScriptURL = "https://raw.githubusercontent.com/redhat-developer/odo/master/scripts/install.sh"
 )
 
-// getLatestReleaseTag polls ocdev's upstream GitHub repository to get the
+// getLatestReleaseTag polls odo's upstream GitHub repository to get the
 // tag of the latest release
 func getLatestReleaseTag() (string, error) {
 	client := github.NewClient(nil)

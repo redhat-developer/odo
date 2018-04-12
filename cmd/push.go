@@ -5,9 +5,9 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/redhat-developer/ocdev/pkg/application"
-	"github.com/redhat-developer/ocdev/pkg/component"
-	"github.com/redhat-developer/ocdev/pkg/project"
+	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/project"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -18,13 +18,13 @@ var pushCmd = &cobra.Command{
 	Short: "Push source code to component",
 	Long:  `Push source code to component.`,
 	Example: `  # Push source code to the to the current component
-  ocdev push
+  odo push
 
   # Push data to the current component from original source.
-  ocdev push
+  odo push
 
   # Push source code in ~/home/mycode to component called my-component
-  ocdev push my-component --local ~/home/mycode
+  odo push my-component --local ~/home/mycode
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -41,7 +41,7 @@ var pushCmd = &cobra.Command{
 			checkError(err, "unable to get current component")
 			if componentName == "" {
 				fmt.Println("No component is set as active.")
-				fmt.Println("Use 'ocdev component set <component name> to set and existing component as active or call this command with component name as and argument.")
+				fmt.Println("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
 				os.Exit(1)
 			}
 		} else {

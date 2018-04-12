@@ -1,4 +1,4 @@
 name: "dev" 
-shortDesc: "ocdev plugin"
-longDesc: "ocdev plugin to use ocdev as a plugin in OpenShift"
-command: "ocdev"
+shortDesc: "odo plugin"
+longDesc: "odo plugin to use odo as a plugin in OpenShift"
+command: "odo"

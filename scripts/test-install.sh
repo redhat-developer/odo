@@ -13,7 +13,7 @@ for image in $DOCKER_IMAGES; do
     echo "*** Testing install.sh in $image"
     echo "******************************************************"
     
-    docker run -it --rm -v `pwd`:/opt/ocdev $image /opt/ocdev/scripts/install.sh
+    docker run -it --rm -v `pwd`:/opt/odo $image /opt/odo/scripts/install.sh
     if [ $? -eq 0 ]; then
         echo "******************************************************"
         echo "**** PASSED for $image"
