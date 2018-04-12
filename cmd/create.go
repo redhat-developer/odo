@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/project"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -44,6 +46,10 @@ A full list of component types that can be deployed is available using: 'odo com
 		log.Debugf("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
 
 		client := getOcClient()
+		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)
+		checkError(err, "")
+		projectName := project.GetCurrent(client)
+
 		if len(componentBinary) != 0 {
 			fmt.Printf("--binary is not implemented yet\n\n")
 			cmd.Help()
@@ -65,31 +71,33 @@ A full list of component types that can be deployed is available using: 'odo com
 			os.Exit(1)
 		}
 
-		exists, err := component.Exists(client, componentName)
-		checkError(err, "")
+		exists, err := component.Exists(client, componentName, applicationName, projectName)
+		if err != nil {
+			checkError(err, "")
+		}
 		if exists {
 			fmt.Printf("component with the name %s already exists in the current application\n", componentName)
 			os.Exit(1)
 		}
 
 		if len(componentGit) != 0 {
-			err := component.CreateFromGit(client, componentName, componentType, componentGit)
+			err := component.CreateFromGit(client, componentName, componentType, componentGit, applicationName)
 			checkError(err, "")
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
-			err = component.CreateFromDir(client, componentName, componentType, dir)
+			err = component.CreateFromDir(client, componentName, componentType, dir, applicationName)
 			checkError(err, "")
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
 			checkError(err, "")
-			err = component.CreateFromDir(client, componentName, componentType, dir)
+			err = component.CreateFromDir(client, componentName, componentType, dir, applicationName)
 			checkError(err, "")
 		}
 		// after component is successfully created, set is as active
-		err = component.SetCurrent(client, componentName)
+		err = component.SetCurrent(client, componentName, applicationName, projectName)
 		checkError(err, "")
 	},
 }

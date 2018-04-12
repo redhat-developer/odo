@@ -134,18 +134,32 @@ func GetCurrent(client *occlient.Client) (string, error) {
 	return app, nil
 }
 
-// GetCurrentOrGetAndSetDefault returns currently active application.
-// If no application is active returns defaultApplication name and sets it as
-// default as well
-func GetCurrentOrGetAndSetDefault(client *occlient.Client) (string, error) {
+// GetCurrentOrGetCreateSetDefault returns currently active application.
+// If no application is active, a defaultApplication is created and set as
+// default as well.
+// Use this carefully only in places where user expects the state to be altered
+// Do not use for read operations like get, list; only for write operations like
+// create
+func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
 	currentApp, err := GetCurrent(client)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
+
 	// if no Application is active use default
 	if currentApp == "" {
 		// get default application name
 		currentApp = getDefaultAppName()
+		// create if default application does not exist
+		exists, err := Exists(client, currentApp)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to check if app %v exists", currentApp)
+		}
+		if !exists {
+			if err := Create(client, currentApp); err != nil {
+				return "", errors.Wrapf(err, "unable to create app %v", currentApp)
+			}
+		}
 		// set default application as the current application
 		if err := SetCurrent(client, currentApp); err != nil {
 			return "", errors.Wrapf(err, "unable to set %v as the current application", currentApp)

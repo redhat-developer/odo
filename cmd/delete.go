@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/project"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -29,28 +30,27 @@ var componentDeleteCmd = &cobra.Command{
 		log.Debugf("args: %#v", strings.Join(args, " "))
 		client := getOcClient()
 		componentName := args[0]
-		var confirmDeletion string
-
-		exists, err := component.Exists(client, componentName)
+		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
+		projectName := project.GetCurrent(client)
 
+		exists, err := component.Exists(client, componentName, applicationName, projectName)
+		checkError(err, "")
 		if !exists {
 			fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
 			os.Exit(1)
 		}
 
-		currentApp, err := application.GetCurrent(client)
-		checkError(err, "")
-
+		var confirmDeletion string
 		if componentForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", componentName, currentApp)
+			fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", componentName, applicationName)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
-			output, err := component.Delete(client, componentName)
+			output, err := component.Delete(client, componentName, applicationName, projectName)
 			checkError(err, "")
 			fmt.Println(output)
 		} else {

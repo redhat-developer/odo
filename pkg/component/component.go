@@ -8,12 +8,10 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/redhat-developer/odo/pkg/application"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/project"
 )
 
 // componentSourceURLAnnotation is an source url from which component was build
@@ -26,33 +24,15 @@ type ComponentInfo struct {
 	Type string
 }
 
-func CreateFromGit(client *occlient.Client, name string, ctype string, url string) error {
-	// if current application doesn't exist, create it
-	// this can happen when odo is started form clean state
-	// and default application is used (first command run is odo create)
-	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create git component %s", name)
-	}
-	exists, err := application.Exists(client, currentApplication)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create git component %s", name)
-	}
-	if !exists {
-		err = application.Create(client, currentApplication)
-		if err != nil {
-			return errors.Wrapf(err, "unable to create git component %s", name)
-		}
-	}
-
-	labels := componentlabels.GetLabels(name, currentApplication, true)
+func CreateFromGit(client *occlient.Client, name string, ctype string, url string, applicationName string) error {
+	labels := componentlabels.GetLabels(name, applicationName, true)
 	// save component type as label
 	labels[componentlabels.ComponentTypeLabel] = ctype
 
 	// save source path as annotation
 	annotations := map[string]string{componentSourceURLAnnotation: url}
 
-	err = client.NewAppS2I(name, ctype, url, labels, annotations)
+	err := client.NewAppS2I(name, ctype, url, labels, annotations)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
@@ -73,24 +53,8 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 }
 
 // CreateFromDir create new component with source from local directory
-func CreateFromDir(client *occlient.Client, name string, ctype string, dir string) error {
-	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
-	}
-
-	exists, err := application.Exists(client, currentApplication)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
-	}
-	if !exists {
-		err = application.Create(client, currentApplication)
-		if err != nil {
-			return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
-		}
-	}
-
-	labels := componentlabels.GetLabels(name, currentApplication, true)
+func CreateFromDir(client *occlient.Client, name string, ctype string, dir string, applicationName string) error {
+	labels := componentlabels.GetLabels(name, applicationName, true)
 	// save component type as label
 	labels[componentlabels.ComponentTypeLabel] = ctype
 
@@ -98,7 +62,7 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 	sourceURL := url.URL{Scheme: "file", Path: dir}
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 
-	err = client.NewAppS2I(name, ctype, "", labels, annotations)
+	err := client.NewAppS2I(name, ctype, "", labels, annotations)
 	if err != nil {
 		return err
 	}
@@ -114,27 +78,20 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 }
 
 // Delete whole component
-func Delete(client *occlient.Client, name string) (string, error) {
-	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to delete component %s", name)
-	}
-
-	currentProject := project.GetCurrent(client)
-
+func Delete(client *occlient.Client, name string, applicationName string, projectName string) (string, error) {
 	cfg, err := config.New()
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
-	labels := componentlabels.GetLabels(name, currentApplication, false)
+	labels := componentlabels.GetLabels(name, applicationName, false)
 
 	output, err := client.Delete("all", "", labels)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
-	err = cfg.SetActiveComponent("", currentProject, currentApplication)
+	err = cfg.SetActiveComponent("", projectName, applicationName)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
@@ -142,20 +99,13 @@ func Delete(client *occlient.Client, name string) (string, error) {
 	return output, nil
 }
 
-func SetCurrent(client *occlient.Client, name string) error {
+func SetCurrent(client *occlient.Client, name string, applicationName string, projectName string) error {
 	cfg, err := config.New()
 	if err != nil {
 		return errors.Wrapf(err, "unable to set current component %s", name)
 	}
 
-	currentProject := project.GetCurrent(client)
-
-	currentApplication, err := application.GetCurrent(client)
-	if err != nil {
-		return errors.Wrapf(err, "unable to set current component %s", name)
-	}
-
-	err = cfg.SetActiveComponent(name, currentApplication, currentProject)
+	err = cfg.SetActiveComponent(name, applicationName, projectName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set current component %s", name)
 	}
@@ -165,18 +115,12 @@ func SetCurrent(client *occlient.Client, name string) error {
 
 // GetCurrent component in active application
 // returns "" if there is no active component
-func GetCurrent(client *occlient.Client) (string, error) {
+func GetCurrent(client *occlient.Client, applicationName string, projectName string) (string, error) {
 	cfg, err := config.New()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get config")
 	}
-	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to get active application")
-	}
-
-	currentProject := project.GetCurrent(client)
-	currentComponent := cfg.GetActiveComponent(currentApplication, currentProject)
+	currentComponent := cfg.GetActiveComponent(applicationName, projectName)
 
 	return currentComponent, nil
 
@@ -225,16 +169,9 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
-func List(client *occlient.Client) ([]ComponentInfo, error) {
-	currentProject := project.GetCurrent(client)
-
-	currentApplication, err := application.GetCurrent(client)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list components")
-	}
-
-	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, currentApplication)
-	componentNames, err := client.GetLabelValues(currentProject, componentlabels.ComponentLabel, applicationSelector)
+func List(client *occlient.Client, applicationName string, projectName string) ([]ComponentInfo, error) {
+	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+	componentNames, err := client.GetLabelValues(projectName, componentlabels.ComponentLabel, applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
@@ -242,7 +179,7 @@ func List(client *occlient.Client) ([]ComponentInfo, error) {
 	components := []ComponentInfo{}
 
 	for _, name := range componentNames {
-		ctype, err := GetComponentType(client, name, currentApplication, currentProject)
+		ctype, err := GetComponentType(client, name, applicationName, projectName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to list components")
 		}
@@ -309,8 +246,8 @@ func Update(client *occlient.Client, componentName string, to string, source str
 // componentName is the component name to perform check for
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
-func Exists(client *occlient.Client, componentName string) (bool, error) {
-	componentList, err := List(client)
+func Exists(client *occlient.Client, componentName, applicationName, projectName string) (bool, error) {
+	componentList, err := List(client, applicationName, projectName)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the component list")
 	}

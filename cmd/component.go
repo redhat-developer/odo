@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/project"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +32,11 @@ var componentGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("component get called")
 		client := getOcClient()
-		component, err := component.GetCurrent(client)
+		applicationName, err := application.GetCurrent(client)
+		checkError(err, "")
+		projectName := project.GetCurrent(client)
+
+		component, err := component.GetCurrent(client, applicationName, projectName)
 		checkError(err, "unable to get current component")
 		if componentShortFlag {
 			fmt.Print(component)
@@ -53,7 +60,11 @@ var componentSetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		err := component.SetCurrent(client, args[0])
+		applicationName, err := application.GetCurrent(client)
+		checkError(err, "")
+		projectName := project.GetCurrent(client)
+
+		err = component.SetCurrent(client, args[0], applicationName, projectName)
 		checkError(err, "")
 		fmt.Printf("Switched to component: %v\n", args[0])
 	},

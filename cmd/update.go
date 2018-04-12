@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+
+	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/spf13/cobra"
 )
 
 var updateCmd = &cobra.Command{
@@ -26,6 +29,9 @@ var updateCmd = &cobra.Command{
 	Short: "Change the source of a component",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
+		applicationName, err := application.GetCurrent(client)
+		checkError(err, "")
+		projectName := project.GetCurrent(client)
 
 		checkFlag := 0
 
@@ -51,10 +57,9 @@ var updateCmd = &cobra.Command{
 
 		var (
 			componentName string
-			err           error
 		)
 		if len(args) == 0 {
-			componentName, err = component.GetCurrent(client)
+			componentName, err = component.GetCurrent(client, applicationName, projectName)
 			checkError(err, "unable to get current component")
 		} else {
 			componentName = args[0]

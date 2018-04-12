@@ -29,15 +29,15 @@ var pushCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		projectName := project.GetCurrent(client)
 		applicationName, err := application.GetCurrent(client)
-		checkError(err, "unable to get current application")
+		checkError(err, "")
+		projectName := project.GetCurrent(client)
 
 		var componentName string
 		if len(args) == 0 {
 			var err error
 			log.Debug("No component name passed, assuming current component")
-			componentName, err = component.GetCurrent(client)
+			componentName, err = component.GetCurrent(client, applicationName, projectName)
 			checkError(err, "unable to get current component")
 			if componentName == "" {
 				fmt.Println("No component is set as active.")
