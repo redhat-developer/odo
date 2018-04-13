@@ -545,15 +545,6 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 					},
 				},
 			},
-			Triggers: []buildv1.BuildTriggerPolicy{
-				{
-					Type: "ConfigChange",
-				},
-				{
-					Type:        "ImageChange",
-					ImageChange: &buildv1.ImageChangeTrigger{},
-				},
-			},
 		},
 	}
 	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)

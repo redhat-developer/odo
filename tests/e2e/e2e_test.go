@@ -142,6 +142,7 @@ var _ = Describe("odo", func() {
 
 				// TODO: add tests for --git
 				runCmd("odo create nodejs --local " + tmpDir + "/nodejs-ex")
+				runCmd("odo push")
 			})
 
 			It("should be the get the component created as active component", func() {
