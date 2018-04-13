@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +30,7 @@ var versionCmd = &cobra.Command{
 		if GlobalVerbose {
 			for _, v := range os.Environ() {
 				if strings.HasPrefix(v, "KUBECTL_") {
-					fmt.Println(v)
+					log.Debug(v)
 				}
 			}
 		}

@@ -6,6 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +25,7 @@ var componentListCmd = &cobra.Command{
 		checkError(err, "")
 
 		if len(components) == 0 {
-			fmt.Println("There are no components deployed.")
+			log.Error("There are no components deployed.")
 			return
 		}
 
