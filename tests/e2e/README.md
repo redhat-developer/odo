@@ -17,11 +17,11 @@ Run `make test-e2e` to execute the tests.
 | `project create` | Y |
 | `project get` | Y |
 | `project delete` | Y |
-| `application create`  | Y  |
-| `application get`  | Y  |
-| `application set` | Y |
-| `application delete` | Y |
-| `application list` | Y |
+| `app create`  | Y  |
+| `app get`  | Y  |
+| `app set` | Y |
+| `app delete` | Y |
+| `app list` | Y |
 | `catalog` | N |
 | `create --git` | N |
 | `create --local` | Y |

@@ -51,7 +51,7 @@ Multiple component types are currently supported, like nodejs, perl, php, python
 
 ## Getting Started
 Developing applications using odo is as simple as -
-- `odo application create <name>`
+- `odo app create <name>`
 - `odo create <name>`
 - `odo push`
 
@@ -60,7 +60,7 @@ Check out our [Getting Started](docs/getting-started.md) guide and get going!
 ## CLI Structure
 ```
 odo --verbose : OpenShift CLI for Developers
-    application --short : Perform application operations
+    app --short : Perform application operations
         create : create an application
         delete --force : delete the given application
         get --short : get the active application

@@ -17,9 +17,9 @@ var (
 
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
-	Use:     "application",
+	Use:     "app",
 	Short:   "Perform application operations",
-	Aliases: []string{"app"},
+	Aliases: []string{"application"},
 	// 'odo application' is the same as 'odo application get'
 	Run: applicationGetCmd.Run,
 }
