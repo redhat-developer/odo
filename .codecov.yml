@@ -7,4 +7,8 @@ coverage:
         # target: auto
         # disable for now, we have only e2e tests
         target: 0%
-        base: auto 
+        base: auto
+    patch:
+      default:
+        target: 0%
+        base: auto
