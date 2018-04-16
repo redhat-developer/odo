@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
@@ -16,15 +14,6 @@ var (
 	storageSize      string
 	storagePath      string
 )
-
-func getComponent(client *occlient.Client, applicationName, projectName string) string {
-	if len(storageComponent) == 0 {
-		c, err := component.GetCurrent(client, applicationName, projectName)
-		checkError(err, "Could not get current component")
-		return c
-	}
-	return storageComponent
-}
 
 var storageCmd = &cobra.Command{
 	Use:   "storage",
@@ -41,10 +30,11 @@ var storageCreateCmd = &cobra.Command{
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
-		cmpnt := getComponent(client, applicationName, projectName)
-		_, err = storage.Create(client, args[0], storageSize, storagePath, cmpnt, applicationName)
+		componentName := getComponent(client, storageComponent, applicationName, projectName)
+
+		_, err = storage.Create(client, args[0], storageSize, storagePath, componentName, applicationName)
 		checkError(err, "")
-		fmt.Printf("Added storage %v to %v\n", args[0], cmpnt)
+		fmt.Printf("Added storage %v to %v\n", args[0], componentName)
 	},
 }
 
@@ -62,17 +52,16 @@ var storageRemoveCmd = &cobra.Command{
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
+		componentName := getComponent(client, storageComponent, applicationName, projectName)
 
-		cmpnt := getComponent(client, applicationName, projectName)
-
-		err = storage.Remove(client, storageName, applicationName, cmpnt)
+		err = storage.Remove(client, storageName, applicationName, componentName)
 		checkError(err, "failed to remove storage")
 
 		switch storageName {
 		case "":
-			fmt.Printf("Removed all storage from %v\n", cmpnt)
+			fmt.Printf("Removed all storage from %v\n", componentName)
 		default:
-			fmt.Printf("Removed %v from %v\n", storageName, cmpnt)
+			fmt.Printf("Removed %v from %v\n", storageName, componentName)
 		}
 	},
 }
@@ -86,15 +75,15 @@ var storageListCmd = &cobra.Command{
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
+		componentName := getComponent(client, storageComponent, applicationName, projectName)
 
-		cmpnt := getComponent(client, applicationName, projectName)
-		storageList, err := storage.List(client, applicationName, cmpnt)
-		checkError(err, "failed to list storage")
+		storageList, err := storage.List(client, applicationName, componentName)
+		checkError(err, "Failed to list storage")
 
 		if len(storageList) == 0 {
-			fmt.Printf("The component '%v' has no storage attached\n", cmpnt)
+			fmt.Printf("The component '%v' has no storage attached\n", componentName)
 		} else {
-			fmt.Printf("The component '%v' has the following storage attached -\n", cmpnt)
+			fmt.Printf("The component '%v' has the following storage attached -\n", componentName)
 			for _, strg := range storageList {
 				fmt.Printf("- %v - %v\n", strg.Name, strg.Size)
 			}
