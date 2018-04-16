@@ -45,7 +45,7 @@ func pingSvc(url string) {
 	for {
 		select {
 		case <-pingTimeout:
-			Fail("could not ping the specific service in given time: 10 minutes")
+			Fail("could not ping the specific service in given time: 5 minutes")
 
 		case <-tick:
 			httpTimeout := time.Duration(10 * time.Second)
@@ -69,6 +69,35 @@ func pingSvc(url string) {
 
 		if ep {
 			break
+		}
+	}
+}
+
+// waitForCmdOut runs a command until it gets
+// the expected output.
+// It accepts 2 arguments, cmd (command to be run)
+// & expOut (expected output).
+// It times out if the command doesn't fetch the
+// expected output  within the timeout period (1m).
+func waitForCmdOut(cmd string, expOut string) bool {
+
+	pingTimeout := time.After(1 * time.Minute)
+	tick := time.Tick(time.Second)
+
+	for {
+		select {
+		case <-pingTimeout:
+			Fail("Timeout out after 1 minute")
+
+		case <-tick:
+			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
+			if err != nil {
+				Fail(err.Error())
+			}
+
+			if string(out) == expOut {
+				return true
+			}
 		}
 	}
 }
@@ -236,20 +265,10 @@ var _ = Describe("odo", func() {
 				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).To(ContainSubstring("nodejs-" + projName))
 
-				for {
-					pingCmd := "curl -s " + getRoute + " | grep -i odo | wc -l | tr -d '\n'"
-					out, err := exec.Command("/bin/sh", "-c", pingCmd).Output()
-					if err != nil {
-						Fail(err.Error())
-					}
-
-					outInt, _ := strconv.Atoi(string(out))
-					if outInt > 0 {
-						grepAfterPush := runCmd("curl -s " + getRoute + " | grep -i odo")
-						log.Printf("After change: %s", strings.TrimSpace(grepAfterPush))
-						break
-					}
-					time.Sleep(5)
+				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1")
+				if curlRoute {
+					grepAfterPush := runCmd("curl -s " + getRoute + " | grep -i odo")
+					log.Printf("After change: %s", strings.TrimSpace(grepAfterPush))
 				}
 			})
 		})
