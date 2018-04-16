@@ -6,44 +6,16 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
 )
 
-// ApplicationLabel is label key that is used to group all object that belong to one application
-// It should be save to use just this label to filter application
-const ApplicationLabel = "app.kubernetes.io/name"
-
-// AdditionalApplicationLabels additional labels that are applied to all objects belonging to one application
-// Those labels are not used for filtering or grouping, they are used just when creating and they are mend to be used by other tools
-var AdditionalApplicationLabels = []string{
-	// OpenShift Web console uses this label for grouping
-	"app",
-}
-
 // getDefaultAppName returns application name to be used as a default name in the case where users doesn't provide a name
 // In future this function should generate name with uniq suffix (app-xy1h), because there might be multiple applications.
 func getDefaultAppName() string {
 	return "app"
-}
-
-// GetLabels return labels that identifies given application
-// additional labels are used only when creating object
-// if you are creating something use additional=true
-// if you need labels to filter component than use additional=false
-func GetLabels(application string, additional bool) map[string]string {
-	labels := map[string]string{
-		ApplicationLabel: application,
-	}
-
-	if additional {
-		for _, additionalLabel := range AdditionalApplicationLabels {
-			labels[additionalLabel] = application
-		}
-	}
-
-	return labels
 }
 
 // Create a new application
@@ -92,7 +64,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 	}
 
 	// Get applications from cluster
-	appNames, err := client.GetLabelValues(project, ApplicationLabel, ApplicationLabel)
+	appNames, err := client.GetLabelValues(project, applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications")
 	}
@@ -122,7 +94,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 func Delete(client *occlient.Client, name string) error {
 	log.Debug("Deleting application %s", name)
 
-	labels := GetLabels(name, false)
+	labels := applabels.GetLabels(name, false)
 
 	// delete application from cluster
 	output, err := client.Delete("all", "", labels)

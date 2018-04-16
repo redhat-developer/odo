@@ -3,10 +3,12 @@ package url
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/component"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,7 +30,7 @@ func Create(client *occlient.Client, cmp string) (*URL, error) {
 		return nil, errors.Wrap(err, "unable to get current application")
 	}
 
-	labels := component.GetLabels(cmp, app, false)
+	labels := componentlabels.GetLabels(cmp, app, false)
 
 	route, err := client.CreateRoute(cmp, labels)
 	if err != nil {
@@ -46,10 +48,10 @@ func Create(client *occlient.Client, cmp string) (*URL, error) {
 // given component
 func List(client *occlient.Client, componentName string, applicationName string) ([]URL, error) {
 
-	labelSelector := fmt.Sprintf("%v=%v", application.ApplicationLabel, applicationName)
+	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
 
 	if componentName != "" {
-		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", component.ComponentLabel, componentName)
+		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
 	}
 
 	log.Debugf("Listing routes with label selector: %v", labelSelector)

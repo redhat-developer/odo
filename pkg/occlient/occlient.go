@@ -1182,3 +1182,24 @@ func (c *Client) GetPVCNamesFromSelector(selector string) ([]string, error) {
 
 	return names, nil
 }
+
+// GetOneDeploymentConfigFromSelector returns the Deployment Config object associated
+// with the given selector.
+// An error is thrown when exactly one Deployment Config is not found for the
+// component.
+func (c *Client) GetOneDeploymentConfigFromSelector(selector string) (*appsv1.DeploymentConfig, error) {
+
+	deploymentConfigs, err := c.GetDeploymentConfigsFromSelector(selector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get DeploymentConfigs for the selector: %v", selector)
+	}
+
+	numDC := len(deploymentConfigs)
+	if numDC == 0 {
+		return nil, fmt.Errorf("no Deployment Config was found for the selector: %v", selector)
+	} else if numDC > 1 {
+		return nil, fmt.Errorf("multiple Deployment Configs exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &deploymentConfigs[0], nil
+}
