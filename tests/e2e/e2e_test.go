@@ -101,12 +101,12 @@ var _ = Describe("odo", func() {
 	Describe("creating an application", func() {
 		Context("when application by the same name doesn't exist", func() {
 			It("should create an application", func() {
-				appName := runCmd("odo application create usecase5")
+				appName := runCmd("odo app create usecase5")
 				Expect(appName).To(ContainSubstring("usecase5"))
 			})
 
 			It("should get the current application", func() {
-				appName := runCmd("odo application get --short")
+				appName := runCmd("odo app get --short")
 				Expect(appName).To(Equal("usecase5"))
 			})
 
@@ -116,17 +116,17 @@ var _ = Describe("odo", func() {
 			})
 
 			It("should be able to create another application", func() {
-				appName := runCmd("odo application create usecase5-2")
+				appName := runCmd("odo app create usecase5-2")
 				Expect(appName).To(ContainSubstring("usecase5-2"))
 			})
 
 			It("should be able to delete an application", func() {
 				// Cleanup
-				runCmd("odo application delete usecase5-2 -f")
+				runCmd("odo app delete usecase5-2 -f")
 			})
 
 			It("should be able to set an application as current", func() {
-				appName := runCmd("odo application set usecase5")
+				appName := runCmd("odo app set usecase5")
 				Expect(appName).To(ContainSubstring("usecase5"))
 			})
 		})
@@ -150,7 +150,7 @@ var _ = Describe("odo", func() {
 			})
 
 			It("should create the component within the application", func() {
-				getApp := runCmd("odo application get --short")
+				getApp := runCmd("odo app get --short")
 				Expect(getApp).To(Equal("usecase5"))
 			})
 
@@ -169,7 +169,7 @@ var _ = Describe("odo", func() {
 			})
 
 			It("should get the application usecase5", func() {
-				appGet := runCmd("odo application get --short")
+				appGet := runCmd("odo app get --short")
 				Expect(appGet).To(Equal("usecase5"))
 			})
 
@@ -294,12 +294,12 @@ var _ = Describe("odo", func() {
 
 	Context("deleting the application", func() {
 		It("should delete application and component", func() {
-			runCmd("odo application delete usecase5 -f")
+			runCmd("odo app delete usecase5 -f")
 
-			appGet := runCmd("odo application get --short")
+			appGet := runCmd("odo app get --short")
 			Expect(appGet).To(Equal(""))
 
-			appList := runCmd("odo application list")
+			appList := runCmd("odo app list")
 			Expect(appList).NotTo(ContainSubstring("usecase5"))
 
 			cmpList := runCmd("odo list")

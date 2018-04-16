@@ -90,7 +90,7 @@ An application is an umbrella under which you will build all the components (mic
 Let's create an application -
 
 ```console
-$ odo application create nodeapp 
+$ odo app create nodeapp
 Creating application: nodeapp
 Switched to application: nodeapp
 ```
