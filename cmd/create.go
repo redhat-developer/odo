@@ -66,9 +66,7 @@ A full list of component types that can be deployed is available using: 'odo com
 		}
 
 		exists, err := component.Exists(client, componentName)
-		if err != nil {
-			checkError(err, "")
-		}
+		checkError(err, "")
 		if exists {
 			fmt.Printf("component with the name %s already exists in the current application\n", componentName)
 			os.Exit(1)
