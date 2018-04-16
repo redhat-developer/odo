@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/component"
+
+	"github.com/redhat-developer/odo/pkg/application"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -53,7 +56,8 @@ var componentSetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		err := component.SetCurrent(client, args[0])
+
+		_, err := application.GetCurrentOrGetAndSetDefault(client)
 		checkError(err, "")
 		fmt.Printf("Switched to component: %v\n", args[0])
 	},

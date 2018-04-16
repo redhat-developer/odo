@@ -26,26 +26,19 @@ type ComponentInfo struct {
 	Type string
 }
 
-func CreateFromGit(client *occlient.Client, name string, ctype string, url string) error {
-	// if current application doesn't exist, create it
-	// this can happen when odo is started form clean state
-	// and default application is used (first command run is odo create)
-	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create git component %s", name)
-	}
-	exists, err := application.Exists(client, currentApplication)
+func CreateFromGit(client *occlient.Client, applicationName string, name string, ctype string, url string) error {
+	exists, err := application.Exists(client, applicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
 	if !exists {
-		err = application.Create(client, currentApplication)
+		err = application.Create(client, applicationName)
 		if err != nil {
 			return errors.Wrapf(err, "unable to create git component %s", name)
 		}
 	}
 
-	labels := componentlabels.GetLabels(name, currentApplication, true)
+	labels := componentlabels.GetLabels(name, applicationName, true)
 	// save component type as label
 	labels[componentlabels.ComponentTypeLabel] = ctype
 
@@ -73,24 +66,19 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 }
 
 // CreateFromDir create new component with source from local directory
-func CreateFromDir(client *occlient.Client, name string, ctype string, dir string) error {
-	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
-	}
-
-	exists, err := application.Exists(client, currentApplication)
+func CreateFromDir(client *occlient.Client, applicationName string, name string, ctype string, dir string) error {
+	exists, err := application.Exists(client, applicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
 	}
 	if !exists {
-		err = application.Create(client, currentApplication)
+		err = application.Create(client, applicationName)
 		if err != nil {
 			return errors.Wrapf(err, "unable to create component %s from local path", name, dir)
 		}
 	}
 
-	labels := componentlabels.GetLabels(name, currentApplication, true)
+	labels := componentlabels.GetLabels(name, applicationName, true)
 	// save component type as label
 	labels[componentlabels.ComponentTypeLabel] = ctype
 
@@ -142,7 +130,7 @@ func Delete(client *occlient.Client, name string) (string, error) {
 	return output, nil
 }
 
-func SetCurrent(client *occlient.Client, name string) error {
+func SetCurrent(client *occlient.Client, name string, applicationName string) error {
 	cfg, err := config.New()
 	if err != nil {
 		return errors.Wrapf(err, "unable to set current component %s", name)
@@ -150,12 +138,7 @@ func SetCurrent(client *occlient.Client, name string) error {
 
 	currentProject := project.GetCurrent(client)
 
-	currentApplication, err := application.GetCurrent(client)
-	if err != nil {
-		return errors.Wrapf(err, "unable to set current component %s", name)
-	}
-
-	err = cfg.SetActiveComponent(name, currentApplication, currentProject)
+	err = cfg.SetActiveComponent(name, applicationName, currentProject)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set current component %s", name)
 	}

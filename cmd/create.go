@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -50,6 +51,8 @@ A full list of component types that can be deployed is available using: 'odo com
 			os.Exit(1)
 		}
 
+		currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
+		checkError(err, "")
 		//TODO: check flags - only one of binary, git, dir can be specified
 
 		//We don't have to check it anymore, Args check made sure that args has at least one item
@@ -73,23 +76,24 @@ A full list of component types that can be deployed is available using: 'odo com
 		}
 
 		if len(componentGit) != 0 {
-			err := component.CreateFromGit(client, componentName, componentType, componentGit)
+			err := component.CreateFromGit(client, currentApplication, componentName, componentType, componentGit)
 			checkError(err, "")
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
-			err = component.CreateFromDir(client, componentName, componentType, dir)
+			err = component.CreateFromDir(client, currentApplication, componentName, componentType, dir)
 			checkError(err, "")
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
 			checkError(err, "")
-			err = component.CreateFromDir(client, componentName, componentType, dir)
+			err = component.CreateFromDir(client, currentApplication, componentName, componentType, dir)
 			checkError(err, "")
 		}
+
 		// after component is successfully created, set is as active
-		err = component.SetCurrent(client, componentName)
+		err = component.SetCurrent(client, componentName, currentApplication)
 		checkError(err, "")
 	},
 }
