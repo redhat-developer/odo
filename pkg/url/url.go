@@ -3,16 +3,20 @@ package url
 import (
 	"fmt"
 
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/ocdev/pkg/application"
-	"github.com/redhat-developer/ocdev/pkg/component"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/application"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/occlient"
+
 	log "github.com/sirupsen/logrus"
 )
 
 type URL struct {
-	Name string
-	URL  string
+	Name     string
+	URL      string
+	Protocol string
 }
 
 // Delete deletes a URL
@@ -28,7 +32,7 @@ func Create(client *occlient.Client, cmp string) (*URL, error) {
 		return nil, errors.Wrap(err, "unable to get current application")
 	}
 
-	labels := component.GetLabels(cmp, app, false)
+	labels := componentlabels.GetLabels(cmp, app, false)
 
 	route, err := client.CreateRoute(cmp, labels)
 	if err != nil {
@@ -36,8 +40,9 @@ func Create(client *occlient.Client, cmp string) (*URL, error) {
 	}
 
 	return &URL{
-		Name: route.Name,
-		URL:  route.Spec.Host,
+		Name:     route.Name,
+		URL:      route.Spec.Host,
+		Protocol: getProtocol(*route),
 	}, nil
 }
 
@@ -46,10 +51,10 @@ func Create(client *occlient.Client, cmp string) (*URL, error) {
 // given component
 func List(client *occlient.Client, componentName string, applicationName string) ([]URL, error) {
 
-	labelSelector := fmt.Sprintf("%v=%v", application.ApplicationLabel, applicationName)
+	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
 
 	if componentName != "" {
-		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", component.ComponentLabel, componentName)
+		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
 	}
 
 	log.Debugf("Listing routes with label selector: %v", labelSelector)
@@ -61,10 +66,23 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	var urls []URL
 	for _, r := range routes {
 		urls = append(urls, URL{
-			Name: r.Name,
-			URL:  r.Spec.Host,
+			Name:     r.Name,
+			URL:      r.Spec.Host,
+			Protocol: getProtocol(r),
 		})
 	}
 
 	return urls, nil
+}
+
+func getProtocol(route routev1.Route) string {
+	if route.Spec.TLS != nil {
+		return "https"
+	} else {
+		return "http"
+	}
+}
+
+func GetUrlString(url URL) string {
+	return url.Protocol + "://" + url.URL
 }

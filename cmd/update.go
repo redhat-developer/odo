@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/ocdev/pkg/component"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
@@ -12,16 +12,16 @@ var updateCmd = &cobra.Command{
 	Use:  "update",
 	Args: cobra.MaximumNArgs(1),
 	Example: `  # Change the source of a currently active component to local (use the current directory as a source)
-  ocdev update --local
+  odo update --local
 
   # Change the source of the frontend component to local with source in ./frontend directory
-  ocdev update frontend --local ./frontend
+  odo update frontend --local ./frontend
 
   # Change the source of a currently active component to git 
-  ocdev update --git https://github.com/openshift/nodejs-ex.git
+  odo update --git https://github.com/openshift/nodejs-ex.git
 
   # Change the source of the component named node-ex to git
-  ocdev update node-ex --git https://github.com/openshift/nodejs-ex.git
+  odo update node-ex --git https://github.com/openshift/nodejs-ex.git
 	`,
 	Short: "Change the source of a component",
 	Run: func(cmd *cobra.Command, args []string) {

@@ -2,7 +2,7 @@ package project
 
 import (
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 // ApplicationInfo holds information about one project

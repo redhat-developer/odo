@@ -3,7 +3,7 @@
 #
 
 # Ignore compiled files
-ocdev
+odo
 dist
 bin
 

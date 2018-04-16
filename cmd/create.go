@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/redhat-developer/ocdev/pkg/catalog"
-	"github.com/redhat-developer/ocdev/pkg/component"
+	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/component"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -21,18 +22,25 @@ var (
 var componentCreateCmd = &cobra.Command{
 	Use:   "create <component_type> [component_name] [flags]",
 	Short: "Create new component",
-	Long: `Create new component.
-If component name is not provided, component type value will be used for name.
-	`,
-	Example: `  # Create new nodejs component with the source in current directory. 
-  ocdev create nodejs
+	Long: `Create new component to deploy on OpenShift.
 
-  # Create new nodejs component named 'frontend' with the source in './frontend' directory
-  ocdev create nodejs frontend --local ./frontend
+If component name is not provided, component type value will be used for the name.
 
-  # Create new nodejs component with source from remote git repository.
-  ocdev create nodejs --git https://github.com/openshift/nodejs-ex.git
-	`,
+A full list of component types that can be deployed is available using: 'odo component list'`,
+	Example: `  # Create new Node.js component with the source in current directory. 
+  odo create nodejs
+
+  # Create new Node.js component named 'frontend' with the source in './frontend' directory
+  odo create nodejs frontend --local ./frontend
+
+  # Create new Node.js component with source from remote git repository.
+  odo create nodejs --git https://github.com/openshift/nodejs-ex.git
+
+  # Create a Ruby component
+  odo create ruby
+	
+  # Create a Python component
+  odo create python`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)

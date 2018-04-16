@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	log "github.com/sirupsen/logrus"
 )
 

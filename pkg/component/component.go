@@ -4,23 +4,17 @@ import (
 	"fmt"
 	"net/url"
 
-	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/redhat-developer/ocdev/pkg/application"
-	"github.com/redhat-developer/ocdev/pkg/config"
-	"github.com/redhat-developer/ocdev/pkg/occlient"
-	"github.com/redhat-developer/ocdev/pkg/project"
-	"github.com/redhat-developer/ocdev/pkg/util"
+	"github.com/redhat-developer/odo/pkg/application"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/project"
 )
-
-// ComponentLabel is a label key used to identify component
-const ComponentLabel = "app.kubernetes.io/component-name"
-
-// componentTypeLabel is kubernetes that identifies type of a component
-const componentTypeLabel = "app.kubernetes.io/component-type"
 
 // componentSourceURLAnnotation is an source url from which component was build
 // it can be also file://
@@ -32,20 +26,10 @@ type ComponentInfo struct {
 	Type string
 }
 
-// GetLabels return labels that should be applied to every object for given component in active application
-// additional labels are used only for creating object
-// if you are creating something use additional=true
-// if you need labels to filter component that use additional=false
-func GetLabels(componentName string, applicationName string, additional bool) map[string]string {
-	labels := application.GetLabels(applicationName, additional)
-	labels[ComponentLabel] = componentName
-	return labels
-}
-
 func CreateFromGit(client *occlient.Client, name string, ctype string, url string) error {
 	// if current application doesn't exist, create it
-	// this can happen when ocdev is started form clean state
-	// and default application is used (first command run is ocdev create)
+	// this can happen when odo is started form clean state
+	// and default application is used (first command run is odo create)
 	currentApplication, err := application.GetCurrentOrGetAndSetDefault(client)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", name)
@@ -61,9 +45,9 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 		}
 	}
 
-	labels := GetLabels(name, currentApplication, true)
+	labels := componentlabels.GetLabels(name, currentApplication, true)
 	// save component type as label
-	labels[componentTypeLabel] = ctype
+	labels[componentlabels.ComponentTypeLabel] = ctype
 
 	// save source path as annotation
 	annotations := map[string]string{componentSourceURLAnnotation: url}
@@ -106,9 +90,9 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 		}
 	}
 
-	labels := GetLabels(name, currentApplication, true)
+	labels := componentlabels.GetLabels(name, currentApplication, true)
 	// save component type as label
-	labels[componentTypeLabel] = ctype
+	labels[componentlabels.ComponentTypeLabel] = ctype
 
 	// save source path as annotation
 	sourceURL := url.URL{Scheme: "file", Path: dir}
@@ -143,7 +127,7 @@ func Delete(client *occlient.Client, name string) (string, error) {
 		return "", errors.Wrapf(err, "unable to delete component %s", name)
 	}
 
-	labels := GetLabels(name, currentApplication, false)
+	labels := componentlabels.GetLabels(name, currentApplication, false)
 
 	output, err := client.Delete("all", "", labels)
 	if err != nil {
@@ -218,8 +202,8 @@ func RebuildGit(client *occlient.Client, componentName string) error {
 // GetComponentType returns type of component in given application and project
 func GetComponentType(client *occlient.Client, componentName string, applicationName string, projectName string) (string, error) {
 	// filter according to component and application name
-	selector := fmt.Sprintf("%s=%s,%s=%s", ComponentLabel, componentName, application.ApplicationLabel, applicationName)
-	ctypes, err := client.GetLabelValues(projectName, componentTypeLabel, selector)
+	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, componentName, applabels.ApplicationLabel, applicationName)
+	ctypes, err := client.GetLabelValues(projectName, componentlabels.ComponentTypeLabel, selector)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get type of %s component")
 	}
@@ -249,8 +233,8 @@ func List(client *occlient.Client) ([]ComponentInfo, error) {
 		return nil, errors.Wrap(err, "unable to list components")
 	}
 
-	applicationSelector := fmt.Sprintf("%s=%s", application.ApplicationLabel, currentApplication)
-	componentNames, err := client.GetLabelValues(currentProject, ComponentLabel, applicationSelector)
+	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, currentApplication)
+	componentNames, err := client.GetLabelValues(currentProject, componentlabels.ComponentLabel, applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
@@ -319,29 +303,6 @@ func Update(client *occlient.Client, componentName string, to string, source str
 		return errors.Wrap(err, "unable to update the component")
 	}
 	return nil
-}
-
-// GetComponentDeploymentConfig returns the Deployment Config object associated
-// with the given component.
-// An error is thrown when exactly one Deployment Config is not found for the
-// component.
-func GetComponentDeploymentConfig(client *occlient.Client, componentName string, applicationName string) (*appsv1.DeploymentConfig, error) {
-	labels := GetLabels(componentName, applicationName, false)
-	selector := util.ConvertLabelsToSelector(labels)
-
-	deploymentConfigs, err := client.GetDeploymentConfigsFromSelector(selector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get DeploymentConfigs for the selector: %v", selector)
-	}
-
-	numDC := len(deploymentConfigs)
-	if numDC == 0 {
-		return nil, fmt.Errorf("no Deployment Config was found for the selector: %v", selector)
-	} else if numDC > 1 {
-		return nil, fmt.Errorf("multiple Deployment Configs exist for the selector: %v. Only one must be present", selector)
-	}
-
-	return &deploymentConfigs[0], nil
 }
 
 // Checks whether a component with the given name exists in the current application or not

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-developer/ocdev/pkg/application"
-	"github.com/redhat-developer/ocdev/pkg/component"
-	"github.com/redhat-developer/ocdev/pkg/url"
+	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/spf13/cobra"
 )
 
@@ -32,10 +32,10 @@ The created URL can be used to access the specified component from outside the
 OpenShift cluster.
 `,
 	Example: `# Create a URL for the current component.
-ocdev url create
+odo url create
 
 # Create a URL for a specific component
-ocdev url create <component name>
+odo url create <component name>
 `,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -58,7 +58,7 @@ ocdev url create <component name>
 		u, err := url.Create(client, cmp)
 		checkError(err, "")
 		fmt.Printf("URL created for component: %v\n\n"+
-			"%v - %v\n", cmp, u.Name, u.URL)
+			"%v - %v\n", cmp, u.Name, url.GetUrlString(*u))
 	},
 }
 
@@ -69,7 +69,7 @@ var urlDeleteCmd = &cobra.Command{
 Deleted the given URL, hence making the service inaccessible.
 `,
 	Example: `# Delete a URL to a component
-ocdev url delete <URL>
+odo url delete <URL>
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -87,7 +87,7 @@ var urlListCmd = &cobra.Command{
 	Long: `List URLs.
 Lists all the available URLs which can be used to access the components.`,
 	Example: ` # List the available URLs
-ocdev url list
+odo url list
 `,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -111,7 +111,7 @@ ocdev url list
 		} else {
 			fmt.Printf("Found the following URLs for component %v in application %v:\n", cmp, app)
 			for _, u := range urls {
-				fmt.Printf("%v - %v\n", u.Name, u.URL)
+				fmt.Printf("%v - %v\n", u.Name, url.GetUrlString(u))
 			}
 		}
 	},
