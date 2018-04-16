@@ -58,7 +58,7 @@ odo url create <component name>
 		u, err := url.Create(client, cmp)
 		checkError(err, "")
 		fmt.Printf("URL created for component: %v\n\n"+
-			"%v - %v\n", cmp, u.Name, u.URL)
+			"%v - %v\n", cmp, u.Name, url.GetUrlString(*u))
 	},
 }
 
@@ -111,7 +111,7 @@ odo url list
 		} else {
 			fmt.Printf("Found the following URLs for component %v in application %v:\n", cmp, app)
 			for _, u := range urls {
-				fmt.Printf("%v - %v\n", u.Name, u.URL)
+				fmt.Printf("%v - %v\n", u.Name, url.GetUrlString(u))
 			}
 		}
 	},
