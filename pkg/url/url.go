@@ -5,7 +5,6 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/application"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
@@ -25,16 +24,10 @@ func Delete(client *occlient.Client, name string) error {
 }
 
 // Create creates a URL
-func Create(client *occlient.Client, cmp string) (*URL, error) {
+func Create(client *occlient.Client, componentName, applicationName string) (*URL, error) {
+	labels := componentlabels.GetLabels(componentName, applicationName, false)
 
-	app, err := application.GetCurrentOrGetAndSetDefault(client)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get current application")
-	}
-
-	labels := componentlabels.GetLabels(cmp, app, false)
-
-	route, err := client.CreateRoute(cmp, labels)
+	route, err := client.CreateRoute(componentName, labels)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}

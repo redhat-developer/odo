@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -13,8 +16,11 @@ var componentListCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
+		applicationName, err := application.GetCurrent(client)
+		checkError(err, "")
+		projectName := project.GetCurrent(client)
 
-		components, err := component.List(client)
+		components, err := component.List(client, applicationName, projectName)
 		checkError(err, "")
 
 		if len(components) == 0 {

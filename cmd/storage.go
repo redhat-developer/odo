@@ -6,6 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 )
@@ -16,9 +17,9 @@ var (
 	storagePath      string
 )
 
-func getComponent(client *occlient.Client) string {
+func getComponent(client *occlient.Client, applicationName, projectName string) string {
 	if len(storageComponent) == 0 {
-		c, err := component.GetCurrent(client)
+		c, err := component.GetCurrent(client, applicationName, projectName)
 		checkError(err, "Could not get current component")
 		return c
 	}
@@ -37,10 +38,11 @@ var storageCreateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		cmpnt := getComponent(client)
-		app, err := application.GetCurrent(client)
+		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
-		_, err = storage.Create(client, args[0], storageSize, storagePath, cmpnt, app)
+		projectName := project.GetCurrent(client)
+		cmpnt := getComponent(client, applicationName, projectName)
+		_, err = storage.Create(client, args[0], storageSize, storagePath, cmpnt, applicationName)
 		checkError(err, "")
 		fmt.Printf("Added storage %v to %v\n", args[0], cmpnt)
 	},
@@ -57,12 +59,13 @@ var storageRemoveCmd = &cobra.Command{
 		if len(args) != 0 {
 			storageName = args[0]
 		}
-
-		cmpnt := getComponent(client)
-		app, err := application.GetCurrent(client)
+		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
+		projectName := project.GetCurrent(client)
 
-		err = storage.Remove(client, storageName, app, cmpnt)
+		cmpnt := getComponent(client, applicationName, projectName)
+
+		err = storage.Remove(client, storageName, applicationName, cmpnt)
 		checkError(err, "failed to remove storage")
 
 		switch storageName {
@@ -80,11 +83,12 @@ var storageListCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		cmpnt := getComponent(client)
-		app, err := application.GetCurrent(client)
+		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
+		projectName := project.GetCurrent(client)
 
-		storageList, err := storage.List(client, app, cmpnt)
+		cmpnt := getComponent(client, applicationName, projectName)
+		storageList, err := storage.List(client, applicationName, cmpnt)
 		checkError(err, "failed to list storage")
 
 		if len(storageList) == 0 {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/spf13/cobra"
 )
@@ -40,12 +41,15 @@ odo url create <component name>
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
+		applicationName, err := application.GetCurrent(client)
+		checkError(err, "")
+		projectName := project.GetCurrent(client)
 
 		var cmp string
 		switch len(args) {
 		case 0:
 			var err error
-			cmp, err = component.GetCurrent(client)
+			cmp, err = component.GetCurrent(client, applicationName, projectName)
 			checkError(err, "")
 		case 1:
 			cmp = args[0]
@@ -55,7 +59,7 @@ odo url create <component name>
 		}
 
 		fmt.Printf("Adding URL to component: %v\n", cmp)
-		u, err := url.Create(client, cmp)
+		u, err := url.Create(client, cmp, applicationName)
 		checkError(err, "")
 		fmt.Printf("URL created for component: %v\n\n"+
 			"%v - %v\n", cmp, u.Name, url.GetUrlString(*u))
