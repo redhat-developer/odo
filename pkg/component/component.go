@@ -36,19 +36,6 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
-
-	fmt.Println("please wait, building component...")
-
-	//get the latest build name for following
-	buildName, err := client.GetLatestBuildName(name)
-	if err != nil {
-		return errors.Wrap(err, "unable to follow build logs")
-	}
-	err = client.FollowBuildLog(buildName)
-	if err != nil {
-		return errors.Wrap(err, "unable to follow build logs")
-	}
-
 	return nil
 }
 
@@ -67,12 +54,6 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 		return err
 	}
 
-	fmt.Println("please wait, building component...")
-
-	err = client.StartBinaryBuild(name, dir)
-	if err != nil {
-		return err
-	}
 	return nil
 
 }

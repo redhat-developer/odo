@@ -91,22 +91,31 @@ A full list of component types that can be deployed is available using: 'odo com
 		if len(componentGit) != 0 {
 			err := component.CreateFromGit(client, componentName, componentType, componentGit, applicationName)
 			checkError(err, "")
+			fmt.Printf("Component '%s' was created.\n", componentName)
+			fmt.Printf("Triggering build from %s.\n\n", componentGit)
+			err = component.RebuildGit(client, componentName)
+			checkError(err, "")
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
 			err = component.CreateFromDir(client, componentName, componentType, dir, applicationName)
 			checkError(err, "")
+			fmt.Printf("Component '%s' was created.\n", componentName)
+			fmt.Printf("To push source code to the component run 'odo push'\n")
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
 			checkError(err, "")
 			err = component.CreateFromDir(client, componentName, componentType, dir, applicationName)
+			fmt.Printf("Component '%s' was created.\n", componentName)
+			fmt.Printf("To push source code to the component run 'odo push'\n")
 			checkError(err, "")
 		}
 		// after component is successfully created, set is as active
 		err = component.SetCurrent(client, componentName, applicationName, projectName)
 		checkError(err, "")
+		fmt.Printf("\nComponent '%s' is now set as active component.\n", componentName)
 	},
 }
 
