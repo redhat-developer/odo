@@ -42,6 +42,16 @@ jobs:
         - oc login -u developer 
         - make test-e2e
 
+    # Run demo
+    - <<: *base-test
+      stage: test
+      go: 1.9
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - make test-demo
 
     # test installation script on linux
     - stage: test
