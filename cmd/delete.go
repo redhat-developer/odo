@@ -2,14 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"strings"
-
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
+	"strings"
 )
 
 var (
@@ -37,7 +36,7 @@ var componentDeleteCmd = &cobra.Command{
 		exists, err := component.Exists(client, componentName, applicationName, projectName)
 		checkError(err, "")
 		if !exists {
-			fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
+			log.Errorf("Component with the name %s does not exist in the current application\n", componentName)
 			os.Exit(1)
 		}
 

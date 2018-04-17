@@ -89,9 +89,9 @@ func checkError(err error, context string, a ...interface{}) {
 	if err != nil {
 		log.Debugf("Error:\n%v", err)
 		if context == "" {
-			fmt.Println(errors.Cause(err))
+			log.Error(errors.Cause(err))
 		} else {
-			fmt.Printf(fmt.Sprintf("%s\n", context), a...)
+			log.Errorf(fmt.Sprintf("%s\n", context), a...)
 		}
 
 		os.Exit(1)
