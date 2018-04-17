@@ -98,6 +98,25 @@ var _ = Describe("odo", func() {
 		})
 	})
 
+	Context("creating component without an application", func() {
+		It("should create the component in default application", func() {
+			runCmd("odo create php testcmp")
+
+			getCmp := runCmd("odo component get --short")
+			Expect(getCmp).To(Equal("testcmp"))
+
+			getApp := runCmd("odo app get --short")
+			Expect(getApp).To(Equal("app"))
+		})
+
+		It("should be able to delete the component", func() {
+			runCmd("odo delete testcmp -f")
+
+			getCmp := runCmd("odo component list")
+			Expect(getCmp).NotTo(ContainSubstring("testcmp"))
+		})
+	})
+
 	Describe("creating an application", func() {
 		Context("when application by the same name doesn't exist", func() {
 			It("should create an application", func() {
