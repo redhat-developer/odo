@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var (
@@ -26,7 +27,14 @@ var projectSetCmd = &cobra.Command{
 		client := getOcClient()
 		current := project.GetCurrent(client)
 
-		err := project.SetCurrent(client, projectName)
+		exists, err := project.Exists(client, projectName)
+		checkError(err, "")
+		if !exists {
+			fmt.Printf("The project %s does not exist\n", projectName)
+			os.Exit(1)
+		}
+
+		err = project.SetCurrent(client, projectName)
 		checkError(err, "")
 		if projectShortFlag {
 			fmt.Print(projectName)
