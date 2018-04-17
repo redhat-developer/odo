@@ -64,21 +64,44 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 
 // Delete whole component
 func Delete(client *occlient.Client, name string, applicationName string, projectName string) (string, error) {
+
 	cfg, err := config.New()
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to delete component %s", name)
+		return "", errors.Wrapf(err, "unable to create new configuration to delete %s", name)
 	}
 
 	labels := componentlabels.GetLabels(name, applicationName, false)
 
 	output, err := client.Delete("all", "", labels)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to delete component %s", name)
+		return "", errors.Wrapf(err, "error deleting component %s", name)
 	}
 
-	err = cfg.SetActiveComponent("", projectName, applicationName)
+	// Get a list of all active components
+	components, err := List(client, applicationName, projectName)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to delete component %s", name)
+		return "", errors.Wrapf(err, "unable to retrieve list of components")
+	}
+
+	// We will *only* set a new component if either len(components) is zero, or the
+	// current component matches the one being deleted.
+	if current := cfg.GetActiveComponent(applicationName, projectName); current == name || len(components) == 0 {
+
+		// If there's more than one component, set it to the first one..
+		if len(components) > 0 {
+			err = cfg.SetActiveComponent(components[0].Name, applicationName, projectName)
+
+			if err != nil {
+				return "", errors.Wrapf(err, "unable to set current component to '%s'", name)
+			}
+		} else {
+			// Unset to blank
+			err = cfg.UnsetActiveComponent(applicationName, projectName)
+			if err != nil {
+				return "", errors.Wrapf(err, "error unsetting current component while deleting %s", name)
+			}
+
+		}
 	}
 
 	return output, nil
