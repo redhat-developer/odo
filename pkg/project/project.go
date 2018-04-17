@@ -53,3 +53,20 @@ func List(client *occlient.Client) ([]ProjectInfo, error) {
 	}
 	return projects, nil
 }
+
+// Checks whether a project with the given name exists or not
+// projectName is the project name to perform check for
+// The first returned parameter is a bool indicating if a project with the given name already exists or not
+// The second returned parameter is the error that might occurs while execution
+func Exists(client *occlient.Client, projectName string) (bool, error) {
+	projects, err := List(client)
+	if err != nil {
+		return false, errors.Wrap(err, "unable to get the project list")
+	}
+	for _, project := range projects {
+		if project.Name == projectName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
