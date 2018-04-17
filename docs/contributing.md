@@ -14,6 +14,8 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
     - [odo.rb](https://github.com/kadel/homebrew-odo/blob/master/Formula/odo.rb) in [kadel/homebrew-odo](https://github.com/kadel/homebrew-odo)
 
     There is a helper script [scripts/bump-version.sh](/scripts/bump-version.sh) that should change version number in all files listed above (expect odo.rb).
+
+    To update the CLI Structure in README.md, run `make generate-cli-docs` and update the section in [README.md](/README.md#cli-structure)
 2. When PR is merged create and push new git tag for version.
     ```
     git tag v0.0.1
