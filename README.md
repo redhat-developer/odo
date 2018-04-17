@@ -32,12 +32,12 @@ If you don't want to add extra package repositories to your system you can just 
 For macOS:
 
 ```
-sudo curl -L  "https://github.com/redhat-developer/odo/releases/download/v0.0.3/odo-darwin-amd64.gz" | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo
+sudo curl -L  "https://github.com/redhat-developer/odo/releases/download/v0.0.3/ocdev-darwin-amd64.gz" | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo
 ```
 
 For Linux:
 ```
-sudo curl -L  "https://github.com/redhat-developer/odo/releases/download/v0.0.3/odo-linux-amd64.gz" | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo
+sudo curl -L  "https://github.com/redhat-developer/odo/releases/download/v0.0.3/ocdev-linux-amd64.gz" | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo
 ```
 
 You can also download latest master builds from [Bintray](https://dl.bintray.com/odo/odo/latest/). This is updated every time there is a change in master git branch.
