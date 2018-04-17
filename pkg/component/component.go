@@ -11,6 +11,8 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/storage"
+	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -312,4 +314,34 @@ func getPortFromService(service *corev1.Service) (int32, error) {
 	}
 
 	return service.Spec.Ports[0].Port, nil
+
+}
+
+// Get Component Description
+func GetComponentDesc(client *occlient.Client, cmpnt string, currentApplication string, currentProject string) (componentType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
+	// Component Type
+	componentType, err = GetComponentType(client, cmpnt, currentApplication, currentProject)
+	if err != nil {
+		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
+	}
+	// Source
+	_, path, err = GetComponentSource(client, cmpnt, currentApplication, currentProject)
+	if err != nil {
+		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
+	}
+	// URL
+	urlList, err := urlpkg.List(client, cmpnt, currentApplication)
+	if len(urlList) != 0 {
+		componentURL = urlList[0].URL
+	}
+	if err != nil {
+		return "", "", "", nil, errors.Wrap(err, "unable to get url list")
+	}
+	//Storage
+	appStore, err = storage.List(client, currentApplication, cmpnt)
+	if err != nil {
+		return "", "", "", nil, errors.Wrap(err, "unable to get storage list")
+	}
+
+	return componentType, path, componentURL, appStore, nil
 }
