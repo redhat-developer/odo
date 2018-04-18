@@ -73,7 +73,7 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
 
-	fmt.Println("please wait, building component...")
+	log.Info("Please wait, building component...")
 
 	//get the latest build name for following
 	buildName, err := client.GetLatestBuildName(name)
@@ -119,7 +119,7 @@ func CreateFromDir(client *occlient.Client, name string, ctype string, dir strin
 		return err
 	}
 
-	fmt.Println("please wait, building component...")
+	log.Info("Please wait, building component...")
 
 	err = client.StartBinaryBuild(name, dir)
 	if err != nil {

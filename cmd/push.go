@@ -40,8 +40,8 @@ var pushCmd = &cobra.Command{
 			componentName, err = component.GetCurrent(client)
 			checkError(err, "unable to get current component")
 			if componentName == "" {
-				fmt.Println("No component is set as active.")
-				fmt.Println("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
+				log.Error("No component is set as active.")
+				log.Error("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
 				os.Exit(1)
 			}
 		} else {
@@ -62,7 +62,7 @@ var pushCmd = &cobra.Command{
 			checkError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
 
 			if u.Scheme != "" && u.Scheme != "file" {
-				fmt.Printf("Component %s has invalid source path %s", componentName, u.Scheme)
+				log.Errorf("Component %s has invalid source path %s", componentName, u.Scheme)
 				os.Exit(1)
 			}
 
@@ -72,7 +72,7 @@ var pushCmd = &cobra.Command{
 			// currently we don't support changing build type
 			// it doesn't make sense to use --dir with git build
 			if len(componentLocal) != 0 {
-				fmt.Println("unable to push local directory to component that uses git repository as source")
+				log.Error("unable to push local directory to component that uses git repository as source")
 				os.Exit(1)
 			}
 			err := component.RebuildGit(client, componentName)

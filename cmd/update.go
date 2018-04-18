@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+
+	"github.com/redhat-developer/odo/pkg/component"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 var updateCmd = &cobra.Command{
@@ -40,12 +42,12 @@ var updateCmd = &cobra.Command{
 		}
 
 		if checkFlag > 1 {
-			fmt.Println("The source can be either --binary or --local or --git")
+			log.Error("The source can be either --binary or --local or --git")
 			os.Exit(1)
 		}
 
 		if len(componentBinary) != 0 {
-			fmt.Printf("--binary is not implemented yet\n\n")
+			log.Error("--binary is not implemented yet\n\n")
 			os.Exit(1)
 		}
 

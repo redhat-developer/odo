@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,7 +44,7 @@ A full list of component types that can be deployed is available using: 'odo com
 
 		client := getOcClient()
 		if len(componentBinary) != 0 {
-			fmt.Printf("--binary is not implemented yet\n\n")
+			log.Error("--binary is not implemented yet\n\n")
 			cmd.Help()
 			os.Exit(1)
 		}
@@ -61,7 +60,7 @@ A full list of component types that can be deployed is available using: 'odo com
 		}
 
 		if len(componentBinary) != 0 {
-			fmt.Printf("--binary is not implemented yet\n\n")
+			log.Error("--binary is not implemented yet\n\n")
 			os.Exit(1)
 		}
 
@@ -70,7 +69,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			checkError(err, "")
 		}
 		if exists {
-			fmt.Printf("component with the name %s already exists in the current application\n", componentName)
+			log.Errorf("Component with the name %s already exists in the current application\n", componentName)
 			os.Exit(1)
 		}
 

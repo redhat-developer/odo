@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

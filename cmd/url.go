@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/url"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +51,7 @@ odo url create <component name>
 		case 1:
 			cmp = args[0]
 		default:
-			fmt.Println("unable to get component")
+			log.Error("unable to get component")
 			os.Exit(1)
 		}
 

@@ -267,7 +267,7 @@ func (c *Client) runOcComamnd(command *OcCommand) ([]byte, error) {
 			defer stdin.Close()
 			_, err := io.WriteString(stdin, *command.data)
 			if err != nil {
-				fmt.Printf("can't write to stdin %v\n", err)
+				log.Errorf("Cannot write to stdin %v\n", err)
 			}
 		}()
 	}
