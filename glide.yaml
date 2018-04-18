@@ -16,6 +16,8 @@ import:
   version: v0.0.1
 - package: github.com/spf13/pflag
   version: v1.0.0
+- package: github.com/fatih/color
+  version: v1.6.0
 - package: github.com/openshift/client-go
   version: release-3.9
 - package: github.com/openshift/source-to-image
