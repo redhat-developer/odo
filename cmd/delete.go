@@ -24,21 +24,38 @@ var componentDeleteCmd = &cobra.Command{
 	Example: `  # Delete component named 'frontend'. 
   odo delete frontend
 	`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("component delete called")
 		log.Debugf("args: %#v", strings.Join(args, " "))
 		client := getOcClient()
-		componentName := args[0]
+
+		// Get all necessary names (current application + project)
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
 
-		exists, err := component.Exists(client, componentName, applicationName, projectName)
-		checkError(err, "")
-		if !exists {
-			fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
-			os.Exit(1)
+		// Get the current component if no arguments have been passed
+		var componentName string
+
+		// If no arguments have been passed, get the current component
+		// else, use the first argument and check to see if it exists
+		if len(args) == 0 {
+			if componentName, err = component.GetCurrent(client, applicationName, projectName); err != nil {
+				fmt.Printf("Error getting current component")
+				os.Exit(1)
+			}
+		} else {
+
+			componentName = args[0]
+
+			// Checks to see if the component actually exists
+			exists, err := component.Exists(client, componentName, applicationName, projectName)
+			checkError(err, "")
+			if !exists {
+				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
+				os.Exit(1)
+			}
 		}
 
 		var confirmDeletion string
