@@ -52,18 +52,19 @@ var componentDeleteCmd = &cobra.Command{
 		if strings.ToLower(confirmDeletion) == "y" {
 			output, err := component.Delete(client, componentName, applicationName, projectName)
 			checkError(err, "")
-			fmt.Println(output)
+			log.Debug(output)
+			fmt.Printf("Component %s from application %s has been deleted\n", componentName, applicationName)
 
 			currentComponent, err := component.GetCurrent(client, applicationName, projectName)
 			if err != nil {
-				fmt.Printf("Unable to get current component")
+				fmt.Printf("Unable to get current component\n")
 				os.Exit(1)
 			}
 
 			if currentComponent == "" {
 				fmt.Println("No default component has been set")
 			} else {
-				fmt.Printf("Default component set to: %s", currentComponent)
+				fmt.Printf("Default component set to: %s\n", currentComponent)
 			}
 
 		} else {
