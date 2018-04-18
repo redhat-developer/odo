@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 // componentCmd represents the component command
@@ -63,6 +64,15 @@ var componentSetCmd = &cobra.Command{
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
+
+		exists, err := component.Exists(client, args[0], applicationName, projectName)
+		if err != nil {
+			checkError(err, "")
+		}
+		if !exists {
+			fmt.Printf("Component %s does not exist in the current application\n", args[0])
+			os.Exit(1)
+		}
 
 		err = component.SetCurrent(client, args[0], applicationName, projectName)
 		checkError(err, "")
