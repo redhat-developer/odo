@@ -65,7 +65,7 @@ A full list of component types that can be deployed is available using: 'odo com
 		exists, err := catalog.Exists(client, componentType)
 		checkError(err, "")
 		if !exists {
-			fmt.Printf("Invalid component type: %v\nRun 'ocdev catalog list' to see a list of supported components\n", componentType)
+			fmt.Printf("Invalid component type: %v\nRun 'odo catalog list' to see a list of supported components\n", componentType)
 			os.Exit(1)
 		}
 

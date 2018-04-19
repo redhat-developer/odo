@@ -41,7 +41,7 @@ var watchCmd = &cobra.Command{
 			checkError(err, "")
 			if componentName == "" {
 				fmt.Println("No component is set as active.")
-				fmt.Println("Use 'ocdev component set <component name> to set and existing component as active or call this command with component name as and argument.")
+				fmt.Println("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
 				os.Exit(1)
 			}
 		} else {

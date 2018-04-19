@@ -25,10 +25,10 @@ printed to STDOUT.
 `,
 	Example: `
   # Link current component to a component 'mariadb'
-  ocdev link mariadb
+  odo link mariadb
 
   # Link 'mariadb' component to 'nodejs' component
-  ocdev link mariadb --component nodejs`,
+  odo link mariadb --component nodejs`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
