@@ -61,8 +61,27 @@ var updateCmd = &cobra.Command{
 		if len(args) == 0 {
 			componentName, err = component.GetCurrent(client, applicationName, projectName)
 			checkError(err, "unable to get current component")
+			if len(componentName) == 0 {
+				appList, err := application.List(client)
+				checkError(err, "")
+				if len(appList) == 0 {
+					fmt.Println("Cannot update as no application exists in the current project")
+					os.Exit(1)
+				}
+			}
 		} else {
 			componentName = args[0]
+			exists, err := component.Exists(client, componentName, applicationName, projectName)
+			checkError(err, "")
+			if !exists {
+				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)
+				os.Exit(1)
+			}
+		}
+
+		if len(applicationName) == 0 {
+			fmt.Println("Cannot update as no application is set as active")
+			os.Exit(1)
 		}
 
 		if len(componentGit) != 0 {
