@@ -112,7 +112,7 @@ var _ = Describe("odo", func() {
 		It("should be able to delete the component", func() {
 			runCmd("odo delete testcmp -f")
 
-			getCmp := runCmd("odo component list")
+			getCmp := runCmd("odo list")
 			Expect(getCmp).NotTo(ContainSubstring("testcmp"))
 		})
 	})
