@@ -21,6 +21,7 @@ import (
 // componentSourceURLAnnotation is an source url from which component was build
 // it can be also file://
 const componentSourceURLAnnotation = "app.kubernetes.io/url"
+const componentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 
 // ComponentInfo holds all important information about one component
 type ComponentInfo struct {
@@ -35,6 +36,7 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 
 	// save source path as annotation
 	annotations := map[string]string{componentSourceURLAnnotation: url}
+	annotations[componentSourceTypeAnnotation] = "git"
 
 	err := client.NewAppS2I(name, ctype, url, labels, annotations)
 	if err != nil {
@@ -43,15 +45,17 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 	return nil
 }
 
-// CreateFromDir create new component with source from local directory
-func CreateFromDir(client *occlient.Client, name string, ctype string, dir string, applicationName string) error {
+// CreateFromPath create new component with source or binary from the given local path
+// sourceType indicates the source type of the component and can be either local or binary
+func CreateFromPath(client *occlient.Client, name string, ctype string, path string, applicationName string, sourceType string) error {
 	labels := componentlabels.GetLabels(name, applicationName, true)
 	// save component type as label
 	labels[componentlabels.ComponentTypeLabel] = ctype
 
 	// save source path as annotation
-	sourceURL := url.URL{Scheme: "file", Path: dir}
+	sourceURL := url.URL{Scheme: "file", Path: path}
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+	annotations[componentSourceTypeAnnotation] = sourceType
 
 	err := client.NewAppS2I(name, ctype, "", labels, annotations)
 	if err != nil {
@@ -134,9 +138,10 @@ func GetCurrent(client *occlient.Client, applicationName string, projectName str
 
 }
 
-// PushLocal start new build and push local dir as a source for build
-func PushLocal(client *occlient.Client, componentName string, dir string) error {
-	err := client.StartBinaryBuild(componentName, dir)
+// PushLocal start new build and push local dir as a source for local or a binary file for a binary build
+// asFile indicates if it is a binary component or not
+func PushLocal(client *occlient.Client, componentName string, dir string, asFile bool) error {
+	err := client.StartBinaryBuild(componentName, dir, asFile)
 	if err != nil {
 		return errors.Wrap(err, "unable to start build")
 	}
@@ -198,8 +203,8 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 }
 
 // GetComponentSource what source type given component uses
-// The first returned string is component source type ("git" or "local")
-// The second returned string is a source (url to git repository or local path)
+// The first returned string is component source type ("git" or "local" or "binary")
+// The second returned string is a source (url to git repository or local path or path to binary)
 func GetComponentSource(client *occlient.Client, componentName string, applicationName string, projectName string) (string, string, error) {
 	bc, err := client.GetBuildConfig(componentName, projectName)
 	if err != nil {
@@ -214,7 +219,7 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		sourceType = "git"
 		sourcePath = bc.Spec.Source.Git.URI
 	case buildv1.BuildSourceBinary:
-		sourceType = "local"
+		sourceType = bc.ObjectMeta.Annotations[componentSourceTypeAnnotation]
 		sourcePath = bc.ObjectMeta.Annotations[componentSourceURLAnnotation]
 		if sourcePath == "" {
 			return "", "", fmt.Errorf("unsupported BuildConfig.Spec.Source.Type %s", bc.Spec.Source.Type)

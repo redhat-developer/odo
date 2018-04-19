@@ -37,6 +37,9 @@ A full list of component types that can be deployed is available using: 'odo com
   # Create new Node.js component with source from remote git repository.
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
 
+  # Create new Wildfly component with binary named sample.war in './downloads' directory
+  odo create wildfly wildly --binary ./downloads/sample.war
+
   # Create a Ruby component
   odo create ruby
 	
@@ -50,12 +53,6 @@ A full list of component types that can be deployed is available using: 'odo com
 		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
-
-		if len(componentBinary) != 0 {
-			fmt.Printf("--binary is not implemented yet\n\n")
-			cmd.Help()
-			os.Exit(1)
-		}
 
 		checkFlag := 0
 
@@ -89,11 +86,6 @@ A full list of component types that can be deployed is available using: 'odo com
 			componentName = args[1]
 		}
 
-		if len(componentBinary) != 0 {
-			fmt.Printf("--binary is not implemented yet\n\n")
-			os.Exit(1)
-		}
-
 		exists, err = component.Exists(client, componentName, applicationName, projectName)
 		checkError(err, "")
 		if exists {
@@ -112,15 +104,35 @@ A full list of component types that can be deployed is available using: 'odo com
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
-			err = component.CreateFromDir(client, componentName, componentType, dir, applicationName)
+			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("To push source code to the component run 'odo push'\n")
+		} else if len(componentBinary) != 0 {
+			path, err := filepath.Abs(componentBinary)
+			checkError(err, "")
+			fi, err := os.Stat(path)
+			if err != nil {
+				checkError(err, "")
+			}
+			if fi.IsDir() {
+				fmt.Println("Please provide path to binary instead of a directory")
+				os.Exit(1)
+			}
+
+			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary")
+			checkError(err, "")
+
+			err = component.PushLocal(client, componentName, path, true)
+			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+
+			fmt.Printf("Component '%s' was created.\n", componentName)
+
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
 			checkError(err, "")
-			err = component.CreateFromDir(client, componentName, componentType, dir, applicationName)
+			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("To push source code to the component run 'odo push'\n")
 			checkError(err, "")

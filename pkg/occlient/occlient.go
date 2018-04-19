@@ -46,6 +46,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/util/retry"
+	"path/filepath"
 )
 
 const (
@@ -678,24 +679,36 @@ func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
 }
 
 // StartBinaryBuild starts new build and streams dir as source for build
-func (c *Client) StartBinaryBuild(name string, dir string) error {
+// asFile indicates a build will start with a single file specified in the path otherwise it assumes path is a directory
+func (c *Client) StartBinaryBuild(name string, path string, asFile bool) error {
 	var r io.Reader
-	pr, pw := io.Pipe()
-	go func() {
-		w := gzip.NewWriter(pw)
-		if err := tar.New(s2ifs.NewFileSystem()).CreateTarStream(dir, false, w); err != nil {
-			pw.CloseWithError(err)
-		} else {
-			w.Close()
-			pw.CloseWithError(io.EOF)
-		}
-	}()
-	r = pr
 
-	buildRequest := buildv1.BuildRequest{
+	buildRequest := buildv1.BinaryBuildRequestOptions{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
+	}
+
+	if !asFile {
+		pr, pw := io.Pipe()
+		go func() {
+			w := gzip.NewWriter(pw)
+			if err := tar.New(s2ifs.NewFileSystem()).CreateTarStream(path, false, w); err != nil {
+				pw.CloseWithError(err)
+			} else {
+				w.Close()
+				pw.CloseWithError(io.EOF)
+			}
+		}()
+		r = pr
+	} else {
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		r = f
+		buildRequest.AsFile = filepath.Base(path)
 	}
 
 	result := &buildv1.Build{}
@@ -714,7 +727,7 @@ func (c *Client) StartBinaryBuild(name string, dir string) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to start build %s", name)
 	}
-	log.Debugf("Build %s from %s directory triggered.", name, dir)
+	log.Debugf("Build %s from %s directory triggered.", name, path)
 
 	err = c.FollowBuildLog(result.Name)
 	if err != nil {

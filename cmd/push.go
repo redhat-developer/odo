@@ -52,8 +52,16 @@ var pushCmd = &cobra.Command{
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
 		checkError(err, "unable to get current component")
 
-		switch sourceType {
-		case "local":
+		if sourceType == "git" {
+			// currently we don't support changing build type
+			// it doesn't make sense to use --dir with git build
+			if len(componentLocal) != 0 {
+				fmt.Println("unable to push local directory to component that uses git repository as source")
+				os.Exit(1)
+			}
+			err := component.RebuildGit(client, componentName)
+			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+		} else if sourceType == "binary" || sourceType == "local" {
 			// use value of '--dir' as source if it was used
 			if len(componentLocal) != 0 {
 				sourcePath = componentLocal
@@ -65,18 +73,18 @@ var pushCmd = &cobra.Command{
 				fmt.Printf("Component %s has invalid source path %s", componentName, u.Scheme)
 				os.Exit(1)
 			}
-
-			err = component.PushLocal(client, componentName, u.Path)
-			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
-		case "git":
-			// currently we don't support changing build type
-			// it doesn't make sense to use --dir with git build
-			if len(componentLocal) != 0 {
-				fmt.Println("unable to push local directory to component that uses git repository as source")
-				os.Exit(1)
+			_, err = os.Stat(u.Path)
+			if err != nil {
+				checkError(err, "")
 			}
-			err := component.RebuildGit(client, componentName)
-			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+
+			if sourceType == "local" {
+				err = component.PushLocal(client, componentName, u.Path, false)
+				checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			} else if sourceType == "binary" {
+				err = component.PushLocal(client, componentName, u.Path, true)
+				checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			}
 		}
 
 		fmt.Printf("changes successfully pushed to component: %v\n", componentName)
