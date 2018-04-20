@@ -34,7 +34,17 @@ var versionCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Println(VERSION + " (" + GITCOMMIT + ")")
+		fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
+
+		// Lets fetch the info about the server
+		versionData := getOcClient().GetServerVersion()
+
+		// if len is 3 that means we have serverhost, kubernetes and openshift info
+		if len(versionData) == 3 {
+			fmt.Println("\nserver " + versionData[0])
+			fmt.Println("openshift " + versionData[1])
+			fmt.Println("kubernetes " + versionData[2])
+		}
 	},
 }
 

@@ -44,6 +44,7 @@ import (
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -253,7 +254,7 @@ func (c *Client) runOcComamnd(command *OcCommand) ([]byte, error) {
 		cmd.Args = append(cmd.Args, "-o", command.format)
 	}
 	if command.data != nil {
-		// data is given, assume this is crate or apply command
+		// data is given, assume this is create or apply command
 		// that takes data from stdin
 		cmd.Args = append(cmd.Args, "-f", "-")
 
@@ -1287,4 +1288,45 @@ func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar,
 		return errors.Wrapf(err, "unable to update Deployment Config %v", dc.Name)
 	}
 	return nil
+}
+
+// GetServerVersion will fetch the Server Host, OpenShift and Kubernetes Version
+// It will be shown on the execution of odo version command
+func (c *Client) GetServerVersion() []string {
+
+	var serverData []string
+	// This will fetch the information about Server Address
+	config, err := c.kubeConfig.ClientConfig()
+	if err != nil {
+		errors.Wrapf(err, "unable to get Server Host")
+	} else {
+		serverData = append(serverData, config.Host)
+	}
+
+	// This will fetch the information about OpenShift Version
+	openshiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
+	if err != nil {
+		errors.Wrapf(err, "unable to get OpenShift Version")
+	} else {
+		var oversion version.Info
+		err := json.Unmarshal(openshiftVersion, &oversion)
+		if err == nil && len(openshiftVersion) > 0 {
+			serverData = append(serverData, oversion.GitVersion)
+		}
+	}
+
+	// This will fetch the information about Kubernetes Version
+	kubernetesVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version").Do().Raw()
+	if err != nil {
+		errors.Wrapf(err, "unable to get Kubernetes Version")
+	} else {
+		var kversion version.Info
+		err := json.Unmarshal(kubernetesVersion, &kversion)
+		if err == nil && len(kubernetesVersion) > 0 {
+			serverData = append(serverData, kversion.GitVersion)
+		}
+	}
+
+	return serverData
+
 }
