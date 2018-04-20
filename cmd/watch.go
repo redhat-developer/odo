@@ -50,32 +50,32 @@ var watchCmd = &cobra.Command{
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
 		checkError(err, "Unable to get source for %s component.", componentName)
-		if sourceType != "local" {
-			fmt.Println("You use watch only with components with local source.")
+
+		u, err := url.Parse(sourcePath)
+		checkError(err, "Unable to parse source %s from component %s.", sourcePath, componentName)
+
+		if u.Scheme != "" && u.Scheme != "file" {
+			fmt.Printf("Component %s has invalid source path %s.", componentName, u.Scheme)
+			os.Exit(1)
+		}
+		watchPath := u.Path
+
+		var asFile bool
+		switch sourceType {
+		case "binary":
+			asFile = true
+		case "local":
+			asFile = false
+		default:
+			fmt.Printf("Watching component that has source type  %s is not supported.", sourceType)
 			os.Exit(1)
 		}
 
-		var watchPath string
-		if watchLocal != "" {
-			watchPath = watchLocal
-		} else {
-			u, err := url.Parse(sourcePath)
-			checkError(err, "Unable to parse source %s from component %s.", sourcePath, componentName)
-
-			if u.Scheme != "" && u.Scheme != "file" {
-				fmt.Printf("Component %s has invalid source path %s.", componentName, u.Scheme)
-				os.Exit(1)
-			}
-			watchPath = u.Path
-		}
-
-		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout)
+		err = component.WatchAndPush(client, componentName, applicationName, watchPath, asFile, stdout)
 		checkError(err, "Error while trying to watch %s", watchPath)
 	},
 }
 
 func init() {
-	watchCmd.Flags().StringVar(&watchLocal, "local", "", "Use given local directory as a source for component. (It must be a local component)")
-
 	rootCmd.AddCommand(watchCmd)
 }
