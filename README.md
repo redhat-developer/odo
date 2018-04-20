@@ -1,8 +1,10 @@
-# odo
+# ODO - OpenShift Developer Optimization
+
 [![Build Status](https://travis-ci.org/redhat-developer/odo.svg?branch=master)](https://travis-ci.org/redhat-developer/odo) [![codecov](https://codecov.io/gh/redhat-developer/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/redhat-developer/odo)
 
 ## What is odo?
-OpenShift Command line for Developers
+
+ODO (OpenShift Developer Optimization) is an OpenShift tool to deploy applications and components in a *fast* and *optimized* manner.
 
 ## Pre-requisites
 - OpenShift version 3.7.0 and up
