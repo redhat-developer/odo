@@ -38,9 +38,9 @@ var storageCreateCmd = &cobra.Command{
 	},
 }
 
-var storageRemoveCmd = &cobra.Command{
-	Use:   "remove",
-	Short: "remove storage from component",
+var storageDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "delete storage from component",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -55,13 +55,13 @@ var storageRemoveCmd = &cobra.Command{
 		componentName := getComponent(client, storageComponent, applicationName, projectName)
 
 		err = storage.Remove(client, storageName, applicationName, componentName)
-		checkError(err, "failed to remove storage")
+		checkError(err, "failed to delete storage")
 
 		switch storageName {
 		case "":
-			fmt.Printf("Removed all storage from %v\n", componentName)
+			fmt.Printf("Deleted all storage from %v\n", componentName)
 		default:
-			fmt.Printf("Removed %v from %v\n", storageName, componentName)
+			fmt.Printf("Deleted %v from %v\n", storageName, componentName)
 		}
 	},
 }
@@ -98,7 +98,7 @@ func init() {
 	storageCreateCmd.MarkFlagRequired("path")
 
 	storageCmd.AddCommand(storageCreateCmd)
-	storageCmd.AddCommand(storageRemoveCmd)
+	storageCmd.AddCommand(storageDeleteCmd)
 	storageCmd.AddCommand(storageListCmd)
 
 	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "Component to add storage to, defaults to active component")
