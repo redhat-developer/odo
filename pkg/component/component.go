@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"strings"
 
-	buildv1 "github.com/openshift/api/build/v1"
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -27,6 +28,21 @@ const componentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 type ComponentInfo struct {
 	Name string
 	Type string
+}
+
+// validateSourceType check if given sourceType is supported
+func validateSourceType(sourceType string) bool {
+	validSourceTypes := []string{
+		"git",
+		"local",
+		"binary",
+	}
+	for _, valid := range validSourceTypes {
+		if valid == sourceType {
+			return true
+		}
+	}
+	return false
 }
 
 func CreateFromGit(client *occlient.Client, name string, ctype string, url string, applicationName string) error {
@@ -57,13 +73,12 @@ func CreateFromPath(client *occlient.Client, name string, ctype string, path str
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 	annotations[componentSourceTypeAnnotation] = sourceType
 
-	err := client.NewAppS2I(name, ctype, "", labels, annotations)
+	err := client.BootstrapSupervisoredS2I(name, ctype, labels, annotations)
 	if err != nil {
 		return err
 	}
 
 	return nil
-
 }
 
 // Delete whole component
@@ -76,7 +91,7 @@ func Delete(client *occlient.Client, name string, applicationName string, projec
 
 	labels := componentlabels.GetLabels(name, applicationName, false)
 
-	output, err := client.Delete("all", "", labels)
+	output, err := client.Delete("all,pvc", "", labels)
 	if err != nil {
 		return "", errors.Wrapf(err, "error deleting component %s", name)
 	}
@@ -104,7 +119,6 @@ func Delete(client *occlient.Client, name string, applicationName string, projec
 			if err != nil {
 				return "", errors.Wrapf(err, "error unsetting current component while deleting %s", name)
 			}
-
 		}
 	}
 
@@ -135,24 +149,74 @@ func GetCurrent(client *occlient.Client, applicationName string, projectName str
 	currentComponent := cfg.GetActiveComponent(applicationName, projectName)
 
 	return currentComponent, nil
-
 }
 
-// PushLocal start new build and push local dir as a source for local or a binary file for a binary build
+// PushLocal push local code to the cluster and trigger build there.
 // asFile indicates if it is a binary component or not
-func PushLocal(client *occlient.Client, componentName string, dir string, asFile bool) error {
-	err := client.StartBinaryBuild(componentName, dir, asFile)
-	if err != nil {
-		return errors.Wrap(err, "unable to start build")
+func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, asFile bool, out io.Writer) error {
+	targetPath := "/opt/app-root/src"
+
+	if !asFile {
+		// We need to make sure that there is a '/' at the end, otherwise rsync will sync files to wrong directory
+		path = fmt.Sprintf("%s/", path)
 	}
+	// Find DeploymentConfig for component
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	if err != nil {
+		return errors.Wrap(err, "unable to get deployment for component")
+	}
+	// Find Pod for component
+	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
+	// Wait for Pod to be in running state otherwise we can't sync data to it.
+	pod, err := client.WaitAndGetPod(podSelector)
+	if err != nil {
+		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
+	}
+	var syncOutput string
+	if !asFile {
+		syncOutput, err = client.RsyncPath(path, pod.Name, targetPath)
+	} else {
+		syncOutput, err = client.CopyFile(path, pod.Name, targetPath)
+
+	}
+	if err != nil {
+		return errors.Wrap(err, "unable push files to pod")
+	}
+	fmt.Fprintf(out, syncOutput)
+	fmt.Fprintf(out, "Please wait, building component....\n")
+	assembleOut, err := client.ExecCMDInContainer(pod.Name, []string{"/opt/app-root/bin/assemble-and-restart.sh"})
+	if err != nil {
+		return errors.Wrap(err, "unable to execute assemble script")
+	}
+	color.Set(color.FgYellow)
+	defer color.Unset()
+	fmt.Fprintf(out, assembleOut)
+
 	return nil
 }
 
-// RebuildGit rebuild git component from the git repo that it was created with
-func RebuildGit(client *occlient.Client, componentName string) error {
-	if err := client.StartBuild(componentName); err != nil {
+// Build component from BuildConfig.
+// If 'streamLogs' is true than it streams build logs on stdout, set 'wait' to true if you want to return error if build fails.
+// If 'wait' is true than it waits for build to successfully complete.
+// If 'wait' is false than this function won't return error even if build failed.
+func Build(client *occlient.Client, componentName string, streamLogs bool, wait bool) error {
+	buildName, err := client.StartBuild(componentName)
+	if err != nil {
 		return errors.Wrapf(err, "unable to rebuild %s", componentName)
 	}
+	if streamLogs {
+		if err := client.FollowBuildLog(buildName); err != nil {
+			return errors.Wrapf(err, "unable to follow logs for %s", buildName)
+		}
+	}
+	if wait {
+		if err := client.WaitForBuildToFinish(buildName); err != nil {
+			return errors.Wrapf(err, "unable to wait for build %s", buildName)
+		}
+	}
+
 	return nil
 }
 
@@ -211,24 +275,14 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		return "", "", errors.Wrapf(err, "unable to get source path for component %s", componentName)
 	}
 
-	var sourceType string
-	var sourcePath string
+	sourcePath := bc.ObjectMeta.Annotations[componentSourceURLAnnotation]
+	sourceType := bc.ObjectMeta.Annotations[componentSourceTypeAnnotation]
 
-	switch bc.Spec.Source.Type {
-	case buildv1.BuildSourceGit:
-		sourceType = "git"
-		sourcePath = bc.Spec.Source.Git.URI
-	case buildv1.BuildSourceBinary:
-		sourceType = bc.ObjectMeta.Annotations[componentSourceTypeAnnotation]
-		sourcePath = bc.ObjectMeta.Annotations[componentSourceURLAnnotation]
-		if sourcePath == "" {
-			return "", "", fmt.Errorf("unsupported BuildConfig.Spec.Source.Type %s", bc.Spec.Source.Type)
-		}
-	default:
-		return "", "", fmt.Errorf("unsupported BuildConfig.Spec.Source.Type %s", bc.Spec.Source.Type)
+	if !validateSourceType(sourceType) {
+		return "", "", fmt.Errorf("unsupported component source type %s", sourceType)
 	}
 
-	log.Debugf("Component %s source type is %s (%s)", componentName, sourceType, sourcePath)
+	log.Debugf("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
 	return sourceType, sourcePath, nil
 }
 

@@ -46,22 +46,19 @@ var pushCmd = &cobra.Command{
 			}
 		} else {
 			componentName = args[0]
+			exists, err := component.Exists(client, componentName, applicationName, projectName)
+			checkError(err, "")
+			if !exists {
+				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)
+				os.Exit(1)
+			}
 		}
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
-		checkError(err, "unable to get current component")
-
-		if sourceType == "git" {
-			// currently we don't support changing build type
-			// it doesn't make sense to use --dir with git build
-			if len(componentLocal) != 0 {
-				fmt.Println("unable to push local directory to component that uses git repository as source")
-				os.Exit(1)
-			}
-			err := component.RebuildGit(client, componentName)
-			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
-		} else if sourceType == "binary" || sourceType == "local" {
+		checkError(err, "unable to get component source")
+		switch sourceType {
+		case "local", "binary":
 			// use value of '--dir' as source if it was used
 			if len(componentLocal) != 0 {
 				sourcePath = componentLocal
@@ -78,13 +75,21 @@ var pushCmd = &cobra.Command{
 				checkError(err, "")
 			}
 
-			if sourceType == "local" {
-				err = component.PushLocal(client, componentName, u.Path, false)
-				checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
-			} else if sourceType == "binary" {
-				err = component.PushLocal(client, componentName, u.Path, true)
-				checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			var asFile bool
+			if sourceType == "binary" {
+				asFile = true
 			}
+			err = component.PushLocal(client, componentName, applicationName, u.Path, asFile, os.Stdout)
+			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+		case "git":
+			// currently we don't support changing build type
+			// it doesn't make sense to use --dir with git build
+			if len(componentLocal) != 0 {
+				fmt.Println("unable to push local directory to component that uses git repository as source")
+				os.Exit(1)
+			}
+			err := component.Build(client, componentName, true, false)
+			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
 		fmt.Printf("changes successfully pushed to component: %v\n", componentName)
