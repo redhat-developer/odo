@@ -57,7 +57,22 @@ A full list of component types that can be deployed is available using: 'odo com
 			os.Exit(1)
 		}
 
-		//TODO: check flags - only one of binary, git, dir can be specified
+		checkFlag := 0
+
+		if len(componentBinary) != 0 {
+			checkFlag++
+		}
+		if len(componentGit) != 0 {
+			checkFlag++
+		}
+		if len(componentLocal) != 0 {
+			checkFlag++
+		}
+
+		if checkFlag > 1 {
+			fmt.Println("The source can be either --binary or --local or --git")
+			os.Exit(1)
+		}
 
 		//We don't have to check it anymore, Args check made sure that args has at least one item
 		// and no more than two
