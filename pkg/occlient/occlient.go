@@ -1290,43 +1290,47 @@ func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar,
 	return nil
 }
 
+// serverInfo contains the fields that contain the server's information like
+// address, OpenShift and Kubernetes versions
+type serverInfo struct {
+	Address           string
+	OpenShiftVersion  string
+	KubernetesVersion string
+}
+
 // GetServerVersion will fetch the Server Host, OpenShift and Kubernetes Version
 // It will be shown on the execution of odo version command
-func (c *Client) GetServerVersion() []string {
+func (c *Client) GetServerVersion() (*serverInfo, error) {
+	var info serverInfo
 
-	var serverData []string
 	// This will fetch the information about Server Address
 	config, err := c.kubeConfig.ClientConfig()
 	if err != nil {
-		errors.Wrapf(err, "unable to get Server Host")
-	} else {
-		serverData = append(serverData, config.Host)
+		return nil, errors.Wrapf(err, "unable to get server's address")
 	}
+	info.Address = config.Host
 
 	// This will fetch the information about OpenShift Version
-	openshiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
+	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
 	if err != nil {
-		errors.Wrapf(err, "unable to get OpenShift Version")
-	} else {
-		var oversion version.Info
-		err := json.Unmarshal(openshiftVersion, &oversion)
-		if err == nil && len(openshiftVersion) > 0 {
-			serverData = append(serverData, oversion.GitVersion)
-		}
+		return nil, errors.Wrapf(err, "unable to get OpenShift Version")
 	}
+	var openShiftVersion version.Info
+	if err := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); err != nil {
+		return nil, errors.Wrapf(err, "unable to unmarshal OpenShift version %v", string(rawOpenShiftVersion))
+	}
+	info.OpenShiftVersion = openShiftVersion.GitVersion
 
 	// This will fetch the information about Kubernetes Version
-	kubernetesVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version").Do().Raw()
+	rawKubernetesVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version").Do().Raw()
 	if err != nil {
-		errors.Wrapf(err, "unable to get Kubernetes Version")
-	} else {
-		var kversion version.Info
-		err := json.Unmarshal(kubernetesVersion, &kversion)
-		if err == nil && len(kubernetesVersion) > 0 {
-			serverData = append(serverData, kversion.GitVersion)
-		}
+		return nil, errors.Wrapf(err, "unable to get Kubernetes Version")
 	}
+	var kubernetesVersion version.Info
+	if err := json.Unmarshal(rawKubernetesVersion, &kubernetesVersion); err != nil {
+		return nil, errors.Wrapf(err, "unable to unmarshal Kubernetes Version: %v", string(rawKubernetesVersion))
+	}
+	info.KubernetesVersion = kubernetesVersion.GitVersion
 
-	return serverData
-
+	return &info, nil
 }
