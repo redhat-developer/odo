@@ -164,7 +164,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 		return fmt.Errorf("error watching source path %s: %v", dir, err)
 	}
 
-	delay := 5 * time.Second
+	delay := 1 * time.Second
 	ticker := time.NewTicker(delay)
 	showWaitingMessage := true
 	defer ticker.Stop()
