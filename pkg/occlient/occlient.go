@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -749,6 +750,7 @@ func (c *Client) FollowBuildLog(buildName string) error {
 		Follow: true,
 		NoWait: false,
 	}
+
 	rd, err := c.buildClient.RESTClient().Get().
 		Namespace(c.namespace).
 		Resource("builds").
@@ -762,7 +764,11 @@ func (c *Client) FollowBuildLog(buildName string) error {
 	}
 	defer rd.Close()
 
-	stdout := os.Stdout
+	// Set the colour of the stdout output..
+	color.Set(color.FgYellow)
+	defer color.Unset()
+
+	stdout := color.Output
 
 	if _, err = io.Copy(stdout, rd); err != nil {
 		return errors.Wrapf(err, "error streaming logs for %s", buildName)
