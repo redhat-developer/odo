@@ -41,10 +41,8 @@ var componentDeleteCmd = &cobra.Command{
 		// If no arguments have been passed, get the current component
 		// else, use the first argument and check to see if it exists
 		if len(args) == 0 {
-			if componentName, err = component.GetCurrent(client, applicationName, projectName); err != nil {
-				fmt.Printf("Error getting current component")
-				os.Exit(1)
-			}
+			componentName, err = component.GetCurrent(client, applicationName, projectName)
+			checkError(err, "Error getting current component")
 		} else {
 
 			componentName = args[0]
@@ -73,10 +71,7 @@ var componentDeleteCmd = &cobra.Command{
 			fmt.Printf("Component %s from application %s has been deleted\n", componentName, applicationName)
 
 			currentComponent, err := component.GetCurrent(client, applicationName, projectName)
-			if err != nil {
-				fmt.Printf("Unable to get current component\n")
-				os.Exit(1)
-			}
+			checkError(err, "Unable to get current component")
 
 			if currentComponent == "" {
 				fmt.Println("No default component has been set")
