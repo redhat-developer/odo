@@ -70,9 +70,7 @@ var watchCmd = &cobra.Command{
 		}
 
 		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout)
-		if err != nil {
-			checkError(err, "Error while trying to watch %s", watchPath)
-		}
+		checkError(err, "Error while trying to watch %s", watchPath)
 	},
 }
 
