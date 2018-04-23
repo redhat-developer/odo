@@ -15,7 +15,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-vendor vet #lint
+validate: gofmt check-vendor vet lint
 
 .PHONY: gofmt
 gofmt:
@@ -38,7 +38,7 @@ vet:
 .PHONY: goget-tools
 goget-tools:
 	go get -u github.com/Masterminds/glide
-	#go get -u github.com/golang/lint/golint
+	go get -u github.com/golang/lint/golint
 	go get -u github.com/mitchellh/gox
 
 # Run unit tests and collect coverage
