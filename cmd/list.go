@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -19,6 +21,7 @@ var componentListCmd = &cobra.Command{
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
+		currentComponent, err := component.GetCurrent(client, applicationName, projectName)
 
 		components, err := component.List(client, applicationName, projectName)
 		checkError(err, "")
@@ -28,10 +31,17 @@ var componentListCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("You have deployed:")
+		activeMark := " "
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
 		for _, comp := range components {
-			fmt.Printf("%s using the %s component\n", comp.Name, comp.Type)
+			if comp.Name == currentComponent {
+				activeMark = "*"
+			}
+			fmt.Fprintln(w, activeMark, "\t", comp.Name, "\t", comp.Type)
+			activeMark = " "
 		}
+		w.Flush()
 
 	},
 }
