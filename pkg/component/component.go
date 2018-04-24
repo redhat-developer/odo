@@ -154,7 +154,7 @@ func GetCurrent(client *occlient.Client, applicationName string, projectName str
 // PushLocal push local code to the cluster and trigger build there.
 // asFile indicates if it is a binary component or not
 func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, asFile bool, out io.Writer) error {
-	targetPath := "/opt/app-root/src"
+	const targetPath = "/opt/app-root/src"
 
 	if !asFile {
 		// We need to make sure that there is a '/' at the end, otherwise rsync will sync files to wrong directory
