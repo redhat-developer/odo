@@ -39,12 +39,12 @@ printed to STDOUT.
 		sourceComponent := getComponent(client, linkComponent, applicationName, projectName)
 		targetComponent := args[0]
 
-		exists, err := component.Exists(client, sourceComponent, applicationName, projectName)
+		exists, err := component.Exists(client, applicationName, sourceComponent, projectName)
 		checkError(err, "")
 		if !exists {
 			fmt.Printf("Component %v does not exist\n", sourceComponent)
 		}
-		exists, err = component.Exists(client, targetComponent, applicationName, projectName)
+		exists, err = component.Exists(client, applicationName, targetComponent, projectName)
 		checkError(err, "")
 		if !exists {
 			fmt.Printf("Component %v does not exist\n", targetComponent)

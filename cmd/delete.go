@@ -48,7 +48,7 @@ var componentDeleteCmd = &cobra.Command{
 			componentName = args[0]
 
 			// Checks to see if the component actually exists
-			exists, err := component.Exists(client, componentName, applicationName, projectName)
+			exists, err := component.Exists(client, applicationName, componentName, projectName)
 			checkError(err, "")
 			if !exists {
 				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)

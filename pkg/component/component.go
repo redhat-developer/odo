@@ -259,7 +259,7 @@ func Update(client *occlient.Client, componentName string, to string, source str
 // componentName is the component name to perform check for
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
-func Exists(client *occlient.Client, componentName, applicationName, projectName string) (bool, error) {
+func Exists(client *occlient.Client, applicationName string, componentName string, projectName string) (bool, error) {
 	componentList, err := List(client, applicationName, projectName)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the component list")

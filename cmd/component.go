@@ -65,7 +65,7 @@ var componentSetCmd = &cobra.Command{
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
 
-		exists, err := component.Exists(client, args[0], applicationName, projectName)
+		exists, err := component.Exists(client, applicationName, args[0], projectName)
 		checkError(err, "")
 		if !exists {
 			fmt.Printf("Component %s does not exist in the current application\n", args[0])
