@@ -80,4 +80,4 @@ Builds for latest released versions are at [GitHub releases page](https://github
 
 ## Windows
 Download latest master builds from Bintray [odo.exe](https://dl.bintray.com/odo/odo/latest/windows-amd64/:odo.exe) or 
-builds for released versions from [GitHub releases page](https://github.com/kadel/odo/releases).
+builds for released versions from [GitHub releases page](https://github.com/redhat-developer/odo/releases).
