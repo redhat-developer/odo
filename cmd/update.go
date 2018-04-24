@@ -71,7 +71,7 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			componentName = args[0]
-			exists, err := component.Exists(client, componentName, applicationName, projectName)
+			exists, err := component.Exists(client, applicationName, componentName, projectName)
 			checkError(err, "")
 			if !exists {
 				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)
