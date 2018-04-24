@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -21,15 +22,26 @@ var catalogCmd = &cobra.Command{
 
 var catalogListCmd = &cobra.Command{
 	Use:   "list",
+	Short: "List all available component & service types.",
+	Long:  "List all available component and service types from OpenShift",
+	Example: `  # Get the supported components
+  odo catalog list components
+
+  # Get the supported services from service catalog
+  odo catalog list services
+`,
+}
+
+var catalogListComponentCmd = &cobra.Command{
+	Use:   "components",
 	Short: "List all available component types.",
 	Long:  "List all available component types from OpenShift's Image Builder.",
 	Example: `  # Get the supported components
-  odo catalog list
+  odo catalog list components
 
   # Search for a supported component
-  odo search nodejs
+  odo catalog search nodejs
 `,
-	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		catalogList, err := catalog.List(client)
@@ -50,6 +62,30 @@ var catalogListCmd = &cobra.Command{
 	},
 }
 
+var catalogListServiceCmd = &cobra.Command{
+	Use:   "services",
+	Short: "Lists all the services from service catalog",
+	Long:  "Lists all the services from service catalog",
+	Example: `  # List all services
+  odo catalog list services
+	`,
+	Args: cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
+		catalogList, err := svc.ListCatalog(client)
+		checkError(err, "unable to list services because Service Catalog is not enabled in your cluster")
+		switch len(catalogList) {
+		case 0:
+			fmt.Printf("No deployable services found\n")
+		default:
+			fmt.Println("The following services can be deployed:")
+			for _, service := range catalogList {
+				fmt.Printf("- %v\n", service)
+			}
+		}
+	},
+}
+
 var catalogSearchCmd = &cobra.Command{
 	Use:   "search <component name>",
 	Short: "Search component type in catalog",
@@ -59,7 +95,7 @@ This searches for a partial match for the given search term in all the available
 components.
 `,
 	Example: `  # Search for a component
-  odo catalog search pyt
+  odo catalog search python
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -83,7 +119,8 @@ components.
 func init() {
 	catalogCmd.AddCommand(catalogSearchCmd)
 	catalogCmd.AddCommand(catalogListCmd)
-
+	catalogListCmd.AddCommand(catalogListComponentCmd)
+	catalogListCmd.AddCommand(catalogListServiceCmd)
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
 	catalogCmd.SetUsageTemplate(cmdUsageTemplate)

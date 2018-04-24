@@ -1129,7 +1129,6 @@ func (c *Client) Delete(labels map[string]string) error {
 		err = c.kubeClient.CoreV1().Services(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			errorList = append(errorList, "unable to delete service")
-
 		}
 	}
 	// PersistentVolumeClaim
@@ -1148,6 +1147,31 @@ func (c *Client) Delete(labels map[string]string) error {
 
 }
 
+// DeleteServiceInstance takes labels as a input and based on it, deletes respective service instance
+func (c *Client) DeleteServiceInstance(labels map[string]string) error {
+	// convert labels to selector
+	selector := util.ConvertLabelsToSelector(labels)
+	glog.V(4).Infof("Selectors used for deletion: %s", selector)
+	// Service Instance
+	glog.V(4).Infof("Deleting Service Instance")
+	// Listing out serviceInstance because `DeleteCollection` method don't work on serviceInstance
+	svcCatList, err := c.serviceCatalogClient.ServiceInstances(c.namespace).List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return errors.Wrap(err, "unable to list service instance")
+	}
+
+	// Iterating over serviceInstance List and deleting one by one
+	for _, svc := range svcCatList.Items {
+		err = c.serviceCatalogClient.ServiceInstances(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			return errors.Wrap(err, "unable to delete serviceInstace")
+		}
+	}
+
+	return nil
+}
+
+// DeleteProject deletes given project
 func (c *Client) DeleteProject(name string) error {
 	err := c.projectClient.Projects().Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
@@ -1157,8 +1181,9 @@ func (c *Client) DeleteProject(name string) error {
 }
 
 // GetLabelValues get label values of given label from objects in project that are matching selector
-// returns slice of uniq label values
+// returns slice of unique label values
 func (c *Client) GetLabelValues(project string, label string, selector string) ([]string, error) {
+	// List DeploymentConfig according to selectors
 	dcList, err := c.appsClient.DeploymentConfigs(project).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
@@ -1171,7 +1196,19 @@ func (c *Client) GetLabelValues(project string, label string, selector string) (
 			}
 		}
 	}
+
 	return values, nil
+}
+
+// GetServiceInstanceList returns list service instances
+func (c *Client) GetServiceInstanceList(project string, selector string) ([]scv1beta1.ServiceInstance, error) {
+	// List ServiceInstance according to given selectors
+	svcList, err := c.serviceCatalogClient.ServiceInstances(project).List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list ServiceInstances")
+	}
+
+	return svcList.Items, nil
 }
 
 // GetBuildConfigFromName get BuildConfig by its name
@@ -1184,14 +1221,43 @@ func (c *Client) GetBuildConfigFromName(name string, project string) (*buildv1.B
 	return bc, nil
 }
 
-// GetClusterServiceClasses queries the service service catalog to get all the
-// currently available cluster service classes
+// GetClusterServiceClasses queries the service service catalog to get available clusterServiceClasses
 func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, error) {
-	classList, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{})
+	// TODO: Remove `FieldSelector` from ListOptions when we are confident with Ansible Service Broker
+	classList, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{FieldSelector: "spec.clusterServiceBrokerName=template-service-broker"})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list cluster service classes")
 	}
 	return classList.Items, nil
+}
+
+// CreateServiceInstance creates service instance from service catalog
+func (c *Client) CreateServiceInstance(componentName string, componentType string, labels map[string]string) error {
+	// Creating Service Instance
+	_, err := c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
+		&scv1beta1.ServiceInstance{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "ServiceInstance",
+				APIVersion: "servicecatalog.k8s.io/v1beta1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Finalizers: []string{"kubernetes-incubator/service-catalog"},
+				Name:       componentName,
+				Namespace:  c.namespace,
+				Labels:     labels,
+			},
+			Spec: scv1beta1.ServiceInstanceSpec{
+				PlanReference: scv1beta1.PlanReference{
+					ClusterServiceClassExternalName: componentType,
+				},
+			},
+			Status: scv1beta1.ServiceInstanceStatus{},
+		})
+
+	if err != nil {
+		return errors.Wrap(err, "unable to create service instance")
+	}
+	return nil
 }
 
 // GetClusterServiceClassExternalNames returns the names of all the cluster service

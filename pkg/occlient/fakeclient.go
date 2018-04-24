@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	fakeServiceCatalogClientSet "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/fake"
 	fakeAppsClientset "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	fakeBuildClientset "github.com/openshift/client-go/build/clientset/versioned/fake"
 	fakeImageClientset "github.com/openshift/client-go/image/clientset/versioned/fake"
@@ -12,12 +13,13 @@ import (
 // FakeClientSet holds fake ClientSets
 // this is returned by FakeNew to access methods of fake client sets
 type FakeClientset struct {
-	Kubernetes     *fakeKubeClientset.Clientset
-	AppsClientset  *fakeAppsClientset.Clientset
-	BuildClientset *fakeBuildClientset.Clientset
-	ImageClientset *fakeImageClientset.Clientset
-	RouteClientset *fakeRouteClientset.Clientset
-	ProjClientset  *fakeProjClientset.Clientset
+	Kubernetes              *fakeKubeClientset.Clientset
+	AppsClientset           *fakeAppsClientset.Clientset
+	BuildClientset          *fakeBuildClientset.Clientset
+	ImageClientset          *fakeImageClientset.Clientset
+	RouteClientset          *fakeRouteClientset.Clientset
+	ProjClientset           *fakeProjClientset.Clientset
+	ServiceCatalogClientSet *fakeServiceCatalogClientSet.Clientset
 }
 
 // FakeNew creates new fake client for testing
@@ -47,6 +49,9 @@ func FakeNew() (*Client, *FakeClientset) {
 
 	fkclientset.BuildClientset = fakeBuildClientset.NewSimpleClientset()
 	client.buildClient = fkclientset.BuildClientset.Build()
+
+	fkclientset.ServiceCatalogClientSet = fakeServiceCatalogClientSet.NewSimpleClientset()
+	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.Servicecatalog()
 
 	return &client, &fkclientset
 }
