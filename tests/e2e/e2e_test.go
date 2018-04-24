@@ -290,9 +290,9 @@ var _ = Describe("odo", func() {
 				// Check if the storage is added on the path provided
 				getMntPath := runCmd("oc get dc/nodejs -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
-					"{{range .volumeMounts}}{{.mountPath}}{{end}}{{end}}'")
+					"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
 
-				Expect(getMntPath).To(Equal("/mnt/pv1"))
+				Expect(getMntPath).To(ContainSubstring("/mnt/pv1"))
 			})
 
 			It("should be able to list the storage added", func() {
@@ -324,9 +324,9 @@ var _ = Describe("odo", func() {
 				// Check if the storage is added on the path provided
 				getMntPath := runCmd("oc get dc/php -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
-					"{{range .volumeMounts}}{{.mountPath}}{{end}}{{end}}'")
+					"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
 
-				Expect(getMntPath).To(Equal("/mnt/pv2"))
+				Expect(getMntPath).To(ContainSubstring("/mnt/pv2"))
 			})
 		})
 	})
