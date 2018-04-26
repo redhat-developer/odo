@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -15,7 +15,21 @@ var (
 var projectCmd = &cobra.Command{
 	Use:   "project [options]",
 	Short: "Perform project operations",
-	Run:   projectGetCmd.Run,
+	Example: `  # Get current project,
+  odo project 
+  
+  # Set myproject to current project,
+  odo project myproject
+	`,
+	// 'odo project' is the same as 'odo project get'
+	// 'odo project <project_name>' is the same as 'odo project set <project_name>'
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 && args[0] != "get" && args[0] != "set" {
+			projectSetCmd.Run(cmd, args)
+		} else {
+			projectGetCmd.Run(cmd, args)
+		}
+	},
 }
 
 var projectSetCmd = &cobra.Command{
@@ -42,7 +56,7 @@ var projectSetCmd = &cobra.Command{
 			if current == projectName {
 				fmt.Printf("Already on project : %v\n", projectName)
 			} else {
-				fmt.Printf("Now using project : %v\n", projectName)
+				fmt.Printf("Switched to project : %v\n", projectName)
 			}
 		}
 	},

@@ -2,20 +2,27 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // componentCmd represents the component command
 var componentCmd = &cobra.Command{
 	Use:   "component",
-	Short: "Components of an application",
+	Short: "Components of application.",
+	Example: `  # Get current component,
+  odo component 
+
+  # Set nodejs to current component,
+  odo component nodejs
+	`,
 	// 'odo component' is the same as 'odo component get'
+	// 'odo component <component_name>' is the same as 'odo component set <component_name>'
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 && args[0] != "get" && args[0] != "set" {
 			componentSetCmd.Run(cmd, args)
