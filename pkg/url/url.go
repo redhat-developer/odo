@@ -5,9 +5,10 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	applicationlabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -24,10 +25,18 @@ func Delete(client *occlient.Client, name string) error {
 }
 
 // Create creates a URL
-func Create(client *occlient.Client, componentName, applicationName string) (*URL, error) {
+func Create(client *occlient.Client, componentName string, applicationName string) (*URL, error) {
+
 	labels := componentlabels.GetLabels(componentName, applicationName, false)
 
-	route, err := client.CreateRoute(componentName, labels)
+	// Namespace the component
+	namespacedOCObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	route, err := client.CreateRoute(namespacedOCObject, labels)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}
@@ -44,7 +53,7 @@ func Create(client *occlient.Client, componentName, applicationName string) (*UR
 // given component
 func List(client *occlient.Client, componentName string, applicationName string) ([]URL, error) {
 
-	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
+	labelSelector := fmt.Sprintf("%v=%v", applicationlabels.ApplicationLabel, applicationName)
 
 	if componentName != "" {
 		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)

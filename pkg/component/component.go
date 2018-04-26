@@ -7,6 +7,8 @@ import (
 
 	buildv1 "github.com/openshift/api/build/v1"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -14,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -38,7 +39,13 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 	annotations := map[string]string{componentSourceURLAnnotation: url}
 	annotations[componentSourceTypeAnnotation] = "git"
 
-	err := client.NewAppS2I(name, ctype, url, labels, annotations)
+	// Namespace the component
+	name, err := util.NamespaceOpenShiftObject(name, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	err = client.NewAppS2I(name, ctype, url, labels, annotations)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", name)
 	}
@@ -57,7 +64,13 @@ func CreateFromPath(client *occlient.Client, name string, ctype string, path str
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 	annotations[componentSourceTypeAnnotation] = sourceType
 
-	err := client.NewAppS2I(name, ctype, "", labels, annotations)
+	// Namespace the component
+	name, err := util.NamespaceOpenShiftObject(name, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	err = client.NewAppS2I(name, ctype, "", labels, annotations)
 	if err != nil {
 		return err
 	}
@@ -140,8 +153,15 @@ func GetCurrent(client *occlient.Client, applicationName string, projectName str
 
 // PushLocal start new build and push local dir as a source for local or a binary file for a binary build
 // asFile indicates if it is a binary component or not
-func PushLocal(client *occlient.Client, componentName string, dir string, asFile bool) error {
-	err := client.StartBinaryBuild(componentName, dir, asFile)
+func PushLocal(client *occlient.Client, componentName string, applicationName string, dir string, asFile bool) error {
+
+	// Namespace the component
+	namespacedOCObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	err = client.StartBinaryBuild(namespacedOCObject, dir, asFile)
 	if err != nil {
 		return errors.Wrap(err, "unable to start build")
 	}
@@ -149,17 +169,31 @@ func PushLocal(client *occlient.Client, componentName string, dir string, asFile
 }
 
 // RebuildGit rebuild git component from the git repo that it was created with
-func RebuildGit(client *occlient.Client, componentName string) error {
-	if err := client.StartBuild(componentName); err != nil {
-		return errors.Wrapf(err, "unable to rebuild %s", componentName)
+func RebuildGit(client *occlient.Client, componentName string, applicationName string) error {
+
+	// Namespace the component
+	namespacedOCObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	if err := client.StartBuild(namespacedOCObject); err != nil {
+		return errors.Wrapf(err, "unable to rebuild %s", namespacedOCObject)
 	}
 	return nil
 }
 
 // GetComponentType returns type of component in given application and project
 func GetComponentType(client *occlient.Client, componentName string, applicationName string, projectName string) (string, error) {
+
+	// Namespace the component
+	namespacedOCObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create namespaced name")
+	}
+
 	// filter according to component and application name
-	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, componentName, applabels.ApplicationLabel, applicationName)
+	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, namespacedOCObject, applabels.ApplicationLabel, applicationName)
 	ctypes, err := client.GetLabelValues(projectName, componentlabels.ComponentTypeLabel, selector)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get type of %s component")
@@ -206,9 +240,16 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 // The first returned string is component source type ("git" or "local" or "binary")
 // The second returned string is a source (url to git repository or local path or path to binary)
 func GetComponentSource(client *occlient.Client, componentName string, applicationName string, projectName string) (string, string, error) {
-	bc, err := client.GetBuildConfig(componentName, projectName)
+
+	// Namespace the component
+	namespacedOCObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "unable to get source path for component %s", componentName)
+		return "", "", errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	bc, err := client.GetBuildConfig(namespacedOCObject, projectName)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "unable to get source path for component %s", namespacedOCObject)
 	}
 
 	var sourceType string
@@ -228,33 +269,38 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		return "", "", fmt.Errorf("unsupported BuildConfig.Spec.Source.Type %s", bc.Spec.Source.Type)
 	}
 
-	log.Debugf("Component %s source type is %s (%s)", componentName, sourceType, sourcePath)
+	log.Debugf("Component %s source type is %s (%s)", namespacedOCObject, sourceType, sourcePath)
 	return sourceType, sourcePath, nil
 }
 
 // Update updates the requested component
 // Component name is the name component to be updated
-// to indicates what type of source type the component source is changing to e.g from git to local or local to binary
-// source indicates path of the source directory or binary or the git URL
-func Update(client *occlient.Client, componentName string, to string, source string) error {
+func Update(client *occlient.Client, componentName string, applicationName string, to string, source string) error {
 	var err error
 	projectName := client.GetCurrentProjectName()
 	// save source path as annotation
 	var annotations map[string]string
+
+	// Namespace the component
+	namespacedOCObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
 	if to == "git" {
 		annotations = map[string]string{componentSourceURLAnnotation: source}
 		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, source, annotations)
+		err = client.UpdateBuildConfig(namespacedOCObject, projectName, source, annotations)
 	} else if to == "local" {
 		sourceURL := url.URL{Scheme: "file", Path: source}
 		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+		err = client.UpdateBuildConfig(namespacedOCObject, projectName, "", annotations)
 	} else if to == "binary" {
 		sourceURL := url.URL{Scheme: "file", Path: source}
 		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+		err = client.UpdateBuildConfig(namespacedOCObject, projectName, "", annotations)
 	}
 	if err != nil {
 		return errors.Wrap(err, "unable to update the component")
@@ -267,6 +313,7 @@ func Update(client *occlient.Client, componentName string, to string, source str
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(client *occlient.Client, componentName, applicationName, projectName string) (bool, error) {
+
 	componentList, err := List(client, applicationName, projectName)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the component list")
@@ -353,19 +400,20 @@ func getPortFromService(service *corev1.Service) (int32, error) {
 }
 
 // Get Component Description
-func GetComponentDesc(client *occlient.Client, cmpnt string, currentApplication string, currentProject string) (componentType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
+func GetComponentDesc(client *occlient.Client, componentName string, currentApplication string, currentProject string) (componentType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
+
 	// Component Type
-	componentType, err = GetComponentType(client, cmpnt, currentApplication, currentProject)
+	componentType, err = GetComponentType(client, componentName, currentApplication, currentProject)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
 	// Source
-	_, path, err = GetComponentSource(client, cmpnt, currentApplication, currentProject)
+	_, path, err = GetComponentSource(client, componentName, currentApplication, currentProject)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
 	// URL
-	urlList, err := urlpkg.List(client, cmpnt, currentApplication)
+	urlList, err := urlpkg.List(client, componentName, currentApplication)
 	if len(urlList) != 0 {
 		componentURL = urlList[0].URL
 	}
@@ -373,7 +421,7 @@ func GetComponentDesc(client *occlient.Client, cmpnt string, currentApplication 
 		return "", "", "", nil, errors.Wrap(err, "unable to get url list")
 	}
 	//Storage
-	appStore, err = storage.List(client, currentApplication, cmpnt)
+	appStore, err = storage.List(client, currentApplication, componentName)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get storage list")
 	}

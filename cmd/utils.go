@@ -29,7 +29,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string, currentProject 
 		}
 
 		for _, store := range appStore {
-			fmt.Println("  This Component uses storage", store.Name, "of size", store.Size, "will be removed")
+			fmt.Println("  This component uses storage", store.Name, "of size", store.Size, "will be removed")
 		}
 
 	}

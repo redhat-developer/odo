@@ -234,7 +234,7 @@ var _ = Describe("odo", func() {
 			It("should push the changes", func() {
 
 				// Get IP and port
-				getIP := runCmd("oc get svc nodejs -o go-template='{{.spec.clusterIP}}:{{(index .spec.ports 0).port}}'")
+				getIP := runCmd("oc get svc/usecase5-nodejs -o go-template='{{.spec.clusterIP}}:{{(index .spec.ports 0).port}}'")
 				pingUrl := fmt.Sprintf("http://%s", getIP)
 				pingSvc(pingUrl)
 
@@ -281,14 +281,14 @@ var _ = Describe("odo", func() {
 				Expect(storAdd).To(ContainSubstring("nodejs"))
 
 				// Check against path and name against dc
-				getDc := runCmd("oc get dc/nodejs -o go-template='" +
+				getDc := runCmd("oc get dc/usecase5-nodejs -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
 
 				Expect(getDc).To(ContainSubstring("pv1"))
 
 				// Check if the storage is added on the path provided
-				getMntPath := runCmd("oc get dc/nodejs -o go-template='" +
+				getMntPath := runCmd("oc get dc/usecase5-nodejs -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.mountPath}}{{end}}{{end}}'")
 
@@ -315,14 +315,14 @@ var _ = Describe("odo", func() {
 				Expect(storList).To(ContainSubstring("pv2"))
 
 				// Verify with deploymentconfig
-				getDc := runCmd("oc get dc/php -o go-template='" +
+				getDc := runCmd("oc get dc/usecase5-php -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
 
 				Expect(getDc).To(ContainSubstring("pv2"))
 
 				// Check if the storage is added on the path provided
-				getMntPath := runCmd("oc get dc/php -o go-template='" +
+				getMntPath := runCmd("oc get dc/usecase5-php -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.mountPath}}{{end}}{{end}}'")
 

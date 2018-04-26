@@ -41,12 +41,13 @@ import (
 	"github.com/openshift/source-to-image/pkg/tar"
 	s2ifs "github.com/openshift/source-to-image/pkg/util/fs"
 
+	"path/filepath"
+
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/util/retry"
-	"path/filepath"
 )
 
 const (
@@ -725,13 +726,13 @@ func (c *Client) StartBinaryBuild(name string, path string, asFile bool) error {
 		Into(result)
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to start build %s", name)
+		return errors.Wrapf(err, "unable to push binary build to openshift api for %s", name)
 	}
 	log.Debugf("Build %s from %s directory triggered.", name, path)
 
 	err = c.FollowBuildLog(result.Name)
 	if err != nil {
-		return errors.Wrapf(err, "unable to start build %s", name)
+		return errors.Wrapf(err, "unable to follow build log for %s", name)
 	}
 
 	return nil
@@ -746,13 +747,13 @@ func (c *Client) StartBuild(name string) error {
 	}
 	result, err := c.buildClient.BuildConfigs(c.namespace).Instantiate(name, &buildRequest)
 	if err != nil {
-		return errors.Wrapf(err, "unable to start build %s", name)
+		return errors.Wrapf(err, "unable to start instantiate buildconfig for %s", name)
 	}
 	log.Debugf("Build %s triggered.", name)
 
 	err = c.FollowBuildLog(result.Name)
 	if err != nil {
-		return errors.Wrapf(err, "unable to start build %s", name)
+		return errors.Wrapf(err, "unable to follow build log after building %s", name)
 	}
 
 	return nil
@@ -944,16 +945,16 @@ func (c *Client) clusterServiceClassExists(name string) bool {
 
 // CreateRoute creates a route object for the given service and with the given
 // labels
-func (c *Client) CreateRoute(service string, labels map[string]string) (*routev1.Route, error) {
+func (c *Client) CreateRoute(name string, labels map[string]string) (*routev1.Route, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   service,
+			Name:   name,
 			Labels: labels,
 		},
 		Spec: routev1.RouteSpec{
 			To: routev1.RouteTargetReference{
 				Kind: "Service",
-				Name: service,
+				Name: name,
 			},
 		},
 	}

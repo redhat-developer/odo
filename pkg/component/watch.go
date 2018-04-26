@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -84,7 +84,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 	targetPodPath := "/opt/app-root/src"
 
 	// Find DeploymentConfig for component
-	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentLabels := labels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
 	if err != nil {

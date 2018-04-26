@@ -59,7 +59,7 @@ var pushCmd = &cobra.Command{
 				fmt.Println("unable to push local directory to component that uses git repository as source")
 				os.Exit(1)
 			}
-			err := component.RebuildGit(client, componentName)
+			err := component.RebuildGit(client, componentName, applicationName)
 			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		} else if sourceType == "binary" || sourceType == "local" {
 			// use value of '--dir' as source if it was used
@@ -79,10 +79,10 @@ var pushCmd = &cobra.Command{
 			}
 
 			if sourceType == "local" {
-				err = component.PushLocal(client, componentName, u.Path, false)
+				err = component.PushLocal(client, componentName, applicationName, u.Path, false)
 				checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 			} else if sourceType == "binary" {
-				err = component.PushLocal(client, componentName, u.Path, true)
+				err = component.PushLocal(client, componentName, applicationName, u.Path, true)
 				checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 			}
 		}

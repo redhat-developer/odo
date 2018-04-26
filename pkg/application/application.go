@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
@@ -64,7 +64,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 	}
 
 	// Get applications from cluster
-	appNames, err := client.GetLabelValues(project, applabels.ApplicationLabel, applabels.ApplicationLabel)
+	appNames, err := client.GetLabelValues(project, labels.ApplicationLabel, labels.ApplicationLabel)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications")
 	}
@@ -94,7 +94,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 func Delete(client *occlient.Client, name string) error {
 	log.Debug("Deleting application %s", name)
 
-	labels := applabels.GetLabels(name, false)
+	labels := labels.GetLabels(name, false)
 
 	// delete application from cluster
 	output, err := client.Delete("all", "", labels)
