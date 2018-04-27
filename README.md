@@ -42,6 +42,11 @@ For Linux:
 sudo curl -L  "https://github.com/redhat-developer/odo/releases/download/v0.0.4/odo-linux-amd64.gz" | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo
 ```
 
+For Windows:
+
+Download the `odo-windows-amd64.exe.gz` file from the [GitHub releases page](https://github.com/redhat-developer/odo/releases), extract it into a directory 
+and add the location of extracted binary to your PATH environment variable by following [this wiki page.](https://github.com/redhat-developer/odo/wiki/Setting-PATH-variable-on-Windows)
+
 You can also download latest master builds from [Bintray](https://dl.bintray.com/odo/odo/latest/). This is updated every time there is a change in master git branch.
 
 
