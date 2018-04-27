@@ -1,6 +1,7 @@
 package component
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net/url"
@@ -186,13 +187,24 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	fmt.Fprintf(out, syncOutput)
 	fmt.Fprintf(out, "Please wait, building component....\n")
-	assembleOut, err := client.ExecCMDInContainer(pod.Name, []string{"/opt/app-root/bin/assemble-and-restart.sh"})
+
+	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
+	pipeReader, pipeWriter := io.Pipe()
+	go func() {
+		yellowFprintln := color.New(color.FgYellow).FprintlnFunc()
+		scanner := bufio.NewScanner(pipeReader)
+		for scanner.Scan() {
+			line := scanner.Text()
+			yellowFprintln(out, line)
+		}
+	}()
+
+	err = client.ExecCMDInContainer(pod.Name,
+		[]string{"/opt/app-root/bin/assemble-and-restart.sh"},
+		pipeWriter, pipeWriter, nil, false)
 	if err != nil {
 		return errors.Wrap(err, "unable to execute assemble script")
 	}
-	color.Set(color.FgYellow)
-	defer color.Unset()
-	fmt.Fprintf(out, assembleOut)
 
 	return nil
 }
