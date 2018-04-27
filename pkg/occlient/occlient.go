@@ -42,7 +42,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/util/retry"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -1629,21 +1631,43 @@ func (c *Client) GetServerVersion() (*serverInfo, error) {
 	return &info, nil
 }
 
-func (c *Client) ExecCMDInContainer(podName string, cmd []string) (string, error) {
+// ExecCMDInContainer execute command in first container of a pod
+func (c *Client) ExecCMDInContainer(podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 
-	// TODO: do this without using 'oc' binary
-	args := []string{
-		"exec",
-		podName,
-		"--",
-		strings.Join(cmd, " "),
-	}
+	req := c.kubeClient.CoreV1().RESTClient().
+		Post().
+		Namespace(c.namespace).
+		Resource("pods").
+		Name(podName).
+		SubResource("exec").
+		VersionedParams(&corev1.PodExecOptions{
+			Command: cmd,
+			Stdin:   stdin != nil,
+			Stdout:  stdout != nil,
+			Stderr:  stderr != nil,
+			TTY:     tty,
+		}, scheme.ParameterCodec)
 
-	output, err := c.runOcComamnd(&OcCommand{args: args})
+	config, err := c.kubeConfig.ClientConfig()
 	if err != nil {
-		return "", err
+		return errors.Wrapf(err, "unable to get Kubernetes client config")
 	}
 
-	log.Debugf("command output:\n %s \n", string(output[:]))
-	return string(output[:]), nil
+	// Connect to url (constructed from req) using SPDY (HTTP/2) protocol which allows bidirectional streams.
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return errors.Wrapf(err, "unable execute command via SPDY")
+	}
+	// initialize the transport of the standard shell streams
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  stdin,
+		Stdout: stdout,
+		Stderr: stderr,
+		Tty:    tty,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "error while streaming command")
+	}
+
+	return nil
 }
