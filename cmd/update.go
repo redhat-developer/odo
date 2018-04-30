@@ -25,6 +25,9 @@ var updateCmd = &cobra.Command{
 
   # Change the source of the component named node-ex to git
   odo update node-ex --git https://github.com/openshift/nodejs-ex.git
+
+  # Change the source of the component named wildfly to a binary named sample.war in ./downloads directory
+  odo update wildfly --binary ./downloads/sample.war
 	`,
 	Short: "Change the source of a component",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -45,13 +48,8 @@ var updateCmd = &cobra.Command{
 			checkFlag++
 		}
 
-		if checkFlag > 1 {
+		if checkFlag != 1 {
 			fmt.Println("The source can be either --binary or --local or --git")
-			os.Exit(1)
-		}
-
-		if len(componentBinary) != 0 {
-			fmt.Printf("--binary is not implemented yet\n\n")
 			os.Exit(1)
 		}
 
@@ -92,14 +90,13 @@ var updateCmd = &cobra.Command{
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
-			err = component.Update(client, componentName, "dir", dir)
+			err = component.Update(client, componentName, "local", dir)
 			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
-		} else {
-			// we want to use and save absolute path for component
-			dir, err := filepath.Abs("./")
+		} else if len(componentBinary) != 0 {
+			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
-			err = component.Update(client, componentName, "dir", dir)
+			err = component.Update(client, componentName, "binary", path)
 			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		}
