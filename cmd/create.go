@@ -98,7 +98,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
-			err = component.RebuildGit(client, componentName)
+			err = component.RebuildGit(client, componentName, applicationName)
 			checkError(err, "")
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
@@ -123,7 +123,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary")
 			checkError(err, "")
 
-			err = component.PushLocal(client, componentName, path, true)
+			err = component.PushLocal(client, componentName, applicationName, path, true)
 			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 
 			fmt.Printf("Component '%s' was created.\n", componentName)

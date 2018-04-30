@@ -52,7 +52,7 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 
 // Remove removes storage from given component of the given application.
 // If no storage name is provided, all storage for the given component is removed
-func Remove(client *occlient.Client, name string, applicationName string, componentName string) error {
+func Remove(client *occlient.Client, name string, componentName string, applicationName string) error {
 
 	// Get DeploymentConfig for the given component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
@@ -90,7 +90,8 @@ func Remove(client *occlient.Client, name string, applicationName string, compon
 
 // List lists all the storage associated with the given component of the given
 // application
-func List(client *occlient.Client, applicationName string, componentName string) ([]StorageInfo, error) {
+func List(client *occlient.Client, componentName string, applicationName string) ([]StorageInfo, error) {
+
 	labels := storagelabels.GetLabels("", componentName, applicationName, false)
 	selector := util.ConvertLabelsToSelector(labels)
 
