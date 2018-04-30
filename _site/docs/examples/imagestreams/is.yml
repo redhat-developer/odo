@@ -1,0 +1,22 @@
+controller: DeploymentConfig
+name: webapp
+containers:
+- image: ""
+triggers:
+- imageChangeParams:
+    automatic: true
+    containerNames:
+    - webapp
+    from:
+      kind: ImageStreamTag
+      name: webapp:2.4
+  type: ImageChange
+services:
+- portMappings:
+  - "8080"
+imageStreams:
+- tags:
+  - from:
+      kind: DockerImage
+      name: centos/httpd-24-centos7:2.4
+    name: "2.4"

@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+  <!-- Viewing -->
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <meta content="website" property="og:type">
+
+
+  <!-- Descriptions -->
+  <meta name="description" content="OpenShift Developer Optimization
+">
+  <title>OpenShift Developer Optimization</title>
+
+
+  <!-- Favicons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+  <link rel="manifest" href="/img/manifest.json">
+  <link rel="mask-icon" href="/img/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/img/favicon.ico">
+  <meta name="msapplication-config" content="/img/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+
+
+  <!-- HLJS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js">
+  </script>
+  <script>
+    hljs.initHighlightingOnLoad();
+  </script>
+
+</head>
+
+
+  <!-- CSS -->
+  <link href="/css/default.css" rel="stylesheet" type="text/css">
+  <link href="/css/pilcrow.css" rel="stylesheet" type="text/css">
+
+<body>
+
+  <header>
+    <a class="logo" href="/">
+      <img class="parcel" src="/img/logo.png" height="30"alt="">
+    </a>
+    <div class="links">
+      <a href="/quickstart">Documentation</a> <a href="https://github.com/redhat-developer/odo" target="_blank">GitHub</a>
+    </div>
+  </header>
+
+  <div class="content">
+    <nav>
+      <h3>Documentation</h3>
+      <ul>
+        
+          
+            <li><a href="/quickstart/">Quick Start</a></li>
+          
+        
+          
+            <li><a href="/installation/">Installation</a></li>
+          
+        
+          
+            <li><a href="/user-guide/">User Guide</a></li>
+          
+        
+      </ul>
+      <h3>Advanced</h3>
+      <ul>
+        
+          
+            <li><a class="active" href="/development/">Development</a></li>
+          
+        
+      </ul>
+    </nav>
+
+
+    <main>
+
+    <h1 id="development-guide">Development Guide</h1>
+
+<ul id="markdown-toc">
+  <li><a href="#development-guide" id="markdown-toc-development-guide">Development Guide</a>    <ul>
+      <li><a href="#building-kedge" id="markdown-toc-building-kedge">Building Kedge</a></li>
+      <li><a href="#workflow" id="markdown-toc-workflow">Workflow</a>        <ul>
+          <li><a href="#fork-the-main-repository" id="markdown-toc-fork-the-main-repository">Fork the main repository</a></li>
+          <li><a href="#clone-your-fork" id="markdown-toc-clone-your-fork">Clone your fork</a></li>
+          <li><a href="#create-a-branch-and-make-changes" id="markdown-toc-create-a-branch-and-make-changes">Create a branch and make changes</a></li>
+          <li><a href="#keeping-your-development-fork-in-sync" id="markdown-toc-keeping-your-development-fork-in-sync">Keeping your development fork in sync</a></li>
+          <li><a href="#committing-changes-to-your-fork" id="markdown-toc-committing-changes-to-your-fork">Committing changes to your fork</a></li>
+          <li><a href="#creating-a-pull-request" id="markdown-toc-creating-a-pull-request">Creating a pull request</a></li>
+        </ul>
+      </li>
+      <li><a href="#dependency-management" id="markdown-toc-dependency-management">Dependency management</a>        <ul>
+          <li><a href="#installing-glide" id="markdown-toc-installing-glide">Installing glide</a></li>
+          <li><a href="#using-glide" id="markdown-toc-using-glide">Using glide</a>            <ul>
+              <li><a href="#adding-new-dependency" id="markdown-toc-adding-new-dependency">Adding new dependency</a></li>
+              <li><a href="#updating-dependencies" id="markdown-toc-updating-dependencies">Updating dependencies</a></li>
+              <li><a href="#updating-openshift" id="markdown-toc-updating-openshift">Updating OpenShift</a></li>
+            </ul>
+          </li>
+          <li><a href="#pr-review-guidelines" id="markdown-toc-pr-review-guidelines">PR review guidelines</a></li>
+          <li><a href="#running-tests" id="markdown-toc-running-tests">Running tests</a>            <ul>
+              <li><a href="#run-all-tests-except-end-to-end-tests" id="markdown-toc-run-all-tests-except-end-to-end-tests">Run all tests except end-to-end tests</a></li>
+              <li><a href="#run-end-to-end-tests" id="markdown-toc-run-end-to-end-tests">Run end-to-end tests</a></li>
+            </ul>
+          </li>
+          <li><a href="#typesgo-conventions" id="markdown-toc-typesgo-conventions">types.go conventions</a></li>
+          <li><a href="#validation" id="markdown-toc-validation">Validation</a></li>
+          <li><a href="#naming-conventions" id="markdown-toc-naming-conventions">Naming conventions</a></li>
+          <li><a href="#optional-vs-required" id="markdown-toc-optional-vs-required">Optional vs. Required</a></li>
+          <li><a href="#general-guidelines-for-developers" id="markdown-toc-general-guidelines-for-developers">General guidelines for developers</a></li>
+          <li><a href="#golang-dependency-import-conventions" id="markdown-toc-golang-dependency-import-conventions">golang dependency import conventions</a></li>
+        </ul>
+      </li>
+      <li><a href="#code-instructions" id="markdown-toc-code-instructions">Code instructions</a>        <ul>
+          <li><a href="#things-to-take-care-of-when-adding-new-type" id="markdown-toc-things-to-take-care-of-when-adding-new-type">Things to take care of when adding new type:</a></li>
+        </ul>
+      </li>
+      <li><a href="#issue-labeling" id="markdown-toc-issue-labeling">Issue labeling</a>        <ul>
+          <li><a href="#size" id="markdown-toc-size">size/*</a>            <ul>
+              <li><a href="#sizes" id="markdown-toc-sizes">size/S</a></li>
+              <li><a href="#sizem" id="markdown-toc-sizem">size/M</a></li>
+              <li><a href="#sizel" id="markdown-toc-sizel">size/L</a></li>
+              <li><a href="#sizexl" id="markdown-toc-sizexl">size/XL</a></li>
+            </ul>
+          </li>
+          <li><a href="#priority" id="markdown-toc-priority">priority/*</a>            <ul>
+              <li><a href="#prioritylow" id="markdown-toc-prioritylow">priority/low</a></li>
+              <li><a href="#prioritymedium" id="markdown-toc-prioritymedium">priority/medium</a></li>
+              <li><a href="#priorityhigh" id="markdown-toc-priorityhigh">priority/high</a></li>
+              <li><a href="#priorityurgent" id="markdown-toc-priorityurgent">priority/urgent</a></li>
+            </ul>
+          </li>
+          <li><a href="#kind" id="markdown-toc-kind">kind/*</a>            <ul>
+              <li><a href="#kindblocker" id="markdown-toc-kindblocker">kind/blocker</a></li>
+              <li><a href="#kindbug" id="markdown-toc-kindbug">kind/bug</a></li>
+              <li><a href="#kindci-cd" id="markdown-toc-kindci-cd">kind/CI-CD</a></li>
+              <li><a href="#kinddiscussion" id="markdown-toc-kinddiscussion">kind/discussion</a></li>
+              <li><a href="#kinddocumentation" id="markdown-toc-kinddocumentation">kind/documentation</a></li>
+              <li><a href="#kindenhancement" id="markdown-toc-kindenhancement">kind/enhancement</a></li>
+            </ul>
+          </li>
+          <li><a href="#kindepic" id="markdown-toc-kindepic">kind/epic</a>            <ul>
+              <li><a href="#kindfeature" id="markdown-toc-kindfeature">kind/feature</a></li>
+              <li><a href="#kindquestion" id="markdown-toc-kindquestion">kind/question</a></li>
+              <li><a href="#kindrefactor" id="markdown-toc-kindrefactor">kind/refactor</a></li>
+              <li><a href="#kindtask" id="markdown-toc-kindtask">kind/task</a></li>
+              <li><a href="#kindtests" id="markdown-toc-kindtests">kind/tests</a></li>
+              <li><a href="#kinduser-experience" id="markdown-toc-kinduser-experience">kind/user-experience</a></li>
+            </ul>
+          </li>
+          <li><a href="#status" id="markdown-toc-status">status/*</a>            <ul>
+              <li><a href="#statusblocked" id="markdown-toc-statusblocked">status/blocked</a></li>
+              <li><a href="#statusdecided" id="markdown-toc-statusdecided">status/decided</a></li>
+              <li><a href="#statusdiscussion-ongoing" id="markdown-toc-statusdiscussion-ongoing">status/discussion-ongoing</a></li>
+              <li><a href="#statusdo-not-review" id="markdown-toc-statusdo-not-review">status/do-not-review</a></li>
+              <li><a href="#statusneeds-rebase" id="markdown-toc-statusneeds-rebase">status/needs-rebase</a></li>
+              <li><a href="#statusneeds-review" id="markdown-toc-statusneeds-review">status/needs-review</a></li>
+              <li><a href="#statusundecided" id="markdown-toc-statusundecided">status/undecided</a></li>
+              <li><a href="#statuswork-in-progress" id="markdown-toc-statuswork-in-progress">status/work-in-progress</a></li>
+            </ul>
+          </li>
+          <li><a href="#other" id="markdown-toc-other">other</a>            <ul>
+              <li><a href="#duplicate" id="markdown-toc-duplicate">duplicate</a></li>
+              <li><a href="#help-wanted" id="markdown-toc-help-wanted">help wanted</a></li>
+              <li><a href="#invalid" id="markdown-toc-invalid">invalid</a></li>
+              <li><a href="#wontfix" id="markdown-toc-wontfix">wontfix</a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="building-kedge">Building Kedge</h2>
+
+<p>Read about building kedge <a href="https://github.com/kedgeproject/kedge#building">here</a>.</p>
+
+<h2 id="workflow">Workflow</h2>
+<h3 id="fork-the-main-repository">Fork the main repository</h3>
+
+<ol>
+  <li>Go to https://github.com/kedgeproject/kedge</li>
+  <li>Click the “Fork” button (at the top right)</li>
+</ol>
+
+<h3 id="clone-your-fork">Clone your fork</h3>
+
+<p>The commands below require that you have $GOPATH. We highly recommended you put Kedge’ code into your $GOPATH.</p>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">git clone https://github.com/$</span>YOUR_GITHUB_USERNAME/kedge.git <span class="nv">$GOPATH</span>/src/github.com/kedgeproject/kedge
+<span class="gp">cd $</span>GOPATH/src/github.com/kedgeproject/kedge
+<span class="go">git remote add upstream 'https://github.com/kedgeproject/kedge'
+</span></code></pre></div></div>
+
+<h3 id="create-a-branch-and-make-changes">Create a branch and make changes</h3>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">git checkout -b myfeature
+</span><span class="gp">#</span> Make your code changes
+</code></pre></div></div>
+
+<h3 id="keeping-your-development-fork-in-sync">Keeping your development fork in sync</h3>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">git fetch upstream
+git rebase upstream/master
+</span></code></pre></div></div>
+
+<p>Note: If you have write access to the main repository at github.com/kedgeproject/kedge, you should modify your git configuration so that you can’t accidentally push to upstream:</p>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">git remote set-url --push upstream no_push
+</span></code></pre></div></div>
+
+<h3 id="committing-changes-to-your-fork">Committing changes to your fork</h3>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">git commit
+git push -f origin myfeature
+</span></code></pre></div></div>
+
+<h3 id="creating-a-pull-request">Creating a pull request</h3>
+
+<ol>
+  <li>Visit https://github.com/$YOUR_GITHUB_USERNAME/kedge.git</li>
+  <li>Click the “Compare and pull request” button next to your “myfeature” branch.</li>
+  <li>Check out the pull request process for more details</li>
+</ol>
+
+<h2 id="dependency-management">Dependency management</h2>
+
+<p>Kedge uses <code class="highlighter-rouge">glide</code> to manage dependencies.
+If you want to make changes to dependencies please make sure that <code class="highlighter-rouge">glide</code> is in your <code class="highlighter-rouge">$PATH</code>.</p>
+
+<h3 id="installing-glide">Installing glide</h3>
+
+<p>There are many ways to build and host golang binaries. Here is an easy way to get utilities like <code class="highlighter-rouge">glide</code> and <code class="highlighter-rouge">glide-vc</code> installed:</p>
+
+<p>Ensure that Mercurial and Git are installed on your system. (some of the dependencies use the mercurial source control system).
+Use <code class="highlighter-rouge">apt-get install mercurial git</code> or <code class="highlighter-rouge">yum install mercurial git</code> on Linux, or <code class="highlighter-rouge">brew.sh</code> on OS X, or download them directly.</p>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">go get -u github.com/Masterminds/glide
+</span></code></pre></div></div>
+
+<p>Check that <code class="highlighter-rouge">glide</code> is working.</p>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">glide --version
+</span></code></pre></div></div>
+
+<h3 id="using-glide">Using glide</h3>
+
+<h4 id="adding-new-dependency">Adding new dependency</h4>
+
+<ol>
+  <li>Update <code class="highlighter-rouge">glide.yaml</code> file</li>
+</ol>
+
+<p>Add new packages or subpackages to <code class="highlighter-rouge">glide.yaml</code> depending if you added whole
+  new package as dependency or just new subpackage.</p>
+
+<p>Kedge vendors OpenShift and all its dependencies. (see comments in <code class="highlighter-rouge">glide.yaml</code> and <code class="highlighter-rouge">./scripts/vendor-openshift.yaml</code>)
+  It is possible that the dependency you want to add is already in OpenShift as a vendored dependency. If that is true, please make sure 
+  that you use the same version OpenShift is using.</p>
+
+<ol>
+  <li>Get new dependencies</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make vendor-update
+</code></pre></div></div>
+
+<ol>
+  <li>Commit updated glide files and vendor</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git add glide.yaml glide.lock vendor
+git commit
+</code></pre></div></div>
+
+<h4 id="updating-dependencies">Updating dependencies</h4>
+
+<ol>
+  <li>
+    <p>Set new package version in  <code class="highlighter-rouge">glide.yaml</code> file.</p>
+  </li>
+  <li>
+    <p>Clear cache</p>
+  </li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>glide cc
+</code></pre></div></div>
+<p>This step is necessary if not done glide will pick up old data from it’s cache.</p>
+
+<ol>
+  <li>Get new and updated dependencies</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make vendor-update
+</code></pre></div></div>
+
+<ol>
+  <li>Commit updated glide files and vendor</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git add glide.yaml glide.lock vendor
+git commit
+</code></pre></div></div>
+
+<h4 id="updating-openshift">Updating OpenShift</h4>
+
+<ol>
+  <li>
+    <p>Update OPENSHIFT_VERSION within <a href="https://github.com/kedgeproject/kedge/blob/c64b0fd7a69edc4db5ef9aab0c52c97a0c9cf10e/scripts/vendor-openshift.sh#L15"><code class="highlighter-rouge">scripts/vendor-openshift.sh</code></a></p>
+  </li>
+  <li>
+    <p>Clear the cache to prevent glide from using previous data</p>
+  </li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>glide cc
+</code></pre></div></div>
+
+<ol>
+  <li>Retrieve new and updated dependencies</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make vendor-update
+</code></pre></div></div>
+
+<ol>
+  <li>Commit updated glide files and vendor</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git add glide.yaml glide.lock vendor
+git commit
+</code></pre></div></div>
+
+<h3 id="pr-review-guidelines">PR review guidelines</h3>
+
+<ul>
+  <li>
+    <p>To merge a PR at least two LGTMs are needed to merge it</p>
+  </li>
+  <li>
+    <p>If a PR is opened for more than two weeks, find why it is open for so long
+if it is blocked on some other issue/pr label it as blocked and then also link
+the issue it is blocked on. If it is outstanding for review and there are no
+reviews on it ping maintainers.</p>
+  </li>
+  <li>
+    <p>For PRs that have more than 500 LOC break it into pieces and merge it one
+by one incrementally so that it is easy to review and going back and forth on
+it is easier.</p>
+  </li>
+</ul>
+
+<p><strong>Note</strong>: Above guidelines are not hard rules use those with discretion</p>
+
+<h3 id="running-tests">Running tests</h3>
+
+<h4 id="run-all-tests-except-end-to-end-tests">Run all tests except end-to-end tests</h4>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make <span class="nb">test</span>
+</code></pre></div></div>
+
+<h4 id="run-end-to-end-tests">Run end-to-end tests</h4>
+
+<p>Before running end to end tests locally make sure <a href="https://github.com/kubernetes/minikube/">minikube</a>
+is running.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make bin
+make test-e2e
+</code></pre></div></div>
+
+<p><strong>Note</strong>: When you run end to end tests, those tests are run in parallel. If
+you are low on resources you can limit number of tests that run in parallel by
+doing following:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make test-e2e <span class="nv">PARALLEL</span><span class="o">=</span>4
+</code></pre></div></div>
+
+<p>This will run only 4 tests in parallel. By default, it is set to the value of
+<code class="highlighter-rouge">GOMAXPROCS</code>.</p>
+
+<p>You may also add a timeout which will increase the overall timeout period for the tests.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make test-e2e <span class="nv">TIMEOUT</span><span class="o">=</span>15m
+</code></pre></div></div>
+
+<h3 id="typesgo-conventions">types.go conventions</h3>
+
+<ul>
+  <li>
+    <p>Add explanation on top of each struct and struct field in <code class="highlighter-rouge">types.go</code> to explain what it does,
+so that when OpenAPI spec is auto-generated it will show up there.</p>
+  </li>
+  <li>
+    <p>Structs that are referred in any other struct in the form of an array should have a comment
+of the format <code class="highlighter-rouge">// kedgeSpec: io.kedge.*</code>, where <code class="highlighter-rouge">*</code> is name of that struct. This becomes the
+identity or reference of that struct in OpenAPI specification.</p>
+  </li>
+  <li>
+    <p>If you are embedding a struct, there is no need to add an explanatory comment.</p>
+  </li>
+  <li>
+    <p>For any struct that is embedded please add a k8s tag comment:
+<code class="highlighter-rouge">// k8s: io.k8s.kubernetes.pkg.api.v1.ServicePort</code>.</p>
+  </li>
+  <li>
+    <p>For all the fields that are optional please include a comment:
+<code class="highlighter-rouge">// +optional</code>.</p>
+  </li>
+  <li>
+    <p>Any struct that is defined in same file and is used in another struct, while embedding
+please add a ref tag comment:
+<code class="highlighter-rouge">// ref: io.kedge.ContainerSpec</code>.</p>
+  </li>
+  <li>
+    <p>To find out what is the key or k8s reference tag for a particular struct in Kubernetes,
+please refer to the swagger specification of Kubernetes for any particular release. For e.g
+In Kubernetes 1.7, the reference tag for deployment is
+<code class="highlighter-rouge">io.k8s.kubernetes.pkg.apis.apps.v1beta1.DeploymentSpec</code>.</p>
+  </li>
+</ul>
+
+<h3 id="validation">Validation</h3>
+
+<p>In order to facilitate consistent error messages, we ask that validation logic
+adheres to the following guidelines whenever possible (though exceptional cases will exist).</p>
+
+<ul>
+  <li>Be as precise as possible.</li>
+  <li>Telling users what they CAN do is more useful than telling them what they
+CANNOT do.</li>
+  <li>When asserting a requirement in the positive, use “must”.  Examples: “must be
+greater than 0”, “must match regex ‘[a-z]+’”.  Words like “should” imply that
+the assertion is optional, and must be avoided.</li>
+  <li>When asserting a formatting requirement in the negative, use “must not”.
+Example: “must not contain ‘..’”.  Words like “should not” imply that the
+assertion is optional, and must be avoided.</li>
+  <li>When asserting a behavioral requirement in the negative, use “may not”.
+Examples: “may not be specified when otherField is empty”, “only <code class="highlighter-rouge">name</code> may be
+specified”.</li>
+  <li>When referencing a literal string value, indicate the literal in
+single-quotes. Example: “must not contain ‘..’”.</li>
+  <li>When referencing another field name, indicate the name in back-quotes.
+Example: “must be greater than <code class="highlighter-rouge">request</code>”.</li>
+  <li>When specifying inequalities, use words rather than symbols.  Examples: “must
+be less than 256”, “must be greater than or equal to 0”.  Do not use words
+like “larger than”, “bigger than”, “more than”, “higher than”, etc.</li>
+  <li>When specifying numeric ranges, use inclusive ranges when possible.</li>
+</ul>
+
+<p>Taken from: <a href="https://github.com/kubernetes/community/blob/2bfe095e4dcd02b4ccd3e21c1f30591ca57518a6/contributors/devel/api-conventions.md#validation">github.com/kubernetes/community/contributors/devel/api-conventions.md</a></p>
+
+<h3 id="naming-conventions">Naming conventions</h3>
+
+<ul>
+  <li>Go field names must be CamelCase. JSON field names must be camelCase. Other
+than capitalization of the initial letter, the two should almost always match.
+No underscores nor dashes in either.</li>
+  <li>Field and resource names should be declarative, not imperative (DoSomething,
+SomethingDoer, DoneBy, DoneAt).</li>
+  <li>Use <code class="highlighter-rouge">Node</code> where referring to
+the node resource in the context of the cluster. Use <code class="highlighter-rouge">Host</code> where referring to
+properties of the individual physical/virtual system, such as <code class="highlighter-rouge">hostname</code>,
+<code class="highlighter-rouge">hostPath</code>, <code class="highlighter-rouge">hostNetwork</code>, etc.</li>
+  <li><code class="highlighter-rouge">FooController</code> is a deprecated kind naming convention. Name the kind after
+the thing being controlled instead (e.g., <code class="highlighter-rouge">Job</code> rather than <code class="highlighter-rouge">JobController</code>).</li>
+  <li>The name of a field that specifies the time at which <code class="highlighter-rouge">something</code> occurs should
+be called <code class="highlighter-rouge">somethingTime</code>. Do not use <code class="highlighter-rouge">stamp</code> (e.g., <code class="highlighter-rouge">creationTimestamp</code>).</li>
+  <li>We use the <code class="highlighter-rouge">fooSeconds</code> convention for durations, as discussed in the <a href="#units">units
+subsection</a>.
+    <ul>
+      <li><code class="highlighter-rouge">fooPeriodSeconds</code> is preferred for periodic intervals and other waiting
+periods (e.g., over <code class="highlighter-rouge">fooIntervalSeconds</code>).</li>
+      <li><code class="highlighter-rouge">fooTimeoutSeconds</code> is preferred for inactivity/unresponsiveness deadlines.</li>
+      <li><code class="highlighter-rouge">fooDeadlineSeconds</code> is preferred for activity completion deadlines.</li>
+    </ul>
+  </li>
+  <li>Do not use abbreviations in the API, except where they are extremely commonly
+used, such as “id”, “args”, or “stdin”.</li>
+  <li>Acronyms should similarly only be used when extremely commonly known. All
+letters in the acronym should have the same case, using the appropriate case for
+the situation. For example, at the beginning of a field name, the acronym should
+be all lowercase, such as “httpGet”. Where used as a constant, all letters
+should be uppercase, such as “TCP” or “UDP”.</li>
+  <li>The name of a field referring to another resource of kind <code class="highlighter-rouge">Foo</code> by name should
+be called <code class="highlighter-rouge">fooName</code>. The name of a field referring to another resource of kind
+<code class="highlighter-rouge">Foo</code> by ObjectReference (or subset thereof) should be called <code class="highlighter-rouge">fooRef</code>.</li>
+  <li>More generally, include the units and/or type in the field name if they could
+be ambiguous and they are not specified by the value or value type.</li>
+  <li>The name of a field expressing a boolean property called ‘fooable’ should be
+called <code class="highlighter-rouge">Fooable</code>, not <code class="highlighter-rouge">IsFooable</code>.</li>
+</ul>
+
+<p>Taken from: <a href="https://github.com/kubernetes/community/blob/2bfe095e4dcd02b4ccd3e21c1f30591ca57518a6/contributors/devel/api-conventions.md#naming-conventions">github.com/kubernetes/community/contributors/devel/api-conventions.md</a></p>
+
+<h3 id="optional-vs-required">Optional vs. Required</h3>
+
+<p>Fields must be either optional or required.</p>
+
+<p>Optional fields have the following properties:</p>
+
+<ul>
+  <li>They have the <code class="highlighter-rouge">+optional</code> comment tag in Go.</li>
+  <li>They are a pointer type in the Go definition (e.g. <code class="highlighter-rouge">bool *awesomeFlag</code>) or
+have a built-in <code class="highlighter-rouge">nil</code> value (e.g. maps and slices).</li>
+</ul>
+
+<p>In most cases, optional fields should also have the <code class="highlighter-rouge">omitempty</code> struct tag (the 
+<code class="highlighter-rouge">omitempty</code> option specifies that the field should be omitted from the json
+encoding if the field has an empty value).</p>
+
+<p>Required fields have the opposite properties, namely:</p>
+
+<ul>
+  <li>They do not have an <code class="highlighter-rouge">+optional</code> comment tag.</li>
+  <li>They do not have an <code class="highlighter-rouge">omitempty</code> struct tag.</li>
+  <li>They are not a pointer type in the Go definition (e.g. <code class="highlighter-rouge">bool otherFlag</code>).</li>
+</ul>
+
+<p>Using the <code class="highlighter-rouge">+optional</code> or the <code class="highlighter-rouge">omitempty</code> tag causes OpenAPI documentation to 
+reflect that the field is optional.</p>
+
+<p>Using a pointer allows distinguishing unset from the zero value for that type.
+There are examples of this in the codebase. However:</p>
+
+<ul>
+  <li>it can be difficult for implementors to anticipate all cases where an empty
+value might need to be distinguished from a zero value</li>
+  <li>having a pointer consistently imply optional is clearer</li>
+</ul>
+
+<p>Therefore, we ask that pointers always be used with optional fields that do not
+have a built-in <code class="highlighter-rouge">nil</code> value.</p>
+
+<p>Inspired from: <a href="https://github.com/kubernetes/community/blob/2bfe095e4dcd02b4ccd3e21c1f30591ca57518a6/contributors/devel/api-conventions.md#optional-vs-required">github.com/kubernetes/community/contributors/devel/api-conventions.md</a></p>
+
+<h3 id="general-guidelines-for-developers">General guidelines for developers</h3>
+
+<ul>
+  <li>
+    <p>When you add a new function/method</p>
+
+    <ul>
+      <li>Add unit-tests</li>
+    </ul>
+  </li>
+  <li>
+    <p>When you add a new feature</p>
+
+    <ul>
+      <li>Add an example in docs/example with its explanation README, for e.g. <a href="https://github.com/kedgeproject/kedge/tree/master/docs/examples/health">health</a>.</li>
+      <li>Add an e2e test on above example, for e.g. see test code for <a href="https://github.com/kedgeproject/kedge/blob/cfee15ffde02c611d08420699a43869706be2d53/tests/e2e/e2e_test.go#L272">health</a>.</li>
+      <li>Add this feature information to file-reference, for e.g. see <a href="https://github.com/kedgeproject/kedge/blob/master/docs/file-reference.md#health">health section</a>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="golang-dependency-import-conventions">golang dependency import conventions</h3>
+
+<p>Imports MUST be arranged in three sections, separated by an empty line.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">stdlib</span><span class="x">
+</span><span class="n">kedge</span><span class="x">
+</span><span class="n">thirdparty</span><span class="x">
+</span></code></pre></div></div>
+
+<p>For example:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">"fmt"</span><span class="x">
+</span><span class="s">"io"</span><span class="x">
+</span><span class="s">"os/exec"</span><span class="x">
+
+</span><span class="n">pkgcmd</span><span class="x"> </span><span class="s">"github.com/kedgeproject/kedge/pkg/cmd"</span><span class="x">
+</span><span class="s">"github.com/kedgeproject/kedge/pkg/spec"</span><span class="x">
+
+</span><span class="s">"github.com/ghodss/yaml"</span><span class="x">
+</span><span class="s">"github.com/pkg/errors"</span><span class="x">
+</span></code></pre></div></div>
+
+<p>Once arranged, let <code class="highlighter-rouge">gofmt</code> sort the sequence of imports.</p>
+
+<h2 id="code-instructions">Code instructions</h2>
+
+<h3 id="things-to-take-care-of-when-adding-new-type">Things to take care of when adding new type:</h3>
+
+<ul>
+  <li>
+    <p>Creating type struct</p>
+
+    <ul>
+      <li>Make a struct type named <code class="highlighter-rouge">ControllerSpecMod</code> and add it to <a href="https://github.com/kedgeproject/kedge/blob/cd5297cfdbd2f1daa510824d49c9d3d649ffc0b8/pkg/spec/types.go">types.go</a>.</li>
+      <li>Embed this struct with <code class="highlighter-rouge">ControllerSpec</code> from upstream and <a href="https://github.com/kedgeproject/kedge/blob/cd5297cfdbd2f1daa510824d49c9d3d649ffc0b8/pkg/spec/types.go#L146"><code class="highlighter-rouge">ControllerFields</code></a>.</li>
+      <li>Make sure all the comments are placed well and all optional fields are maked as
+<a href="https://github.com/kedgeproject/kedge/blob/cd5297cfdbd2f1daa510824d49c9d3d649ffc0b8/pkg/spec/types.go#L154">optional</a>.</li>
+      <li>For more info about how to add fields read <a href="https://github.com/kedgeproject/kedge/blob/3640c31ea44c2aa06e59e127b291bf4e1d49a6b4/docs/development.md#typesgo-conventions">here</a>.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Make sure it satisfies the interface <a href="https://github.com/kedgeproject/kedge/blob/cd5297cfdbd2f1daa510824d49c9d3d649ffc0b8/pkg/spec/controller.go#L29"><code class="highlighter-rouge">ControllerInterface</code></a></p>
+
+    <ul>
+      <li>Define all these methods in interface on the new <code class="highlighter-rouge">ControllerSpecMod</code> in it’s
+own separate file <code class="highlighter-rouge">controller-name.go</code>, like we have <a href="https://github.com/kedgeproject/kedge/blob/d4e27324b444c68a27b552a6eca83baceec4e0df/pkg/spec/deployment.go"><code class="highlighter-rouge">deployment.go</code></a>,
+<a href="https://github.com/kedgeproject/kedge/blob/f4c3808a0285199a5e94f3b89bdfe03eedfe91a3/pkg/spec/deploymentconfig.go"><code class="highlighter-rouge">deploymentconfig.go</code></a>, etc.</li>
+      <li>After that, goto function <a href="https://github.com/kedgeproject/kedge/blob/cd5297cfdbd2f1daa510824d49c9d3d649ffc0b8/pkg/spec/controller.go#L46"><code class="highlighter-rouge">GetController</code></a>
+and add a case for this new controller type.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Interface’s Validate method</p>
+
+    <ul>
+      <li>This is to validate what user has given is the right information.</li>
+      <li>In this function we fail, since we can’t do much about what user means.</li>
+      <li>Here don’t forget to make a call to <a href="https://github.com/kedgeproject/kedge/blob/9b732e3d526b03b197c9ba623627099f221f023c/pkg/spec/resources.go#L512"><code class="highlighter-rouge">ControllerFields.validateControllerFields()</code></a>
+and then also add any other validations that are Controller specific.</li>
+      <li><a href="https://github.com/kedgeproject/kedge/blob/cd5297cfdbd2f1daa510824d49c9d3d649ffc0b8/pkg/spec/deployment.go#L42">Sample Validate method</a>
+of <code class="highlighter-rouge">deployment</code> controller.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Interface’s Fix method</p>
+
+    <ul>
+      <li>This is where we can do most of fixing of user provided data, we can do
+auto-population of information that user has not given us.</li>
+      <li>Make sure to call the <a href="https://github.com/surajssd/kedge/blob/9b732e3d526b03b197c9ba623627099f221f023c/pkg/spec/resources.go#L183"><code class="highlighter-rouge">ControllerFields.fixControllerFields()</code></a>.</li>
+      <li>Now after that add any Controller specific Fix methods.</li>
+      <li><a href="https://github.com/kedgeproject/kedge/blob/2f1cf4ee6a90e5f0911ac8d8fcee0d751fc97fa8/pkg/spec/job.go#L42">Sample Fix method</a>
+of Job controller.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Interface’s Transform method</p>
+
+    <ul>
+      <li>Create basic Kubernetes/OpenShift objects by calling <a href="https://github.com/surajssd/kedge/blob/9b732e3d526b03b197c9ba623627099f221f023c/pkg/spec/resources.go#L407"><code class="highlighter-rouge">CreateK8sObjects</code></a>
+on the controller.</li>
+      <li>Now create the actual <code class="highlighter-rouge">Controller</code>.</li>
+      <li><a href="https://github.com/surajssd/kedge/blob/f4c3808a0285199a5e94f3b89bdfe03eedfe91a3/pkg/spec/deploymentconfig.go#L79">Sample Transform method</a>
+of DeploymentConfig controller.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="issue-labeling">Issue labeling</h2>
+
+<p>Most of the issues should have at least <code class="highlighter-rouge">size</code> and <code class="highlighter-rouge">priority</code> and <code class="highlighter-rouge">kind</code> label.</p>
+
+<ul>
+  <li>Default size is <a href="#sizeM">size/M</a>.</li>
+  <li>Default priority is <a href="#priority/medium">priority/medium</a>.</li>
+</ul>
+
+<h3 id="size">size/*</h3>
+<p>size/* labels are for estimating size.
+It should estimation how complicated it is going to be to solve given problem.</p>
+
+<h4 id="sizes"><a href="https://github.com/kedgeproject/kedge/labels/size%2FS">size/S</a></h4>
+<p>Simple change, just few lines (no more than 1 day of work).</p>
+
+<h4 id="sizem"><a href="https://github.com/kedgeproject/kedge/labels/size%2FM">size/M</a></h4>
+<p>Considerable change but fair straightforward problem statement.
+This is the default size. If you are not sure about the sizes of the task, you can start with marking it as <code class="highlighter-rouge">size/M</code> and adjust size later on.</p>
+
+<h4 id="sizel"><a href="https://github.com/kedgeproject/kedge/labels/size%2FL">size/L</a></h4>
+<p>A bit more complicated to solve, maybe requiring small refactoring of existing code.</p>
+
+<h4 id="sizexl"><a href="https://github.com/kedgeproject/kedge/labels/size%2FL">size/XL</a></h4>
+<p>Complex change, new big feature, requiring big refactoring, perhaps is an epic and should be broken into smaller tasks.</p>
+
+<h3 id="priority">priority/*</h3>
+
+<h4 id="prioritylow"><a href="https://github.com/kedgeproject/kedge/labels/priority%2Flow">priority/low</a></h4>
+<p>The lowest priority, the issue is not affecting any functionality or it is nice to have feature.</p>
+
+<h4 id="prioritymedium"><a href="https://github.com/kedgeproject/kedge/labels/priority%2Fmedium">priority/medium</a></h4>
+<p>Medium should be a default priority. If you are not sure about priority of the issue mark it as <code class="highlighter-rouge">priority/medium</code>.</p>
+
+<h4 id="priorityhigh"><a href="https://github.com/kedgeproject/kedge/labels/priority%2Fhigh">priority/high</a></h4>
+<p>High priority means that this is important feature that will help someone start using Kedge, or it is a bug that is affecting existing users.</p>
+
+<h4 id="priorityurgent"><a href="https://github.com/kedgeproject/kedge/labels/priority%2Furgent">priority/urgent</a></h4>
+<p>If issue is marked as urgent it means that it should be solved before everything else (Drop everything and work on this). Bug marked as <code class="highlighter-rouge">priority/urget</code> completely breaks important Kedge functionality.
+Usually it doesn’t make sense to new features as <code class="highlighter-rouge">priority/urgent</code>.</p>
+
+<h3 id="kind">kind/*</h3>
+
+<h4 id="kindblocker"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Fblocker">kind/blocker</a></h4>
+<p>This issue is blocking some other issue. There should be a commend that is explaining what issue is blocked and why.</p>
+
+<p>Related labels: <a href="#statusblocked">status/blocked</a></p>
+
+<h4 id="kindbug"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Fbug">kind/bug</a></h4>
+<p>This is a bug. Something that should be working is broken.</p>
+
+<h4 id="kindci-cd"><a href="https://github.com/kedgeproject/kedge/labels/kind%2CI-CD">kind/CI-CD</a></h4>
+<p>Issue is touching CI/CD area.</p>
+
+<h4 id="kinddiscussion"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Fdiscussion">kind/discussion</a></h4>
+<p>This issue is discussion. The discussion can be about new features or changes or anything that is related to the project.</p>
+
+<p>Related labels: <a href="#statusdecided">status/decided</a>, <a href="#statusundecided">status/undecided</a></p>
+
+<h4 id="kinddocumentation"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Fdocumentation">kind/documentation</a></h4>
+<p>Issues related to documentation.</p>
+
+<h4 id="kindenhancement"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Fenhancement">kind/enhancement</a></h4>
+<p>This issue is improving already existing functionality.</p>
+
+<h3 id="kindepic"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Fepic">kind/epic</a></h3>
+<p>Issues marked as <code class="highlighter-rouge">kind/epic</code> are usually description of a larger goal or feature. 
+Before any actual coding work can be started on this it should be broken down to smaller smaller features (<a href="#kindfeature">kind/feature</a>) or tasks (<a href="#kindtask">kind/task</a>)</p>
+
+<h4 id="kindfeature"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Ffeature">kind/feature</a></h4>
+<p>This is a description or definition of a new feature.</p>
+
+<h4 id="kindquestion"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Ffeature">kind/question</a></h4>
+<p>Someone is asking a question. Once the question is answered the issue should be closed.</p>
+
+<h4 id="kindrefactor"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Frefactor">kind/refactor</a></h4>
+<p>This is work on definition of some kind of refactoring effort.</p>
+
+<h4 id="kindtask"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Ftask">kind/task</a></h4>
+<p>This is clear definition of a task that can be assigned and work on this can start.</p>
+
+<h4 id="kindtests"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Ftests">kind/tests</a></h4>
+<p>Issue related to test and testing.</p>
+
+<h4 id="kinduser-experience"><a href="https://github.com/kedgeproject/kedge/labels/kind%2Fuser-experience">kind/user-experience</a></h4>
+<p>This issue is touching user experience.</p>
+
+<h3 id="status">status/*</h3>
+
+<h4 id="statusblocked"><a href="https://github.com/kedgeproject/kedge/labels/status%2Fblocked">status/blocked</a></h4>
+<p>This issue is blocked by some other issue. There should be a commend explaining why this issue is blocked 
+and what is blocking it. Issue that is blocking it should be marked as <code class="highlighter-rouge">kind/blocker</code>.</p>
+
+<p>Related labels: <a href="#kindblocker">kind/blocker</a></p>
+
+<h4 id="statusdecided"><a href="https://github.com/kedgeproject/kedge/labels/status%2Fdecided">status/decided</a></h4>
+<p>This usually goes together with <code class="highlighter-rouge">kind/discussion</code>. Once a discussion ended and decision was made issue should be labeled <code class="highlighter-rouge">status/decided</code>.</p>
+
+<p>Related labels: <a href="#kinddiscussion">kind/discussion</a></p>
+
+<h4 id="statusdiscussion-ongoing"><a href="https://github.com/kedgeproject/kedge/labels/status%2Fdiscussion-ongoing">status/discussion-ongoing</a></h4>
+
+<h4 id="statusdo-not-review"><a href="https://github.com/kedgeproject/kedge/labels/status%2Fdo-not-review">status/do-not-review</a></h4>
+<p>Used for PRs. It means that PR is Work In Progress and it will change a lot. Currently it is not worth to do any reviews on it.</p>
+
+<h4 id="statusneeds-rebase"><a href="https://github.com/kedgeproject/kedge/labels/status%2Fneeds-rebase">status/needs-rebase</a></h4>
+<p>Used for PRs. There are conflicts and branch needs rebase and resolving conflicts.</p>
+
+<h4 id="statusneeds-review"><a href="https://github.com/kedgeproject/kedge/labels/status%2Fneeds-review">status/needs-review</a></h4>
+<p>Used for PRs. All work is done, and PR just need review.</p>
+
+<h4 id="statusundecided"><a href="https://github.com/kedgeproject/kedge/labels/status%2Fundecided">status/undecided</a></h4>
+<p>This usually goes together with <code class="highlighter-rouge">kind/discussion</code>. This means that conclusion was not yet made.</p>
+
+<p>Related labels: <a href="#kinddiscussion">kind/discussion</a></p>
+
+<h4 id="statuswork-in-progress"><a href="https://github.com/kedgeproject/kedge/labels/status%2Fwork-in-progress">status/work-in-progress</a></h4>
+<p>Used for PRs. It means that PR is Work In Progress. Some preliminary reviews can be done, but it can’t be merged yet, as something is still missing.</p>
+
+<h3 id="other">other</h3>
+
+<h4 id="duplicate"><a href="https://github.com/kedgeproject/kedge/labels/duplicate">duplicate</a></h4>
+<p>Issue is a duplicate of other already existing issue.</p>
+
+<h4 id="help-wanted"><a href="https://github.com/kedgeproject/kedge/labels/help%20wanted">help wanted</a></h4>
+
+<h4 id="invalid"><a href="https://github.com/kedgeproject/kedge/labels/invalid">invalid</a></h4>
+
+<h4 id="wontfix"><a href="https://github.com/kedgeproject/kedge/labels/wontfix">wontfix</a></h4>
+
+
+    </main>
+  </div>
+</body>
+
+</html>

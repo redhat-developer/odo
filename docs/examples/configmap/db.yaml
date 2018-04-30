@@ -1,0 +1,22 @@
+name: database
+containers:
+- image: mariadb:10
+  env:
+  - name: MYSQL_ROOT_PASSWORD
+    value: rootpasswd
+  - name: MYSQL_DATABASE
+    valueFrom:
+      configMapKeyRef:
+        key: MYSQL_DATABASE
+        name: database
+  - name: MYSQL_USER
+    value: wordpress
+  - name: MYSQL_PASSWORD
+    value: wordpress
+services:
+- name: database
+  ports:
+  - port: 3306
+configMaps:
+- data:
+    MYSQL_DATABASE: wordpress

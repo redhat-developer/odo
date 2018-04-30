@@ -1,0 +1,26 @@
+apiVersion: batch/v2alpha1
+kind: CronJob
+metadata:
+  name: web
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: web
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date > /var/www/html/index.html; echo 'Hello from the Kubernetes cluster' >> /var/www/html/index.html
+            volumeMounts:
+            - name: web
+              mountPath: /var/www/html/
+          restartPolicy: OnFailure
+          volumes:
+          - name: web
+            persistentVolumeClaim:
+              claimName: web
+

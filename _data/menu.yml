@@ -1,0 +1,20 @@
+items:
+  "Quick Start": "/quickstart/"
+  "Installation": "/installation/"
+  "User Guide": "/user-guide/"
+
+advanced:
+  "Development": "/development/"
+
+documentation_footer_1:
+  "Installation": "/installation/"
+  "Quick Start": "/quickstart/"
+  "User Guide": "/user-guide/"
+
+documentation_footer_2:
+  "Development": "/development/"
+
+footer:
+  "Slack": "http://slack.kedgeproject.org"
+  "Releases": "https://github.com/kedgeproject/kedge/releases"
+  "GitHub": "https://github.com/kedgeproject/kedge"

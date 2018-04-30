@@ -1,0 +1,43 @@
+controller: DeploymentConfig
+name: ruby
+containers:
+- image: ""
+triggers:
+- imageChangeParams:
+    automatic: true
+    containerNames:
+    - ruby
+    from:
+      kind: ImageStreamTag
+      name: origin-ruby-sample:latest
+  type: ImageChange
+services:
+- portMappings:
+  - "8080"
+imageStreams:
+- name: origin-ruby-sample
+- name: ruby-22-centos7
+  tags:
+  - name: latest
+    from:
+      kind: DockerImage
+      name: openshift/ruby-20-centos7
+buildConfigs:
+- triggers:
+  - type: "ImageChange"
+  source:
+    type: "Git"
+    git:
+      uri: "https://github.com/openshift/ruby-hello-world"
+  strategy:
+    type: "Source"
+    sourceStrategy:
+      from:
+        kind: "ImageStreamTag"
+        name: "ruby-22-centos7:latest"
+  output:
+    to:
+      kind: "ImageStreamTag"
+      name: "origin-ruby-sample:latest"
+  postCommit:
+      script: "bundle exec rake test"

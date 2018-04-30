@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+  <!-- Viewing -->
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <meta content="website" property="og:type">
+
+
+  <!-- Descriptions -->
+  <meta name="description" content="OpenShift Developer Optimization
+">
+  <title>OpenShift Developer Optimization</title>
+
+
+  <!-- Favicons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+  <link rel="manifest" href="/img/manifest.json">
+  <link rel="mask-icon" href="/img/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/img/favicon.ico">
+  <meta name="msapplication-config" content="/img/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+
+
+  <!-- HLJS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js">
+  </script>
+  <script>
+    hljs.initHighlightingOnLoad();
+  </script>
+
+</head>
+
+
+  <!-- CSS -->
+  <link href="/css/default.css" rel="stylesheet" type="text/css">
+  <link href="/css/pilcrow.css" rel="stylesheet" type="text/css">
+
+<body>
+
+  <header>
+    <a class="logo" href="/">
+      <img class="parcel" src="/img/logo.png" height="30"alt="">
+    </a>
+    <div class="links">
+      <a href="/quickstart">Documentation</a> <a href="https://github.com/redhat-developer/odo" target="_blank">GitHub</a>
+    </div>
+  </header>
+
+  <div class="content">
+    <nav>
+      <h3>Documentation</h3>
+      <ul>
+        
+          
+            <li><a href="/quickstart/">Quick Start</a></li>
+          
+        
+          
+            <li><a href="/installation/">Installation</a></li>
+          
+        
+          
+            <li><a href="/user-guide/">User Guide</a></li>
+          
+        
+      </ul>
+      <h3>Advanced</h3>
+      <ul>
+        
+          
+            <li><a href="/development/">Development</a></li>
+          
+        
+      </ul>
+    </nav>
+
+
+    <main>
+
+    <h1 id="getting-started">Getting Started</h1>
+
+<ul id="markdown-toc">
+  <li><a href="#getting-started" id="markdown-toc-getting-started">Getting Started</a>    <ul>
+      <li><a href="#minikube-and-kedge" id="markdown-toc-minikube-and-kedge">Minikube and Kedge</a></li>
+      <li><a href="#minishift-and-kedge" id="markdown-toc-minishift-and-kedge">Minishift and Kedge</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>These guide(s) will show you how to get started with your favourite container orchestrator as well as Kedge!</p>
+
+<p>There are three different guides depending on your container orchestrator as well as operating system.</p>
+
+<p>For beginners and the most compatibility, follow the <strong>Minikube and Kedge</strong> guide.</p>
+
+<h2 id="minikube-and-kedge">Minikube and Kedge</h2>
+
+<p>In this guide, we’ll deploy a sample kedge file <code class="highlighter-rouge">httpd.yaml</code> to a Kubernetes cluster.</p>
+
+<p>Requirements:</p>
+<ul>
+  <li><a href="https://github.com/kubernetes/minikube">minikube</a></li>
+  <li><a href="https://github.com/kedgeproject/kedge">kedge</a></li>
+</ul>
+
+<p><strong>Start <code class="highlighter-rouge">minikube</code>:</strong></p>
+
+<p>If you don’t already have a Kubernetes cluster running, <a href="https://github.com/kubernetes/minikube">minikube</a> is the best way to get started.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>minikube start
+Starting <span class="nb">local </span>Kubernetes v1.7.5 cluster...
+Starting VM...
+Getting VM IP address...
+Moving files into cluster...
+Setting up certs...
+Connecting to cluster...
+Setting up kubeconfig...
+Starting cluster components...
+Kubectl is now configured to use the cluster
+</code></pre></div></div>
+
+<p><strong>Download the <a href="https://raw.githubusercontent.com/kedgeproject/kedge/master/examples/httpd/httpd.yaml">httpd.yaml</a> example file, or another example from the <a href="https://github.com/kedgeproject/kedge/tree/master/examples">examples</a> GitHub directory:</strong></p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-LO</span> https://raw.githubusercontent.com/kedgeproject/kedge/master/examples/httpd/httpd.yaml
+</code></pre></div></div>
+
+<p><strong>Deploy directly to your Kubernetes cluster with <code class="highlighter-rouge">kedge apply</code>:</strong></p>
+
+<p>Run <code class="highlighter-rouge">kedge apply -f httpd.yaml</code> in the same directory as your example file.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kedge apply <span class="nt">-f</span> httpd.yaml 
+service <span class="s2">"httpd"</span> created
+deployment <span class="s2">"httpd"</span> created
+</code></pre></div></div>
+
+<p><strong>Access the newly deployed service:</strong></p>
+
+<p>Now that your service has been deployed, let’s access it.</p>
+
+<p>If you’re using <code class="highlighter-rouge">minikube</code> you may access it via the <code class="highlighter-rouge">minikube service</code> command.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>minikube service httpd
+Opening kubernetes service default/httpd <span class="k">in </span>default browser...
+Created new window <span class="k">in </span>existing browser session.
+</code></pre></div></div>
+
+<p>Otherwise, use <code class="highlighter-rouge">kubectl</code> to see what IP address the service is using:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kubectl describe svc httpd
+Name:                   httpd
+Namespace:              default
+Labels:                 <span class="nv">app</span><span class="o">=</span>httpd
+Annotations:            kubectl.kubernetes.io/last-applied-configuration<span class="o">={</span><span class="s2">"apiVersion"</span>:<span class="s2">"v1"</span>,<span class="s2">"kind"</span>:<span class="s2">"Service"</span>,<span class="s2">"metadata"</span>:<span class="o">{</span><span class="s2">"annotations"</span>:<span class="o">{}</span>,<span class="s2">"creationTimestamp"</span>:null,<span class="s2">"labels"</span>:<span class="o">{</span><span class="s2">"app"</span>:<span class="s2">"httpd"</span><span class="o">}</span>,<span class="s2">"name"</span>:<span class="s2">"httpd"</span>,<span class="s2">"namespace"</span>:<span class="s2">"default"</span>...
+Selector:               <span class="nv">app</span><span class="o">=</span>httpd
+Type:                   LoadBalancer
+IP:                     10.0.0.249
+Port:                   httpd-8080      8080/TCP
+NodePort:               httpd-8080      30692/TCP
+Endpoints:              172.17.0.4:80
+Session Affinity:       None
+Events:                 &lt;none&gt;
+</code></pre></div></div>
+
+<h2 id="minishift-and-kedge">Minishift and Kedge</h2>
+
+<p>In this guide, we’ll deploy an OpenShift-compatible Kedge file to an OpenShift cluster.</p>
+
+<p>Requirements:</p>
+<ul>
+  <li><a href="https://github.com/minishift/minishift">minishift</a></li>
+  <li><a href="https://github.com/kedgeproject/kedge">kedge</a></li>
+  <li>An OpenShift route created</li>
+</ul>
+
+<p><strong>Note:</strong> The service will NOT be accessible until you create an OpenShift route with <code class="highlighter-rouge">oc expose</code>. You must also have a virtualization environment setup. By default, <code class="highlighter-rouge">minishift</code> uses KVM.</p>
+
+<p><strong>Start <code class="highlighter-rouge">minishift</code>:</strong></p>
+
+<p><a href="https://github.com/minishift/minishift">Minishift</a> is a tool that helps run OpenShift locally using a single-node cluster inside of a VM. Similar to <a href="https://github.com/kubernetes/minikube">minikube</a>.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>minishift start
+Starting <span class="nb">local </span>OpenShift cluster using <span class="s1">'kvm'</span> hypervisor...
+<span class="nt">--</span> Checking OpenShift client ... OK
+<span class="nt">--</span> Checking Docker client ... OK
+<span class="nt">--</span> Checking Docker version ... OK
+<span class="nt">--</span> Checking <span class="k">for </span>existing OpenShift container ... OK
+...
+</code></pre></div></div>
+
+<p><strong>Login as developer within <code class="highlighter-rouge">minishift</code>:</strong></p>
+
+<p>Login as developer if you haven’t done so already within <code class="highlighter-rouge">minishift</code>.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>▶ oc login <span class="nt">-u</span> developer          
+Server <span class="o">[</span>https://localhost:8443]: https://192.168.42.113:8443
+The server uses a certificate signed by an unknown authority.
+You can bypass the certificate check, but any data you send to the server could be intercepted by others.
+Use insecure connections? <span class="o">(</span>y/n<span class="o">)</span>: y 
+
+Authentication required <span class="k">for </span>https://192.168.42.113:8443 <span class="o">(</span>openshift<span class="o">)</span>
+Username: developer
+Password: 
+Login successful.
+
+You have one project on this server: <span class="s2">"myproject"</span>
+
+Using project <span class="s2">"myproject"</span><span class="nb">.</span>
+Welcome! See <span class="s1">'oc help'</span> to get started.
+</code></pre></div></div>
+
+<p><strong>Download the <a href="https://github.com/kedgeproject/kedge/tree/master/examples/guestbook-demo">Guestbook Demo files</a> from GitHub:</strong></p>
+
+<p>Due to OpenShift using non-root containers, we will be using an OpenShift-compatible demo. In particular, the highly-used “Guestbook” Kubernetes demo.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-LO</span> https://raw.githubusercontent.com/kedgeproject/kedge/master/examples/guestbook-demo/backend.yaml
+curl <span class="nt">-LO</span> https://raw.githubusercontent.com/kedgeproject/kedge/master/examples/guestbook-demo/frontend.yaml
+curl <span class="nt">-LO</span> https://raw.githubusercontent.com/kedgeproject/kedge/master/examples/guestbook-demo/db.yaml
+</code></pre></div></div>
+
+<p><strong>Deploy directly to your OpenShift cluster with <code class="highlighter-rouge">kedge apply</code>:</strong></p>
+
+<p>Run <code class="highlighter-rouge">kedge apply -f backend.yaml -f frontend.yaml -f db.yaml</code> in the same directory as your example files.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kedge apply <span class="nt">-f</span> backend.yaml <span class="nt">-f</span> frontend.yaml <span class="nt">-f</span> db.yaml
+service <span class="s2">"guestbook"</span> created
+deployment <span class="s2">"guestbook"</span> created
+service <span class="s2">"backend"</span> created
+deployment <span class="s2">"backend"</span> created
+persistentvolumeclaim <span class="s2">"mongodb-data"</span> created
+service <span class="s2">"database"</span> created
+secret <span class="s2">"mongodb-admin"</span> created
+secret <span class="s2">"mongodb-user"</span> created
+configmap <span class="s2">"mongodb-user"</span> created
+deployment <span class="s2">"database"</span> created
+</code></pre></div></div>
+
+<p><strong>Access the newly deployed service:</strong></p>
+
+<p>After deployment, you must create an OpenShift route in order to access the service.</p>
+
+<p>If you’re using <code class="highlighter-rouge">minishift</code>, you’ll use a combination of <code class="highlighter-rouge">oc</code> and <code class="highlighter-rouge">minishift</code> commands to access the service.</p>
+
+<p>Create a route for the <code class="highlighter-rouge">frontend</code> service using <code class="highlighter-rouge">oc</code>:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>oc expose service frontend
+route <span class="s2">"frontend"</span> exposed
+</code></pre></div></div>
+
+<p>Access the <code class="highlighter-rouge">frontend</code> service with <code class="highlighter-rouge">minishift</code>:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>minishift openshift service frontend <span class="nt">--namespace</span><span class="o">=</span>myproject
+Opening the service myproject/frontend <span class="k">in </span>the default browser...
+</code></pre></div></div>
+
+<p>You can also access the GUI interface of OpenShift for an overview of the deployed containers:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>minishift console
+Opening the OpenShift Web console <span class="k">in </span>the default browser...
+</code></pre></div></div>
+
+
+    </main>
+  </div>
+</body>
+
+</html>

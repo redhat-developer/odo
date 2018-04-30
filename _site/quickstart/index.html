@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+  <!-- Viewing -->
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <meta content="website" property="og:type">
+
+
+  <!-- Descriptions -->
+  <meta name="description" content="OpenShift Developer Optimization
+">
+  <title>OpenShift Developer Optimization</title>
+
+
+  <!-- Favicons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+  <link rel="manifest" href="/img/manifest.json">
+  <link rel="mask-icon" href="/img/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/img/favicon.ico">
+  <meta name="msapplication-config" content="/img/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+
+
+  <!-- HLJS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js">
+  </script>
+  <script>
+    hljs.initHighlightingOnLoad();
+  </script>
+
+</head>
+
+
+  <!-- CSS -->
+  <link href="/css/default.css" rel="stylesheet" type="text/css">
+  <link href="/css/pilcrow.css" rel="stylesheet" type="text/css">
+
+<body>
+
+  <header>
+    <a class="logo" href="/">
+      <img class="parcel" src="/img/logo.png" height="30"alt="">
+    </a>
+    <div class="links">
+      <a href="/quickstart">Documentation</a> <a href="https://github.com/redhat-developer/odo" target="_blank">GitHub</a>
+    </div>
+  </header>
+
+  <div class="content">
+    <nav>
+      <h3>Documentation</h3>
+      <ul>
+        
+          
+            <li><a class="active" href="/quickstart/">Quick Start</a></li>
+          
+        
+          
+            <li><a href="/installation/">Installation</a></li>
+          
+        
+          
+            <li><a href="/user-guide/">User Guide</a></li>
+          
+        
+      </ul>
+      <h3>Advanced</h3>
+      <ul>
+        
+          
+            <li><a href="/development/">Development</a></li>
+          
+        
+      </ul>
+    </nav>
+
+
+    <main>
+
+    <h1 id="kedge---concise-application-definitions-for-kubernetes">Kedge - Concise Application Definitions for Kubernetes</h1>
+
+<p>Simplify your Kubernetes deployment by using Kedge. Reduce your technical debt by investing in a simple and concise definition!</p>
+
+<p>Kedge is a deployment tool for Kubernetes artifacts by using a simplified version of the Kubernetes spec (a Kedge formatted YAML file).</p>
+
+<p>In two steps, we will go from a super-simple YAML file to a full-fledged Kubernetes deployment:</p>
+
+<p><strong>1. Using an example <a href="https://raw.githubusercontent.com/kedgeproject/kedge/master/examples/httpd/httpd.yaml">httpd.yaml</a> file</strong></p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">name</span><span class="pi">:</span> <span class="s">httpd</span>
+
+<span class="na">containers</span><span class="pi">:</span>
+<span class="pi">-</span> <span class="na">image</span><span class="pi">:</span> <span class="s">centos/httpd</span>
+
+<span class="na">services</span><span class="pi">:</span>
+<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">httpd</span>
+  <span class="na">type</span><span class="pi">:</span> <span class="s">LoadBalancer</span>
+  <span class="na">portMappings</span><span class="pi">:</span> 
+    <span class="pi">-</span> <span class="s">8080:80</span>
+</code></pre></div></div>
+
+<p><strong>2. Now run the apply command to deploy to Kubernetes!</strong></p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kedge apply <span class="nt">-f</span> httpd.yaml
+deployment <span class="s2">"httpd"</span> created
+service <span class="s2">"httpd"</span> created
+</code></pre></div></div>
+
+<p><strong>2.1. Alternatively, you can generate the raw Kubernetes artifact files and deploy it with <code class="highlighter-rouge">kubectl</code>.</strong></p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kedge generate <span class="nt">-f</span> httpd.yaml <span class="o">&gt;</span> output.yaml
+<span class="nv">$ </span>kubectl apply <span class="nt">-f</span> output.yaml
+</code></pre></div></div>
+
+<p><strong>View the deployed service</strong></p>
+
+<p>Now that your service has been deployed, let’s access it.</p>
+
+<p>If you’re already using <code class="highlighter-rouge">minikube</code> for your development process:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>minikube service httpd
+Opening kubernetes service default/httpd <span class="k">in </span>default browser...
+</code></pre></div></div>
+
+<p>Otherwise, let’s look up what IP your service is using!</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kubectl describe svc httpd
+Name:                   httpd
+Namespace:              default
+Labels:                 <span class="nv">app</span><span class="o">=</span>httpd
+Selector:               <span class="nv">app</span><span class="o">=</span>httpd
+Type:                   NodePort
+IP:                     10.0.0.34
+Port:                   &lt;<span class="nb">unset</span><span class="o">&gt;</span> 8080/TCP
+NodePort:               &lt;<span class="nb">unset</span><span class="o">&gt;</span> 31511/TCP
+Endpoints:              172.17.0.4:80
+Session Affinity:       None
+No events.
+</code></pre></div></div>
+
+<p><strong>Next steps</strong></p>
+
+<p>That’s it! There’s more examples in our <a href="https://github.com/kedgeproject/kedge/tree/master/examples">repository</a>. Check out the further documentation such as the <a href="/docs/user_guide.md">user guide</a> or our <a href="/docs/file-reference.md">file reference</a>.</p>
+
+
+    </main>
+  </div>
+</body>
+
+</html>

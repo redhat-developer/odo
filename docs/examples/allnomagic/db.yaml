@@ -1,0 +1,56 @@
+name: database
+containers:
+- image: mariadb:10
+  env:
+  - name: MYSQL_ROOT_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: wordpress
+        key: MYSQL_ROOT_PASSWORD
+  - name: MYSQL_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: wordpress
+        key: DB_PASSWD
+  - name: MYSQL_USER
+    valueFrom:
+      configMapKeyRef:
+        key: MYSQL_USER
+        name: database
+  - name: MYSQL_DATABASE
+    valueFrom:
+      configMapKeyRef:
+        key: MYSQL_DATABASE
+        name: database
+  volumeMounts:
+  - name: database
+    mountPath: /var/lib/mysql
+  livenessProbe:
+    exec:
+      command:
+      - mysqladmin
+      - ping
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+  readinessProbe:
+    exec:
+      command:
+      - mysqladmin
+      - ping
+    initialDelaySeconds: 5
+    timeoutSeconds: 1
+services:
+- name: database
+  ports:
+  - port: 3306
+volumeClaims:
+- name: database
+  resources:
+    requests:
+      storage: 100Mi
+  accessModes:
+  - ReadWriteOnce
+configMaps:
+- data:
+   MYSQL_DATABASE: wordpress
+   MYSQL_USER: wordpress

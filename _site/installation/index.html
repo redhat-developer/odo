@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+  <!-- Viewing -->
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <meta content="website" property="og:type">
+
+
+  <!-- Descriptions -->
+  <meta name="description" content="OpenShift Developer Optimization
+">
+  <title>OpenShift Developer Optimization</title>
+
+
+  <!-- Favicons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+  <link rel="manifest" href="/img/manifest.json">
+  <link rel="mask-icon" href="/img/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/img/favicon.ico">
+  <meta name="msapplication-config" content="/img/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+
+
+  <!-- HLJS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js">
+  </script>
+  <script>
+    hljs.initHighlightingOnLoad();
+  </script>
+
+</head>
+
+
+  <!-- CSS -->
+  <link href="/css/default.css" rel="stylesheet" type="text/css">
+  <link href="/css/pilcrow.css" rel="stylesheet" type="text/css">
+
+<body>
+
+  <header>
+    <a class="logo" href="/">
+      <img class="parcel" src="/img/logo.png" height="30"alt="">
+    </a>
+    <div class="links">
+      <a href="/quickstart">Documentation</a> <a href="https://github.com/redhat-developer/odo" target="_blank">GitHub</a>
+    </div>
+  </header>
+
+  <div class="content">
+    <nav>
+      <h3>Documentation</h3>
+      <ul>
+        
+          
+            <li><a href="/quickstart/">Quick Start</a></li>
+          
+        
+          
+            <li><a class="active" href="/installation/">Installation</a></li>
+          
+        
+          
+            <li><a href="/user-guide/">User Guide</a></li>
+          
+        
+      </ul>
+      <h3>Advanced</h3>
+      <ul>
+        
+          
+            <li><a href="/development/">Development</a></li>
+          
+        
+      </ul>
+    </nav>
+
+
+    <main>
+
+    <h1 id="installation">Installation</h1>
+
+<p>There are multiple ways of installing Kedge. Our prefered method is downloading the binary from the latest GitHub release.</p>
+
+<h4 id="github-release">GitHub release</h4>
+
+<p>Kedge is released via GitHub on a three-week cycle, you can see all current releases on the <a href="https://github.com/kedgeproject/kedge/releases">GitHub release page</a>.</p>
+
+<p><strong>Linux and macOS:</strong></p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Linux</span>
+curl <span class="nt">-L</span> https://github.com/kedgeproject/kedge/releases/download/v0.5.1/kedge-linux-amd64 <span class="nt">-o</span> kedge
+
+<span class="c"># macOS</span>
+curl <span class="nt">-L</span> https://github.com/kedgeproject/kedge/releases/download/v0.5.1/kedge-darwin-amd64 <span class="nt">-o</span> kedge
+
+chmod +x kedge
+<span class="nb">sudo </span>mv ./kedge /usr/local/bin/kedge
+</code></pre></div></div>
+
+<p><strong>Windows:</strong></p>
+
+<p>Download from <a href="https://github.com/kedgeproject/kedge/releases/download/v0.5.1/kedge-windows-amd64.exe">GitHub</a> and add the binary to your PATH.</p>
+
+<h4 id="installing-the-latest-binary-master">Installing the latest binary (master)</h4>
+
+<p>You can download latest binary (built on each master PR merge) for <a href="https://dl.bintray.com/kedgeproject/kedge/latest/kedge-linux-amd64">Linux (amd64)</a>, <a href="https://dl.bintray.com/kedgeproject/kedge/latest/kedge-darwin-amd64">macOS (darwin)</a> or <a href="https://dl.bintray.com/kedgeproject/kedge/latest/kedge-windows-amd64.exe">Windows (amd64)</a> from <a href="https://bintray.com">Bintray</a>:</p>
+
+<p><strong>Linux and macOS:</strong></p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Linux </span>
+curl <span class="nt">-L</span> https://dl.bintray.com/kedgeproject/kedge/latest/kedge-linux-amd64 <span class="nt">-o</span> kedge
+
+<span class="c"># macOS</span>
+curl <span class="nt">-L</span> https://dl.bintray.com/kedgeproject/kedge/latest/kedge-darwin-amd64 <span class="nt">-o</span> kedge
+
+chmod +x kedge
+<span class="nb">sudo </span>mv ./kedge /usr/local/bin/kedge
+</code></pre></div></div>
+
+<p><strong>Windows:</strong></p>
+
+<p>Download from <a href="https://dl.bintray.com/kedgeproject/kedge/latest/kedge-windows-amd64.exe">Bintray</a> and add the binary to your PATH.</p>
+
+<h4 id="go-get">Go get</h4>
+
+<p>You can also download and build Kedge via Go:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>go get github.com/kedgeproject/kedge
+</code></pre></div></div>
+
+
+
+    </main>
+  </div>
+</body>
+
+</html>

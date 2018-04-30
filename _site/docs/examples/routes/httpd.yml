@@ -1,0 +1,12 @@
+name: httpd
+containers:
+- image: bitnami/nginx
+services:
+- name: httpd
+  type: NodePort
+  portMappings:
+  - 8080:8080
+routes:
+- to:
+    kind: Service
+    name: httpd

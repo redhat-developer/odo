@@ -1,0 +1,29 @@
+name: web
+replicas: 1
+containers:
+- image: wordpress:4
+  env:
+  - name: WORDPRESS_DB_PASSWORD
+    value: wordpress
+  - name: WORDPRESS_DB_USER
+    value: wordpress
+  - name: WORDPRESS_DB_NAME
+    valueFrom:
+      configMapKeyRef:
+        key: WORDPRESS_DB_NAME
+        name: web
+  - name: WORDPRESS_DB_HOST
+    valueFrom:
+      configMapKeyRef:
+        key: WORDPRESS_DB_HOST
+        name: web
+services:
+- name: wordpress
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 80
+configMaps:
+- data:
+    WORDPRESS_DB_NAME: wordpress
+    WORDPRESS_DB_HOST: "database:3306"
