@@ -17,12 +17,12 @@ func printDeleteAppInfo(client *occlient.Client, appName string, currentProject 
 		return errors.Wrap(err, "failed to get Component list")
 	}
 
-	for _, cmpnt := range componentList {
-		_, _, componentURL, appStore, err := component.GetComponentDesc(client, cmpnt.Name, appName, currentProject)
+	for _, currentComponent := range componentList {
+		_, _, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName, currentProject)
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}
-		fmt.Println("Component", cmpnt.Name, "will be deleted.")
+		fmt.Println("Component", currentComponent.Name, "will be deleted.")
 
 		if len(componentURL) != 0 {
 			fmt.Println("  This component is externally exposed, and the URL will be removed")
@@ -55,10 +55,10 @@ func getComponent(client *occlient.Client, inputComponent, applicationName, proj
 }
 
 // printComponentInfo prints Component Information like path, URL & storage
-func printComponentInfo(cmpntName string, componentType string, path string, componentURL string, appStore []storage.StorageInfo) {
+func printComponentInfo(currentComponentName string, componentType string, path string, componentURL string, appStore []storage.StorageInfo) {
 	// Source
 	if path != "" {
-		fmt.Println("Component", cmpntName, "of type", componentType, "with source in", path)
+		fmt.Println("Component", currentComponentName, "of type", componentType, "with source in", path)
 	}
 	// URL
 	if componentURL != "" {
