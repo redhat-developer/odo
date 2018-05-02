@@ -353,19 +353,19 @@ func getPortFromService(service *corev1.Service) (int32, error) {
 }
 
 // Get Component Description
-func GetComponentDesc(client *occlient.Client, cmpnt string, currentApplication string, currentProject string) (componentType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
+func GetComponentDesc(client *occlient.Client, currentComponent string, currentApplication string, currentProject string) (componentType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
 	// Component Type
-	componentType, err = GetComponentType(client, cmpnt, currentApplication, currentProject)
+	componentType, err = GetComponentType(client, currentComponent, currentApplication, currentProject)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
 	// Source
-	_, path, err = GetComponentSource(client, cmpnt, currentApplication, currentProject)
+	_, path, err = GetComponentSource(client, currentComponent, currentApplication, currentProject)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
 	// URL
-	urlList, err := urlpkg.List(client, cmpnt, currentApplication)
+	urlList, err := urlpkg.List(client, currentComponent, currentApplication)
 	if len(urlList) != 0 {
 		componentURL = urlList[0].URL
 	}
@@ -373,7 +373,7 @@ func GetComponentDesc(client *occlient.Client, cmpnt string, currentApplication 
 		return "", "", "", nil, errors.Wrap(err, "unable to get url list")
 	}
 	//Storage
-	appStore, err = storage.List(client, currentApplication, cmpnt)
+	appStore, err = storage.List(client, currentApplication, currentComponent)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get storage list")
 	}

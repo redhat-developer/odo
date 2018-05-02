@@ -181,10 +181,10 @@ var applicationDescribeCmd = &cobra.Command{
 		}
 		fmt.Printf("Application %s has:\n", currentApplication)
 
-		for _, cmpnt := range componentList {
-			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, cmpnt.Name, currentApplication, currentProject)
+		for _, currentComponent := range componentList {
+			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, currentApplication, currentProject)
 			checkError(err, "")
-			printComponentInfo(cmpnt.Name, componentType, path, componentURL, appStore)
+			printComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
 		}
 	},
 }

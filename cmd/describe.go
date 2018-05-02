@@ -25,25 +25,25 @@ var describeCmd = &cobra.Command{
 		checkError(err, "")
 		// Project
 		currentProject := project.GetCurrent(client)
-		var cmpnt string
+		var currentComponent string
 		if len(args) == 0 {
 			var err error
-			cmpnt, err = component.GetCurrent(client, currentApplication, currentProject)
+			currentComponent, err = component.GetCurrent(client, currentApplication, currentProject)
 			checkError(err, "")
 		} else {
-			cmpnt = args[0]
+			currentComponent = args[0]
 			//Check whether component exist or not
-			exists, err := component.Exists(client, cmpnt, currentApplication, currentProject)
+			exists, err := component.Exists(client, currentComponent, currentApplication, currentProject)
 			checkError(err, "")
 			if !exists {
-				fmt.Printf("component with the name %s does not exist\n", cmpnt)
+				fmt.Printf("component with the name %s does not exist\n", currentComponent)
 				os.Exit(1)
 			}
 		}
 
-		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, cmpnt, currentApplication, currentProject)
+		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent, currentApplication, currentProject)
 		checkError(err, "")
-		printComponentInfo(cmpnt, componentType, path, componentURL, appStore)
+		printComponentInfo(currentComponent, componentType, path, componentURL, appStore)
 	},
 }
 
