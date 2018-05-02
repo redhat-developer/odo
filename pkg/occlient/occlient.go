@@ -41,12 +41,13 @@ import (
 	"github.com/openshift/source-to-image/pkg/tar"
 	s2ifs "github.com/openshift/source-to-image/pkg/util/fs"
 
+	"path/filepath"
+
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/util/retry"
-	"path/filepath"
 )
 
 const (
@@ -479,7 +480,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 				tagDigest := tag.Items[0].Image
 				// look for imageStreamImage for given tag (reference by digest)
 				imageStreamImageName := fmt.Sprintf("%s@%s", imageName, tagDigest)
-				imageStreamImage, err := c.imageClient.ImageStreamImages("openshift").Get(imageStreamImageName, metav1.GetOptions{})
+				imageStreamImage, err := c.imageClient.ImageStreamImages(OpenShiftNameSpace).Get(imageStreamImageName, metav1.GetOptions{})
 				if err != nil {
 					return errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
 				}
