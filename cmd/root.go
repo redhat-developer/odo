@@ -36,17 +36,19 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 
-	updateInfo := make(chan string)
-	go getLatestReleaseInfo(updateInfo)
+	// Disabling version checking as this is special version for Katacoda
+
+	// updateInfo := make(chan string)
+	// go getLatestReleaseInfo(updateInfo)
 
 	checkError(rootCmd.Execute(), "")
 
-	select {
-	case message := <-updateInfo:
-		fmt.Printf(message)
-	default:
-		log.Debug("Could not get the latest release information in time. Never mind, exiting gracefully :)")
-	}
+	// select {
+	// case message := <-updateInfo:
+	// 	fmt.Printf(message)
+	// default:
+	// 	log.Debug("Could not get the latest release information in time. Never mind, exiting gracefully :)")
+	// }
 }
 
 func init() {
