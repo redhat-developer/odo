@@ -1198,6 +1198,7 @@ func (c *Client) CreateRoute(service string, labels map[string]string) (*routev1
 			Labels: labels,
 		},
 		Spec: routev1.RouteSpec{
+			Port: &routev1.RoutePort{TargetPort: intstr.FromInt(8080)},
 			To: routev1.RouteTargetReference{
 				Kind: "Service",
 				Name: service,
