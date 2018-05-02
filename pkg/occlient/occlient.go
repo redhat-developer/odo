@@ -652,6 +652,10 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labels map[string]string, annotations map[string]string) error {
 	appRootVolumeName := fmt.Sprintf("%s-s2idata", name)
 
+	// wildfly s2i assemble script moves war files to /wildfly/standalone/deployments/
+	// this is why we need to create additional volume for this path if wildfly builder image is used
+	wildflyVolumeName := fmt.Sprintf("%s-wildfly", name)
+
 	imageName, imageTag, _, err := parseImageName(builderImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to create new s2i git build ")
@@ -748,6 +752,27 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 			},
 		},
 	}
+
+	if imageName == "wildfly" {
+		dc.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+			dc.Spec.Template.Spec.Containers[0].VolumeMounts,
+			corev1.VolumeMount{
+				Name:      wildflyVolumeName,
+				MountPath: "/wildfly/standalone/deployments",
+				SubPath:   "deployments",
+			})
+		dc.Spec.Template.Spec.Volumes = append(
+			dc.Spec.Template.Spec.Volumes,
+			corev1.Volume{
+				Name: wildflyVolumeName,
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+						ClaimName: wildflyVolumeName,
+					},
+				},
+			})
+	}
+
 	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
@@ -779,9 +804,16 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		return errors.Wrapf(err, "unable to create Service for %s", name)
 	}
 
-	_, err = c.CreatePVC(appRootVolumeName, "1Gi", labels)
+	_, err = c.CreatePVC(appRootVolumeName, "500Mi", labels)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create PVC for %s", name)
+	}
+
+	if imageName == "wildfly" {
+		_, err = c.CreatePVC(wildflyVolumeName, "500Mi", labels)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create PVC for %s", name)
+		}
 	}
 
 	//  make sure that deployment finished, and pod is running
