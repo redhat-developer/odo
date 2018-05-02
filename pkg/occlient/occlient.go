@@ -645,14 +645,11 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 
 }
 
-// BootstrapSupervisoredS2I uses s2i to inject Supervisor into builder image.
+// BootstrapSupervisoredS2I creates new deployment from builder image. It is expected that given builder image already
+// has supervisor installed and configured.
 // Supervisor keeps pod running (runs as pid1), so you it is possible to trigger assembly script inside running pod,
 // and than restart application using Supervisor without need to restart whole container.
 func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labels map[string]string, annotations map[string]string) error {
-	// git repository that will be used for bootstraping
-	const bootstrapperURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
-	const bootstrapperRef = "v0.0.1"
-
 	appRootVolumeName := fmt.Sprintf("%s-s2idata", name)
 
 	imageName, imageTag, _, err := parseImageName(builderImage)
@@ -672,57 +669,6 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		Annotations: annotations,
 	}
 
-	// generate and create ImageStream
-	is := imagev1.ImageStream{
-		ObjectMeta: commonObjectMeta,
-	}
-	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create ImageStream for %s", name)
-	}
-
-	// generate BuildConfig
-	buildSource := buildv1.BuildSource{
-		Type:   buildv1.BuildSourceBinary,
-		Binary: &buildv1.BinaryBuildSource{},
-	}
-
-	buildSource = buildv1.BuildSource{
-		Git: &buildv1.GitBuildSource{
-			URI: bootstrapperURI,
-			Ref: bootstrapperRef,
-		},
-		Type: buildv1.BuildSourceGit,
-	}
-
-	bc := buildv1.BuildConfig{
-		ObjectMeta: commonObjectMeta,
-		Spec: buildv1.BuildConfigSpec{
-			CommonSpec: buildv1.CommonSpec{
-				Output: buildv1.BuildOutput{
-					To: &corev1.ObjectReference{
-						Kind: "ImageStreamTag",
-						Name: name + ":latest",
-					},
-				},
-				Source: buildSource,
-				Strategy: buildv1.BuildStrategy{
-					SourceStrategy: &buildv1.SourceBuildStrategy{
-						From: corev1.ObjectReference{
-							Kind:      "ImageStreamTag",
-							Name:      imageName + ":" + imageTag,
-							Namespace: OpenShiftNameSpace,
-						},
-					},
-				},
-			},
-		},
-	}
-	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create BuildConfig for %s", name)
-	}
-
 	// generate  and create DeploymentConfig
 	dc := appsv1.DeploymentConfig{
 		ObjectMeta: commonObjectMeta,
@@ -740,7 +686,7 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Image: bc.Spec.Output.To.Name,
+							Image: " ",
 							Name:  name,
 							Ports: containerPorts,
 							VolumeMounts: []corev1.VolumeMount{
@@ -765,7 +711,7 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 					InitContainers: []corev1.Container{
 						{
 							Name:  "copy-files-to-volume",
-							Image: bc.Spec.Output.To.Name,
+							Image: fmt.Sprintf("%s:%s", imageName, imageTag),
 							Command: []string{
 								"copy-files-to-volume",
 								"/opt/app-root",
@@ -793,8 +739,9 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 							"copy-files-to-volume",
 						},
 						From: corev1.ObjectReference{
-							Kind: "ImageStreamTag",
-							Name: bc.Spec.Output.To.Name,
+							Kind:      "ImageStreamTag",
+							Name:      fmt.Sprintf("%s:%s", imageName, imageTag),
+							Namespace: OpenShiftNameSpace,
 						},
 					},
 				},
@@ -835,6 +782,13 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 	_, err = c.CreatePVC(appRootVolumeName, "1Gi", labels)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create PVC for %s", name)
+	}
+
+	//  make sure that deployment finished, and pod is running
+	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
+	_, err = c.WaitAndGetPod(podSelector)
+	if err != nil {
+		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
 
 	return nil

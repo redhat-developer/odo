@@ -155,7 +155,7 @@ func GetCurrent(client *occlient.Client, applicationName string, projectName str
 // PushLocal push local code to the cluster and trigger build there.
 // asFile indicates if it is a binary component or not
 func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, asFile bool, out io.Writer) error {
-	const targetPath = "/opt/app-root/src"
+	const targetPath = "/opt/app-root/src/"
 
 	if !asFile {
 		// We need to make sure that there is a '/' at the end, otherwise rsync will sync files to wrong directory
@@ -282,7 +282,10 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 // The first returned string is component source type ("git" or "local" or "binary")
 // The second returned string is a source (url to git repository or local path or path to binary)
 func GetComponentSource(client *occlient.Client, componentName string, applicationName string, projectName string) (string, string, error) {
-	bc, err := client.GetBuildConfig(componentName, projectName)
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	bc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "unable to get source path for component %s", componentName)
 	}
