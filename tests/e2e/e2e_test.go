@@ -102,12 +102,12 @@ func waitForCmdOut(cmd string, expOut string) bool {
 	}
 }
 
-func TestOCdev(t *testing.T) {
+func TestOdo(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "odo test suite")
 }
 
-var _ = Describe("odo", func() {
+var _ = Describe("odoe2e", func() {
 
 	tmpDir, err := ioutil.TempDir("", "odo")
 	if err != nil {
