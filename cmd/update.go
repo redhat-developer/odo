@@ -31,6 +31,13 @@ var updateCmd = &cobra.Command{
 	`,
 	Short: "Change the source of a component",
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// we are not creating buildconfig in this version
+		// to support update we would have to create new one and update deployment config when switching to git source
+		// and delete it build config and update deployment when switching from git to something else.
+		fmt.Println("Changing component source is not supported in this version :-(")
+		os.Exit(1)
+
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
@@ -83,14 +90,9 @@ var updateCmd = &cobra.Command{
 		}
 
 		if len(componentGit) != 0 {
-			// we are not creating buildconfig in this version
-			// to support update we would have to create new one and update deployment config when switching to git source
-			// and delete it build config and update deployment when switching from git to something else.
-			fmt.Println("Changing component source to git is not supported in this version")
-			os.Exit(1)
-			// err := component.Update(client, componentName, "git", componentGit)
-			// checkError(err, "")
-			// fmt.Printf("The component %s was updated successfully\n", componentName)
+			err := component.Update(client, componentName, "git", componentGit)
+			checkError(err, "")
+			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
