@@ -104,31 +104,19 @@ A full list of component types that can be deployed is available using: 'odo com
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
+			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
 			checkError(err, "")
-			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("To push source code to the component run 'odo push'\n")
 		} else if len(componentBinary) != 0 {
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
-			fi, err := os.Stat(path)
-			if err != nil {
-				checkError(err, "")
-			}
-			if fi.IsDir() {
-				fmt.Println("Please provide path to binary instead of a directory")
-				os.Exit(1)
-			}
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary")
 			checkError(err, "")
-			fmt.Printf("Component was successfully created, pushing %s to the component.\n", path)
-			err = component.PushLocal(client, componentName, applicationName, path, true, os.Stdout)
-			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
-
 			fmt.Printf("Component '%s' was created.\n", componentName)
-
+			fmt.Printf("To push source code to the component run 'odo push'\n")
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
