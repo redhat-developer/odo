@@ -33,7 +33,8 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 		log.Debugf("adding watch on path %s", path)
 		err = watcher.Add(path)
 		if err != nil {
-			return fmt.Errorf("error adding watcher for path %s: %v", path, err)
+			log.Debugf("error adding watcher for file %s: %v", path, err)
+			//return fmt.Errorf("error adding watcher for file %s: %v", path, err)
 		}
 		return nil
 	}
