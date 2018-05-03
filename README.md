@@ -6,6 +6,8 @@
 
 ODO (OpenShift Developer Optimization) is an OpenShift tool to deploy applications and components in a *fast* and *optimized* manner.
 
+![Powered by OpenShift](/docs/img/powered_by_openshift.png)
+
 ## Pre-requisites
 - OpenShift version 3.7.0 and up
 
