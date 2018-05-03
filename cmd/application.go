@@ -33,9 +33,12 @@ var applicationCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Args validation makes sure that there is exactly one argument
 		name := args[0]
+		// validate application name
+		err := validateName(name)
+		checkError(err, "")
 		client := getOcClient()
 		fmt.Printf("Creating application: %v\n", name)
-		err := application.Create(client, name)
+		err = application.Create(client, name)
 		checkError(err, "")
 		err = application.SetCurrent(client, name)
 		checkError(err, "")
