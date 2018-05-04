@@ -98,7 +98,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
-			err = component.Build(client, componentName, true, false)
+			err = component.Build(client, componentName, true, true)
 			checkError(err, "")
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component

@@ -88,7 +88,7 @@ var pushCmd = &cobra.Command{
 				fmt.Println("unable to push local directory to component that uses git repository as source")
 				os.Exit(1)
 			}
-			err := component.Build(client, componentName, true, false)
+			err := component.Build(client, componentName, true, true)
 			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
