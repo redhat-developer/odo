@@ -98,7 +98,7 @@ $ curl nodejs-myproject.192.168.42.147.nip.io</code></pre>
           <h3>Links</h3>
           <ul>
           {% for item in site.data.menu.footer %}
-              <li><a href="{{ item[1] | prepend: site.baseurl }}">{{ item[0] }}</a></li>
+              <li><a href="{{ item[1] }}">{{ item[0] }}</a></li>
           {% endfor %}
           </ul>
         </nav>
