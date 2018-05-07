@@ -1,77 +1,112 @@
-# ODO - OpenShift Developer Optimization
+# Odo - OpenShift do
 
 [![Build Status](https://travis-ci.org/redhat-developer/odo.svg?branch=master)](https://travis-ci.org/redhat-developer/odo) [![codecov](https://codecov.io/gh/redhat-developer/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/redhat-developer/odo)
 
-## What is odo?
-
-ODO (OpenShift Developer Optimization) is an OpenShift tool to deploy applications and components in a *fast* and *optimized* manner.
-
 ![Powered by OpenShift](/docs/img/powered_by_openshift.png)
 
-## Pre-requisites
-- OpenShift version 3.7.0 and up
+## What's Odo?
 
-To use odo you need access to an OpenShift instance and have OpenShift CLI installed on your local machine (`oc` should be in your $PATH).
+Odo (OpenShift do...) is a CLI tool that provides developers with **fast** and **automated** source code deployments. Odo supplements continuous development by using the power of OpenShift's [Source-to-Image](https://github.com/openshift/source-to-image) with the stableness of [Kubernetes](https://github.com/kubernetes/kubernetes). Developers can immediately start coding while Odo builds, pushes and deploys the application in the background.
 
-### OpenShift instance
-You can use [Minishift](https://docs.openshift.org/latest/minishift/index.html) to get a local instance of OpenShift. However odo can be used with any instance of OpenShift.
+#### Features
 
-### OpenShift CLI
-There are different ways to install OpenShift CLI. 
-Please follow [OpenShift documentation](https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli).
+  - **Multiple languages:** Odo supports Node.JS, Ruby, .Net Core, Perl, PHP and Python.
+  - **Speed:** Building your source code *immediately* after saving and deployed to your cluster.
+  - **Reproducible:** Allows for easy reproducibility by using tightly versioned Docker containers for your source code environment.
+  - **Deployability:** Easily deploy a new version, or have Odo automatically build and re-deploy your code on each change.
+  - **Support for multiple components and microservices:** Deploy only what you need. For example, having both a Ruby and a JavaScript application side-by-side.
+  - **Serverless:** No requirement for running a server to automate tasks. Odo talks to OpenShift directly through an API.
+  - **Instant feedback:** Deploy while making edits to files, showing direct and instant feedback.
 
-## Installation
-To install `odo` on your system, you can use the fully automated [install.sh](./scripts/install.sh) script.
-This script will enable odo repository on your system and install odo using package manager depending on your system.
-Supported systems are Debian, Ubuntu, Fedora, CentOS and macOS. You can find more information about package repositories in 
-[Advanced installation guide](./docs/advanced-installation-guide.md)
+### Documentation
 
-```
+Documentation can be found below:
+
+  - [Installation](https://github.com/redhat-developer/odo/blob/master/docs/installation.md)
+  - [Getting Started](https://github.com/redhat-developer/odo/blob/master/docs/getting-started.md)
+  - [Development](https://github.com/redhat-developer/odo/blob/master/docs/development.md)
+
+### Installation
+
+#### Automated installation
+
+The quickest way to install Odo is through our [bash script](./scripts/install.sh), which will automatically detect your operating system and install `odo` accordingly!
+
+```sh
 curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | bash
 ```
 
+#### macOS
 
-If you don't want to add extra package repositories to your system you can just extract  `odo` binary from [GitHub releases page](https://github.com/redhat-developer/odo/releases) to one of the directories that are in your `$PATH`.
-
-For macOS:
-
-```
+```sh
 sudo curl -L  "https://github.com/redhat-developer/odo/releases/download/v0.0.4/odo-darwin-amd64.gz" | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo
 ```
 
-For Linux:
-```
+#### Linux
+
+```sh
 sudo curl -L  "https://github.com/redhat-developer/odo/releases/download/v0.0.4/odo-linux-amd64.gz" | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo
 ```
 
-For Windows:
+#### Windows
 
-Download the `odo-windows-amd64.exe.gz` file from the [GitHub releases page](https://github.com/redhat-developer/odo/releases), extract it into a directory 
-and add the location of extracted binary to your PATH environment variable by following [this wiki page.](https://github.com/redhat-developer/odo/wiki/Setting-PATH-variable-on-Windows)
+1. Download the `odo-windows-amd64.exe.gz` file from the [GitHub releases page](https://github.com/redhat-developer/odo/releases).
+2. Extract the file
+3. Add the location of extracted binary to your PATH environment variable by following [this Wiki page](https://github.com/redhat-developer/odo/wiki/Setting-PATH-variable-on-Windows).
 
-You can also download latest master builds from [Bintray](https://dl.bintray.com/odo/odo/latest/). This is updated every time there is a change in master git branch.
+#### Other methods
 
+For a list of other methods such as installing the latest mastery binary, or specific OS installations, visit our [installation page](/docs/installation.md).
 
+## Getting started with Odo
 
-## Concepts
-- An **_application_** is, well, your application! It consists of multiple microservices or components, that work individually to build the entire application.
-- A **_component_** can be thought of as a microservice. Multiple components will make up an application. A component will have different attributes like storage, etc.
+Wanted to get started? Follow the instructions below or our [Katacoda tutorial](https://www.katacoda.com/mjelen/courses/introduction/developing-with-odo):
+
+### Requirements
+
+  - `minishift` or an OpenShift environment 3.7.0+, the best way to deploy a development environment is using [Minishift](https://www.katacoda.com/mjelen/courses/introduction/developing-with-odo).
+  - `oc` If you do not have it, there's an excellent guide on the [OpenShift site](https://www.katacoda.com/mjelen/courses/introduction/developing-with-odo) on how to install the latest client.
+
+### Deploying a Node.js application using Odo
+
+For a quick tutorial on how Odo works, follow the instructions below! Otherwise, we have an [excellent Katacoda tutorial](https://www.katacoda.com/mjelen/courses/introduction/developing-with-odo) or an [in-depth getting started guide](/docs/getting-started.md).
+
+```sh
+# Download the latest release!
+$ curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | bash
+
+# Start your development environment
+$ minishift start
+
+# Download the Node.JS example directory
+$ git clone https://github.com/openshift/nodejs-ex
+$ cd nodejs-ex
+
+# Now let's deploy your application!
+$ odo create nodejs --local=.
+
+# Last, we'll create a way to access the application
+$ odo url create
+nodejs - nodejs-myproject.192.168.42.147.nip.io
+
+# Test it / visit the URL
+$ curl nodejs-myproject.192.168.42.147.nip.io
+```
+
+## Glossary
+
+- **Application:** Is, well, your application! It consists of multiple microservices or components, that work individually to build the entire application.
+- **Component:** can be thought of as a microservice. Multiple components will make up an application. A component will have different attributes like storage, etc.
 Multiple component types are currently supported, like nodejs, perl, php, python, ruby, etc.
 
-## Getting Started
-Developing applications using odo is as simple as -
-- `odo app create <name>`
-- `odo create <name>`
-- `odo push`
-
-Check out our [Getting Started](docs/getting-started.md) guide and get going!
-
 ## CLI Structure
-```
+
+```sh
 odo --verbose : OpenShift CLI for Developers
     app --short : Perform application operations
         create : create an application
         delete --force : delete the given application
+        describe : describe the given application
         get --short : get the active application
         list : lists all the applications
         set : Set application as active.
@@ -95,8 +130,8 @@ odo --verbose : OpenShift CLI for Developers
     push --local : Push source code to component
     storage --component : Perform storage operations
         create --path --size : create storage and mount to component
+        delete : delete storage from component
         list : list storage attached to a component
-        remove : remove storage from component
     update --binary --git --local : Change the source of a component
     url : Expose component to the outside world
         create : Create a URL for a component
