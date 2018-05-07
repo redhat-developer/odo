@@ -13,7 +13,7 @@ copyright: Copyright ©2018 Red Hat, Inc.
 
 markdown: kramdown
 
-docs_index: /quickstart
+docs_index: /getting-started
 
 plugins:
   - jekyll-redirect-from

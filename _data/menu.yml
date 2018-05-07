@@ -1,20 +1,19 @@
 items:
-  "Quick Start": "/quickstart/"
+  "Getting Started": "/getting-started/"
   "Installation": "/installation/"
-  "User Guide": "/user-guide/"
 
 advanced:
   "Development": "/development/"
 
 documentation_footer_1:
+  "Getting Started": "/getting-started/"
   "Installation": "/installation/"
-  "Quick Start": "/quickstart/"
-  "User Guide": "/user-guide/"
-
-documentation_footer_2:
   "Development": "/development/"
 
+# documentation_footer_2:
+# "Development": "/development/"
+
 footer:
-  "Slack": "http://slack.kedgeproject.org"
-  "Releases": "https://github.com/kedgeproject/kedge/releases"
-  "GitHub": "https://github.com/kedgeproject/kedge"
+  "Chat": "http://chat.openshift.io"
+  "Releases": "https://github.com/redhat-developer/odo/releases"
+  "GitHub": "https://github.com/redhat-developer/odo"

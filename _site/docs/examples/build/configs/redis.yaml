@@ -1,6 +1,0 @@
-name: redis
-containers:
-- image: redis
-services:
-- portMappings:
-  - "6379"

@@ -5,62 +5,85 @@ redirect_from:
   - /docs/installation.md/
 ---
 
-# Installation
+# Advanced Installation Guide
 
-There are multiple ways of installing Kedge. Our prefered method is downloading the binary from the latest GitHub release.
+Latest binaries build from git master are available at https://dl.bintray.com/odo/odo/latest/.
+
+Builds for latest released versions are at [GitHub releases page](https://github.com/redhat-developer/odo/releases/latest).
+
+## macOS
+1. First, you need to enable `kadel/odo` Homebrew Tap:
+    ```sh
+    brew tap kadel/odo
+    ```
+2. 
+    - If you want to install latest master build
+    ```sh
+    brew install kadel/odo/odo -- HEAD
+    ```
+    - If you want to install latest released version
+    ```sh
+    brew install kadel/odo/odo
+    ```
+
+## Linux
+### Debian/Ubuntu and other distributions using deb
+1. First, you need to add gpg [public key](https://bintray.com/user/downloadSubjectPublicKey?username=bintray) used to sign repositories.
+    ```sh
+    curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
+    ```
+2. Add odo repository to your `/etc/apt/sources.list`
+    - If you want to use latest master builds add  `deb https://dl.bintray.com/odo/odo-deb-dev stretch main` repository.
+      ```sh
+      echo "deb https://dl.bintray.com/odo/odo-deb-dev stretch main" | sudo tee -a /etc/apt/sources.list
+      ```
+    - If you want to use latest released version add  `deb https://dl.bintray.com/odo/odo-deb-releases stretch main` repository.
+      ```sh
+      echo "deb https://dl.bintray.com/odo/odo-deb-releases stretch main" | sudo tee -a /etc/apt/sources.list
+      ```
+3. Now you can install `odo` and you would install any other package.
+   ```sh
+   apt-get update
+   apt-get install odo
+   ```
 
 
-#### GitHub release
+### Fedora/Centos/RHEL and other distribution using rpm
+1. Add odo repository to your `/etc/yum.repos.d/`
+    - If you want to use latest master builds save following text to `/etc/yum.repos.d/bintray-odo-odo-rpm-dev.repo`
+        ```
+        # /etc/yum.repos.d/bintray-odo-odo-rpm-dev.repo
+        [bintraybintray-odo-odo-rpm-dev]
+        name=bintray-odo-odo-rpm-dev
+        baseurl=https://dl.bintray.com/odo/odo-rpm-dev
+        gpgcheck=0
+        repo_gpgcheck=0
+        enabled=1
+        ```
+        Or you can download it using following command:
+        ```sh
+        sudo curl -L https://bintray.com/odo/odo-rpm-dev/rpm -o /etc/yum.repos.d/bintray-odo-odo-rpm-dev.repo
+        ```
+    - If you want to use latest released version save following text to `/etc/yum.repos.d/bintray-odo-odo-rpm-releases.repo`
+        ```
+        # /etc/yum.repos.d/bintray-odo-odo-rpm-releases.repo
+        [bintraybintray-odo-odo-rpm-releases]
+        name=bintray-odo-odo-rpm-releases
+        baseurl=https://dl.bintray.com/odo/odo-rpm-releases
+        gpgcheck=0
+        repo_gpgcheck=0
+        enabled=1
+        ```
+        Or you can download it using following command:
+        ```sh
+        sudo curl -L https://bintray.com/odo/odo-rpm-releases/rpm -o /etc/yum.repos.d/bintray-odo-odo-rpm-releases.repo
+        ```
+3. Now you can install `odo` and you would install any other package.
+   ```sh
+   yum install odo
+   # or 'dnf install odo'
+   ```
 
-Kedge is released via GitHub on a three-week cycle, you can see all current releases on the [GitHub release page](https://github.com/kedgeproject/kedge/releases).
-
-__Linux and macOS:__
-
-```sh
-# Linux
-curl -L https://github.com/kedgeproject/kedge/releases/download/v0.5.1/kedge-linux-amd64 -o kedge
-
-# macOS
-curl -L https://github.com/kedgeproject/kedge/releases/download/v0.5.1/kedge-darwin-amd64 -o kedge
-
-chmod +x kedge
-sudo mv ./kedge /usr/local/bin/kedge
-```
-
-__Windows:__
-
-Download from [GitHub](https://github.com/kedgeproject/kedge/releases/download/v0.5.1/kedge-windows-amd64.exe) and add the binary to your PATH.
-
-
-#### Installing the latest binary (master)
-
-You can download latest binary (built on each master PR merge) for [Linux (amd64)][Bintray Latest Linux], [macOS (darwin)][Bintray Latest macOS] or [Windows (amd64)][Bintray Latest Windows] from [Bintray](https://bintray.com):
-
-__Linux and macOS:__
-
-```sh
-# Linux 
-curl -L https://dl.bintray.com/kedgeproject/kedge/latest/kedge-linux-amd64 -o kedge
-
-# macOS
-curl -L https://dl.bintray.com/kedgeproject/kedge/latest/kedge-darwin-amd64 -o kedge
-
-chmod +x kedge
-sudo mv ./kedge /usr/local/bin/kedge
-```
-
-__Windows:__
-
-Download from [Bintray](https://dl.bintray.com/kedgeproject/kedge/latest/kedge-windows-amd64.exe) and add the binary to your PATH.
-
-#### Go get
-
-You can also download and build Kedge via Go:
-
-```sh
-go get github.com/kedgeproject/kedge
-```
-
-[Bintray Latest Linux]:https://dl.bintray.com/kedgeproject/kedge/latest/kedge-linux-amd64
-[Bintray Latest macOS]:https://dl.bintray.com/kedgeproject/kedge/latest/kedge-darwin-amd64
-[Bintray Latest Windows]:https://dl.bintray.com/kedgeproject/kedge/latest/kedge-windows-amd64.exe
+## Windows
+Download latest master builds from Bintray [odo.exe](https://dl.bintray.com/odo/odo/latest/windows-amd64/:odo.exe) or 
+builds for released versions from [GitHub releases page](https://github.com/redhat-developer/odo/releases).

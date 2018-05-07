@@ -4,17 +4,17 @@
   {% include head.html %}
 
   <!-- CSS -->
-  <link href="/css/default.css" rel="stylesheet" type="text/css">
-  <link href="/css/pilcrow.css" rel="stylesheet" type="text/css">
+  <link href="{{ site.baseurl }}/css/default.css" rel="stylesheet" type="text/css">
+  <link href="{{ site.baseurl }}/css/pilcrow.css" rel="stylesheet" type="text/css">
 
 <body>
 
   <header>
     <a class="logo" href="/">
-      <img class="parcel" src="/img/logo.png" height="30"alt="">
+      <img class="parcel" src="{{ site.baseurl }}/img/logo.png" height="30"alt="">
     </a>
     <div class="links">
-      <a href="{{ site.docs_index }}">Documentation</a> <a href="{{ site.repository_url }}" target="_blank">GitHub</a>
+      <a href="{{ site.baseurl}}{{ site.docs_index }}">Documentation</a> <a href="{{ site.repository_url }}" target="_blank">GitHub</a>
     </div>
   </header>
 

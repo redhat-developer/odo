@@ -4,8 +4,8 @@
   {% include head.html %}
 
   <!-- CSS -->
-  <link href="/css/main.css" rel="stylesheet" type="text/css">
-  <link href="/css/hljs-github.min.css" rel="stylesheet" type="text/css">
+  <link href="{{ site.baseurl }}/css/main.css" rel="stylesheet" type="text/css">
+  <link href="{{ site.baseurl }}/css/hljs-github.min.css" rel="stylesheet" type="text/css">
 
   <body>
     <header>
@@ -17,117 +17,67 @@
           </div>
           <div class="right">
             <h2>
-            OpenShift Developer Optimization
+            OpenShift Do
             </h2>
-            <p><a class="button" href="{{ site.docs_index }}">Get Started</a> <a class="button white" href="{{ site.repository_url }}" target="_blank">GitHub</a></p>
+            <p><a class="button" href="{{ site.baseurl }}{{ site.docs_index }}">Get Started</a> <a class="button white" href="{{ site.repository_url }}" target="_blank">GitHub</a></p>
           </div>
         </div>
         <div class="features">
           <section>
             <h3>Deploy with one command</h3>
-            <p>Odo is an OpenShift tool to deploy applications in a fast and optimized manner.
+            <p>Odo (OpenShift Do..) is a CLI tool that opens up continuous development for OpenShift.
             </p>
           </section>
           <section>
             <h3>Get up and running faster</h3>
             <p>
-            No need to use .yaml files, create and and deploy your applications instantly.
+            No need to use OpenShift yaml files, create and and deploy your applications instantly.
             </p>
           </section>
           <section>
             <h3>Multiple frameworks</h3>
             <p>
-            Use any OpenShift Source-to-Build image to deploy your application. Odo supports: Ruby, Java, .NET, Node.js, Perl, Python.
+            Ruby, Java, .NET, Node.js, Perl and Python readily available.
             </p>
           </section>
         </div>
       </div>
       <nav class="links">
-        <a href="{{ site.docs_index }}">Documentation</a> <a href="{{ site.repository_url }}" target="_blank">GitHub</a>
+        <a href="{{ site.baseurl }}{{ site.docs_index }}">Documentation</a> <a href="{{ site.repository_url }}" target="_blank">GitHub</a>
       </nav>
     </header>
     <main>
       <section>
         <h2>Take your application source code and let OpenShift take care of the rest.</h2>
-        <p>Kedge will convert the defined definitions to their Kubernetes equivalent. Utilize intuitive Kedge shortcuts and look through our <a href="/file-reference">file reference</a>.</p>
-        <div class="examples">
-          <div class="example">
-            <p><strong>Web server Kedge example</strong></p>
-            <pre><code class="yaml">name: httpd
-containers:
-  - image: centos/httpd
-services:
-  - name: httpd
-    type: LoadBalancer
-    portMappings: 
-      - 8080:80
-  </code></pre>
-          </div>
-          <div class="example">
-            <div class="kubernetes">
-              <p><strong>Converted Kubernetes artifact file(s)</strong></p>
-              <pre><code class="yaml">---
-apiVersion: v1
-kind: Service
-metadata:
-  creationTimestamp: null
-  labels:
-    app: httpd
-  name: httpd
-spec:
-  ports:
-  - name: httpd-8080
-    port: 8080
-    protocol: TCP
-    targetPort: 80
-  selector:
-    app: httpd
-  type: LoadBalancer
-status:
-  loadBalancer: {}
----
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  creationTimestamp: null
-  labels:
-    app: httpd
-  name: httpd
-spec:
-  strategy: {}
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: httpd
-      name: httpd
-    spec:
-      containers:
-      - image: centos/httpd
-        name: httpd
-        resources: {}
-status: {}
-  </code></pre>
-            </div>
-          </div>
-          <p>Just run <code>kedge apply -f httpd.yaml</code> and it's directly deployed to your cluster.</p>
-        </div>
+        <p>Odo utilizes <a href="https://github.com/openshift/source-to-image">Source-to-Image</a> to create reproducible Docker images from source code. Odo handles the complex task of building, pushing and deploying your source code. </p>
+        <p><strong>Want to get started? Follow the instructions below or our <a href="https://www.katacoda.com/mjelen/courses/introduction/developing-with-odo">Katacoda tutorial</a>:</strong></p>
+            <pre><code class="bash"># Download the latest release!
+$ curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | bash
+
+# Start your development environment
+$ minishift start
+
+# Download the Node.JS example directory
+$ git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
+
+# Now let's deploy your application!
+$ odo create nodejs --local=.
+
+# Last, we'll create a way to access the application
+$ odo url create
+nodejs - nodejs-myproject.192.168.42.147.nip.io
+
+# Test it / visit the URL
+$ curl nodejs-myproject.192.168.42.147.nip.io</code></pre>
       </section>
+      <!--
       <section>
         <h2>Get started immediately with our interactive tutorial</h2>
-
-        <!-- KATACODA TUTORIAL
-        <script src="//katacoda.com/embed.js"></script>
-        <div id="katacoda-scenario-1"
-        data-katacoda-id="mjelen/courses/introduction/developing-with-odo"
-        data-katacoda-color="004d7f"
-        style="height: 600px; padding-top: 20px;"></div>
-        -->
-
       </section>
+      -->
     </main>
     <footer>
-      <a class="button" href="{{ site.docs_index }}">Get Started</a>
+      <a class="button" href="{{ site.baseurl }}{{ site.docs_index }}">Get Started</a>
       <div class="content">
         <nav>
           <h3>Documentation</h3>
@@ -154,7 +104,7 @@ status: {}
         </nav>
       </div>
       <div class="copyright">
-        <img src="/img/redhat-logo.png" class="redhat-logo"></img>
+        <img src="{{ site.baseurl }}/img/redhat-logo.png" class="redhat-logo"></img>
         <p>
         {{ site.copyright }}
         </p>
@@ -164,5 +114,5 @@ status: {}
   </body>
 
   <!-- ICONS -->
-  <script src="/js/icons.js"></script>
+  <script src="{{ site.baseurl }}/js/icons.js"></script>
 </html>

@@ -57,7 +57,7 @@ header h2 {
 }
 
 .icons {
-  top:-200px;
+  top:-80px;
   position: relative;
   left: 0;
   width: 100%;
@@ -70,8 +70,8 @@ header h2 {
 }
 
 .icon {
-  width: 42px;
-  height: 65px;
+  width: 25px;
+  height: auto;
   background-size: cover;
   position: absolute;
   left: 0;
@@ -319,8 +319,8 @@ footer .copyright a {
   }
 
   .icon {
-    width: 40px;
-    height: 52px;
+    width: 25px;
+    height: auto;
   }
 
   .button {
