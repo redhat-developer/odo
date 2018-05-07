@@ -29,6 +29,11 @@ var _ = Describe("katacodaDemo", func() {
 			appCreate := runCmd("odo app create sample")
 			Expect(appCreate).To(ContainSubstring("sample"))
 		})
+
+		It("should list the application created", func() {
+			appList := runCmd("odo app list")
+			Expect(appList).To(ContainSubstring("sample"))
+		})
 	})
 
 	Context("odo component creation", func() {
@@ -38,20 +43,19 @@ var _ = Describe("katacodaDemo", func() {
 			Expect(getProj).To(ContainSubstring("ruby"))
 		})
 
-		It("should create the component", func() {
-			runCmd("odo create wildfly backend")
+		It("should be able to create the component", func() {
+			runCmd("git clone https://github.com/marekjelen/katacoda-odo-backend " + tmpDir + "/backend")
+			runCmd("cd " + tmpDir + "/backend && mvn package")
+
+			runCmd("odo create wildfly backend --binary " + tmpDir + "/backend/target/ROOT.war")
+
+			// Push the changes
+			runCmd("odo push")
 		})
 
 		It("should list the component", func() {
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("wildfly"))
-		})
-
-		It("should be able to push the changes", func() {
-			runCmd("git clone https://github.com/marekjelen/katacoda-odo-backend " + tmpDir + "/backend")
-
-			runCmd("odo push --local " + tmpDir + "/backend")
-
 		})
 
 		It("should add storage to the component", func() {
