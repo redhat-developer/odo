@@ -93,22 +93,30 @@ A full list of component types that can be deployed is available using: 'odo com
 			os.Exit(1)
 		}
 
+		fmt.Printf("Creating %s component called %s\n", componentType, componentName)
+
 		if len(componentGit) != 0 {
+			fmt.Printf("Building component %s from Git repository: %s\n\n", componentName, componentGit)
+
 			err := component.CreateFromGit(client, componentName, componentType, componentGit, applicationName)
 			checkError(err, "")
-			fmt.Printf("Component '%s' was created.\n", componentName)
-			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 			err = component.RebuildGit(client, componentName)
 			checkError(err, "")
+
 		} else if len(componentLocal) != 0 {
+
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
+
+			fmt.Printf("Building component %s from local directory %s\n", componentName, dir)
+
 			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
 			checkError(err, "")
-			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("To push source code to the component run 'odo push'\n")
+
 		} else if len(componentBinary) != 0 {
+
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
 			fi, err := os.Stat(path)
@@ -120,27 +128,29 @@ A full list of component types that can be deployed is available using: 'odo com
 				os.Exit(1)
 			}
 
+			fmt.Printf("Building component %s from binary %s\n\n", componentName, path)
+
 			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary")
 			checkError(err, "")
 
 			err = component.PushLocal(client, componentName, path, true)
 			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 
-			fmt.Printf("Component '%s' was created.\n", componentName)
-
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
 			checkError(err, "")
+
+			fmt.Printf("Building component %s from directory %s\n\n", componentName, dir)
+
 			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
-			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("To push source code to the component run 'odo push'\n")
 			checkError(err, "")
 		}
 		// after component is successfully created, set is as active
 		err = component.SetCurrent(client, componentName, applicationName, projectName)
 		checkError(err, "")
-		fmt.Printf("\nComponent '%s' is now set as active component.\n", componentName)
+		fmt.Printf("\nComponent %s successfully deployed and set as active component\n", componentName)
 	},
 }
 
