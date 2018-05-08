@@ -1,8 +1,8 @@
 # Getting Started
 
-This guide will get you started with developing your microservices iteratively on OpenShift using `odo`.
+We will be developing and deploying a Node.JS application to an OpenShift cluster in this guide.
 
-We will be developing a nodejs application in this guide, you can try along by getting the code for the application by running: `git clone https://github.com/kadel/nodejs-ex`
+You can try along by getting the code for the application by running: `git clone https://github.com/kadel/nodejs-ex`
 
 #### Running OpenShift
 
