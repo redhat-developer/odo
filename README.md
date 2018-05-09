@@ -82,8 +82,11 @@ $ minishift start
 $ git clone https://github.com/openshift/nodejs-ex
 $ cd nodejs-ex
 
+# Create new nodejs component
+$ odo create nodejs
+
 # Now let's deploy your application!
-$ odo create nodejs --local=.
+$ odo push
 
 # Last, we'll create a way to access the application
 $ odo url create
