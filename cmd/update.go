@@ -90,6 +90,12 @@ var updateCmd = &cobra.Command{
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
+			fileInfo, err := os.Stat(dir)
+			checkError(err, "")
+			if !fileInfo.IsDir() {
+				fmt.Println("Please provide a path to the directory")
+				os.Exit(1)
+			}
 			err = component.Update(client, componentName, "local", dir)
 			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)

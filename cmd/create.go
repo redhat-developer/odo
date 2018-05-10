@@ -106,6 +106,12 @@ A full list of component types that can be deployed is available using: 'odo com
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
+			fileInfo, err := os.Stat(dir)
+			checkError(err, "")
+			if !fileInfo.IsDir() {
+				fmt.Println("Please provide a path to the directory")
+				os.Exit(1)
+			}
 			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
@@ -116,6 +122,7 @@ A full list of component types that can be deployed is available using: 'odo com
 		} else if len(componentBinary) != 0 {
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
+
 			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary")
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
