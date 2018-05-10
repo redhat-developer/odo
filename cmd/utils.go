@@ -3,11 +3,13 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/storage"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 // printDeleteAppInfo will print things which will be deleted
@@ -68,4 +70,18 @@ func printComponentInfo(currentComponentName string, componentType string, path 
 	for _, store := range appStore {
 		fmt.Println("This Component uses storage", store.Name, "of size", store.Size)
 	}
+}
+
+// validateName will do validation of application & component names
+// Criteria for valid name in kubernetes: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
+func validateName(name string) error {
+
+	errorList := validation.IsDNS1123Label(name)
+
+	if len(errorList) != 0 {
+		return errors.New(fmt.Sprintf("%s is not a valid name:  %s", name, strings.Join(errorList, " ")))
+	}
+
+	return nil
+
 }

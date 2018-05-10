@@ -85,7 +85,9 @@ A full list of component types that can be deployed is available using: 'odo com
 		if len(args) == 2 {
 			componentName = args[1]
 		}
-
+		//validate component name
+		err = validateName(componentName)
+		checkError(err, "")
 		exists, err = component.Exists(client, componentName, applicationName, projectName)
 		checkError(err, "")
 		if exists {
