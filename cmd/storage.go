@@ -2,19 +2,22 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+
+	"os"
+	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
-	"os"
-	"text/tabwriter"
 )
 
 var (
-	storageComponent string
-	storageSize      string
-	storagePath      string
+	storageComponent       string
+	storageSize            string
+	storagePath            string
+	storageForceDeleteflag bool
 )
 
 var storageCmd = &cobra.Command{
@@ -90,16 +93,29 @@ var storageDeleteCmd = &cobra.Command{
 		exists, err := storage.Exists(client, storageName, applicationName)
 		checkError(err, "")
 		if !exists {
+
 			fmt.Printf("The storage %v does not exists in the application %v\n", storageName, applicationName)
 			os.Exit(1)
 		}
-		componentName, err = storage.Delete(client, storageName, applicationName)
-		checkError(err, "failed to remove storage")
 
-		if componentName != "" {
-			fmt.Printf("Deleted storage %v from %v\n", storageName, componentName)
+		var confirmDeletion string
+		if storageForceDeleteflag {
+			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Deleted storage %v\n", storageName)
+			mPath := storage.GetMountPath(client, applicationName, componentName, storageName)
+			fmt.Printf("Are you sure you want to delete the storage %v mounted to %v in %v component? [y/N] ", storageName, mPath, componentName)
+			fmt.Scanln(&confirmDeletion)
+		}
+		if strings.ToLower(confirmDeletion) == "y" {
+			componentName, err = storage.Delete(client, storageName, applicationName)
+			checkError(err, "failed to delete storage")
+			if componentName != "" {
+				fmt.Printf("Deleted storage %v from %v\n", storageName, componentName)
+			} else {
+				fmt.Printf("Deleted storage %v\n", storageName)
+			}
+		} else {
+			fmt.Printf("Aborting deletion of storage: %v\n", storageName)
 		}
 	},
 }
@@ -157,6 +173,7 @@ var storageListCmd = &cobra.Command{
 }
 
 func init() {
+	storageDeleteCmd.Flags().BoolVarP(&storageForceDeleteflag, "force", "f", false, "Delete storage without prompting")
 	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.MarkFlagRequired("size")
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")

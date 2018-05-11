@@ -252,3 +252,15 @@ func IsMounted(client *occlient.Client, storageName string, componentName string
 	}
 	return false, nil
 }
+
+//GetMountPath returns mount path for given storage
+func GetMountPath(client *occlient.Client, applicationName string, componentName string, storageName string) string {
+	var mPath string
+	storageInfo, _ := List(client, componentName, applicationName)
+	for _, storage := range storageInfo {
+		if storage.Name == storageName {
+			mPath = storage.Path
+		}
+	}
+	return mPath
+}

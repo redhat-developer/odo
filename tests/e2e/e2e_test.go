@@ -308,7 +308,7 @@ var _ = Describe("odoe2e", func() {
 
 			// TODO: Verify if the storage removed using odo deletes pvc
 			It("should be able to delete the storage added", func() {
-				runCmd("odo storage delete pv1")
+				runCmd("odo storage delete pv1 -f")
 
 				storList := runCmd("odo storage list")
 				Expect(storList).NotTo(ContainSubstring("pv1"))
