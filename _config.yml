@@ -5,7 +5,7 @@ description: >
 repository_url: https://github.com/redhat-developer/odo
 repository_shorthand: redhat-developer/odo
 
-home_url: https://redhat-developer.github.io/odo/
+home_url: http://openshiftdo.org/
 
 author_name: Copyright ©2018 Red Hat, Inc.
 author_url: https://github.com/redhat-developer/odo/graphs/contributors
