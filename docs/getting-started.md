@@ -1,39 +1,32 @@
 # Getting Started
 
-This guide will get you started with developing your microservices iteratively on OpenShift using `odo`.
+We will be developing and deploying a Node.JS application to an OpenShift cluster in this guide.
 
-We will be developing a nodejs application in this guide, you can try along by getting the code for the application by running: `git clone https://github.com/kadel/nodejs-ex`
+We'll be going over the following steps:
 
-#### Running OpenShift
+1. Running OpenShift
+2. Creating an application
+3. Creating a component
+4. Accessing the component
+5. Pushing new changes to the component
+6. Adding storage to the component
 
-The easiest way to get a single node OpenShift cluster is by using [minishift](https://docs.openshift.org/latest/minishift/index.html), but `odo` will work with any other OpenShift instance you are logged in to.
 
-- Install minishift using this [installation guide](https://docs.openshift.org/latest/minishift/getting-started/installing.html)
-- The `oc` binary can be installed `minishift oc-env` command as described [here](https://docs.openshift.org/latest/minishift/getting-started/quickstart.html#starting-minishift)
-- Install odo using this [installation guide](/README.md#installation)
+### 1. Running OpenShift
 
-Make sure that the commands exist by running -
-- `minishift version`
-- `oc version`
-- `odo version`
+A few requirements before we proceed!
 
-The output should look something like -
-```console
-$ minishift version
-minishift v1.13.1+75352e5
+ - A running OpenShift cluster (we recommend using [`minishift`](https://docs.openshift.org/latest/minishift/getting-started/installing.html))
+ - `oc` binary ([installation guide here](https://docs.openshift.org/latest/minishift/getting-started/quickstart.html#starting-minishift))
+ - `odo` binary ([installation guide here](/README.md#installation))
 
-$ oc version
-oc v3.7.1+ab0f056
-kubernetes v1.7.6+a08f5eeb62
-features: Basic-Auth GSSAPI Kerberos SPNEGO
+The quickest way to deploy a development OpenShift cluster is by using [minishift](https://docs.openshift.org/latest/minishift/index.html). Alternatively, `odo` will automatically work with any OpenShift cluster you're currently logged into.
 
-error: server took too long to respond with version information.
 
-$ odo version
-v0.0.1 (HEAD)
-```
+#### Running Minishift
 
-Next, start a local OpenShift cluster using minishift -
+If you don't have a local development cluster, get started by running Minishift:
+
 ```console
 $ minishift start       
 -- Starting profile 'minishift'                                
@@ -69,9 +62,10 @@ The server is accessible via web console at:
     https://192.168.42.147:8443
 ```
 
-Now login to the OpenShift cluster using the server address that was in the output of `minishift start` -
-```console
-$ oc login -u developer -p developer https://192.168.42.147:8443
+Now log into the OpenShift cluster:
+
+```sh
+$ oc login -u developer -p developer
 Login successful.
 
 You have one project on this server: "myproject"
@@ -79,15 +73,13 @@ You have one project on this server: "myproject"
 Using project "myproject".
 ```
 
-Make sure you are logged in to the cluster by running `oc whoami` command.
-
 Now we can move on to creating our application using `odo`.
 
-#### Create an application
+### 2. Create an application
 
 An application is an umbrella under which you will build all the components (microservices) of your entire application.
 
-Let's create an application -
+Let's create an application:
 
 ```console
 $ odo app create nodeapp
@@ -95,37 +87,61 @@ Creating application: nodeapp
 Switched to application: nodeapp
 ```
 
-#### Create a component
+### 3. Create a component
 
-Now that you have created an application, now add a component of type _nodejs_ to the application, from the current directory where our code lies.
+First, we'll download the our test application: 
+
+```console
+$ git clone https://github.com/kadel/nodejs-ex
+Cloning into 'nodejs-ex'...
+remote: Counting objects: 568, done.
+remote: Total 568 (delta 0), reused 0 (delta 0), pack-reused 568
+Receiving objects: 100% (568/568), 174.63 KiB | 1.53 MiB/s, done.
+Resolving deltas: 100% (224/224), done.
+
+$ cd nodejs-ex 
+~/nodejs-ex  master
+```
+
+Now that you've created an application, add a component of type _nodejs_ to the application, from the current directory where our code lies:
 
 ```console
 $ odo create nodejs --local=.
---> Found image 2809a54 (3 weeks old) in image stream "openshift/nodejs" under tag "6" for "nodejs"
---> Creating resources with label app=nodeapp,app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=nodeapp ...
-    imagestream "nodejs" created       
-    buildconfig "nodejs" created       
-    deploymentconfig "nodejs" created  
-    service "nodejs" created           
---> Success        
-    Build scheduled, use 'oc logs -f bc/nodejs' to track its progress.
-    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
-     'oc expose svc/nodejs'            
-    Run 'oc status' to view your app.  
+Please wait, creating nodejs component ...
+Component 'nodejs' was created.
+To push source code to the component run 'odo push'
 
-please wait, building application...   
-Uploading directory "." as binary input for the build ...
-build "nodejs-2" started               
-Pushing image 172.30.1.1:5000/myproject/nodejs:latest ...
-Push successful
+Component 'nodejs' is now set as active component.
 ```
 
-Great news! Your component has been deployed on OpenShift now. Let's quickly check how it looks!
+Now that a component is running we'll go ahead and push our initial source code!
 
-##### Connect to the component
-
-We need create the URL so we can connect to it our application.
+```sh
+$ odo push
+Pushing changes to component: nodejs
+sending incremental file list
+...
+---> Installing application source ...
+---> Installing all dependencies
+...
+---> Building in production mode
+---> Pruning the development dependencies
+/opt/app-root/src/.npm is not a mountpoint
+---> Cleaning the npm cache /opt/app-root/src/.npm
+/tmp is not a mountpoint
+---> Cleaning the /tmp/npm-*
+run: ERROR (not running)
+run: started
+changes successfully pushed to component: nodejs
 ```
+
+Great news! Your component has been deployed to OpenShift! Now we'll connect to the component.
+
+### 4. Accessing the component
+
+To access the component, we'll need to create an OpenShift route:
+
+```console
 $ odo url create
 Adding URL to component: nodejs
 URL created for component: nodejs
@@ -135,30 +151,39 @@ nodejs - nodejs-myproject.192.168.42.147.nip.io
 
 Now just open the URL `nodejs-myproject.192.168.42.147.nip.io` in the browser and you will be able to view your deployed application.
 
-#### Push new changes to the component
+### 5. Pushing new changes to the component
 
-Well, your application looks great, but now you've made some changes in the code. Let's deploy these changes and see how it looks.
+Let's make some changes to the code and push them.
 
-The current component is already set to nodejs, which can confirm from `odo component get`, so all we need to do is -
+Edit one of the layout files within the Node.JS directory.
+
+```sh
+$ vim views/index.html
+```
+
+Now let's push the changes:
 
 ```console
 $ odo push
-pushing changes to component: nodejs   
-changes successfully pushed to component: nodejs               
+Pushing changes to component: nodejs
+sending incremental file list
+...
+changes successfully pushed to component: nodejs
 ```
 
-And now simply refresh your application in the browser, and you'll be able to see the changes.
+Refresh your application in the browser, and you'll be able to see the changes.
 
-Now you can repeat this cycle over and over again. Keep on making changes and keep pushing using `$ odo push nodejs`
+After each change, you can continue updating your component by using: `odo push nodejs`.
 
-#### Add storage to a component
+### 6. Adding storage to a component
 
-You need to add storage to your component, `odo` makes it very easy for you to do this.
+Now that you've got your component running, how do you add persistent any data between restarts?
+
+If you wish to add storage to your component, `odo` makes it very easy for you to do this:
 
 ```console
 $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi 
 Added storage nodestorage to nodejs
 ```
-That just added 1Gi of storage to your nodejs component on the given path. Now your data will persist over application restarts.
 
-That's all, folks!
+That's it! Storage has been added your component with an allocated size of 1 Gb.
