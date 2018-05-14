@@ -11,7 +11,7 @@ mkdir -p $RELEASE_DIR
 if [[ -n $TRAVIS_TAG ]]; then
     echo "Checking if odo version was set to the same version as current tag"
     # use sed to get only semver part
-    bin_version=$(${BIN_DIR}/linux-amd64/odo version | sed 's/ .*//g')
+    bin_version=$(${BIN_DIR}/linux-amd64/odo version | head -1 | sed "s/^odo \(.*\) (.*)$/\1/")
     if [ "$TRAVIS_TAG" == "${bin_version}" ]; then
         echo "OK: odo version output is matching current tag"
     else
