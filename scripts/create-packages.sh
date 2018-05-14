@@ -14,7 +14,7 @@ PKG_VERSION=$(date "+%Y%m%d%H%M%S")
 if [[ -n $TRAVIS_TAG ]]; then
     echo "Checking if odo version was set to the same version as current tag"
     # use sed to get only semver part
-    bin_version=$(${BIN_DIR}/linux-amd64/odo version | sed 's/ .*//g')
+    bin_version=$(${BIN_DIR}/linux-amd64/odo version | head -1 | sed "s/^odo \(.*\) (.*)$/\1/")
     if [ "$TRAVIS_TAG" == "${bin_version}" ]; then
         echo "OK: odo version output is matching current tag"
     else
@@ -22,7 +22,7 @@ if [[ -n $TRAVIS_TAG ]]; then
         exit 1
     fi
     # this is build from tag, that means it is proper relase, use version for PKG_VERSION
-    PKG_VERSION=$(echo ${bin_version} | head -1 | sed "s/^odo v\(.*\) (.*)$/\1/")
+    PKG_VERSION=$(echo ${bin_version} | sed "s/^v\(.*\)$/\1/")
 fi
 
 # create packages using fpm
