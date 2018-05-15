@@ -931,13 +931,13 @@ func (c *Client) StartBinaryBuild(name string, path string, asFile bool) error {
 		Into(result)
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to start build %s", name)
+		return errors.Wrapf(err, "unable to push binary build to OpenShift API for %s", name)
 	}
 	log.Debugf("Build %s from %s directory triggered.", name, path)
 
 	err = c.FollowBuildLog(result.Name)
 	if err != nil {
-		return errors.Wrapf(err, "unable to start build %s", name)
+		return errors.Wrapf(err, "unable to follow build log for %s", name)
 	}
 
 	return nil
@@ -952,7 +952,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 	}
 	result, err := c.buildClient.BuildConfigs(c.namespace).Instantiate(name, &buildRequest)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to start build %s", name)
+		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
 	}
 	log.Debugf("Build %s for BuildConfig %s triggered.", name, result.Name)
 
