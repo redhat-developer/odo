@@ -1089,36 +1089,60 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, stdout 
 	return nil
 }
 
-// Delete calls oc delete
-// kind is always required (can be set to 'all')
-// name can be omitted if labels are set, in that case set name to ''
-// if you want to delete object just by its name set labels to nil
-func (c *Client) Delete(kind string, name string, labels map[string]string) (string, error) {
+// Delete takes labels as a input and based on it, deletes respective resource
+func (c *Client) Delete(labels map[string]string) error {
+	// convert labels to selector
+	selector := util.ConvertLabelsToSelector(labels)
+	log.Debugf("Selectors used for deletion: %s", selector)
 
-	args := []string{
-		"delete",
-		kind,
-	}
-
-	if len(name) > 0 {
-		args = append(args, name)
-	}
-
-	if labels != nil {
-		var labelsString []string
-		for key, value := range labels {
-			labelsString = append(labelsString, fmt.Sprintf("%s=%s", key, value))
-		}
-		args = append(args, "--selector")
-		args = append(args, strings.Join(labelsString, ","))
-	}
-
-	output, err := c.runOcComamnd(&OcCommand{args: args})
+	var errorList []string
+	// Delete DeploymentConfig
+	log.Debug("Deleting DeploymentConfigs")
+	err := c.appsClient.DeploymentConfigs(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
-		return "", err
+		errorList = append(errorList, "unable to delete deploymentconfig")
+	}
+	// Delete Route
+	log.Debug("Deleting Routes")
+	err = c.routeClient.Routes(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		errorList = append(errorList, "unable to delete route")
+	}
+	// Delete BuildConfig
+	log.Debug("Deleting BuildConfigs")
+	err = c.buildClient.BuildConfigs(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		errorList = append(errorList, "unable to delete buildconfig")
+	}
+	// Delete ImageStream
+	log.Debug("Deleting ImageStreams")
+	err = c.imageClient.ImageStreams(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		errorList = append(errorList, "unable to delete imagestream")
+	}
+	// Delete Services
+	log.Debug("Deleting Services")
+	svcList, err := c.kubeClient.CoreV1().Services(c.namespace).List(metav1.ListOptions{LabelSelector: selector})
+	for _, svc := range svcList.Items {
+		err = c.kubeClient.CoreV1().Services(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			errorList = append(errorList, "unable to delete service")
+
+		}
+	}
+	// PersistentVolumeClaim
+	log.Debugf("Deleting PersistentVolumeClaims")
+	err = c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		errorList = append(errorList, "unable to delete volume")
 	}
 
-	return string(output[:]), nil
+	// Error string
+	errString := strings.Join(errorList, ",")
+	if len(errString) != 0 {
+		return errors.New(errString)
+	}
+	return nil
 
 }
 

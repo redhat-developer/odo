@@ -83,24 +83,24 @@ func CreateFromPath(client *occlient.Client, name string, ctype string, path str
 }
 
 // Delete whole component
-func Delete(client *occlient.Client, name string, applicationName string, projectName string) (string, error) {
+func Delete(client *occlient.Client, name string, applicationName string, projectName string) error {
 
 	cfg, err := config.New()
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create new configuration to delete %s", name)
+		return errors.Wrapf(err, "unable to create new configuration to delete %s", name)
 	}
 
 	labels := componentlabels.GetLabels(name, applicationName, false)
 
-	output, err := client.Delete("all,pvc", "", labels)
+	err = client.Delete(labels)
 	if err != nil {
-		return "", errors.Wrapf(err, "error deleting component %s", name)
+		return errors.Wrapf(err, "error deleting component %s", name)
 	}
 
 	// Get a list of all active components
 	components, err := List(client, applicationName, projectName)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to retrieve list of components")
+		return errors.Wrapf(err, "unable to retrieve list of components")
 	}
 
 	// We will *only* set a new component if either len(components) is zero, or the
@@ -112,18 +112,18 @@ func Delete(client *occlient.Client, name string, applicationName string, projec
 			err = cfg.SetActiveComponent(components[0].Name, applicationName, projectName)
 
 			if err != nil {
-				return "", errors.Wrapf(err, "unable to set current component to '%s'", name)
+				return errors.Wrapf(err, "unable to set current component to '%s'", name)
 			}
 		} else {
 			// Unset to blank
 			err = cfg.UnsetActiveComponent(applicationName, projectName)
 			if err != nil {
-				return "", errors.Wrapf(err, "error unsetting current component while deleting %s", name)
+				return errors.Wrapf(err, "error unsetting current component while deleting %s", name)
 			}
 		}
 	}
 
-	return output, nil
+	return nil
 }
 
 func SetCurrent(client *occlient.Client, name string, applicationName string, projectName string) error {
