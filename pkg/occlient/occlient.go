@@ -63,13 +63,13 @@ const (
 
 type Client struct {
 	ocpath               string
-	kubeClient           *kubernetes.Clientset
-	imageClient          *imageclientset.ImageV1Client
-	appsClient           *appsclientset.AppsV1Client
-	buildClient          *buildclientset.BuildV1Client
-	projectClient        *projectclientset.ProjectV1Client
-	serviceCatalogClient *servicecatalogclienset.ServicecatalogV1beta1Client
-	routeClient          *routeclientset.RouteV1Client
+	kubeClient           kubernetes.Interface
+	imageClient          imageclientset.ImageV1Interface
+	appsClient           appsclientset.AppsV1Interface
+	buildClient          buildclientset.BuildV1Interface
+	projectClient        projectclientset.ProjectV1Interface
+	serviceCatalogClient servicecatalogclienset.ServicecatalogV1beta1Interface
+	routeClient          routeclientset.RouteV1Interface
 	kubeConfig           clientcmd.ClientConfig
 	namespace            string
 }
