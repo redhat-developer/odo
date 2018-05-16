@@ -54,7 +54,7 @@ var storageDeleteCmd = &cobra.Command{
 		projectName := project.GetCurrent(client)
 		componentName := getComponent(client, storageComponent, applicationName, projectName)
 
-		err = storage.Remove(client, storageName, applicationName, componentName)
+		err = storage.Remove(client, storageName, componentName, applicationName)
 		checkError(err, "failed to delete storage")
 
 		switch storageName {
@@ -77,7 +77,7 @@ var storageListCmd = &cobra.Command{
 		projectName := project.GetCurrent(client)
 		componentName := getComponent(client, storageComponent, applicationName, projectName)
 
-		storageList, err := storage.List(client, applicationName, componentName)
+		storageList, err := storage.List(client, componentName, applicationName)
 		checkError(err, "Failed to list storage")
 
 		if len(storageList) == 0 {
