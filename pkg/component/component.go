@@ -439,7 +439,7 @@ func GetComponentDesc(client *occlient.Client, currentComponent string, currentA
 		return "", "", "", nil, errors.Wrap(err, "unable to get url list")
 	}
 	//Storage
-	appStore, err = storage.List(client, currentApplication, currentComponent)
+	appStore, err = storage.List(client, currentComponent, currentApplication)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get storage list")
 	}
