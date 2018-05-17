@@ -50,8 +50,7 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	return dc.Name, nil
 }
 
-// Remove removes storage from given component of the given application.
-// If no storage name is provided, all storage for the given component is removed
+// Remove removes storage `name` from given component of the given application.
 func Remove(client *occlient.Client, name string, componentName string, applicationName string) error {
 
 	// Get DeploymentConfig for the given component
@@ -62,27 +61,9 @@ func Remove(client *occlient.Client, name string, componentName string, applicat
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
 
-	if name == "" {
-		labels := storagelabels.GetLabels("", componentName, applicationName, false)
-		selector := util.ConvertLabelsToSelector(labels)
-		pvcs, err := client.GetPVCNamesFromSelector(selector)
-		log.Debugf("Found PVC names\n%v\nfor selector\n%v", pvcs, selector)
-		if err != nil {
-			return errors.Wrapf(err, "error getting PVC names from selector: %v", selector)
-		}
-
-		for _, pvc := range pvcs {
-			log.Debugf("Removing storage for PVC %v from Deployment Config %v", pvc, dc.Name)
-			if err := removeStorage(client, pvc, dc.Name); err != nil {
-				return errors.Wrap(err, "unable to remove storage")
-			}
-			log.Debugf("Removed storage for pvc: %v", pvc)
-		}
-	} else {
-		pvc := generatePVCNameFromStorageName(name)
-		if err := removeStorage(client, pvc, dc.Name); err != nil {
-			return errors.Wrap(err, "unable to remove storage")
-		}
+	pvc := generatePVCNameFromStorageName(name)
+	if err := removeStorage(client, pvc, dc.Name); err != nil {
+		return errors.Wrap(err, "unable to remove storage")
 	}
 
 	return nil
