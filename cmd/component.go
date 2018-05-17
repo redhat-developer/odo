@@ -14,7 +14,7 @@ import (
 // componentCmd represents the component command
 var componentCmd = &cobra.Command{
 	Use:   "component",
-	Short: "Components of application.",
+	Short: "Components of an application",
 	// 'odo component' is the same as 'odo component get'
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 && args[0] != "get" && args[0] != "set" {

@@ -21,7 +21,7 @@ var (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version of odo",
+	Short: "Print the client version information",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// If verbose mode is enabled, dump all KUBECLT_* env variables
