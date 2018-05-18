@@ -1086,9 +1086,7 @@ func (c *Client) Delete(kind string, name string, labels map[string]string) (str
 }
 
 func (c *Client) DeleteProject(name string) error {
-	_, err := c.runOcComamnd(&OcCommand{
-		args: []string{"delete", "project", name},
-	})
+	err := c.projectClient.Projects().Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to delete project")
 	}
@@ -1098,38 +1096,18 @@ func (c *Client) DeleteProject(name string) error {
 // GetLabelValues get label values of given label from objects in project that are matching selector
 // returns slice of uniq label values
 func (c *Client) GetLabelValues(project string, label string, selector string) ([]string, error) {
-	// get all object that have given label
-	// and show just label values separated by ,
-	args := []string{
-		"get", "all",
-		"--selector", selector,
-		"--namespace", project,
-		"-o", "go-template={{range .items}}{{range $key, $value := .metadata.labels}}{{if eq $key \"" + label + "\"}}{{$value}},{{end}}{{end}}{{end}}",
-	}
-
-	output, err := c.runOcComamnd(&OcCommand{args: args})
+	dcList, err := c.appsClient.DeploymentConfigs(project).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
 	}
-
 	var values []string
-	// deduplicate label values
-	for _, val := range strings.Split(string(output), ",") {
-		val = strings.TrimSpace(val)
-		if val != "" {
-			// check if this is the first time we see this value
-			found := false
-			for _, existing := range values {
-				if val == existing {
-					found = true
-				}
-			}
-			if !found {
+	for _, elem := range dcList.Items {
+		for key, val := range elem.Labels {
+			if key == label {
 				values = append(values, val)
 			}
 		}
 	}
-
 	return values, nil
 }
 
