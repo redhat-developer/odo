@@ -446,3 +446,15 @@ func GetComponentDesc(client *occlient.Client, currentComponent string, currentA
 
 	return componentType, path, componentURL, appStore, nil
 }
+
+// Get Component logs
+func GetLogs(client *occlient.Client, applicationName string, stdout io.Writer) error {
+
+	// Retrieve the logs
+	err := client.DisplayDeploymentConfigLog(applicationName, stdout)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
