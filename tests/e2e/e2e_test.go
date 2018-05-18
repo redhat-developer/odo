@@ -226,6 +226,12 @@ var _ = Describe("odoe2e", func() {
 				cmpSet := runCmd("odo component set nodejs")
 				Expect(cmpSet).To(ContainSubstring("nodejs"))
 			})
+
+			It("should be able to retrieve logs", func() {
+				runCmd("odo log")
+				runCmd("odo log nodejs")
+			})
+
 		})
 	})
 

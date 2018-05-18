@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -1047,6 +1048,43 @@ func (c *Client) FollowBuildLog(buildName string) error {
 
 	if _, err = io.Copy(stdout, rd); err != nil {
 		return errors.Wrapf(err, "error streaming logs for %s", buildName)
+	}
+
+	return nil
+}
+
+// Display DeploymentConfig log to stdout
+func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, stdout io.Writer) error {
+
+	// RESTClient call to OpenShift
+	rd, err := c.appsClient.RESTClient().Get().
+		Namespace(c.namespace).
+		Name(deploymentConfigName).
+		Resource("deploymentconfigs").
+		SubResource("log").Stream()
+
+	if rd == nil {
+		return errors.New("unable to retrieve DeploymentConfig from OpenShift, does your component exist?")
+	}
+
+	defer rd.Close()
+
+	if err != nil {
+		return errors.Wrapf(err, "unable get deploymentconfigs log %s", deploymentConfigName)
+	}
+
+	// Copy to buffer (we aren't going to be streaming the logs..)
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, rd)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to copy stream to buffer")
+	}
+
+	// Copy to stdout (in yellow)
+	color.Set(color.FgYellow)
+	defer color.Unset()
+	if _, err = io.Copy(stdout, buf); err != nil {
+		return errors.Wrapf(err, "error copying logs to stdout")
 	}
 
 	return nil
