@@ -14,22 +14,22 @@ import (
 var updateCmd = &cobra.Command{
 	Use:  "update",
 	Args: cobra.MaximumNArgs(1),
-	Example: `  # Change the source of a currently active component to local (use the current directory as a source)
+	Example: `  # Change the source code path of a currently active component to local (use the current directory as a source)
   odo update --local
 
-  # Change the source of the frontend component to local with source in ./frontend directory
+  # Change the source code path of the frontend component to local with source in ./frontend directory
   odo update frontend --local ./frontend
 
-  # Change the source of a currently active component to git 
+  # Change the source code path of a currently active component to git 
   odo update --git https://github.com/openshift/nodejs-ex.git
 
-  # Change the source of the component named node-ex to git
+  # Change the source code path of the component named node-ex to git
   odo update node-ex --git https://github.com/openshift/nodejs-ex.git
 
-  # Change the source of the component named wildfly to a binary named sample.war in ./downloads directory
+  # Change the source code path of the component named wildfly to a binary named sample.war in ./downloads directory
   odo update wildfly --binary ./downloads/sample.war
 	`,
-	Short: "Change the source of a component",
+	Short: "Update the source code path of a component",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)

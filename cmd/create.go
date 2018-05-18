@@ -22,8 +22,8 @@ var (
 
 var componentCreateCmd = &cobra.Command{
 	Use:   "create <component_type> [component_name] [flags]",
-	Short: "Create new component",
-	Long: `Create new component to deploy on OpenShift.
+	Short: "Create a new component",
+	Long: `Create a new component to deploy on OpenShift.
 
 If component name is not provided, component type value will be used for the name.
 
