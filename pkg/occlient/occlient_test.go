@@ -12,9 +12,6 @@ import (
 )
 
 func TestCreateRoute(t *testing.T) {
-	// initialising the fakeclient
-	fkclient, fkclientset := FakeNew()
-
 	tests := []struct {
 		name    string
 		service string
@@ -42,42 +39,40 @@ func TestCreateRoute(t *testing.T) {
 			},
 			wantErr: false,
 		},
-
-		{
-			name:    "Case : empty string",
-			service: "",
-			labels: map[string]string{
-				"app.kubernetes.io/component-name": "frontend",
-				"app.kubernetes.io/component-type": "php",
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// initialising the fakeclient
+			fkclient, fkclientset := FakeNew()
+
 			_, err := fkclient.CreateRoute(tt.service, tt.labels)
 
 			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf(" client.CreateRoute(string, labels) unexpected error \n%v, wantErr %v", err, tt.wantErr)
+				t.Errorf(" client.CreateRoute(string, labels) unexpected error %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			// Check for validating actions performed
-			if len(fkclientset.routeClientset.Actions()) != 1 {
-				t.Errorf("expected 1 action in CreateRoute got: %v", fkclientset.routeClientset.Actions())
+			if len(fkclientset.RouteClientset.Actions()) != 1 {
+				t.Errorf("expected 1 action in CreateRoute got: %v", fkclientset.RouteClientset.Actions())
 			}
 			// Checks for return values in positive cases
 			if err == nil {
-				createdRoute := fkclientset.routeClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
+				createdRoute := fkclientset.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
+				// created route should be labeled with labels passed to CreateRoute
 				if !reflect.DeepEqual(createdRoute.Labels, tt.labels) {
 					t.Errorf("labels in created route is not matching expected labels, expected: %v, got: %v", tt.labels, createdRoute.Labels)
 				}
+				// route name and service that route is pointg to should match
 				if createdRoute.Spec.To.Name != tt.service {
 					t.Errorf("route is not matching to expected service name, expected: %s, got %s", tt.service, createdRoute)
 				}
+				if createdRoute.Name != tt.service {
+					t.Errorf("route name is not matching to expected name, expected: %s, got %s", tt.service, createdRoute.Name)
+
+				}
 			}
-			fkclientset.routeClientset.ClearActions()
 		})
 	}
 }
