@@ -41,14 +41,11 @@ var storageCreateCmd = &cobra.Command{
 var storageDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "delete storage from component",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		var storageName string
-		if len(args) != 0 {
-			storageName = args[0]
-		}
+		storageName := args[0]
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
@@ -56,13 +53,7 @@ var storageDeleteCmd = &cobra.Command{
 
 		err = storage.Remove(client, storageName, componentName, applicationName)
 		checkError(err, "failed to delete storage")
-
-		switch storageName {
-		case "":
-			fmt.Printf("Deleted all storage from %v\n", componentName)
-		default:
-			fmt.Printf("Deleted %v from %v\n", storageName, componentName)
-		}
+		fmt.Printf("Deleted %v from %v\n", storageName, componentName)
 	},
 }
 
