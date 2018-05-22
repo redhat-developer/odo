@@ -19,7 +19,7 @@ Builds for latest released versions are at [GitHub releases page](https://github
 2. 
     - If you want to install latest master build
     ```sh
-    brew install kadel/odo/odo -- HEAD
+    brew install kadel/odo/odo --HEAD
     ```
     - If you want to install latest released version
     ```sh
