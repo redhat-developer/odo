@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
@@ -17,6 +18,7 @@ import (
 type StorageInfo struct {
 	Name string
 	Size string
+	// if path is empty, it indicates that the storage is not mounted in any component
 	Path string
 }
 
@@ -50,9 +52,8 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	return dc.Name, nil
 }
 
-// Remove removes storage `name` from given component of the given application.
-func Remove(client *occlient.Client, name string, componentName string, applicationName string) error {
-
+// Unmount unmounts the given storage from the given component
+func Unmount(client *occlient.Client, storageName string, componentName string, applicationName string) error {
 	// Get DeploymentConfig for the given component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -61,38 +62,126 @@ func Remove(client *occlient.Client, name string, componentName string, applicat
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
 
-	pvc := generatePVCNameFromStorageName(name)
-	if err := removeStorage(client, pvc, dc.Name); err != nil {
-		return errors.Wrap(err, "unable to remove storage")
+	pvcName, err := getPVCNameFromStorageName(client, storageName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get PVC for storage %v", storageName)
 	}
 
+	// Remove PVC from Deployment Config
+	if err := client.RemoveVolumeFromDeploymentConfig(pvcName, dc.Name); err != nil {
+		return errors.Wrapf(err, "unable to remove volume: %v from Deployment Config: %v", pvcName, dc.Name)
+	}
+
+	pvc, err := client.GetPVCFromName(pvcName)
+	pvcLabels := applabels.GetLabels(applicationName, true)
+	pvcLabels[storagelabels.StorageLabel] = storageName
+
+	if err := client.UpdatePVCLabels(pvc, pvcLabels); err != nil {
+		return errors.Wrapf(err, "unable to remove storage label from : %v", pvc.Name)
+	}
 	return nil
 }
 
-// List lists all the storage associated with the given component of the given
-// application
-func List(client *occlient.Client, componentName string, applicationName string) ([]StorageInfo, error) {
-	labels := storagelabels.GetLabels("", componentName, applicationName, false)
-	selector := util.ConvertLabelsToSelector(labels)
-
-	log.Debugf("Looking for PVCs with the selector: %v", selector)
-	pvcs, err := client.GetPVCsFromSelector(selector)
+// Delete removes storage from the given application.
+// Delete returns the component name, if it is mounted to a component, or "" and the error, if any
+func Delete(client *occlient.Client, name string, applicationName string) (string, error) {
+	// unmount the storage from the component if mounted
+	componentName, err := getComponentNameFromStorageName(client, name)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get PVC names")
+		return "", errors.Wrap(err, "unable to find component name and app name")
+	}
+	if componentName != "" {
+		err := Unmount(client, name, componentName, applicationName)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to unmount storage %v", name)
+		}
 	}
 
+	pvcName, err := getPVCNameFromStorageName(client, name)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to get PVC for storage %v", name)
+	}
+
+	// delete the associated PVC with the component
+	err = client.DeletePVC(pvcName)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to delete PVC %v", pvcName)
+	}
+
+	return componentName, nil
+}
+
+// List lists all the mounted storage associated with the given component of the given
+// application and the unmounted storages in the given application
+func List(client *occlient.Client, componentName string, applicationName string) ([]StorageInfo, error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get Deployment Config associated with component %v", componentName)
+	}
+
+	// store the storages in a map for faster searching with the key instead of list
+	mountedStorageMap := make(map[string]string)
+	volumeMounts := client.GetVolumeMountsFromDC(dc)
+	for _, volumeMount := range volumeMounts {
+		pvcName := client.GetPVCNameFromVolumeMountName(volumeMount.Name, dc)
+		if pvcName == "" {
+			return nil, fmt.Errorf("no PVC associated with Volume Mount %v", volumeMount.Name)
+		}
+		pvc, err := client.GetPVCFromName(pvcName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to get PVC %v", pvcName)
+		}
+
+		storageName := getStorageFromPVC(pvc)
+		mountedStorageMap[storageName] = volumeMount.MountPath
+	}
+
+	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get Deployment Config associated with component %v", componentName)
+	}
 	var storageList []StorageInfo
 	for _, pvc := range pvcs {
-		storage := getStorageFromPVC(pvc)
-		if storage != "" {
-			size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+		pvcComponentName, ok := pvc.Labels[componentlabels.ComponentLabel]
+		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
+		// first check if storage label does not exists indicating that the storage is not mounted in any component
+		// if the storage label exists, then check if the component is the current active component
+		// also check if the app label exists and is equal to the current application
+		if (!ok || pvcComponentName == componentName) && (okApp && pvcAppName == applicationName) {
+			if pvc.Name == "" {
+				return nil, fmt.Errorf("no PVC associated")
+			}
+			storageName := getStorageFromPVC(&pvc)
+			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+			storagePath := mountedStorageMap[storageName]
 			storageList = append(storageList, StorageInfo{
-				Name: storage,
-				Size: size.String(),
+				Name: storageName,
+				Size: storageSize.String(),
+				Path: storagePath,
 			})
 		}
 	}
 	return storageList, nil
+}
+
+// Exists checks if the given storage exists in the given application
+func Exists(client *occlient.Client, storageName string, applicationName string) (bool, error) {
+	var labels = make(map[string]string)
+	labels[applabels.ApplicationLabel] = applicationName
+	labels[storagelabels.StorageLabel] = storageName
+	selector := util.ConvertLabelsToSelector(labels)
+	pvcs, err := client.GetPVCsFromSelector(selector)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to list storage for application %v", applicationName)
+	}
+
+	if len(pvcs) <= 0 {
+		return false, nil
+	}
+	return true, nil
 }
 
 // generatePVCNameFromStorageName generates a PVC name from the given storage
@@ -101,26 +190,65 @@ func generatePVCNameFromStorageName(storage string) string {
 	return fmt.Sprintf("%v-pvc", storage)
 }
 
-// getStorageFromPVC returns the storage assocaited with the given PVC
-func getStorageFromPVC(pvc corev1.PersistentVolumeClaim) string {
+// getStorageFromPVC returns the storage associated with the given PVC
+func getStorageFromPVC(pvc *corev1.PersistentVolumeClaim) string {
 	if _, ok := pvc.Labels[storagelabels.StorageLabel]; !ok {
 		return ""
 	}
 	return pvc.Labels[storagelabels.StorageLabel]
 }
 
-// removeStorage removes the given PVC from the given Deployment Config and also
-// deletes the PVC
-func removeStorage(client *occlient.Client, pvc string, dc string) error {
-	// Remove PVC from Deployment Config
-	if err := client.RemoveVolumeFromDeploymentConfig(pvc, dc); err != nil {
-		return errors.Wrapf(err, "unable to remove volume: %v from Deployment Config: %v", pvc, dc)
-	}
+// getPVCNameFromStorageName returns the PVC associated with the given storage
+func getPVCNameFromStorageName(client *occlient.Client, storageName string) (string, error) {
+	var labels = make(map[string]string)
+	labels[storagelabels.StorageLabel] = storageName
 
-	// Delete PVC
-	if err := client.DeletePVC(pvc); err != nil {
-		return errors.Wrapf(err, "unable to delete PVC: %v", pvc)
+	selector := util.ConvertLabelsToSelector(labels)
+	pvcs, err := client.GetPVCNamesFromSelector(selector)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to get PVC names for selector %v", selector)
 	}
+	numPVCs := len(pvcs)
+	if numPVCs != 1 {
+		return "", fmt.Errorf("expected exactly one PVC attached to storage %v, but got %v, %v", storageName, numPVCs, pvcs)
+	}
+	return pvcs[0], nil
+}
 
-	return nil
+// getComponentNameFromStorageName returns the component name associated with the storageName, if any, or ""
+func getComponentNameFromStorageName(client *occlient.Client, storageName string) (string, error) {
+	var labels = make(map[string]string)
+	labels[storagelabels.StorageLabel] = storageName
+
+	selector := util.ConvertLabelsToSelector(labels)
+	pvcs, err := client.GetPVCsFromSelector(selector)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to list the pvcs")
+	}
+	if len(pvcs) > 1 {
+		return "", errors.Wrap(err, "more than one pvc found for the storage label")
+	}
+	if len(pvcs) == 1 {
+		pvc := pvcs[0]
+		labels = pvc.GetLabels()
+		return labels[componentlabels.ComponentLabel], nil
+	}
+	return "", nil
+}
+
+// IsMounted checks if the given storage is mounted to the given component
+// IsMounted returns a bool indicating the storage is mounted to the component or not
+func IsMounted(client *occlient.Client, storageName string, componentName string, applicationName string) (bool, error) {
+	storageList, err := List(client, componentName, applicationName)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to list storage for component %v", componentName)
+	}
+	for _, storage := range storageList {
+		if storage.Name == storageName {
+			if storage.Path != "" {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }

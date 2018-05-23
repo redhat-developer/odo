@@ -4,6 +4,8 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 )
 
+// StorageLabel is the label key that is applied to all storage resources
+// that are created
 const StorageLabel = "app.kubernetes.io/storage-name"
 
 // GetLabels gets the labels to be applied to the given storage besides the
