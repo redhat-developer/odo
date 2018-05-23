@@ -73,6 +73,7 @@ jobs:
     - stage: deploy
       go_import_path:  github.com/redhat-developer/odo
       go: 1.9
+      env: BUILD_DOCS=yes
       install:
         - make goget-tools
         - gem install fpm
@@ -119,3 +120,6 @@ jobs:
             - make upload-packages
           on:
             branch: master
+      after_success:
+        # synchronize the documentation
+        - bash scripts/sync-docs.sh
