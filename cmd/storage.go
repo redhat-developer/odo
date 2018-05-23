@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	"os"
+	"text/tabwriter"
 )
 
 var (
@@ -117,13 +118,40 @@ var storageListCmd = &cobra.Command{
 		storageList, err := storage.List(client, componentName, applicationName)
 		checkError(err, "Failed to list storage")
 
-		if len(storageList) == 0 {
-			fmt.Printf("The component '%v' has no storage attached\n", componentName)
-		} else {
-			fmt.Printf("The component '%v' has the following storage attached -\n", componentName)
-			for _, strg := range storageList {
-				fmt.Printf("- %v - %v - %v\n", strg.Name, strg.Size, strg.Path)
+		hasMounted := false
+		hasUnmounted := false
+		tabWriterMounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		tabWriterUnmounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+		//create headers
+		fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH")
+		fmt.Fprintln(tabWriterUnmounted, "NAME", "\t", "SIZE")
+
+		for _, storage := range storageList {
+			if storage.Path != "" {
+				if !hasMounted {
+					hasMounted = true
+				}
+				fmt.Fprintln(tabWriterMounted, storage.Name, "\t", storage.Size, "\t", storage.Path)
+			} else {
+				if !hasUnmounted {
+					hasUnmounted = true
+				}
+				fmt.Fprintln(tabWriterUnmounted, storage.Name, "\t", storage.Size)
 			}
+		}
+		if hasMounted {
+			fmt.Printf("The component '%v' has the following storage attached -\n", componentName)
+			tabWriterMounted.Flush()
+		} else {
+			fmt.Printf("The component '%v' has no storage attached\n", componentName)
+		}
+		fmt.Println("")
+		if hasUnmounted {
+			fmt.Printf("The following unmounted storages can be mounted to '%v' - \n", componentName)
+			tabWriterUnmounted.Flush()
+		} else {
+			fmt.Printf("No unmounted storage exists to mount to '%v' \n", componentName)
 		}
 	},
 }
