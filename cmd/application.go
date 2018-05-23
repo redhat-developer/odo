@@ -22,8 +22,21 @@ var applicationCmd = &cobra.Command{
 	Use:     "app",
 	Short:   "Perform application operations",
 	Aliases: []string{"application"},
-	// 'odo application' is the same as 'odo application get'
-	Run: applicationGetCmd.Run,
+	Example: `  # Get current application,
+  odo app 
+  
+  # Set webapp to current application,
+  odo app webapp
+	`,
+	// 'odo app' is the same as 'odo app get'
+	// 'odo app <application_name>' is the same as 'odo app set <application_name>'
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 && args[0] != "get" && args[0] != "set" {
+			applicationSetCmd.Run(cmd, args)
+		} else {
+			applicationGetCmd.Run(cmd, args)
+		}
+	},
 }
 
 var applicationCreateCmd = &cobra.Command{
