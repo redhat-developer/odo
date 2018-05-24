@@ -35,8 +35,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&PodSecurityPolicySubjectReview{},
 		&PodSecurityPolicySelfSubjectReview{},
 		&PodSecurityPolicyReview{},
-		&RangeAllocation{},
-		&RangeAllocationList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

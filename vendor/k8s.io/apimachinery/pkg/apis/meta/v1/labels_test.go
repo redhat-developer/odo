@@ -27,9 +27,6 @@ func TestCloneSelectorAndAddLabel(t *testing.T) {
 		"foo2": "bar2",
 		"foo3": "bar3",
 	}
-	matchExpressions := []LabelSelectorRequirement{
-		{Key: "foo", Operator: LabelSelectorOpIn, Values: []string{"foo"}},
-	}
 
 	cases := []struct {
 		labels     map[string]string
@@ -63,8 +60,8 @@ func TestCloneSelectorAndAddLabel(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		ls_in := LabelSelector{MatchLabels: tc.labels, MatchExpressions: matchExpressions}
-		ls_out := LabelSelector{MatchLabels: tc.want, MatchExpressions: matchExpressions}
+		ls_in := LabelSelector{MatchLabels: tc.labels}
+		ls_out := LabelSelector{MatchLabels: tc.want}
 
 		got := CloneSelectorAndAddLabel(&ls_in, tc.labelKey, tc.labelValue)
 		if !reflect.DeepEqual(got, &ls_out) {
