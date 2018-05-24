@@ -264,3 +264,37 @@ func GetMountPath(client *occlient.Client, storageName string, componentName str
 	}
 	return mPath
 }
+
+// Mount mounts the given storage to the given component
+func Mount(client *occlient.Client, path string, storageName string, componentName string, applicationName string) error {
+	storageComponent, err := GetComponentNameFromStorageName(client, storageName)
+	if err != nil {
+		return errors.Wrap(err, "unable to get the component name associated with the storage")
+	}
+	if storageComponent != "" {
+		return fmt.Errorf("the given storage is already mounted to the component %v", storageComponent)
+	}
+	pvc, err := client.GetPVCFromName(generatePVCNameFromStorageName(storageName))
+	if err != nil {
+		return errors.Wrap(err, "unable to get the pvc from the storage name")
+	}
+
+	// Get DeploymentConfig for the given component
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
+	}
+	log.Debugf("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
+
+	// Add PVC to DeploymentConfig
+	if err := client.AddPVCToDeploymentConfig(dc, pvc.Name, path); err != nil {
+		return errors.Wrap(err, "unable to add PVC to DeploymentConfig")
+	}
+	err = client.UpdatePVCLabels(pvc, storagelabels.GetLabels(storageName, componentName, applicationName, true))
+	if err != nil {
+		return errors.Wrap(err, "unable to update the pvc")
+	}
+	return nil
+}
