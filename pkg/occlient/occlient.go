@@ -873,6 +873,24 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 	return nil
 }
 
+// TODO: better name
+func (c *Client) RemoveInitFromDC(dcName string, projectName string, annotations map[string]string) error {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update DeploymentConfig %s ", dcName)
+	}
+
+	dc.Annotations = annotations
+	// TODO: just remove one container that we need
+	dc.Spec.Template.Spec.InitContainers = []corev1.Container{}
+
+	_, err = c.appsClient.DeploymentConfigs(projectName).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update deployment config %s", dcName)
+	}
+	return nil
+}
+
 // GetLatestBuildName gets the name of the latest build
 // buildConfigName is the name of the buildConfig for which we are fetching the build name
 // returns the name of the latest build or the error
