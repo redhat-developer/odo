@@ -86,7 +86,7 @@ func Unmount(client *occlient.Client, storageName string, componentName string, 
 // Delete returns the component name, if it is mounted to a component, or "" and the error, if any
 func Delete(client *occlient.Client, name string, applicationName string) (string, error) {
 	// unmount the storage from the component if mounted
-	componentName, err := getComponentNameFromStorageName(client, name)
+	componentName, err := GetComponentNameFromStorageName(client, name)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to find component name and app name")
 	}
@@ -215,8 +215,8 @@ func getPVCNameFromStorageName(client *occlient.Client, storageName string) (str
 	return pvcs[0], nil
 }
 
-// getComponentNameFromStorageName returns the component name associated with the storageName, if any, or ""
-func getComponentNameFromStorageName(client *occlient.Client, storageName string) (string, error) {
+// GetComponentNameFromStorageName returns the component name associated with the storageName, if any, or ""
+func GetComponentNameFromStorageName(client *occlient.Client, storageName string) (string, error) {
 	var labels = make(map[string]string)
 	labels[storagelabels.StorageLabel] = storageName
 
@@ -254,7 +254,7 @@ func IsMounted(client *occlient.Client, storageName string, componentName string
 }
 
 //GetMountPath returns mount path for given storage
-func GetMountPath(client *occlient.Client, applicationName string, componentName string, storageName string) string {
+func GetMountPath(client *occlient.Client, storageName string, componentName string, applicationName string) string {
 	var mPath string
 	storageInfo, _ := List(client, componentName, applicationName)
 	for _, storage := range storageInfo {
