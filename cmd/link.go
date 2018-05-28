@@ -17,18 +17,20 @@ var linkCmd = &cobra.Command{
 	Use:   "link <target component> --component [source component]",
 	Short: "Link target component to source component",
 	Long: `Link target component to source component
+
 If source component is not provided, the link is created to the current active
 component.
+
 In the linking process, the environment variables containing the connection
 information from target component are injected into the source component and
 printed to STDOUT.
 `,
-	Example: `
-  # Link current component to a component 'mariadb'
+	Example: `  # Link current component to a component 'mariadb'
   odo link mariadb
 
   # Link 'mariadb' component to 'nodejs' component
-  odo link mariadb --component nodejs`,
+  odo link mariadb --component nodejs
+	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()

@@ -104,7 +104,9 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 
     There is a helper script [scripts/bump-version.sh](/scripts/bump-version.sh) that should change version number in all files listed above (expect odo.rb).
 
-    To update the CLI Structure in README.md, run `make generate-cli-docs` and update the section in [README.md](/README.md#cli-structure)
+    To update the CLI Structure in README.md, run `make generate-cli-structure` and update the section in [README.md](/README.md#cli-structure)
+
+    To update the CLI reference documentation in docs/cli-reference.md, run `make generate-cli-structure > docs/cli-reference.md`.
 2. When PR is merged create and push new git tag for version.
     ```
     git tag v0.0.1
@@ -122,6 +124,6 @@ This is GitHub user that does all the automation.
 
 ### Scripts using odo-bot
 
-| script | what it is doing | access via | 
-|-|-|-|
-| .travis.yml | uploading binaries to GitHub release page | personal access token `deploy-github-release` |
+| Script      | What it is doing                          | Access via                                    |
+|-------------|-------------------------------------------|-----------------------------------------------|
+| .travis.yml | Uploading binaries to GitHub release page | Personal access token `deploy-github-release` |

@@ -15,12 +15,9 @@ import (
 var componentCmd = &cobra.Command{
 	Use:   "component",
 	Short: "Components of application.",
-	Example: `  # Get current component,
-  odo component 
-
-  # Set nodejs to current component,
-  odo component nodejs
-	`,
+	Example: fmt.Sprintf("%s\n%s",
+		componentGetCmd.Example,
+		componentSetCmd.Example),
 	// 'odo component' is the same as 'odo component get'
 	// 'odo component <component_name>' is the same as 'odo component set <component_name>'
 	Run: func(cmd *cobra.Command, args []string) {
@@ -36,7 +33,10 @@ var componentGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get currently active component",
 	Long:  "Get currently active component.",
-	Args:  cobra.NoArgs,
+	Example: `  # Get the currently active component
+  odo component get
+	`,
+	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("component get called")
 		client := getOcClient()

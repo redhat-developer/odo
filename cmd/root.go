@@ -19,8 +19,17 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "odo",
-	Short: "OpenShift CLI for Developers",
-	Long:  `OpenShift CLI for Developers`,
+	Short: "Odo (Openshift Do)",
+	Long: `Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code.
+
+Find more information at https://github.com/redhat-developer/odo`,
+	Example: `  # Creating and deploying a Node.js project
+  git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
+  odo create nodejs
+  odo push
+
+  # Accessing your Node.js component
+  odo url create`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 
 		// Add extra logging when verbosity is passed

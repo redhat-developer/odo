@@ -15,7 +15,10 @@ var componentListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all components in the current application",
 	Long:  "List all components in the current application.",
-	Args:  cobra.NoArgs,
+	Example: `  # List all components in the application
+  odo list
+	`,
+	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)

@@ -14,14 +14,14 @@ var completionCmd = &cobra.Command{
 	Short: "Output shell completion code",
 	Long: `Generates shell completion code.
 
-Auto completion supports both bash and zsh. Output is to STDOUT.
+Auto completion supports both bash and zsh. Output is to STDOUT.`,
 
-source <(odo completion bash)
-source <(odo completion zsh)
+	Example: `  # Bash autocompletion support
+  source <(odo completion bash)
 
-Will load the shell completion code.
-	`,
-
+  # Zsh autocompletion support
+  source <(odo completion zsh)
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		err := Generate(cmd, args)

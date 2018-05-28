@@ -19,8 +19,8 @@ var (
 
 var componentDeleteCmd = &cobra.Command{
 	Use:   "delete <component_name>",
-	Short: "Delete existing component",
-	Long:  "Delete existing component.",
+	Short: "Delete an existing component",
+	Long:  "Delete an existing component.",
 	Example: `  # Delete component named 'frontend'. 
   odo delete frontend
 	`,

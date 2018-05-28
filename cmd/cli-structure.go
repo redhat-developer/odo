@@ -42,6 +42,6 @@ func commandPrinter(command *cobra.Command, level int) string {
 	return finalCommand
 }
 
-func GenerateCLIDocs() string {
+func GenerateCLIStructure() string {
 	return commandPrinter(rootCmd, 0)
 }

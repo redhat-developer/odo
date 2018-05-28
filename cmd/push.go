@@ -15,16 +15,16 @@ import (
 
 var pushCmd = &cobra.Command{
 	Use:   "push [component name]",
-	Short: "Push source code to component",
-	Long:  `Push source code to component.`,
-	Example: `  # Push source code to the to the current component
+	Short: "Push source code to a component",
+	Long:  `Push source code to a component.`,
+	Example: `  # Push source code to the current component
   odo push
 
-  # Push data to the current component from original source.
+  # Push data to the current component from the original source.
   odo push
 
-  # Push source code in ~/home/mycode to component called my-component
-  odo push my-component --local ~/home/mycode
+  # Push source code in ~/mycode to component called my-component
+  odo push my-component --local ~/mycode
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

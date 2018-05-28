@@ -13,7 +13,7 @@ var logCmd = &cobra.Command{
 	Use:   "log [component_name]",
 	Short: "Retrieve the log for the given component.",
 	Long:  `Retrieve the log for the given component.`,
-	Example: `  # Get the logs for the nodejs component,
+	Example: `  # Get the logs for the nodejs component
   odo log nodejs
 	`,
 	Args: cobra.RangeArgs(0, 1),

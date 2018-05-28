@@ -44,7 +44,8 @@ A full list of component types that can be deployed is available using: 'odo com
   odo create ruby
 	
   # Create a Python component
-  odo create python`,
+  odo create python
+	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)

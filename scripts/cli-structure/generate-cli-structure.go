@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	fmt.Print(cmd.GenerateCLIDocs())
+	fmt.Print(cmd.GenerateCLIStructure())
 }
