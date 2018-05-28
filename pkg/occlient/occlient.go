@@ -846,6 +846,8 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 // gitUrl equals to the git URL of the source and is equals to "" if the source is of type dir or binary
 // annotations contains the annotations for the BuildConfig file
 func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, gitUrl string, annotations map[string]string) error {
+	const bootstrapperURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
+	const bootstrapperRef = "v0.0.1"
 	// generate BuildConfig
 	buildSource := buildv1.BuildSource{
 		Type:   buildv1.BuildSourceBinary,
@@ -856,6 +858,14 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 		buildSource = buildv1.BuildSource{
 			Git: &buildv1.GitBuildSource{
 				URI: gitUrl,
+			},
+			Type: buildv1.BuildSourceGit,
+		}
+	} else {
+		buildSource = buildv1.BuildSource{
+			Git: &buildv1.GitBuildSource{
+				URI: bootstrapperURI,
+				Ref: bootstrapperRef,
 			},
 			Type: buildv1.BuildSourceGit,
 		}
@@ -874,19 +884,171 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 }
 
 // TODO: better name
-func (c *Client) RemoveInitFromDC(dcName string, projectName string, annotations map[string]string) error {
+
+func (c *Client) AddInitToDC(dcName string, builderImage string, projectName string, annotations map[string]string, labels map[string]string) error {
+	appRootVolumeName := fmt.Sprintf("%s-s2idata", dcName)
+
+	//imageName, imageTag, _, err := parseImageName(builderImage)
+	//if err != nil {
+	//	return errors.Wrap(err, "unable to create new s2i git build ")
+	//}
+	//
+	//containerPorts, err := c.GetExposedPorts(imageName, imageTag)
+	//if err != nil {
+	//	return errors.Wrapf(err, "unable to exposed ports for %s:%s", imageName, imageTag)
+	//}
+	//bc, err := c.GetBuildConfig(dcName, projectName)
+	//if err != nil {
+	//	return errors.Wrapf(err, "unable to get BuildConfig %s ", dcName)
+	//}
 	dc, err := c.GetDeploymentConfigFromName(dcName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to update DeploymentConfig %s ", dcName)
+		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
 	}
 
 	dc.Annotations = annotations
+	//dc.Spec.Template.Spec.Containers = []corev1.Container{
+	//	{
+	//		Image: bc.Spec.Output.To.Name,
+	//		Name:  dcName,
+	//		Ports: containerPorts,
+	//		VolumeMounts: []corev1.VolumeMount{
+	//			{
+	//				Name:      appRootVolumeName,
+	//				MountPath: "/opt/app-root",
+	//				SubPath:   "app-root",
+	//			},
+	//		},
+	//	},
+	//}
+
+	dc.Spec.Template.Spec.InitContainers = append(dc.Spec.Template.Spec.InitContainers,
+		corev1.Container{
+			Name:  "copy-files-to-volume",
+			Image: dc.Spec.Template.Spec.Containers[0].Image,
+			Command: []string{
+				"copy-files-to-volume",
+				"/opt/app-root",
+				"/mnt/app-root"},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					// TODO:
+					Name:      fmt.Sprintf("%s-s2idata", dcName),
+					MountPath: "/mnt",
+				},
+			},
+		})
+
+	dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, corev1.Volume{
+		Name: appRootVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: appRootVolumeName,
+			},
+		},
+	})
+
+	for i := range dc.Spec.Template.Spec.Containers {
+		dc.Spec.Template.Spec.Containers[i].VolumeMounts = append(dc.Spec.Template.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
+			Name:      appRootVolumeName,
+			MountPath: "/opt/app-root",
+			SubPath:   "app-root",
+		})
+	}
+
+	dc, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
+	}
+	_, err = c.CreatePVC(appRootVolumeName, "1Gi", labels)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create PVC for %s", dcName)
+	}
+	return nil
+}
+
+// func (c *Client) AddCopyFilesToVolumesInitContainer(dcName string, image string, appRootVolumeName string) error {
+// 	initContainer := corev1.Container{
+// 		Name:  "copy-files-to-volume",
+// 		Image: image,
+// 		Command: []string{
+// 			"copy-files-to-volume",
+// 			"/opt/app-root",
+// 			"/mnt/app-root"},
+// 		VolumeMounts: []corev1.VolumeMount{
+// 			{
+// 				Name:      appRootVolumeName,
+// 				MountPath: "/mnt",
+// 			},
+// 		},
+// 	}
+// 	return nil
+// }
+
+// TODO: better name
+func (c *Client) RemoveInitFromDC(dcName string, builderImage string, projectName string, annotations map[string]string) error {
+	appRootVolumeName := fmt.Sprintf("%s-s2idata", dcName)
+	//
+	//imageName, imageTag, _, err := parseImageName(builderImage)
+	//if err != nil {
+	//	return errors.Wrap(err, "unable to create new s2i git build ")
+	//}
+	//
+	//containerPorts, err := c.GetExposedPorts(imageName, imageTag)
+	//if err != nil {
+	//	return errors.Wrapf(err, "unable to exposed ports for %s:%s", imageName, imageTag)
+	//}
+	//bc, err := c.GetBuildConfig(dcName, projectName)
+	//if err != nil {
+	//	return errors.Wrapf(err, "unable to get BuildConfig %s ", dcName)
+	//}
+	dc, err := c.GetDeploymentConfigFromName(dcName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get DeploymentConfig %s ", dcName)
+	}
+
+	dc.Annotations = annotations
+	//dc.Spec.Template.Spec.Containers = []corev1.Container{
+	//	{
+	//		Image: bc.Spec.Output.To.Name,
+	//		Name:  dcName,
+	//		Ports: containerPorts,
+	//	},
+	//}
+
+	found := removeVolumeFromDC(appRootVolumeName, dc)
+	if !found {
+		return errors.Wrapf(err, "unable to find volume in the dc")
+	}
+	found = removeVolumeMountFromDC(appRootVolumeName, dc)
+	if !found {
+		return errors.Wrapf(err, "unable to find volume in the dc")
+	}
 	// TODO: just remove one container that we need
 	dc.Spec.Template.Spec.InitContainers = []corev1.Container{}
 
-	_, err = c.appsClient.DeploymentConfigs(projectName).Update(dc)
+	//for i, volume := range dc.Spec.Template.Spec.Volumes {
+	//	if volume.Name == appRootVolumeName {
+	//		dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes[:i], dc.Spec.Template.Spec.Volumes[i+1:]...)
+	//	}
+	//}
+
+	dc, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update deployment config %s", dcName)
+	}
+	//err = c.RemoveVolumeFromDeploymentConfig(appRootVolumeName, dcName)
+	//if err != nil {
+	//	return errors.Wrapf(err, "unable to remove S2I data from %s", dcName)
+	//}
+
+	//dc, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	//if err != nil {
+	//	return errors.Wrapf(err, "unable to update deployment config %s", dcName)
+	//}
+	err = c.DeletePVC(appRootVolumeName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete S2I data PVC from %s", dcName)
 	}
 	return nil
 }
