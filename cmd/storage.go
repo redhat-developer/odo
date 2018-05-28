@@ -88,8 +88,6 @@ var storageDeleteCmd = &cobra.Command{
 		storageName := args[0]
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
-		projectName := project.GetCurrent(client)
-		componentName := getComponent(client, storageComponent, applicationName, projectName)
 		exists, err := storage.Exists(client, storageName, applicationName)
 		checkError(err, "")
 		if !exists {
@@ -98,12 +96,21 @@ var storageDeleteCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		componentName, err := storage.GetComponentNameFromStorageName(client, storageName)
+		if err != nil {
+			checkError(err, "Unable to get component associated with %s storage.", storageName)
+		}
+
 		var confirmDeletion string
 		if storageForceDeleteflag {
 			confirmDeletion = "y"
 		} else {
-			mPath := storage.GetMountPath(client, applicationName, componentName, storageName)
-			fmt.Printf("Are you sure you want to delete the storage %v mounted to %v in %v component? [y/N] ", storageName, mPath, componentName)
+			if componentName != "" {
+				mPath := storage.GetMountPath(client, storageName, componentName, applicationName)
+				fmt.Printf("Are you sure you want to delete the storage %v mounted to %v in %v component? [y/N] ", storageName, mPath, componentName)
+			} else {
+				fmt.Printf("Are you sure you want to delete the storage %v that is not currently mounted to any component? [y/N] ", storageName)
+			}
 			fmt.Scanln(&confirmDeletion)
 		}
 		if strings.ToLower(confirmDeletion) == "y" {
@@ -179,11 +186,14 @@ func init() {
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageCreateCmd.MarkFlagRequired("path")
 
+	storageCreateCmd.Flags().StringVar(&storageComponent, "component", "", "Component to add storage to. Defaults to active component.")
+	storageUnmountCmd.Flags().StringVar(&storageComponent, "component", "", "Component from which the storage will be unmounted. Defaults to active component.")
+	storageListCmd.Flags().StringVar(&storageComponent, "component", "", "List storage for given component. Defaults to active component.")
+
 	storageCmd.AddCommand(storageCreateCmd)
 	storageCmd.AddCommand(storageDeleteCmd)
 	storageCmd.AddCommand(storageUnmountCmd)
 	storageCmd.AddCommand(storageListCmd)
 
-	storageCmd.PersistentFlags().StringVar(&storageComponent, "component", "", "Component to add storage to, defaults to active component")
 	rootCmd.AddCommand(storageCmd)
 }
