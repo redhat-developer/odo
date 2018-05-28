@@ -12,8 +12,10 @@ import (
 )
 
 var updateCmd = &cobra.Command{
-	Use:  "update",
-	Args: cobra.MaximumNArgs(1),
+	Use:   "update",
+	Args:  cobra.MaximumNArgs(1),
+	Short: "Update the source code path of a component",
+	Long:  "Update the source code path of a component",
 	Example: `  # Change the source code path of a currently active component to local (use the current directory as a source)
   odo update --local
 
@@ -29,7 +31,6 @@ var updateCmd = &cobra.Command{
   # Change the source code path of the component named wildfly to a binary named sample.war in ./downloads directory
   odo update wildfly --binary ./downloads/sample.war
 	`,
-	Short: "Update the source code path of a component",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)

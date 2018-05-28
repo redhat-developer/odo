@@ -2,9 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
-
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/application"
@@ -24,12 +23,21 @@ var storageCmd = &cobra.Command{
 	Use:   "storage",
 	Short: "Perform storage operations",
 	Long:  "Perform storage operations",
+	Example: fmt.Sprintf("%s\n%s\n%s\n%s",
+		storageCreateCmd.Example,
+		storageDeleteCmd.Example,
+		storageUnmountCmd.Example,
+		storageListCmd.Example),
 }
 
 var storageCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create storage and mount to component",
-	Args:  cobra.ExactArgs(1),
+	Short: "Create storage and mount to a component",
+	Long:  "Create storage and mount to a component",
+	Example: `  # Create storage of size 1Gb to a component
+  odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi
+	`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)
@@ -45,10 +53,10 @@ var storageCreateCmd = &cobra.Command{
 
 var storageUnmountCmd = &cobra.Command{
 	Use:   "unmount [storage name]",
-	Short: "unmount storage from the current component",
-	Long: `unmount storage from the current component.
-  The storage and the contents are not deleted, the storage is only unmounted
-  from the component, and hence is no longer accessible by the component.`,
+	Short: "Unmount storage from the current component",
+	Long: `Unmount storage from the current component.
+
+  The storage and the contents are not deleted, the storage is only unmounted from the component, and hence is no longer accessible by the component.`,
 	Example: `  # Unmount storage 'dbstorage' from current component
   odo storage umount dbstorage
 
@@ -79,8 +87,14 @@ var storageUnmountCmd = &cobra.Command{
 
 var storageDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "delete storage from component",
-	Args:  cobra.ExactArgs(1),
+	Short: "Delete storage from component",
+	Example: `  # Delete storage mystorage from the currently active component
+	odo storage delete mystorage
+
+  # Delete storage mystorage from component 'mongodb'
+  odo storage delete mystorage --component mongodb
+`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
@@ -128,8 +142,12 @@ var storageDeleteCmd = &cobra.Command{
 
 var storageListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list storage attached to a component",
-	Args:  cobra.MaximumNArgs(1),
+	Short: "List storage attached to a component",
+	Long:  "List storage attached to a component",
+	Example: `  # List all storage attached or mounted to the current component and all unattached or unmounted storage in the current application
+  odo storage list
+	`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)

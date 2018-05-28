@@ -51,9 +51,13 @@ test-coverage:
 cross:
 	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS)
 
-.PHONY: generate-cli-docs
-generate-cli-docs:
-	go run scripts/generate-cli-documentation.go
+.PHONY: generate-cli-structure
+generate-cli-structure:
+	go run scripts/cli-structure/generate-cli-structure.go
+
+.PHONY: generate-cli-reference
+generate-cli-reference:
+	go run scripts/cli-reference/generate-cli-reference.go
 
 # create gzipped binaries in ./dist/release/
 # for uploading to GitHub release page

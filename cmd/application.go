@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/application"
@@ -19,15 +18,17 @@ var (
 
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
-	Use:     "app",
-	Short:   "Perform application operations",
+	Use:   "app",
+	Short: "Perform application operations",
+	Long:  `Performs application operations related to your OpenShift project.`,
+	Example: fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s",
+		applicationCreateCmd.Example,
+		applicationGetCmd.Example,
+		applicationDeleteCmd.Example,
+		applicationDescribeCmd.Example,
+		applicationListCmd.Example,
+		applicationSetCmd.Example),
 	Aliases: []string{"application"},
-	Example: `  # Get current application,
-  odo app 
-  
-  # Set webapp to current application,
-  odo app webapp
-	`,
 	// 'odo app' is the same as 'odo app get'
 	// 'odo app <application_name>' is the same as 'odo app set <application_name>'
 	Run: func(cmd *cobra.Command, args []string) {
@@ -41,8 +42,12 @@ var applicationCmd = &cobra.Command{
 
 var applicationCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create an application",
-	Args:  cobra.ExactArgs(1),
+	Short: "Create an application",
+	Long:  "Create an application",
+	Example: `  # Create an application
+  odo app create myapp
+	`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Args validation makes sure that there is exactly one argument
 		name := args[0]
@@ -61,8 +66,12 @@ var applicationCreateCmd = &cobra.Command{
 
 var applicationGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "get the active application",
-	Args:  cobra.ExactArgs(0),
+	Short: "Get the active application",
+	Long:  "Get the active application",
+	Example: `  # Get the currently active application
+  odo app get
+	`,
+	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		app, err := application.GetCurrent(client)
@@ -81,7 +90,11 @@ var applicationGetCmd = &cobra.Command{
 
 var applicationDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "delete the given application",
+	Short: "Delete the given application",
+	Long:  "Delete the given application",
+	Example: `  # Delete the application
+  odo app delete myapp
+	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("Please provide application name")
@@ -117,8 +130,12 @@ var applicationDeleteCmd = &cobra.Command{
 
 var applicationListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "lists all the applications",
-	Args:  cobra.ExactArgs(0),
+	Short: "Lists all the applications",
+	Long:  "Lists all the applications",
+	Example: `  # List all applications
+  odo app list
+	`,
+	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		apps, err := application.List(client)
@@ -136,7 +153,11 @@ var applicationListCmd = &cobra.Command{
 
 var applicationSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "Set application as active.",
+	Short: "Set application as active",
+	Long:  "Set application as active",
+	Example: `  # Set an application as active
+  odo app set myapp
+	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("Please provide application name")
@@ -164,7 +185,8 @@ var applicationSetCmd = &cobra.Command{
 
 var applicationDescribeCmd = &cobra.Command{
 	Use:   "describe [application_name]",
-	Short: "describe the given application",
+	Short: "Describe the given application",
+	Long:  "Describe the given application",
 	Args:  cobra.MaximumNArgs(1),
 	Example: `  # Describe webapp application,
   odo app describe webapp

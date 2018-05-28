@@ -1,5 +1,5 @@
-hash: 4c4b24209ff50c6bf736b779517647cb930d2718e9768f7903c22682ef8efe03
-updated: 2018-04-27T15:55:56.535752+02:00
+hash: 0e3933b6297df4c747cd3c6ab3613b564ebe4fcd61aa3b778fb28917bfaa29d6
+updated: 2018-05-24T13:44:03.948397367-04:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -51,12 +51,24 @@ imports:
   version: 449fdfce4d962303d702fec724ef0ad181c92528
   subpackages:
   - spdy
+- name: github.com/emicklei/go-restful
+  version: ff4f55a206334ef123e4f79bbf348980da81ca46
+  subpackages:
+  - log
 - name: github.com/fatih/color
   version: 507f6050b8568533fb3f5504de8e5205fa62a114
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
+- name: github.com/go-openapi/jsonpointer
+  version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
+- name: github.com/go-openapi/jsonreference
+  version: 13c6e3589ad90f49bd3e3bbe2c2cb3d7a4142272
+- name: github.com/go-openapi/spec
+  version: 7abd5745472fff5eb3685386d5fb8bf38683154d
+- name: github.com/go-openapi/swag
+  version: f3f9494671f93fcff853e3c6e9e948b3eb71e590
 - name: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
@@ -101,7 +113,7 @@ imports:
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/json-iterator/go
-  version: 13f86432b882000a51c6e610c620974462691a97
+  version: 36b14963da70d11297d313183d7e6388c8510e1e
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubernetes-incubator/service-catalog
@@ -113,10 +125,20 @@ imports:
   - pkg/apis/settings/v1alpha1
   - pkg/client/clientset_generated/clientset/scheme
   - pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1
+- name: github.com/mailru/easyjson
+  version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
+  subpackages:
+  - buffer
+  - jlexer
+  - jwriter
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
   version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
+- name: github.com/mattn/go-runewidth
+  version: ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb
+- name: github.com/olekukonko/tablewriter
+  version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - name: github.com/onsi/ginkgo
   version: 9eda700730cba42af70d53180f9dcce9266bc2bc
   subpackages:
@@ -154,7 +176,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/openshift/api
-  version: 80a1e2bf16952088360b492c175703755deea8d2
+  version: 0d921e363e951d89f583292c60d013c318df64dc
   subpackages:
   - apps/v1
   - build/v1
@@ -174,10 +196,13 @@ imports:
   - image/clientset/versioned/typed/image/v1
   - project/clientset/versioned/scheme
   - project/clientset/versioned/typed/project/v1
+  - route/clientset/versioned
+  - route/clientset/versioned/fake
   - route/clientset/versioned/scheme
   - route/clientset/versioned/typed/route/v1
+  - route/clientset/versioned/typed/route/v1/fake
 - name: github.com/openshift/source-to-image
-  version: 2a50fd3a5116b6e02d60a118f5e3d86acdd98262
+  version: 27f0729d81fe0641486257252189b8dca856ea28
   subpackages:
   - pkg/api
   - pkg/errors
@@ -193,6 +218,10 @@ imports:
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/PuerkitoBio/purell
+  version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
+- name: github.com/PuerkitoBio/urlesc
+  version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
@@ -202,7 +231,7 @@ imports:
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: golang.org/x/crypto
-  version: b49d69b5da943f7ef3c9cf91c8777c1f78a0cc3c
+  version: 159ae71589f303f9fbfd7528413e0fe944b9c1cb
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
@@ -215,6 +244,7 @@ imports:
   - http2/hpack
   - idna
   - lex/httplex
+  - websocket
 - name: golang.org/x/sys
   version: 7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce
   subpackages:
@@ -223,6 +253,7 @@ imports:
 - name: golang.org/x/text
   version: b19bf474d317b857955b12035d2c5acb57ce8b01
   subpackages:
+  - cases
   - encoding
   - encoding/charmap
   - encoding/htmlindex
@@ -233,20 +264,23 @@ imports:
   - encoding/simplifiedchinese
   - encoding/traditionalchinese
   - encoding/unicode
+  - internal
   - internal/tag
   - internal/utf8internal
   - language
   - runes
   - secure/bidirule
+  - secure/precis
   - transform
   - unicode/bidi
   - unicode/norm
+  - width
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/api
-  version: 73d903622b7391f3312dcbac6483fed484e185f8
+  version: 006a217681ae70cbacdd66a5e2fca1a61a8ff28e
   subpackages:
   - admissionregistration/v1alpha1
   - admissionregistration/v1beta1
@@ -277,22 +311,19 @@ imports:
   - storage/v1alpha1
   - storage/v1beta1
 - name: k8s.io/apimachinery
-  version: 302974c03f7e50f16561ba237db776ab93594ef6
+  version: 68f9c3a1feb3140df59c67ced62d3a5df8e6c9c2
   subpackages:
   - pkg/api/errors
   - pkg/api/meta
   - pkg/api/resource
-  - pkg/api/resource
   - pkg/apis/meta/v1
   - pkg/apis/meta/v1/unstructured
-  - pkg/apis/meta/v1beta1
+  - pkg/apis/meta/v1alpha1
   - pkg/conversion
   - pkg/conversion/queryparams
   - pkg/fields
   - pkg/labels
   - pkg/runtime
-  - pkg/runtime
-  - pkg/runtime/schema
   - pkg/runtime/schema
   - pkg/runtime/serializer
   - pkg/runtime/serializer/json
@@ -302,13 +333,11 @@ imports:
   - pkg/runtime/serializer/versioning
   - pkg/selection
   - pkg/types
-  - pkg/types
   - pkg/util/clock
   - pkg/util/errors
   - pkg/util/framer
   - pkg/util/httpstream
   - pkg/util/httpstream/spdy
-  - pkg/util/intstr
   - pkg/util/intstr
   - pkg/util/json
   - pkg/util/net
@@ -327,6 +356,7 @@ imports:
   version: 9389c055a838d4f208b699b3c7c51b70f2368861
   subpackages:
   - discovery
+  - discovery/fake
   - kubernetes
   - kubernetes/scheme
   - kubernetes/typed/admissionregistration/v1alpha1
@@ -360,6 +390,7 @@ imports:
   - pkg/version
   - rest
   - rest/watch
+  - testing
   - tools/auth
   - tools/clientcmd
   - tools/clientcmd/api
@@ -376,4 +407,9 @@ imports:
   - util/homedir
   - util/integer
   - util/retry
+- name: k8s.io/kube-openapi
+  version: 39a7bf85c140f972372c2a0d1ee40adbf0c8bfe1
+  subpackages:
+  - pkg/common
+  - pkg/util/proto
 testImports: []

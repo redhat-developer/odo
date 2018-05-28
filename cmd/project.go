@@ -15,12 +15,12 @@ var (
 var projectCmd = &cobra.Command{
 	Use:   "project [options]",
 	Short: "Perform project operations",
-	Example: `  # Get current project,
-  odo project 
-  
-  # Set myproject to current project,
-  odo project myproject
-	`,
+	Long:  "Perform project operations",
+	Example: fmt.Sprintf("%s\n%s\n%s\n%s",
+		projectSetCmd.Example,
+		projectCreateCmd.Example,
+		projectListCmd.Example,
+		projectGetCmd.Example),
 	// 'odo project' is the same as 'odo project get'
 	// 'odo project <project_name>' is the same as 'odo project set <project_name>'
 	Run: func(cmd *cobra.Command, args []string) {
@@ -34,8 +34,12 @@ var projectCmd = &cobra.Command{
 
 var projectSetCmd = &cobra.Command{
 	Use:   "set",
-	Short: "set the current active project",
-	Args:  cobra.ExactArgs(1),
+	Short: "Set the current active project",
+	Long:  "Set the current active project",
+	Example: `  # Set the current active project
+  odo project set myproject
+	`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
 		client := getOcClient()
@@ -64,8 +68,12 @@ var projectSetCmd = &cobra.Command{
 
 var projectGetCmd = &cobra.Command{
 	Use:   "get",
-	Short: "get the active project",
-	Args:  cobra.ExactArgs(0),
+	Short: "Get the active project",
+	Long:  "Get the active project",
+	Example: `  # Get the active project
+  odo project get
+	`,
+	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		project := project.GetCurrent(client)
@@ -80,8 +88,12 @@ var projectGetCmd = &cobra.Command{
 
 var projectCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create a new project",
-	Args:  cobra.ExactArgs(1),
+	Short: "Create a new project",
+	Long:  "Create a new project",
+	Example: `  # Create a new project
+  odo project create myproject
+	`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
 		client := getOcClient()
@@ -95,8 +107,12 @@ var projectCreateCmd = &cobra.Command{
 
 var projectListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list all the projects",
-	Args:  cobra.ExactArgs(0),
+	Short: "List all the projects",
+	Long:  "List all the projects",
+	Example: `  # List all the projects
+  odo project list
+	`,
+	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		projects, err := project.List(client)

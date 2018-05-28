@@ -20,24 +20,27 @@ var urlCmd = &cobra.Command{
 	Use:   "url",
 	Short: "Expose component to the outside world",
 	Long: `Expose component to the outside world.
-The URLs that are generated using this command, can be used to access the
-deployed components from outside the cluster.
-`,
+
+The URLs that are generated using this command, can be used to access the deployed components from outside the cluster.`,
+	Example: fmt.Sprintf("%s\n%s\n%s",
+		urlCreateCmd.Example,
+		urlDeleteCmd.Example,
+		urlListCmd.Example),
 }
 
 var urlCreateCmd = &cobra.Command{
 	Use:   "create [component name]",
 	Short: "Create a URL for a component",
 	Long: `Create a URL for a component.
-The created URL can be used to access the specified component from outside the
-OpenShift cluster.
-`,
-	Example: `# Create a URL for the current component.
-odo url create
 
-# Create a URL for a specific component
-odo url create <component name>
+The created URL can be used to access the specified component from outside the OpenShift cluster.
 `,
+	Example: `  # Create a URL for the current component.
+  odo url create
+
+  # Create a URL for a specific component
+  odo url create mycomponent
+	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -69,12 +72,10 @@ odo url create <component name>
 var urlDeleteCmd = &cobra.Command{
 	Use:   "delete <URL>",
 	Short: "Delete a URL",
-	Long: `Delete a URL.
-Deleted the given URL, hence making the service inaccessible.
-`,
-	Example: `# Delete a URL to a component
-odo url delete <URL>
-`,
+	Long:  `Delete the given URL, hence making the service inaccessible.`,
+	Example: `  # Delete a URL to a component
+  odo url delete myurl
+	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -88,11 +89,10 @@ odo url delete <URL>
 var urlListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List URLs",
-	Long: `List URLs.
-Lists all the available URLs which can be used to access the components.`,
+	Long:  `Lists all the available URLs which can be used to access the components.`,
 	Example: ` # List the available URLs
-odo url list
-`,
+  odo url list
+	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -122,8 +122,8 @@ odo url list
 }
 
 func init() {
-	urlListCmd.Flags().StringVarP(&urlListApplication, "application", "a", "", "list URLs for application")
-	urlListCmd.Flags().StringVarP(&urlListComponent, "component", "c", "", "list URLs for component")
+	urlListCmd.Flags().StringVarP(&urlListApplication, "application", "a", "", "List URLs for application")
+	urlListCmd.Flags().StringVarP(&urlListComponent, "component", "c", "", "List URLs for component")
 
 	urlCmd.AddCommand(urlListCmd)
 	urlCmd.AddCommand(urlDeleteCmd)

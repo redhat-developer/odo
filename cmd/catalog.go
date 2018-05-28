@@ -9,15 +9,21 @@ import (
 var catalogCmd = &cobra.Command{
 	Use:   "catalog [options]",
 	Short: "Catalog related operations",
+	Long:  "Catalog related operations",
+	Example: fmt.Sprintf("%s\n%s",
+		catalogListCmd.Example,
+		catalogSearchCmd.Example),
 }
 
 var catalogListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all available component types.",
-	Long:  "List all available component types.",
-	Example: `
-# Get the supported components
-odo catalog list
+	Long:  "List all available component types from OpenShift's Image Builder.",
+	Example: `  # Get the supported components
+  odo catalog list
+
+  # Search for a supported component
+  odo search nodejs
 `,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -44,9 +50,9 @@ var catalogSearchCmd = &cobra.Command{
 This searches for a partial match for the given search term in all the available
 components.
 `,
-	Example: `# Search for a component
-odo catalog search pyt
-`,
+	Example: `  # Search for a component
+  odo catalog search pyt
+	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()

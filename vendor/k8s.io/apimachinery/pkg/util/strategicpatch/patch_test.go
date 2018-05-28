@@ -654,21 +654,6 @@ mergingIntList:
 			ExpectedError: "doesn't match",
 		},
 	},
-	{
-		Description: "missing merge key should error out",
-		StrategicMergePatchRawTestCaseData: StrategicMergePatchRawTestCaseData{
-			Original: []byte(`
-mergingList:
-  - name: 1
-    value: a
-`),
-			TwoWay: []byte(`
-mergingList:
-  - value: b
-`),
-			ExpectedError: "does not contain declared merge key",
-		},
-	},
 }
 
 func TestCustomStrategicMergePatch(t *testing.T) {
