@@ -65,9 +65,8 @@ var componentDeleteCmd = &cobra.Command{
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
-			output, err := component.Delete(client, componentName, applicationName, projectName)
+			err := component.Delete(client, componentName, applicationName, projectName)
 			checkError(err, "")
-			log.Debug(output)
 			fmt.Printf("Component %s from application %s has been deleted\n", componentName, applicationName)
 
 			currentComponent, err := component.GetCurrent(client, applicationName, projectName)
