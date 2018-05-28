@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -14,6 +15,7 @@ import (
 var (
 	urlListComponent   string
 	urlListApplication string
+	urlForceDeleteflag bool
 )
 
 var urlCmd = &cobra.Command{
@@ -80,9 +82,22 @@ var urlDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		u := args[0]
-		err := url.Delete(client, u)
-		checkError(err, "")
-		fmt.Printf("Deleted URL: %v\n", u)
+		var confirmDeletion string
+		if urlForceDeleteflag {
+			confirmDeletion = "y"
+		} else {
+			fmt.Printf("Are you sure you want to delete the url %v? [y/N] ", u)
+			fmt.Scanln(&confirmDeletion)
+		}
+
+		if strings.ToLower(confirmDeletion) == "y" {
+			err := url.Delete(client, u)
+			checkError(err, "")
+			fmt.Printf("Deleted URL: %v\n", u)
+		} else {
+			fmt.Printf("Aborting deletion of url: %v\n", u)
+		}
+
 	},
 }
 
@@ -122,8 +137,9 @@ var urlListCmd = &cobra.Command{
 }
 
 func init() {
-	urlListCmd.Flags().StringVarP(&urlListApplication, "application", "a", "", "List URLs for application")
-	urlListCmd.Flags().StringVarP(&urlListComponent, "component", "c", "", "List URLs for component")
+	urlDeleteCmd.Flags().BoolVarP(&urlForceDeleteflag, "force", "f", false, "Delete url without prompting")
+	urlListCmd.Flags().StringVarP(&urlListApplication, "application", "a", "", "list URLs for application")
+	urlListCmd.Flags().StringVarP(&urlListComponent, "component", "c", "", "list URLs for component")
 
 	urlCmd.AddCommand(urlListCmd)
 	urlCmd.AddCommand(urlDeleteCmd)
