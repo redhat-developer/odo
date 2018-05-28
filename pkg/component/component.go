@@ -314,7 +314,25 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 	// - update BuildConfig source to have git repository https://example.com/myrepo as a source.
 	// - delete initContainer from DC
 
-	if oldSourceType == "local" && newSourceType == "git" {
+	if (oldSourceType == "local" || oldSourceType == "binary") && newSourceType == "git" {
+		annotations := map[string]string{componentSourceURLAnnotation: newSource}
+		annotations[componentSourceTypeAnnotation] = newSourceType
+		err = client.UpdateBuildConfig(componentName, projectName, newSource, annotations)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
+		}
+		err = client.RemoveInitFromDC(componentName, annotations)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update DeploymentConfig  for %s component", componentName)
+		}
+	} else
+	// Steps to update component from git to local or binary
+	// - update odo annotations and labels to reflect changes
+	// - update BuildConfig source to have s2i supervisor bootstrap repository as a source https://github.com/kadel/bootstrap-supervisored-s2i
+	// - add initContainer
+	// - trigger build (wait for it to finish)
+	// - instruct user to run odo push to push local code to a component
+	if oldSourceType == "git" && (newSourceType == "binary" || newSourceType == "local") {
 		annotations := map[string]string{componentSourceURLAnnotation: newSource}
 		annotations[componentSourceTypeAnnotation] = newSourceType
 		err = client.UpdateBuildConfig(componentName, projectName, newSource, annotations)
@@ -322,33 +340,32 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
 		}
 
-		err = client.RemoveInitFromDC(componentName, projectName, annotations)
+		err = client.AddInitToDC(componentName, annotations)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig  for %s component", componentName)
 		}
-
 	}
 
-	// save source path as annotation
-	var annotations map[string]string
-	if newSourceType == "git" {
-		annotations = map[string]string{componentSourceURLAnnotation: newSource}
-		annotations[componentSourceTypeAnnotation] = newSourceType
-		err = client.UpdateBuildConfig(componentName, projectName, newSource, annotations)
-	} else if newSourceType == "local" {
-		sourceURL := url.URL{Scheme: "file", Path: newSource}
-		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
-		annotations[componentSourceTypeAnnotation] = newSourceType
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
-	} else if newSourceType == "binary" {
-		sourceURL := url.URL{Scheme: "file", Path: newSource}
-		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
-		annotations[componentSourceTypeAnnotation] = newSourceType
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
-	}
-	if err != nil {
-		return errors.Wrap(err, "unable to update the component")
-	}
+	// // save source path as annotation
+	// var annotations map[string]string
+	// if newSourceType == "git" {
+	// 	annotations = map[string]string{componentSourceURLAnnotation: newSource}
+	// 	annotations[componentSourceTypeAnnotation] = newSourceType
+	// 	err = client.UpdateBuildConfig(componentName, projectName, newSource, annotations)
+	// } else if newSourceType == "local" {
+	// 	sourceURL := url.URL{Scheme: "file", Path: newSource}
+	// 	annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+	// 	annotations[componentSourceTypeAnnotation] = newSourceType
+	// 	err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+	// } else if newSourceType == "binary" {
+	// 	sourceURL := url.URL{Scheme: "file", Path: newSource}
+	// 	annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+	// 	annotations[componentSourceTypeAnnotation] = newSourceType
+	// 	err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+	// }
+	// if err != nil {
+	// 	return errors.Wrap(err, "unable to update the component")
+	// }
 	return nil
 }
 
