@@ -277,6 +277,15 @@ var _ = Describe("odoe2e", func() {
 					log.Printf("After change: %s", strings.TrimSpace(grepAfterPush))
 				}
 			})
+
+			// Check if url is deleted
+			It("should be able to delete the url added", func() {
+				runCmd("odo url delete nodejs -f")
+
+				urlList := runCmd("odo url list")
+				Expect(urlList).NotTo(ContainSubstring("nodejs"))
+			})
+
 		})
 	})
 
