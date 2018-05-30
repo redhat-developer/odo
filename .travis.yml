@@ -54,13 +54,13 @@ jobs:
         - make test-demo
 
     # test installation script on linux
-    - stage: test
-      services:
-        - docker
-      install:
-        - true
-      script:
-        ./scripts/test-install.sh
+    # - stage: test
+    #   services:
+    #     - docker
+    #   install:
+    #     - true
+    #   script:
+    #     ./scripts/test-install.sh
     # test installation script on macOS
     - state: test
       os: osx
