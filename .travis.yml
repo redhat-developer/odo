@@ -62,13 +62,12 @@ jobs:
       script:
         ./scripts/test-install.sh
     # test installation script on macOS
-    # disabled after rename to odo, can be enabled after next release
-    # - state: test
-    #   os: osx
-    #   install:
-    #     - true
-    #   script:
-    #     ./scripts/install.sh
+    - state: test
+      os: osx
+      install:
+        - true
+      script:
+        ./scripts/install.sh
 
     - stage: deploy
       go_import_path:  github.com/redhat-developer/odo

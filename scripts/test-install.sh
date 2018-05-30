@@ -32,6 +32,7 @@ if [ -n "$FAILED_INSTALL" ]; then
     echo "TEST FAILED!!"
     echo "Instalation script failed in following images:"
     echo "$FAILED_INSTALL"
+    exit 1
 else
     echo "ALL TESTS SUCCEEDED"
 fi
