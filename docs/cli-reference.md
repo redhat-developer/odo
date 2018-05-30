@@ -75,12 +75,12 @@ odo --verbose : Odo (Openshift Do)
         create --component --path --size : Create storage and mount to a component
         delete --force : Delete storage from component
         list --component : List storage attached to a component
-        mount --path : mount storage to a component
+        mount --component --path : mount storage to a component
         unmount --component : Unmount storage from the current component
     update --binary --git --local : Update the source code path of a component
     url : Expose component to the outside world
         create : Create a URL for a component
-        delete : Delete a URL
+        delete --force : Delete a URL
         list --application --component : List URLs
     version : Print the client version information
     watch : Watch for changes, update component on change
@@ -352,17 +352,19 @@ Push source code to a component.
   odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi
 	
   # Delete storage mystorage from the currently active component
-	odo storage delete mystorage
+  odo storage delete mystorage
 
   # Delete storage mystorage from component 'mongodb'
   odo storage delete mystorage --component mongodb
 
   # Unmount storage 'dbstorage' from current component
-  odo storage umount dbstorage
+  odo storage unmount dbstorage
 
   # Unmount storage 'database' from component 'mongodb'
-  odo storage umount database --component mongodb
-  # List all storage attached or mounted to the current component and all unattached or unmounted storage in the current application
+  odo storage unmount database --component mongodb
+
+  # List all storage attached or mounted to the current component and 
+  # all unattached or unmounted storage in the current application
   odo storage list
 	
 ```
