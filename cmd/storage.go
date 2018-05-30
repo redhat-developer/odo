@@ -58,10 +58,11 @@ var storageUnmountCmd = &cobra.Command{
 
   The storage and the contents are not deleted, the storage is only unmounted from the component, and hence is no longer accessible by the component.`,
 	Example: `  # Unmount storage 'dbstorage' from current component
-  odo storage umount dbstorage
+  odo storage unmount dbstorage
 
   # Unmount storage 'database' from component 'mongodb'
-  odo storage umount database --component mongodb`,
+  odo storage unmount database --component mongodb
+`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -89,7 +90,7 @@ var storageDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete storage from component",
 	Example: `  # Delete storage mystorage from the currently active component
-	odo storage delete mystorage
+  odo storage delete mystorage
 
   # Delete storage mystorage from component 'mongodb'
   odo storage delete mystorage --component mongodb
@@ -144,7 +145,8 @@ var storageListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List storage attached to a component",
 	Long:  "List storage attached to a component",
-	Example: `  # List all storage attached or mounted to the current component and all unattached or unmounted storage in the current application
+	Example: `  # List all storage attached or mounted to the current component and 
+  # all unattached or unmounted storage in the current application
   odo storage list
 	`,
 	Args: cobra.MaximumNArgs(1),
@@ -200,10 +202,10 @@ var storageMountCmd = &cobra.Command{
 	Use:   "mount [storage name]",
 	Short: "mount storage to a component",
 	Example: `  # Mount storage 'dbstorage' to current component
-  odo storage mount dbstorage
+  odo storage mount dbstorage --path /data
 
   # Mount storage 'database' to component 'mongodb'
-  odo storage mount database --component mongodb`,
+  odo storage mount database --component mongodb --path /data`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -244,6 +246,7 @@ func init() {
 	storageCreateCmd.Flags().StringVar(&storageComponent, "component", "", "Component to add storage to. Defaults to active component.")
 	storageUnmountCmd.Flags().StringVar(&storageComponent, "component", "", "Component from which the storage will be unmounted. Defaults to active component.")
 	storageListCmd.Flags().StringVar(&storageComponent, "component", "", "List storage for given component. Defaults to active component.")
+	storageMountCmd.Flags().StringVar(&storageComponent, "component", "", "Component to which storage will be mounted to.")
 
 	storageCmd.AddCommand(storageCreateCmd)
 	storageCmd.AddCommand(storageDeleteCmd)
