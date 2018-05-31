@@ -298,3 +298,18 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 	}
 	return nil
 }
+
+// Gets the storageName mounted to the given path in the given component and application
+// GetStorageNameFromMountPath returns the name of the storage or the error
+func GetStorageNameFromMountPath(client *occlient.Client, path string, componentName string, applicationName string) (string, error) {
+	storages, err := List(client, componentName, applicationName)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to list storage for component %v", componentName)
+	}
+	for _, storage := range storages {
+		if storage.Path == path {
+			return storage.Name, nil
+		}
+	}
+	return "", nil
+}
