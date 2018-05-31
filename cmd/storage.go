@@ -63,7 +63,8 @@ var storageUnmountCmd = &cobra.Command{
   # Unmount storage 'database' from component 'mongodb'
   odo storage unmount database --component mongodb
 `,
-	Args: cobra.ExactArgs(1),
+	Aliases: []string{"umount"},
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)
