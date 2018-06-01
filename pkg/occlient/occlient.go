@@ -25,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
+	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
 	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
@@ -1053,37 +1054,62 @@ func (c *Client) FollowBuildLog(buildName string) error {
 }
 
 // Display DeploymentConfig log to stdout
-func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, stdout io.Writer) error {
+func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followLog bool, stdout io.Writer) error {
+
+	// Set standard log options
+	deploymentLogOptions := appsv1.DeploymentLogOptions{Follow: false, NoWait: true}
+
+	// If the log is being followed, set it to follow / don't wait
+	if followLog {
+		// TODO: https://github.com/kubernetes/kubernetes/pull/60696
+		// Unable to set to 0, until openshift/client-go updates their Kubernetes vendoring to 1.11.0
+		// Set to 1 for now.
+		tailLines := int64(1)
+		deploymentLogOptions = appsv1.DeploymentLogOptions{Follow: true, NoWait: false, Previous: false, TailLines: &tailLines}
+	}
 
 	// RESTClient call to OpenShift
 	rd, err := c.appsClient.RESTClient().Get().
 		Namespace(c.namespace).
 		Name(deploymentConfigName).
 		Resource("deploymentconfigs").
-		SubResource("log").Stream()
-
-	if rd == nil {
-		return errors.New("unable to retrieve DeploymentConfig from OpenShift, does your component exist?")
-	}
-
-	defer rd.Close()
-
+		SubResource("log").
+		VersionedParams(&deploymentLogOptions, appsschema.ParameterCodec).
+		Stream()
 	if err != nil {
 		return errors.Wrapf(err, "unable get deploymentconfigs log %s", deploymentConfigName)
 	}
-
-	// Copy to buffer (we aren't going to be streaming the logs..)
-	buf := new(bytes.Buffer)
-	_, err = io.Copy(buf, rd)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to copy stream to buffer")
+	if rd == nil {
+		return errors.New("unable to retrieve DeploymentConfig from OpenShift, does your component exist?")
 	}
+	defer rd.Close()
 
 	// Copy to stdout (in yellow)
 	color.Set(color.FgYellow)
 	defer color.Unset()
-	if _, err = io.Copy(stdout, buf); err != nil {
-		return errors.Wrapf(err, "error copying logs to stdout")
+
+	// If we are going to followLog, we'll be copying it to stdout
+	// else, we copy it to a buffer
+	if followLog {
+
+		if _, err = io.Copy(stdout, rd); err != nil {
+			return errors.Wrapf(err, "error followLoging logs for %s", deploymentConfigName)
+		}
+
+	} else {
+
+		// Copy to buffer (we aren't going to be followLoging the logs..)
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, rd)
+		if err != nil {
+			return errors.Wrapf(err, "unable to copy followLog to buffer")
+		}
+
+		// Copy to stdout
+		if _, err = io.Copy(stdout, buf); err != nil {
+			return errors.Wrapf(err, "error copying logs to stdout")
+		}
+
 	}
 
 	return nil
