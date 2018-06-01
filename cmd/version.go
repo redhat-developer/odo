@@ -54,5 +54,9 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
+	// Add a defined annotation in order to appear in the help menu
+	versionCmd.Annotations = map[string]string{"command": "utility"}
+	versionCmd.SetUsageTemplate(cmdUsageTemplate)
+
 	rootCmd.AddCommand(versionCmd)
 }

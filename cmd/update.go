@@ -115,5 +115,9 @@ func init() {
 	updateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
 	updateCmd.Flags().StringVar(&componentLocal, "local", "", "Use local directory as a source for component.")
 
+	// Add a defined annotation in order to appear in the help menu
+	updateCmd.Annotations = map[string]string{"command": "component"}
+	updateCmd.SetUsageTemplate(cmdUsageTemplate)
+
 	rootCmd.AddCommand(updateCmd)
 }

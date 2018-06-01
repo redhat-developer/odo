@@ -65,5 +65,10 @@ printed to STDOUT.
 
 func init() {
 	linkCmd.PersistentFlags().StringVar(&linkComponent, "component", "", "Component to add link to, defaults to active component")
+
+	// Add a defined annotation in order to appear in the help menu
+	linkCmd.Annotations = map[string]string{"command": "component"}
+	linkCmd.SetUsageTemplate(cmdUsageTemplate)
+
 	rootCmd.AddCommand(linkCmd)
 }

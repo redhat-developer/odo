@@ -136,5 +136,10 @@ func init() {
 	projectCmd.AddCommand(projectSetCmd)
 	projectCmd.AddCommand(projectCreateCmd)
 	projectCmd.AddCommand(projectListCmd)
+
+	// Add a defined annotation in order to appear in the help menu
+	projectCmd.Annotations = map[string]string{"command": "other"}
+	projectCmd.SetUsageTemplate(cmdUsageTemplate)
+
 	rootCmd.AddCommand(projectCmd)
 }

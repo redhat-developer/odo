@@ -95,5 +95,9 @@ func init() {
 	componentCmd.AddCommand(componentGetCmd)
 	componentCmd.AddCommand(componentSetCmd)
 
+	// Add a defined annotation in order to appear in the help menu
+	componentCmd.Annotations = map[string]string{"command": "component"}
+	componentCmd.SetUsageTemplate(cmdUsageTemplate)
+
 	rootCmd.AddCommand(componentCmd)
 }

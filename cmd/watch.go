@@ -77,5 +77,9 @@ var watchCmd = &cobra.Command{
 }
 
 func init() {
+	// Add a defined annotation in order to appear in the help menu
+	watchCmd.Annotations = map[string]string{"command": "component"}
+	watchCmd.SetUsageTemplate(cmdUsageTemplate)
+
 	rootCmd.AddCommand(watchCmd)
 }
