@@ -23,6 +23,7 @@ import (
 
 var t = strconv.FormatInt(time.Now().Unix(), 10)
 var projName = fmt.Sprintf("odo-%s", t)
+var curProj string
 
 func runCmd(cmdS string) string {
 	cmd := exec.Command("/bin/sh", "-c", cmdS)
@@ -106,6 +107,15 @@ func TestOdo(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "odo test suite")
 }
+
+var _ = BeforeSuite(func() {
+	// Save the current project
+	curProj = runCmd("oc project -q")
+})
+
+var _ = AfterSuite(func() {
+	runCmd("oc project " + curProj)
+})
 
 var _ = Describe("odoe2e", func() {
 
