@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -77,7 +78,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 // WatchAndPush watches path, if something changes in  that path it calls PushLocal
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
-func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, asFile bool, out io.Writer) error {
+func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer) error {
 	log.Debugf("starting WatchAndPush, path: %s, component: %s", path, componentName)
 
 	// it might be better to expose this as argument in the future
@@ -170,7 +171,18 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				fmt.Fprintf(out, "File %s changed\n", file)
 			}
 			fmt.Fprintf(out, "Pushing files...\n")
-			err := PushLocal(client, componentName, applicationName, path, asFile, out)
+			fileInfo, err := os.Stat(path)
+			if err != nil {
+				return errors.Wrapf(err, "%s: file doesn't exist", path)
+			}
+			if fileInfo.IsDir() {
+				log.Debugf("Copying files %s to pod", changedFiles)
+				err = PushLocal(client, componentName, applicationName, path, out, changedFiles)
+			} else {
+				pathDir := filepath.Dir(path)
+				log.Debugf("Copying file %s to pod", path)
+				err = PushLocal(client, componentName, applicationName, pathDir, out, []string{path})
+			}
 			if err != nil {
 				// Intentionally not exiting on error here.
 				// We don't want to break watch when push failed, it might be fixed with the next change.

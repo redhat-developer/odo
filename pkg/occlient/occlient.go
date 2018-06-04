@@ -1,14 +1,16 @@
 package occlient
 
 import (
+	taro "archive/tar"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
-	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +30,7 @@ import (
 	imageclientset "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
 
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -65,7 +68,6 @@ oc login https://mycluster.mydomain.com
 `
 
 type Client struct {
-	ocpath               string
 	kubeClient           kubernetes.Interface
 	imageClient          imageclientset.ImageV1Interface
 	appsClient           appsclientset.AppsV1Interface
@@ -73,6 +75,7 @@ type Client struct {
 	projectClient        projectclientset.ProjectV1Interface
 	serviceCatalogClient servicecatalogclienset.ServicecatalogV1beta1Interface
 	routeClient          routeclientset.RouteV1Interface
+	userClient           userclientset.UserV1Interface
 	kubeConfig           clientcmd.ClientConfig
 	namespace            string
 }
@@ -132,26 +135,25 @@ func New(connectionCheck bool) (*Client, error) {
 	}
 	client.routeClient = routeClient
 
+	userClient, err := userclientset.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.userClient = userClient
+
 	namespace, _, err := client.kubeConfig.Namespace()
 	if err != nil {
 		return nil, err
 	}
 	client.namespace = namespace
 
-	// The following should go away once we're done with complete migration to
-	// client-go
-	ocpath, err := getOcBinary()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get oc binary")
-	}
-	client.ocpath = ocpath
-
 	// Skip this if connectionCheck is false
 	if !connectionCheck {
-		if !isServerUp(client.ocpath) {
+		if !isServerUp(config.Host) {
 			return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
 		}
-		if !isLoggedIn(client.ocpath) {
+		if !client.isLoggedIn() {
 			return nil, errors.New("Please log in to the cluster")
 		}
 	}
@@ -208,99 +210,12 @@ func imageWithMetadata(image *imagev1.Image) error {
 	return nil
 }
 
-// getOcBinary returns full path to oc binary
-// first it looks for env variable KUBECTL_PLUGINS_CALLER (run as oc plugin)
-// than looks for env variable OC_BIN (set manualy by user)
-// at last it tries to find oc in default PATH
-func getOcBinary() (string, error) {
-	log.Debug("getOcBinary - searching for oc binary")
-
-	var ocPath string
-
-	envKubectlPluginCaller := os.Getenv("KUBECTL_PLUGINS_CALLER")
-	envOcBin := os.Getenv("OC_BIN")
-
-	log.Debugf("envKubectlPluginCaller = %s\n", envKubectlPluginCaller)
-	log.Debugf("envOcBin = %s\n", envOcBin)
-
-	if len(envKubectlPluginCaller) > 0 {
-		log.Debug("using path from KUBECTL_PLUGINS_CALLER")
-		ocPath = envKubectlPluginCaller
-	} else if len(envOcBin) > 0 {
-		log.Debug("using path from OC_BIN")
-		ocPath = envOcBin
-	} else {
-		path, err := exec.LookPath("oc")
-		if err != nil {
-			log.Debug("oc binary not found in PATH")
-			return "", err
-		}
-		log.Debug("using oc from PATH")
-		ocPath = path
-	}
-	log.Debug("using oc from %s", ocPath)
-
-	if _, err := os.Stat(ocPath); err != nil {
-		return "", err
-	}
-
-	return ocPath, nil
-}
-
-type OcCommand struct {
-	args   []string
-	data   *string
-	format string
-}
-
-// runOcCommands executes oc
-// args - command line arguments to be passed to oc ('-o json' is added by default if data is not nil)
-// data - is a pointer to a string, if set than data is given to command to stdin ('-f -' is added to args as default)
-func (c *Client) runOcComamnd(command *OcCommand) ([]byte, error) {
-	cmd := exec.Command(c.ocpath, command.args...)
-
-	// if data is not set assume that it is get command
-	if len(command.format) > 0 {
-		cmd.Args = append(cmd.Args, "-o", command.format)
-	}
-	if command.data != nil {
-		// data is given, assume this is create or apply command
-		// that takes data from stdin
-		cmd.Args = append(cmd.Args, "-f", "-")
-
-		// Read from stdin
-		stdin, err := cmd.StdinPipe()
-		if err != nil {
-			return nil, err
-		}
-
-		// Write to stdin
-		go func() {
-			defer stdin.Close()
-			_, err := io.WriteString(stdin, *command.data)
-			if err != nil {
-				fmt.Printf("can't write to stdin %v\n", err)
-			}
-		}()
-	}
-
-	log.Debugf("running oc command with arguments: %s\n", strings.Join(cmd.Args, " "))
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			return nil, errors.Wrapf(err, "command: %v failed to run:\n%v", cmd.Args, string(output))
-		}
-		return nil, errors.Wrap(err, "unable to get combined output")
-	}
-
-	return output, nil
-}
-
-func isLoggedIn(ocpath string) bool {
-	cmd := exec.Command(ocpath, "whoami")
-	output, err := cmd.CombinedOutput()
-	log.Debugf("isLoggedIn err:  %#v \n output: %#v", err, string(output))
+// isLoggedIn checks whether user is logged in or not and returns boolean output
+func (c *Client) isLoggedIn() bool {
+	// ~ indicates current user
+	// Reference: https://github.com/openshift/origin/blob/master/pkg/oc/cli/cmd/whoami.go#L55
+	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
+	log.Debugf("isLoggedIn err:  %#v \n output: %#v", err, output.Name)
 	if err != nil {
 		log.Debug(errors.Wrap(err, "error running command"))
 		log.Debugf("Output is: %v", output)
@@ -309,15 +224,8 @@ func isLoggedIn(ocpath string) bool {
 	return true
 }
 
-func isServerUp(ocpath string) bool {
-	cmd := exec.Command(ocpath, "whoami", "--show-server")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Debug(errors.Wrap(err, "error running command"))
-		return false
-	}
-
-	server := strings.TrimSpace(string(output))
+// isServerUp returns true if server is up and running
+func isServerUp(server string) bool {
 	u, err := url.Parse(server)
 	if err != nil {
 		log.Debug(errors.Wrap(err, "unable to parse url"))
@@ -1531,46 +1439,170 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 	return &pods.Items[0], nil
 }
 
-// RsyncPath copies local directory to directory in running Pod.
-func (c *Client) RsyncPath(localPath string, targetPodName string, targetPath string) (string, error) {
-	log.Debugf("Syncing %s to pod %s:%s", localPath, targetPodName, targetPath)
+// CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.
+// copyFiles is list of changed files captured during `odo watch` as well as binary file path
+// During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
+// During copying local source components, localPath represent base directory path whereas copyFiles is empty
+// During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
+func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string) error {
+	fmt.Println("my localpath is", localPath)
+	dest := targetPath + "/" + path.Base(localPath)
+	reader, writer := io.Pipe()
+	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
+	go func() {
+		defer writer.Close()
+		err := makeTar(localPath, dest, writer, copyFiles)
+		if err != nil {
+			log.Errorf("Error while creating tar: %#v", err)
+			os.Exit(-1)
+		}
 
-	// TODO: do this without using 'oc' binary
-	args := []string{
-		"rsync",
-		localPath,
-		fmt.Sprintf("%s:%s", targetPodName, targetPath),
-		"--exclude", ".git",
-		"--no-perms",
-	}
+	}()
 
-	output, err := c.runOcComamnd(&OcCommand{args: args})
+	// cmdArr will run inside container
+	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
+
+	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
 	if err != nil {
-		return "", err
+		return err
 	}
-
-	log.Debugf("command output:\n %s \n", string(output[:]))
-	return string(output[:]), nil
+	return nil
 }
 
-// CopyFile copies single local file to the directory in running Pod.
-func (c *Client) CopyFile(localFile string, targetPodName string, targetPath string) (string, error) {
-	log.Debugf("Copying file %s to pod %s:%s", localFile, targetPodName, targetPath)
+// checkFileExist check if given file exists or not
+func checkFileExist(fileName string) bool {
+	_, err := os.Stat(fileName)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
 
-	// TODO: do this without using 'oc' binary
-	args := []string{
-		"cp",
-		localFile,
-		fmt.Sprintf("%s:%s", targetPodName, targetPath),
+// makeTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L309
+// srcPath is ignored if files is set
+func makeTar(srcPath, destPath string, writer io.Writer, files []string) error {
+	// TODO: use compression here?
+	tarWriter := taro.NewWriter(writer)
+	defer tarWriter.Close()
+	srcPath = path.Clean(srcPath)
+	destPath = path.Clean(destPath)
+
+	if len(files) != 0 {
+		//watchTar
+		for _, fileName := range files {
+			if checkFileExist(fileName) {
+				err := tar(tarWriter, fileName, path.Base(destPath))
+				if err != nil {
+					return err
+				}
+
+			}
+		}
+	} else {
+		return recursiveTar(path.Dir(srcPath), path.Base(srcPath), path.Dir(destPath), path.Base(destPath), tarWriter)
 	}
 
-	output, err := c.runOcComamnd(&OcCommand{args: args})
+	return nil
+}
+
+// Tar will be used to tar files using odo watch
+// inspired from https://gist.github.com/jonmorehouse/9060515
+func tar(tw *taro.Writer, fileName string, destFile string) error {
+	stat, _ := os.Lstat(fileName)
+
+	// now lets create the header as needed for this file within the tarball
+	hdr, err := taro.FileInfoHeader(stat, fileName)
 	if err != nil {
-		return "", err
+		return err
+	}
+	splitFileName := strings.Split(fileName, destFile)[1]
+
+	hdr.Name = destFile + splitFileName
+
+	// write the header to the tarball archive
+	err = tw.WriteHeader(hdr)
+	if err != nil {
+		return err
 	}
 
-	log.Debugf("command output:\n %s \n", string(output[:]))
-	return string(output[:]), nil
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// copy the file data to the tarball
+	_, err = io.Copy(tw, file)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
+func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer) error {
+	filepath := path.Join(srcBase, srcFile)
+	stat, err := os.Lstat(filepath)
+	if err != nil {
+		return err
+	}
+	if stat.IsDir() {
+		files, err := ioutil.ReadDir(filepath)
+		if err != nil {
+			return err
+		}
+		if len(files) == 0 {
+			//case empty directory
+			hdr, _ := taro.FileInfoHeader(stat, filepath)
+			hdr.Name = destFile
+			if err := tw.WriteHeader(hdr); err != nil {
+				return err
+			}
+		}
+		for _, f := range files {
+			if err := recursiveTar(srcBase, path.Join(srcFile, f.Name()), destBase, path.Join(destFile, f.Name()), tw); err != nil {
+				return err
+			}
+		}
+		return nil
+	} else if stat.Mode()&os.ModeSymlink != 0 {
+		//case soft link
+		hdr, _ := taro.FileInfoHeader(stat, filepath)
+		target, err := os.Readlink(filepath)
+		if err != nil {
+			return err
+		}
+
+		hdr.Linkname = target
+		hdr.Name = destFile
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+	} else {
+		//case regular file or other file type like pipe
+		hdr, err := taro.FileInfoHeader(stat, filepath)
+		if err != nil {
+			return err
+		}
+		hdr.Name = destFile
+
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		f, err := os.Open(filepath)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		if _, err := io.Copy(tw, f); err != nil {
+			return err
+		}
+		return f.Close()
+	}
+	return nil
 }
 
 // GetOneServiceFromSelector returns the Service object associated with the
