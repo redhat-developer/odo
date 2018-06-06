@@ -158,8 +158,13 @@ var storageListCmd = &cobra.Command{
 		projectName := project.GetCurrent(client)
 		componentName := getComponent(client, storageComponent, applicationName, projectName)
 
+		if componentName == "" {
+			fmt.Println("No component selected")
+			os.Exit(1)
+		}
+
 		storageList, err := storage.List(client, componentName, applicationName)
-		checkError(err, "Failed to list storage")
+		checkError(err, "")
 
 		hasMounted := false
 		hasUnmounted := false
