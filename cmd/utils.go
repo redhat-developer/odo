@@ -27,11 +27,11 @@ func printDeleteAppInfo(client *occlient.Client, appName string, currentProject 
 		fmt.Println("Component", currentComponent.Name, "will be deleted.")
 
 		if len(componentURL) != 0 {
-			fmt.Println("  This component is externally exposed, and the URL will be removed")
+			fmt.Println("  Externally exposed URL will be removed")
 		}
 
 		for _, store := range appStore {
-			fmt.Println("  This Component uses storage", store.Name, "of size", store.Size, "will be removed")
+			fmt.Println("  Storage", store.Name, "of size", store.Size, "will be removed")
 		}
 
 	}
@@ -64,11 +64,11 @@ func printComponentInfo(currentComponentName string, componentType string, path 
 	}
 	// URL
 	if componentURL != "" {
-		fmt.Println("This Component is externally exposed via", componentURL)
+		fmt.Println("Externally exposed via", componentURL)
 	}
 	// Storage
 	for _, store := range appStore {
-		fmt.Println("This Component uses storage", store.Name, "of size", store.Size)
+		fmt.Println("Storage", store.Name, "of size", store.Size)
 	}
 }
 
