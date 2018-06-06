@@ -47,6 +47,9 @@ var logCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(logCmd)
+	// Add a defined annotation in order to appear in the help menu
+	logCmd.Annotations = map[string]string{"command": "component"}
+	logCmd.SetUsageTemplate(cmdUsageTemplate)
 
+	rootCmd.AddCommand(logCmd)
 }

@@ -58,6 +58,10 @@ func Generate(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
+	// Add a defined annotation in order to appear in the help menu
+	completionCmd.Annotations = map[string]string{"command": "utility"}
+	completionCmd.SetUsageTemplate(cmdUsageTemplate)
+
 	rootCmd.AddCommand(completionCmd)
 }
 

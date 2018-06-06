@@ -75,5 +75,10 @@ components.
 func init() {
 	catalogCmd.AddCommand(catalogSearchCmd)
 	catalogCmd.AddCommand(catalogListCmd)
+
+	// Add a defined annotation in order to appear in the help menu
+	catalogCmd.Annotations = map[string]string{"command": "other"}
+	catalogCmd.SetUsageTemplate(cmdUsageTemplate)
+
 	rootCmd.AddCommand(catalogCmd)
 }
