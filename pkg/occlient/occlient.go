@@ -651,7 +651,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labels map[string]string, annotations map[string]string) error {
 	// git repository that will be used for bootstraping
 	const bootstrapperURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
-	const bootstrapperRef = "v0.0.1"
+	const bootstrapperRef = "v0.0.2"
 
 	appRootVolumeName := fmt.Sprintf("%s-s2idata", name)
 
