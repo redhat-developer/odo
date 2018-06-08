@@ -448,10 +448,11 @@ func GetComponentDesc(client *occlient.Client, currentComponent string, currentA
 }
 
 // Get Component logs
-func GetLogs(client *occlient.Client, applicationName string, stdout io.Writer) error {
+// follow the DeploymentConfig logs if follow is set to true
+func GetLogs(client *occlient.Client, applicationName string, follow bool, stdout io.Writer) error {
 
 	// Retrieve the logs
-	err := client.DisplayDeploymentConfigLog(applicationName, stdout)
+	err := client.DisplayDeploymentConfigLog(applicationName, follow, stdout)
 	if err != nil {
 		return err
 	}

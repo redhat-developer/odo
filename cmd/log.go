@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	logFollow bool
+)
+
 var logCmd = &cobra.Command{
 	Use:   "log [component_name]",
 	Short: "Retrieve the log for the given component.",
@@ -41,12 +45,15 @@ var logCmd = &cobra.Command{
 		// Retrieve and set the currentComponent
 		currentComponent := getComponent(client, argComponent, currentApplication, currentProject)
 
-		err = component.GetLogs(client, currentComponent, stdout)
+		// Retrieve the log
+		err = component.GetLogs(client, currentComponent, logFollow, stdout)
 		checkError(err, "Unable to retrieve logs, does your component exist?")
 	},
 }
 
 func init() {
+	logCmd.Flags().BoolVarP(&logFollow, "follow", "f", false, "Follow logs")
+
 	// Add a defined annotation in order to appear in the help menu
 	logCmd.Annotations = map[string]string{"command": "component"}
 	logCmd.SetUsageTemplate(cmdUsageTemplate)
