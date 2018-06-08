@@ -8,8 +8,84 @@ import (
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	ktesting "k8s.io/client-go/testing"
 )
+
+func TestCreatePVC(t *testing.T) {
+	tests := []struct {
+		name    string
+		size    string
+		labels  map[string]string
+		wantErr bool
+	}{
+		{
+			name: "storage 10Gi",
+			size: "10Gi",
+			labels: map[string]string{
+				"name":      "mongodb",
+				"namespace": "blog",
+			},
+			wantErr: false,
+		},
+		{
+			name: "storage 1024",
+			size: "1024",
+			labels: map[string]string{
+				"name":      "PostgreSQL",
+				"namespace": "backend",
+			},
+			wantErr: false,
+		},
+		{
+			name: "storage invalid size",
+			size: "4#0",
+			labels: map[string]string{
+				"name":      "MySQL",
+				"namespace": "",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+
+			_, err := fkclient.CreatePVC(tt.name, tt.size, tt.labels)
+
+			// Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.CreatePVC(name, size, labels) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			// Check for validating actions performed
+			if (len(fkclientset.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
+				t.Errorf("expected 1 action in CreatePVC got: %v", fkclientset.RouteClientset.Actions())
+			}
+			// Checks for return values in positive cases
+			if err == nil {
+				createdPVC := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.PersistentVolumeClaim)
+				quantity, err := resource.ParseQuantity(tt.size)
+				if err != nil {
+					t.Errorf("failed to create quantity by calling resource.ParseQuantity(%v)", tt.size)
+				}
+
+				// created PVC should be labeled with labels passed to CreatePVC
+				if !reflect.DeepEqual(createdPVC.Labels, tt.labels) {
+					t.Errorf("labels in created route is not matching expected labels, expected: %v, got: %v", tt.labels, createdPVC.Labels)
+				}
+				// name, size of createdPVC should be matching to size, name passed to CreatePVC
+				if !reflect.DeepEqual(createdPVC.Spec.Resources.Requests["storage"], quantity) {
+					t.Errorf("size of PVC is not matching to expected size, expected: %v, got %v", quantity, createdPVC.Spec.Resources.Requests["storage"])
+				}
+				if createdPVC.Name != tt.name {
+					t.Errorf("PVC name is not matching to expected name, expected: %s, got %s", tt.name, createdPVC.Name)
+				}
+			}
+		})
+	}
+}
 
 func TestCreateRoute(t *testing.T) {
 	tests := []struct {
@@ -50,7 +126,6 @@ func TestCreateRoute(t *testing.T) {
 			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf(" client.CreateRoute(string, labels) unexpected error %v, wantErr %v", err, tt.wantErr)
-				return
 			}
 
 			// Check for validating actions performed
