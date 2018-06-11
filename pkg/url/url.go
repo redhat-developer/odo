@@ -8,6 +8,7 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -19,21 +20,35 @@ type URL struct {
 }
 
 // Delete deletes a URL
-func Delete(client *occlient.Client, name string) error {
-	return client.DeleteRoute(name)
+func Delete(client *occlient.Client, urlName string, applicationName string) error {
+
+	// Namespace the URL name
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(urlName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	return client.DeleteRoute(namespacedOpenShiftObject)
 }
 
 // Create creates a URL
 func Create(client *occlient.Client, componentName, applicationName string) (*URL, error) {
 	labels := componentlabels.GetLabels(componentName, applicationName, false)
 
-	route, err := client.CreateRoute(componentName, labels)
+	// Namespace the component
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	// Pass in the namespace name, link to the service (componentName) and labels to create a route
+	route, err := client.CreateRoute(namespacedOpenShiftObject, labels)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}
 
 	return &URL{
-		Name:     route.Name,
+		Name:     route.Labels[componentlabels.ComponentLabel],
 		URL:      route.Spec.Host,
 		Protocol: getProtocol(*route),
 	}, nil
@@ -59,7 +74,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	var urls []URL
 	for _, r := range routes {
 		urls = append(urls, URL{
-			Name:     r.Name,
+			Name:     r.Labels[componentlabels.ComponentLabel],
 			URL:      r.Spec.Host,
 			Protocol: getProtocol(r),
 		})

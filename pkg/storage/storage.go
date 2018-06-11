@@ -25,12 +25,20 @@ type StorageInfo struct {
 // Create adds storage to given component of given application
 func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
 
+	// Namespace the component
+	// We will use name+applicationName instead of componentName+applicationName until:
+	// https://github.com/redhat-developer/odo/issues/504 is resolved.
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create namespaced name")
+	}
+
 	labels := storagelabels.GetLabels(name, componentName, applicationName, true)
 
 	log.Debugf("Got labels for PVC: %v", labels)
 
 	// Create PVC
-	pvc, err := client.CreatePVC(generatePVCNameFromStorageName(name), size, labels)
+	pvc, err := client.CreatePVC(generatePVCNameFromStorageName(namespacedOpenShiftObject), size, labels)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to create PVC")
 	}

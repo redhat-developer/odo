@@ -1270,16 +1270,16 @@ func (c *Client) clusterServiceClassExists(name string) bool {
 
 // CreateRoute creates a route object for the given service and with the given
 // labels
-func (c *Client) CreateRoute(service string, labels map[string]string) (*routev1.Route, error) {
+func (c *Client) CreateRoute(name string, labels map[string]string) (*routev1.Route, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   service,
+			Name:   name,
 			Labels: labels,
 		},
 		Spec: routev1.RouteSpec{
 			To: routev1.RouteTargetReference{
 				Kind: "Service",
-				Name: service,
+				Name: name,
 			},
 		},
 	}
@@ -1292,7 +1292,11 @@ func (c *Client) CreateRoute(service string, labels map[string]string) (*routev1
 
 // DeleteRoute deleted the given route
 func (c *Client) DeleteRoute(name string) error {
-	return errors.Wrap(c.routeClient.Routes(c.namespace).Delete(name, &metav1.DeleteOptions{}), "unable to delete route")
+	err := c.routeClient.Routes(c.namespace).Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		return errors.Wrap(err, "unable to delete route")
+	}
+	return nil
 }
 
 // ListRoutes lists all the routes based on the given label selector

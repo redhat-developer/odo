@@ -86,7 +86,7 @@ var _ = Describe("katacodaDemo", func() {
 			runCmd("odo url create frontend")
 
 			getUrl := runCmd("odo url list")
-			Expect(getUrl).To(ContainSubstring("frontend-sample-proj"))
+			Expect(getUrl).To(ContainSubstring("frontend-sample-sample-proj"))
 		})
 	})
 

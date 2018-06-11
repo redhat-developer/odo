@@ -55,9 +55,15 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 	annotations := map[string]string{componentSourceURLAnnotation: url}
 	annotations[componentSourceTypeAnnotation] = "git"
 
-	err := client.NewAppS2I(name, ctype, url, labels, annotations)
+	// Namespace the component
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create git component %s", name)
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	err = client.NewAppS2I(namespacedOpenShiftObject, ctype, url, labels, annotations)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
 	return nil
 }
@@ -74,7 +80,13 @@ func CreateFromPath(client *occlient.Client, name string, ctype string, path str
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 	annotations[componentSourceTypeAnnotation] = sourceType
 
-	err := client.BootstrapSupervisoredS2I(name, ctype, labels, annotations)
+	// Namespace the component
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	err = client.BootstrapSupervisoredS2I(namespacedOpenShiftObject, ctype, labels, annotations)
 	if err != nil {
 		return err
 	}
@@ -213,8 +225,15 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 // If 'streamLogs' is true than it streams build logs on stdout, set 'wait' to true if you want to return error if build fails.
 // If 'wait' is true than it waits for build to successfully complete.
 // If 'wait' is false than this function won't return error even if build failed.
-func Build(client *occlient.Client, componentName string, streamLogs bool, wait bool) error {
-	buildName, err := client.StartBuild(componentName)
+func Build(client *occlient.Client, componentName string, applicationName string, streamLogs bool, wait bool) error {
+
+	// Namespace the component
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	buildName, err := client.StartBuild(namespacedOpenShiftObject)
 	if err != nil {
 		return errors.Wrapf(err, "unable to rebuild %s", componentName)
 	}
@@ -234,6 +253,7 @@ func Build(client *occlient.Client, componentName string, streamLogs bool, wait 
 
 // GetComponentType returns type of component in given application and project
 func GetComponentType(client *occlient.Client, componentName string, applicationName string, projectName string) (string, error) {
+
 	// filter according to component and application name
 	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, componentName, applabels.ApplicationLabel, applicationName)
 	ctypes, err := client.GetLabelValues(projectName, componentlabels.ComponentTypeLabel, selector)
@@ -259,6 +279,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 
 // List lists components in active application
 func List(client *occlient.Client, applicationName string, projectName string) ([]ComponentInfo, error) {
+
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	componentNames, err := client.GetLabelValues(projectName, componentlabels.ComponentLabel, applicationSelector)
 	if err != nil {
@@ -282,9 +303,16 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 // The first returned string is component source type ("git" or "local" or "binary")
 // The second returned string is a source (url to git repository or local path or path to binary)
 func GetComponentSource(client *occlient.Client, componentName string, applicationName string, projectName string) (string, string, error) {
-	bc, err := client.GetBuildConfig(componentName, projectName)
+
+	// Namespace the application
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "unable to get source path for component %s", componentName)
+		return "", "", errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	bc, err := client.GetBuildConfig(namespacedOpenShiftObject, projectName)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "unable to get source path for component %s", namespacedOpenShiftObject)
 	}
 
 	sourcePath := bc.ObjectMeta.Annotations[componentSourceURLAnnotation]
@@ -302,25 +330,31 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 // Component name is the name component to be updated
 // to indicates what type of source type the component source is changing to e.g from git to local or local to binary
 // source indicates path of the source directory or binary or the git URL
-func Update(client *occlient.Client, componentName string, to string, source string) error {
-	var err error
+func Update(client *occlient.Client, componentName string, applicationName string, to string, source string) error {
+
+	// Namespace the application
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
 	projectName := client.GetCurrentProjectName()
 	// save source path as annotation
 	var annotations map[string]string
 	if to == "git" {
 		annotations = map[string]string{componentSourceURLAnnotation: source}
 		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, source, annotations)
+		err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, source, annotations)
 	} else if to == "local" {
 		sourceURL := url.URL{Scheme: "file", Path: source}
 		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+		err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, "", annotations)
 	} else if to == "binary" {
 		sourceURL := url.URL{Scheme: "file", Path: source}
 		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
 		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+		err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, "", annotations)
 	}
 	if err != nil {
 		return errors.Wrap(err, "unable to update the component")
@@ -333,6 +367,7 @@ func Update(client *occlient.Client, componentName string, to string, source str
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(client *occlient.Client, componentName, applicationName, projectName string) (bool, error) {
+
 	componentList, err := List(client, applicationName, projectName)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the component list")
@@ -449,10 +484,16 @@ func GetComponentDesc(client *occlient.Client, currentComponent string, currentA
 
 // Get Component logs
 // follow the DeploymentConfig logs if follow is set to true
-func GetLogs(client *occlient.Client, applicationName string, follow bool, stdout io.Writer) error {
+func GetLogs(client *occlient.Client, componentName string, applicationName string, follow bool, stdout io.Writer) error {
+
+	// Namespace the component
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
 
 	// Retrieve the logs
-	err := client.DisplayDeploymentConfigLog(applicationName, follow, stdout)
+	err = client.DisplayDeploymentConfigLog(namespacedOpenShiftObject, follow, stdout)
 	if err != nil {
 		return err
 	}
