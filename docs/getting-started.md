@@ -92,7 +92,7 @@ Switched to application: nodeapp
 First, we'll download the our test application: 
 
 ```console
-$ git clone https://github.com/kadel/nodejs-ex
+$ git clone https://github.com/openshift/nodejs-ex
 Cloning into 'nodejs-ex'...
 remote: Counting objects: 568, done.
 remote: Total 568 (delta 0), reused 0 (delta 0), pack-reused 568

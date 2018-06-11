@@ -40,11 +40,10 @@ A full list of component types that can be deployed is available using: 'odo com
   # Create new Wildfly component with binary named sample.war in './downloads' directory
   odo create wildfly wildly --binary ./downloads/sample.war
 
-  # Create a Ruby component
-  odo create ruby
-	
-  # Create a Python component
-  odo create python
+  # List of ready-to-use examples
+  # for more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
+  odo create php --git https://github.com/openshift/cakephp-ex.git
+  odo create python --git https://github.com/openshift/django-ex.git
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
