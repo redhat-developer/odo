@@ -52,16 +52,22 @@ var storageCreateCmd = &cobra.Command{
 }
 
 var storageUnmountCmd = &cobra.Command{
-	Use:   "unmount [storage name]",
-	Short: "Unmount storage from the current component",
-	Long: `Unmount storage from the current component.
+	Use:   "unmount PATH | STORAGE_NAME",
+	Short: "Unmount storage from the given path or identified by its name, from the current component",
+	Long: `Unmount storage from the given path or identified by its name, from the current component.
 
-  The storage and the contents are not deleted, the storage is only unmounted from the component, and hence is no longer accessible by the component.`,
+  The storage and the contents are not deleted, the storage or storage with the given path, is only unmounted from the component, and hence is no longer accessible by the component.`,
 	Example: `  # Unmount storage 'dbstorage' from current component
   odo storage unmount dbstorage
 
   # Unmount storage 'database' from component 'mongodb'
   odo storage unmount database --component mongodb
+
+  # Unmount storage mounted to path '/data' from current component
+  odo storage unmount /data
+
+  # Unmount storage mounted to path '/data' from component 'mongodb'
+  odo storage unmount /data --component mongodb
 `,
 	Aliases: []string{"umount"},
 	Args:    cobra.ExactArgs(1),
@@ -72,12 +78,24 @@ var storageUnmountCmd = &cobra.Command{
 		projectName := project.GetCurrent(client)
 		componentName := getComponent(client, storageComponent, applicationName, projectName)
 
-		storageName := args[0]
-		exists, err := storage.IsMounted(client, storageName, componentName, applicationName)
-		checkError(err, "")
-		if !exists {
-			fmt.Printf("Storage %v does not exist in component %v\n", storageName, componentName)
-			os.Exit(1)
+		var storageName string
+		// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
+		if string(args[0][0]) == "/" {
+			path := args[0]
+			storageName, err = storage.GetStorageNameFromMountPath(client, path, componentName, applicationName)
+			checkError(err, "Unable to get storage name from mount path")
+			if storageName == "" {
+				fmt.Printf("No storage is mounted to %s in the component %s\n", path, componentName)
+				os.Exit(1)
+			}
+		} else {
+			storageName = args[0]
+			exists, err := storage.IsMounted(client, storageName, componentName, applicationName)
+			checkError(err, "Unable to check if storage is mounted or not")
+			if !exists {
+				fmt.Printf("Storage %v does not exist in component %v\n", storageName, componentName)
+				os.Exit(1)
+			}
 		}
 
 		err = storage.Unmount(client, storageName, componentName, applicationName)
