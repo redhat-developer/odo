@@ -84,7 +84,7 @@ var updateCmd = &cobra.Command{
 		}
 
 		if len(componentGit) != 0 {
-			err := component.Update(client, componentName, "git", componentGit)
+			err := component.Update(client, componentName, applicationName, projectName, "git", componentGit)
 			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else if len(componentLocal) != 0 {
@@ -97,13 +97,13 @@ var updateCmd = &cobra.Command{
 				fmt.Println("Please provide a path to the directory")
 				os.Exit(1)
 			}
-			err = component.Update(client, componentName, "local", dir)
+			err = component.Update(client, componentName, applicationName, projectName, "local", dir)
 			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else if len(componentBinary) != 0 {
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
-			err = component.Update(client, componentName, "binary", path)
+			err = component.Update(client, componentName, applicationName, projectName, "binary", path)
 			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		}

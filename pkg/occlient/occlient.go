@@ -874,6 +874,76 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 	return nil
 }
 
+// TODO: better name
+
+func (c *Client) AddInitToDC(dcName string, annotations map[string]string) error {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
+	}
+
+	dc.Annotations = annotations
+	dc.Spec.Template.Spec.InitContainers = append(dc.Spec.Template.Spec.InitContainers,
+		corev1.Container{
+			Name:  "copy-files-to-volume",
+			Image: dc.Spec.Template.Spec.Containers[0].Image,
+			Command: []string{
+				"copy-files-to-volume",
+				"/opt/app-root",
+				"/mnt/app-root"},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					// TODO:
+					Name:      fmt.Sprintf("%s-s2idata", dcName),
+					MountPath: "/mnt",
+				},
+			},
+		})
+
+	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
+	}
+
+	return nil
+}
+
+// func (c *Client) AddCopyFilesToVolumesInitContainer(dcName string, image string, appRootVolumeName string) error {
+// 	initContainer := corev1.Container{
+// 		Name:  "copy-files-to-volume",
+// 		Image: image,
+// 		Command: []string{
+// 			"copy-files-to-volume",
+// 			"/opt/app-root",
+// 			"/mnt/app-root"},
+// 		VolumeMounts: []corev1.VolumeMount{
+// 			{
+// 				Name:      appRootVolumeName,
+// 				MountPath: "/mnt",
+// 			},
+// 		},
+// 	}
+// 	return nil
+// }
+
+// TODO: better name
+func (c *Client) RemoveInitFromDC(dcName string, annotations map[string]string) error {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update DeploymentConfig %s ", dcName)
+	}
+
+	dc.Annotations = annotations
+	// TODO: just remove one container that we need
+	dc.Spec.Template.Spec.InitContainers = []corev1.Container{}
+
+	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update deployment config %s", dcName)
+	}
+	return nil
+}
+
 // GetLatestBuildName gets the name of the latest build
 // buildConfigName is the name of the buildConfig for which we are fetching the build name
 // returns the name of the latest build or the error

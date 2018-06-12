@@ -298,33 +298,74 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 	return sourceType, sourcePath, nil
 }
 
-// Update updates the requested component
-// Component name is the name component to be updated
-// to indicates what type of source type the component source is changing to e.g from git to local or local to binary
-// source indicates path of the source directory or binary or the git URL
-func Update(client *occlient.Client, componentName string, to string, source string) error {
-	var err error
-	projectName := client.GetCurrentProjectName()
-	// save source path as annotation
-	var annotations map[string]string
-	if to == "git" {
-		annotations = map[string]string{componentSourceURLAnnotation: source}
-		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, source, annotations)
-	} else if to == "local" {
-		sourceURL := url.URL{Scheme: "file", Path: source}
-		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
-		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
-	} else if to == "binary" {
-		sourceURL := url.URL{Scheme: "file", Path: source}
-		annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
-		annotations[componentSourceTypeAnnotation] = to
-		err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
-	}
+// Update changes source of the component
+// newSourceType indicates to what source type component should be changed tio (git, local or binary)
+// newSource is path/url to the source of the component
+func Update(client *occlient.Client, componentName string, applicationName string, projectName string, newSourceType string, newSource string) error {
+	log.Debugf("Updating component %s, to %s (%s).", componentName, newSource, newSourceType)
+
+	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName, projectName)
 	if err != nil {
-		return errors.Wrap(err, "unable to update the component")
+		return errors.Wrapf(err, "unable to get source of %s component", componentName)
 	}
+
+	// Steps to update component from local or binary to git
+	// - update odo annotations and labels to reflect changes
+	// - update BuildConfig source to have git repository https://example.com/myrepo as a source.
+	// - delete initContainer from DC
+
+	if (oldSourceType == "local" || oldSourceType == "binary") && newSourceType == "git" {
+		annotations := map[string]string{componentSourceURLAnnotation: newSource}
+		annotations[componentSourceTypeAnnotation] = newSourceType
+		err = client.UpdateBuildConfig(componentName, projectName, newSource, annotations)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
+		}
+		err = client.RemoveInitFromDC(componentName, annotations)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update DeploymentConfig  for %s component", componentName)
+		}
+	} else
+	// Steps to update component from git to local or binary
+	// - update odo annotations and labels to reflect changes
+	// - update BuildConfig source to have s2i supervisor bootstrap repository as a source https://github.com/kadel/bootstrap-supervisored-s2i
+	// - add initContainer
+	// - trigger build (wait for it to finish)
+	// - instruct user to run odo push to push local code to a component
+	if oldSourceType == "git" && (newSourceType == "binary" || newSourceType == "local") {
+		annotations := map[string]string{componentSourceURLAnnotation: newSource}
+		annotations[componentSourceTypeAnnotation] = newSourceType
+		err = client.UpdateBuildConfig(componentName, projectName, newSource, annotations)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
+		}
+
+		err = client.AddInitToDC(componentName, annotations)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update DeploymentConfig  for %s component", componentName)
+		}
+	}
+
+	// // save source path as annotation
+	// var annotations map[string]string
+	// if newSourceType == "git" {
+	// 	annotations = map[string]string{componentSourceURLAnnotation: newSource}
+	// 	annotations[componentSourceTypeAnnotation] = newSourceType
+	// 	err = client.UpdateBuildConfig(componentName, projectName, newSource, annotations)
+	// } else if newSourceType == "local" {
+	// 	sourceURL := url.URL{Scheme: "file", Path: newSource}
+	// 	annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+	// 	annotations[componentSourceTypeAnnotation] = newSourceType
+	// 	err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+	// } else if newSourceType == "binary" {
+	// 	sourceURL := url.URL{Scheme: "file", Path: newSource}
+	// 	annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+	// 	annotations[componentSourceTypeAnnotation] = newSourceType
+	// 	err = client.UpdateBuildConfig(componentName, projectName, "", annotations)
+	// }
+	// if err != nil {
+	// 	return errors.Wrap(err, "unable to update the component")
+	// }
 	return nil
 }
 
