@@ -10,8 +10,49 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
+
+func TestGetPVCFromName(t *testing.T) {
+	tests := []struct {
+		name    string
+		pvcName string
+		wantErr bool
+	}{
+		{
+			name:    "storage 10Gi",
+			pvcName: "postgresql",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.Kubernetes.PrependReactor("get", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			_, err := fakeClient.GetPVCFromName(tt.pvcName)
+
+			//Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.GetPVCFromName(name) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+			// Check for validating actions performed
+			if (len(fakeClientSet.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
+				t.Errorf("expected 1 action in GetPVCFromName got: %v", fakeClientSet.Kubernetes.Actions())
+			}
+			// Check for value with which the function has called
+			PVCname := fakeClientSet.Kubernetes.Actions()[0].(ktesting.GetAction).GetName()
+			if PVCname != tt.pvcName {
+				t.Errorf("Get action is performed with wrong pvcName, expected: %s, got %s", tt.pvcName, PVCname)
+
+			}
+		})
+	}
+}
 
 func TestCreatePVC(t *testing.T) {
 	tests := []struct {
