@@ -118,6 +118,7 @@ var _ = AfterSuite(func() {
 })
 
 var _ = Describe("odoe2e", func() {
+	appTestName := "testing"
 
 	tmpDir, err := ioutil.TempDir("", "odo")
 	if err != nil {
@@ -159,13 +160,13 @@ var _ = Describe("odoe2e", func() {
 	Describe("creating an application", func() {
 		Context("when application by the same name doesn't exist", func() {
 			It("should create an application", func() {
-				appName := runCmd("odo app create usecase5")
-				Expect(appName).To(ContainSubstring("usecase5"))
+				appName := runCmd("odo app create " + appTestName)
+				Expect(appName).To(ContainSubstring(appTestName))
 			})
 
 			It("should get the current application", func() {
 				appName := runCmd("odo app get --short")
-				Expect(appName).To(Equal("usecase5"))
+				Expect(appName).To(Equal(appTestName))
 			})
 
 			It("should be created within the project", func() {
@@ -174,18 +175,18 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able to create another application", func() {
-				appName := runCmd("odo app create usecase5-2")
-				Expect(appName).To(ContainSubstring("usecase5-2"))
+				appName := runCmd("odo app create " + appTestName + "-2")
+				Expect(appName).To(ContainSubstring(appTestName + "-2"))
 			})
 
 			It("should be able to delete an application", func() {
 				// Cleanup
-				runCmd("odo app delete usecase5-2 -f")
+				runCmd("odo app delete " + appTestName + "-2 -f")
 			})
 
 			It("should be able to set an application as current", func() {
-				appName := runCmd("odo app set usecase5")
-				Expect(appName).To(ContainSubstring("usecase5"))
+				appName := runCmd("odo app set " + appTestName)
+				Expect(appName).To(ContainSubstring(appTestName))
 			})
 		})
 
@@ -210,7 +211,7 @@ var _ = Describe("odoe2e", func() {
 
 			It("should create the component within the application", func() {
 				getApp := runCmd("odo app get --short")
-				Expect(getApp).To(Equal("usecase5"))
+				Expect(getApp).To(Equal(appTestName))
 			})
 
 			It("should list the components within the application", func() {
@@ -227,9 +228,9 @@ var _ = Describe("odoe2e", func() {
 				Expect(cmpList).To(ContainSubstring("php"))
 			})
 
-			It("should get the application usecase5", func() {
+			It("should get the application "+appTestName, func() {
 				appGet := runCmd("odo app get --short")
-				Expect(appGet).To(Equal("usecase5"))
+				Expect(appGet).To(Equal(appTestName))
 			})
 
 			It("should be able to set a component as active", func() {
@@ -358,13 +359,13 @@ var _ = Describe("odoe2e", func() {
 
 	Context("deleting the application", func() {
 		It("should delete application and component", func() {
-			runCmd("odo app delete usecase5 -f")
+			runCmd("odo app delete " + appTestName + " -f")
 
 			appGet := runCmd("odo app get --short")
 			Expect(appGet).To(Equal(""))
 
 			appList := runCmd("odo app list")
-			Expect(appList).NotTo(ContainSubstring("usecase5"))
+			Expect(appList).NotTo(ContainSubstring(appTestName))
 
 			cmpList := runCmd("odo list")
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
