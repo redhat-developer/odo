@@ -56,3 +56,43 @@ func TestCreate(t *testing.T) {
 		})
 	}
 }
+
+func TestDelete(t *testing.T) {
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "first test",
+			args: args{
+				name: "component",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := occlient.FakeNew()
+
+			fakeClientSet.RouteClientset.PrependReactor("delete", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			err := Delete(client, tt.args.name)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+
+			// Check for value with which the function has called
+			DeletedURL := fakeClientSet.RouteClientset.Actions()[0].(ktesting.DeleteAction).GetName()
+			if !reflect.DeepEqual(DeletedURL, tt.args.name) {
+				t.Errorf("Delete is been called with %#v, expected %#v", DeletedURL, tt.args.name)
+			}
+		})
+	}
+}
