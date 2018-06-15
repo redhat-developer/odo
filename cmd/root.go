@@ -13,7 +13,8 @@ import (
 
 // Global variables
 var (
-	GlobalVerbose bool
+	GlobalVerbose         bool
+	GlobalConnectionCheck bool
 )
 
 // Templates
@@ -124,6 +125,7 @@ func init() {
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
 	rootCmd.PersistentFlags().BoolVarP(&GlobalVerbose, "verbose", "v", false, "Verbose output")
+	rootCmd.PersistentFlags().BoolVar(&GlobalConnectionCheck, "skip-connection-check", false, "Skip cluster check")
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
 }
@@ -146,7 +148,7 @@ func getLatestReleaseInfo(info chan<- string) {
 }
 
 func getOcClient() *occlient.Client {
-	client, err := occlient.New()
+	client, err := occlient.New(GlobalConnectionCheck)
 	checkError(err, "")
 	return client
 }

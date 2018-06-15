@@ -74,7 +74,7 @@ type Client struct {
 	namespace            string
 }
 
-func New() (*Client, error) {
+func New(connectionCheck bool) (*Client, error) {
 	var client Client
 
 	// initialize client-go clients
@@ -143,13 +143,15 @@ func New() (*Client, error) {
 	}
 	client.ocpath = ocpath
 
-	if !isServerUp(client.ocpath) {
-		return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
+	// Skip this if connectionCheck is false
+	if !connectionCheck {
+		if !isServerUp(client.ocpath) {
+			return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
+		}
+		if !isLoggedIn(client.ocpath) {
+			return nil, errors.New("Please log in to the cluster")
+		}
 	}
-	if !isLoggedIn(client.ocpath) {
-		return nil, errors.New("Please log in to the cluster")
-	}
-
 	return &client, nil
 }
 
