@@ -50,29 +50,29 @@ The created URL can be used to access the specified component from outside the O
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
 
-		var cmp string
+		var componentName string
 		switch len(args) {
 		case 0:
 			var err error
-			cmp, err = component.GetCurrent(client, applicationName, projectName)
+			componentName, err = component.GetCurrent(client, applicationName, projectName)
 			checkError(err, "")
 		case 1:
-			cmp = args[0]
+			componentName = args[0]
 		default:
 			fmt.Println("unable to get component")
 			os.Exit(1)
 		}
 
-		fmt.Printf("Adding URL to component: %v\n", cmp)
-		u, err := url.Create(client, cmp, applicationName)
+		fmt.Printf("Adding URL to component: %v\n", componentName)
+		urlRoute, err := url.Create(client, componentName, applicationName)
 		checkError(err, "")
 		fmt.Printf("URL created for component: %v\n\n"+
-			"%v - %v\n", cmp, u.Name, url.GetUrlString(*u))
+			"%v - %v\n", componentName, componentName, url.GetUrlString(*urlRoute))
 	},
 }
 
 var urlDeleteCmd = &cobra.Command{
-	Use:   "delete <URL>",
+	Use:   "delete <url-name>",
 	Short: "Delete a URL",
 	Long:  `Delete the given URL, hence making the service inaccessible.`,
 	Example: `  # Delete a URL to a component
@@ -80,24 +80,27 @@ var urlDeleteCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// Initialization
 		client := getOcClient()
-		u := args[0]
+		applicationName, err := application.GetCurrent(client)
+		checkError(err, "")
+		urlName := args[0]
 		var confirmDeletion string
 		if urlForceDeleteflag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete the url %v? [y/N] ", u)
+			fmt.Printf("Are you sure you want to delete the url %v? [y/N] ", urlName)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
-			err := url.Delete(client, u)
+			err := url.Delete(client, urlName, applicationName)
 			checkError(err, "")
-			fmt.Printf("Deleted URL: %v\n", u)
+			fmt.Printf("Deleted URL: %v\n", urlName)
 		} else {
-			fmt.Printf("Aborting deletion of url: %v\n", u)
+			fmt.Printf("Aborting deletion of url: %v\n", urlName)
 		}
-
 	},
 }
 
@@ -121,14 +124,14 @@ var urlListCmd = &cobra.Command{
 			app = urlListApplication
 		}
 
-		cmp := urlListComponent
-		urls, err := url.List(client, cmp, app)
+		componentName := urlListComponent
+		urls, err := url.List(client, componentName, app)
 		checkError(err, "")
 
 		if len(urls) == 0 {
-			fmt.Printf("No URLs found for component %v in application %v\n", cmp, app)
+			fmt.Printf("No URLs found for component %v in application %v\n", componentName, app)
 		} else {
-			fmt.Printf("Found the following URLs for component %v in application %v:\n", cmp, app)
+			fmt.Printf("Found the following URLs for component %v in application %v:\n", componentName, app)
 			for _, u := range urls {
 				fmt.Printf("%v - %v\n", u.Name, url.GetUrlString(u))
 			}

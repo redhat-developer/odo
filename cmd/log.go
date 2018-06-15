@@ -46,7 +46,7 @@ var logCmd = &cobra.Command{
 		currentComponent := getComponent(client, argComponent, currentApplication, currentProject)
 
 		// Retrieve the log
-		err = component.GetLogs(client, currentComponent, logFollow, stdout)
+		err = component.GetLogs(client, currentComponent, currentApplication, logFollow, stdout)
 		checkError(err, "Unable to retrieve logs, does your component exist?")
 	},
 }
