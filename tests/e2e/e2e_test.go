@@ -23,7 +23,6 @@ import (
 
 var t = strconv.FormatInt(time.Now().Unix(), 10)
 var projName = fmt.Sprintf("odo-%s", t)
-var appName = "usecase5"
 var curProj string
 
 func runCmd(cmdS string) string {
@@ -252,7 +251,7 @@ var _ = Describe("odoe2e", func() {
 			It("should push the changes", func() {
 
 				// Get IP and port
-				getIP := runCmd("oc get svc/nodejs-usecase5 -o go-template='{{.spec.clusterIP}}:{{(index .spec.ports 0).port}}'")
+				getIP := runCmd("oc get svc/nodejs-" + appTestName + " -o go-template='{{.spec.clusterIP}}:{{(index .spec.ports 0).port}}'")
 				pingUrl := fmt.Sprintf("http://%s", getIP)
 				pingSvc(pingUrl)
 
@@ -281,7 +280,7 @@ var _ = Describe("odoe2e", func() {
 			It("should be able to list the url", func() {
 				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
 				getRoute = strings.TrimSpace(getRoute)
-				Expect(getRoute).To(ContainSubstring("nodejs-usecase5-" + projName))
+				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
 				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1")
 				if curlRoute {
@@ -308,14 +307,14 @@ var _ = Describe("odoe2e", func() {
 				Expect(storAdd).To(ContainSubstring("nodejs"))
 
 				// Check against path and name against dc
-				getDc := runCmd("oc get dc/nodejs-usecase5 -o go-template='" +
+				getDc := runCmd("oc get dc/nodejs-" + appTestName + " -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
 
 				Expect(getDc).To(ContainSubstring("pv1"))
 
 				// Check if the storage is added on the path provided
-				getMntPath := runCmd("oc get dc/nodejs-usecase5 -o go-template='" +
+				getMntPath := runCmd("oc get dc/nodejs-" + appTestName + " -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
 
@@ -342,14 +341,14 @@ var _ = Describe("odoe2e", func() {
 				Expect(storList).To(ContainSubstring("pv2"))
 
 				// Verify with deploymentconfig
-				getDc := runCmd("oc get dc/php-usecase5 -o go-template='" +
+				getDc := runCmd("oc get dc/php-" + appTestName + " -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
 
 				Expect(getDc).To(ContainSubstring("pv2"))
 
 				// Check if the storage is added on the path provided
-				getMntPath := runCmd("oc get dc/php-usecase5 -o go-template='" +
+				getMntPath := runCmd("oc get dc/php-" + appTestName + " -o go-template='" +
 					"{{range .spec.template.spec.containers}}" +
 					"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
 
