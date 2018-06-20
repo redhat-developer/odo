@@ -79,6 +79,10 @@ test-e2e:
 test-demo:
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="katacodaDemo" -ginkgo.v
 
+.PHONY: test-update-e2e
+test-update-e2e:
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="updateE2e" -ginkgo.v
+
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
 .PHONY: packages
