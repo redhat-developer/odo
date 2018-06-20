@@ -51,6 +51,10 @@ var storageCreateCmd = &cobra.Command{
 		} else {
 			storageName = componentName + "-" + util.GenerateRandomString(4)
 		}
+		// validate storage path
+		err = validateStoragePath(client, storagePath, componentName, applicationName)
+		checkError(err, "")
+
 		_, err = storage.Create(client, storageName, storageSize, storagePath, componentName, applicationName)
 		checkError(err, "")
 		fmt.Printf("Added storage %v to %v\n", storageName, componentName)
