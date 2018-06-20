@@ -59,7 +59,8 @@ func TestCreate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	type args struct {
-		name string
+		urlName         string
+		applicationName string
 	}
 	tests := []struct {
 		name    string
@@ -69,7 +70,8 @@ func TestDelete(t *testing.T) {
 		{
 			name: "first test",
 			args: args{
-				name: "component",
+				urlName:         "component",
+				applicationName: "appname",
 			},
 			wantErr: false,
 		},
@@ -82,7 +84,7 @@ func TestDelete(t *testing.T) {
 				return true, nil, nil
 			})
 
-			err := Delete(client, tt.args.name)
+			err := Delete(client, tt.args.urlName, tt.args.applicationName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -90,8 +92,8 @@ func TestDelete(t *testing.T) {
 
 			// Check for value with which the function has called
 			DeletedURL := fakeClientSet.RouteClientset.Actions()[0].(ktesting.DeleteAction).GetName()
-			if !reflect.DeepEqual(DeletedURL, tt.args.name) {
-				t.Errorf("Delete is been called with %#v, expected %#v", DeletedURL, tt.args.name)
+			if !reflect.DeepEqual(DeletedURL, tt.args.urlName+"-"+tt.args.applicationName) {
+				t.Errorf("Delete is been called with %#v, expected %#v", DeletedURL, tt.args.urlName+"-"+tt.args.applicationName)
 			}
 		})
 	}
