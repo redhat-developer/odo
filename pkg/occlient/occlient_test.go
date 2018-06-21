@@ -128,6 +128,48 @@ func TestCreatePVC(t *testing.T) {
 	}
 }
 
+func TestDeletePVC(t *testing.T) {
+	tests := []struct {
+		name    string
+		pvcName string
+		wantErr bool
+	}{
+		{
+			name:    "storage 10Gi",
+			pvcName: "postgresql",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.Kubernetes.PrependReactor("delete", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			err := fakeClient.DeletePVC(tt.pvcName)
+
+			//Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.DeletePVC(name) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			// Check for validating actions performed
+			if (len(fakeClientSet.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
+				t.Errorf("expected 1 action in DeletePVC got: %v", fakeClientSet.Kubernetes.Actions())
+			}
+
+			// Check for value with which the function has called
+			DeletedPVC := fakeClientSet.Kubernetes.Actions()[0].(ktesting.DeleteAction).GetName()
+			if DeletedPVC != tt.pvcName {
+				t.Errorf("Delete action is performed with wrong pvcName, expected: %s, got %s", tt.pvcName, DeletedPVC)
+
+			}
+		})
+	}
+}
+
 func TestCreateRoute(t *testing.T) {
 	tests := []struct {
 		name    string
