@@ -27,8 +27,13 @@ for arch in `ls -1 $BIN_DIR/`;do
         suffix=".exe"
     fi
     source_file=$BIN_DIR/$arch/odo$suffix
-    target_file=$RELEASE_DIR/odo-$arch$suffix.gz
+    target_file=$RELEASE_DIR/odo-$arch$suffix
 
+    # Create a gzip of the binary
     echo "gzipping binary $source_file as $target_file"
-    gzip --keep --to-stdout $source_file > $target_file
+    gzip --keep --to-stdout $source_file > $target_file.gz
+
+    # Move binaries to the release directory as well
+    echo "copying binary $source_file to release directory"
+    cp $source_file $target_file
 done
