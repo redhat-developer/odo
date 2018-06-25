@@ -282,7 +282,13 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 	if storageComponent != "" {
 		return fmt.Errorf("the given storage is already mounted to the component %v", storageComponent)
 	}
-	pvc, err := client.GetPVCFromName(generatePVCNameFromStorageName(storageName))
+
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(storageName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	pvc, err := client.GetPVCFromName(generatePVCNameFromStorageName(namespacedOpenShiftObject))
 	if err != nil {
 		return errors.Wrap(err, "unable to get the pvc from the storage name")
 	}

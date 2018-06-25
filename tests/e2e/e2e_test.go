@@ -5,7 +5,7 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	gexec "github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/gexec"
 
 	"fmt"
 	"io/ioutil"
@@ -353,6 +353,46 @@ var _ = Describe("odoe2e", func() {
 					"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
 
 				Expect(getMntPath).To(ContainSubstring("/mnt/pv2"))
+			})
+
+			It("should be able to unmount the storage using the storage name", func() {
+				runCmd("odo storage unmount pv2 --component php")
+
+				// Verify with deploymentconfig
+				getDc := runCmd("oc get dc/php-" + appTestName + " -o go-template='" +
+					"{{range .spec.template.spec.containers}}" +
+					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
+
+				Expect(getDc).NotTo(ContainSubstring("pv2"))
+			})
+
+			It("should be able to mount the storage to the path specified", func() {
+				runCmd("odo storage mount pv2 --path /mnt/pv2 --component php")
+
+				// Verify with deploymentconfig
+				getDc := runCmd("oc get dc/php-" + appTestName + " -o go-template='" +
+					"{{range .spec.template.spec.containers}}" +
+					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
+
+				Expect(getDc).To(ContainSubstring("pv2"))
+
+				// Check if the storage is added on the path provided
+				getMntPath := runCmd("oc get dc/php-" + appTestName + " -o go-template='" +
+					"{{range .spec.template.spec.containers}}" +
+					"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
+
+				Expect(getMntPath).To(ContainSubstring("/mnt/pv2"))
+			})
+
+			It("should be able to unmount the storage", func() {
+				runCmd("odo storage unmount /mnt/pv2 --component php")
+
+				// Verify with deploymentconfig
+				getDc := runCmd("oc get dc/php-" + appTestName + " -o go-template='" +
+					"{{range .spec.template.spec.containers}}" +
+					"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
+
+				Expect(getDc).NotTo(ContainSubstring("pv2"))
 			})
 		})
 	})
