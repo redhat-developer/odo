@@ -29,37 +29,43 @@ If you don't have a local development cluster, get started by running Minishift:
 
 ```console
 $ minishift start       
--- Starting profile 'minishift'                                
+-- Starting profile 'minishift'
+-- Checking if https://github.com is reachable ... OK
+-- Checking if requested OpenShift version 'v3.9.0' is valid ... OK
+-- Checking if requested OpenShift version 'v3.9.0' is supported ... OK
 -- Checking if requested hypervisor 'kvm' is supported on this platform ... OK
--- Checking if KVM driver is installed ...                     
-   Driver is available at /usr/local/bin/docker-machine-driver-kvm ... 
-   Checking driver binary is executable ... OK                 
--- Checking if Libvirt is installed ... OK                     
--- Checking if Libvirt default network is present ... OK       
--- Checking if Libvirt default network is active ... OK        
--- Checking the ISO URL ... OK 
--- Starting local OpenShift cluster using 'kvm' hypervisor ... 
--- Starting Minishift VM ............... OK                    
--- Checking for IP address ... OK                              
--- Checking if external host is reachable from the Minishift VM ... 
-   Pinging 8.8.8.8 ... OK      
--- Checking HTTP connectivity from the VM ...                  
-   Retrieving http://minishift.io/index.html ... OK            
--- Checking if persistent storage volume is mounted ... OK     
--- Checking available disk space ... 19% used OK               
--- OpenShift cluster will be configured with ...               
-   Version: v3.7.1             
--- Checking 'oc' support for startup flags ...                 
-   routing-suffix ... OK       
-   host-config-dir ... OK      
-   host-data-dir ... OK        
-   host-pv-dir ... OK          
-   host-volumes-dir ... OK     
-Starting OpenShift using openshift/origin:v3.7.1 ...           
+-- Checking if KVM driver is installed ...
+   Driver is available at /usr/local/bin/docker-machine-driver-kvm ...
+   Checking driver binary is executable ... OK
+-- Checking if Libvirt is installed ... OK
+-- Checking if Libvirt default network is present ... OK
+-- Checking if Libvirt default network is active ... OK
+-- Checking the ISO URL ... OK
+-- Checking if provided oc flags are supported ... OK
+-- Starting local OpenShift cluster using 'kvm' hypervisor ...
+-- Starting Minishift VM .................. OK
+-- Checking for IP address ... OK
+-- Checking for nameservers ... OK
+-- Checking if external host is reachable from the Minishift VM ...
+   Pinging 8.8.8.8 ... OK
+-- Checking HTTP connectivity from the VM ...
+   Retrieving http://minishift.io/index.html ... FAIL
+   VM cannot connect to external URL with HTTP
+-- Checking if persistent storage volume is mounted ... OK
+-- Checking available disk space ... 11% used OK
+-- OpenShift cluster will be configured with ...
+   Version: v3.9.0
+-- Copying oc binary from the OpenShift container image to VM .... OK
+-- Starting OpenShift cluster .................
+Deleted existing OpenShift container
+Using Docker shared volumes for OpenShift volumes
+Using public hostname IP 192.168.42.10 as the host IP
+Using 192.168.42.10 as the server IP
+Starting OpenShift using openshift/origin:v3.9.0 ...
 OpenShift server started.
 
 The server is accessible via web console at:
-    https://192.168.42.147:8443
+    https://192.168.42.10:8443
 ```
 
 Now log into the OpenShift cluster:

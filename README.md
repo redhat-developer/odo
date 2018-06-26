@@ -72,7 +72,7 @@ Wanted to get started? Follow the instructions below or our [Katacoda tutorial](
 
 ### Requirements
 
-  - `minishift` or an OpenShift environment 3.7.0+, the best way to deploy a development environment is using [Minishift](https://github.com/minishift/minishift).
+  - `minishift` or an OpenShift environment 3.9.0+, the best way to deploy a development environment is using [Minishift](https://github.com/minishift/minishift).
   - `oc` If you do not have it, there's an excellent guide on the [OpenShift site](https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli) on how to install the latest client.
 
 ### Deploying a Node.js application using Odo
