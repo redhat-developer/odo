@@ -225,7 +225,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 // If 'streamLogs' is true than it streams build logs on stdout, set 'wait' to true if you want to return error if build fails.
 // If 'wait' is true than it waits for build to successfully complete.
 // If 'wait' is false than this function won't return error even if build failed.
-func Build(client *occlient.Client, componentName string, applicationName string, streamLogs bool, wait bool) error {
+func Build(client *occlient.Client, componentName string, applicationName string, streamLogs bool, wait bool, stdout io.Writer) error {
 
 	// Namespace the component
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -238,7 +238,7 @@ func Build(client *occlient.Client, componentName string, applicationName string
 		return errors.Wrapf(err, "unable to rebuild %s", componentName)
 	}
 	if streamLogs {
-		if err := client.FollowBuildLog(buildName); err != nil {
+		if err := client.FollowBuildLog(buildName, stdout); err != nil {
 			return errors.Wrapf(err, "unable to follow logs for %s", buildName)
 		}
 	}
