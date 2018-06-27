@@ -17,10 +17,10 @@ var completionCmd = &cobra.Command{
 Auto completion supports both bash and zsh. Output is to STDOUT.`,
 
 	Example: `  # Bash autocompletion support
-  source <(odo completion bash)
+  source <(odo utils completion bash)
 
   # Zsh autocompletion support
-  source <(odo completion zsh)
+  source <(odo utils completion zsh)
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -55,14 +55,6 @@ func Generate(cmd *cobra.Command, args []string) error {
 	} else {
 		return fmt.Errorf("not a compatible shell, bash and zsh are only supported")
 	}
-}
-
-func init() {
-	// Add a defined annotation in order to appear in the help menu
-	completionCmd.Annotations = map[string]string{"command": "utility"}
-	completionCmd.SetUsageTemplate(cmdUsageTemplate)
-
-	rootCmd.AddCommand(completionCmd)
 }
 
 /*
