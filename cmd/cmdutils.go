@@ -45,6 +45,10 @@ func getComponent(client *occlient.Client, inputComponent, applicationName, proj
 	if len(inputComponent) == 0 {
 		c, err := component.GetCurrent(client, applicationName, projectName)
 		checkError(err, "Could not get current component")
+		if c == "" {
+			fmt.Println("There is no component set")
+			os.Exit(1)
+		}
 		return c
 	}
 	exists, err := component.Exists(client, inputComponent, applicationName, projectName)
