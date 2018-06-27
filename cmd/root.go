@@ -112,7 +112,7 @@ func Execute() {
 
 	select {
 	case message := <-updateInfo:
-		fmt.Printf(message)
+		fmt.Println(message)
 	default:
 		log.Debug("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 	}

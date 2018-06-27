@@ -25,7 +25,7 @@ var componentListCmd = &cobra.Command{
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
 		currentComponent, err := component.GetCurrent(client, applicationName, projectName)
-
+		checkError(err, "")
 		components, err := component.List(client, applicationName, projectName)
 		checkError(err, "")
 

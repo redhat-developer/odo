@@ -3,10 +3,6 @@ package cmd
 import "testing"
 
 func Test_validateName(t *testing.T) {
-	type args struct {
-		name string
-	}
-
 	tests := []struct {
 		testCase string
 		name     string

@@ -1088,6 +1088,9 @@ func (c *Client) Delete(labels map[string]string) error {
 	// Delete Services
 	log.Debug("Deleting Services")
 	svcList, err := c.kubeClient.CoreV1().Services(c.namespace).List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		errorList = append(errorList, "unable to list services")
+	}
 	for _, svc := range svcList.Items {
 		err = c.kubeClient.CoreV1().Services(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {

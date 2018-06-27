@@ -249,9 +249,6 @@ func TestGetOcBinary(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 	defer os.Remove(tmpfile1.Name())
 
-	type args struct {
-		oc string
-	}
 	tests := []struct {
 		name    string
 		envs    map[string]string
