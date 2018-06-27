@@ -26,7 +26,7 @@ Documentation can be found below:
   - [Getting Started](https://github.com/redhat-developer/odo/blob/master/docs/getting-started.md)
   - [Development](https://github.com/redhat-developer/odo/blob/master/docs/development.md)
 
-### Installation
+## Installation
 
 #### Automated installation
 
@@ -103,6 +103,14 @@ nodejs - nodejs-myproject.192.168.42.147.nip.io
 # Test it / visit the URL
 $ curl nodejs-myproject.192.168.42.147.nip.io
 ```
+
+## Community, Discussion, Contribution and Support
+
+**Chat:** We have a public channel [#Odo on chat.openshift.io](https://chat.openshift.io/developers/channels/odo).
+
+**Issues:** If you have an issue with Odo, please [file it](https://github.com/redhat-developer/odo/issues).
+
+**Contributing:** Want to become a contributor and submit your own code? Have a look at our [development guide](https://github.com/redhat-developer/odo/blob/master/docs/development.md).
 
 ## Glossary
 
