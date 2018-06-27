@@ -81,7 +81,7 @@ var applicationGetCmd = &cobra.Command{
 			return
 		}
 		if app == "" {
-			fmt.Printf("There's no active application.\nYou can create one by running 'odo application create <name>'.")
+			fmt.Printf("There's no active application.\nYou can create one by running 'odo application create <name>'.\n")
 			return
 		}
 		fmt.Printf("The current application is: %v\n", app)
