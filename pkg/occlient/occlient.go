@@ -1371,6 +1371,10 @@ func generateVolumeNameFromPVC(pvc string) string {
 func (c *Client) AddPVCToDeploymentConfig(dc *appsv1.DeploymentConfig, pvc string, path string) error {
 	volumeName := generateVolumeNameFromPVC(pvc)
 
+	// Validating dc.Spec.Template is present before dereferencing
+	if dc.Spec.Template == nil {
+		return fmt.Errorf("TemplatePodSpec in %s DeploymentConfig is empty", dc.Name)
+	}
 	dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, corev1.Volume{
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
@@ -1380,6 +1384,10 @@ func (c *Client) AddPVCToDeploymentConfig(dc *appsv1.DeploymentConfig, pvc strin
 		},
 	})
 
+	// Validating dc.Spec.Template.Spec.Containers[] is present before dereferencing
+	if len(dc.Spec.Template.Spec.Containers) == 0 {
+		return fmt.Errorf("DeploymentConfig %s doesn't have any Containers defined", dc.Name)
+	}
 	dc.Spec.Template.Spec.Containers[0].VolumeMounts = append(dc.Spec.Template.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 		Name:      volumeName,
 		MountPath: path,
