@@ -81,6 +81,9 @@ func Unmount(client *occlient.Client, storageName string, componentName string, 
 	}
 
 	pvc, err := client.GetPVCFromName(pvcName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get PersistentVolumeClaim from name: %v", pvcName)
+	}
 	pvcLabels := applabels.GetLabels(applicationName, true)
 	pvcLabels[storagelabels.StorageLabel] = storageName
 

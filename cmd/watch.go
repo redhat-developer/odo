@@ -13,8 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var watchLocal string
-
 var watchCmd = &cobra.Command{
 	Use:   "watch [component name]",
 	Short: "Watch for changes, update component on change",
