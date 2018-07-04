@@ -1,6 +1,7 @@
 package occlient
 
 import (
+	fakeAppClientset "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	fakeRouteClientset "github.com/openshift/client-go/route/clientset/versioned/fake"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
 )
@@ -10,6 +11,7 @@ import (
 type FakeClientset struct {
 	Kubernetes     *fakeKubeClientset.Clientset
 	RouteClientset *fakeRouteClientset.Clientset
+	AppClientset   *fakeAppClientset.Clientset
 }
 
 // FakeNew creates new fake client for testing
@@ -24,6 +26,9 @@ func FakeNew() (*Client, *FakeClientset) {
 
 	fkclientset.Kubernetes = fakeKubeClientset.NewSimpleClientset()
 	client.kubeClient = fkclientset.Kubernetes
+
+	fkclientset.AppClientset = fakeAppClientset.NewSimpleClientset()
+	client.appsClient = fkclientset.AppClientset.Apps()
 
 	return &client, &fkclientset
 }
