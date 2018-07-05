@@ -57,6 +57,13 @@ const (
 	nameLength = 5
 )
 
+// errorMsg is the message for user when invalid configuration error occurs
+const errorMsg = `
+Please login to your server: 
+
+oc login https://mycluster.mydomain.com
+`
+
 type Client struct {
 	ocpath               string
 	kubeClient           kubernetes.Interface
@@ -80,7 +87,7 @@ func New(connectionCheck bool) (*Client, error) {
 
 	config, err := client.kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(err.Error() + errorMsg)
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(config)
