@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -37,17 +38,22 @@ var storageCreateCmd = &cobra.Command{
 	Example: `  # Create storage of size 1Gb to a component
   odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi
 	`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
 		componentName := getComponent(client, storageComponent, applicationName, projectName)
-
-		_, err = storage.Create(client, args[0], storageSize, storagePath, componentName, applicationName)
+		var storageName string
+		if len(args) != 0 {
+			storageName = args[0]
+		} else {
+			storageName = componentName + "-" + util.GenerateRandomString(4)
+		}
+		_, err = storage.Create(client, storageName, storageSize, storagePath, componentName, applicationName)
 		checkError(err, "")
-		fmt.Printf("Added storage %v to %v\n", args[0], componentName)
+		fmt.Printf("Added storage %v to %v\n", storageName, componentName)
 	},
 }
 
