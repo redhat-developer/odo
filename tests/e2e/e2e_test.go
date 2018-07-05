@@ -274,13 +274,20 @@ var _ = Describe("odoe2e", func() {
 	Describe("Creating url", func() {
 		Context("using odo url", func() {
 			It("should create route", func() {
-				runCmd("odo url create nodejs")
+				getUrlOut := runCmd("odo url create nodejs")
+				Expect(getUrlOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 			})
 
 			It("should be able to list the url", func() {
 				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
 				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
+
+				// Check the labels in `oc get route`
+				routeName := "nodejs-" + appTestName
+				getRouteLabel := runCmd("oc get route/" + routeName + " -o jsonpath='" +
+					"{.metadata.labels.app\\.kubernetes\\.io/component-name}'")
+				Expect(getRouteLabel).To(Equal("nodejs"))
 
 				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1")
 				if curlRoute {
