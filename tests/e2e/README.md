@@ -17,20 +17,39 @@ Run `make test-e2e` to execute the tests.
 | `project create` | Y |
 | `project get` | Y |
 | `project delete` | Y |
+| `project list` | N |
+| `project set` | N |
 | `app create`  | Y  |
 | `app get`  | Y  |
 | `app set` | Y |
 | `app delete` | Y |
+| `app describe` | N |
 | `app list` | Y |
-| `catalog` | N |
+| `catalog list` | Y |
+| `catalog search` | N |
+| `component get` | Y |
+| `component set` | Y |
+| `create` | Y |
 | `create --git` | N |
 | `create --local` | Y |
+| `create --binary` | Y |
+| `delete` | N |
+| `describe` | N |
+| `link` | Y |
 | `list` | Y |
-| `push` | Y |
-| `storage add` | N |
-| `storage list` | N |
-| `storage remove` | N |
-| `update` | N |
+| `push` --local | Y |
+| `push` --git | Y |
+| `push` --binary | Y |
+| `storage create` | Y |
+| `storage list` | Y |
+| `storage delete` | N |
+| `update`: `--git` to `--local` | N |
+| `update`: `--local` to `--git` | N |
+| `update`: `--binary` to `--git` | N |
+| `update`: `--git` to `--binary` | N |
+| `update`: `--local` to `--binary` | N |
+| `update`: `--binary` to `--local` | N |
 | `url create` | Y |
 | `url list` | Y |
 | `url delete` | N |
+| `watch` | N |
