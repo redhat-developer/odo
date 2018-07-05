@@ -17,6 +17,9 @@ The following components can be deployed:
 - wildfly
 ```
 
+
+## Examples from Git repos
+
 ### httpd
 
 Build and serve static content via httpd on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/httpd-container/blob/master/2.4/README.md.
@@ -71,4 +74,15 @@ Build and run WildFly applications on CentOS 7. For more information about using
 
 ```sh
   odo create wildfly --git https://github.com/openshift/openshift-jee-sample.git
+```
+
+## Binary example
+
+### wildfly
+
+WildFly can deploy a binary application.
+
+```sh
+  wget -O example.war 'https://github.com/appuio/hello-world-war/blob/master/repo/ch/appuio/hello-world-war/1.0.0/hello-world-war-1.0.0.war?raw=true'
+  odo create wildfly --binary example.war
 ```
