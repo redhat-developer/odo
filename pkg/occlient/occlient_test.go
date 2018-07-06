@@ -7,12 +7,96 @@ import (
 	"reflect"
 	"testing"
 
+	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
+
+func TestRemoveVolumeFromDeploymentConfig(t *testing.T) {
+	type args struct {
+		pvc    string
+		dcName string
+	}
+	tests := []struct {
+		name     string
+		dcBefore *appsv1.DeploymentConfig
+		args     args
+		wantErr  bool
+	}{
+		{
+			name: "Test case : 1",
+			dcBefore: &appsv1.DeploymentConfig{
+				Spec: appsv1.DeploymentConfigSpec{
+					Selector: map[string]string{
+						"deploymentconfig": "test",
+					},
+					Template: &corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name: "test",
+									VolumeMounts: []corev1.VolumeMount{
+										{
+											MountPath: "/tmp",
+											Name:      "test-pvc",
+										},
+									},
+								},
+							},
+							Volumes: []corev1.Volume{
+								{
+									Name: "test-pvc",
+									VolumeSource: corev1.VolumeSource{
+										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+											ClaimName: "test-pvc",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				pvc:    "test-pvc",
+				dcName: "test",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.AppClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, tt.dcBefore, nil
+			})
+			fakeClientSet.AppClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+			err := fakeClient.RemoveVolumeFromDeploymentConfig(tt.args.pvc, tt.args.dcName)
+
+			// Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.RemoveVolumeFromDeploymentConfig(pvc, dcName) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+			// Check for validating number of actions performed
+			if (len(fakeClientSet.AppClientset.Actions()) != 2) && (tt.wantErr != true) {
+				t.Errorf("expected 2 actions in GetPVCFromName got: %v", fakeClientSet.Kubernetes.Actions())
+			}
+			updatedDc := fakeClientSet.AppClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+			// 	validating volume got removed from dc
+			for _, volume := range updatedDc.Spec.Template.Spec.Volumes {
+				if volume.PersistentVolumeClaim.ClaimName == tt.args.pvc {
+					t.Errorf("expected volume with name : %v to be removed from dc", tt.args.pvc)
+				}
+			}
+		})
+	}
+}
 
 func TestGetPVCFromName(t *testing.T) {
 	tests := []struct {
