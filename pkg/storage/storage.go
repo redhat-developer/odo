@@ -61,7 +61,10 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 }
 
 // Unmount unmounts the given storage from the given component
-func Unmount(client *occlient.Client, storageName string, componentName string, applicationName string) error {
+// updateLabels is a flag to whether update Label or not, so updation of label
+// is not required in delete call but required in unmount call
+// this is introduced as causing unnecessary delays
+func Unmount(client *occlient.Client, storageName string, componentName string, applicationName string, updateLabels bool) error {
 	// Get DeploymentConfig for the given component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -87,8 +90,10 @@ func Unmount(client *occlient.Client, storageName string, componentName string, 
 	pvcLabels := applabels.GetLabels(applicationName, true)
 	pvcLabels[storagelabels.StorageLabel] = storageName
 
-	if err := client.UpdatePVCLabels(pvc, pvcLabels); err != nil {
-		return errors.Wrapf(err, "unable to remove storage label from : %v", pvc.Name)
+	if updateLabels {
+		if err := client.UpdatePVCLabels(pvc, pvcLabels); err != nil {
+			return errors.Wrapf(err, "unable to remove storage label from : %v", pvc.Name)
+		}
 	}
 	return nil
 }
@@ -102,7 +107,7 @@ func Delete(client *occlient.Client, name string, applicationName string) (strin
 		return "", errors.Wrap(err, "unable to find component name and app name")
 	}
 	if componentName != "" {
-		err := Unmount(client, name, componentName, applicationName)
+		err := Unmount(client, name, componentName, applicationName, false)
 		if err != nil {
 			return "", errors.Wrapf(err, "unable to unmount storage %v", name)
 		}
@@ -152,14 +157,14 @@ func List(client *occlient.Client, componentName string, applicationName string)
 
 	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Deployment Config associated with component %v", componentName)
+		return nil, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
 	var storageList []StorageInfo
 	for _, pvc := range pvcs {
 		pvcComponentName, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
-		// first check if storage label does not exists indicating that the storage is not mounted in any component
-		// if the storage label exists, then check if the component is the current active component
+		// first check if component label does not exists indicating that the storage is not mounted in any component
+		// if the component label exists, then check if the component is the current active component
 		// also check if the app label exists and is equal to the current application
 		if (!ok || pvcComponentName == componentName) && (okApp && pvcAppName == applicationName) {
 			if pvc.Name == "" {
@@ -172,6 +177,49 @@ func List(client *occlient.Client, componentName string, applicationName string)
 				Name: storageName,
 				Size: storageSize.String(),
 				Path: storagePath,
+			})
+		}
+	}
+	return storageList, nil
+}
+
+// ListMounted lists all the mounted storage associated with the given component and application
+func ListMounted(client *occlient.Client, componentName string, applicationName string) ([]StorageInfo, error) {
+	storageList, err := List(client, componentName, applicationName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get storage of component %v", componentName)
+	}
+	var storageListMounted []StorageInfo
+	for _, storage := range storageList {
+		if storage.Path != "" {
+			storageListMounted = append(storageListMounted, storage)
+		}
+	}
+	return storageListMounted, nil
+}
+
+// ListUnmounted lists all the unmounted storage associated with the given application
+func ListUnmounted(client *occlient.Client, applicationName string) ([]StorageInfo, error) {
+	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
+	}
+	var storageList []StorageInfo
+	for _, pvc := range pvcs {
+		_, ok := pvc.Labels[componentlabels.ComponentLabel]
+		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
+		// first check if component label does not exists indicating that the storage is not mounted in any component
+		// also check if the app label exists and is equal to the current application
+		if !ok && (okApp && pvcAppName == applicationName) {
+			if pvc.Name == "" {
+				return nil, fmt.Errorf("no PVC associated")
+			}
+			storageName := getStorageFromPVC(&pvc)
+			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+			storageList = append(storageList, StorageInfo{
+				Name: storageName,
+				Size: storageSize.String(),
+				Path: "",
 			})
 		}
 	}
