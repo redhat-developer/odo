@@ -50,7 +50,7 @@ var componentGetCmd = &cobra.Command{
 			fmt.Print(component)
 		} else {
 			if component == "" {
-				fmt.Printf("No component is set as current\n")
+				fmt.Errorf("No component is set as current\n")
 				return
 			}
 			fmt.Printf("The current component is: %v\n", component)
@@ -75,7 +75,7 @@ var componentSetCmd = &cobra.Command{
 		exists, err := component.Exists(client, args[0], applicationName, projectName)
 		checkError(err, "")
 		if !exists {
-			fmt.Printf("Component %s does not exist in the current application\n", args[0])
+			fmt.Errorf("Component %s does not exist in the current application\n", args[0])
 			os.Exit(1)
 		}
 

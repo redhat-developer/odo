@@ -81,7 +81,7 @@ var applicationGetCmd = &cobra.Command{
 			return
 		}
 		if app == "" {
-			fmt.Printf("There's no active application.\nYou can create one by running 'odo application create <name>'.\n")
+			fmt.Errorf("There's no active application.\nYou can create one by running 'odo application create <name>'.\n")
 			return
 		}
 		fmt.Printf("The current application is: %v\n", app)
@@ -173,7 +173,7 @@ var applicationSetCmd = &cobra.Command{
 		exists, err := application.Exists(client, appName)
 		checkError(err, "unable to check if application exists")
 		if !exists {
-			fmt.Printf("Application %v does not exist\n", appName)
+			fmt.Errorf("Application %v does not exist\n", appName)
 			os.Exit(1)
 		}
 
@@ -204,7 +204,7 @@ var applicationDescribeCmd = &cobra.Command{
 			exists, err := application.Exists(client, currentApplication)
 			checkError(err, "")
 			if !exists {
-				fmt.Printf("Application with the name %s does not exist\n", currentApplication)
+				fmt.Errorf("Application with the name %s does not exist\n", currentApplication)
 				os.Exit(1)
 			}
 		}
@@ -214,7 +214,7 @@ var applicationDescribeCmd = &cobra.Command{
 		componentList, err := component.List(client, currentApplication, currentProject)
 		checkError(err, "")
 		if len(componentList) == 0 {
-			fmt.Printf("Application %s has no components deployed.\n", currentApplication)
+			fmt.Errorf("Application %s has no components deployed.\n", currentApplication)
 			os.Exit(1)
 		}
 		fmt.Printf("Application %s has:\n", currentApplication)
