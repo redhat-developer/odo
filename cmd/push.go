@@ -61,6 +61,10 @@ var pushCmd = &cobra.Command{
 		case "local", "binary":
 			// use value of '--dir' as source if it was used
 			if len(componentLocal) != 0 {
+				if sourceType == "binary" {
+					fmt.Printf("Unable to push local directory:%s to component %s that uses binary %s.\n", componentLocal, componentName, sourcePath)
+					os.Exit(1)
+				}
 				sourcePath = componentLocal
 			}
 			u, err := url.Parse(sourcePath)
@@ -85,7 +89,7 @@ var pushCmd = &cobra.Command{
 			// currently we don't support changing build type
 			// it doesn't make sense to use --dir with git build
 			if len(componentLocal) != 0 {
-				fmt.Println("unable to push local directory to component that uses git repository as source")
+				fmt.Printf("Unable to push local directory:%s to component %s that uses Git repository:%s.\n", componentLocal, componentName, sourcePath)
 				os.Exit(1)
 			}
 			err := component.Build(client, componentName, applicationName, true, true)
