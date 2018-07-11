@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -47,6 +48,8 @@ A full list of component types that can be deployed is available using: 'odo com
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
+
+		stdout := color.Output
 		log.Debugf("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
 
 		client := getOcClient()
@@ -100,7 +103,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
-			err = component.Build(client, componentName, applicationName, true, true)
+			err = component.Build(client, componentName, applicationName, true, true, stdout)
 			checkError(err, "")
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
@@ -115,7 +118,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
-			err = component.Build(client, componentName, applicationName, false, true)
+			err = component.Build(client, componentName, applicationName, false, true, stdout)
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("To push source code to the component run 'odo push'\n")
@@ -126,7 +129,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary")
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
-			err = component.Build(client, componentName, applicationName, false, true)
+			err = component.Build(client, componentName, applicationName, false, true, stdout)
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("To push source code to the component run 'odo push'\n")
@@ -137,7 +140,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
-			err = component.Build(client, componentName, applicationName, false, true)
+			err = component.Build(client, componentName, applicationName, false, true, stdout)
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("To push source code to the component run 'odo push'\n")

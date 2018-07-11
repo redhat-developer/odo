@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
@@ -28,6 +29,7 @@ var pushCmd = &cobra.Command{
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		stdout := color.Output
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
@@ -88,7 +90,7 @@ var pushCmd = &cobra.Command{
 				fmt.Println("unable to push local directory to component that uses git repository as source")
 				os.Exit(1)
 			}
-			err := component.Build(client, componentName, applicationName, true, true)
+			err := component.Build(client, componentName, applicationName, true, true, stdout)
 			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 

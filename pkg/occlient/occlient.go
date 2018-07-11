@@ -967,7 +967,7 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 }
 
 // FollowBuildLog stream build log to stdout
-func (c *Client) FollowBuildLog(buildName string) error {
+func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 	buildLogOptions := buildv1.BuildLogOptions{
 		Follow: true,
 		NoWait: false,
@@ -989,8 +989,6 @@ func (c *Client) FollowBuildLog(buildName string) error {
 	// Set the colour of the stdout output..
 	color.Set(color.FgYellow)
 	defer color.Unset()
-
-	stdout := color.Output
 
 	if _, err = io.Copy(stdout, rd); err != nil {
 		return errors.Wrapf(err, "error streaming logs for %s", buildName)
