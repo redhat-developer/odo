@@ -689,11 +689,6 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 
 	// generate BuildConfig
 	buildSource := buildv1.BuildSource{
-		Type:   buildv1.BuildSourceBinary,
-		Binary: &buildv1.BinaryBuildSource{},
-	}
-
-	buildSource = buildv1.BuildSource{
 		Git: &buildv1.GitBuildSource{
 			URI: bootstrapperURI,
 			Ref: bootstrapperRef,
