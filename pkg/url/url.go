@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 type URL struct {
@@ -32,23 +33,32 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 }
 
 // Create creates a URL
-func Create(client *occlient.Client, componentName, applicationName string) (*URL, error) {
+func Create(client *occlient.Client, componentName, applicationName string, urlName string) (*URL, error) {
 	labels := componentlabels.GetLabels(componentName, applicationName, false)
 
-	// Namespace the component
-	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	serviceName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
+	if urlName == "" {
+		// Namespace the component
+		urlName = serviceName
+	} else {
+		urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to create namespaced name")
+		}
+	}
+
 	// Pass in the namespace name, link to the service (componentName) and labels to create a route
-	route, err := client.CreateRoute(namespacedOpenShiftObject, labels)
+	route, err := client.CreateRoute(urlName, serviceName, labels)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}
-
+	urlName = strings.TrimSuffix(route.Name, "-"+route.Labels[applabels.ApplicationLabel])
 	return &URL{
-		Name:     route.Labels[componentlabels.ComponentLabel],
+		Name:     urlName,
 		URL:      route.Spec.Host,
 		Protocol: getProtocol(*route),
 	}, nil
@@ -73,8 +83,9 @@ func List(client *occlient.Client, componentName string, applicationName string)
 
 	var urls []URL
 	for _, r := range routes {
+		urlName := strings.TrimSuffix(r.Name, "-"+r.Labels[applabels.ApplicationLabel])
 		urls = append(urls, URL{
-			Name:     r.Labels[componentlabels.ComponentLabel],
+			Name:     urlName,
 			URL:      r.Spec.Host,
 			Protocol: getProtocol(r),
 		})
