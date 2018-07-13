@@ -41,8 +41,7 @@ var componentDeleteCmd = &cobra.Command{
 		// If no arguments have been passed, get the current component
 		// else, use the first argument and check to see if it exists
 		if len(args) == 0 {
-			componentName, err = component.GetCurrent(client, applicationName, projectName)
-			checkError(err, "Error getting current component")
+			componentName = getComponent(client, "", applicationName, projectName)
 		} else {
 
 			componentName = args[0]
