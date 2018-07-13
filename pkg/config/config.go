@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	configEnvName  = "OCDEVCONFIG"
+	configEnvName  = "ODOCONFIG"
 	configFileName = "odo"
 )
 
@@ -51,7 +51,7 @@ func getDefaultConfigFile() string {
 	return filepath.Join(currentUser.HomeDir, ".kube", configFileName)
 }
 
-func getOcdevConfigFile() (string, error) {
+func getOdoConfigFile() (string, error) {
 	if env, ok := os.LookupEnv(configEnvName); ok {
 		return env, nil
 	}
@@ -64,7 +64,7 @@ func getOcdevConfigFile() (string, error) {
 }
 
 func New() (*ConfigInfo, error) {
-	configFile, err := getOcdevConfigFile()
+	configFile, err := getOdoConfigFile()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
