@@ -171,12 +171,18 @@ func parseImageName(image string) (string, string, string, error) {
 	digestParts := strings.Split(image, "@")
 	if len(digestParts) == 2 {
 		// image is references digest
-		return digestParts[0], "", digestParts[1], nil
-	} else if len(digestParts) == 1 {
+		// Safe path image name and digest are non empty, else error
+		if digestParts[0] != "" && digestParts[1] != "" {
+			return digestParts[0], "", digestParts[1], nil
+		}
+	} else if len(digestParts) == 1 && digestParts[0] != "" { // Filter out empty image name
 		tagParts := strings.Split(image, ":")
 		if len(tagParts) == 2 {
-			// image references tag
-			return tagParts[0], tagParts[1], "", nil
+			// ":1.0.0 is invalid image name"
+			if tagParts[0] != "" {
+				// image references tag
+				return tagParts[0], tagParts[1], "", nil
+			}
 		} else if len(tagParts) == 1 {
 			return tagParts[0], "latest", "", nil
 		}
