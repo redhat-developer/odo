@@ -923,6 +923,126 @@ func TestDeleteApplication(t *testing.T) {
 	}
 }
 
+func TestSetConfiguration(t *testing.T) {
+
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(configEnvName, tempConfigFile.Name())
+	trueValue := true
+	falseValue := false
+
+	tests := []struct {
+		name           string
+		parameter      string
+		existingConfig Config
+		want           bool
+	}{
+		{
+			name:           "updatenotification set nil to true",
+			parameter:      "updatenotification",
+			existingConfig: Config{},
+			want:           true,
+		},
+		{
+			name:      "updatenotification set true to false",
+			parameter: "updatenotification",
+			existingConfig: Config{
+				OdoSettings: OdoSettings{
+					UpdateNotification: &trueValue,
+				},
+			},
+			want: false,
+		},
+		{
+			name:      "updatenotification set false to true",
+			parameter: "updatenotification",
+			existingConfig: Config{
+				OdoSettings: OdoSettings{
+					UpdateNotification: &falseValue,
+				},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := New()
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.Config = tt.existingConfig
+
+			cfg.SetConfiguration(tt.parameter, tt.want)
+
+			// validating the value after executing Serconfiguration
+			if *cfg.OdoSettings.UpdateNotification != tt.want {
+				t.Errorf("unexpeced value after execution of SetConfiguration expected \ngot: %t \nexpected: %t\n", *cfg.OdoSettings.UpdateNotification, tt.want)
+			}
+
+		})
+	}
+}
+
+func TestGetupdateNotification(t *testing.T) {
+
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(configEnvName, tempConfigFile.Name())
+	trueValue := true
+	falseValue := false
+
+	tests := []struct {
+		name           string
+		existingConfig Config
+		want           bool
+	}{
+		{
+			name:           "updatenotification nil",
+			existingConfig: Config{},
+			want:           true,
+		},
+		{
+			name: "updatenotification true",
+			existingConfig: Config{
+				OdoSettings: OdoSettings{
+					UpdateNotification: &trueValue,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "updatenotification false",
+			existingConfig: Config{
+				OdoSettings: OdoSettings{
+					UpdateNotification: &falseValue,
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := ConfigInfo{
+				Config: tt.existingConfig,
+			}
+			output := cfg.GetUpdateNotification()
+
+			if output != tt.want {
+				t.Errorf("GetUpdateNotification returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
+			}
+
+		})
+	}
+}
+
 //
 //func TestGet(t *testing.T) {
 //
