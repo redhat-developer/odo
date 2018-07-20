@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
@@ -36,6 +37,8 @@ var updateCmd = &cobra.Command{
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
+
+		stdout := color.Output
 
 		checkFlag := 0
 
@@ -84,7 +87,7 @@ var updateCmd = &cobra.Command{
 		}
 
 		if len(componentGit) != 0 {
-			err := component.Update(client, componentName, applicationName, "git", componentGit)
+			err := component.Update(client, componentName, applicationName, "git", componentGit, stdout)
 			checkError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else if len(componentLocal) != 0 {
@@ -97,15 +100,15 @@ var updateCmd = &cobra.Command{
 				fmt.Println("Please provide a path to the directory")
 				os.Exit(1)
 			}
-			err = component.Update(client, componentName, applicationName, "local", dir)
+			err = component.Update(client, componentName, applicationName, "local", dir, stdout)
 			checkError(err, "")
-			fmt.Printf("The component %s was updated successfully\n", componentName)
+			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
 		} else if len(componentBinary) != 0 {
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
-			err = component.Update(client, componentName, applicationName, "binary", path)
+			err = component.Update(client, componentName, applicationName, "binary", path, stdout)
 			checkError(err, "")
-			fmt.Printf("The component %s was updated successfully\n", componentName)
+			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
 		}
 	},
 }
