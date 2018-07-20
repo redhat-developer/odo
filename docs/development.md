@@ -31,7 +31,7 @@ git fetch upstream
 git rebase upstream/master
 ```
 
-Note: If you have write access to the main repository at github.com/redhat-developer/odo, you should modify your git configuration so that you can't accidentally push to upstream:
+**Note for maintainers**: If you have write access to the main repository at github.com/redhat-developer/odo, you should modify your git configuration so that you can't accidentally push to upstream:
 
 ```sh
 git remote set-url --push upstream no_push
@@ -49,6 +49,8 @@ git push -f origin myfeature
 1. Visit https://github.com/$YOUR_GITHUB_USERNAME/odo.git
 2. Click the "Compare and pull request" button next to your "myfeature" branch.
 3. Check out the pull request process for more details
+
+**Pull request description:** A PR should contain an accurate description of the feature being implemented as well as a link to an active issue (if any).
 
 ## Dependency Management
 
