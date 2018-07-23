@@ -46,7 +46,8 @@ func validateSourceType(sourceType string) bool {
 	return false
 }
 
-func CreateFromGit(client *occlient.Client, name string, ctype string, url string, applicationName string) error {
+// inputPorts is the array containing the string port values
+func CreateFromGit(client *occlient.Client, name string, ctype string, url string, applicationName string, inputPorts []string) error {
 	labels := componentlabels.GetLabels(name, applicationName, true)
 	// save component type as label
 	labels[componentlabels.ComponentTypeLabel] = ctype
@@ -61,7 +62,7 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	err = client.NewAppS2I(namespacedOpenShiftObject, ctype, url, labels, annotations)
+	err = client.NewAppS2I(namespacedOpenShiftObject, ctype, url, labels, annotations, inputPorts)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
@@ -70,7 +71,8 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
-func CreateFromPath(client *occlient.Client, name string, ctype string, path string, applicationName string, sourceType string) error {
+// inputPorts is the array containing the string port values
+func CreateFromPath(client *occlient.Client, name string, ctype string, path string, applicationName string, sourceType string, inputPorts []string) error {
 	labels := componentlabels.GetLabels(name, applicationName, true)
 	// save component type as label
 	labels[componentlabels.ComponentTypeLabel] = ctype
@@ -86,7 +88,7 @@ func CreateFromPath(client *occlient.Client, name string, ctype string, path str
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	err = client.BootstrapSupervisoredS2I(namespacedOpenShiftObject, ctype, labels, annotations)
+	err = client.BootstrapSupervisoredS2I(namespacedOpenShiftObject, ctype, labels, annotations, inputPorts)
 	if err != nil {
 		return err
 	}

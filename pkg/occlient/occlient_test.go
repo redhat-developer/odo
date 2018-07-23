@@ -22,9 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
+	//applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	//componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	//urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
 )
 
 // fakeImageStream gets imagestream for the reactor
@@ -596,7 +596,7 @@ func TestCreateRoute(t *testing.T) {
 			urlName: "mailserver",
 			service: "mailserver",
 			labels: map[string]string{
-				"SLA": "High",
+				"SLA":                              "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "python",
 			},
@@ -608,7 +608,7 @@ func TestCreateRoute(t *testing.T) {
 			urlName: "example",
 			service: "blog",
 			labels: map[string]string{
-				"SLA": "High",
+				"SLA":                              "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "golang",
 			},
@@ -902,7 +902,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -936,7 +936,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -965,7 +965,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1000,7 +1000,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1029,7 +1029,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1064,7 +1064,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1092,7 +1092,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1701,6 +1701,7 @@ func TestNewAppS2I(t *testing.T) {
 		gitUrl       string
 		labels       map[string]string
 		annotations  map[string]string
+		inputPorts   []string
 	}
 
 	tests := []struct {
@@ -1716,7 +1717,7 @@ func TestNewAppS2I(t *testing.T) {
 				namespace:    "testing",
 				gitUrl:       "https://github.com/openshift/ruby",
 				labels: map[string]string{
-					"app": "apptmp",
+					"app":                              "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
@@ -1737,7 +1738,7 @@ func TestNewAppS2I(t *testing.T) {
 				namespace:    "testing",
 				gitUrl:       "",
 				labels: map[string]string{
-					"app": "apptmp",
+					"app":                              "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
@@ -1746,8 +1747,30 @@ func TestNewAppS2I(t *testing.T) {
 					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
 					"app.kubernetes.io/component-source-type": "git",
 				},
+				inputPorts: []string{"8081/tcp", "9100/udp"},
 			},
 			wantErr: false,
+		},
+		{
+			name: "case 2 : binary buildSource with invalid ports",
+			args: args{
+				name:         "ruby",
+				builderImage: "ruby:latest",
+				namespace:    "testing",
+				gitUrl:       "",
+				labels: map[string]string{
+					"app":                              "apptmp",
+					"app.kubernetes.io/component-name": "ruby",
+					"app.kubernetes.io/component-type": "ruby",
+					"app.kubernetes.io/name":           "apptmp",
+				},
+				annotations: map[string]string{
+					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.kubernetes.io/component-source-type": "git",
+				},
+				inputPorts: []string{"8080", "9100/asd"},
+			},
+			wantErr: true,
 		},
 
 		// TODO: Currently fails. Enable this case once fixed
@@ -1792,17 +1815,14 @@ func TestNewAppS2I(t *testing.T) {
 				tt.args.builderImage,
 				tt.args.gitUrl,
 				tt.args.labels,
-				tt.args.annotations)
+				tt.args.annotations,
+				tt.args.inputPorts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewAppS2I() error = %#v, wantErr %#v", err, tt.wantErr)
 			}
 
 			if err == nil {
-
-				if len(fkclientset.ImageClientset.Actions()) != 3 {
-					t.Errorf("expected 3 ImageClientset.Actions() in NewAppS2I, got: %v", fkclientset.ImageClientset.Actions())
-				}
 
 				if len(fkclientset.BuildClientset.Actions()) != 1 {
 					t.Errorf("expected 1 BuildClientset.Actions() in NewAppS2I, got: %v", fkclientset.BuildClientset.Actions())
@@ -1816,8 +1836,23 @@ func TestNewAppS2I(t *testing.T) {
 					t.Errorf("expected 1 Kubernetes.Actions() in NewAppS2I, go: %v", fkclientset.Kubernetes.Actions())
 				}
 
-				// Check for imagestream objects
-				createdIS := fkclientset.ImageClientset.Actions()[2].(ktesting.CreateAction).GetObject().(*imagev1.ImageStream)
+				var createdIS *imagev1.ImageStream
+
+				if len(tt.args.inputPorts) <= 0 {
+					if len(fkclientset.ImageClientset.Actions()) != 3 {
+						t.Errorf("expected 3 ImageClientset.Actions() in NewAppS2I, got: %v", fkclientset.ImageClientset.Actions())
+					}
+
+					// Check for imagestream objects
+					createdIS = fkclientset.ImageClientset.Actions()[2].(ktesting.CreateAction).GetObject().(*imagev1.ImageStream)
+				} else {
+					if len(fkclientset.ImageClientset.Actions()) != 1 {
+						t.Errorf("expected 3 ImageClientset.Actions() in NewAppS2I, got: %v", fkclientset.ImageClientset.Actions())
+					}
+
+					// Check for imagestream objects
+					createdIS = fkclientset.ImageClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*imagev1.ImageStream)
+				}
 
 				if createdIS.Name != tt.args.name {
 					t.Errorf("imagestream name is not matching with expected name, expected: %s, got %s", tt.args.name, createdIS.Name)
@@ -1857,11 +1892,16 @@ func TestNewAppS2I(t *testing.T) {
 
 				createdSvc := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
 
-				// ExposedPorts 8080 in fakeImageStreamImages()
-				if createdSvc.Spec.Ports[0].Port != 8080 {
-					t.Errorf("Svc port not matching, expected: 8080, got %v", createdSvc.Spec.Ports[0].Port)
+				if len(tt.args.inputPorts) <= 0 {
+					// ExposedPorts 8080 in fakeImageStreamImages()
+					if createdSvc.Spec.Ports[0].Port != 8080 {
+						t.Errorf("Svc port not matching, expected: 8080, got %v", createdSvc.Spec.Ports[0].Port)
+					}
+				} else {
+					if !reflect.DeepEqual(createdSvc, tt.args.inputPorts) {
+						t.Errorf("Svc port not matching, expected: %v, got %v", tt.args.inputPorts, createdSvc)
+					}
 				}
-
 			}
 		})
 	}
@@ -2111,7 +2151,7 @@ func TestWaitAndGetPod(t *testing.T) {
 		},
 
 		{
-			name: "phase:	unknown",
+			name:    "phase:	unknown",
 			podName: "ruby",
 			status:  corev1.PodUnknown,
 			wantErr: true,
@@ -2205,82 +2245,5 @@ func TestCreateNewProject(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestListRoutes(t *testing.T) {
-	tests := []struct {
-		name          string
-		labelSelector string
-		wantLabels    map[string]string
-		routesList    routev1.RouteList
-		wantErr       bool
-	}{
-		{
-			name:          "existing url",
-			labelSelector: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
-			wantLabels: map[string]string{
-				applabels.ApplicationLabel:     "app",
-				componentlabels.ComponentLabel: "nodejs",
-			},
-			routesList: routev1.RouteList{
-				Items: []routev1.Route{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "nodejs",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:     "app",
-								componentlabels.ComponentLabel: "nodejs",
-							},
-						},
-						Spec: routev1.RouteSpec{
-							To: routev1.RouteTargetReference{
-								Kind: "Service",
-								Name: "nodejs-app",
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "wildfly",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:     "app",
-								componentlabels.ComponentLabel: "wildfly",
-								urlLabels.UrlLabel:             "wildfly",
-							},
-						},
-						Spec: routev1.RouteSpec{
-							To: routev1.RouteTargetReference{
-								Kind: "Service",
-								Name: "wildfly-app",
-							},
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		client, fakeClientSet := FakeNew()
-
-		fakeClientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-			if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), tt.labelSelector) {
-				return true, nil, fmt.Errorf("labels not matching with expected values, expected:%s, got:%s", tt.labelSelector, action.(ktesting.ListAction).GetListRestrictions())
-			}
-			return true, &tt.routesList, nil
-		})
-
-		_, err := client.ListRoutes(tt.labelSelector)
-		if err == nil && !tt.wantErr {
-			if (len(fakeClientSet.RouteClientset.Actions()) != 1) && (tt.wantErr != true) {
-				t.Errorf("expected 1 action in ListRoutes got: %v", fakeClientSet.RouteClientset.Actions())
-			}
-		} else if err == nil && tt.wantErr {
-			t.Error("error was expected, but no error was returned")
-		} else if err != nil && !tt.wantErr {
-			t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
-		}
 	}
 }

@@ -19,6 +19,7 @@ var (
 	componentBinary string
 	componentGit    string
 	componentLocal  string
+	componentPorts  []string
 )
 
 var componentCreateCmd = &cobra.Command{
@@ -40,6 +41,9 @@ A full list of component types that can be deployed is available using: 'odo com
 
   # Create new Wildfly component with binary named sample.war in './downloads' directory
   odo create wildfly wildly --binary ./downloads/sample.war
+
+  # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
+  odo create nodejs --ports 8080,8100/tcp,9100/udp
 
   # List of ready-to-use examples
   # for more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
@@ -99,7 +103,7 @@ A full list of component types that can be deployed is available using: 'odo com
 		}
 
 		if len(componentGit) != 0 {
-			err := component.CreateFromGit(client, componentName, componentType, componentGit, applicationName)
+			err := component.CreateFromGit(client, componentName, componentType, componentGit, applicationName, componentPorts)
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
@@ -115,7 +119,7 @@ A full list of component types that can be deployed is available using: 'odo com
 				fmt.Println("Please provide a path to the directory")
 				os.Exit(1)
 			}
-			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
+			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local", componentPorts)
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
@@ -126,7 +130,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
 
-			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary")
+			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary", componentPorts)
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
@@ -137,7 +141,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
 			checkError(err, "")
-			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local")
+			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local", componentPorts)
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
@@ -156,6 +160,7 @@ func init() {
 	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "Binary artifact")
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "Git source")
 	componentCreateCmd.Flags().StringVar(&componentLocal, "local", "", "Use local directory as a source for component")
+	componentCreateCmd.Flags().StringSliceVar(&componentPorts, "ports", []string{}, "Ports to be used when the component is created")
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCreateCmd.Annotations = map[string]string{"command": "component"}
