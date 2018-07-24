@@ -46,7 +46,7 @@ var watchCmd = &cobra.Command{
 			componentName = args[0]
 		}
 
-		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
+		_, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
 		checkError(err, "Unable to get source for %s component.", componentName)
 
 		u, err := url.Parse(sourcePath)
@@ -58,18 +58,7 @@ var watchCmd = &cobra.Command{
 		}
 		watchPath := u.Path
 
-		var asFile bool
-		switch sourceType {
-		case "binary":
-			asFile = true
-		case "local":
-			asFile = false
-		default:
-			fmt.Printf("Watching component that has source type  %s is not supported.", sourceType)
-			os.Exit(1)
-		}
-
-		err = component.WatchAndPush(client, componentName, applicationName, watchPath, asFile, stdout)
+		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout)
 		checkError(err, "Error while trying to watch %s", watchPath)
 	},
 }

@@ -10,6 +10,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
 
+	"path/filepath"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -77,12 +79,16 @@ var pushCmd = &cobra.Command{
 				checkError(err, "")
 			}
 
-			var asFile bool
-			if sourceType == "binary" {
-				asFile = true
+			if sourceType == "local" {
+				log.Debugf("Copying directory %s to pod", u.Path)
+				err = component.PushLocal(client, componentName, applicationName, u.Path, os.Stdout, []string{})
+			} else {
+				dir := filepath.Dir(u.Path)
+				log.Debugf("Copying file %s to pod", u.Path)
+				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{u.Path})
 			}
-			err = component.PushLocal(client, componentName, applicationName, u.Path, asFile, os.Stdout)
 			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+
 		case "git":
 			// currently we don't support changing build type
 			// it doesn't make sense to use --dir with git build

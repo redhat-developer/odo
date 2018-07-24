@@ -165,14 +165,13 @@ func GetCurrent(client *occlient.Client, applicationName string, projectName str
 }
 
 // PushLocal push local code to the cluster and trigger build there.
-// asFile indicates if it is a binary component or not
-func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, asFile bool, out io.Writer) error {
+// files is list of changed files captured during `odo watch` as well as binary file path
+// During copying binary components, path represent base directory path to binary and files contains path of binary
+// During copying local source components, path represent base directory path whereas files is empty
+// During `odo watch`, path represent base directory path whereas files contains list of changed Files
+func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
 	const targetPath = "/opt/app-root/src"
 
-	if !asFile {
-		// We need to make sure that there is a '/' at the end, otherwise rsync will sync files to wrong directory
-		path = fmt.Sprintf("%s/", path)
-	}
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -187,17 +186,11 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
-	var syncOutput string
-	if !asFile {
-		syncOutput, err = client.RsyncPath(path, pod.Name, targetPath)
-	} else {
-		syncOutput, err = client.CopyFile(path, pod.Name, targetPath)
-
-	}
+	log.Debugf("Copying to pod %s", pod.Name)
+	err = client.CopyFile(path, pod.Name, targetPath, files)
 	if err != nil {
 		return errors.Wrap(err, "unable push files to pod")
 	}
-	fmt.Fprintf(out, syncOutput)
 	fmt.Fprintf(out, "Please wait, building component....\n")
 
 	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
