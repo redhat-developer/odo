@@ -45,21 +45,19 @@ func TerminalGenerate(out io.Writer, cmd *cobra.Command, args []string) error {
 	var PS1 = `
 __odo_ps1() {
 
-    # Get current context
-    COMPONENT_GET=$(odo component get --skip-connection-check | sed "s/The current component is: //g")
-		if [ $? != 0 ]; then
-		COMPONENT="Unable to retrieve component"
-		else
-    COMPONENT=$(echo $COMPONENT_GET | sed "s/The current component is: //g")
+		# Get application context
+    APP=$(odo application get -q --skip-connection-check)
+
+		if [ "$APP" = "" ]; then
+		APP="<no application>"
 		fi
 
-		# Get application context
-    APP_GET=$(odo application get --skip-connection-check | sed "s/The current application is: //g")
-		if [ $? != 0 ]; then
-		APP="Unable to retrieve app"
-		else
-    APP=$(echo $APP_GET | sed "s/The current application is: //g")
-		fi
+    # Get current context
+    COMPONENT=$(odo component get -q --skip-connection-check)
+
+		if [ "$COMPONENT" = "" ]; then
+		COMPONENT="<no component>"
+    fi
 
     if [ -n "$COMPONENT" ] || [ -n "$APP" ]; then
         echo "[${APP}/${COMPONENT}]"
