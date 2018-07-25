@@ -1,19 +1,103 @@
 package occlient
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
+	dockerapi "github.com/openshift/api/image/docker10"
+	imagev1 "github.com/openshift/api/image/v1"
+	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fields "k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	watch "k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
+
+// fakeImageStream gets imagestream for the reactor
+func fakeImageStream(imageName string, namespace string) *imagev1.ImageStream {
+	return &imagev1.ImageStream{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      imageName,
+			Namespace: namespace,
+		},
+
+		Status: imagev1.ImageStreamStatus{
+			Tags: []imagev1.NamedTagEventList{
+				{
+					Tag: "latest",
+					Items: []imagev1.TagEvent{
+						{DockerImageReference: "example/" + imageName + ":latest"},
+						{Generation: 1},
+						{Image: imageName + "@sha256:9579a93ee"},
+					},
+				},
+			},
+		},
+	}
+}
+
+// fakeImageStreams lists the imagestreams for the reactor
+func fakeImageStreams(imageName string, namespace string) *imagev1.ImageStreamList {
+	return &imagev1.ImageStreamList{
+		Items: []imagev1.ImageStream{*fakeImageStream(imageName, namespace)},
+	}
+}
+
+// fakeImageStreamImages gets imagstreamimages for the reactor
+func fakeImageStreamImages(imageName string) *imagev1.ImageStreamImage {
+	mdata := &dockerapi.DockerImage{
+		ContainerConfig: dockerapi.DockerConfig{
+			Env: []string{
+				"STI_SCRIPTS_URL=http://repo/git/" + imageName,
+			},
+
+			ExposedPorts: map[string]struct{}{
+				"8080/tcp": {},
+			},
+		},
+	}
+
+	mdataRaw, _ := json.Marshal(mdata)
+	return &imagev1.ImageStreamImage{
+		Image: imagev1.Image{
+			DockerImageReference: "example/" + imageName + ":latest",
+			DockerImageMetadata:  runtime.RawExtension{Raw: mdataRaw},
+		},
+	}
+}
+
+// fakeBuildStatus is used to pass fake BuildStatus to watch
+func fakeBuildStatus(status buildv1.BuildPhase, buildName string) *buildv1.Build {
+	return &buildv1.Build{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      buildName,
+		},
+		Status: buildv1.BuildStatus{
+			Phase: status,
+		},
+	}
+}
+
+func fakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+		},
+		Status: corev1.PodStatus{
+			Phase: status,
+		},
+	}
+}
 
 func TestRemoveVolumeFromDeploymentConfig(t *testing.T) {
 	type args struct {
@@ -71,10 +155,10 @@ func TestRemoveVolumeFromDeploymentConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
-			fakeClientSet.AppClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, tt.dcBefore, nil
 			})
-			fakeClientSet.AppClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, nil, nil
 			})
 			err := fakeClient.RemoveVolumeFromDeploymentConfig(tt.args.pvc, tt.args.dcName)
@@ -84,11 +168,11 @@ func TestRemoveVolumeFromDeploymentConfig(t *testing.T) {
 				t.Errorf(" client.RemoveVolumeFromDeploymentConfig(pvc, dcName) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 			// Check for validating number of actions performed
-			if (len(fakeClientSet.AppClientset.Actions()) != 2) && (tt.wantErr != true) {
+			if (len(fakeClientSet.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
 				t.Errorf("expected 2 actions in GetPVCFromName got: %v", fakeClientSet.Kubernetes.Actions())
 			}
-			updatedDc := fakeClientSet.AppClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
-			// 	validating volume got removed from dc
+			updatedDc := fakeClientSet.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+			//	validating volume got removed from dc
 			for _, volume := range updatedDc.Spec.Template.Spec.Volumes {
 				if volume.PersistentVolumeClaim.ClaimName == tt.args.pvc {
 					t.Errorf("expected volume with name : %v to be removed from dc", tt.args.pvc)
@@ -492,7 +576,7 @@ func TestUpdateDCAnnotations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
-			fkclientset.AppClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				dcName := action.(ktesting.GetAction).GetName()
 				if dcName != tt.dcName {
 					return true, nil, fmt.Errorf("'get' called with a different dcName")
@@ -504,7 +588,7 @@ func TestUpdateDCAnnotations(t *testing.T) {
 				return true, &tt.existingDc, nil
 			})
 
-			fkclientset.AppClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			fkclientset.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
 				if dc.Name != tt.existingDc.Name {
 					return true, nil, fmt.Errorf("got different dc")
@@ -516,11 +600,11 @@ func TestUpdateDCAnnotations(t *testing.T) {
 
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
-				if (len(fkclientset.AppClientset.Actions()) != 2) && (tt.wantErr != true) {
-					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppClientset.Actions())
+				if (len(fkclientset.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
+					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppsClientset.Actions())
 				}
 
-				updatedDc := fkclientset.AppClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				updatedDc := fkclientset.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
 				if updatedDc.Name != tt.dcName {
 					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.dcName, updatedDc.Name)
 				}
@@ -767,7 +851,7 @@ func TestSetupForSupervisor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
-			fkclientset.AppClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				dcName := action.(ktesting.GetAction).GetName()
 				if dcName != tt.dcName {
 					return true, nil, fmt.Errorf("'get' called with different dcName")
@@ -778,7 +862,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				return true, &tt.existingDc, nil
 			})
 
-			fkclientset.AppClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			fkclientset.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
 				if dc.Name != tt.existingDc.Name {
 					return true, nil, fmt.Errorf("got different dc")
@@ -801,16 +885,16 @@ func TestSetupForSupervisor(t *testing.T) {
 
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
-				if (len(fkclientset.AppClientset.Actions()) != 2) && (tt.wantErr != true) {
-					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppClientset.Actions())
+				if (len(fkclientset.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
+					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppsClientset.Actions())
 				}
 
 				// Check for validating actions performed
 				if (len(fkclientset.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
-					t.Errorf("expected 1 action in CreatePVC got: %v", fkclientset.AppClientset.Actions())
+					t.Errorf("expected 1 action in CreatePVC got: %v", fkclientset.AppsClientset.Actions())
 				}
 
-				updatedDc := fkclientset.AppClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				updatedDc := fkclientset.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
 				if updatedDc.Name != tt.dcName {
 					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.dcName, updatedDc.Name)
 				}
@@ -1059,7 +1143,7 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 			lenInitContainer := len(tt.existingDc.Spec.Template.Spec.InitContainers)
 
 			fkclient, fkclientset := FakeNew()
-			fkclientset.AppClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				dcName := action.(ktesting.GetAction).GetName()
 				if tt.dcName != dcName {
 					return true, nil, fmt.Errorf("got different dc")
@@ -1067,7 +1151,7 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 				return true, &tt.existingDc, nil
 			})
 
-			fkclientset.AppClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			fkclientset.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
 				if dc.Name != tt.dcName {
 					return true, nil, fmt.Errorf("got different dc")
@@ -1086,8 +1170,8 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 			err := fkclient.CleanupAfterSupervisor(tt.dcName, tt.projectName, tt.annotations)
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
-				if (len(fkclientset.AppClientset.Actions()) != 2) && (tt.wantErr != true) {
-					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppClientset.Actions())
+				if (len(fkclientset.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
+					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppsClientset.Actions())
 				}
 
 				// Check for validating actions performed
@@ -1095,7 +1179,7 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 					t.Errorf("expected 1 action in CreatePVC got: %v", fkclientset.Kubernetes.Actions())
 				}
 
-				updatedDc := fkclientset.AppClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				updatedDc := fkclientset.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
 				if updatedDc.Name != tt.dcName {
 					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.dcName, updatedDc.Name)
 				}
@@ -1190,7 +1274,7 @@ func TestGetBuildConfig(t *testing.T) {
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
 				if (len(fkclientset.BuildClientset.Actions()) != 1) && (tt.wantErr != true) {
-					t.Errorf("expected 1 action in GetBuildConfig got: %v", fkclientset.AppClientset.Actions())
+					t.Errorf("expected 1 action in GetBuildConfig got: %v", fkclientset.AppsClientset.Actions())
 				}
 				if build.Name != tt.buildName {
 					t.Errorf("wrong GetBuildConfig got: %v, expected: %v", build.Name, tt.buildName)
@@ -1346,6 +1430,521 @@ func TestUpdateBuildConfig(t *testing.T) {
 				t.Errorf("test failed, expected: %s, got %s", "error", "no error")
 			} else if err != nil && !tt.wantErr {
 				t.Errorf("test failed, expected: %s, got %s", "no error", "error: "+err.Error())
+			}
+		})
+	}
+}
+
+func TestNewAppS2I(t *testing.T) {
+	type args struct {
+		name         string
+		namespace    string
+		builderImage string
+		gitUrl       string
+		labels       map[string]string
+		annotations  map[string]string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case 1: with valid gitUrl",
+			args: args{
+				name:         "ruby",
+				builderImage: "ruby:latest",
+				namespace:    "testing",
+				gitUrl:       "https://github.com/openshift/ruby",
+				labels: map[string]string{
+					"app": "apptmp",
+					"app.kubernetes.io/component-name": "ruby",
+					"app.kubernetes.io/component-type": "ruby",
+					"app.kubernetes.io/name":           "apptmp",
+				},
+				annotations: map[string]string{
+					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.kubernetes.io/component-source-type": "git",
+				},
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "case 2 : binary buildSource with gitUrl empty",
+			args: args{
+				name:         "ruby",
+				builderImage: "ruby:latest",
+				namespace:    "testing",
+				gitUrl:       "",
+				labels: map[string]string{
+					"app": "apptmp",
+					"app.kubernetes.io/component-name": "ruby",
+					"app.kubernetes.io/component-type": "ruby",
+					"app.kubernetes.io/name":           "apptmp",
+				},
+				annotations: map[string]string{
+					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.kubernetes.io/component-source-type": "git",
+				},
+			},
+			wantErr: false,
+		},
+
+		// TODO: Currently fails. Enable this case once fixed
+		// {
+		// 	name: "case 3: with empty builderImage",
+		// 	args: args{
+		// 		name:         "ruby",
+		// 		builderImage: "",
+		// 		gitUrl:       "https://github.com/openshift/ruby",
+		// 		labels: map[string]string{
+		// 			"app": "apptmp",
+		// 			"app.kubernetes.io/component-name": "ruby",
+		// 			"app.kubernetes.io/component-type": "ruby",
+		// 			"app.kubernetes.io/name":           "apptmp",
+		// 		},
+		// 		annotations: map[string]string{
+		// 			"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+		// 			"app.kubernetes.io/component-source-type": "git",
+		// 		},
+		// 	},
+		// 	wantErr: true,
+		// },
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+
+			fkclientset.ImageClientset.PrependReactor("list", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStreams(tt.args.name, tt.args.namespace), nil
+			})
+
+			fkclientset.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStream(tt.args.name, tt.args.namespace), nil
+			})
+
+			fkclientset.ImageClientset.PrependReactor("get", "imagestreamimages", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStreamImages(tt.args.name), nil
+			})
+
+			err := fkclient.NewAppS2I(tt.args.name,
+				tt.args.builderImage,
+				tt.args.gitUrl,
+				tt.args.labels,
+				tt.args.annotations)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewAppS2I() error = %#v, wantErr %#v", err, tt.wantErr)
+			}
+
+			if err == nil {
+
+				if len(fkclientset.ImageClientset.Actions()) != 3 {
+					t.Errorf("expected 3 ImageClientset.Actions() in NewAppS2I, got: %v", fkclientset.ImageClientset.Actions())
+				}
+
+				if len(fkclientset.BuildClientset.Actions()) != 1 {
+					t.Errorf("expected 1 BuildClientset.Actions() in NewAppS2I, got: %v", fkclientset.BuildClientset.Actions())
+				}
+
+				if len(fkclientset.AppsClientset.Actions()) != 1 {
+					t.Errorf("expected 1 AppsClientset.Actions() in NewAppS2I, go: %v", fkclientset.AppsClientset.Actions())
+				}
+
+				if len(fkclientset.Kubernetes.Actions()) != 1 {
+					t.Errorf("expected 1 Kubernetes.Actions() in NewAppS2I, go: %v", fkclientset.Kubernetes.Actions())
+				}
+
+				// Check for imagestream objects
+				createdIS := fkclientset.ImageClientset.Actions()[2].(ktesting.CreateAction).GetObject().(*imagev1.ImageStream)
+
+				if createdIS.Name != tt.args.name {
+					t.Errorf("imagestream name is not matching with expected name, expected: %s, got %s", tt.args.name, createdIS.Name)
+				}
+
+				if !reflect.DeepEqual(createdIS.Labels, tt.args.labels) {
+					t.Errorf("imagestream labels not matching with expected values, expected: %s, got %s", tt.args.labels, createdIS.Labels)
+				}
+
+				if !reflect.DeepEqual(createdIS.Annotations, tt.args.annotations) {
+					t.Errorf("imagestream annotations not matching with expected values, expected: %s, got %s", tt.args.annotations, createdIS.Annotations)
+				}
+
+				// Check buildconfig objects
+				createdBC := fkclientset.BuildClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*buildv1.BuildConfig)
+
+				if tt.args.gitUrl != "" {
+					if createdBC.Spec.CommonSpec.Source.Git.URI != tt.args.gitUrl {
+						t.Errorf("git url is not matching with expected value, expected: %s, got %s", tt.args.gitUrl, createdBC.Spec.CommonSpec.Source.Git.URI)
+					}
+
+					if createdBC.Spec.CommonSpec.Source.Type != "Git" {
+						t.Errorf("BuildSource type is not Git as expected")
+					}
+				}
+
+				// TODO: Enable once Issue #594 fixed
+				// } else if createdBC.Spec.CommonSpec.Source.Type != "Binary" {
+				// 	t.Errorf("BuildSource type is not Binary as expected")
+				// }
+
+				// Check deploymentconfig objects
+				createdDC := fkclientset.AppsClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*appsv1.DeploymentConfig)
+				if createdDC.Spec.Selector["deploymentconfig"] != tt.args.name {
+					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.args.name, createdDC.Spec.Selector["deploymentconfig"])
+				}
+
+				createdSvc := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
+
+				// ExposedPorts 8080 in fakeImageStreamImages()
+				if createdSvc.Spec.Ports[0].Port != 8080 {
+					t.Errorf("Svc port not matching, expected: 8080, got %s", createdSvc.Spec.Ports[0].Port)
+				}
+
+			}
+		})
+	}
+}
+
+func TestGetImageStreams(t *testing.T) {
+
+	type args struct {
+		name      string
+		namespace string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    []imagev1.ImageStream
+		wantErr bool
+	}{
+		{
+			name: "case 1: testing a valid imagestream",
+			args: args{
+				name:      "ruby",
+				namespace: "testing",
+			},
+			want: []imagev1.ImageStream{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ruby",
+						Namespace: "testing",
+					},
+					Status: imagev1.ImageStreamStatus{
+						Tags: []imagev1.NamedTagEventList{
+							{
+								Tag: "latest",
+								Items: []imagev1.TagEvent{
+									{DockerImageReference: "example/ruby:latest"},
+									{Generation: 1},
+									{Image: "ruby@sha256:9579a93ee"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+
+		// TODO: Currently fails. Enable once fixed
+		// {
+		//         name: "case 2: empty namespace",
+		//         args: args{
+		//                 name:      "ruby",
+		//                 namespace: "",
+		//         },
+		//         wantErr: true,
+		// },
+
+		// {
+		// 	name: "case 3: empty name",
+		// 	args: args{
+		// 		name:      "",
+		// 		namespace: "testing",
+		// 	},
+		// 	wantErr: true,
+		// },
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			client, fkclientset := FakeNew()
+
+			fkclientset.ImageClientset.PrependReactor("list", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStreams(tt.args.name, tt.args.namespace), nil
+			})
+
+			got, err := client.GetImageStreams(tt.args.namespace)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetImageStreams() error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+
+			if len(fkclientset.ImageClientset.Actions()) != 1 {
+				t.Errorf("expected 1 action in GetImageStreams got: %v", fkclientset.ImageClientset.Actions())
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetImageStreams() = %#v, want %#v", got, tt.want)
+			}
+
+		})
+	}
+}
+
+func TestStartBuild(t *testing.T) {
+	tests := []struct {
+		name    string
+		bcName  string
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Testing valid name",
+			bcName:  "ruby",
+			wantErr: false,
+		},
+
+		// TODO: Currently fails. Enable once fixed.
+		// {
+		// 	name:    "Case 2: Testing empty name",
+		// 	bcName:  "",
+		// 	wantErr: true,
+		// },
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fkclient, fkclientset := FakeNew()
+
+			fkclientset.BuildClientset.PrependReactor("create", "buildconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				build := buildv1.Build{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tt.bcName,
+					},
+				}
+
+				return true, &build, nil
+			})
+
+			_, err := fkclient.StartBuild(tt.bcName)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.StartBuild(string) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err == nil {
+
+				if len(fkclientset.BuildClientset.Actions()) != 1 {
+					t.Errorf("expected 1 action in StartBuild got: %v", fkclientset.BuildClientset.Actions())
+				}
+
+				startedBuild := fkclientset.BuildClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*buildv1.BuildRequest)
+
+				if startedBuild.Name != tt.bcName {
+					t.Errorf("buildconfig name is not matching to expected name, expected: %s, got %s", tt.bcName, startedBuild.Name)
+				}
+			}
+		})
+	}
+
+}
+
+func TestWaitForBuildToFinish(t *testing.T) {
+
+	tests := []struct {
+		name      string
+		buildName string
+		status    buildv1.BuildPhase
+		wantErr   bool
+	}{
+		{
+			name:      "phase: complete",
+			buildName: "ruby",
+			status:    buildv1.BuildPhaseComplete,
+			wantErr:   false,
+		},
+
+		{
+			name:      "phase: failed",
+			buildName: "ruby",
+			status:    buildv1.BuildPhaseFailed,
+			wantErr:   true,
+		},
+
+		{
+			name:      "phase: cancelled",
+			buildName: "ruby",
+			status:    buildv1.BuildPhaseCancelled,
+			wantErr:   true,
+		},
+
+		{
+			name:      "phase: error",
+			buildName: "ruby",
+			status:    buildv1.BuildPhaseError,
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fkclient, fkclientset := FakeNew()
+			fkWatch := watch.NewFake()
+
+			go func() {
+				fkWatch.Modify(fakeBuildStatus(tt.status, tt.buildName))
+			}()
+
+			fkclientset.BuildClientset.PrependWatchReactor("builds", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			err := fkclient.WaitForBuildToFinish(tt.buildName)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.WaitForBuildToFinish(string) unexpected error %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if len(fkclientset.BuildClientset.Actions()) != 1 {
+				t.Errorf("expected 1 action in WaitForBuildToFinish got: %v", fkclientset.BuildClientset.Actions())
+			}
+
+			if err == nil {
+				expectedFields := fields.OneTermEqualSelector("metadata.name", tt.buildName)
+				gotFields := fkclientset.BuildClientset.Actions()[0].(ktesting.WatchAction).GetWatchRestrictions().Fields
+
+				if !reflect.DeepEqual(expectedFields, gotFields) {
+					t.Errorf("Fields not matching: expected: %s, got %s", expectedFields, gotFields)
+				}
+			}
+		})
+	}
+
+}
+
+func TestWaitAndGetPod(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		podName string
+		status  corev1.PodPhase
+		wantErr bool
+	}{
+		{
+			name:    "phase: running",
+			podName: "ruby",
+			status:  corev1.PodRunning,
+			wantErr: false,
+		},
+
+		{
+			name:    "phase: failed",
+			podName: "ruby",
+			status:  corev1.PodFailed,
+			wantErr: true,
+		},
+
+		{
+			name: "phase:	unknown",
+			podName: "ruby",
+			status:  corev1.PodUnknown,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fkclient, fkclientset := FakeNew()
+			fkWatch := watch.NewFake()
+
+			// Change the status
+			go func() {
+				fkWatch.Modify(fakePodStatus(tt.status, tt.podName))
+			}()
+
+			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			podSelector := fmt.Sprintf("deploymentconfig=%s", tt.podName)
+			pod, err := fkclient.WaitAndGetPod(podSelector)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if len(fkclientset.Kubernetes.Actions()) != 1 {
+				t.Errorf("expected 1 action in WaitAndGetPod got: %v", fkclientset.Kubernetes.Actions())
+			}
+
+			if err == nil {
+				if pod.Name != tt.podName {
+					t.Errorf("pod name is not matching to expected name, expected: %s, got %s", tt.podName, pod.Name)
+				}
+			}
+
+		})
+	}
+}
+
+func TestCreateNewProject(t *testing.T) {
+	tests := []struct {
+		name     string
+		projName string
+		wantErr  bool
+	}{
+		{
+			name:     "Case 1: valid project name",
+			projName: "testing",
+			wantErr:  false,
+		},
+
+		// TODO: Currently fails. Enable once fixed.
+		// {
+		// 	name:     "Case 2: empty project name",
+		// 	projName: "",
+		// 	wantErr:  true,
+		// },
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+
+			fkclientset.ProjClientset.PrependReactor("create", "projectrequests", func(action ktesting.Action) (bool, runtime.Object, error) {
+				proj := projectv1.Project{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tt.projName,
+					},
+				}
+				return true, &proj, nil
+			})
+
+			err := fkclient.CreateNewProject(tt.projName)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("client.CreateNewProject(string) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if len(fkclientset.ProjClientset.Actions()) != 1 {
+				t.Errorf("expected 1 action in CreateNewProject got: %v", fkclientset.ProjClientset.Actions())
+			}
+
+			if err == nil {
+				createdProj := fkclientset.ProjClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*projectv1.ProjectRequest)
+
+				if createdProj.Name != tt.projName {
+					t.Errorf("project name does not match the expected name, expected: %s, got: %s", tt.projName, createdProj.Name)
+				}
 			}
 		})
 	}
