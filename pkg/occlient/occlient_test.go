@@ -16,9 +16,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	fields "k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	watch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -613,9 +613,9 @@ func TestUpdateDCAnnotations(t *testing.T) {
 					t.Errorf("deployment Config annotations not matching with expected values, expected: %s, got %s", tt.annotations, updatedDc.Annotations)
 				}
 			} else if err == nil && tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "false", "true")
+				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "no error", "error")
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
 		})
 	}
@@ -909,16 +909,16 @@ func TestSetupForSupervisor(t *testing.T) {
 				}
 
 				if !reflect.DeepEqual(createdPVC.Name, tt.createdPVC.Name) {
-					t.Errorf("created PVC not matching with expected values, expected: %s, got %s", tt.createdPVC, createdPVC)
+					t.Errorf("created PVC not matching with expected values, expected: %v, got %v", tt.createdPVC, createdPVC)
 				}
 
 				if !reflect.DeepEqual(createdPVC.Spec, tt.createdPVC.Spec) {
-					t.Errorf("created PVC spec not matching with expected values, expected: %s, got %s", createdPVC.Spec, tt.createdPVC.Spec)
+					t.Errorf("created PVC spec not matching with expected values, expected: %v, got %v", createdPVC.Spec, tt.createdPVC.Spec)
 				}
 			} else if err == nil && tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "error", "no error")
+				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "no error", "error")
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
 		})
 	}
@@ -1201,7 +1201,7 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 				}
 
 				if lenVolumes-1 != len(updatedDc.Spec.Template.Spec.Volumes) {
-					t.Errorf("wrong number of Volumes deleted, expected: %s, removed %s", "1 volume", lenVolumes-len(updatedDc.Spec.Template.Spec.Volumes))
+					t.Errorf("wrong number of Volumes deleted, expected: %s, removed %d", "1 volume", lenVolumes-len(updatedDc.Spec.Template.Spec.Volumes))
 				}
 
 				if lenInitContainer-1 != len(updatedDc.Spec.Template.Spec.InitContainers) {
@@ -1230,9 +1230,9 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 					}
 				}
 			} else if err == nil && tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "error", "no error")
+				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "no error", "error: "+err.Error())
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
 		})
 	}
@@ -1280,9 +1280,9 @@ func TestGetBuildConfig(t *testing.T) {
 					t.Errorf("wrong GetBuildConfig got: %v, expected: %v", build.Name, tt.buildName)
 				}
 			} else if err == nil && tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "error", "no error")
+				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "no error", "error: "+err.Error())
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
 		})
 	}
@@ -1424,12 +1424,12 @@ func TestUpdateBuildConfig(t *testing.T) {
 				}
 
 				if !reflect.DeepEqual(updatedDc.Spec, tt.updatedBuildConfig.Spec) {
-					t.Errorf("deployment Config Spec not matching with expected values, expected: %s, got %s", tt.updatedBuildConfig.Spec, updatedDc.Spec)
+					t.Errorf("deployment Config Spec not matching with expected values, expected: %v, got %v", tt.updatedBuildConfig.Spec, updatedDc.Spec)
 				}
 			} else if err == nil && tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "error", "no error")
+				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
-				t.Errorf("test failed, expected: %s, got %s", "no error", "error: "+err.Error())
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
 		})
 	}
@@ -1601,7 +1601,7 @@ func TestNewAppS2I(t *testing.T) {
 
 				// ExposedPorts 8080 in fakeImageStreamImages()
 				if createdSvc.Spec.Ports[0].Port != 8080 {
-					t.Errorf("Svc port not matching, expected: 8080, got %s", createdSvc.Spec.Ports[0].Port)
+					t.Errorf("Svc port not matching, expected: 8080, got %v", createdSvc.Spec.Ports[0].Port)
 				}
 
 			}
