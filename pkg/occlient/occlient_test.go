@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -201,6 +202,142 @@ func TestGetPVCNameFromVolumeMountName(t *testing.T) {
 			// Check for validating return value
 			if returnValue != tt.want {
 				t.Errorf("error in return value got: %v, expected %v", returnValue, tt.want)
+			}
+
+		})
+	}
+}
+
+func TestAddPVCToDeploymentConfig(t *testing.T) {
+	type args struct {
+		dc   *appsv1.DeploymentConfig
+		pvc  string
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Test case 1: valid dc",
+			args: args{
+				dc: &appsv1.DeploymentConfig{
+					Spec: appsv1.DeploymentConfigSpec{
+						Selector: map[string]string{
+							"deploymentconfig": "nodejs-app",
+						},
+						Template: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "test",
+										VolumeMounts: []corev1.VolumeMount{
+											{
+												MountPath: "/tmp",
+												Name:      "test",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				pvc:  "test volume",
+				path: "/mnt",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test case 2: dc without Containers defined",
+			args: args{
+				dc: &appsv1.DeploymentConfig{
+					Spec: appsv1.DeploymentConfigSpec{
+						Selector: map[string]string{
+							"deploymentconfig": "nodejs-app",
+						},
+						Template: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{},
+						},
+					},
+				},
+				pvc:  "test-voulme",
+				path: "/mnt",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test case 3: dc without Template defined",
+			args: args{
+				dc: &appsv1.DeploymentConfig{
+					Spec: appsv1.DeploymentConfigSpec{
+						Selector: map[string]string{
+							"deploymentconfig": "nodejs-app",
+						},
+					},
+				},
+				pvc:  "test-voulme",
+				path: "/mnt",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientset := FakeNew()
+
+			fakeClientset.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				if dc.Name != tt.args.dc.Name {
+					t.Errorf("dc Name mismatch got: %s, expected %s", dc.Name, tt.args.dc.Name)
+				}
+				return true, nil, nil
+			})
+			err := fakeClient.AddPVCToDeploymentConfig(tt.args.dc, tt.args.pvc, tt.args.path)
+
+			// Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("Client.AddPVCToDeploymentConfig() unexpected error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			// Checks for number of actions performed in positive cases
+			if err == nil {
+				// Check for validating actions performed
+				if (len(fakeClientset.AppsClientset.Actions()) != 1) && (tt.wantErr != true) {
+					t.Errorf("expected 1 action in GetPVCFromName got: %v", fakeClientset.AppsClientset.Actions())
+				}
+
+				updatedDc := fakeClientset.AppsClientset.Actions()[0].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				found := false // creating a flag
+				// iterating over the VolumeMounts for finding the one specified during func call
+				for bb := range updatedDc.Spec.Template.Spec.Containers[0].VolumeMounts {
+					if tt.args.path == updatedDc.Spec.Template.Spec.Containers[0].VolumeMounts[bb].MountPath {
+						found = true
+						if !strings.Contains(updatedDc.Spec.Template.Spec.Containers[0].VolumeMounts[bb].Name, tt.args.pvc) {
+							t.Errorf("pvc name not matching with the specified value got: %v, expected %v", updatedDc.Spec.Template.Spec.Containers[0].VolumeMounts[bb].Name, tt.args.pvc)
+						}
+					}
+				}
+				if found == false {
+					t.Errorf("expected Volume mount path %v not found in VolumeMounts", tt.args.path)
+				}
+
+				found = false // resetting the flag
+				// iterating over the volume claims to find the one specified during func call
+				for bb := range updatedDc.Spec.Template.Spec.Volumes {
+					if tt.args.pvc == updatedDc.Spec.Template.Spec.Volumes[bb].VolumeSource.PersistentVolumeClaim.ClaimName {
+						found = true
+						if !strings.Contains(updatedDc.Spec.Template.Spec.Volumes[bb].Name, tt.args.pvc) {
+							t.Errorf("pvc name not matching in PersistentVolumeClaim, got: %v, expected %v", updatedDc.Spec.Template.Spec.Volumes[bb].Name, tt.args.pvc)
+						}
+					}
+				}
+				if found == false {
+					t.Errorf("expected volume %s not found in DeploymentConfig.Spec.Template.Spec.Volumes", tt.args.pvc)
+				}
+
 			}
 
 		})
