@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	log "github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 )
 
 // List lists all the available component types
@@ -83,6 +83,6 @@ outer:
 			}
 		}
 	}
-	log.Debugf("Found builder images: %v", builderImages)
+	glog.V(4).Infof("Found builder images: %v", builderImages)
 	return builderImages, nil
 }

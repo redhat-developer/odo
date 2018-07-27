@@ -7,7 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
-	log "github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +38,7 @@ var componentGetCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debugf("component get called")
+		glog.V(4).Infof("component get called")
 		client := getOcClient()
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")

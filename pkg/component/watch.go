@@ -13,7 +13,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 )
 
 // addRecursiveWatch handles adding watches recursively for the path provided
@@ -31,7 +31,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 	mode := file.Mode()
 	if mode.IsRegular() {
-		log.Debugf("adding watch on path %s", path)
+		glog.V(4).Infof("adding watch on path %s", path)
 		err = watcher.Add(path)
 		if err != nil {
 			return fmt.Errorf("error adding watcher for path %s: %v", path, err)
@@ -59,10 +59,10 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 			}
 		}
 		if ignore {
-			log.Debugf("ignoring watch for %s", v)
+			glog.V(4).Infof("ignoring watch for %s", v)
 			continue
 		}
-		log.Debugf("adding watch on path %s", v)
+		glog.V(4).Infof("adding watch on path %s", v)
 		err = watcher.Add(v)
 		if err != nil {
 			// Linux "no space left on device" issues are usually resolved via
@@ -79,7 +79,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
 func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer) error {
-	log.Debugf("starting WatchAndPush, path: %s, component: %s", path, componentName)
+	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s", path, componentName)
 
 	// it might be better to expose this as argument in the future
 	ignores := []string{
@@ -110,7 +110,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 			select {
 			case event := <-watcher.Events:
 				changeLock.Lock()
-				log.Debugf("filesystem watch event: %s", event)
+				glog.V(4).Infof("filesystem watch event: %s", event)
 
 				// add file name to changedFiles only once
 				alreadyInChangedFiles := false
@@ -128,7 +128,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				dirty = true
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
 					if e := watcher.Remove(event.Name); e != nil {
-						log.Debugf("error removing watch for %s: %v", event.Name, e)
+						glog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
 					}
 				} else {
 					if e := addRecursiveWatch(watcher, event.Name, ignores); e != nil && watchError == nil {
@@ -176,17 +176,17 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				return errors.Wrapf(err, "%s: file doesn't exist", path)
 			}
 			if fileInfo.IsDir() {
-				log.Debugf("Copying files %s to pod", changedFiles)
+				glog.V(4).Infof("Copying files %s to pod", changedFiles)
 				err = PushLocal(client, componentName, applicationName, path, out, changedFiles)
 			} else {
 				pathDir := filepath.Dir(path)
-				log.Debugf("Copying file %s to pod", path)
+				glog.V(4).Infof("Copying file %s to pod", path)
 				err = PushLocal(client, componentName, applicationName, pathDir, out, []string{path})
 			}
 			if err != nil {
 				// Intentionally not exiting on error here.
 				// We don't want to break watch when push failed, it might be fixed with the next change.
-				log.Debug("Error from PushLocal: %v", err)
+				glog.V(4).Info("Error from PushLocal: %v", err)
 			}
 			dirty = false
 			showWaitingMessage = true

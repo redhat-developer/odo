@@ -10,7 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 )
 
 type URL struct {
@@ -65,7 +65,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
 	}
 
-	log.Debugf("Listing routes with label selector: %v", labelSelector)
+	glog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
 	routes, err := client.ListRoutes(labelSelector)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list route names")
