@@ -8,21 +8,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type CatalogImage struct {
+	Name string
+	Tags []string
+}
+
 // List lists all the available component types
-func List(client *occlient.Client) ([]string, error) {
-	var catalogList []string
-	imageStreams, err := getDefaultBuilderImages(client)
+func List(client *occlient.Client) ([]CatalogImage, error) {
+
+	catalogList, err := getDefaultBuilderImages(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get image streams")
 	}
-	catalogList = append(catalogList, imageStreams...)
 
-	// TODO: uncomment when component create supports template creation
-	//clusterServiceClasses, err := client.GetClusterServiceClassExternalNames()
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "unable to get cluster service classes")
-	//}
-	//catalogList = append(catalogList, clusterServiceClasses...)
+	if len(catalogList) == 0 {
+		return nil, errors.New("unable to retrieve any catalog images from the OpenShift cluster")
+	}
 
 	return catalogList, nil
 }
@@ -37,8 +38,8 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 
 	// do a partial search in all the components
 	for _, component := range componentList {
-		if strings.Contains(component, name) {
-			result = append(result, component)
+		if strings.Contains(component.Name, name) {
+			result = append(result, component.Name)
 		}
 	}
 
@@ -53,7 +54,7 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 	}
 
 	for _, supported := range catalogList {
-		if componentType == supported {
+		if componentType == supported.Name {
 			return true, nil
 		}
 	}
@@ -62,27 +63,43 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 
 // getDefaultBuilderImages returns the default builder images available in the
 // openshift namespace
-func getDefaultBuilderImages(client *occlient.Client) ([]string, error) {
+func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 	imageStreams, err := client.GetImageStreams(occlient.OpenShiftNameSpace)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get Image Streams")
 	}
 
-	var builderImages []string
+	var builderImages []CatalogImage
+
 	// Get builder images from the available imagestreams
-outer:
 	for _, imageStream := range imageStreams {
+		var allTags []string
+		buildImage := false
+
 		for _, tag := range imageStream.Spec.Tags {
+
+			allTags = append(allTags, tag.Name)
+
+			// Check to see if it is a "builder" image
 			if _, ok := tag.Annotations["tags"]; ok {
 				for _, t := range strings.Split(tag.Annotations["tags"], ",") {
+
+					// If the tag has "builder" then we will add the image to the list
 					if t == "builder" {
-						builderImages = append(builderImages, imageStream.Name)
-						continue outer
+						buildImage = true
 					}
 				}
 			}
+
 		}
+
+		// Append to the list of images if a "builder" tag was found
+		if buildImage {
+			builderImages = append(builderImages, CatalogImage{Name: imageStream.Name, Tags: allTags})
+		}
+
 	}
+
 	log.Debugf("Found builder images: %v", builderImages)
 	return builderImages, nil
 }

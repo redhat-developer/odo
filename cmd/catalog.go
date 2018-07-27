@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
+	"text/tabwriter"
+
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/spf13/cobra"
 )
@@ -34,10 +38,14 @@ var catalogListCmd = &cobra.Command{
 		case 0:
 			fmt.Printf("No deployable components found\n")
 		default:
-			fmt.Println("The following components can be deployed:")
+
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "NAME", "\t", "TAGS")
 			for _, component := range catalogList {
-				fmt.Printf("- %v\n", component)
+				fmt.Fprintln(w, component.Name, "\t", strings.Join(component.Tags, ","))
 			}
+			w.Flush()
+
 		}
 	},
 }
