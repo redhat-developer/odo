@@ -3,9 +3,9 @@ package catalog
 import (
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	log "github.com/sirupsen/logrus"
 )
 
 type CatalogImage struct {
@@ -124,7 +124,6 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 		}
 
 	}
-
-	log.Debugf("Found builder images: %v", builderImages)
+	glog.V(4).Infof("Found builder images: %v", builderImages)
 	return builderImages, nil
 }

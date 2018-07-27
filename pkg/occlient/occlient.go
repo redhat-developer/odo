@@ -15,12 +15,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kiali/kiali/log"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/fatih/color"
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"

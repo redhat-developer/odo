@@ -1,19 +1,20 @@
 package cmd
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/notify"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 // Global variables
 var (
-	GlobalVerbose         bool
+	GlobalVerbose         string
 	GlobalConnectionCheck bool
 )
 
@@ -91,14 +92,18 @@ Find more information at https://github.com/redhat-developer/odo`,
   # Accessing your Node.js component
   odo url create`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-
-		// Add extra logging when verbosity is passed
-		if GlobalVerbose {
-			//TODO
-			log.SetLevel(log.DebugLevel)
-		}
-
+		setFlags()
 	},
+}
+
+func setFlags() {
+	flag.Usage = func() {
+		flag.PrintDefaults()
+		os.Exit(2)
+	}
+	flag.CommandLine.Set("logtostderr", "true")
+	flag.CommandLine.Set("v", GlobalVerbose)
+	flag.Parse()
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -114,7 +119,7 @@ func Execute() {
 	case message := <-updateInfo:
 		fmt.Println(message)
 	default:
-		log.Debug("Could not get the latest release information in time. Never mind, exiting gracefully :)")
+		glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 	}
 }
 
@@ -124,7 +129,7 @@ func init() {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
-	rootCmd.PersistentFlags().BoolVarP(&GlobalVerbose, "verbose", "v", false, "Verbose output")
+	rootCmd.PersistentFlags().StringVarP(&GlobalVerbose, "verbose", "v", "", "Verbose output")
 	rootCmd.PersistentFlags().BoolVar(&GlobalConnectionCheck, "skip-connection-check", false, "Skip cluster check")
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
@@ -135,7 +140,7 @@ func getLatestReleaseInfo(info chan<- string) {
 	if err != nil {
 		// The error is intentionally not being handled because we don't want
 		// to stop the execution of the program because of this failure
-		log.Debugf("Error checking if newer odo release is available: %v", err)
+		glog.V(4).Infof("Error checking if newer odo release is available: %v", err)
 	}
 	if len(newTag) > 0 {
 		info <- "---\n" +
@@ -159,7 +164,7 @@ func getOcClient() *occlient.Client {
 // detected using errors.Cause(err)
 func checkError(err error, context string, a ...interface{}) {
 	if err != nil {
-		log.Debugf("Error:\n%v", err)
+		glog.V(4).Infof("Error:\n%v", err)
 		if context == "" {
 			fmt.Println(errors.Cause(err))
 		} else {

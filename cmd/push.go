@@ -12,7 +12,7 @@ import (
 
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ var pushCmd = &cobra.Command{
 		var componentName string
 		if len(args) == 0 {
 			var err error
-			log.Debug("No component name passed, assuming current component")
+			glog.V(4).Info("No component name passed, assuming current component")
 			componentName, err = component.GetCurrent(client, applicationName, projectName)
 			checkError(err, "unable to get current component")
 			if componentName == "" {
@@ -84,11 +84,11 @@ var pushCmd = &cobra.Command{
 			}
 
 			if sourceType == "local" {
-				log.Debugf("Copying directory %s to pod", u.Path)
+				glog.V(4).Infof("Copying directory %s to pod", u.Path)
 				err = component.PushLocal(client, componentName, applicationName, u.Path, os.Stdout, []string{})
 			} else {
 				dir := filepath.Dir(u.Path)
-				log.Debugf("Copying file %s to pod", u.Path)
+				glog.V(4).Infof("Copying file %s to pod", u.Path)
 				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{u.Path})
 			}
 			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
