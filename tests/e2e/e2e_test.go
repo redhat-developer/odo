@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -40,42 +39,6 @@ func runCmd(cmdS string) string {
 	return string(session.Out.Contents())
 }
 
-func pingSvc(url string) {
-	var ep bool = false
-	pingTimeout := time.After(5 * time.Minute)
-	tick := time.Tick(time.Second)
-
-	for {
-		select {
-		case <-pingTimeout:
-			Fail("could not ping the specific service in given time: 5 minutes")
-
-		case <-tick:
-			httpTimeout := time.Duration(10 * time.Second)
-			client := http.Client{
-				Timeout: httpTimeout,
-			}
-
-			response, err := client.Get(url)
-			if err != nil {
-				time.Sleep(1 * time.Second)
-				continue
-			}
-
-			if response.Status == "200 OK" {
-				ep = true
-
-			} else {
-				Fail("for service")
-			}
-		}
-
-		if ep {
-			break
-		}
-	}
-}
-
 // waitForCmdOut runs a command until it gets
 // the expected output.
 // It accepts 2 arguments, cmd (command to be run)
@@ -94,6 +57,7 @@ func waitForCmdOut(cmd string, expOut string) bool {
 
 		case <-tick:
 			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
+
 			if err != nil {
 				Fail(err.Error())
 			}
@@ -295,36 +259,10 @@ var _ = Describe("odoe2e", func() {
 		})
 	})
 
-	Describe("pushing updates", func() {
-		Context("When push is made", func() {
-			It("should push the changes", func() {
-				// Switch to nodejs component
-				runCmd("odo component set nodejs")
-
-				// Get IP and port
-				getIP := runCmd("oc get svc/nodejs-" + appTestName + " -o go-template='{{.spec.clusterIP}}:{{(index .spec.ports 0).port}}'")
-				pingUrl := fmt.Sprintf("http://%s", getIP)
-				pingSvc(pingUrl)
-
-				// Text before changes
-				grepBeforePush := runCmd("curl -s " + pingUrl +
-					" | grep 'Welcome to your Node.js application on OpenShift'")
-
-				log.Printf("Text before change: %s", strings.TrimSpace(grepBeforePush))
-
-				// Make changes to the html file
-				runCmd("sed -i 's/Welcome to your Node.js application on OpenShift/Welcome to your Node.js on ODO/g' " + tmpDir + "/nodejs-ex/views/index.html")
-
-				// Push the changes
-				runCmd("odo push --local " + tmpDir + "/nodejs-ex")
-			})
-
-		})
-	})
-
-	Describe("Creating url", func() {
+	Describe("Creating odo url", func() {
 		Context("using odo url", func() {
 			It("should create route", func() {
+				runCmd("odo component set nodejs")
 				getUrlOut := runCmd("odo url create nodejs")
 				Expect(getUrlOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 			})
@@ -339,11 +277,42 @@ var _ = Describe("odoe2e", func() {
 				getRouteLabel := runCmd("oc get route/" + routeName + " -o jsonpath='" +
 					"{.metadata.labels.app\\.kubernetes\\.io/component-name}'")
 				Expect(getRouteLabel).To(Equal("nodejs"))
+			})
+		})
+	})
+
+	Describe("pushing updates", func() {
+		Context("When push is made", func() {
+			It("should push the changes", func() {
+				// Switch to nodejs component
+				runCmd("odo component set nodejs")
+
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute = strings.TrimSpace(getRoute)
+
+				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1")
+				if curlRoute {
+					grepBeforePush := runCmd("curl -s " + getRoute + " | grep 'Welcome to your Node.js application on OpenShift'")
+					log.Printf("Text before odo push: %s", strings.TrimSpace(grepBeforePush))
+				}
+
+				// Make changes to the html file
+				runCmd("sed -i 's/Welcome to your Node.js application on OpenShift/Welcome to your Node.js on ODO/g' " + tmpDir + "/nodejs-ex/views/index.html")
+
+				// Push the changes
+				runCmd("odo push --local " + tmpDir + "/nodejs-ex")
+			})
+
+			It("should reflect the changes pushed", func() {
+
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute = strings.TrimSpace(getRoute)
 
 				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1")
 				if curlRoute {
 					grepAfterPush := runCmd("curl -s " + getRoute + " | grep -i odo")
-					log.Printf("After change: %s", strings.TrimSpace(grepAfterPush))
+					log.Printf("Text after odo push: %s", strings.TrimSpace(grepAfterPush))
+					Expect(grepAfterPush).To(ContainSubstring("ODO"))
 				}
 			})
 
@@ -351,34 +320,33 @@ var _ = Describe("odoe2e", func() {
 				appTestName_new := appTestName + "-1"
 				runCmd("odo app create " + appTestName_new)
 				runCmd("odo create nodejs nodejs-1 --git https://github.com/sclorg/nodejs-ex")
-				runCmd("odo url create nodejs")
+				runCmd("odo url create nodejs-1")
 
 				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
 				getRoute = strings.TrimSpace(getRoute)
-				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName_new + "-" + projName))
+				Expect(getRoute).To(ContainSubstring("nodejs-1-" + appTestName_new + "-" + projName))
 
 				// Check the labels in `oc get route`
-				routeName := "nodejs-" + appTestName_new
+				routeName := "nodejs-1-" + appTestName_new
 				getRouteLabel := runCmd("oc get route/" + routeName + " -o jsonpath='" +
 					"{.metadata.labels.app\\.kubernetes\\.io/component-name}'")
 				Expect(getRouteLabel).To(Equal("nodejs-1"))
 
-				waitForCmdOut("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1")
-
-				// Clean up
-				runCmd("odo delete -f")
-				runCmd("odo app delete " + appTestName_new + " -f")
 			})
 
 			// Check if url is deleted
 			It("should be able to delete the url added", func() {
-				runCmd("odo app set " + appTestName)
-				runCmd("odo component set nodejs")
-				runCmd("odo url delete nodejs -f")
+				appTestName_new := appTestName + "-1"
+				runCmd("odo app set " + appTestName_new)
+				runCmd("odo component set nodejs-1")
+				runCmd("odo url delete nodejs-1 -f")
 
 				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
 				getRoute = strings.TrimSpace(getRoute)
-				Expect(getRoute).NotTo(ContainSubstring("nodejs-" + appTestName + "-" + projName))
+				Expect(getRoute).NotTo(ContainSubstring("nodejs-1-" + appTestName_new + "-" + projName))
+
+				runCmd("odo delete -f")
+				runCmd("odo app delete " + appTestName_new + " -f")
 			})
 
 		})
@@ -387,6 +355,10 @@ var _ = Describe("odoe2e", func() {
 	Describe("Adding storage", func() {
 		Context("when storage is added", func() {
 			It("should default to active component when no component name is passed", func() {
+
+				runCmd("odo app set " + appTestName)
+				runCmd("odo component set nodejs")
+
 				storAdd := runCmd("odo storage create pv1 --path /mnt/pv1 --size 5Gi")
 				Expect(storAdd).To(ContainSubstring("nodejs"))
 
@@ -492,7 +464,17 @@ var _ = Describe("odoe2e", func() {
 	})
 
 	Context("deleting the application", func() {
+		// Check if url is deleted
+		It("should be able to delete the url added to the component", func() {
+			runCmd("odo component set nodejs")
+			runCmd("odo url delete nodejs -f")
+
+			urlList := runCmd("odo url list | sed -n '1!p' | awk '{ print $3 }'")
+			Expect(urlList).NotTo(ContainSubstring("nodejs"))
+		})
+
 		It("should delete application and component", func() {
+
 			runCmd("odo app delete " + appTestName + " -f")
 
 			appGet := runCmd("odo app get --short")
