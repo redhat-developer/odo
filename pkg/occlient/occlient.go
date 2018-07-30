@@ -431,7 +431,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	}
 
 	var containerPorts []corev1.ContainerPort
-	if len(inputPorts) <= 0 {
+	if len(inputPorts) == 0 {
 		containerPorts, err = c.GetExposedPorts(imageName, imageTag)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
@@ -439,7 +439,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	} else {
 		containerPorts, err = getContainerPortsFromStrings(inputPorts)
 		if err != nil {
-			return errors.Wrapf(err, "unable to get container Ports from %v", inputPorts)
+			return errors.Wrapf(err, "unable to get container ports from %v", inputPorts)
 		}
 	}
 
@@ -544,28 +544,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
 	}
 
-	// generate and create Service
-	var svcPorts []corev1.ServicePort
-	for _, containerPort := range dc.Spec.Template.Spec.Containers[0].Ports {
-		svcPort := corev1.ServicePort{
-
-			Name:       containerPort.Name,
-			Port:       containerPort.ContainerPort,
-			Protocol:   containerPort.Protocol,
-			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
-		}
-		svcPorts = append(svcPorts, svcPort)
-	}
-	svc := corev1.Service{
-		ObjectMeta: commonObjectMeta,
-		Spec: corev1.ServiceSpec{
-			Ports: svcPorts,
-			Selector: map[string]string{
-				"deploymentconfig": name,
-			},
-		},
-	}
-	_, err = c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
+	err = c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", name)
 	}
@@ -585,7 +564,7 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 	}
 
 	var containerPorts []corev1.ContainerPort
-	if len(inputPorts) <= 0 {
+	if len(inputPorts) == 0 {
 		containerPorts, err = c.GetExposedPorts(imageName, imageTag)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
@@ -593,7 +572,7 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 	} else {
 		containerPorts, err = getContainerPortsFromStrings(inputPorts)
 		if err != nil {
-			return errors.Wrapf(err, "unable to get container Ports from %v", inputPorts)
+			return errors.Wrapf(err, "unable to get container ports from %v", inputPorts)
 		}
 	}
 
@@ -705,9 +684,26 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
 	}
 
+	err = c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create Service for %s", name)
+	}
+
+	_, err = c.CreatePVC(getAppRootVolumeName(name), "1Gi", labels)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create PVC for %s", name)
+	}
+
+	return nil
+}
+
+// CreateService generates and creates the service
+// commonObjectMeta is the ObjectMeta for the service
+// dc is the deploymentConfig to get the container ports
+func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort) error {
 	// generate and create Service
 	var svcPorts []corev1.ServicePort
-	for _, containerPort := range dc.Spec.Template.Spec.Containers[0].Ports {
+	for _, containerPort := range containerPorts {
 		svcPort := corev1.ServicePort{
 
 			Name:       containerPort.Name,
@@ -722,20 +718,14 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		Spec: corev1.ServiceSpec{
 			Ports: svcPorts,
 			Selector: map[string]string{
-				"deploymentconfig": name,
+				"deploymentconfig": commonObjectMeta.Name,
 			},
 		},
 	}
-	_, err = c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
+	_, err := c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create Service for %s", name)
+		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
-
-	_, err = c.CreatePVC(getAppRootVolumeName(name), "1Gi", labels)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create PVC for %s", name)
-	}
-
 	return nil
 }
 

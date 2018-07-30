@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 
@@ -596,7 +597,7 @@ func TestCreateRoute(t *testing.T) {
 			urlName: "mailserver",
 			service: "mailserver",
 			labels: map[string]string{
-				"SLA":                              "High",
+				"SLA": "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "python",
 			},
@@ -608,7 +609,7 @@ func TestCreateRoute(t *testing.T) {
 			urlName: "example",
 			service: "blog",
 			labels: map[string]string{
-				"SLA":                              "High",
+				"SLA": "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "golang",
 			},
@@ -902,7 +903,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -936,7 +937,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -965,7 +966,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1000,7 +1001,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1029,7 +1030,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1064,7 +1065,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1092,7 +1093,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1705,9 +1706,10 @@ func TestNewAppS2I(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name          string
+		args          args
+		wantedService map[int32]corev1.Protocol
+		wantErr       bool
 	}{
 		{
 			name: "case 1: with valid gitUrl",
@@ -1717,7 +1719,7 @@ func TestNewAppS2I(t *testing.T) {
 				namespace:    "testing",
 				gitUrl:       "https://github.com/openshift/ruby",
 				labels: map[string]string{
-					"app":                              "apptmp",
+					"app": "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
@@ -1727,9 +1729,11 @@ func TestNewAppS2I(t *testing.T) {
 					"app.kubernetes.io/component-source-type": "git",
 				},
 			},
+			wantedService: map[int32]corev1.Protocol{
+				8080: corev1.ProtocolTCP,
+			},
 			wantErr: false,
 		},
-
 		{
 			name: "case 2 : binary buildSource with gitUrl empty",
 			args: args{
@@ -1738,7 +1742,7 @@ func TestNewAppS2I(t *testing.T) {
 				namespace:    "testing",
 				gitUrl:       "",
 				labels: map[string]string{
-					"app":                              "apptmp",
+					"app": "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
@@ -1749,17 +1753,21 @@ func TestNewAppS2I(t *testing.T) {
 				},
 				inputPorts: []string{"8081/tcp", "9100/udp"},
 			},
+			wantedService: map[int32]corev1.Protocol{
+				8081: corev1.ProtocolTCP,
+				9100: corev1.ProtocolUDP,
+			},
 			wantErr: false,
 		},
 		{
-			name: "case 2 : binary buildSource with invalid ports",
+			name: "case 3 : with a invalid port protocol",
 			args: args{
 				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "",
+				gitUrl:       "https://github.com/openshift/ruby",
 				labels: map[string]string{
-					"app":                              "apptmp",
+					"app": "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
@@ -1768,7 +1776,36 @@ func TestNewAppS2I(t *testing.T) {
 					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
 					"app.kubernetes.io/component-source-type": "git",
 				},
-				inputPorts: []string{"8080", "9100/asd"},
+				inputPorts: []string{"8081", "9100/blah"},
+			},
+			wantedService: map[int32]corev1.Protocol{
+				8081: corev1.ProtocolTCP,
+				9100: corev1.ProtocolUDP,
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 4 : with a invalid port number",
+			args: args{
+				name:         "ruby",
+				builderImage: "ruby:latest",
+				namespace:    "testing",
+				gitUrl:       "https://github.com/openshift/ruby",
+				labels: map[string]string{
+					"app": "apptmp",
+					"app.kubernetes.io/component-name": "ruby",
+					"app.kubernetes.io/component-type": "ruby",
+					"app.kubernetes.io/name":           "apptmp",
+				},
+				annotations: map[string]string{
+					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.kubernetes.io/component-source-type": "git",
+				},
+				inputPorts: []string{"8ad1", "9100/Udp"},
+			},
+			wantedService: map[int32]corev1.Protocol{
+				8081: corev1.ProtocolTCP,
+				9100: corev1.ProtocolUDP,
 			},
 			wantErr: true,
 		},
@@ -1892,14 +1929,19 @@ func TestNewAppS2I(t *testing.T) {
 
 				createdSvc := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
 
-				if len(tt.args.inputPorts) <= 0 {
-					// ExposedPorts 8080 in fakeImageStreamImages()
-					if createdSvc.Spec.Ports[0].Port != 8080 {
-						t.Errorf("Svc port not matching, expected: 8080, got %v", createdSvc.Spec.Ports[0].Port)
+				for port, protocol := range tt.wantedService {
+					found := false
+					for _, servicePort := range createdSvc.Spec.Ports {
+						if servicePort.Port == port {
+							found = true
+							if servicePort.Protocol != protocol {
+								t.Errorf("port protocol not matching, expected: %v, got %v", protocol, servicePort.Protocol)
+							}
+						}
 					}
-				} else {
-					if !reflect.DeepEqual(createdSvc, tt.args.inputPorts) {
-						t.Errorf("Svc port not matching, expected: %v, got %v", tt.args.inputPorts, createdSvc)
+					if !found {
+						t.Errorf("%v port with %v protocol not found", port, protocol)
+						break
 					}
 				}
 			}
@@ -2151,7 +2193,7 @@ func TestWaitAndGetPod(t *testing.T) {
 		},
 
 		{
-			name:    "phase:	unknown",
+			name: "phase:	unknown",
 			podName: "ruby",
 			status:  corev1.PodUnknown,
 			wantErr: true,
