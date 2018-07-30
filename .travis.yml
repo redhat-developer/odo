@@ -13,7 +13,7 @@ jobs:
     - &base-test
       stage: test
       go_import_path: github.com/redhat-developer/odo
-      go: 1.8
+      go: "1.10"
       install:
         - make goget-tools
       script:
@@ -22,7 +22,6 @@ jobs:
         - make test
 
     - <<: *base-test
-      go: 1.9
       script:
         - make bin
         - make validate
@@ -34,7 +33,6 @@ jobs:
     # Run e2e tests
     - <<: *base-test
       stage: test
-      go: 1.9
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -45,7 +43,6 @@ jobs:
     # Run demo
     - <<: *base-test
       stage: test
-      go: 1.9
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -56,7 +53,6 @@ jobs:
     # Run update e2e tests
     - <<: *base-test
       stage: test
-      go: 1.9
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -82,7 +78,7 @@ jobs:
 
     - stage: deploy
       go_import_path:  github.com/redhat-developer/odo
-      go: 1.9
+      go: "1.10"
       install:
         - make goget-tools
         - gem install fpm
