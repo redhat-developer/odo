@@ -19,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/fatih/color"
+	"github.com/golang/glog"
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	"github.com/pkg/errors"
 

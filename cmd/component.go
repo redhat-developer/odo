@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
 

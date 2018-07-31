@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -16,7 +17,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 )
 

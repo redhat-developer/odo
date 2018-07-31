@@ -3,8 +3,8 @@ package application
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/config"

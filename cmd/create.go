@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
 

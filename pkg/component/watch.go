@@ -12,8 +12,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/pkg/errors"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 // addRecursiveWatch handles adding watches recursively for the path provided
