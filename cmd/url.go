@@ -87,10 +87,6 @@ The created URL can be used to access the specified component from outside the O
 			os.Exit(1)
 		}
 
-		if urlComponent != "" {
-			componentName = urlComponent
-		}
-
 		fmt.Printf("Adding URL to component: %v\n", componentName)
 		urlRoute, err := url.Create(client, urlName, componentName, applicationName)
 		checkError(err, "")

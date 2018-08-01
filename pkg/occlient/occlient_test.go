@@ -2133,9 +2133,9 @@ func TestListRoutes(t *testing.T) {
 				t.Errorf("expected 1 action in ListRoutes got: %v", fakeClientSet.RouteClientset.Actions())
 			}
 		} else if err == nil && tt.wantErr {
-			t.Errorf("test failed, expected: %s, got %s", "false", "true")
+			t.Error("error was expected, but no error was returned")
 		} else if err != nil && !tt.wantErr {
-			t.Errorf("test failed, expected: %s, got %s", "no error", "error:"+err.Error())
+			t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 		}
 	}
 }
