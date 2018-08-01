@@ -20,6 +20,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
+
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
 )
 
 // fakeImageStream gets imagestream for the reactor
@@ -445,12 +449,14 @@ func TestDeletePVC(t *testing.T) {
 func TestCreateRoute(t *testing.T) {
 	tests := []struct {
 		name    string
+		urlName string
 		service string
 		labels  map[string]string
 		wantErr bool
 	}{
 		{
 			name:    "Case : mailserver",
+			urlName: "mailserver",
 			service: "mailserver",
 			labels: map[string]string{
 				"SLA": "High",
@@ -461,7 +467,8 @@ func TestCreateRoute(t *testing.T) {
 		},
 
 		{
-			name:    "Case : blog",
+			name:    "Case : blog (urlName is different than service)",
+			urlName: "example",
 			service: "blog",
 			labels: map[string]string{
 				"SLA": "High",
@@ -476,7 +483,7 @@ func TestCreateRoute(t *testing.T) {
 			// initialising the fakeclient
 			fkclient, fkclientset := FakeNew()
 
-			_, err := fkclient.CreateRoute(tt.service, tt.labels)
+			_, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.labels)
 
 			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
@@ -498,9 +505,11 @@ func TestCreateRoute(t *testing.T) {
 				if createdRoute.Spec.To.Name != tt.service {
 					t.Errorf("route is not matching to expected service name, expected: %s, got %s", tt.service, createdRoute)
 				}
-				if createdRoute.Name != tt.service {
-					t.Errorf("route name is not matching to expected name, expected: %s, got %s", tt.service, createdRoute.Name)
-
+				if createdRoute.Name != tt.urlName {
+					t.Errorf("route name is not matching to expected route name, expected: %s, got %s", tt.urlName, createdRoute.Name)
+				}
+				if createdRoute.Spec.To.Name != tt.service {
+					t.Errorf("service name is not matching to expected service name, expected: %s, got %s", tt.service, createdRoute.Spec.To.Name)
 				}
 			}
 		})
@@ -2051,5 +2060,82 @@ func TestCreateNewProject(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestListRoutes(t *testing.T) {
+	tests := []struct {
+		name          string
+		labelSelector string
+		wantLabels    map[string]string
+		routesList    routev1.RouteList
+		wantErr       bool
+	}{
+		{
+			name:          "existing url",
+			labelSelector: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			wantLabels: map[string]string{
+				applabels.ApplicationLabel:     "app",
+				componentlabels.ComponentLabel: "nodejs",
+			},
+			routesList: routev1.RouteList{
+				Items: []routev1.Route{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "nodejs",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:     "app",
+								componentlabels.ComponentLabel: "nodejs",
+							},
+						},
+						Spec: routev1.RouteSpec{
+							To: routev1.RouteTargetReference{
+								Kind: "Service",
+								Name: "nodejs-app",
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "wildfly",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:     "app",
+								componentlabels.ComponentLabel: "wildfly",
+								urlLabels.UrlLabel:             "wildfly",
+							},
+						},
+						Spec: routev1.RouteSpec{
+							To: routev1.RouteTargetReference{
+								Kind: "Service",
+								Name: "wildfly-app",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		client, fakeClientSet := FakeNew()
+
+		fakeClientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+			if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), tt.labelSelector) {
+				return true, nil, fmt.Errorf("labels not matching with expected values, expected:%s, got:%s", tt.labelSelector, action.(ktesting.ListAction).GetListRestrictions())
+			}
+			return true, &tt.routesList, nil
+		})
+
+		_, err := client.ListRoutes(tt.labelSelector)
+		if err == nil && !tt.wantErr {
+			if (len(fakeClientSet.RouteClientset.Actions()) != 1) && (tt.wantErr != true) {
+				t.Errorf("expected 1 action in ListRoutes got: %v", fakeClientSet.RouteClientset.Actions())
+			}
+		} else if err == nil && tt.wantErr {
+			t.Error("error was expected, but no error was returned")
+		} else if err != nil && !tt.wantErr {
+			t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+		}
 	}
 }

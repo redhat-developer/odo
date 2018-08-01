@@ -328,12 +328,38 @@ var _ = Describe("odoe2e", func() {
 				}
 			})
 
+			It("should be able to create the url with same name in different application", func() {
+				appTestName_new := appTestName + "-1"
+				runCmd("odo app create " + appTestName_new)
+				runCmd("odo create nodejs nodejs-1 --git https://github.com/sclorg/nodejs-ex")
+				runCmd("odo url create nodejs")
+
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute = strings.TrimSpace(getRoute)
+				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName_new + "-" + projName))
+
+				// Check the labels in `oc get route`
+				routeName := "nodejs-" + appTestName_new
+				getRouteLabel := runCmd("oc get route/" + routeName + " -o jsonpath='" +
+					"{.metadata.labels.app\\.kubernetes\\.io/component-name}'")
+				Expect(getRouteLabel).To(Equal("nodejs-1"))
+
+				waitForCmdOut("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1")
+
+				// Clean up
+				runCmd("odo delete -f")
+				runCmd("odo app delete " + appTestName_new + " -f")
+			})
+
 			// Check if url is deleted
 			It("should be able to delete the url added", func() {
+				runCmd("odo app set " + appTestName)
+				runCmd("odo component set nodejs")
 				runCmd("odo url delete nodejs -f")
 
-				urlList := runCmd("odo url list")
-				Expect(urlList).NotTo(ContainSubstring("nodejs"))
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute = strings.TrimSpace(getRoute)
+				Expect(getRoute).NotTo(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 			})
 
 		})
