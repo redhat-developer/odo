@@ -620,9 +620,17 @@ func Test_parseImageName(t *testing.T) {
 			want3:   "",
 			wantErr: false,
 		},
+		{
+			arg:     "",
+			wantErr: true,
+		},
+		{
+			arg:     ":",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
-		name := fmt.Sprintf("image name: %s", tt.arg)
+		name := fmt.Sprintf("image name: '%s'", tt.arg)
 		t.Run(name, func(t *testing.T) {
 			got1, got2, got3, err := parseImageName(tt.arg)
 			if (err != nil) != tt.wantErr {
