@@ -1754,7 +1754,7 @@ func TestNewAppS2I(t *testing.T) {
 				8081: corev1.ProtocolTCP,
 				9100: corev1.ProtocolUDP,
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "case 3 : with a invalid port protocol",
