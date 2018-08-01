@@ -79,8 +79,8 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 }
 
 // GetComponentPorts provides slice of ports used by the component in the form port_no/protocol
-func GetComponentPorts(client *occlient.Client, componentName string, applicationName string, additional bool) (res []string, err error) {
-	componentLabels := componentlabels.GetLabels(componentName, applicationName, additional)
+func GetComponentPorts(client *occlient.Client, componentName string, applicationName string) (res []string, err error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
 	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
