@@ -54,7 +54,7 @@ func getComponent(client *occlient.Client, inputComponent, applicationName, proj
 	exists, err := component.Exists(client, inputComponent, applicationName, projectName)
 	checkError(err, "")
 	if !exists {
-		fmt.Printf("Component %v does not exist", inputComponent)
+		fmt.Printf("Component %v does not exist\n", inputComponent)
 		os.Exit(1)
 	}
 	return inputComponent
