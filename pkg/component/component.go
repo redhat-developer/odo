@@ -78,6 +78,31 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 	return nil
 }
 
+// GetComponentPorts provides map[container_name][]array_of_ports
+func GetComponentPorts(client *occlient.Client, componentName string, applicationName string, additional bool) (res []string, err error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to fetch deployment configs for the selector %v", componentSelector)
+	}
+	// Find Pod for component
+	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
+	// Wait for Pod to be in running state otherwise we can't sync data to it.
+	pod, err := client.WaitAndGetPod(podSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error fetching pod for podselector %v", podSelector)
+	}
+	//Iterate and fetch ports
+	for _, container := range pod.Spec.Containers {
+		for _, port := range container.Ports {
+			res = append(res, fmt.Sprintf("%v/%v", port.ContainerPort, port.Protocol))
+		}
+	}
+	return res, nil
+}
+
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string) error {
