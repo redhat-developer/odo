@@ -19,8 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/watch"
+		"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 
 	//applabels "github.com/redhat-developer/odo/pkg/application/labels"
