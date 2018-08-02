@@ -19,12 +19,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-		"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 
-	//applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	//componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	//urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // fakeImageStream gets imagestream for the reactor
@@ -2284,6 +2282,180 @@ func TestCreateNewProject(t *testing.T) {
 				if createdProj.Name != tt.projName {
 					t.Errorf("project name does not match the expected name, expected: %s, got: %s", tt.projName, createdProj.Name)
 				}
+			}
+		})
+	}
+}
+
+func Test_getContainerPortsFromStrings(t *testing.T) {
+	tests := []struct {
+		name           string
+		ports          []string
+		containerPorts []corev1.ContainerPort
+		wantErr        bool
+	}{
+		{
+			name:  "with normal port values and normal protocol values in lowercase",
+			ports: []string{"8080/tcp", "9090/udp"},
+			containerPorts: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      corev1.ProtocolTCP,
+				},
+				{
+					Name:          "9090-udp",
+					ContainerPort: 9090,
+					Protocol:      corev1.ProtocolUDP,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "with normal port values and normal protocol values in mixed case",
+			ports: []string{"8080/TcP", "9090/uDp"},
+			containerPorts: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      corev1.ProtocolTCP,
+				},
+				{
+					Name:          "9090-udp",
+					ContainerPort: 9090,
+					Protocol:      corev1.ProtocolUDP,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "with normal port values and with one protocol value not mentioned",
+			ports: []string{"8080", "9090/Udp"},
+			containerPorts: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      corev1.ProtocolTCP,
+				},
+				{
+					Name:          "9090-udp",
+					ContainerPort: 9090,
+					Protocol:      corev1.ProtocolUDP,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "with normal port values and with one invalid protocol value",
+			ports:   []string{"8080/blah", "9090/Udp"},
+			wantErr: true,
+		},
+		{
+			name:    "with invalid port values and normal protocol",
+			ports:   []string{"ads/Tcp", "9090/Udp"},
+			wantErr: true,
+		},
+		{
+			name:    "with invalid port values and one missing protocol value",
+			ports:   []string{"ads", "9090/Udp"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ports, err := getContainerPortsFromStrings(tt.ports)
+			if err == nil && !tt.wantErr {
+				if !reflect.DeepEqual(tt.containerPorts, ports) {
+					t.Errorf("the ports are not matching, expected %#v, got %#v", tt.containerPorts, ports)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func TestCreateService(t *testing.T) {
+	tests := []struct {
+		name             string
+		commonObjectMeta metav1.ObjectMeta
+		containerPorts   []corev1.ContainerPort
+		wantErr          bool
+	}{
+		{
+			name: "Test case: with valid commonObjectName and containerPorts",
+			commonObjectMeta: metav1.ObjectMeta{
+				Name: "nodejs",
+				Labels: map[string]string{
+					"app": "apptmp",
+					"app.kubernetes.io/component-name": "ruby",
+					"app.kubernetes.io/component-type": "ruby",
+					"app.kubernetes.io/name":           "apptmp",
+				},
+				Annotations: map[string]string{
+					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.kubernetes.io/component-source-type": "git",
+				},
+			},
+			containerPorts: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      corev1.ProtocolTCP,
+				},
+				{
+					Name:          "9100-udp",
+					ContainerPort: 9100,
+					Protocol:      corev1.ProtocolUDP,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+
+			err := fkclient.CreateService(tt.commonObjectMeta, tt.containerPorts)
+
+			if err == nil && !tt.wantErr {
+				if len(fkclientset.Kubernetes.Actions()) != 1 {
+					t.Errorf("expected 1 Kubernetes.Actions() in CreateService, got: %v", fkclientset.ImageClientset.Actions())
+				}
+				createdSvc := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
+				if !reflect.DeepEqual(tt.commonObjectMeta, createdSvc.ObjectMeta) {
+					t.Errorf("ObjectMeta does not match the expected name, expected: %v, got: %v", tt.commonObjectMeta, createdSvc.ObjectMeta)
+				}
+				if !reflect.DeepEqual(tt.commonObjectMeta.Name, createdSvc.Spec.Selector["deploymentconfig"]) {
+					t.Errorf("selector value does not match the expected name, expected: %s, got: %s", tt.commonObjectMeta.Name, createdSvc.Spec.Selector["deploymentconfig"])
+				}
+				for _, port := range tt.containerPorts {
+					found := false
+					for _, servicePort := range createdSvc.Spec.Ports {
+						if servicePort.Port == port.ContainerPort {
+							found = true
+							if servicePort.Protocol != port.Protocol {
+								t.Errorf("service protocol does not match the expected name, expected: %s, got: %s", port.Protocol, servicePort.Protocol)
+							}
+							if servicePort.Name != port.Name {
+								t.Errorf("service name does not match the expected name, expected: %s, got: %s", port.Name, servicePort.Name)
+							}
+							if servicePort.TargetPort != intstr.FromInt(int(port.ContainerPort)) {
+								t.Errorf("target port does not match the expected name, expected: %v, got: %v", intstr.FromInt(int(port.ContainerPort)), servicePort.TargetPort)
+							}
+						}
+					}
+					if found == false {
+						t.Errorf("expected service port %s not found in the created Service", tt.name)
+						break
+					}
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
 		})
 	}
