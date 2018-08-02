@@ -22,9 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // fakeImageStream gets imagestream for the reactor
@@ -1701,12 +1699,14 @@ func TestNewAppS2I(t *testing.T) {
 		gitUrl       string
 		labels       map[string]string
 		annotations  map[string]string
+		inputPorts   []string
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name          string
+		args          args
+		wantedService map[int32]corev1.Protocol
+		wantErr       bool
 	}{
 		{
 			name: "case 1: with valid gitUrl",
@@ -1726,9 +1726,11 @@ func TestNewAppS2I(t *testing.T) {
 					"app.kubernetes.io/component-source-type": "git",
 				},
 			},
+			wantedService: map[int32]corev1.Protocol{
+				8080: corev1.ProtocolTCP,
+			},
 			wantErr: false,
 		},
-
 		{
 			name: "case 2 : binary buildSource with gitUrl empty",
 			args: args{
@@ -1746,8 +1748,63 @@ func TestNewAppS2I(t *testing.T) {
 					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
 					"app.kubernetes.io/component-source-type": "git",
 				},
+				inputPorts: []string{"8081/tcp", "9100/udp"},
+			},
+			wantedService: map[int32]corev1.Protocol{
+				8081: corev1.ProtocolTCP,
+				9100: corev1.ProtocolUDP,
 			},
 			wantErr: false,
+		},
+		{
+			name: "case 3 : with a invalid port protocol",
+			args: args{
+				name:         "ruby",
+				builderImage: "ruby:latest",
+				namespace:    "testing",
+				gitUrl:       "https://github.com/openshift/ruby",
+				labels: map[string]string{
+					"app": "apptmp",
+					"app.kubernetes.io/component-name": "ruby",
+					"app.kubernetes.io/component-type": "ruby",
+					"app.kubernetes.io/name":           "apptmp",
+				},
+				annotations: map[string]string{
+					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.kubernetes.io/component-source-type": "git",
+				},
+				inputPorts: []string{"8081", "9100/blah"},
+			},
+			wantedService: map[int32]corev1.Protocol{
+				8081: corev1.ProtocolTCP,
+				9100: corev1.ProtocolUDP,
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 4 : with a invalid port number",
+			args: args{
+				name:         "ruby",
+				builderImage: "ruby:latest",
+				namespace:    "testing",
+				gitUrl:       "https://github.com/openshift/ruby",
+				labels: map[string]string{
+					"app": "apptmp",
+					"app.kubernetes.io/component-name": "ruby",
+					"app.kubernetes.io/component-type": "ruby",
+					"app.kubernetes.io/name":           "apptmp",
+				},
+				annotations: map[string]string{
+					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.kubernetes.io/component-source-type": "git",
+				},
+				inputPorts: []string{"8ad1", "9100/Udp"},
+			},
+			wantedService: map[int32]corev1.Protocol{
+				8081: corev1.ProtocolTCP,
+				9100: corev1.ProtocolUDP,
+			},
+			wantErr: true,
 		},
 
 		// TODO: Currently fails. Enable this case once fixed
@@ -1792,17 +1849,14 @@ func TestNewAppS2I(t *testing.T) {
 				tt.args.builderImage,
 				tt.args.gitUrl,
 				tt.args.labels,
-				tt.args.annotations)
+				tt.args.annotations,
+				tt.args.inputPorts)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewAppS2I() error = %#v, wantErr %#v", err, tt.wantErr)
 			}
 
 			if err == nil {
-
-				if len(fkclientset.ImageClientset.Actions()) != 3 {
-					t.Errorf("expected 3 ImageClientset.Actions() in NewAppS2I, got: %v", fkclientset.ImageClientset.Actions())
-				}
 
 				if len(fkclientset.BuildClientset.Actions()) != 1 {
 					t.Errorf("expected 1 BuildClientset.Actions() in NewAppS2I, got: %v", fkclientset.BuildClientset.Actions())
@@ -1816,8 +1870,23 @@ func TestNewAppS2I(t *testing.T) {
 					t.Errorf("expected 1 Kubernetes.Actions() in NewAppS2I, go: %v", fkclientset.Kubernetes.Actions())
 				}
 
-				// Check for imagestream objects
-				createdIS := fkclientset.ImageClientset.Actions()[2].(ktesting.CreateAction).GetObject().(*imagev1.ImageStream)
+				var createdIS *imagev1.ImageStream
+
+				if len(tt.args.inputPorts) <= 0 {
+					if len(fkclientset.ImageClientset.Actions()) != 3 {
+						t.Errorf("expected 3 ImageClientset.Actions() in NewAppS2I, got: %v", fkclientset.ImageClientset.Actions())
+					}
+
+					// Check for imagestream objects
+					createdIS = fkclientset.ImageClientset.Actions()[2].(ktesting.CreateAction).GetObject().(*imagev1.ImageStream)
+				} else {
+					if len(fkclientset.ImageClientset.Actions()) != 1 {
+						t.Errorf("expected 3 ImageClientset.Actions() in NewAppS2I, got: %v", fkclientset.ImageClientset.Actions())
+					}
+
+					// Check for imagestream objects
+					createdIS = fkclientset.ImageClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*imagev1.ImageStream)
+				}
 
 				if createdIS.Name != tt.args.name {
 					t.Errorf("imagestream name is not matching with expected name, expected: %s, got %s", tt.args.name, createdIS.Name)
@@ -1857,11 +1926,21 @@ func TestNewAppS2I(t *testing.T) {
 
 				createdSvc := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
 
-				// ExposedPorts 8080 in fakeImageStreamImages()
-				if createdSvc.Spec.Ports[0].Port != 8080 {
-					t.Errorf("Svc port not matching, expected: 8080, got %v", createdSvc.Spec.Ports[0].Port)
+				for port, protocol := range tt.wantedService {
+					found := false
+					for _, servicePort := range createdSvc.Spec.Ports {
+						if servicePort.Port == port {
+							found = true
+							if servicePort.Protocol != protocol {
+								t.Errorf("port protocol not matching, expected: %v, got %v", protocol, servicePort.Protocol)
+							}
+						}
+					}
+					if !found {
+						t.Errorf("%v port with %v protocol not found", port, protocol)
+						break
+					}
 				}
-
 			}
 		})
 	}
@@ -2208,79 +2287,176 @@ func TestCreateNewProject(t *testing.T) {
 	}
 }
 
-func TestListRoutes(t *testing.T) {
+func Test_getContainerPortsFromStrings(t *testing.T) {
 	tests := []struct {
-		name          string
-		labelSelector string
-		wantLabels    map[string]string
-		routesList    routev1.RouteList
-		wantErr       bool
+		name           string
+		ports          []string
+		containerPorts []corev1.ContainerPort
+		wantErr        bool
 	}{
 		{
-			name:          "existing url",
-			labelSelector: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
-			wantLabels: map[string]string{
-				applabels.ApplicationLabel:     "app",
-				componentlabels.ComponentLabel: "nodejs",
+			name:  "with normal port values and normal protocol values in lowercase",
+			ports: []string{"8080/tcp", "9090/udp"},
+			containerPorts: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      corev1.ProtocolTCP,
+				},
+				{
+					Name:          "9090-udp",
+					ContainerPort: 9090,
+					Protocol:      corev1.ProtocolUDP,
+				},
 			},
-			routesList: routev1.RouteList{
-				Items: []routev1.Route{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "nodejs",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:     "app",
-								componentlabels.ComponentLabel: "nodejs",
-							},
-						},
-						Spec: routev1.RouteSpec{
-							To: routev1.RouteTargetReference{
-								Kind: "Service",
-								Name: "nodejs-app",
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "wildfly",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:     "app",
-								componentlabels.ComponentLabel: "wildfly",
-								urlLabels.UrlLabel:             "wildfly",
-							},
-						},
-						Spec: routev1.RouteSpec{
-							To: routev1.RouteTargetReference{
-								Kind: "Service",
-								Name: "wildfly-app",
-							},
-						},
-					},
+			wantErr: false,
+		},
+		{
+			name:  "with normal port values and normal protocol values in mixed case",
+			ports: []string{"8080/TcP", "9090/uDp"},
+			containerPorts: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      corev1.ProtocolTCP,
+				},
+				{
+					Name:          "9090-udp",
+					ContainerPort: 9090,
+					Protocol:      corev1.ProtocolUDP,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "with normal port values and with one protocol value not mentioned",
+			ports: []string{"8080", "9090/Udp"},
+			containerPorts: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      corev1.ProtocolTCP,
+				},
+				{
+					Name:          "9090-udp",
+					ContainerPort: 9090,
+					Protocol:      corev1.ProtocolUDP,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "with normal port values and with one invalid protocol value",
+			ports:   []string{"8080/blah", "9090/Udp"},
+			wantErr: true,
+		},
+		{
+			name:    "with invalid port values and normal protocol",
+			ports:   []string{"ads/Tcp", "9090/Udp"},
+			wantErr: true,
+		},
+		{
+			name:    "with invalid port values and one missing protocol value",
+			ports:   []string{"ads", "9090/Udp"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ports, err := getContainerPortsFromStrings(tt.ports)
+			if err == nil && !tt.wantErr {
+				if !reflect.DeepEqual(tt.containerPorts, ports) {
+					t.Errorf("the ports are not matching, expected %#v, got %#v", tt.containerPorts, ports)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func TestCreateService(t *testing.T) {
+	tests := []struct {
+		name             string
+		commonObjectMeta metav1.ObjectMeta
+		containerPorts   []corev1.ContainerPort
+		wantErr          bool
+	}{
+		{
+			name: "Test case: with valid commonObjectName and containerPorts",
+			commonObjectMeta: metav1.ObjectMeta{
+				Name: "nodejs",
+				Labels: map[string]string{
+					"app": "apptmp",
+					"app.kubernetes.io/component-name": "ruby",
+					"app.kubernetes.io/component-type": "ruby",
+					"app.kubernetes.io/name":           "apptmp",
+				},
+				Annotations: map[string]string{
+					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.kubernetes.io/component-source-type": "git",
+				},
+			},
+			containerPorts: []corev1.ContainerPort{
+				{
+					Name:          "8080-tcp",
+					ContainerPort: 8080,
+					Protocol:      corev1.ProtocolTCP,
+				},
+				{
+					Name:          "9100-udp",
+					ContainerPort: 9100,
+					Protocol:      corev1.ProtocolUDP,
 				},
 			},
 			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
-		client, fakeClientSet := FakeNew()
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
 
-		fakeClientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-			if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), tt.labelSelector) {
-				return true, nil, fmt.Errorf("labels not matching with expected values, expected:%s, got:%s", tt.labelSelector, action.(ktesting.ListAction).GetListRestrictions())
+			err := fkclient.CreateService(tt.commonObjectMeta, tt.containerPorts)
+
+			if err == nil && !tt.wantErr {
+				if len(fkclientset.Kubernetes.Actions()) != 1 {
+					t.Errorf("expected 1 Kubernetes.Actions() in CreateService, got: %v", fkclientset.ImageClientset.Actions())
+				}
+				createdSvc := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
+				if !reflect.DeepEqual(tt.commonObjectMeta, createdSvc.ObjectMeta) {
+					t.Errorf("ObjectMeta does not match the expected name, expected: %v, got: %v", tt.commonObjectMeta, createdSvc.ObjectMeta)
+				}
+				if !reflect.DeepEqual(tt.commonObjectMeta.Name, createdSvc.Spec.Selector["deploymentconfig"]) {
+					t.Errorf("selector value does not match the expected name, expected: %s, got: %s", tt.commonObjectMeta.Name, createdSvc.Spec.Selector["deploymentconfig"])
+				}
+				for _, port := range tt.containerPorts {
+					found := false
+					for _, servicePort := range createdSvc.Spec.Ports {
+						if servicePort.Port == port.ContainerPort {
+							found = true
+							if servicePort.Protocol != port.Protocol {
+								t.Errorf("service protocol does not match the expected name, expected: %s, got: %s", port.Protocol, servicePort.Protocol)
+							}
+							if servicePort.Name != port.Name {
+								t.Errorf("service name does not match the expected name, expected: %s, got: %s", port.Name, servicePort.Name)
+							}
+							if servicePort.TargetPort != intstr.FromInt(int(port.ContainerPort)) {
+								t.Errorf("target port does not match the expected name, expected: %v, got: %v", intstr.FromInt(int(port.ContainerPort)), servicePort.TargetPort)
+							}
+						}
+					}
+					if found == false {
+						t.Errorf("expected service port %s not found in the created Service", tt.name)
+						break
+					}
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
-			return true, &tt.routesList, nil
 		})
-
-		_, err := client.ListRoutes(tt.labelSelector)
-		if err == nil && !tt.wantErr {
-			if (len(fakeClientSet.RouteClientset.Actions()) != 1) && (tt.wantErr != true) {
-				t.Errorf("expected 1 action in ListRoutes got: %v", fakeClientSet.RouteClientset.Actions())
-			}
-		} else if err == nil && tt.wantErr {
-			t.Error("error was expected, but no error was returned")
-		} else if err != nil && !tt.wantErr {
-			t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
-		}
 	}
 }

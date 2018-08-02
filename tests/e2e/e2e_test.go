@@ -273,6 +273,25 @@ var _ = Describe("odoe2e", func() {
 				cmpList := runCmd("odo list")
 				Expect(cmpList).To(ContainSubstring("wildfly"))
 			})
+
+			It("should be able to create git component with required ports", func() {
+				runCmd("odo create nodejs nodejs-git --git https://github.com/openshift/nodejs-ex --ports 8080/tcp,9100/udp")
+
+				// checking port names
+				portsNames := runCmd("oc get services nodejs-git-" + appTestName + " -o go-template='{{range .spec.ports}}{{.name}}{{end}}'")
+				Expect(portsNames).To(ContainSubstring("8080-tcp"))
+				Expect(portsNames).To(ContainSubstring("9100-udp"))
+
+				// checking port numbers
+				ports := runCmd("oc get services nodejs-git-" + appTestName + " -o go-template='{{range .spec.ports}}{{.port}}{{end}}'")
+				Expect(ports).To(ContainSubstring("8080"))
+				Expect(ports).To(ContainSubstring("9100"))
+
+				// checking protocols
+				protocols := runCmd("oc get services nodejs-git-" + appTestName + " -o go-template='{{range .spec.ports}}{{.protocol}}{{end}}'")
+				Expect(protocols).To(ContainSubstring("TCP"))
+				Expect(protocols).To(ContainSubstring("UDP"))
+			})
 		})
 	})
 

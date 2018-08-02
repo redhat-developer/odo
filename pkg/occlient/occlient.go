@@ -422,16 +422,25 @@ func getAppRootVolumeName(dcName string) string {
 
 // NewAppS2I create new application using S2I
 // gitUrl is the url of the git repo
-func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string, annotations map[string]string) error {
+// inputPorts is the array containing the string port values
+func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string, annotations map[string]string, inputPorts []string) error {
 
 	imageName, imageTag, _, err := parseImageName(builderImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to create new s2i git build ")
 	}
 
-	containerPorts, err := c.GetExposedPorts(imageName, imageTag)
-	if err != nil {
-		return errors.Wrapf(err, "unable to exposed ports for %s:%s", imageName, imageTag)
+	var containerPorts []corev1.ContainerPort
+	if len(inputPorts) == 0 {
+		containerPorts, err = c.GetExposedPorts(imageName, imageTag)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
+		}
+	} else {
+		containerPorts, err = getContainerPortsFromStrings(inputPorts)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get container ports from %v", inputPorts)
+		}
 	}
 
 	// ObjectMetadata are the same for all generated objects
@@ -535,28 +544,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
 	}
 
-	// generate and create Service
-	var svcPorts []corev1.ServicePort
-	for _, containerPort := range dc.Spec.Template.Spec.Containers[0].Ports {
-		svcPort := corev1.ServicePort{
-
-			Name:       containerPort.Name,
-			Port:       containerPort.ContainerPort,
-			Protocol:   containerPort.Protocol,
-			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
-		}
-		svcPorts = append(svcPorts, svcPort)
-	}
-	svc := corev1.Service{
-		ObjectMeta: commonObjectMeta,
-		Spec: corev1.ServiceSpec{
-			Ports: svcPorts,
-			Selector: map[string]string{
-				"deploymentconfig": name,
-			},
-		},
-	}
-	_, err = c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
+	err = c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", name)
 	}
@@ -568,15 +556,24 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 // BootstrapSupervisoredS2I uses s2i to inject Supervisor into builder image.
 // Supervisor keeps pod running (runs as pid1), so you it is possible to trigger assembly script inside running pod,
 // and than restart application using Supervisor without need to restart whole container.
-func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labels map[string]string, annotations map[string]string) error {
+// inputPorts is the array containing the string port values
+func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labels map[string]string, annotations map[string]string, inputPorts []string) error {
 	imageName, imageTag, _, err := parseImageName(builderImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to create new s2i git build ")
 	}
 
-	containerPorts, err := c.GetExposedPorts(imageName, imageTag)
-	if err != nil {
-		return errors.Wrapf(err, "unable to exposed ports for %s:%s", imageName, imageTag)
+	var containerPorts []corev1.ContainerPort
+	if len(inputPorts) == 0 {
+		containerPorts, err = c.GetExposedPorts(imageName, imageTag)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
+		}
+	} else {
+		containerPorts, err = getContainerPortsFromStrings(inputPorts)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get container ports from %v", inputPorts)
+		}
 	}
 
 	// ObjectMetadata are the same for all generated objects
@@ -687,9 +684,26 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
 	}
 
+	err = c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create Service for %s", name)
+	}
+
+	_, err = c.CreatePVC(getAppRootVolumeName(name), "1Gi", labels)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create PVC for %s", name)
+	}
+
+	return nil
+}
+
+// CreateService generates and creates the service
+// commonObjectMeta is the ObjectMeta for the service
+// dc is the deploymentConfig to get the container ports
+func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort) error {
 	// generate and create Service
 	var svcPorts []corev1.ServicePort
-	for _, containerPort := range dc.Spec.Template.Spec.Containers[0].Ports {
+	for _, containerPort := range containerPorts {
 		svcPort := corev1.ServicePort{
 
 			Name:       containerPort.Name,
@@ -704,20 +718,14 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		Spec: corev1.ServiceSpec{
 			Ports: svcPorts,
 			Selector: map[string]string{
-				"deploymentconfig": name,
+				"deploymentconfig": commonObjectMeta.Name,
 			},
 		},
 	}
-	_, err = c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
+	_, err := c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create Service for %s", name)
+		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
-
-	_, err = c.CreatePVC(getAppRootVolumeName(name), "1Gi", labels)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create PVC for %s", name)
-	}
-
 	return nil
 }
 
@@ -1869,4 +1877,44 @@ func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[s
 		return errors.Wrap(err, "unable to remove storage label from PVC")
 	}
 	return nil
+}
+
+// getContainerPortsFromStrings generates ContainerPort values from the array of string port values
+// ports is the array containing the string port values
+func getContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error) {
+	var containerPorts []corev1.ContainerPort
+	for _, port := range ports {
+		splits := strings.Split(port, "/")
+		if len(splits) < 1 || len(splits) > 2 {
+			return nil, errors.Errorf("unable to parse the port string %s", port)
+		}
+
+		portNumberI64, err := strconv.ParseInt(splits[0], 10, 32)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid port number %s", splits[0])
+		}
+		portNumber := int32(portNumberI64)
+
+		var portProto corev1.Protocol
+		if len(splits) == 2 {
+			switch strings.ToUpper(splits[1]) {
+			case "TCP":
+				portProto = corev1.ProtocolTCP
+			case "UDP":
+				portProto = corev1.ProtocolUDP
+			default:
+				return nil, fmt.Errorf("invalid port protocol %s", splits[1])
+			}
+		} else {
+			portProto = corev1.ProtocolTCP
+		}
+
+		port := corev1.ContainerPort{
+			Name:          fmt.Sprintf("%d-%s", portNumber, strings.ToLower(string(portProto))),
+			ContainerPort: portNumber,
+			Protocol:      portProto,
+		}
+		containerPorts = append(containerPorts, port)
+	}
+	return containerPorts, nil
 }
