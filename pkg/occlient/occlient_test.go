@@ -583,16 +583,18 @@ func TestDeletePVC(t *testing.T) {
 
 func TestCreateRoute(t *testing.T) {
 	tests := []struct {
-		name    string
-		urlName string
-		service string
-		labels  map[string]string
-		wantErr bool
+		name       string
+		urlName    string
+		service    string
+		portNumber intstr.IntOrString
+		labels     map[string]string
+		wantErr    bool
 	}{
 		{
-			name:    "Case : mailserver",
-			urlName: "mailserver",
-			service: "mailserver",
+			name:       "Case : mailserver",
+			urlName:    "mailserver",
+			service:    "mailserver",
+			portNumber: intstr.FromInt(8080),
 			labels: map[string]string{
 				"SLA": "High",
 				"app.kubernetes.io/component-name": "backend",
@@ -602,9 +604,10 @@ func TestCreateRoute(t *testing.T) {
 		},
 
 		{
-			name:    "Case : blog (urlName is different than service)",
-			urlName: "example",
-			service: "blog",
+			name:       "Case : blog (urlName is different than service)",
+			urlName:    "example",
+			service:    "blog",
+			portNumber: intstr.FromInt(9100),
 			labels: map[string]string{
 				"SLA": "High",
 				"app.kubernetes.io/component-name": "backend",
@@ -618,7 +621,7 @@ func TestCreateRoute(t *testing.T) {
 			// initialising the fakeclient
 			fkclient, fkclientset := FakeNew()
 
-			_, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.labels)
+			_, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.portNumber, tt.labels)
 
 			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
@@ -645,6 +648,9 @@ func TestCreateRoute(t *testing.T) {
 				}
 				if createdRoute.Spec.To.Name != tt.service {
 					t.Errorf("service name is not matching to expected service name, expected: %s, got %s", tt.service, createdRoute.Spec.To.Name)
+				}
+				if createdRoute.Spec.Port.TargetPort != tt.portNumber {
+					t.Errorf("port number is not matching to expected port number, expected: %v, got %v", tt.portNumber, createdRoute.Spec.Port.TargetPort)
 				}
 			}
 		})

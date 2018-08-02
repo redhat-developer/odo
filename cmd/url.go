@@ -9,12 +9,14 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/spf13/cobra"
+	"text/tabwriter"
 )
 
 var (
 	urlComponent       string
 	urlApplication     string
 	urlForceDeleteFlag bool
+	urlPort            int
 )
 
 var urlCmd = &cobra.Command{
@@ -87,8 +89,24 @@ The created URL can be used to access the specified component from outside the O
 			os.Exit(1)
 		}
 
+		componentPorts, err := url.GetComponentServicePortNumbers(client, componentName, applicationName)
+		checkError(err, "unable to get component exposed ports")
+
+		var portFound bool
+
+		for _, port := range componentPorts {
+			if urlPort == port {
+				portFound = true
+			}
+		}
+
+		if !portFound {
+			fmt.Printf("Port %d is not exposed by the component\n", urlPort)
+			os.Exit(1)
+		}
+
 		fmt.Printf("Adding URL to component: %v\n", componentName)
-		urlRoute, err := url.Create(client, urlName, componentName, applicationName)
+		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
 		checkError(err, "")
 		fmt.Printf("URL created for component: %v\n\n"+
 			"%v - %v\n", componentName, urlRoute.Name, url.GetUrlString(*urlRoute))
@@ -179,9 +197,16 @@ var urlListCmd = &cobra.Command{
 			fmt.Printf("No URLs found for component %v in application %v\n", componentName, app)
 		} else {
 			fmt.Printf("Found the following URLs for component %v in application %v:\n", componentName, app)
+
+			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+			//create headers
+			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
+
 			for _, u := range urls {
-				fmt.Printf("%v - %v\n", u.Name, url.GetUrlString(u))
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetUrlString(u), "\t", u.Port.IntVal)
 			}
+			tabWriterURL.Flush()
 		}
 	},
 }
@@ -189,6 +214,8 @@ var urlListCmd = &cobra.Command{
 func init() {
 	urlCreateCmd.Flags().StringVarP(&urlApplication, "application", "a", "", "create url for application")
 	urlCreateCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "create url for component")
+	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component")
+	urlCreateCmd.MarkFlagRequired("port")
 
 	urlDeleteCmd.Flags().BoolVarP(&urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 	urlDeleteCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "delete url for component")

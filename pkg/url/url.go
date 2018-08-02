@@ -12,12 +12,14 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type URL struct {
 	Name     string
 	URL      string
 	Protocol string
+	Port     intstr.IntOrString
 }
 
 // Delete deletes a URL
@@ -33,7 +35,7 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 }
 
 // Create creates a URL
-func Create(client *occlient.Client, urlName string, componentName, applicationName string) (*URL, error) {
+func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (*URL, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, false)
 
 	serviceName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -52,7 +54,7 @@ func Create(client *occlient.Client, urlName string, componentName, applicationN
 	}
 
 	// Pass in the namespace name, link to the service (componentName) and labels to create a route
-	route, err := client.CreateRoute(urlName, serviceName, labels)
+	route, err := client.CreateRoute(urlName, serviceName, intstr.FromInt(portNumber), labels)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}
@@ -60,6 +62,7 @@ func Create(client *occlient.Client, urlName string, componentName, applicationN
 		Name:     route.Labels[urlLabels.UrlLabel],
 		URL:      route.Spec.Host,
 		Protocol: getProtocol(*route),
+		Port:     route.Spec.Port.TargetPort,
 	}, nil
 }
 
@@ -86,6 +89,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 			Name:     r.Labels[urlLabels.UrlLabel],
 			URL:      r.Spec.Host,
 			Protocol: getProtocol(r),
+			Port:     r.Spec.Port.TargetPort,
 		})
 	}
 
@@ -120,4 +124,27 @@ func Exists(client *occlient.Client, urlName string, componentName string, appli
 		}
 	}
 	return false, nil
+}
+
+// GetComponentServicePortNumbers returns the port numbers exposed by the service of the component
+// componentName is the name of the component
+// applicationName is the name of the application
+func GetComponentServicePortNumbers(client *occlient.Client, componentName string, applicationName string) ([]int, error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	services, err := client.GetServicesFromSelector(componentSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get the service")
+	}
+
+	var ports []int
+
+	for _, service := range services {
+		for _, port := range service.Spec.Ports {
+			ports = append(ports, int(port.Port))
+		}
+	}
+
+	return ports, nil
 }

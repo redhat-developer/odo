@@ -10,8 +10,10 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/url/labels"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -20,6 +22,7 @@ func TestCreate(t *testing.T) {
 		componentName   string
 		applicationName string
 		urlName         string
+		portNumber      int
 	}
 	tests := []struct {
 		name    string
@@ -33,11 +36,13 @@ func TestCreate(t *testing.T) {
 				componentName:   "component",
 				applicationName: "application",
 				urlName:         "component",
+				portNumber:      8080,
 			},
 			want: &URL{
 				Name:     "component",
 				Protocol: "http",
 				URL:      "host",
+				Port:     intstr.FromInt(8080),
 			},
 			wantErr: false,
 		},
@@ -47,11 +52,13 @@ func TestCreate(t *testing.T) {
 				componentName:   "component",
 				applicationName: "application",
 				urlName:         "example-url",
+				portNumber:      9100,
 			},
 			want: &URL{
 				Name:     "example-url",
 				Protocol: "http",
 				URL:      "host",
+				Port:     intstr.FromInt(9100),
 			},
 			wantErr: false,
 		},
@@ -66,7 +73,7 @@ func TestCreate(t *testing.T) {
 				return true, route, nil
 			})
 
-			got, err := Create(client, tt.args.urlName, tt.args.componentName, tt.args.applicationName)
+			got, err := Create(client, tt.args.urlName, tt.args.portNumber, tt.args.componentName, tt.args.applicationName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -152,6 +159,9 @@ func TestExists(t *testing.T) {
 								Kind: "Service",
 								Name: "nodejs-app",
 							},
+							Port: &routev1.RoutePort{
+								TargetPort: intstr.FromInt(8080),
+							},
 						},
 					},
 					{
@@ -167,6 +177,9 @@ func TestExists(t *testing.T) {
 							To: routev1.RouteTargetReference{
 								Kind: "Service",
 								Name: "wildfly-app",
+							},
+							Port: &routev1.RoutePort{
+								TargetPort: intstr.FromInt(9100),
 							},
 						},
 					},
@@ -197,6 +210,9 @@ func TestExists(t *testing.T) {
 								Kind: "Service",
 								Name: "nodejs-app",
 							},
+							Port: &routev1.RoutePort{
+								TargetPort: intstr.FromInt(8080),
+							},
 						},
 					},
 					{
@@ -212,6 +228,9 @@ func TestExists(t *testing.T) {
 							To: routev1.RouteTargetReference{
 								Kind: "Service",
 								Name: "wildfly-app",
+							},
+							Port: &routev1.RoutePort{
+								TargetPort: intstr.FromInt(9100),
 							},
 						},
 					},
@@ -245,5 +264,123 @@ func TestExists(t *testing.T) {
 		} else if err != nil && !tt.wantErr {
 			t.Errorf("test failed, expected: %s, got %s", "no error", "error:"+err.Error())
 		}
+	}
+}
+
+func TestGetComponentServicePortNumbers(t *testing.T) {
+	type args struct {
+		componentName   string
+		applicationName string
+	}
+	tests := []struct {
+		name             string
+		args             args
+		selectors        string
+		returnedServices corev1.ServiceList
+		wantedPorts      []int
+		wantErr          bool
+	}{
+		{
+			name: "case 1: with valid values and one port",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+			},
+			selectors: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantedPorts: []int{8080},
+			wantErr:     false,
+		},
+		{
+			name: "case 2: with valid values and two ports",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+			},
+			selectors: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8080,
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 9100,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantedPorts: []int{8080, 9100},
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := occlient.FakeNew()
+
+			fakeClientSet.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				selectors := action.(ktesting.ListAction).GetListRestrictions()
+				if !reflect.DeepEqual(tt.selectors, selectors.Labels.String()) {
+					return true, nil, fmt.Errorf("'list' called with different selector")
+				}
+				return true, &tt.returnedServices, nil
+			})
+
+			ports, err := GetComponentServicePortNumbers(client, tt.args.componentName, tt.args.applicationName)
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.Kubernetes.Actions()) != 1 {
+					t.Errorf("expected 1 Kubernetes.Actions() in CreateService, got: %v", fakeClientSet.ImageClientset.Actions())
+				}
+
+				if !reflect.DeepEqual(tt.wantedPorts, ports) {
+					t.Errorf("the returned ports do not match the expected value, expected: %v, got: %v", tt.wantedPorts, ports)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
 	}
 }
