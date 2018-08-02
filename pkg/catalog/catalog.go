@@ -61,6 +61,31 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 	return false, nil
 }
 
+// VersionExists checks if that version exists, returns true if the given version exists, false if not
+func VersionExists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
+
+	// Retrieve the catalogList
+	catalogList, err := List(client)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to list catalog")
+	}
+
+	// Find the component and then return true if the version has been found
+	for _, supported := range catalogList {
+		if componentType == supported.Name {
+			// Now check to see if that version matches that components tag
+			for _, tag := range supported.Tags {
+				if componentVersion == tag {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	// Else return false if nothing is found
+	return false, nil
+}
+
 // getDefaultBuilderImages returns the default builder images available in the
 // openshift namespace
 func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {

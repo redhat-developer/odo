@@ -167,7 +167,7 @@ func New(connectionCheck bool) (*Client, error) {
 // returns (imageName, tag, digest, error)
 // if image is referenced by tag (name:tag)  than digest is ""
 // if image is referenced by digest (name@digest) than  tag is ""
-func parseImageName(image string) (string, string, string, error) {
+func ParseImageName(image string) (string, string, string, error) {
 	digestParts := strings.Split(image, "@")
 	if len(digestParts) == 2 {
 		// image is references digest
@@ -425,9 +425,9 @@ func getAppRootVolumeName(dcName string) string {
 // inputPorts is the array containing the string port values
 func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string, annotations map[string]string, inputPorts []string) error {
 
-	imageName, imageTag, _, err := parseImageName(builderImage)
+	imageName, imageTag, _, err := ParseImageName(builderImage)
 	if err != nil {
-		return errors.Wrap(err, "unable to create new s2i git build ")
+		return errors.Wrap(err, "unable to parse image name")
 	}
 
 	var containerPorts []corev1.ContainerPort
@@ -558,7 +558,8 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 // and than restart application using Supervisor without need to restart whole container.
 // inputPorts is the array containing the string port values
 func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labels map[string]string, annotations map[string]string, inputPorts []string) error {
-	imageName, imageTag, _, err := parseImageName(builderImage)
+	imageName, imageTag, _, err := ParseImageName(builderImage)
+
 	if err != nil {
 		return errors.Wrap(err, "unable to create new s2i git build ")
 	}

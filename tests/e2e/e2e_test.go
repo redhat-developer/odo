@@ -481,6 +481,16 @@ var _ = Describe("odoe2e", func() {
 		})
 	})
 
+	Context("deploying a component with a specific image name", func() {
+		It("should deploy the component", func() {
+			runCmd("odo create nodejs:latest testversioncmp")
+		})
+
+		It("should delete the deployed image-specific component", func() {
+			runCmd("odo delete testversioncmp")
+		})
+	})
+
 	Context("deleting the application", func() {
 		It("should delete application and component", func() {
 			runCmd("odo app delete " + appTestName + " -f")

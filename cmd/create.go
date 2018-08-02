@@ -33,6 +33,9 @@ A full list of component types that can be deployed is available using: 'odo com
 	Example: `  # Create new Node.js component with the source in current directory. 
   odo create nodejs
 
+  # A specific image version may also be specified
+  odo create nodejs:latest
+
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
 
@@ -45,9 +48,7 @@ A full list of component types that can be deployed is available using: 'odo com
   # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
   odo create nodejs --ports 8080,8100/tcp,9100/udp
 
-  # List of ready-to-use examples
-  # for more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
-  odo create php --git https://github.com/openshift/cakephp-ex.git
+  # For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
   odo create python --git https://github.com/openshift/django-ex.git
 	`,
 	Args: cobra.RangeArgs(1, 2),
@@ -78,9 +79,24 @@ A full list of component types that can be deployed is available using: 'odo com
 			os.Exit(1)
 		}
 
-		//We don't have to check it anymore, Args check made sure that args has at least one item
+		// We don't have to check it anymore, Args check made sure that args has at least one item
 		// and no more than two
+
+		// "Default" values
+		componentImageName := args[0]
 		componentType := args[0]
+		componentName := args[0]
+		componentVersion := "latest"
+
+		// Check if componentType includes ":", if so, then we need to spit it into using versions
+		if strings.ContainsAny(componentImageName, ":") {
+			versionSplit := strings.Split(args[0], ":")
+			componentType = versionSplit[0]
+			componentName = versionSplit[0]
+			componentVersion = versionSplit[1]
+		}
+
+		// Check to see if the catalog type actually exists
 		exists, err := catalog.Exists(client, componentType)
 		checkError(err, "")
 		if !exists {
@@ -88,11 +104,20 @@ A full list of component types that can be deployed is available using: 'odo com
 			os.Exit(1)
 		}
 
-		componentName := args[0]
+		// Check to see if that particular version exists
+		versionExists, err := catalog.VersionExists(client, componentType, componentVersion)
+		checkError(err, "")
+		if !versionExists {
+			fmt.Printf("Invalid component version: %v\nRun 'odo catalog list' to see a list of supported component versions\n", componentVersion)
+			os.Exit(1)
+		}
+
+		// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
 		if len(args) == 2 {
 			componentName = args[1]
 		}
-		//validate component name
+
+		// Validate component name
 		err = validateName(componentName)
 		checkError(err, "")
 		exists, err = component.Exists(client, componentName, applicationName, projectName)
@@ -103,7 +128,7 @@ A full list of component types that can be deployed is available using: 'odo com
 		}
 
 		if len(componentGit) != 0 {
-			err := component.CreateFromGit(client, componentName, componentType, componentGit, applicationName, componentPorts)
+			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts)
 			checkError(err, "")
 			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
@@ -119,7 +144,7 @@ A full list of component types that can be deployed is available using: 'odo com
 				fmt.Println("Please provide a path to the directory")
 				os.Exit(1)
 			}
-			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local", componentPorts)
+			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts)
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
@@ -130,7 +155,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
 
-			err = component.CreateFromPath(client, componentName, componentType, path, applicationName, "binary", componentPorts)
+			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts)
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
@@ -141,7 +166,7 @@ A full list of component types that can be deployed is available using: 'odo com
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
 			checkError(err, "")
-			err = component.CreateFromPath(client, componentName, componentType, dir, applicationName, "local", componentPorts)
+			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts)
 			checkError(err, "")
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)

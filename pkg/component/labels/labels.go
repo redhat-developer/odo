@@ -4,11 +4,14 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 )
 
-// ComponentLabel is a label key used to identify component
+// ComponentLabel is a label key used to identify the component name
 const ComponentLabel = "app.kubernetes.io/component-name"
 
-// ComponentTypeLabel is kubernetes that identifies type of a component
+// ComponentTypeLabel is Kubernetes label that identifies the type of a component being used
 const ComponentTypeLabel = "app.kubernetes.io/component-type"
+
+// ComponentTypeVersion is a Kubernetes label that identifies the component version
+const ComponentTypeVersion = "app.kubernetes.io/component-version"
 
 // GetLabels return labels that should be applied to every object for given component in active application
 // additional labels are used only for creating object
