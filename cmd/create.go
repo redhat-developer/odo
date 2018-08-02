@@ -167,15 +167,19 @@ A full list of component types that can be deployed is available using: 'odo com
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
 			checkError(err, "")
 		}
+
 		ports, err := component.GetComponentPorts(client, componentName, applicationName)
 		checkError(err, "")
 		fmt.Printf("Component '%s' was created", componentName)
+
 		if len(ports) > 1 {
 			fmt.Printf(" and ports %s were opened\n", strings.Join(ports, ","))
 		} else if len(ports) == 1 {
 			fmt.Printf(" and port %s was opened\n", ports[0])
 		}
+
 		fmt.Printf("To push source code to the component run 'odo push'\n")
+
 		// after component is successfully created, set is as active
 		err = component.SetCurrent(client, componentName, applicationName, projectName)
 		checkError(err, "")
