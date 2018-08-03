@@ -88,16 +88,7 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 		return nil, errors.Wrapf(err, "unable to fetch deployment configs for the selector %v", componentSelector)
 	}
 
-	// Find Pod for component
-	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
-	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := client.WaitAndGetPod(podSelector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error fetching pod for podselector %v", podSelector)
-	}
-
-	//Iterate and fetch ports
-	for _, container := range pod.Spec.Containers {
+	for _, container := range dc.Spec.Template.Spec.Containers {
 		for _, port := range container.Ports {
 			ports = append(ports, fmt.Sprintf("%v/%v", port.ContainerPort, port.Protocol))
 		}
