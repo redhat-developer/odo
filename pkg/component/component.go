@@ -47,10 +47,19 @@ func validateSourceType(sourceType string) bool {
 }
 
 // inputPorts is the array containing the string port values
-func CreateFromGit(client *occlient.Client, name string, ctype string, url string, applicationName string, inputPorts []string) error {
+func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string) error {
+
 	labels := componentlabels.GetLabels(name, applicationName, true)
+
+	// Parse componentImageType before adding to labels
+	imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse image name")
+	}
+
 	// save component type as label
-	labels[componentlabels.ComponentTypeLabel] = ctype
+	labels[componentlabels.ComponentTypeLabel] = imageName
+	labels[componentlabels.ComponentTypeVersion] = imageTag
 
 	// save source path as annotation
 	annotations := map[string]string{componentSourceURLAnnotation: url}
@@ -62,7 +71,7 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	err = client.NewAppS2I(namespacedOpenShiftObject, ctype, url, labels, annotations, inputPorts)
+	err = client.NewAppS2I(namespacedOpenShiftObject, componentImageType, url, labels, annotations, inputPorts)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
@@ -71,11 +80,18 @@ func CreateFromGit(client *occlient.Client, name string, ctype string, url strin
 
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
-// inputPorts is the array containing the string port values
-func CreateFromPath(client *occlient.Client, name string, ctype string, path string, applicationName string, sourceType string, inputPorts []string) error {
+func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string) error {
 	labels := componentlabels.GetLabels(name, applicationName, true)
+
+	// Parse componentImageType before adding to labels
+	imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse image name")
+	}
+
 	// save component type as label
-	labels[componentlabels.ComponentTypeLabel] = ctype
+	labels[componentlabels.ComponentTypeLabel] = imageName
+	labels[componentlabels.ComponentTypeVersion] = imageTag
 
 	// save source path as annotation
 	sourceURL := url.URL{Scheme: "file", Path: path}
@@ -88,7 +104,7 @@ func CreateFromPath(client *occlient.Client, name string, ctype string, path str
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	err = client.BootstrapSupervisoredS2I(namespacedOpenShiftObject, ctype, labels, annotations, inputPorts)
+	err = client.BootstrapSupervisoredS2I(namespacedOpenShiftObject, componentImageType, labels, annotations, inputPorts)
 	if err != nil {
 		return err
 	}
@@ -251,11 +267,11 @@ func GetComponentType(client *occlient.Client, componentName string, application
 
 	// filter according to component and application name
 	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, componentName, applabels.ApplicationLabel, applicationName)
-	ctypes, err := client.GetLabelValues(projectName, componentlabels.ComponentTypeLabel, selector)
+	componentImageTypes, err := client.GetLabelValues(projectName, componentlabels.ComponentTypeLabel, selector)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get type of %s component")
 	}
-	if len(ctypes) < 1 {
+	if len(componentImageTypes) < 1 {
 		// no type returned
 		return "", errors.Wrap(err, "unable to find type of %s component")
 
@@ -263,13 +279,13 @@ func GetComponentType(client *occlient.Client, componentName string, application
 	// check if all types are the same
 	// it should be as we are secting only exactly one component, and it doesn't make sense
 	// to have one component labeled with different component type labels
-	for _, ctype := range ctypes {
-		if ctypes[0] != ctype {
+	for _, componentImageType := range componentImageTypes {
+		if componentImageTypes[0] != componentImageType {
 			return "", errors.Wrap(err, "data mismatch: %s component has objects with different types")
 		}
 
 	}
-	return ctypes[0], nil
+	return componentImageTypes[0], nil
 }
 
 // List lists components in active application
@@ -284,11 +300,11 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 	components := []ComponentInfo{}
 
 	for _, name := range componentNames {
-		ctype, err := GetComponentType(client, name, applicationName, projectName)
+		componentImageType, err := GetComponentType(client, name, applicationName, projectName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to list components")
 		}
-		components = append(components, ComponentInfo{Name: name, Type: ctype})
+		components = append(components, ComponentInfo{Name: name, Type: componentImageType})
 	}
 
 	return components, nil
@@ -526,9 +542,9 @@ func getPortFromService(service *corev1.Service) (int32, error) {
 }
 
 // Get Component Description
-func GetComponentDesc(client *occlient.Client, currentComponent string, currentApplication string, currentProject string) (componentType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
+func GetComponentDesc(client *occlient.Client, currentComponent string, currentApplication string, currentProject string) (componentImageType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
 	// Component Type
-	componentType, err = GetComponentType(client, currentComponent, currentApplication, currentProject)
+	componentImageType, err = GetComponentType(client, currentComponent, currentApplication, currentProject)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
@@ -551,7 +567,7 @@ func GetComponentDesc(client *occlient.Client, currentComponent string, currentA
 		return "", "", "", nil, errors.Wrap(err, "unable to get storage list")
 	}
 
-	return componentType, path, componentURL, appStore, nil
+	return componentImageType, path, componentURL, appStore, nil
 }
 
 // Get Component logs
