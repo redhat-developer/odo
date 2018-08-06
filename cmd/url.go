@@ -38,14 +38,14 @@ var urlCreateCmd = &cobra.Command{
 
 The created URL can be used to access the specified component from outside the OpenShift cluster.
 `,
-	Example: `  # Create a URL for the current component.
-  odo url create
+	Example: `  # Create a URL for the current component with a specific port
+  odo url create --port 8080
 
-  # Create a URL with a specific name
-  odo url create example
+  # Create a URL with a specific name and port
+  odo url create example --port 8080
 
-  # Create a URL with a specific name for component frontend
-  odo url create example --component frontend
+  # Create a URL with a specific name and port for component frontend
+  odo url create example --port 8080 --component frontend
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
