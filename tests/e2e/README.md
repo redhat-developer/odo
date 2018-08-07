@@ -23,33 +23,37 @@ Run `make test-e2e` to execute the tests.
 | `app get`  | Y  |
 | `app set` | Y |
 | `app delete` | Y |
-| `app describe` | N |
+| `app describe` | Y |
 | `app list` | Y |
 | `catalog list` | Y |
 | `catalog search` | N |
 | `component get` | Y |
 | `component set` | Y |
 | `create` | Y |
-| `create --git` | N |
+| `create --git` | Y |
 | `create --local` | Y |
 | `create --binary` | Y |
-| `delete` | N |
-| `describe` | N |
-| `link` | Y |
+| `delete` | Y |
+| `describe` | Y |
+| `link` | N |
 | `list` | Y |
 | `push` --local | Y |
-| `push` --git | Y |
 | `push` --binary | Y |
 | `storage create` | Y |
 | `storage list` | Y |
-| `storage delete` | N |
-| `update`: `--git` to `--local` | N |
-| `update`: `--local` to `--git` | N |
-| `update`: `--binary` to `--git` | N |
-| `update`: `--git` to `--binary` | N |
-| `update`: `--local` to `--binary` | N |
-| `update`: `--binary` to `--local` | N |
+| `storage delete` | Y |
+| `storage mount` | Y |
+| `storage unmount` | Y |
+| `update`: `--git` to `--local` | Y |
+| `update`: `--local` to `--git` | Y |
+| `update`: `--binary` to `--git` | Y |
+| `update`: `--git` to `--binary` | Y |
+| `update`: `--local` to `--binary` | Y |
+| `update`: `--binary` to `--local` | Y |
+| `update`: `--binary` to `--binary` | Y |
+| `update`: `--local` to `--local` | Y |
+| `update`: `--git` to `--git` | Y |
 | `url create` | Y |
 | `url list` | Y |
-| `url delete` | N |
+| `url delete` | Y |
 | `watch` | N |

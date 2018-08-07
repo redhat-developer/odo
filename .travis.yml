@@ -40,7 +40,7 @@ jobs:
         - oc login -u developer 
         - make test-e2e
 
-    # Run demo
+    # Run component e2e tests
     - <<: *base-test
       stage: test
       script:
@@ -48,17 +48,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-demo
-
-    # Run update e2e tests
-    - <<: *base-test
-      stage: test
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-update-e2e
+        - make test-cmp-e2e
 
     # test installation script on linux
     # - stage: test
