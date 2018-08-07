@@ -313,6 +313,7 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 // GetComponentSource what source type given component uses
 // The first returned string is component source type ("git" or "local" or "binary")
 // The second returned string is a source (url to git repository or local path or path to binary)
+// we retrieve the source type by looking up the DeploymentConfig that's deployed
 func GetComponentSource(client *occlient.Client, componentName string, applicationName string, projectName string) (string, string, error) {
 
 	// Namespace the application
@@ -321,13 +322,13 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		return "", "", errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	bc, err := client.GetBuildConfig(namespacedOpenShiftObject, projectName)
+	deploymentConfig, err := client.GetDeploymentConfigFromName(namespacedOpenShiftObject, projectName)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "unable to get source path for component %s", namespacedOpenShiftObject)
 	}
 
-	sourcePath := bc.ObjectMeta.Annotations[componentSourceURLAnnotation]
-	sourceType := bc.ObjectMeta.Annotations[componentSourceTypeAnnotation]
+	sourcePath := deploymentConfig.ObjectMeta.Annotations[componentSourceURLAnnotation]
+	sourceType := deploymentConfig.ObjectMeta.Annotations[componentSourceTypeAnnotation]
 
 	if !validateSourceType(sourceType) {
 		return "", "", fmt.Errorf("unsupported component source type %s", sourceType)

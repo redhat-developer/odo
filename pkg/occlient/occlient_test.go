@@ -1494,7 +1494,7 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 	}
 }
 
-func TestGetBuildConfig(t *testing.T) {
+func TestGetBuildConfigFromName(t *testing.T) {
 	tests := []struct {
 		name                string
 		buildName           string
@@ -1526,14 +1526,14 @@ func TestGetBuildConfig(t *testing.T) {
 				return true, &tt.returnedBuildConfig, nil
 			})
 
-			build, err := fkclient.GetBuildConfig(tt.buildName, tt.projectName)
+			build, err := fkclient.GetBuildConfigFromName(tt.buildName, tt.projectName)
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
 				if (len(fkclientset.BuildClientset.Actions()) != 1) && (tt.wantErr != true) {
-					t.Errorf("expected 1 action in GetBuildConfig got: %v", fkclientset.AppsClientset.Actions())
+					t.Errorf("expected 1 action in GetBuildConfigFromName got: %v", fkclientset.AppsClientset.Actions())
 				}
 				if build.Name != tt.buildName {
-					t.Errorf("wrong GetBuildConfig got: %v, expected: %v", build.Name, tt.buildName)
+					t.Errorf("wrong GetBuildConfigFromName got: %v, expected: %v", build.Name, tt.buildName)
 				}
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
@@ -1671,7 +1671,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
 				if (len(fkclientset.BuildClientset.Actions()) != 2) && (tt.wantErr != true) {
-					t.Errorf("expected 2 action in GetBuildConfig got: %v", fkclientset.BuildClientset.Actions())
+					t.Errorf("expected 2 action in GetBuildConfigFromName got: %v", fkclientset.BuildClientset.Actions())
 				}
 
 				updatedDc := fkclientset.BuildClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*buildv1.BuildConfig)

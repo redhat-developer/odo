@@ -804,7 +804,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 			Type: buildv1.BuildSourceGit,
 		}
 	}
-	buildConfig, err := c.GetBuildConfig(buildConfigName, projectName)
+	buildConfig, err := c.GetBuildConfigFromName(buildConfigName, projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to get the BuildConfig file")
 	}
@@ -821,7 +821,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 // dcName is the name of the DeploymentConfig file to be updated
 // annotations contains the annotations for the DeploymentConfig file
 func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
+	dc, err := c.GetDeploymentConfigFromName(dcName, c.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
 	}
@@ -840,7 +840,7 @@ func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]strin
 // annotations are the updated annotations for the new deployment config
 // labels are the labels of the PVC created while setting up the supervisor
 func (c *Client) SetupForSupervisor(dcName string, projectName string, annotations map[string]string, labels map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
+	dc, err := c.GetDeploymentConfigFromName(dcName, projectName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
 	}
@@ -869,7 +869,7 @@ func (c *Client) SetupForSupervisor(dcName string, projectName string, annotatio
 // projectName is the name of the project
 // annotations are the updated annotations for the new deployment config
 func (c *Client) CleanupAfterSupervisor(dcName string, projectName string, annotations map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
+	dc, err := c.GetDeploymentConfigFromName(dcName, projectName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s ", dcName)
 	}
@@ -1170,8 +1170,8 @@ func (c *Client) GetLabelValues(project string, label string, selector string) (
 	return values, nil
 }
 
-// GetBuildConfig get BuildConfig by its name
-func (c *Client) GetBuildConfig(name string, project string) (*buildv1.BuildConfig, error) {
+// GetBuildConfigFromName get BuildConfig by its name
+func (c *Client) GetBuildConfigFromName(name string, project string) (*buildv1.BuildConfig, error) {
 	log.Debugf("Getting BuildConfig: %s", name)
 	bc, err := c.buildClient.BuildConfigs(project).Get(name, metav1.GetOptions{})
 	if err != nil {
@@ -1413,7 +1413,7 @@ func removeVolumeMountFromDC(vm string, dc *appsv1.DeploymentConfig) bool {
 func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) error {
 
 	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		dc, err := c.GetDeploymentConfigFromName(dcName)
+		dc, err := c.GetDeploymentConfigFromName(dcName, c.namespace)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get Deployment Config: %v", dcName)
 		}
@@ -1485,8 +1485,14 @@ func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, err
 
 // GetDeploymentConfigFromName returns the Deployment Config resource given
 // the Deployment Config name
-func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentConfig, error) {
-	return c.appsClient.DeploymentConfigs(c.namespace).Get(name, metav1.GetOptions{})
+func (c *Client) GetDeploymentConfigFromName(name string, project string) (*appsv1.DeploymentConfig, error) {
+	log.Debugf("Getting DeploymentConfig: %s", name)
+	deploymentConfig, err := c.appsClient.DeploymentConfigs(project).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
+	}
+	return deploymentConfig, nil
+
 }
 
 // GetPVCsFromSelector returns the PVCs based on the given selector
