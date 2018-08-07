@@ -459,7 +459,11 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 		return errors.Wrapf(err, "unable to create ImageStream for %s", name)
 	}
 
-	// if gitUrl set change buildSource to git and use given repo
+	// if gitUrl is not set, error out
+	if gitUrl == "" {
+		return errors.New("unable to create buildSource with empty gitUrl")
+	}
+
 	buildSource := buildv1.BuildSource{
 		Git: &buildv1.GitBuildSource{
 			URI: gitUrl,
