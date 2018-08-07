@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -14,7 +15,7 @@ import (
 
 // Global variables
 var (
-	GlobalVerbose         string
+	GlobalVerbose         int
 	GlobalConnectionCheck bool
 )
 
@@ -102,7 +103,7 @@ func setFlags() {
 		os.Exit(2)
 	}
 	flag.CommandLine.Set("logtostderr", "true")
-	flag.CommandLine.Set("v", GlobalVerbose)
+	flag.CommandLine.Set("v", strconv.Itoa(GlobalVerbose))
 	flag.Parse()
 }
 
@@ -129,7 +130,7 @@ func init() {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
-	rootCmd.PersistentFlags().StringVarP(&GlobalVerbose, "verbose", "v", "", "Verbose output")
+	rootCmd.PersistentFlags().IntVarP(&GlobalVerbose, "verbose", "v", 0, "log level for V logs")
 	rootCmd.PersistentFlags().BoolVar(&GlobalConnectionCheck, "skip-connection-check", false, "Skip cluster check")
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
