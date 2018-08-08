@@ -66,7 +66,6 @@ func TestGetComponentPorts(t *testing.T) {
 			// Fake the client with the appropriate arguments
 			client, fakeClientSet := occlient.FakeNew()
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				//return true, testingutil.FakeDeploymentConfigs(tt.args.namespace, tt.args.componentName, tt.args.componentType, tt.args.applicationName, tt.args.containerPort), nil
 				return true, testingutil.FakeDeploymentConfigs(), nil
 			})
 
