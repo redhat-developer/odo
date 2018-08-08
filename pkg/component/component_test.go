@@ -73,7 +73,7 @@ func TestGetComponentPorts(t *testing.T) {
 			// The function we are testing
 			output, err := GetComponentPorts(client, tt.args.componentName, tt.args.applicationName)
 
-			//Checks for error in positive cases
+			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component List() unexpected error %v, wantErr %v", err, tt.wantErr)
 			}

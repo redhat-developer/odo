@@ -69,7 +69,7 @@ func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 	var applicationName string
 	var componentType string
 
-	//DC1 with multiple containers each with multiple ports
+	// DC1 with multiple containers each with multiple ports
 	componentType = "python"
 	componentName = "python"
 	applicationName = "app"
@@ -99,7 +99,7 @@ func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 	})
 	dc1 := getDeploymentConfig("myproject", componentName, componentType, applicationName, []corev1.Container{c1, c2})
 
-	//DC2 with single container and single port
+	// DC2 with single container and single port
 	componentType = "nodejs"
 	componentName = "nodejs"
 	applicationName = "app"
@@ -112,7 +112,7 @@ func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 	})
 	dc2 := getDeploymentConfig("myproject", componentName, componentType, applicationName, []corev1.Container{c3})
 
-	//DC3 with single container and multiple ports
+	// DC3 with single container and multiple ports
 	componentType = "wildfly"
 	componentName = "wildfly"
 	applicationName = "app"
