@@ -73,7 +73,11 @@ test:
 # Run e2e tests
 .PHONY: test-e2e
 test-e2e:
+ifdef TIMEOUT
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.v -timeout $(TIMEOUT)
+else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.v
+endif
 
 .PHONY: test-demo
 test-demo:
