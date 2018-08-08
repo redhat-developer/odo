@@ -94,15 +94,24 @@ The created URL can be used to access the specified component from outside the O
 
 		var portFound bool
 
-		for _, port := range componentPorts {
-			if urlPort == port {
-				portFound = true
+		if urlPort == -1 {
+			if len(componentPorts) > 1 {
+				fmt.Printf("'port' is required as the component %s exposes %d ports: %s\n", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
+				os.Exit(1)
+			} else {
+				urlPort = componentPorts[0]
 			}
-		}
+		} else {
+			for _, port := range componentPorts {
+				if urlPort == port {
+					portFound = true
+				}
+			}
 
-		if !portFound {
-			fmt.Printf("Port %d is not exposed by the component\n", urlPort)
-			os.Exit(1)
+			if !portFound {
+				fmt.Printf("Port %d is not exposed by the component\n", urlPort)
+				os.Exit(1)
+			}
 		}
 
 		fmt.Printf("Adding URL to component: %v\n", componentName)
@@ -215,7 +224,6 @@ func init() {
 	urlCreateCmd.Flags().StringVarP(&urlApplication, "application", "a", "", "create url for application")
 	urlCreateCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "create url for component")
 	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component")
-	urlCreateCmd.MarkFlagRequired("port")
 
 	urlDeleteCmd.Flags().BoolVarP(&urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 	urlDeleteCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "delete url for component")

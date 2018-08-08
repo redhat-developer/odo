@@ -261,14 +261,18 @@ var _ = Describe("odoe2e", func() {
 
 	Describe("Creating odo url", func() {
 		Context("using odo url", func() {
-			It("should create route", func() {
+			It("should create route with required port", func() {
 				runCmd("odo component set nodejs")
-				getUrlOut := runCmd("odo url create nodejs")
+				getUrlOut := runCmd("odo url create nodejs --port 8080")
 				Expect(getUrlOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
+
+				// check the port number of the created URL
+				port := runCmd("oc get route nodejs-" + appTestName + " -o go-template='{{index .spec.port.targetPort}}'")
+				Expect(port).To(Equal("8080"))
 			})
 
 			It("should be able to list the url", func() {
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
@@ -287,7 +291,7 @@ var _ = Describe("odoe2e", func() {
 				// Switch to nodejs component
 				runCmd("odo component set nodejs")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 				getRoute = strings.TrimSpace(getRoute)
 
 				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1")
@@ -305,7 +309,7 @@ var _ = Describe("odoe2e", func() {
 
 			It("should reflect the changes pushed", func() {
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 				getRoute = strings.TrimSpace(getRoute)
 
 				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1")
@@ -320,18 +324,17 @@ var _ = Describe("odoe2e", func() {
 				appTestName_new := appTestName + "-1"
 				runCmd("odo app create " + appTestName_new)
 				runCmd("odo create nodejs nodejs-1 --git https://github.com/sclorg/nodejs-ex")
-				runCmd("odo url create nodejs-1")
+				runCmd("odo url create nodejs --port 8080")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 				getRoute = strings.TrimSpace(getRoute)
-				Expect(getRoute).To(ContainSubstring("nodejs-1-" + appTestName_new + "-" + projName))
+				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName_new + "-" + projName))
 
 				// Check the labels in `oc get route`
-				routeName := "nodejs-1-" + appTestName_new
+				routeName := "nodejs-" + appTestName_new
 				getRouteLabel := runCmd("oc get route/" + routeName + " -o jsonpath='" +
 					"{.metadata.labels.app\\.kubernetes\\.io/component-name}'")
 				Expect(getRouteLabel).To(Equal("nodejs-1"))
-
 			})
 
 			// Check if url is deleted
@@ -339,9 +342,9 @@ var _ = Describe("odoe2e", func() {
 				appTestName_new := appTestName + "-1"
 				runCmd("odo app set " + appTestName_new)
 				runCmd("odo component set nodejs-1")
-				runCmd("odo url delete nodejs-1 -f")
+				runCmd("odo url delete nodejs -f")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).NotTo(ContainSubstring("nodejs-1-" + appTestName_new + "-" + projName))
 
@@ -469,7 +472,7 @@ var _ = Describe("odoe2e", func() {
 			runCmd("odo component set nodejs")
 			runCmd("odo url delete nodejs -f")
 
-			urlList := runCmd("odo url list | sed -n '1!p' | awk '{ print $3 }'")
+			urlList := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 			Expect(urlList).NotTo(ContainSubstring("nodejs"))
 		})
 
