@@ -130,7 +130,6 @@ A full list of component types that can be deployed is available using: 'odo com
 		if len(componentGit) != 0 {
 			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts)
 			checkError(err, "")
-			fmt.Printf("Component '%s' was created.\n", componentName)
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 			err = component.Build(client, componentName, applicationName, true, true, stdout)
 			checkError(err, "")
@@ -149,8 +148,6 @@ A full list of component types that can be deployed is available using: 'odo com
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
 			checkError(err, "")
-			fmt.Printf("Component '%s' was created.\n", componentName)
-			fmt.Printf("To push source code to the component run 'odo push'\n")
 		} else if len(componentBinary) != 0 {
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
@@ -160,8 +157,6 @@ A full list of component types that can be deployed is available using: 'odo com
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
 			checkError(err, "")
-			fmt.Printf("Component '%s' was created.\n", componentName)
-			fmt.Printf("To push source code to the component run 'odo push'\n")
 		} else {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs("./")
@@ -171,9 +166,22 @@ A full list of component types that can be deployed is available using: 'odo com
 			fmt.Printf("Please wait, creating %s component ...\n", componentName)
 			err = component.Build(client, componentName, applicationName, false, true, stdout)
 			checkError(err, "")
-			fmt.Printf("Component '%s' was created.\n", componentName)
+		}
+
+		ports, err := component.GetComponentPorts(client, componentName, applicationName)
+		checkError(err, "")
+		fmt.Printf("Component '%s' was created", componentName)
+
+		if len(ports) > 1 {
+			fmt.Printf(" and ports %s were opened\n", strings.Join(ports, ","))
+		} else if len(ports) == 1 {
+			fmt.Printf(" and port %s was opened\n", ports[0])
+		}
+
+		if len(componentGit) == 0 {
 			fmt.Printf("To push source code to the component run 'odo push'\n")
 		}
+
 		// after component is successfully created, set is as active
 		err = component.SetCurrent(client, componentName, applicationName, projectName)
 		checkError(err, "")

@@ -78,6 +78,25 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 	return nil
 }
 
+// GetComponentPorts provides slice of ports used by the component in the form port_no/protocol
+func GetComponentPorts(client *occlient.Client, componentName string, applicationName string) (ports []string, err error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to fetch deployment configs for the selector %v", componentSelector)
+	}
+
+	for _, container := range dc.Spec.Template.Spec.Containers {
+		for _, port := range container.Ports {
+			ports = append(ports, fmt.Sprintf("%v/%v", port.ContainerPort, port.Protocol))
+		}
+	}
+
+	return ports, nil
+}
+
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string) error {
