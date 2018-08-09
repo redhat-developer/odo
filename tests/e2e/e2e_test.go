@@ -183,12 +183,7 @@ var _ = Describe("odoe2e", func() {
 	Describe("creating a component", func() {
 		Context("when application exists", func() {
 			It("should create a component", func() {
-				runCmd("git clone https://github.com/openshift/nodejs-ex " +
-					tmpDir + "/nodejs-ex")
-
-				// TODO: add tests for --git
-				runCmd("odo create nodejs --local " + tmpDir + "/nodejs-ex")
-				runCmd("odo push")
+				runCmd("odo create nodejs --git https://github.com/openshift/nodejs-ex")
 			})
 
 			It("should be the get the component created as active component", func() {
@@ -283,6 +278,14 @@ var _ = Describe("odoe2e", func() {
 
 	Describe("pushing updates", func() {
 		Context("When push is made", func() {
+
+			It("should be able to update the source dir", func() {
+				runCmd("git clone https://github.com/openshift/nodejs-ex " +
+					tmpDir + "/nodejs-ex")
+
+				runCmd("odo update nodejs --local " + tmpDir + "/nodejs-ex")
+			})
+
 			It("should push the changes", func() {
 				// Switch to nodejs component
 				runCmd("odo component set nodejs")
