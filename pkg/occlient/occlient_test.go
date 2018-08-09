@@ -31,7 +31,7 @@ import (
 
 // fakeDeploymentConfig creates a fake DC.
 // we "dog food" our own functions by using our templates / functions to generate this fake deployment config
-func fakeDeploymentConfig(name string, image string) *appsv1.DeploymentConfig {
+func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar) *appsv1.DeploymentConfig {
 
 	// save component type as label
 	labels := componentlabels.GetLabels(name, name, true)
@@ -58,7 +58,7 @@ func fakeDeploymentConfig(name string, image string) *appsv1.DeploymentConfig {
 	}
 
 	// Generate the DeploymentConfig that will be used.
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, image, commonImageMeta)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, image, commonImageMeta, envVars)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -1740,6 +1740,7 @@ func TestNewAppS2I(t *testing.T) {
 		builderImage     string
 		gitURL           string
 		inputPorts       []string
+		envVars          []string
 	}
 
 	tests := []struct {
@@ -1749,7 +1750,7 @@ func TestNewAppS2I(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name: "case 1: with valid gitURL",
+			name: "case 1: with valid gitURL and two env vars",
 			args: args{
 				builderImage: "ruby:latest",
 				namespace:    "testing",
@@ -1767,6 +1768,7 @@ func TestNewAppS2I(t *testing.T) {
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
+				envVars: []string{"key=value", "key1=value1"},
 			},
 			wantedService: map[int32]corev1.Protocol{
 				8080: corev1.ProtocolTCP,
@@ -1774,7 +1776,7 @@ func TestNewAppS2I(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "case 2 : binary buildSource with gitURL empty",
+			name: "case 2 : binary buildSource with gitURL empty and no env vars",
 			args: args{
 				builderImage: "ruby:latest",
 				namespace:    "testing",
@@ -1896,7 +1898,8 @@ func TestNewAppS2I(t *testing.T) {
 			err := fkclient.NewAppS2I(tt.args.commonObjectMeta,
 				tt.args.builderImage,
 				tt.args.gitURL,
-				tt.args.inputPorts)
+				tt.args.inputPorts,
+				tt.args.envVars)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewAppS2I() error = %#v, wantErr %#v", err, tt.wantErr)
@@ -2418,7 +2421,7 @@ func TestWaitAndGetPod(t *testing.T) {
 		},
 
 		{
-			name: "phase:	unknown",
+			name:    "phase:	unknown",
 			podName: "ruby",
 			status:  corev1.PodUnknown,
 			wantErr: true,
@@ -2962,8 +2965,10 @@ func TestPatchCurrentDC(t *testing.T) {
 			name: "Case 1: Test patching",
 			args: args{
 				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo"),
-				dcPatch:  generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo"}, "bar", []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}}),
+				dcBefore: *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo"}, "bar",
+					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
 			actions: 2,
@@ -2972,8 +2977,10 @@ func TestPatchCurrentDC(t *testing.T) {
 			name: "Case 2: Test patching with the wrong name",
 			args: args{
 				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo"),
-				dcPatch:  generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar", []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}}),
+				dcBefore: *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar",
+					[]corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}},
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: true,
 			actions: 2,
@@ -3037,7 +3044,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "bar",
-				dc:       *fakeDeploymentConfig("foo", "foo"),
+				dc:       *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
 			actions: 3,
@@ -3047,7 +3054,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "",
-				dc:       *fakeDeploymentConfig("foo", "foo"),
+				dc:       *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3057,7 +3064,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "",
-				dc:       *fakeDeploymentConfig("foo2", "foo"),
+				dc:       *fakeDeploymentConfig("foo2", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3067,7 +3074,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "bar:latest",
-				dc:       *fakeDeploymentConfig("foo", "foo"),
+				dc:       *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
 			actions: 3,
@@ -3143,7 +3150,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "nodejs",
 				expectedImage:  "nodejs",
 				imageNamespace: "openshift",
-				dc:             *fakeDeploymentConfig("foo", "foo"),
+				dc:             *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
 			actions: 3,
@@ -3155,7 +3162,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "foo",
 				expectedImage:  "foobar",
 				imageNamespace: "testing",
-				dc:             *fakeDeploymentConfig("foo", "foo"),
+				dc:             *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3269,6 +3276,217 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 				t.Errorf(" client.IsVolumeAnEmptyDir() unexpected %v, wantEmptyDir %v", isVolumeEmpty, tt.wantEmptyDir)
 			}
 
+		})
+	}
+}
+
+func Test_getInputEnvVarsFromStrings(t *testing.T) {
+	tests := []struct {
+		name          string
+		envVars       []string
+		wantedEnvVars []corev1.EnvVar
+		wantErr       bool
+	}{
+		{
+			name:    "Test case 1: with valid two key value pairs",
+			envVars: []string{"key=value", "key1=value1"},
+			wantedEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key",
+					Value: "value",
+				},
+				{
+					Name:  "key1",
+					Value: "value1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Test case 2: one env var with missing value",
+			envVars: []string{"key=value", "key1="},
+			wantedEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key",
+					Value: "value",
+				},
+				{
+					Name:  "key1",
+					Value: "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Test case 3: one env var with no value and no =",
+			envVars: []string{"key=value", "key1"},
+			wantErr: true,
+		},
+		{
+			name:    "Test case 4: one env var with multiple values",
+			envVars: []string{"key=value", "key1=value1=value2"},
+			wantErr: true,
+		},
+		{
+			name:    "Test case 5: two env var with same key",
+			envVars: []string{"key=value", "key=value1"},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envVars, err := getInputEnvVarsFromStrings(tt.envVars)
+
+			if err == nil && !tt.wantErr {
+				if !reflect.DeepEqual(tt.wantedEnvVars, envVars) {
+					t.Errorf("corev1.Env values are not matching with expected values, expected: %v, got %v", tt.wantedEnvVars, envVars)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func TestGetEnvVarsFromDC(t *testing.T) {
+	tests := []struct {
+		name            string
+		dcName          string
+		projectName     string
+		returnedDC      appsv1.DeploymentConfig
+		returnedEnvVars []corev1.EnvVar
+		wantErr         bool
+	}{
+		{
+			name:        "case 1: with valid existing dc and one valid env var pair",
+			dcName:      "nodejs-app",
+			projectName: "project",
+			returnedDC: appsv1.DeploymentConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nodejs-app",
+				},
+				Spec: appsv1.DeploymentConfigSpec{
+					Template: &corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Env: []corev1.EnvVar{
+										{
+											Name:  "key",
+											Value: "value",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key",
+					Value: "value",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "case 2: with valid existing dc and two valid env var pairs",
+			dcName:      "nodejs-app",
+			projectName: "project",
+			returnedDC: appsv1.DeploymentConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nodejs-app",
+				},
+				Spec: appsv1.DeploymentConfigSpec{
+					Template: &corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Env: []corev1.EnvVar{
+										{
+											Name:  "key",
+											Value: "value",
+										},
+										{
+											Name:  "key-1",
+											Value: "value-1",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key",
+					Value: "value",
+				},
+				{
+					Name:  "key-1",
+					Value: "value-1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "case 3: with non valid existing dc",
+			dcName:      "nodejs-app",
+			projectName: "project",
+			returnedDC: appsv1.DeploymentConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "wildfly-app",
+				},
+				Spec: appsv1.DeploymentConfigSpec{
+					Template: &corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Env: []corev1.EnvVar{},
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedEnvVars: []corev1.EnvVar{},
+			wantErr:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				dcName := action.(ktesting.GetAction).GetName()
+				if dcName != tt.dcName {
+					return true, nil, fmt.Errorf("get dc called with different name, expected: %s, got %s", tt.dcName, dcName)
+				}
+				return true, &tt.returnedDC, nil
+			})
+
+			envVars, err := fakeClient.GetEnvVarsFromDC(tt.dcName, tt.projectName)
+
+			if err == nil && !tt.wantErr {
+				// Check for validating actions performed
+				if len(fakeClientSet.AppsClientset.Actions()) != 1 {
+					t.Errorf("expected 1 action in GetBuildConfigFromName got: %v", fakeClientSet.AppsClientset.Actions())
+				}
+
+				if !reflect.DeepEqual(tt.returnedEnvVars, envVars) {
+					t.Errorf("env vars are not matching with expected values, expected: %s, got %s", tt.returnedEnvVars, envVars)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
 		})
 	}
 }

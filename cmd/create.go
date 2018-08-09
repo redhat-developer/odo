@@ -21,6 +21,7 @@ var (
 	componentGit    string
 	componentLocal  string
 	componentPorts  []string
+	componentEnvVars []string
 )
 
 var componentCreateCmd = &cobra.Command{
@@ -54,6 +55,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 
   # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
   odo create nodejs --port 8080,8100/tcp,9100/udp
+
+  # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
+  odo create nodejs --env key=value,key1=value1
 
   # For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
   odo create python --git https://github.com/openshift/django-ex.git
@@ -123,7 +127,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		if len(componentGit) != 0 {
 
 			// Use Git
-			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts)
+			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts,componentEnvVars)
 			checkError(err, "")
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 
@@ -144,7 +148,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			}
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts)
+			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts,componentEnvVars)
 			checkError(err, "")
 
 		} else if len(componentBinary) != 0 {
@@ -155,7 +159,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			checkError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts)
+			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts,componentEnvVars)
 			checkError(err, "")
 
 		} else {
@@ -164,7 +168,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			checkError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts)
+			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts,componentEnvVars)
 			checkError(err, "")
 		}
 
@@ -194,6 +198,7 @@ func init() {
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
 	componentCreateCmd.Flags().StringSliceVar(&componentPorts, "port", []string{}, "Ports to be used when the component is created")
+	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component, specified like --env VariableName=Value")
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCreateCmd.Annotations = map[string]string{"command": "component"}
