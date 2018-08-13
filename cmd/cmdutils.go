@@ -89,3 +89,17 @@ func validateName(name string) error {
 	return nil
 
 }
+
+// validateStoragePath will validate storagePath, if there is any existing storage with similar path, it will give an error
+func validateStoragePath(client *occlient.Client, storagePath, componentName, applicationName string) error {
+	storeList, err := storage.List(client, componentName, applicationName)
+	if err != nil {
+		return err
+	}
+	for _, store := range storeList {
+		if store.Path == storagePath {
+			return errors.Errorf("there already is a storage mounted at %s", storagePath)
+		}
+	}
+	return nil
+}

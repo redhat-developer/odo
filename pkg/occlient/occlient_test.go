@@ -2283,6 +2283,7 @@ func TestCreateNewProject(t *testing.T) {
 					t.Errorf("project name does not match the expected name, expected: %s, got: %s", tt.projName, createdProj.Name)
 				}
 			}
+
 		})
 	}
 }
@@ -2457,6 +2458,74 @@ func TestCreateService(t *testing.T) {
 			} else if err != nil && !tt.wantErr {
 				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
+		})
+	}
+}
+
+func TestGetDeploymentConfigsFromSelector(t *testing.T) {
+	tests := []struct {
+		name     string
+		selector string
+		label    map[string]string
+		wantErr  bool
+	}{
+		{
+			name:     "true case",
+			selector: "app.kubernetes.io/name=app",
+			label: map[string]string{
+				"app.kubernetes.io/name": "app",
+			},
+			wantErr: false,
+		},
+		{
+			name:     "true case",
+			selector: "app.kubernetes.io/name=app1",
+			label: map[string]string{
+				"app.kubernetes.io/name": "app",
+			},
+			wantErr: false,
+		},
+	}
+
+	listOfDC := appsv1.DeploymentConfigList{
+		Items: []appsv1.DeploymentConfig{
+
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app.kubernetes.io/name": "app",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), tt.selector) {
+					return true, nil, fmt.Errorf("labels not matching with expected values, expected:%s, got:%s", tt.selector, action.(ktesting.ListAction).GetListRestrictions())
+				}
+				return true, &listOfDC, nil
+			})
+			dc, err := fakeClient.GetDeploymentConfigsFromSelector(tt.selector)
+
+			if len(fakeClientSet.AppsClientset.Actions()) != 1 {
+				t.Errorf("expected 1 AppsClientset.Actions() in GetDeploymentConfigsFromSelector, got: %v", fakeClientSet.AppsClientset.Actions())
+			}
+
+			if tt.wantErr == false && err != nil {
+				t.Errorf("test failed, %#v", dc[0].Labels)
+			}
+
+			for _, dc1 := range dc {
+				if !reflect.DeepEqual(dc1.Labels, tt.label) {
+					t.Errorf("labels are not matching with expected labels, expected: %s, got %s", tt.label, dc1.Labels)
+				}
+			}
+
 		})
 	}
 }
