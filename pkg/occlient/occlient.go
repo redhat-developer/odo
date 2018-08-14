@@ -22,7 +22,13 @@ import (
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	"github.com/pkg/errors"
 
+	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
+	appsv1 "github.com/openshift/api/apps/v1"
+	buildv1 "github.com/openshift/api/build/v1"
+	imagev1 "github.com/openshift/api/image/v1"
+	projectv1 "github.com/openshift/api/project/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
@@ -31,17 +37,9 @@ import (
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
-
-	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
-	appsv1 "github.com/openshift/api/apps/v1"
-	buildv1 "github.com/openshift/api/build/v1"
-	imagev1 "github.com/openshift/api/image/v1"
-	projectv1 "github.com/openshift/api/project/v1"
-	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/version"
@@ -78,8 +76,8 @@ type Client struct {
 	projectClient        projectclientset.ProjectV1Interface
 	serviceCatalogClient servicecatalogclienset.ServicecatalogV1beta1Interface
 	routeClient          routeclientset.RouteV1Interface
-	userClient           userclientset.UserV1Interface
-	kubeConfig           clientcmd.ClientConfig
+	UserClient           userclientset.UserV1Interface
+	KubeConfig           clientcmd.ClientConfig
 	namespace            string
 }
 
@@ -89,9 +87,9 @@ func New(connectionCheck bool) (*Client, error) {
 	// initialize client-go clients
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
-	client.kubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	config, err := client.kubeConfig.ClientConfig()
+	config, err := client.KubeConfig.ClientConfig()
 	if err != nil {
 		return nil, errors.New(err.Error() + errorMsg)
 	}
@@ -143,9 +141,9 @@ func New(connectionCheck bool) (*Client, error) {
 		return nil, err
 	}
 
-	client.userClient = userClient
+	client.UserClient = userClient
 
-	namespace, _, err := client.kubeConfig.Namespace()
+	namespace, _, err := client.KubeConfig.Namespace()
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +221,7 @@ func imageWithMetadata(image *imagev1.Image) error {
 func (c *Client) isLoggedIn() bool {
 	// ~ indicates current user
 	// Reference: https://github.com/openshift/origin/blob/master/pkg/oc/cli/cmd/whoami.go#L55
-	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
+	output, err := c.UserClient.Users().Get("~", metav1.GetOptions{})
 	glog.V(4).Infof("isLoggedIn err:  %#v \n output: %#v", err, output.Name)
 	if err != nil {
 		glog.V(4).Info(errors.Wrap(err, "error running command"))
@@ -283,7 +281,7 @@ func (c *Client) CreateNewProject(name string) error {
 }
 
 func (c *Client) SetCurrentProject(project string) error {
-	rawConfig, err := c.kubeConfig.RawConfig()
+	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to switch to %s project", project)
 	}
@@ -1786,7 +1784,7 @@ func (c *Client) GetServerVersion() (*serverInfo, error) {
 	var info serverInfo
 
 	// This will fetch the information about Server Address
-	config, err := c.kubeConfig.ClientConfig()
+	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get server's address")
 	}
@@ -1834,7 +1832,7 @@ func (c *Client) ExecCMDInContainer(podName string, cmd []string, stdout io.Writ
 			TTY:     tty,
 		}, scheme.ParameterCodec)
 
-	config, err := c.kubeConfig.ClientConfig()
+	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Kubernetes client config")
 	}
