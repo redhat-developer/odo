@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kiali/kiali/log"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/fatih/color"
@@ -225,10 +224,10 @@ func (c *Client) isLoggedIn() bool {
 	// ~ indicates current user
 	// Reference: https://github.com/openshift/origin/blob/master/pkg/oc/cli/cmd/whoami.go#L55
 	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
-	log.Debugf("isLoggedIn err:  %#v \n output: %#v", err, output.Name)
+	glog.V(4).Infof("isLoggedIn err:  %#v \n output: %#v", err, output.Name)
 	if err != nil {
-		log.Debug(errors.Wrap(err, "error running command"))
-		log.Debugf("Output is: %v", output)
+		glog.V(4).Info(errors.Wrap(err, "error running command"))
+		glog.V(4).Infof("Output is: %v", output)
 		return false
 	}
 	return true
@@ -238,17 +237,17 @@ func (c *Client) isLoggedIn() bool {
 func isServerUp(server string) bool {
 	u, err := url.Parse(server)
 	if err != nil {
-		log.Debug(errors.Wrap(err, "unable to parse url"))
+		glog.V(4).Info(errors.Wrap(err, "unable to parse url"))
 		return false
 	}
 
-	log.Debugf("Trying to connect to server %v - %v", u.Host)
+	glog.V(4).Infof("Trying to connect to server %v - %v", u.Host)
 	_, connectionError := net.DialTimeout("tcp", u.Host, time.Duration(ocRequestTimeout))
 	if connectionError != nil {
-		log.Debug(errors.Wrap(connectionError, "unable to connect to server"))
+		glog.V(4).Info(errors.Wrap(connectionError, "unable to connect to server"))
 		return false
 	}
-	log.Debugf("Server %v is up", server)
+	glog.V(4).Infof("Server %v is up", server)
 	return true
 }
 
@@ -382,10 +381,10 @@ func (c *Client) GetImageStreamsNames(namespace string) ([]string, error) {
 func (c *Client) GetExposedPorts(imageName string, imageTag string) ([]corev1.ContainerPort, error) {
 	var containerPorts []corev1.ContainerPort
 
-	log.Debugf("Checking for exact match of builderImage with ImageStream")
+	glog.V(4).Infof("Checking for exact match of builderImage with ImageStream")
 	imageStream, err := c.imageClient.ImageStreams(OpenShiftNameSpace).Get(imageName, metav1.GetOptions{})
 	if err != nil {
-		log.Debugf("No exact match found: %s", err.Error())
+		glog.V(4).Infof("No exact match found: %s", err.Error())
 		return nil, errors.Wrapf(err, "unable to find matching builder image %s", imageName)
 	} else {
 		tagFound := false
@@ -393,7 +392,7 @@ func (c *Client) GetExposedPorts(imageName string, imageTag string) ([]corev1.Co
 			// look for matching tag
 			if tag.Tag == imageTag {
 				tagFound = true
-				log.Debugf("Found exact image tag match for %s:%s", imageName, imageTag)
+				glog.V(4).Infof("Found exact image tag match for %s:%s", imageName, imageTag)
 				// ImageStream holds tag history
 				// first item is the latest one
 				tagDigest := tag.Items[0].Image
@@ -931,14 +930,14 @@ func (c *Client) StartBuild(name string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
 	}
-	log.Debugf("Build %s for BuildConfig %s triggered.", name, result.Name)
+	glog.V(4).Infof("Build %s for BuildConfig %s triggered.", name, result.Name)
 
 	return result.Name, nil
 }
 
 // WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
 func (c *Client) WaitForBuildToFinish(buildName string) error {
-	log.Debugf("Waiting for %s  build to finish", buildName)
+	glog.V(4).Infof("Waiting for %s  build to finish", buildName)
 
 	w, err := c.buildClient.Builds(c.namespace).Watch(metav1.ListOptions{
 		FieldSelector: fields.Set{"metadata.name": buildName}.AsSelector().String(),
@@ -953,10 +952,10 @@ func (c *Client) WaitForBuildToFinish(buildName string) error {
 			break
 		}
 		if e, ok := val.Object.(*buildv1.Build); ok {
-			log.Debugf("Status of %s build is %s", e.Name, e.Status.Phase)
+			glog.V(4).Infof("Status of %s build is %s", e.Name, e.Status.Phase)
 			switch e.Status.Phase {
 			case buildv1.BuildPhaseComplete:
-				log.Debugf("Build %s completed.", e.Name)
+				glog.V(4).Infof("Build %s completed.", e.Name)
 				return nil
 			case buildv1.BuildPhaseFailed, buildv1.BuildPhaseCancelled, buildv1.BuildPhaseError:
 				return errors.Errorf("build %s status %s", e.Name, e.Status.Phase)
@@ -968,7 +967,7 @@ func (c *Client) WaitForBuildToFinish(buildName string) error {
 
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
-	log.Debugf("Waiting for %s pod", selector)
+	glog.V(4).Infof("Waiting for %s pod", selector)
 
 	w, err := c.kubeClient.CoreV1().Pods(c.namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
@@ -983,10 +982,10 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 			break
 		}
 		if e, ok := val.Object.(*corev1.Pod); ok {
-			log.Debugf("Status of %s pod is %s", e.Name, e.Status.Phase)
+			glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
 			switch e.Status.Phase {
 			case corev1.PodRunning:
-				log.Debugf("Pod %s is running.", e.Name)
+				glog.V(4).Infof("Pod %s is running.", e.Name)
 				return e, nil
 			case corev1.PodFailed, corev1.PodUnknown:
 				return nil, errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
@@ -1093,35 +1092,35 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followL
 func (c *Client) Delete(labels map[string]string) error {
 	// convert labels to selector
 	selector := util.ConvertLabelsToSelector(labels)
-	log.Debugf("Selectors used for deletion: %s", selector)
+	glog.V(4).Infof("Selectors used for deletion: %s", selector)
 
 	var errorList []string
 	// Delete DeploymentConfig
-	log.Debug("Deleting DeploymentConfigs")
+	glog.V(4).Info("Deleting DeploymentConfigs")
 	err := c.appsClient.DeploymentConfigs(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
 	}
 	// Delete Route
-	log.Debug("Deleting Routes")
+	glog.V(4).Info("Deleting Routes")
 	err = c.routeClient.Routes(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete route")
 	}
 	// Delete BuildConfig
-	log.Debug("Deleting BuildConfigs")
+	glog.V(4).Info("Deleting BuildConfigs")
 	err = c.buildClient.BuildConfigs(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete buildconfig")
 	}
 	// Delete ImageStream
-	log.Debug("Deleting ImageStreams")
+	glog.V(4).Info("Deleting ImageStreams")
 	err = c.imageClient.ImageStreams(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete imagestream")
 	}
 	// Delete Services
-	log.Debug("Deleting Services")
+	glog.V(4).Info("Deleting Services")
 	svcList, err := c.kubeClient.CoreV1().Services(c.namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to list services")
@@ -1134,7 +1133,7 @@ func (c *Client) Delete(labels map[string]string) error {
 		}
 	}
 	// PersistentVolumeClaim
-	log.Debugf("Deleting PersistentVolumeClaims")
+	glog.V(4).Infof("Deleting PersistentVolumeClaims")
 	err = c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete volume")
@@ -1177,7 +1176,7 @@ func (c *Client) GetLabelValues(project string, label string, selector string) (
 
 // GetBuildConfigFromName get BuildConfig by its name
 func (c *Client) GetBuildConfigFromName(name string, project string) (*buildv1.BuildConfig, error) {
-	log.Debugf("Getting BuildConfig: %s", name)
+	glog.V(4).Infof("Getting BuildConfig: %s", name)
 	bc, err := c.buildClient.BuildConfigs(project).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
@@ -1216,7 +1215,7 @@ func (c *Client) GetClusterServiceClassExternalNames() ([]string, error) {
 func (c *Client) imageStreamExists(name string, namespace string) bool {
 	imageStreams, err := c.GetImageStreamsNames(namespace)
 	if err != nil {
-		log.Debugf("unable to get image streams in the namespace: %v", namespace)
+		glog.V(4).Infof("unable to get image streams in the namespace: %v", namespace)
 		return false
 	}
 
@@ -1233,7 +1232,7 @@ func (c *Client) imageStreamExists(name string, namespace string) bool {
 func (c *Client) clusterServiceClassExists(name string) bool {
 	clusterServiceClasses, err := c.GetClusterServiceClassExternalNames()
 	if err != nil {
-		log.Debugf("unable to get cluster service classes' external names")
+		glog.V(4).Infof("unable to get cluster service classes' external names")
 	}
 
 	for _, class := range clusterServiceClasses {
@@ -1379,7 +1378,7 @@ func (c *Client) AddPVCToDeploymentConfig(dc *appsv1.DeploymentConfig, pvc strin
 	},
 	)
 
-	log.Debugf("Updating DeploymentConfig: %v", dc)
+	glog.V(4).Infof("Updating DeploymentConfig: %v", dc)
 	_, err := c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update DeploymentConfig: %v", dc)
@@ -1440,7 +1439,7 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 		if !removeVolumeFromDC(volumeName, dc) {
 			return fmt.Errorf("could not find volume '%v' in Deployment Config '%v'", volumeName, dc.Name)
 		}
-		log.Debugf("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
+		glog.V(4).Infof("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
 
 		// Remove volume mount if volume mount exists
 		if !removeVolumeMountFromDC(volumeName, dc) {
@@ -1495,7 +1494,7 @@ func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, err
 // GetDeploymentConfigFromName returns the Deployment Config resource given
 // the Deployment Config name
 func (c *Client) GetDeploymentConfigFromName(name string, project string) (*appsv1.DeploymentConfig, error) {
-	log.Debugf("Getting DeploymentConfig: %s", name)
+	glog.V(4).Infof("Getting DeploymentConfig: %s", name)
 	deploymentConfig, err := c.appsClient.DeploymentConfigs(project).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
@@ -1584,7 +1583,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 		defer writer.Close()
 		err := makeTar(localPath, dest, writer, copyFiles)
 		if err != nil {
-			log.Errorf("Error while creating tar: %#v", err)
+			glog.Errorf("Error while creating tar: %#v", err)
 			os.Exit(-1)
 		}
 
