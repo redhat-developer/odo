@@ -208,7 +208,7 @@ Create a new component to deploy on OpenShift.
 
 If component name is not provided, component type value will be used for the name.
 
-A full list of component types that can be deployed is available using: 'odo component list'
+A full list of component types that can be deployed is available using: `odo catalog list`
 
 ## delete
 
