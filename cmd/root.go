@@ -4,18 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/notify"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // Global variables
 var (
-	GlobalVerbose         int
 	GlobalConnectionCheck bool
 )
 
@@ -93,18 +92,7 @@ Find more information at https://github.com/redhat-developer/odo`,
   # Accessing your Node.js component
   odo url create`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		setFlags()
 	},
-}
-
-func setFlags() {
-	flag.Usage = func() {
-		flag.PrintDefaults()
-		os.Exit(2)
-	}
-	flag.CommandLine.Set("logtostderr", "true")
-	flag.CommandLine.Set("v", strconv.Itoa(GlobalVerbose))
-	flag.Parse()
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -130,8 +118,9 @@ func init() {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
-	rootCmd.PersistentFlags().IntVarP(&GlobalVerbose, "verbose", "v", 0, "log level for V logs")
 	rootCmd.PersistentFlags().BoolVar(&GlobalConnectionCheck, "skip-connection-check", false, "Skip cluster check")
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.CommandLine.Set("logtostderr", "true")
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
 }
