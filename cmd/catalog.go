@@ -54,7 +54,7 @@ var catalogListComponentCmd = &cobra.Command{
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "NAME", "\t", "TAGS")
 			for _, component := range catalogList {
-				fmt.Fprintln(w, component.Name, "\t", strings.Join(component.Tags, ","))
+				fmt.Fprintln(w, fmt.Sprintf("%s/%s", component.Namespace, component.Name), "\t", strings.Join(component.Tags, ","))
 			}
 			w.Flush()
 

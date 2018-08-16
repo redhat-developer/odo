@@ -5,13 +5,15 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 type CatalogImage struct {
-	Name string
-	Tags []string
+	Name      string
+	Namespace string
+	Tags      []string
 }
 
 // List lists all the available component types
@@ -90,10 +92,33 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 // getDefaultBuilderImages returns the default builder images available in the
 // openshift namespace
 func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
-	imageStreams, err := client.GetImageStreams(occlient.OpenShiftNameSpace)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get Image Streams")
+	var imageStreams []imagev1.ImageStream
+	currentNamespace := client.GetCurrentProjectName()
+	var err error
+
+	// Fetch imagestreams from default openshift namespace
+	openshiftNSImageStreams, e := client.GetImageStreams(occlient.OpenShiftNameSpace)
+	if e != nil {
+		// Tolerate the error as it might only be a partial failure
+		// We may get the imagestreams from other Namespaces
+		err = errors.Wrapf(e, "unable to get Image Streams from namespace %s", occlient.OpenShiftNameSpace)
 	}
+
+	// Fetch imagestreams from current namespace
+	currentNSImageStreams, e := client.GetImageStreams(currentNamespace)
+	if e != nil {
+		if err != nil {
+			// Failure to fetch images from any namespace, error out
+			return nil, errors.Wrapf(e, "%s. unable to get Image Streams from namespace %s", err.Error(), currentNamespace)
+		}
+		// It is possible that the current namespace has no imagestreams -- a valid scenario
+		// But may be required for debugging purposes
+		err = errors.Wrapf(e, "unable to get Image Streams from namespace %s", currentNamespace)
+	}
+
+	// Resultant imagestreams is list of imagestreams from current and openshift namespaces
+	imageStreams = append(imageStreams, openshiftNSImageStreams...)
+	imageStreams = append(imageStreams, currentNSImageStreams...)
 
 	var builderImages []CatalogImage
 
@@ -121,7 +146,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 
 		// Append to the list of images if a "builder" tag was found
 		if buildImage {
-			builderImages = append(builderImages, CatalogImage{Name: imageStream.Name, Tags: allTags})
+			builderImages = append(builderImages, CatalogImage{Name: imageStream.Name, Namespace: imageStream.Namespace, Tags: allTags})
 		}
 
 	}
