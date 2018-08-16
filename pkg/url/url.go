@@ -13,6 +13,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"strings"
 )
 
 type URL struct {
@@ -35,6 +36,7 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 }
 
 // Create creates a URL
+// portNumber is the target port number for the route and is -1 in case no port number is specified
 func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (*URL, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, false)
 
@@ -43,14 +45,36 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 		return nil, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	if urlName == "" {
-		// Namespace the component
-		urlName = serviceName
-	} else {
-		urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to create namespaced name")
+	componentPorts, err := GetComponentServicePortNumbers(client, componentName, applicationName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get component exposed ports for component %s", componentName)
+	}
+
+	var portFound bool
+
+	if portNumber == -1 {
+		if len(componentPorts) > 1 {
+			return nil, errors.Errorf("'port' is required as the component %s exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
+		} else if len(componentPorts) == 1 {
+			portNumber = componentPorts[0]
+		} else {
+			return nil, errors.Errorf("no port is exposed by the component %s", componentName)
 		}
+	} else {
+		for _, port := range componentPorts {
+			if portNumber == port {
+				portFound = true
+			}
+		}
+
+		if !portFound {
+			return nil, errors.Errorf("port %d is not exposed by the component", portNumber)
+		}
+	}
+
+	urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
 	// Pass in the namespace name, link to the service (componentName) and labels to create a route

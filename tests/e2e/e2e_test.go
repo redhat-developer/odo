@@ -261,9 +261,22 @@ var _ = Describe("odoe2e", func() {
 
 	Describe("Creating odo url", func() {
 		Context("using odo url", func() {
-			It("should create route with required port", func() {
+			It("should create route without url name provided", func() {
 				runCmd("odo component set nodejs")
-				getUrlOut := runCmd("odo url create nodejs --port 8080")
+				getUrlOut := runCmd("odo url create")
+				Expect(getUrlOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
+
+				// check the port number of the created URL
+				port := runCmd("oc get route nodejs-" + appTestName + " -o go-template='{{index .spec.port.targetPort}}'")
+				Expect(port).To(Equal("8080"))
+
+				// delete the url
+				runCmd("odo url delete nodejs -f")
+			})
+
+			It("should create route without port in case of single service port component", func() {
+				runCmd("odo component set nodejs")
+				getUrlOut := runCmd("odo url create nodejs")
 				Expect(getUrlOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
 				// check the port number of the created URL
@@ -281,6 +294,19 @@ var _ = Describe("odoe2e", func() {
 				getRouteLabel := runCmd("oc get route/" + routeName + " -o jsonpath='" +
 					"{.metadata.labels.app\\.kubernetes\\.io/component-name}'")
 				Expect(getRouteLabel).To(Equal("nodejs"))
+			})
+
+			It("should create route with required port", func() {
+				runCmd("odo create httpd httpd-test --git https://github.com/openshift/httpd-ex.git")
+				getUrlOut := runCmd("odo url create example-url --port 8443")
+				Expect(getUrlOut).To(ContainSubstring("example-url-" + appTestName + "-" + projName))
+
+				// check the port number of the created URL
+				port := runCmd("oc get route example-url-" + appTestName + " -o go-template='{{index .spec.port.targetPort}}'")
+				Expect(port).To(Equal("8443"))
+
+				// delete the component
+				runCmd("odo delete httpd-test -f")
 			})
 		})
 	})

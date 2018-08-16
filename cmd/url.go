@@ -89,31 +89,6 @@ The created URL can be used to access the specified component from outside the O
 			os.Exit(1)
 		}
 
-		componentPorts, err := url.GetComponentServicePortNumbers(client, componentName, applicationName)
-		checkError(err, "unable to get component exposed ports")
-
-		var portFound bool
-
-		if urlPort == -1 {
-			if len(componentPorts) > 1 {
-				fmt.Printf("'port' is required as the component %s exposes %d ports: %s\n", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
-				os.Exit(1)
-			} else {
-				urlPort = componentPorts[0]
-			}
-		} else {
-			for _, port := range componentPorts {
-				if urlPort == port {
-					portFound = true
-				}
-			}
-
-			if !portFound {
-				fmt.Printf("Port %d is not exposed by the component\n", urlPort)
-				os.Exit(1)
-			}
-		}
-
 		fmt.Printf("Adding URL to component: %v\n", componentName)
 		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
 		checkError(err, "")
