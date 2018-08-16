@@ -726,6 +726,7 @@ func TestParseImageName(t *testing.T) {
 
 	tests := []struct {
 		arg     string
+		want0   string
 		want1   string
 		want2   string
 		want3   string
@@ -733,6 +734,7 @@ func TestParseImageName(t *testing.T) {
 	}{
 		{
 			arg:     "nodejs:8",
+			want0:   "",
 			want1:   "nodejs",
 			want2:   "8",
 			want3:   "",
@@ -741,6 +743,7 @@ func TestParseImageName(t *testing.T) {
 		{
 			arg:     "nodejs@sha256:7e56ca37d1db225ebff79dd6d9fd2a9b8f646007c2afc26c67962b85dd591eb2",
 			want1:   "nodejs",
+			want0:   "",
 			want2:   "",
 			want3:   "sha256:7e56ca37d1db225ebff79dd6d9fd2a9b8f646007c2afc26c67962b85dd591eb2",
 			wantErr: false,
@@ -759,6 +762,7 @@ func TestParseImageName(t *testing.T) {
 		},
 		{
 			arg:     "nodejs",
+			want0:   "",
 			want1:   "nodejs",
 			want2:   "latest",
 			want3:   "",
@@ -772,14 +776,25 @@ func TestParseImageName(t *testing.T) {
 			arg:     ":",
 			wantErr: true,
 		},
+		{
+			arg:     "myproject/nodejs:8",
+			want0:   "myproject",
+			want1:   "nodejs",
+			want2:   "8",
+			want3:   "",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		name := fmt.Sprintf("image name: '%s'", tt.arg)
 		t.Run(name, func(t *testing.T) {
-			got1, got2, got3, err := ParseImageName(tt.arg)
+			got0, got1, got2, got3, err := ParseImageName(tt.arg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseImageName() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+			if got0 != tt.want0 {
+				t.Errorf("ParseImageName() got0 = %v, want %v", got0, tt.want0)
 			}
 			if got1 != tt.want1 {
 				t.Errorf("ParseImageName() got1 = %v, want %v", got1, tt.want1)

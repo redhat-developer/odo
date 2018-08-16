@@ -67,6 +67,9 @@ func TestVersionExist(t *testing.T) {
 				return true, testingutil.FakeImageStreams(tt.args.name, tt.args.namespace, tt.args.tags), nil
 			})
 
+			fakeClientSet.ImageClientset.PrependReactor("list", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, testingutil.FakeImageStreams(tt.args.name, "openshift", tt.args.tags), nil
+			})
 			// The function we are testing
 			doesItExist, err := VersionExists(client, tt.args.componentType, tt.args.componentVersion)
 
@@ -131,6 +134,16 @@ func TestList(t *testing.T) {
 			},
 			wantErr:  true,
 			wantTags: []string{},
+		},
+		{
+			name: "Case 4: Valid image with output tags from current namespace",
+			args: args{
+				name:      "foobar",
+				namespace: "foo",
+				tags:      []string{"1.0.0", "1.0.1", "0.0.1", "latest"},
+			},
+			wantErr:  false,
+			wantTags: []string{"1.0.0", "1.0.1", "0.0.1", "latest"},
 		},
 	}
 
