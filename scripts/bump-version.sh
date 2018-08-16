@@ -37,6 +37,6 @@ echo "* Don't forget to update homebrew package at https://github.com/kadel/home
 echo "****************************************************************************************"
 
 echo "****************************************************************************************"
-echo "* Don't forget to update scripts/.latest-release once the binaries become available !  *"
+echo "* Don't forget to update build/VERSION once the binaries become available !            *"
 echo "****************************************************************************************"
 

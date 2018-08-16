@@ -120,7 +120,7 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
     This job builds binaries automatically (via `make prepare-release`) and then uploads it to GitHub release page (done using odo-bot user).
 3. When job fishes you should see binaries on GitHub release page. Release is now marked as a draft. Update descriptions and publish release.
 4. Verify that packages have been uploaded to rpm and deb repositories.
-5. Confirm the binaries are available in GitHub release page and update the file `scripts/.latest-release` with latest version number.
+5. Confirm the binaries are available in GitHub release page and update the file `build/VERSION` with latest version number.
 
 ## odo-bot
 This is GitHub user that does all the automation.
