@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/golang/glog"
@@ -54,7 +55,7 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 	}
 
 	for _, supported := range catalogList {
-		if componentType == supported.Name {
+		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
 			return true, nil
 		}
 	}
@@ -72,7 +73,7 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 
 	// Find the component and then return true if the version has been found
 	for _, supported := range catalogList {
-		if componentType == supported.Name {
+		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
 			// Now check to see if that version matches that components tag
 			for _, tag := range supported.Tags {
 				if componentVersion == tag {

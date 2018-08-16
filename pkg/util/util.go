@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -57,5 +58,5 @@ func NamespaceOpenShiftObject(componentName string, applicationName string) (str
 	}
 
 	// Return the hyphenated namespaced name
-	return fmt.Sprintf("%s-%s", componentName, applicationName), nil
+	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
 }

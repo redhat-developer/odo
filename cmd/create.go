@@ -85,7 +85,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		// "Default" values
 		componentImageName := args[0]
 		componentType := args[0]
-		componentName := args[0]
+		componentName := strings.Replace(args[0], "/", "-", -1)
 		componentVersion := "latest"
 
 		// Check if componentType includes ":", if so, then we need to spit it into using versions
