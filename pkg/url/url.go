@@ -20,7 +20,7 @@ type URL struct {
 	Name     string
 	URL      string
 	Protocol string
-	Port     intstr.IntOrString
+	Port     int
 }
 
 // Delete deletes a URL
@@ -36,7 +36,7 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 }
 
 // Create creates a URL
-// portNumber is the target port number for the route and is -1 in case no port number is specified
+// portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
 func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (*URL, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, false)
 
@@ -86,7 +86,7 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 		Name:     route.Labels[urlLabels.UrlLabel],
 		URL:      route.Spec.Host,
 		Protocol: getProtocol(*route),
-		Port:     route.Spec.Port.TargetPort,
+		Port:     route.Spec.Port.TargetPort.IntValue(),
 	}, nil
 }
 
@@ -113,7 +113,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 			Name:     r.Labels[urlLabels.UrlLabel],
 			URL:      r.Spec.Host,
 			Protocol: getProtocol(r),
-			Port:     r.Spec.Port.TargetPort,
+			Port:     r.Spec.Port.TargetPort.IntValue(),
 		})
 	}
 

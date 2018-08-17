@@ -44,6 +44,9 @@ The created URL can be used to access the specified component from outside the O
   # Create a URL with a specific name and port
   odo url create example --port 8080
 
+  # Create a URL with a specific name by automatic detection of port (only for components which expose only one service port) 
+  odo url create example
+
   # Create a URL with a specific name and port for component frontend
   odo url create example --port 8080 --component frontend
 	`,
@@ -188,7 +191,7 @@ var urlListCmd = &cobra.Command{
 			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
 			for _, u := range urls {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetUrlString(u), "\t", u.Port.IntVal)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetUrlString(u), "\t", u.Port)
 			}
 			tabWriterURL.Flush()
 		}
@@ -198,7 +201,7 @@ var urlListCmd = &cobra.Command{
 func init() {
 	urlCreateCmd.Flags().StringVarP(&urlApplication, "application", "a", "", "create url for application")
 	urlCreateCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "create url for component")
-	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component")
+	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 
 	urlDeleteCmd.Flags().BoolVarP(&urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 	urlDeleteCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "delete url for component")
