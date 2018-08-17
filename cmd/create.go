@@ -46,7 +46,7 @@ A full list of component types that can be deployed is available using: 'odo com
   odo create wildfly wildly --binary ./downloads/sample.war
 
   # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
-  odo create nodejs --ports 8080,8100/tcp,9100/udp
+  odo create nodejs --port 8080,8100/tcp,9100/udp
 
   # For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
   odo create python --git https://github.com/openshift/django-ex.git
@@ -193,7 +193,7 @@ func init() {
 	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "Binary artifact")
 	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "Git source")
 	componentCreateCmd.Flags().StringVar(&componentLocal, "local", "", "Use local directory as a source for component")
-	componentCreateCmd.Flags().StringSliceVar(&componentPorts, "ports", []string{}, "Ports to be used when the component is created")
+	componentCreateCmd.Flags().StringSliceVar(&componentPorts, "port", []string{}, "Ports to be used when the component is created")
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCreateCmd.Annotations = map[string]string{"command": "component"}
