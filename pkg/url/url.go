@@ -47,7 +47,7 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 
 	componentPorts, err := GetComponentServicePortNumbers(client, componentName, applicationName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get component exposed ports for component %s", componentName)
+		return nil, errors.Wrapf(err, "unable to get exposed ports for component %s", componentName)
 	}
 
 	var portFound bool
