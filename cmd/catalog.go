@@ -54,10 +54,22 @@ var catalogListComponentCmd = &cobra.Command{
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "NAME", "\t", "TAGS")
 			for _, component := range catalogList {
-				fmt.Fprintln(w, fmt.Sprintf("%s/%s", component.Namespace, component.Name), "\t", strings.Join(component.Tags, ","))
+				component_name := fmt.Sprintf("%s/%s", component.Namespace, component.Name)
+				if component.Namespace == client.GetCurrentProjectName() {
+					for _, comp1 := range catalogList {
+						if comp1.Name == component.Name && component.Namespace != comp1.Namespace {
+							component_name = fmt.Sprintf("%s (*)", component_name)
+						}
+					}
+				}
+				fmt.Fprintln(w, component_name, "\t", strings.Join(component.Tags, ","))
 			}
 			w.Flush()
-
+			fmt.Println(
+				`NOTE: There might be catalog items in multiple catalogs.
+Those marked with (*) will take precedence.
+In case you want to use an item from a different catalog, please fully qualify it as $namespace/$catalog_name`,
+			)
 		}
 	},
 }
