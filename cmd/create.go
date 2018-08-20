@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -85,14 +86,14 @@ A full list of component types that can be deployed is available using: 'odo cat
 		// "Default" values
 		componentImageName := args[0]
 		componentType := args[0]
-		componentName := strings.Replace(args[0], "/", "-", -1)
+		componentName := util.ExtractComponentType(componentType)
 		componentVersion := "latest"
 
 		// Check if componentType includes ":", if so, then we need to spit it into using versions
 		if strings.ContainsAny(componentImageName, ":") {
 			versionSplit := strings.Split(args[0], ":")
 			componentType = versionSplit[0]
-			componentName = versionSplit[0]
+			componentName = util.ExtractComponentType(componentType)
 			componentVersion = versionSplit[1]
 		}
 

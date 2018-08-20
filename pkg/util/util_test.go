@@ -51,3 +51,42 @@ func TestNamespaceOpenShiftObject(t *testing.T) {
 	}
 
 }
+
+func TestExtractComponentType(t *testing.T) {
+
+	tests := []struct {
+		testName      string
+		componentType string
+		want          string
+		wantErr       bool
+	}{
+		{
+			testName:      "Test namespacing and versioning",
+			componentType: "myproject/foo:3.5",
+			want:          "foo",
+		},
+		{
+			testName:      "Test versioning",
+			componentType: "foo:3.5",
+			want:          "foo",
+		},
+		{
+			testName:      "Test plain component type",
+			componentType: "foo",
+			want:          "foo",
+		},
+	}
+
+	// Test that it "joins"
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			name := ExtractComponentType(tt.componentType)
+			if tt.want != name {
+				t.Errorf("Expected %s, got %s", tt.want, name)
+			}
+		})
+	}
+
+}

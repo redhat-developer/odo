@@ -60,3 +60,20 @@ func NamespaceOpenShiftObject(componentName string, applicationName string) (str
 	// Return the hyphenated namespaced name
 	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
 }
+
+// ExtractComponentType returns only component type part from passed component type(default unqualified, fully qualified, versioned, etc...and their combinations) for use as component name
+func ExtractComponentType(namespacedVersionedComponentType string) string {
+	/*
+		Possible types of parameters:
+		1. "myproject/python:3.5" -- Return python
+		2. "python:3.5" -- Return python
+		3. nodejs -- Return nodejs
+	*/
+	s := strings.Split(namespacedVersionedComponentType, "/")
+	versionedString := s[0]
+	if len(s) == 2 {
+		versionedString = s[1]
+	}
+	s = strings.Split(versionedString, ":")
+	return s[0]
+}
