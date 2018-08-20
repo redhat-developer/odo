@@ -29,7 +29,7 @@ var componentCreateCmd = &cobra.Command{
 
 If component name is not provided, component type value will be used for the name.
 
-A full list of component types that can be deployed is available using: 'odo component list'`,
+A full list of component types that can be deployed is available using: 'odo catalog list'`,
 	Example: `  # Create new Node.js component with the source in current directory. 
   odo create nodejs
 
