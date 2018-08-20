@@ -1244,9 +1244,10 @@ func (c *Client) clusterServiceClassExists(name string) bool {
 	return false
 }
 
-// CreateRoute creates a route object for the given service and with the given
-// labels
-func (c *Client) CreateRoute(name string, serviceName string, labels map[string]string) (*routev1.Route, error) {
+// CreateRoute creates a route object for the given service and with the given labels
+// serviceName is the name of the service for the target reference
+// portNumber is the target port of the route
+func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string) (*routev1.Route, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
@@ -1256,6 +1257,9 @@ func (c *Client) CreateRoute(name string, serviceName string, labels map[string]
 			To: routev1.RouteTargetReference{
 				Kind: "Service",
 				Name: serviceName,
+			},
+			Port: &routev1.RoutePort{
+				TargetPort: portNumber,
 			},
 		},
 	}

@@ -9,12 +9,14 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/spf13/cobra"
+	"text/tabwriter"
 )
 
 var (
 	urlComponent       string
 	urlApplication     string
 	urlForceDeleteFlag bool
+	urlPort            int
 )
 
 var urlCmd = &cobra.Command{
@@ -36,14 +38,17 @@ var urlCreateCmd = &cobra.Command{
 
 The created URL can be used to access the specified component from outside the OpenShift cluster.
 `,
-	Example: `  # Create a URL for the current component.
-  odo url create
+	Example: `  # Create a URL for the current component with a specific port
+  odo url create --port 8080
 
-  # Create a URL with a specific name
+  # Create a URL with a specific name and port
+  odo url create example --port 8080
+
+  # Create a URL with a specific name by automatic detection of port (only for components which expose only one service port) 
   odo url create example
 
-  # Create a URL with a specific name for component frontend
-  odo url create example --component frontend
+  # Create a URL with a specific name and port for component frontend
+  odo url create example --port 8080 --component frontend
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -88,7 +93,7 @@ The created URL can be used to access the specified component from outside the O
 		}
 
 		fmt.Printf("Adding URL to component: %v\n", componentName)
-		urlRoute, err := url.Create(client, urlName, componentName, applicationName)
+		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
 		checkError(err, "")
 		fmt.Printf("URL created for component: %v\n\n"+
 			"%v - %v\n", componentName, urlRoute.Name, url.GetUrlString(*urlRoute))
@@ -179,9 +184,16 @@ var urlListCmd = &cobra.Command{
 			fmt.Printf("No URLs found for component %v in application %v\n", componentName, app)
 		} else {
 			fmt.Printf("Found the following URLs for component %v in application %v:\n", componentName, app)
+
+			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+			//create headers
+			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
+
 			for _, u := range urls {
-				fmt.Printf("%v - %v\n", u.Name, url.GetUrlString(u))
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetUrlString(u), "\t", u.Port)
 			}
+			tabWriterURL.Flush()
 		}
 	},
 }
@@ -189,6 +201,7 @@ var urlListCmd = &cobra.Command{
 func init() {
 	urlCreateCmd.Flags().StringVarP(&urlApplication, "application", "a", "", "create url for application")
 	urlCreateCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "create url for component")
+	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 
 	urlDeleteCmd.Flags().BoolVarP(&urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 	urlDeleteCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "delete url for component")

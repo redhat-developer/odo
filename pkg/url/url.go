@@ -12,12 +12,15 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"strings"
 )
 
 type URL struct {
 	Name     string
 	URL      string
 	Protocol string
+	Port     int
 }
 
 // Delete deletes a URL
@@ -33,7 +36,8 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 }
 
 // Create creates a URL
-func Create(client *occlient.Client, urlName string, componentName, applicationName string) (*URL, error) {
+// portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
+func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (*URL, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, false)
 
 	serviceName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -41,18 +45,40 @@ func Create(client *occlient.Client, urlName string, componentName, applicationN
 		return nil, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	if urlName == "" {
-		// Namespace the component
-		urlName = serviceName
+	componentPorts, err := GetComponentServicePortNumbers(client, componentName, applicationName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get exposed ports for component %s", componentName)
+	}
+
+	var portFound bool
+
+	if portNumber == -1 {
+		if len(componentPorts) > 1 {
+			return nil, errors.Errorf("'port' is required as the component %s exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
+		} else if len(componentPorts) == 1 {
+			portNumber = componentPorts[0]
+		} else {
+			return nil, errors.Errorf("no port is exposed by the component %s", componentName)
+		}
 	} else {
-		urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to create namespaced name")
+		for _, port := range componentPorts {
+			if portNumber == port {
+				portFound = true
+			}
+		}
+
+		if !portFound {
+			return nil, errors.Errorf("port %d is not exposed by the component", portNumber)
 		}
 	}
 
+	urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to create namespaced name")
+	}
+
 	// Pass in the namespace name, link to the service (componentName) and labels to create a route
-	route, err := client.CreateRoute(urlName, serviceName, labels)
+	route, err := client.CreateRoute(urlName, serviceName, intstr.FromInt(portNumber), labels)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}
@@ -60,6 +86,7 @@ func Create(client *occlient.Client, urlName string, componentName, applicationN
 		Name:     route.Labels[urlLabels.UrlLabel],
 		URL:      route.Spec.Host,
 		Protocol: getProtocol(*route),
+		Port:     route.Spec.Port.TargetPort.IntValue(),
 	}, nil
 }
 
@@ -86,6 +113,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 			Name:     r.Labels[urlLabels.UrlLabel],
 			URL:      r.Spec.Host,
 			Protocol: getProtocol(r),
+			Port:     r.Spec.Port.TargetPort.IntValue(),
 		})
 	}
 
@@ -120,4 +148,27 @@ func Exists(client *occlient.Client, urlName string, componentName string, appli
 		}
 	}
 	return false, nil
+}
+
+// GetComponentServicePortNumbers returns the port numbers exposed by the service of the component
+// componentName is the name of the component
+// applicationName is the name of the application
+func GetComponentServicePortNumbers(client *occlient.Client, componentName string, applicationName string) ([]int, error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	services, err := client.GetServicesFromSelector(componentSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get the service")
+	}
+
+	var ports []int
+
+	for _, service := range services {
+		for _, port := range service.Spec.Ports {
+			ports = append(ports, int(port.Port))
+		}
+	}
+
+	return ports, nil
 }

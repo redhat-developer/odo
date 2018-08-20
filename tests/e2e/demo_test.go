@@ -83,7 +83,7 @@ var _ = Describe("katacodaDemo", func() {
 		})
 
 		It("should create a url for frontend", func() {
-			runCmd("odo url create frontend")
+			runCmd("odo url create frontend --port 8080")
 
 			getUrl := runCmd("odo url list")
 			Expect(getUrl).To(ContainSubstring("frontend-sample-sample-proj"))
@@ -99,7 +99,7 @@ var _ = Describe("katacodaDemo", func() {
 		})
 
 		It("should fetch the updated changes", func() {
-			getRoute := runCmd("odo url list  | sed -n '1!p' | awk '{ print $3 }'")
+			getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 			getRoute = strings.TrimSpace(getRoute)
 
 			curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep 'Counter' | wc -l | tr -d '\n'", "1")

@@ -10,8 +10,10 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/url/labels"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -20,45 +22,328 @@ func TestCreate(t *testing.T) {
 		componentName   string
 		applicationName string
 		urlName         string
+		portNumber      int
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    *URL
-		wantErr bool
+		name             string
+		args             args
+		returnedServices corev1.ServiceList
+		returnedRoute    *routev1.Route
+		want             *URL
+		wantErr          bool
 	}{
 		{
-			name: "component name same as urlName",
+			name: "case 1: component name same as urlName and port number provided",
 			args: args{
-				componentName:   "component",
-				applicationName: "application",
-				urlName:         "component",
+				componentName:   "nodejs",
+				applicationName: "app",
+				urlName:         "nodejs",
+				portNumber:      8080,
+			},
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nodejs-app",
+					Labels: map[string]string{
+						"app.kubernetes.io/name":           "app",
+						"app.kubernetes.io/component-name": "nodejs",
+						"app.kubernetes.io/url-name":       "nodejs",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "nodejs-app",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromInt(8080),
+					},
+				},
 			},
 			want: &URL{
-				Name:     "component",
+				Name:     "nodejs",
 				Protocol: "http",
 				URL:      "host",
+				Port:     8080,
 			},
 			wantErr: false,
 		},
 		{
-			name: "component name different than urlName",
+			name: "case 2: component name different than urlName and port number provided",
 			args: args{
-				componentName:   "component",
-				applicationName: "application",
+				componentName:   "nodejs",
+				applicationName: "app",
 				urlName:         "example-url",
+				portNumber:      9100,
+			},
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 9100,
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "example-url-app",
+					Labels: map[string]string{
+						"app.kubernetes.io/name":           "app",
+						"app.kubernetes.io/component-name": "nodejs",
+						"app.kubernetes.io/url-name":       "example-url",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "nodejs-app",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromInt(9100),
+					},
+				},
 			},
 			want: &URL{
 				Name:     "example-url",
 				Protocol: "http",
 				URL:      "host",
+				Port:     9100,
 			},
 			wantErr: false,
+		},
+		{
+			name: "case 3: component name different than urlName and service with multiple ports and port number provided",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+				urlName:         "example-url",
+				portNumber:      9100,
+			},
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8080,
+								},
+								{
+									Port: 9100,
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "example-url-app",
+					Labels: map[string]string{
+						"app.kubernetes.io/name":           "app",
+						"app.kubernetes.io/component-name": "nodejs",
+						"app.kubernetes.io/url-name":       "example-url",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "nodejs-app",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromInt(9100),
+					},
+				},
+			},
+			want: &URL{
+				Name:     "example-url",
+				Protocol: "http",
+				URL:      "host",
+				Port:     9100,
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 4: component name different than urlName, no port number not provided and single service port component",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+				urlName:         "example-url",
+				portNumber:      -1,
+			},
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "example-url-app",
+					Labels: map[string]string{
+						"app.kubernetes.io/name":           "app",
+						"app.kubernetes.io/component-name": "nodejs",
+						"app.kubernetes.io/url-name":       "example-url",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "nodejs-app",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromInt(8080),
+					},
+				},
+			},
+			want: &URL{
+				Name:     "example-url",
+				Protocol: "http",
+				URL:      "host",
+				Port:     8080,
+			},
+			wantErr: false,
+		},
+		{
+			name: "case 5: component name different than urlName, no port number in argument but multiple service ports",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+				urlName:         "example-url",
+				portNumber:      -1,
+			},
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8080,
+								},
+								{
+									Port: 9100,
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedRoute: &routev1.Route{},
+			want: &URL{
+				Name:     "example-url",
+				Protocol: "http",
+				URL:      "host",
+				Port:     9100,
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 6: component name different than urlName and the port number not exposed",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+				urlName:         "example-url",
+				portNumber:      9100,
+			},
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8100,
+								},
+							},
+						},
+					},
+				},
+			},
+			returnedRoute: &routev1.Route{},
+			want:          &URL{},
+			wantErr:       true,
+		},
+		{
+			name: "case 7: component name different than urlName and no port number exposed by component",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+				urlName:         "example-url",
+				portNumber:      9100,
+			},
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{},
+			},
+			returnedRoute: &routev1.Route{},
+			want:          &URL{},
+			wantErr:       true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client, fakeClientSet := occlient.FakeNew()
+
+			fakeClientSet.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &tt.returnedServices, nil
+			})
 
 			fakeClientSet.RouteClientset.PrependReactor("create", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 				route := action.(ktesting.CreateAction).GetObject().(*routev1.Route)
@@ -66,13 +351,38 @@ func TestCreate(t *testing.T) {
 				return true, route, nil
 			})
 
-			got, err := Create(client, tt.args.urlName, tt.args.componentName, tt.args.applicationName)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Create() error = %#v, wantErr %#v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Create() = %#v, want %#v", got, tt.want)
+			got, err := Create(client, tt.args.urlName, tt.args.portNumber, tt.args.componentName, tt.args.applicationName)
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.RouteClientset.Actions()) != 1 {
+					t.Errorf("expected 1 RouteClientset.Actions() in CreateService, got: %v", fakeClientSet.RouteClientset.Actions())
+				}
+
+				if len(fakeClientSet.Kubernetes.Actions()) != 1 {
+					t.Errorf("expected 1 Kubernetes.Actions() in CreateService, got: %v", fakeClientSet.Kubernetes.Actions())
+				}
+
+				createdRoute := fakeClientSet.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
+				if !reflect.DeepEqual(createdRoute.Name, tt.returnedRoute.Name) {
+					t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Name, createdRoute.Name)
+				}
+				if !reflect.DeepEqual(createdRoute.Labels, tt.returnedRoute.Labels) {
+					t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Labels, createdRoute.Labels)
+				}
+				if !reflect.DeepEqual(createdRoute.Spec.Port, tt.returnedRoute.Spec.Port) {
+					t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Spec.Port, createdRoute.Spec.Port)
+				}
+				if !reflect.DeepEqual(createdRoute.Spec.To.Name, tt.returnedRoute.Spec.To.Name) {
+					t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Spec.To.Name, createdRoute.Spec.To.Name)
+				}
+
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("Create() = %#v, want %#v", got, tt.want)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			}
 		})
 	}
@@ -152,6 +462,9 @@ func TestExists(t *testing.T) {
 								Kind: "Service",
 								Name: "nodejs-app",
 							},
+							Port: &routev1.RoutePort{
+								TargetPort: intstr.FromInt(8080),
+							},
 						},
 					},
 					{
@@ -167,6 +480,9 @@ func TestExists(t *testing.T) {
 							To: routev1.RouteTargetReference{
 								Kind: "Service",
 								Name: "wildfly-app",
+							},
+							Port: &routev1.RoutePort{
+								TargetPort: intstr.FromInt(9100),
 							},
 						},
 					},
@@ -197,6 +513,9 @@ func TestExists(t *testing.T) {
 								Kind: "Service",
 								Name: "nodejs-app",
 							},
+							Port: &routev1.RoutePort{
+								TargetPort: intstr.FromInt(8080),
+							},
 						},
 					},
 					{
@@ -212,6 +531,9 @@ func TestExists(t *testing.T) {
 							To: routev1.RouteTargetReference{
 								Kind: "Service",
 								Name: "wildfly-app",
+							},
+							Port: &routev1.RoutePort{
+								TargetPort: intstr.FromInt(9100),
 							},
 						},
 					},
@@ -245,5 +567,111 @@ func TestExists(t *testing.T) {
 		} else if err != nil && !tt.wantErr {
 			t.Errorf("test failed, expected: %s, got %s", "no error", "error:"+err.Error())
 		}
+	}
+}
+
+func TestGetComponentServicePortNumbers(t *testing.T) {
+	type args struct {
+		componentName   string
+		applicationName string
+	}
+	tests := []struct {
+		name             string
+		args             args
+		selectors        string
+		returnedServices corev1.ServiceList
+		wantedPorts      []int
+		wantErr          bool
+	}{
+		{
+			name: "case 1: with valid values and one port",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+			},
+			selectors: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantedPorts: []int{8080},
+			wantErr:     false,
+		},
+		{
+			name: "case 2: with valid values and two ports",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+			},
+			selectors: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			returnedServices: corev1.ServiceList{
+				Items: []corev1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app.kubernetes.io/name":           "app",
+								"app.kubernetes.io/component-name": "nodejs",
+							},
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Port: 8080,
+								},
+								{
+									Port: 9100,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantedPorts: []int{8080, 9100},
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := occlient.FakeNew()
+
+			fakeClientSet.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				selectors := action.(ktesting.ListAction).GetListRestrictions()
+				if !reflect.DeepEqual(tt.selectors, selectors.Labels.String()) {
+					return true, nil, fmt.Errorf("'list' called with different selector")
+				}
+				return true, &tt.returnedServices, nil
+			})
+
+			ports, err := GetComponentServicePortNumbers(client, tt.args.componentName, tt.args.applicationName)
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.Kubernetes.Actions()) != 1 {
+					t.Errorf("expected 1 Kubernetes.Actions() in CreateService, got: %v", fakeClientSet.Kubernetes.Actions())
+				}
+
+				if !reflect.DeepEqual(tt.wantedPorts, ports) {
+					t.Errorf("the returned ports do not match the expected value, expected: %v, got: %v", tt.wantedPorts, ports)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
 	}
 }
