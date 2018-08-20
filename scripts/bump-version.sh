@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-# this scripts updates version number in odo source code
-# run this script from source root with new version as an argument (./scripts/bump-version.sh v0.0.2 )
+# this script updates version number in odo source code
+# run this script from root source with new version as an argument (./scripts/bump-version.sh v0.0.2 )
 
 NEW_VERSION=$1
 
