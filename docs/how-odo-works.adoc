@@ -1,0 +1,7 @@
+= What happens when you run ODO command
+
+Document is at
+https://docs.google.com/document/d/1IPrSUw2CVcXpc6RqIwIDC0q9TBheFcUFJ8anfHk3oDE/edit# 
+, for now. It makes it easier to collaborate on it.
+Once it is in some acceptable form it will be put here in AsciiDoc format.
+
