@@ -401,7 +401,11 @@ func isTagInImageStream(is imagev1.ImageStream, imageTag string) bool {
 	return false
 }
 
-// GetImageNS returns the imagestream using image details
+// GetImageNS returns the imagestream using image details like imageNS, imageName and imageTag
+// imageNS can be empty in which case, this function searches currentNamespace on priority. If
+// imagestream of required tag not found in current namespace, then searches openshift namespace.
+// If not found, error out. If imageNS is not empty string, then, the requested imageNS only is searched
+// for requested imagestream
 func (c *Client) GetImageStream(imageNS string, imageName string, imageTag string) (*imagev1.ImageStream, error) {
 	var err error
 	var imageStream *imagev1.ImageStream
@@ -448,7 +452,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 		}
 
 		// Required tag not in openshift and current namespaces
-		return nil, errors.Errorf("image stream %s with tag %s not found in openshift and %s namespaces", imageName, imageTag, currentProjectName)
+		return nil, fmt.Errorf("image stream %s with tag %s not found in openshift and %s namespaces", imageName, imageTag, currentProjectName)
 
 	} else {
 
@@ -460,7 +464,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 			)
 		}
 		if !isTagInImageStream(*imageStream, imageTag) {
-			return nil, errors.Errorf("image stream %s with tag %s not found in %s namespaces", imageName, imageTag, currentProjectName)
+			return nil, fmt.Errorf("image stream %s with tag %s not found in %s namespaces", imageName, imageTag, currentProjectName)
 		}
 	}
 
@@ -468,68 +472,47 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 }
 
 // GetExposedPorts retruns image namespace and list of ContainerPorts that are exposed by given image
-func (c *Client) GetExposedPorts(imageNS string, imageName string, imageTag string) (string, []corev1.ContainerPort, error) {
+func (c *Client) GetExposedPorts(imageStream *imagev1.ImageStream, imageTag string) ([]corev1.ContainerPort, error) {
 	var containerPorts []corev1.ContainerPort
-	var err error
-	var imageStream *imagev1.ImageStream
 
 	glog.V(4).Infof("Checking for exact match of builderImage with ImageStream")
-	imageStream, err = c.GetImageStream(imageNS, imageName, imageTag)
-	if err != nil {
-		glog.V(4).Infof("No exact match found: %s", err.Error())
-		return "", nil, errors.Wrapf(err, "unable to find matching builder image %s", imageName)
-	}
-	imageNS = imageStream.ObjectMeta.Namespace
+	imageNS := imageStream.ObjectMeta.Namespace
+	imageName := imageStream.ObjectMeta.Name
 
 	tagFound := false
+
 	for _, tag := range imageStream.Status.Tags {
 		// look for matching tag
 		if tag.Tag == imageTag {
 			tagFound = true
 			glog.V(4).Infof("Found exact image tag match for %s:%s", imageName, imageTag)
 
-			// ImageStream holds tag history
-			// first item is the latest one
-			imageStreamImageName := imageName
 			if len(tag.Items) > 0 {
 				tagDigest := tag.Items[0].Image
-				imageStreamImageName = fmt.Sprintf("%s@%s", imageName, tagDigest)
-			}
+				imageStreamImageName := fmt.Sprintf("%s@%s", imageName, tagDigest)
 
-			// look for imageStreamImage for given tag (reference by digest)
-			imageStreamImage, e := c.imageClient.ImageStreamImages(imageNS).Get(imageStreamImageName, metav1.GetOptions{})
-			if e != nil {
+				// look for imageStreamImage for given tag (reference by digest)
+				imageStreamImage, err := c.imageClient.ImageStreamImages(imageNS).Get(imageStreamImageName, metav1.GetOptions{})
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
+				}
 
-				// May get success in other namespace, patiently wait with error accumulated and error logged as debug
-				// If fails in all namespaces, return with complete failure(accumulated error msgs)
-				err = errors.Wrapf(e, "%v\n Failed to fetch : %s in namespace %s", err, imageStreamImageName, imageNS)
-				glog.V(4).Infof("Error trying to fetch imagestream %s from namespace %s. Err: %v", imageStreamImageName, imageNS, err)
-			}
-
-			// If it reaches here, succesfully an image was found in namespace of current iteration
-			// Unset the already logged error
-			err = nil
-			containerPorts, err = getExposedPortsFromISI(imageStreamImage)
-			if err != nil {
-
-				// May get success in other namespace, patiently wait with error accumulated and error logged as debug
-				// If fails in all namespaces, return with complete failure(accumulated error msgs)
-				// Todo(anmolbabu): Solve nil concatenation problem in error concatenation
-				err = errors.Wrapf(err, "%v unable to get exported ports from %s:%s image in namespace %s", err, imageName, imageTag, imageNS)
-				glog.V(4).Infof("Unable to get exported ports from %s:%s image in namespace %s", imageName, imageTag, imageNS)
+				// get ports that are exported by image
+				containerPorts, err = getExposedPortsFromISI(imageStreamImage)
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to get exported ports from %s:%s image", imageName, imageTag)
+				}
+			} else {
+				return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
 			}
 		}
 	}
 
 	if !tagFound {
-		return "", nil, errors.Wrapf(err, "unable to find tag %s for image", imageTag, imageName)
+		return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
 	}
 
-	if err != nil {
-		return "", nil, err
-	}
-
-	return imageNS, containerPorts, nil
+	return containerPorts, nil
 }
 
 func getAppRootVolumeName(dcName string) string {
@@ -545,15 +528,23 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 	if err != nil {
 		return errors.Wrap(err, "unable to parse image name")
 	}
+	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
+	if err != nil {
+		return errors.Wrap(err, "Unable to create new app")
+	}
+	/*
+	 Set imageNS to the namespace of above fetched imagestream because, the namespace passed here can potentially be emptystring
+	 in which case, GetImageStream function resolves to correct namespace in accordance with priorities in GetImageStream
+	*/
+	imageNS = imageStream.ObjectMeta.Namespace
 
 	var containerPorts []corev1.ContainerPort
 	if len(inputPorts) == 0 {
-		imageNS, containerPorts, err = c.GetExposedPorts(imageNS, imageName, imageTag)
+		containerPorts, err = c.GetExposedPorts(imageStream, imageTag)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
 		}
 	} else {
-		imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
 		if err != nil {
 			return errors.Wrapf(err, "unable to create s2i app for %s", name)
 		}
@@ -688,15 +679,23 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 	if err != nil {
 		return errors.Wrap(err, "unable to create new s2i git build ")
 	}
+	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
+	if err != nil {
+		return errors.Wrap(err, "Failed to bootstrap supervisored")
+	}
+	/*
+	 Set imageNS to the namespace of above fetched imagestream because, the namespace passed here can potentially be emptystring
+	 in which case, GetImageStream function resolves to correct namespace in accordance with priorities in GetImageStream
+	*/
+	imageNS = imageStream.ObjectMeta.Namespace
 
 	var containerPorts []corev1.ContainerPort
 	if len(inputPorts) == 0 {
-		imageNS, containerPorts, err = c.GetExposedPorts(imageNS, imageName, imageTag)
+		containerPorts, err = c.GetExposedPorts(imageStream, imageTag)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
 		}
 	} else {
-		imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
 		if err != nil {
 			return errors.Wrapf(err, "unable to bootstrap s2i supervisored for %s", name)
 		}

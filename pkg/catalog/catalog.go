@@ -90,7 +90,7 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 }
 
 // getDefaultBuilderImages returns the default builder images available in the
-// openshift namespace
+// openshift and the current namespaces
 func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 	var imageStreams []imagev1.ImageStream
 	currentNamespace := client.GetCurrentProjectName()
@@ -102,6 +102,8 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 		// Tolerate the error as it might only be a partial failure
 		// We may get the imagestreams from other Namespaces
 		err = errors.Wrapf(e, "unable to get Image Streams from namespace %s", occlient.OpenShiftNameSpace)
+		// log it for debugging purposes
+		log.Debugf("Unable to get Image Streams from namespace %s. Error %s", occlient.OpenShiftNameSpace, e.Error())
 	}
 
 	// Fetch imagestreams from current namespace
@@ -114,6 +116,8 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 		// It is possible that the current namespace has no imagestreams -- a valid scenario
 		// But may be required for debugging purposes
 		err = errors.Wrapf(e, "unable to get Image Streams from namespace %s", currentNamespace)
+		// log it for debugging purposes
+		log.Debugf("Unable to get Image Streams from namespace %s. Error %s", currentNamespace, e.Error())
 	}
 
 	// Resultant imagestreams is list of imagestreams from current and openshift namespaces

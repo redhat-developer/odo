@@ -50,25 +50,31 @@ var catalogListComponentCmd = &cobra.Command{
 		case 0:
 			fmt.Printf("No deployable components found\n")
 		default:
-
+			currentProject := client.GetCurrentProjectName()
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "TAGS")
+			fmt.Fprintln(w, "NAME", "\t", "NAMESPACE", "\t", "TAGS")
 			for _, component := range catalogList {
-				component_name := fmt.Sprintf("%s/%s", component.Namespace, component.Name)
-				if component.Namespace == client.GetCurrentProjectName() {
+				component_name := component.Name
+				if component.Namespace == currentProject {
+					/*
+						 If current namespace is same as the current component namespace,
+						 	Loop through every other component,
+								If there exists a component with same name but in different namespaces,
+									 mark the one from current namespace with (*)
+					*/
 					for _, comp1 := range catalogList {
 						if comp1.Name == component.Name && component.Namespace != comp1.Namespace {
-							component_name = fmt.Sprintf("%s (*)", component_name)
+							component_name = fmt.Sprintf("%s (*)", component.Name)
 						}
 					}
 				}
-				fmt.Fprintln(w, component_name, "\t", strings.Join(component.Tags, ","))
+				fmt.Fprintln(w, component_name, "\t", component.Namespace, "\t", strings.Join(component.Tags, ","))
 			}
 			w.Flush()
 			fmt.Println(
-				`NOTE: There might be catalog items in multiple catalogs.
-Those marked with (*) will take precedence.
-In case you want to use an item from a different catalog, please fully qualify it as $namespace/$catalog_name`,
+				`NOTE: There might be items in multiple namespaces.
+Items from current project (marked with *) will take precedence.
+In case you want to use an item from a different namespace, please fully qualify it as $namespace/$name`,
 			)
 		}
 	},
