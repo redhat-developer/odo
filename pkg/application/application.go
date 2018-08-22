@@ -12,7 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 )
 
-// getDefaultAppName returns application name to be used as a default name in case of user doesn't provide a name.
+// getDefaultAppName returns application name to be used as a default name in case the user doesn't provide a name.
 // In future this function should generate name with unique suffix (app-xy1h), because there might be multiple applications.
 func getDefaultAppName() string {
 	return "app"
