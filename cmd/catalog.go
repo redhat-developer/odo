@@ -40,7 +40,7 @@ var catalogListComponentCmd = &cobra.Command{
   odo catalog list components
 
   # Search for a supported component
-  odo catalog search nodejs
+  odo catalog search components nodejs
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -68,6 +68,9 @@ var catalogListServiceCmd = &cobra.Command{
 	Long:  "Lists all the services from service catalog",
 	Example: `  # List all services
   odo catalog list services
+
+ # Search for a supported services
+  odo catalog search services mysql
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -87,17 +90,33 @@ var catalogListServiceCmd = &cobra.Command{
 }
 
 var catalogSearchCmd = &cobra.Command{
-	Use:   "search <component name>",
+	Use:   "search",
+	Short: "Search available component & service types.",
+	Long: `Search available component & service types..
+
+This searches for a partial match for the given search term in all the available
+components & services.
+`,
+	Example: `  # Search for a component
+  odo catalog search components python
+
+  # Search for a service
+  odo catalog search service mysql
+	`,
+}
+
+var catalogSearchComponentCmd = &cobra.Command{
+	Use:   "components",
 	Short: "Search component type in catalog",
 	Long: `Search component type in catalog.
 
 This searches for a partial match for the given search term in all the available
 components.
 `,
-	Example: `  # Search for a component
-  odo catalog search python
-	`,
 	Args: cobra.ExactArgs(1),
+	Example: `  # Search for a component
+  odo catalog search components python
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		searchTerm := args[0]
@@ -116,11 +135,43 @@ components.
 	},
 }
 
+var catalogSearchServiceCmd = &cobra.Command{
+	Use:   "services",
+	Short: "Search service type in catalog",
+	Long: `Search service type in catalog.
+
+This searches for a partial match for the given search term in all the available
+services from service catalog.
+`,
+	Example: `  # Search for a service
+  odo catalog search services mysql
+	`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
+		searchTerm := args[0]
+		components, err := svc.Search(client, searchTerm)
+		checkError(err, "unable to search for services")
+
+		switch len(components) {
+		case 0:
+			fmt.Printf("No service matched the query: %v\n", searchTerm)
+		default:
+			fmt.Println("The following services were found:")
+			for _, component := range components {
+				fmt.Printf("- %v\n", component)
+			}
+		}
+	},
+}
+
 func init() {
 	catalogCmd.AddCommand(catalogSearchCmd)
 	catalogCmd.AddCommand(catalogListCmd)
 	catalogListCmd.AddCommand(catalogListComponentCmd)
 	catalogListCmd.AddCommand(catalogListServiceCmd)
+	catalogSearchCmd.AddCommand(catalogSearchComponentCmd)
+	catalogSearchCmd.AddCommand(catalogSearchServiceCmd)
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
 	catalogCmd.SetUsageTemplate(cmdUsageTemplate)

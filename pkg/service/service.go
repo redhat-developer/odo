@@ -6,6 +6,7 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
+	"strings"
 )
 
 // ServiceInfo holds all important information about one service
@@ -24,6 +25,24 @@ func ListCatalog(client *occlient.Client) ([]string, error) {
 	}
 
 	return clusterServiceClasses, nil
+}
+
+// Search searches for the services
+func Search(client *occlient.Client, name string) ([]string, error) {
+	var result []string
+	serviceList, err := ListCatalog(client)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list services")
+	}
+
+	// do a partial search in all the services
+	for _, service := range serviceList {
+		if strings.Contains(service, name) {
+			result = append(result, service)
+		}
+	}
+
+	return result, nil
 }
 
 // CreateService creates new service from serviceCatalog
