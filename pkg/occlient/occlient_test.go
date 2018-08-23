@@ -1976,7 +1976,7 @@ func TestNewAppS2I(t *testing.T) {
 	}
 }
 
-func TestisTagInImageStream(t *testing.T) {
+func TestIsTagInImageStream(t *testing.T) {
 	tests := []struct {
 		name        string
 		imagestream imagev1.ImageStream
