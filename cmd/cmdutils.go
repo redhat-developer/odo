@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"text/tabwriter"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
@@ -39,9 +41,9 @@ func printDeleteAppInfo(client *occlient.Client, appName string, currentProject 
 }
 
 // getComponent returns the component to be used for the operation. If an input
-// component is specified, then it is returned, if not, the current component
-// is fetched and returned
-func getComponent(client *occlient.Client, inputComponent, applicationName, projectName string) string {
+// component is specified, then it is returned if it exists, if not,
+// the current component is fetched and returned. If no component set, throws error
+func getComponent(client *occlient.Client, inputComponent string, applicationName string, projectName string) string {
 	if len(inputComponent) == 0 {
 		c, err := component.GetCurrent(client, applicationName, projectName)
 		checkError(err, "Could not get current component")
@@ -102,4 +104,69 @@ func validateStoragePath(client *occlient.Client, storagePath, componentName, ap
 		}
 	}
 	return nil
+}
+
+// printMountedStorageInComponent prints all the mounted storage in a given component of the application
+func printMountedStorageInComponent(client *occlient.Client, componentName string, applicationName string) {
+
+	// defining the column structure of the table
+	tabWriterMounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+	// create headers of mounted storage table
+	fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH")
+
+	storageListMounted, err := storage.ListMounted(client, componentName, applicationName)
+	checkError(err, "could not get mounted storage list")
+
+	// iterating over all mounted storage and put in the mount storage table
+	if len(storageListMounted) > 0 {
+		for _, mstorage := range storageListMounted {
+			fmt.Fprintln(tabWriterMounted, mstorage.Name, "\t", mstorage.Size, "\t", mstorage.Path)
+		}
+
+		// print all mounted storage of the given component
+		fmt.Printf("The component '%v' has the following storage attached:\n", componentName)
+		tabWriterMounted.Flush()
+	} else {
+		fmt.Printf("The component '%v' has no storage attached\n", componentName)
+	}
+	fmt.Println("")
+}
+
+// printMountedStorageInAllComponent prints all the mounted storage in all the components of the application and project
+func printMountedStorageInAllComponent(client *occlient.Client, applicationName string, projectName string) {
+	componentList, err := component.List(client, applicationName, projectName)
+	checkError(err, "could not get component list")
+
+	// iterating over all the components in the given aplication and project
+	for _, component := range componentList {
+		printMountedStorageInComponent(client, component.Name, applicationName)
+	}
+}
+
+// printUnmountedStorage prints all the unmounted storage in the application
+func printUnmountedStorage(client *occlient.Client, applicationName string) {
+
+	// defining the column structure of the unmounted storage table
+	tabWriterUnmounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+	// create header of unmounted storage in all the components of the given application and project
+	fmt.Fprintln(tabWriterUnmounted, "NAME", "\t", "SIZE")
+
+	storageListUnmounted, err := storage.ListUnmounted(client, applicationName)
+	checkError(err, "could not get unmounted storage list")
+
+	// iterating over all unmounted storage and put in the unmount storage table
+	if len(storageListUnmounted) > 0 {
+		for _, ustorage := range storageListUnmounted {
+			fmt.Fprintln(tabWriterUnmounted, ustorage.Name, "\t", ustorage.Size)
+		}
+
+		// print unmounted storage of all the application
+		fmt.Printf("Storage that are not mounted to any component:\n")
+		tabWriterUnmounted.Flush()
+	} else {
+		fmt.Printf("No unmounted storage exists to mount\n")
+	}
+	fmt.Println("")
 }

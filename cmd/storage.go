@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/project"
@@ -18,6 +17,7 @@ var (
 	storageSize            string
 	storagePath            string
 	storageForceDeleteflag bool
+	storageAllListflag     bool
 )
 
 var storageCmd = &cobra.Command{
@@ -108,7 +108,7 @@ var storageUnmountCmd = &cobra.Command{
 			}
 		}
 
-		err = storage.Unmount(client, storageName, componentName, applicationName)
+		err = storage.Unmount(client, storageName, componentName, applicationName, true)
 		checkError(err, "Unable to unmount storage %v from component %v", storageName, componentName)
 
 		fmt.Printf("Unmounted storage %v from %v\n", storageName, componentName)
@@ -184,51 +184,18 @@ var storageListCmd = &cobra.Command{
 		applicationName, err := application.GetCurrent(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
-		componentName := getComponent(client, storageComponent, applicationName, projectName)
-
-		if componentName == "" {
-			fmt.Println("No component selected")
-			os.Exit(1)
-		}
-
-		storageList, err := storage.List(client, componentName, applicationName)
-		checkError(err, "")
-
-		hasMounted := false
-		hasUnmounted := false
-		tabWriterMounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		tabWriterUnmounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-
-		//create headers
-		fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH")
-		fmt.Fprintln(tabWriterUnmounted, "NAME", "\t", "SIZE")
-
-		for _, storage := range storageList {
-			if storage.Path != "" {
-				if !hasMounted {
-					hasMounted = true
-				}
-				fmt.Fprintln(tabWriterMounted, storage.Name, "\t", storage.Size, "\t", storage.Path)
-			} else {
-				if !hasUnmounted {
-					hasUnmounted = true
-				}
-				fmt.Fprintln(tabWriterUnmounted, storage.Name, "\t", storage.Size)
+		if storageAllListflag {
+			if storageComponent != "" {
+				fmt.Println("Invalid arguments. Component name is not needed")
+				os.Exit(1)
 			}
-		}
-		if hasMounted {
-			fmt.Printf("The component '%v' has the following storage attached -\n", componentName)
-			tabWriterMounted.Flush()
+			printMountedStorageInAllComponent(client, applicationName, projectName)
 		} else {
-			fmt.Printf("The component '%v' has no storage attached\n", componentName)
+			// storageComponent is the input component name
+			componentName := getComponent(client, storageComponent, applicationName, projectName)
+			printMountedStorageInComponent(client, componentName, applicationName)
 		}
-		fmt.Println("")
-		if hasUnmounted {
-			fmt.Printf("The following unmounted storages can be mounted to '%v' - \n", componentName)
-			tabWriterUnmounted.Flush()
-		} else {
-			fmt.Printf("No unmounted storage exists to mount to '%v' \n", componentName)
-		}
+		printUnmountedStorage(client, applicationName)
 	},
 }
 
@@ -269,18 +236,22 @@ var storageMountCmd = &cobra.Command{
 }
 
 func init() {
-	storageDeleteCmd.Flags().BoolVarP(&storageForceDeleteflag, "force", "f", false, "Delete storage without prompting")
 	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
-	storageCreateCmd.MarkFlagRequired("size")
+	storageCreateCmd.Flags().StringVar(&storageComponent, "component", "", "Component to add storage to. Defaults to active component.")
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageCreateCmd.MarkFlagRequired("path")
-	storageMountCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
-	storageMountCmd.MarkFlagRequired("path")
+	storageCreateCmd.MarkFlagRequired("size")
 
-	storageCreateCmd.Flags().StringVar(&storageComponent, "component", "", "Component to add storage to. Defaults to active component.")
+	storageDeleteCmd.Flags().BoolVarP(&storageForceDeleteflag, "force", "f", false, "Delete storage without prompting")
+
 	storageUnmountCmd.Flags().StringVar(&storageComponent, "component", "", "Component from which the storage will be unmounted. Defaults to active component.")
+
 	storageListCmd.Flags().StringVar(&storageComponent, "component", "", "List storage for given component. Defaults to active component.")
+	storageListCmd.Flags().BoolVarP(&storageAllListflag, "all", "a", false, "List all storage in all components")
+
+	storageMountCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageMountCmd.Flags().StringVar(&storageComponent, "component", "", "Component to which storage will be mounted to.")
+	storageMountCmd.MarkFlagRequired("path")
 
 	storageCmd.AddCommand(storageCreateCmd)
 	storageCmd.AddCommand(storageDeleteCmd)

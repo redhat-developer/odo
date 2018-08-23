@@ -411,14 +411,6 @@ var _ = Describe("odoe2e", func() {
 				Expect(storList).To(ContainSubstring("pv1"))
 			})
 
-			// TODO: Verify if the storage removed using odo deletes pvc
-			It("should be able to delete the storage added", func() {
-				runCmd("odo storage delete pv1 -f")
-
-				storList := runCmd("odo storage list")
-				Expect(storList).NotTo(ContainSubstring("pv1"))
-			})
-
 			It("should be able add storage to a component specified", func() {
 				runCmd("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
 
@@ -438,6 +430,20 @@ var _ = Describe("odoe2e", func() {
 					"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
 
 				Expect(getMntPath).To(ContainSubstring("/mnt/pv2"))
+			})
+
+			It("should be able to list all storage in all components", func() {
+				storList := runCmd("odo storage list --all")
+				Expect(storList).To(ContainSubstring("pv1"))
+				Expect(storList).To(ContainSubstring("pv2"))
+			})
+
+			// TODO: Verify if the storage removed using odo deletes pvc
+			It("should be able to delete the storage added", func() {
+				runCmd("odo storage delete pv1 -f")
+
+				storList := runCmd("odo storage list")
+				Expect(storList).NotTo(ContainSubstring("pv1"))
 			})
 
 			It("should be able to unmount the storage using the storage name", func() {
