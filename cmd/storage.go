@@ -193,7 +193,7 @@ var storageListCmd = &cobra.Command{
 		} else {
 			// storageComponent is the input component name
 			componentName := getComponent(client, storageComponent, applicationName, projectName)
-			printMountedStorageInComponent(client, applicationName, componentName)
+			printMountedStorageInComponent(client, componentName, applicationName)
 		}
 		printUnmountedStorage(client, applicationName)
 	},

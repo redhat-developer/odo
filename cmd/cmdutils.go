@@ -107,7 +107,7 @@ func validateStoragePath(client *occlient.Client, storagePath, componentName, ap
 }
 
 // printMountedStorageInComponent prints all the mounted storage in a given component of the application
-func printMountedStorageInComponent(client *occlient.Client, applicationName string, componentName string) {
+func printMountedStorageInComponent(client *occlient.Client, componentName string, applicationName string) {
 
 	// defining the column structure of the table
 	tabWriterMounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -140,7 +140,7 @@ func printMountedStorageInAllComponent(client *occlient.Client, applicationName 
 
 	// iterating over all the components in the given aplication and project
 	for _, component := range componentList {
-		printMountedStorageInComponent(client, applicationName, component.Name)
+		printMountedStorageInComponent(client, component.Name, applicationName)
 	}
 }
 
