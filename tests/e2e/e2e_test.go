@@ -3,6 +3,8 @@
 package e2e
 
 import (
+	"strconv"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -11,7 +13,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os/exec"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -182,12 +183,23 @@ var _ = Describe("odoe2e", func() {
 
 	Describe("creating a component", func() {
 		Context("when application exists", func() {
+			It("should be able to create new imagestream and find it in catalog list", func() {
+				curProj = strings.TrimSuffix(runCmd("oc project -q"), "\n")
+				cmd := fmt.Sprintf("oc create -f https://raw.githubusercontent.com/bucharest-gold/centos7-s2i-nodejs/master/imagestreams/nodejs-centos7.json -n %s", curProj)
+				runCmd(cmd)
+				cmpList := runCmd("odo catalog list")
+				Expect(cmpList).To(ContainSubstring(curProj))
+			})
+
 			It("should create a component", func() {
 				runCmd("git clone https://github.com/openshift/nodejs-ex " +
 					tmpDir + "/nodejs-ex")
 
 				// TODO: add tests for --git
-				runCmd("odo create nodejs --local " + tmpDir + "/nodejs-ex")
+				curProj = strings.TrimSuffix(runCmd("oc project -q"), "\n")
+				// Sleep until status tags and their annotations are created
+				time.Sleep(15 * time.Second)
+				runCmd("odo create " + curProj + "/nodejs --local " + tmpDir + "/nodejs-ex")
 				runCmd("odo push")
 			})
 
