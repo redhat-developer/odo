@@ -12,8 +12,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 )
 
-// getDefaultAppName returns application name to be used as a default name in the case where users doesn't provide a name
-// In future this function should generate name with uniq suffix (app-xy1h), because there might be multiple applications.
+// getDefaultAppName returns application name to be used as a default name in case the user doesn't provide a name.
+// In future this function should generate name with unique suffix (app-xy1h), because there might be multiple applications.
 func getDefaultAppName() string {
 	return "app"
 }
@@ -27,7 +27,7 @@ func Create(client *occlient.Client, applicationName string) error {
 		return errors.Wrap(err, "unable to create new application")
 	}
 	if exists {
-		return fmt.Errorf("unable to create new application, application %s already exists", applicationName)
+		return fmt.Errorf("unable to create new application, %s application already exists", applicationName)
 	}
 
 	cfg, err := config.New()
@@ -43,9 +43,9 @@ func Create(client *occlient.Client, applicationName string) error {
 }
 
 // List all application in current project
-// Queries cluster and configfile.
+// Queries cluster and config file.
 // Shows also empty applications (empty applications are those that are just
-// mentioned in config but don't have any object associated with it on cluster).
+// mentioned in config file but don't have any object associated with it on cluster).
 func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 	applications := []config.ApplicationInfo{}
 
@@ -186,8 +186,8 @@ func SetCurrent(client *occlient.Client, name string) error {
 	}
 
 	// There might be a situation where application is not defined in local config
-	// but it is present in OpenShift cluster. This situation can happen for example if user delted config file.
-	// In this case we need to add application back to the the config  before we set is as active.
+	// but it is present in OpenShift cluster. This situation can happen for example if user deleted config file.
+	// In that case we need to add application back to the the config before we set it as active.
 	found := false
 	for _, cfgApp := range cfg.ActiveApplications {
 		if cfgApp.Project == project && cfgApp.Name == name {
