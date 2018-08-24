@@ -11,8 +11,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type StorageInfo struct {
@@ -35,7 +35,7 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 
 	labels := storagelabels.GetLabels(name, componentName, applicationName, true)
 
-	log.Debugf("Got labels for PVC: %v", labels)
+	glog.V(4).Infof("Got labels for PVC: %v", labels)
 
 	// Create PVC
 	pvc, err := client.CreatePVC(generatePVCNameFromStorageName(namespacedOpenShiftObject), size, labels)
@@ -50,7 +50,7 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
-	log.Debugf("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
+	glog.V(4).Infof("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
 
 	// Add PVC to DeploymentConfig
 	if err := client.AddPVCToDeploymentConfig(dc, pvc.Name, path); err != nil {
@@ -351,7 +351,7 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
-	log.Debugf("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
+	glog.V(4).Infof("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
 
 	// Add PVC to DeploymentConfig
 	if err := client.AddPVCToDeploymentConfig(dc, pvc.Name, path); err != nil {

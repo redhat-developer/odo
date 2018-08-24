@@ -86,7 +86,7 @@ func TestSetActiveComponent(t *testing.T) {
 			name: "activeComponents empty",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:    "a",
 						Active:  true,
 						Project: "test",
@@ -98,7 +98,7 @@ func TestSetActiveComponent(t *testing.T) {
 			application: "a",
 			wantErr:     false,
 			result: []ApplicationInfo{
-				ApplicationInfo{
+				{
 					Name:            "a",
 					Active:          true,
 					Project:         "test",
@@ -110,7 +110,7 @@ func TestSetActiveComponent(t *testing.T) {
 			name: "project doesn't exists",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          false,
 						Project:         "test",
@@ -128,7 +128,7 @@ func TestSetActiveComponent(t *testing.T) {
 			name: "application doesn't exists",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          false,
 						Project:         "test",
@@ -146,13 +146,13 @@ func TestSetActiveComponent(t *testing.T) {
 			name: "overwrite existing active component (apps with same name in different projects)",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          true,
 						Project:         "test",
 						ActiveComponent: "old",
 					},
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          false,
 						Project:         "test2",
@@ -165,13 +165,13 @@ func TestSetActiveComponent(t *testing.T) {
 			application: "a",
 			wantErr:     false,
 			result: []ApplicationInfo{
-				ApplicationInfo{
+				{
 					Name:            "a",
 					Active:          true,
 					Project:         "test",
 					ActiveComponent: "new",
 				},
-				ApplicationInfo{
+				{
 					Name:            "a",
 					Active:          false,
 					Project:         "test2",
@@ -183,13 +183,13 @@ func TestSetActiveComponent(t *testing.T) {
 			name: "overwrite existing active component (different apps in the same project)",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          true,
 						Project:         "test",
 						ActiveComponent: "old",
 					},
-					ApplicationInfo{
+					{
 						Name:            "b",
 						Active:          false,
 						Project:         "test",
@@ -202,13 +202,13 @@ func TestSetActiveComponent(t *testing.T) {
 			application: "a",
 			wantErr:     false,
 			result: []ApplicationInfo{
-				ApplicationInfo{
+				{
 					Name:            "a",
 					Active:          true,
 					Project:         "test",
 					ActiveComponent: "new",
 				},
-				ApplicationInfo{
+				{
 					Name:            "b",
 					Active:          false,
 					Project:         "test",
@@ -277,7 +277,7 @@ func TestGetActiveComponent(t *testing.T) {
 			name: "no active component record for given application",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:    "a",
 						Active:  false,
 						Project: "test",
@@ -292,7 +292,7 @@ func TestGetActiveComponent(t *testing.T) {
 			name: "activeComponents for one project",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          true,
 						Project:         "test",
@@ -308,7 +308,7 @@ func TestGetActiveComponent(t *testing.T) {
 			name: "inactive project",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          false,
 						Project:         "test",
@@ -324,13 +324,13 @@ func TestGetActiveComponent(t *testing.T) {
 			name: "multiple projects",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          false,
 						Project:         "test",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          true,
 						Project:         "test2",
@@ -387,7 +387,7 @@ func TestSetActiveApplication(t *testing.T) {
 			name: "no Active value",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Project:         "proj",
 						ActiveComponent: "b",
@@ -401,13 +401,13 @@ func TestSetActiveApplication(t *testing.T) {
 			name: "multiple apps in the same project",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "app2",
 						Active:          false,
 						Project:         "proj",
@@ -422,13 +422,13 @@ func TestSetActiveApplication(t *testing.T) {
 			name: "same app name in different projects",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          false,
 						Project:         "proj2",
@@ -443,7 +443,7 @@ func TestSetActiveApplication(t *testing.T) {
 			name: "nonexisting application",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
@@ -507,7 +507,7 @@ func TestAddApplication(t *testing.T) {
 			existingConfig: Config{},
 			resultConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:    "app",
 						Project: "proj",
 						Active:  false,
@@ -525,7 +525,7 @@ func TestAddApplication(t *testing.T) {
 			},
 			resultConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:    "app",
 						Project: "proj",
 						Active:  false,
@@ -540,13 +540,13 @@ func TestAddApplication(t *testing.T) {
 			name: "multiple apps in the same project",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "app2",
 						Active:          false,
 						Project:         "proj",
@@ -556,19 +556,19 @@ func TestAddApplication(t *testing.T) {
 			},
 			resultConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "app2",
 						Active:          false,
 						Project:         "proj",
 						ActiveComponent: "b2",
 					},
-					ApplicationInfo{
+					{
 						Name:    "app3",
 						Project: "proj",
 						Active:  false,
@@ -582,13 +582,13 @@ func TestAddApplication(t *testing.T) {
 			name: "same app name in different projects",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          false,
 						Project:         "proj2",
@@ -598,19 +598,19 @@ func TestAddApplication(t *testing.T) {
 			},
 			resultConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          false,
 						Project:         "proj2",
 						ActiveComponent: "b2",
 					},
-					ApplicationInfo{
+					{
 						Name:    "app2",
 						Project: "proj2",
 						Active:  false,
@@ -624,7 +624,7 @@ func TestAddApplication(t *testing.T) {
 			name: "application already exist",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
@@ -634,7 +634,7 @@ func TestAddApplication(t *testing.T) {
 			},
 			resultConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
@@ -709,7 +709,7 @@ func TestGetActiveApplication(t *testing.T) {
 			name: "no Active value",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Project:         "proj",
 						ActiveComponent: "b",
@@ -723,13 +723,13 @@ func TestGetActiveApplication(t *testing.T) {
 			name: "multiple apps in the same project",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "app2",
 						Active:          false,
 						Project:         "proj",
@@ -744,13 +744,13 @@ func TestGetActiveApplication(t *testing.T) {
 			name: "same app name in different projects",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          true,
 						Project:         "proj",
 						ActiveComponent: "b",
 					},
-					ApplicationInfo{
+					{
 						Name:            "app",
 						Active:          false,
 						Project:         "proj2",
@@ -806,7 +806,7 @@ func TestDeleteApplication(t *testing.T) {
 			name: "delete not existing application",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:    "a",
 						Active:  true,
 						Project: "test",
@@ -817,14 +817,14 @@ func TestDeleteApplication(t *testing.T) {
 			project:     "test",
 			wantErr:     false,
 			result: []ApplicationInfo{
-				ApplicationInfo{},
+				{},
 			},
 		},
 		{
 			name: "delete existing application",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          false,
 						Project:         "test",
@@ -841,13 +841,13 @@ func TestDeleteApplication(t *testing.T) {
 			name: "delete application (apps with same name in different projects)",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          true,
 						Project:         "test",
 						ActiveComponent: "old",
 					},
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          false,
 						Project:         "test2",
@@ -859,7 +859,7 @@ func TestDeleteApplication(t *testing.T) {
 			project:     "test",
 			wantErr:     false,
 			result: []ApplicationInfo{
-				ApplicationInfo{
+				{
 					Name:            "a",
 					Active:          false,
 					Project:         "test2",
@@ -871,13 +871,13 @@ func TestDeleteApplication(t *testing.T) {
 			name: "delete application (different apps in the same project)",
 			existingConfig: Config{
 				ActiveApplications: []ApplicationInfo{
-					ApplicationInfo{
+					{
 						Name:            "a",
 						Active:          true,
 						Project:         "test",
 						ActiveComponent: "comp",
 					},
-					ApplicationInfo{
+					{
 						Name:            "b",
 						Active:          false,
 						Project:         "test",
@@ -889,7 +889,7 @@ func TestDeleteApplication(t *testing.T) {
 			project:     "test",
 			wantErr:     false,
 			result: []ApplicationInfo{
-				ApplicationInfo{
+				{
 					Name:            "a",
 					Active:          true,
 					Project:         "test",

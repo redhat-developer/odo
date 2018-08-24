@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +55,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 	Run: func(cmd *cobra.Command, args []string) {
 
 		stdout := color.Output
-		log.Debugf("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
+		glog.V(4).Infof("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
 
 		client := getOcClient()
 		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)

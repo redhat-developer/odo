@@ -3,8 +3,8 @@ package application
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -92,7 +92,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 
 // Delete deletes the given application
 func Delete(client *occlient.Client, name string) error {
-	log.Debug("Deleting application %s", name)
+	glog.V(4).Info("Deleting application %s", name)
 
 	labels := applabels.GetLabels(name, false)
 
@@ -168,7 +168,7 @@ func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
 
 // SetCurrent set application as active
 func SetCurrent(client *occlient.Client, name string) error {
-	log.Debugf("Setting application %s as current.\n", name)
+	glog.V(4).Infof("Setting application %s as current.\n", name)
 
 	project := project.GetCurrent(client)
 

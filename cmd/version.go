@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
 
@@ -30,11 +31,9 @@ var versionCmd = &cobra.Command{
 
 		// If verbose mode is enabled, dump all KUBECLT_* env variables
 		// this is usefull for debuging oc plugin integration
-		if GlobalVerbose {
-			for _, v := range os.Environ() {
-				if strings.HasPrefix(v, "KUBECTL_") {
-					fmt.Println(v)
-				}
+		for _, v := range os.Environ() {
+			if strings.HasPrefix(v, "KUBECTL_") {
+				glog.V(4).Info(v)
 			}
 		}
 

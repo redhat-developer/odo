@@ -9,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +34,7 @@ var watchCmd = &cobra.Command{
 		var componentName string
 		if len(args) == 0 {
 			var err error
-			log.Debug("No component name passed, assuming current component")
+			glog.V(4).Info("No component name passed, assuming current component")
 			componentName, err = component.GetCurrent(client, applicationName, projectName)
 			checkError(err, "")
 			if componentName == "" {

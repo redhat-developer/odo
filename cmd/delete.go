@@ -5,10 +5,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -26,8 +26,8 @@ var componentDeleteCmd = &cobra.Command{
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debugf("component delete called")
-		log.Debugf("args: %#v", strings.Join(args, " "))
+		glog.V(4).Infof("component delete called")
+		glog.V(4).Infof("args: %#v", strings.Join(args, " "))
 		client := getOcClient()
 
 		// Get all necessary names (current application + project)

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -16,7 +17,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -223,7 +223,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
-	log.Debugf("Copying to pod %s", pod.Name)
+	glog.V(4).Infof("Copying to pod %s", pod.Name)
 	err = client.CopyFile(path, pod.Name, targetPath, files)
 	if err != nil {
 		return errors.Wrap(err, "unable push files to pod")
@@ -353,7 +353,7 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		return "", "", fmt.Errorf("unsupported component source type %s", sourceType)
 	}
 
-	log.Debugf("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
+	glog.V(4).Infof("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
 	return sourceType, sourcePath, nil
 }
 
@@ -378,7 +378,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		return errors.Wrapf(err, "unable to get source of %s component", componentName)
 	}
 
-	log.Debugf("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
+	glog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
 
 	if (oldSourceType == "local" || oldSourceType == "binary") && newSourceType == "git" {
 		// Steps to update component from local or binary to git
