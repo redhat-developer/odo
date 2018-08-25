@@ -699,7 +699,6 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		if err != nil {
 			return errors.Wrapf(err, "unable to bootstrap s2i supervisored for %s", name)
 		}
-		imageNS = imageStream.ObjectMeta.Namespace
 		containerPorts, err = getContainerPortsFromStrings(inputPorts)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get container ports from %v", inputPorts)
