@@ -98,3 +98,8 @@ packages:
 .PHONY: upload-packages
 upload-packages:
 	./scripts/upload-packages.sh
+
+# Update vendoring
+.PHONY: vendor-update
+vendor-update:
+	glide update --strip-vendor
