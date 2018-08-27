@@ -57,10 +57,10 @@ var catalogListComponentCmd = &cobra.Command{
 				component_name := component.Name
 				if component.Namespace == currentProject {
 					/*
-						 If current namespace is same as the current component namespace,
-						 	Loop through every other component,
-								If there exists a component with same name but in different namespaces,
-									 mark the one from current namespace with (*)
+						If current namespace is same as the current component namespace,
+						Loop through every other component,
+						If there exists a component with same name but in different namespaces,
+						mark the one from current namespace with (*)
 					*/
 					for _, comp1 := range catalogList {
 						if comp1.Name == component.Name && component.Namespace != comp1.Namespace {
@@ -73,7 +73,7 @@ var catalogListComponentCmd = &cobra.Command{
 			w.Flush()
 			fmt.Println(
 				`NOTE: There might be items in multiple namespaces.
-Items from current project (marked with *) will take precedence.
+Items from the current project (marked with *) will take precedence.
 In case you want to use an item from a different namespace, please fully qualify it as $namespace/$name`,
 			)
 		}
