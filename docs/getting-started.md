@@ -17,7 +17,6 @@ We'll be going over the following steps:
 A few requirements before we proceed!
 
  - A running OpenShift cluster (we recommend using [`minishift`](https://docs.openshift.org/latest/minishift/getting-started/installing.html))
- - `oc` binary ([installation guide here](https://docs.openshift.org/latest/minishift/getting-started/quickstart.html#starting-minishift))
  - `odo` binary ([installation guide here](/README.md#installation))
 
 The quickest way to deploy a development OpenShift cluster is by using [minishift](https://docs.openshift.org/latest/minishift/index.html). Alternatively, `odo` will automatically work with any OpenShift cluster you're currently logged into.
@@ -67,6 +66,16 @@ OpenShift server started.
 The server is accessible via web console at:
     https://192.168.42.10:8443
 ```
+
+Now set your `PATH` to include the version of the `oc` tool bundled with Minishift.  You may already have `oc` installed separately, but this approach releases you from this requirement and additionally ensures that the versions between client and server are aligned.
+
+```console
+$ eval $(minishift oc-env)
+$ which oc
+~/.minishift/cache/oc/v3.10.0/linux/oc
+```
+
+Note that you will have to execute this `eval` command for every command shell you're using as its effects are not global.  Alternatively, you may install the `oc` tool system-wide and put it on the `PATH`, but you will need to ensure version compatibility.  You may take that approach [here](https://docs.openshift.org/latest/minishift/getting-started/quickstart.html#starting-minishift).
 
 Now log into the OpenShift cluster:
 
