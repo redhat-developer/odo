@@ -111,6 +111,32 @@ func fakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
 	}
 }
 
+func fakeImageStreamImage(imageName string, ports []string) *imagev1.ImageStreamImage {
+	exposedPorts := make(map[string]struct{})
+	var s struct{}
+	for _, port := range ports {
+		exposedPorts[port] = s
+	}
+	return &imagev1.ImageStreamImage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s@@sha256:9579a93ee", imageName),
+		},
+		Image: imagev1.Image{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "@sha256:9579a93ee",
+			},
+			DockerImageMetadata: runtime.RawExtension{
+				Object: &dockerapiv10.DockerImage{
+					ContainerConfig: dockerapiv10.DockerConfig{
+						ExposedPorts: exposedPorts,
+					},
+				},
+			},
+			DockerImageReference: fmt.Sprintf("docker.io/centos/%s-36-centos7@s@sha256:9579a93ee", imageName),
+		},
+	}
+}
+
 func TestGetPVCNameFromVolumeMountName(t *testing.T) {
 	type args struct {
 		volumeMountName string
@@ -2008,31 +2034,6 @@ func TestIsTagInImageStream(t *testing.T) {
 		})
 	}
 }
-func fakeImageStreamImage(imageName string, ports []string) *imagev1.ImageStreamImage {
-	exposedPorts := make(map[string]struct{})
-	var s struct{}
-	for _, port := range ports {
-		exposedPorts[port] = s
-	}
-	return &imagev1.ImageStreamImage{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s@@sha256:9579a93ee", imageName),
-		},
-		Image: imagev1.Image{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "@sha256:9579a93ee",
-			},
-			DockerImageMetadata: runtime.RawExtension{
-				Object: &dockerapiv10.DockerImage{
-					ContainerConfig: dockerapiv10.DockerConfig{
-						ExposedPorts: exposedPorts,
-					},
-				},
-			},
-			DockerImageReference: fmt.Sprintf("docker.io/centos/%s-36-centos7@s@sha256:9579a93ee", imageName),
-		},
-	}
-}
 
 func TestGetExposedPorts(t *testing.T) {
 	tests := []struct {
@@ -2054,14 +2055,12 @@ func TestGetExposedPorts(t *testing.T) {
 				},
 			},
 		},
-		/*
-			{
-				name:        "Case: Invalid image tag",
-				imagestream: fakeImageStream("bar", "testing", []string{"latest"}),
-				imageTag:    "0.1",
-				wantErr:     true,
-			},
-		*/
+		{
+			name:        "Case: Invalid image tag",
+			imagestream: fakeImageStream("bar", "testing", []string{"latest"}),
+			imageTag:    "0.1",
+			wantErr:     true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2086,78 +2085,54 @@ func TestGetExposedPorts(t *testing.T) {
 }
 
 func TestGetImageStream(t *testing.T) {
-	/*
-		imagev1.ImageStream{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "nodejs",
-							Namespace: "openshift",
-						},
-						Spec: imagev1.ImageStreamSpec{
-							Tags: []imagev1.TagReference{
-								{
-									Annotations: map[string]string{
-										"supports": "nodejs",
-										"tags":     "builder,nodejs",
-									},
-									From: &corev1.ObjectReference{
-										Kind: "ImageStreamTag",
-										Name: "latest",
-									},
-									Name: "latest",
-								},
-							},
-						},
-					}
-	*/
 	tests := []struct {
-		name      string
-		imageNS   string
-		imageName string
-		imageTag  string
-		wantErr   bool
-		want      *imagev1.ImageStream
+		name           string
+		imageNS        string
+		imageName      string
+		imageTag       string
+		wantErr        bool
+		want           *imagev1.ImageStream
+		wantActionsCnt int
 	}{
 		{
-			name:      "Case: Valid request for imagestream of latest version and not namespace qualified",
-			imageNS:   "",
-			imageName: "foo",
-			imageTag:  "latest",
-			want:      fakeImageStream("foo", "testing", []string{"latest"}),
+			name:           "Case: Valid request for imagestream of latest version and not namespace qualified",
+			imageNS:        "",
+			imageName:      "foo",
+			imageTag:       "latest",
+			want:           fakeImageStream("foo", "testing", []string{"latest"}),
+			wantActionsCnt: 1,
 		},
 		{
-			name:      "Case: Valid explicit request for specific namespace qualified imagestream of specific version",
-			imageNS:   "openshift",
-			imageName: "foo",
-			imageTag:  "latest",
-			want:      fakeImageStream("foo", "openshift", []string{"latest", "3.5"}),
+			name:           "Case: Valid explicit request for specific namespace qualified imagestream of specific version",
+			imageNS:        "openshift",
+			imageName:      "foo",
+			imageTag:       "latest",
+			want:           fakeImageStream("foo", "openshift", []string{"latest", "3.5"}),
+			wantActionsCnt: 1,
 		},
 		{
-			name:      "Case: Valid request for specific imagestream of specific version not in current namespace",
-			imageNS:   "",
-			imageName: "foo",
-			imageTag:  "3.5",
-			want:      fakeImageStream("foo", "openshift", []string{"latest", "3.5"}),
+			name:           "Case: Valid request for specific imagestream of specific version not in current namespace",
+			imageNS:        "",
+			imageName:      "foo",
+			imageTag:       "3.5",
+			want:           fakeImageStream("foo", "openshift", []string{"latest", "3.5"}),
+			wantActionsCnt: 1, // Ideally supposed to be 2 but bcoz prependreactor is not parameter sensitive, the way it is mocked makes it 1
 		},
 		{
-			name:      "Case: Valid request for specific imagestream of specific version not in current namespace",
-			imageNS:   "",
-			imageName: "foo",
-			imageTag:  "3.5",
-			want:      fakeImageStream("foo", "openshift", []string{"latest", "3.5"}),
+			name:           "Case: Invalid request for non-current and non-openshift namespace imagestream/Non-existant imagestream",
+			imageNS:        "foo",
+			imageName:      "bar",
+			imageTag:       "3.5",
+			wantErr:        true,
+			wantActionsCnt: 1,
 		},
 		{
-			name:      "Case: Invalid request for non-current and non-openshift namespace imagestream/Non-existant imagestream",
-			imageNS:   "foo",
-			imageName: "bar",
-			imageTag:  "3.5",
-			wantErr:   true,
-		},
-		{
-			name:      "Case: Request for non-existant tag",
-			imageNS:   "",
-			imageName: "foo",
-			imageTag:  "3.6",
-			wantErr:   true,
+			name:           "Case: Request for non-existant tag",
+			imageNS:        "",
+			imageName:      "foo",
+			imageTag:       "3.6",
+			wantErr:        true,
+			wantActionsCnt: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -2186,6 +2161,9 @@ func TestGetImageStream(t *testing.T) {
 			})
 
 			got, err := fkclient.GetImageStream(tt.imageNS, tt.imageName, tt.imageTag)
+			if len(fkclientset.ImageClientset.Actions()) != tt.wantActionsCnt {
+				t.Errorf("expected 1 ImageClientset.Actions() in GetImageStream, got %v", fkclientset.ImageClientset.Actions())
+			}
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("\nclient.GetImageStream(imageNS, imageName, imageTag) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
