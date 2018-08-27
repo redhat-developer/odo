@@ -118,30 +118,6 @@ var serviceDeleteCmd = &cobra.Command{
 	},
 }
 
-//var serviceCatalogCmd = &cobra.Command{
-//	Use:   "catalog",
-//	Short: "Lists all the services from service catalog",
-//	Long:  "Lists all the services from service catalog",
-//	Example: `  # List all services
-//  odo service catalog
-//	`,
-//	Args: cobra.ExactArgs(0),
-//	Run: func(cmd *cobra.Command, args []string) {
-//		client := getOcClient()
-//		catalogList, err := svc.ListCatalog(client)
-//		checkError(err, "unable to list services because Service Catalog is not enabled in your cluster")
-//		switch len(catalogList) {
-//		case 0:
-//			fmt.Printf("No deployable services found\n")
-//		default:
-//			fmt.Println("The following services can be deployed:")
-//			for _, service := range catalogList {
-//				fmt.Printf("- %v\n", service)
-//			}
-//		}
-//	},
-//}
-
 var serviceListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all services in the current application",

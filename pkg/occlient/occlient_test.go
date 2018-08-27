@@ -2583,7 +2583,7 @@ func TestCreateServiceInstance(t *testing.T) {
 			if !reflect.DeepEqual(createdServiceInstance.Labels, tt.args.labels) {
 				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.labels, createdServiceInstance.Labels)
 			}
-			if !reflect.DeepEqual(createdServiceInstance.Name, tt.args.componentName) {
+			if createdServiceInstance.Name != tt.args.componentName {
 				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.componentName, createdServiceInstance.Name)
 			}
 			if !reflect.DeepEqual(createdServiceInstance.Spec.ClusterServiceClassExternalName, tt.args.componentType) {

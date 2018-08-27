@@ -1155,16 +1155,16 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 	// Service Instance
 	glog.V(4).Infof("Deleting Service Instance")
 	// Listing out serviceInstance because `DeleteCollection` method don't work on serviceInstance
-	svcCatList, err := c.serviceCatalogClient.ServiceInstances(c.namespace).List(metav1.ListOptions{LabelSelector: selector})
+	svcCatList, err := c.GetServiceInstanceList(c.namespace, selector)
 	if err != nil {
 		return errors.Wrap(err, "unable to list service instance")
 	}
 
 	// Iterating over serviceInstance List and deleting one by one
-	for _, svc := range svcCatList.Items {
+	for _, svc := range svcCatList {
 		err = c.serviceCatalogClient.ServiceInstances(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
-			return errors.Wrap(err, "unable to delete serviceInstace")
+			return errors.Wrap(err, "unable to delete serviceInstance")
 		}
 	}
 
@@ -1201,9 +1201,9 @@ func (c *Client) GetLabelValues(project string, label string, selector string) (
 }
 
 // GetServiceInstanceList returns list service instances
-func (c *Client) GetServiceInstanceList(project string, selector string) ([]scv1beta1.ServiceInstance, error) {
+func (c *Client) GetServiceInstanceList(namespace string, selector string) ([]scv1beta1.ServiceInstance, error) {
 	// List ServiceInstance according to given selectors
-	svcList, err := c.serviceCatalogClient.ServiceInstances(project).List(metav1.ListOptions{LabelSelector: selector})
+	svcList, err := c.serviceCatalogClient.ServiceInstances(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list ServiceInstances")
 	}
