@@ -1223,8 +1223,7 @@ func (c *Client) GetBuildConfigFromName(name string, project string) (*buildv1.B
 
 // GetClusterServiceClasses queries the service service catalog to get available clusterServiceClasses
 func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, error) {
-	// TODO: Remove `FieldSelector` from ListOptions when we are confident with Ansible Service Broker
-	classList, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{FieldSelector: "spec.clusterServiceBrokerName=template-service-broker"})
+	classList, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list cluster service classes")
 	}
