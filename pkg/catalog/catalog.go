@@ -97,27 +97,27 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 	var err error
 
 	// Fetch imagestreams from default openshift namespace
-	openshiftNSImageStreams, e := client.GetImageStreams(occlient.OpenShiftNameSpace)
-	if e != nil {
+	openshiftNSImageStreams, possibleError := client.GetImageStreams(occlient.OpenShiftNameSpace)
+	if possibleError != nil {
 		// Tolerate the error as it might only be a partial failure
 		// We may get the imagestreams from other Namespaces
-		err = errors.Wrapf(e, "unable to get Image Streams from namespace %s", occlient.OpenShiftNameSpace)
+		err = errors.Wrapf(possibleError, "unable to get Image Streams from namespace %s", occlient.OpenShiftNameSpace)
 		// log it for debugging purposes
-		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", occlient.OpenShiftNameSpace, e.Error())
+		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", occlient.OpenShiftNameSpace, possibleError.Error())
 	}
 
 	// Fetch imagestreams from current namespace
-	currentNSImageStreams, e := client.GetImageStreams(currentNamespace)
-	if e != nil {
+	currentNSImageStreams, possibleError := client.GetImageStreams(currentNamespace)
+	if possibleError != nil {
 		if err != nil {
 			// Failure to fetch images from any namespace, error out
-			return nil, errors.Wrapf(e, "%s. unable to get Image Streams from namespace %s", err.Error(), currentNamespace)
+			return nil, errors.Wrapf(possibleError, "%s. unable to get Image Streams from namespace %s", err.Error(), currentNamespace)
 		}
 		// It is possible that the current namespace has no imagestreams -- a valid scenario
 		// But may be required for debugging purposes
-		err = errors.Wrapf(e, "unable to get Image Streams from namespace %s", currentNamespace)
+		err = errors.Wrapf(possibleError, "unable to get Image Streams from namespace %s", currentNamespace)
 		// log it for debugging purposes
-		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", currentNamespace, e.Error())
+		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", currentNamespace, possibleError.Error())
 	}
 
 	// Resultant imagestreams is list of imagestreams from current and openshift namespaces
