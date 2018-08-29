@@ -187,7 +187,7 @@ var _ = Describe("odoe2e", func() {
 				curProj = strings.TrimSuffix(runCmd("oc project -q"), "\n")
 				cmd := fmt.Sprintf("oc create -f https://raw.githubusercontent.com/bucharest-gold/centos7-s2i-nodejs/master/imagestreams/nodejs-centos7.json -n %s", curProj)
 				runCmd(cmd)
-				cmpList := runCmd("odo catalog list")
+				cmpList := runCmd("odo catalog list components")
 				Expect(cmpList).To(ContainSubstring(curProj))
 			})
 
