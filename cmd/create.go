@@ -30,8 +30,19 @@ var componentCreateCmd = &cobra.Command{
 
 If component name is not provided, component type value will be used for the name.
 
+The component type will be chosen by default from current project,
+but if specific version is requested for, it'll be used from either
+* current
+   or
+* openshift
+
+project(with search precendence in same order) where available.
+So, if you would like it to be specifically from openshift project, please fully qualify the
+component type as $project/$component_type:$version.
+If version is not specified by default, latest wil be chosen as the version.
+
 A full list of component types that can be deployed is available using: 'odo catalog list'`,
-	Example: `  # Create new Node.js component with the source in current directory. 
+	Example: `  # Create new Node.js component with the source in current directory.
   odo create nodejs
 
   # A specific image version may also be specified
@@ -42,6 +53,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 
   # Create new Node.js component with source from remote git repository.
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
+
+  # Create new Node.js component of version 6 using the builder image specifically from 'openshift' namespace
+  odo create openshift/nodejs:6 --local /nodejs-ex
 
   # Create new Wildfly component with binary named sample.war in './downloads' directory
   odo create wildfly wildly --binary ./downloads/sample.war
