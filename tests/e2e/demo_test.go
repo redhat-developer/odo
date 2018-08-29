@@ -38,7 +38,7 @@ var _ = Describe("katacodaDemo", func() {
 
 	Context("odo component creation", func() {
 		It("should list the components in the catalog", func() {
-			getProj := runCmd("odo catalog list components")
+			getProj := runCmd("odo catalog list")
 			Expect(getProj).To(ContainSubstring("wildfly"))
 			Expect(getProj).To(ContainSubstring("ruby"))
 		})

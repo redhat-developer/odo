@@ -7,7 +7,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
-	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -22,26 +21,15 @@ var catalogCmd = &cobra.Command{
 
 var catalogListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all available component & service types.",
-	Long:  "List all available component and service types from OpenShift",
-	Example: `  # Get the supported components
-  odo catalog list components
-
-  # Get the supported services from service catalog
-  odo catalog list services
-`,
-}
-
-var catalogListComponentCmd = &cobra.Command{
-	Use:   "components",
 	Short: "List all available component types.",
 	Long:  "List all available component types from OpenShift's Image Builder.",
 	Example: `  # Get the supported components
-  odo catalog list components
+  odo catalog list
 
   # Search for a supported component
-  odo catalog search components nodejs
+  odo search nodejs
 `,
+	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		catalogList, err := catalog.List(client)
@@ -62,61 +50,18 @@ var catalogListComponentCmd = &cobra.Command{
 	},
 }
 
-var catalogListServiceCmd = &cobra.Command{
-	Use:   "services",
-	Short: "Lists all the services from service catalog",
-	Long:  "Lists all the services from service catalog",
-	Example: `  # List all services
-  odo catalog list services
-
- # Search for a supported services
-  odo catalog search services mysql
-	`,
-	Args: cobra.ExactArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
-		catalogList, err := svc.ListCatalog(client)
-		checkError(err, "unable to list services because Service Catalog is not enabled in your cluster")
-		switch len(catalogList) {
-		case 0:
-			fmt.Printf("No deployable services found\n")
-		default:
-			fmt.Println("The following services can be deployed:")
-			for _, service := range catalogList {
-				fmt.Printf("- %v\n", service)
-			}
-		}
-	},
-}
-
 var catalogSearchCmd = &cobra.Command{
-	Use:   "search",
-	Short: "Search available component & service types.",
-	Long: `Search available component & service types..
-
-This searches for a partial match for the given search term in all the available
-components & services.
-`,
-	Example: `  # Search for a component
-  odo catalog search components python
-
-  # Search for a service
-  odo catalog search service mysql
-	`,
-}
-
-var catalogSearchComponentCmd = &cobra.Command{
-	Use:   "components",
+	Use:   "search <component name>",
 	Short: "Search component type in catalog",
 	Long: `Search component type in catalog.
 
 This searches for a partial match for the given search term in all the available
 components.
 `,
-	Args: cobra.ExactArgs(1),
 	Example: `  # Search for a component
-  odo catalog search components python
+  odo catalog search pyt
 	`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		searchTerm := args[0]
@@ -135,43 +80,10 @@ components.
 	},
 }
 
-var catalogSearchServiceCmd = &cobra.Command{
-	Use:   "services",
-	Short: "Search service type in catalog",
-	Long: `Search service type in catalog.
-
-This searches for a partial match for the given search term in all the available
-services from service catalog.
-`,
-	Example: `  # Search for a service
-  odo catalog search services mysql
-	`,
-	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
-		searchTerm := args[0]
-		components, err := svc.Search(client, searchTerm)
-		checkError(err, "unable to search for services")
-
-		switch len(components) {
-		case 0:
-			fmt.Printf("No service matched the query: %v\n", searchTerm)
-		default:
-			fmt.Println("The following services were found:")
-			for _, component := range components {
-				fmt.Printf("- %v\n", component)
-			}
-		}
-	},
-}
-
 func init() {
 	catalogCmd.AddCommand(catalogSearchCmd)
 	catalogCmd.AddCommand(catalogListCmd)
-	catalogListCmd.AddCommand(catalogListComponentCmd)
-	catalogListCmd.AddCommand(catalogListServiceCmd)
-	catalogSearchCmd.AddCommand(catalogSearchComponentCmd)
-	catalogSearchCmd.AddCommand(catalogSearchServiceCmd)
+
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
 	catalogCmd.SetUsageTemplate(cmdUsageTemplate)
