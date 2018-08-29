@@ -20,31 +20,31 @@ Find more information at https://github.com/redhat-developer/odo
 
 #### List of Commands
 
-|           NAME            |                  DESCRIPTION                   |
-|---------------------------|------------------------------------------------|
-| [app](#app)               | Perform application operations                 |
-| [catalog](#catalog)       | Catalog related operations                     |
-| [completion](#completion) | Output shell completion code                   |
-| [component](#component)   | Components of application.                     |
-| [create](#create)         | Create a new component                         |
-| [delete](#delete)         | Delete an existing component                   |
-| [describe](#describe)     | Describe the given component                   |
-| [link](#link)             | Link target component to source component      |
-| [list](#list)             | List all components in the current application |
-| [log](#log)               | Retrieve the log for the given component.      |
-| [project](#project)       | Perform project operations                     |
-| [push](#push)             | Push source code to a component                |
-| [storage](#storage)       | Perform storage operations                     |
-| [update](#update)         | Update the source code path of a component     |
-| [url](#url)               | Expose component to the outside world          |
-| [version](#version)       | Print the client version information           |
-| [watch](#watch)           | Watch for changes, update component on change  |
+|          NAME           |                  DESCRIPTION                   |
+|-------------------------|------------------------------------------------|
+| [app](#app)             | Perform application operations                 |
+| [catalog](#catalog)     | Catalog related operations                     |
+| [component](#component) | Components of application.                     |
+| [create](#create)       | Create a new component                         |
+| [delete](#delete)       | Delete an existing component                   |
+| [describe](#describe)   | Describe the given component                   |
+| [link](#link)           | Link target component to source component      |
+| [list](#list)           | List all components in the current application |
+| [log](#log)             | Retrieve the log for the given component.      |
+| [project](#project)     | Perform project operations                     |
+| [push](#push)           | Push source code to a component                |
+| [storage](#storage)     | Perform storage operations                     |
+| [update](#update)       | Update the source code path of a component     |
+| [url](#url)             | Expose component to the outside world          |
+| [utils](#utils)         | Utilities for completion and terminal commands |
+| [version](#version)     | Print the client version information           |
+| [watch](#watch)         | Watch for changes, update component on change  |
 
 
 #### CLI Structure
 
 ```sh
-odo --verbose : Odo (Openshift Do)
+odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : Odo (Openshift Do)
     app --short : Perform application operations
         create : Create an application
         delete --force : Delete the given application
@@ -55,16 +55,15 @@ odo --verbose : Odo (Openshift Do)
     catalog : Catalog related operations
         list : List all available component types.
         search : Search component type in catalog
-    completion : Output shell completion code
     component --short : Components of application.
         get --short : Get currently active component
         set : Set active component.
-    create --binary --git --local : Create a new component
+    create --binary --git --local --port : Create a new component
     delete --force : Delete an existing component
     describe : Describe the given component
     link --component : Link target component to source component
     list : List all components in the current application
-    log : Retrieve the log for the given component.
+    log --follow : Retrieve the log for the given component.
     project --short : Perform project operations
         create : Create a new project
         get --short : Get the active project
@@ -74,14 +73,17 @@ odo --verbose : Odo (Openshift Do)
     storage : Perform storage operations
         create --component --path --size : Create storage and mount to a component
         delete --force : Delete storage from component
-        list --component : List storage attached to a component
+        list --all --component : List storage attached to a component
         mount --component --path : mount storage to a component
-        unmount --component : Unmount storage from the current component
+        unmount --component : Unmount storage from the given path or identified by its name, from the current component
     update --binary --git --local : Update the source code path of a component
     url : Expose component to the outside world
-        create : Create a URL for a component
-        delete --force : Delete a URL
+        create --application --component --port : Create a URL for a component
+        delete --component --force : Delete a URL
         list --application --component : List URLs
+    utils : Utilities for completion and terminal commands
+        completion : Output shell completion code
+        terminal : Add Odo terminal support to your development environment
     version : Print the client version information
     watch : Watch for changes, update component on change
 
@@ -138,26 +140,6 @@ Performs application operations related to your OpenShift project.
 
 Catalog related operations
 
-## completion
-
-`completion SHELL`
-
-> Example using completion
-
-```sh
-  # Bash autocompletion support
-  source <(odo completion bash)
-
-  # Zsh autocompletion support
-  source <(odo completion zsh)
-
-```
-
-
-Generates shell completion code.
-
-Auto completion supports both bash and zsh. Output is to STDOUT.
-
 ## component
 
 `component`
@@ -186,6 +168,9 @@ Auto completion supports both bash and zsh. Output is to STDOUT.
   # Create new Node.js component with the source in current directory. 
   odo create nodejs
 
+  # A specific image version may also be specified
+  odo create nodejs:latest
+
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
 
@@ -195,11 +180,11 @@ Auto completion supports both bash and zsh. Output is to STDOUT.
   # Create new Wildfly component with binary named sample.war in './downloads' directory
   odo create wildfly wildly --binary ./downloads/sample.war
 
-  # Create a Ruby component
-  odo create ruby
-	
-  # Create a Python component
-  odo create python
+  # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
+  odo create nodejs --port 8080,8100/tcp,9100/udp
+
+  # For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
+  odo create python --git https://github.com/openshift/django-ex.git
 	
 ```
 
@@ -208,7 +193,7 @@ Create a new component to deploy on OpenShift.
 
 If component name is not provided, component type value will be used for the name.
 
-A full list of component types that can be deployed is available using: `odo catalog list`
+A full list of component types that can be deployed is available using: 'odo catalog list'
 
 ## delete
 
@@ -363,6 +348,12 @@ Push source code to a component.
   # Unmount storage 'database' from component 'mongodb'
   odo storage unmount database --component mongodb
 
+  # Unmount storage mounted to path '/data' from current component
+  odo storage unmount /data
+
+  # Unmount storage mounted to path '/data' from component 'mongodb'
+  odo storage unmount /data --component mongodb
+
   # List all storage attached or mounted to the current component and 
   # all unattached or unmounted storage in the current application
   odo storage list
@@ -406,11 +397,17 @@ Update the source code path of a component
 > Example using url
 
 ```sh
-  # Create a URL for the current component.
-  odo url create
+  # Create a URL for the current component with a specific port
+  odo url create --port 8080
 
-  # Create a URL for a specific component
-  odo url create mycomponent
+  # Create a URL with a specific name and port
+  odo url create example --port 8080
+
+  # Create a URL with a specific name by automatic detection of port (only for components which expose only one service port) 
+  odo url create example
+
+  # Create a URL with a specific name and port for component frontend
+  odo url create example --port 8080 --component frontend
 	
   # Delete a URL to a component
   odo url delete myurl
@@ -424,6 +421,30 @@ Update the source code path of a component
 Expose component to the outside world.
 
 The URLs that are generated using this command, can be used to access the deployed components from outside the cluster.
+
+## utils
+
+`utils`
+
+> Example using utils
+
+```sh
+  # Bash autocompletion support
+  source <(odo utils completion bash)
+
+  # Zsh autocompletion support
+  source <(odo utils completion zsh)
+
+  # Bash terminal PS1 support
+  source <(odo utils terminal bash)
+
+  # Zsh terminal PS1 support
+  source <(odo utils terminal zsh)
+
+```
+
+
+Utilities for completion and terminal commands
 
 ## version
 
