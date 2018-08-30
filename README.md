@@ -130,35 +130,45 @@ odo --verbose : Odo (Openshift Do)
         list : Lists all the applications
         set : Set application as active
     catalog : Catalog related operations
-        list : List all available component types.
-        search : Search component type in catalog
-    completion : Output shell completion code
+        list : List all available component & service types.
+            components : List all available component types.
+            services : Lists all the services from service catalog
+        search : Search available component & service types.
+            components : Search component type in catalog
+            services : Search service type in catalog
     component --short : Components of application.
         get --short : Get currently active component
         set : Set active component.
-    create --binary --git --local : Create a new component
+    create --binary --git --local --port : Create a new component
     delete --force : Delete an existing component
     describe : Describe the given component
     link --component : Link target component to source component
     list : List all components in the current application
-    log : Retrieve the log for the given component.
+    log --follow : Retrieve the log for the given component.
     project --short : Perform project operations
         create : Create a new project
         get --short : Get the active project
         list : List all the projects
         set --short : Set the current active project
     push --local : Push source code to a component
+    service : Perform service catalog operations
+        create : Create a new service
+        delete --force : Delete an existing service
+        list : List all services in the current application
     storage : Perform storage operations
         create --component --path --size : Create storage and mount to a component
         delete --force : Delete storage from component
-        list --component : List storage attached to a component
+        list --all --component : List storage attached to a component
         mount --component --path : mount storage to a component
-        unmount --component : Unmount storage from the current component
+        unmount --component : Unmount storage from the given path or identified by its name, from the current component
     update --binary --git --local : Update the source code path of a component
     url : Expose component to the outside world
-        create : Create a URL for a component
-        delete --force : Delete a URL
+        create --application --component --port : Create a URL for a component
+        delete --component --force : Delete a URL
         list --application --component : List URLs
+    utils : Utilities for completion and terminal commands
+        completion : Output shell completion code
+        terminal : Add Odo terminal support to your development environment
     version : Print the client version information
     watch : Watch for changes, update component on change
 ```

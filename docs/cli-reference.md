@@ -33,6 +33,7 @@ Find more information at https://github.com/redhat-developer/odo
 | [log](#log)             | Retrieve the log for the given component.      |
 | [project](#project)     | Perform project operations                     |
 | [push](#push)           | Push source code to a component                |
+| [service](#service)     | Perform service catalog operations             |
 | [storage](#storage)     | Perform storage operations                     |
 | [update](#update)       | Update the source code path of a component     |
 | [url](#url)             | Expose component to the outside world          |
@@ -53,8 +54,12 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         list : Lists all the applications
         set : Set application as active
     catalog : Catalog related operations
-        list : List all available component types.
-        search : Search component type in catalog
+        list : List all available component & service types.
+            components : List all available component types.
+            services : Lists all the services from service catalog
+        search : Search available component & service types.
+            components : Search component type in catalog
+            services : Search service type in catalog
     component --short : Components of application.
         get --short : Get currently active component
         set : Set active component.
@@ -70,6 +75,10 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         list : List all the projects
         set --short : Set the current active project
     push --local : Push source code to a component
+    service : Perform service catalog operations
+        create : Create a new service
+        delete --force : Delete an existing service
+        list : List all services in the current application
     storage : Perform storage operations
         create --component --path --size : Create storage and mount to a component
         delete --force : Delete storage from component
@@ -127,13 +136,16 @@ Performs application operations related to your OpenShift project.
 
 ```sh
   # Get the supported components
-  odo catalog list
+  odo catalog list components
 
-  # Search for a supported component
-  odo search nodejs
+  # Get the supported services from service catalog
+  odo catalog list services
 
   # Search for a component
-  odo catalog search pyt
+  odo catalog search components python
+
+  # Search for a service
+  odo catalog search service mysql
 	
 ```
 
@@ -325,6 +337,27 @@ Perform project operations
 
 
 Push source code to a component.
+
+## service
+
+`service`
+
+> Example using service
+
+```sh
+  # Create new mysql-persistent service from service catalog.
+  odo service create mysql-persistent
+	
+  # Delete service named 'mysql-persistent'
+  odo service delete mysql-persistent
+	
+  # List all services in the application
+  odo service list
+	
+```
+
+
+ Perform service catalog operations, Limited to template service broker only.
 
 ## storage
 
