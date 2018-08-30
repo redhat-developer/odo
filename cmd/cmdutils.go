@@ -8,21 +8,24 @@ import (
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 // printDeleteAppInfo will print things which will be deleted
-func printDeleteAppInfo(client *occlient.Client, appName string, currentProject string) error {
-	componentList, err := component.List(client, appName, currentProject)
+func printDeleteAppInfo(client *occlient.Client, appName string, projectName string) error {
+	componentList, err := component.List(client, appName, projectName)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Component list")
 	}
 
 	for _, currentComponent := range componentList {
-		_, _, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName, currentProject)
+		_, _, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName, projectName)
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}
@@ -45,7 +48,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string, currentProject 
 // the current component is fetched and returned. If no component set, throws error
 func getComponent(client *occlient.Client, inputComponent string, applicationName string, projectName string) string {
 	if len(inputComponent) == 0 {
-		c, err := component.GetCurrent(client, applicationName, projectName)
+		c, err := component.GetCurrent(applicationName, projectName)
 		checkError(err, "Could not get current component")
 		if c == "" {
 			fmt.Println("There is no component set")
@@ -120,8 +123,8 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 
 	// iterating over all mounted storage and put in the mount storage table
 	if len(storageListMounted) > 0 {
-		for _, mstorage := range storageListMounted {
-			fmt.Fprintln(tabWriterMounted, mstorage.Name, "\t", mstorage.Size, "\t", mstorage.Path)
+		for _, mStorage := range storageListMounted {
+			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Size, "\t", mStorage.Path)
 		}
 
 		// print all mounted storage of the given component
@@ -158,8 +161,8 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 
 	// iterating over all unmounted storage and put in the unmount storage table
 	if len(storageListUnmounted) > 0 {
-		for _, ustorage := range storageListUnmounted {
-			fmt.Fprintln(tabWriterUnmounted, ustorage.Name, "\t", ustorage.Size)
+		for _, uStorage := range storageListUnmounted {
+			fmt.Fprintln(tabWriterUnmounted, uStorage.Name, "\t", uStorage.Size)
 		}
 
 		// print unmounted storage of all the application
@@ -167,4 +170,51 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 		tabWriterUnmounted.Flush()
 	}
 	fmt.Println("")
+}
+
+// GetAppName returns application name from the provided flag or if flag is not provided, it will return current application name
+func getAppName(client *occlient.Client) string {
+	// applicationFlag is `--application` flag
+	if applicationFlag != "" {
+
+		_, err := application.Exists(client, applicationFlag)
+		if err != nil {
+			checkError(err, "")
+		}
+		return applicationFlag
+	}
+	applicationName, err := application.GetCurrent(client.Namespace)
+	checkError(err, "unable to get current application")
+
+	return applicationName
+}
+
+// setNamespace checks whether project flag is provided,
+// if provided, it validates the name and sets it as namespace for further operations
+// if not provided, it fetches current namespace and sets it as namespace for further operations
+func setNamespace(client *occlient.Client) string {
+	// projectFlag is `--project` flag
+	if projectFlag != "" {
+		_, err := project.Exists(client, projectFlag)
+		if err != nil {
+			checkError(err, "")
+		}
+		client.Namespace = projectFlag
+		return projectFlag
+	}
+	client.Namespace = project.GetCurrent(client)
+	return project.GetCurrent(client)
+
+}
+
+func addProjectFlag(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Project, defaults to active project")
+}
+
+func addComponentFlag(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&componentFlag, "component", "c", "", "Component, defaults to active component.")
+}
+
+func addApplicationFlag(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&applicationFlag, "application", "", "Application, defaults to active application")
 }

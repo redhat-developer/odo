@@ -9,14 +9,12 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
 var (
 	applicationShortFlag       bool
 	applicationForceDeleteFlag bool
-	projectName                string
 )
 
 // applicationCmd represents the app command
@@ -55,11 +53,11 @@ If no app name is passed, a default app name will be auto-generated.
 	`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var name string
+		var appName string
 		client := getOcClient()
 		if len(args) == 1 {
 			// The only arg passed is the app name
-			name = args[0]
+			appName = args[0]
 		} else {
 			// Desired app name is not passed so, generate a new app name
 			// Fetch existing list of apps
@@ -67,18 +65,21 @@ If no app name is passed, a default app name will be auto-generated.
 			checkError(err, "")
 
 			// Generate a random name that's not already in use for the existing apps
-			name, err = application.GetDefaultAppName(apps)
+			appName, err = application.GetDefaultAppName(apps)
 			checkError(err, "")
 		}
 		// validate application name
-		err := validateName(name)
+		err := validateName(appName)
 		checkError(err, "")
-		fmt.Printf("Creating application: %v\n", name)
-		err = application.Create(client, name)
+		fmt.Printf("Creating application: %v\n", appName)
+		err = application.Create(client, appName)
+
+		projectName := setNamespace(client)
+		fmt.Printf("Creating application: %v in project: %v \n", appName, projectName)
+
+		err = application.SetCurrent(client, appName)
 		checkError(err, "")
-		err = application.SetCurrent(client, name)
-		checkError(err, "")
-		fmt.Printf("Switched to application: %v\n", name)
+		fmt.Printf("Switched to application: %v in project\n", appName, projectName)
 	},
 }
 
@@ -92,7 +93,8 @@ var applicationGetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		app, err := application.GetCurrent(client)
+		projectName := setNamespace(client)
+		app, err := application.GetCurrent(projectName)
 		checkError(err, "")
 		if applicationShortFlag {
 			fmt.Print(app)
@@ -116,21 +118,21 @@ var applicationDeleteCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
+		projectName := setNamespace(client)
 		var appName string
 		// If name of the app to be deleted is not passed, consider the current app for deletion
 		if len(args) == 0 {
 			var err error
-			appName, err = application.GetCurrent(client)
+			appName, err = application.GetCurrent(projectName)
 			checkError(err, "")
 		} else {
 			// If app name passed, consider it for deletion
 			appName = args[0]
 		}
 		var confirmDeletion string
-		// Project
-		currentProject := project.GetCurrent(client)
+
 		// Print App Information which will be deleted
-		err := printDeleteAppInfo(client, appName, currentProject)
+		err := printDeleteAppInfo(client, appName, projectName)
 		checkError(err, "")
 
 		if applicationForceDeleteFlag {
@@ -163,17 +165,9 @@ var applicationListCmd = &cobra.Command{
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		if projectName == "" {
-			projectName = project.GetCurrent(client)
-		} else {
-			exist, err := project.Exists(client, projectName)
-			checkError(err, "unable to check if project exists")
-			if !exist {
-				fmt.Printf("Project %s does not exist\n", projectName)
-				os.Exit(1)
-			}
-		}
-		apps, err := application.ListInProject(client, projectName)
+
+		projectName := setNamespace(client)
+		apps, err := application.ListInProject(client)
 		checkError(err, "unable to get list of applications")
 		if len(apps) > 0 {
 			fmt.Printf("The project '%v' has the following applications:\n", projectName)
@@ -211,6 +205,8 @@ var applicationSetCmd = &cobra.Command{
 	}, Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		appName := args[0]
+
+		projectName := setNamespace(client)
 		// error if application does not exist
 		exists, err := application.Exists(client, appName)
 		checkError(err, "unable to check if application exists")
@@ -221,7 +217,7 @@ var applicationSetCmd = &cobra.Command{
 
 		err = application.SetCurrent(client, appName)
 		checkError(err, "")
-		fmt.Printf("Switched to application: %v\n", args[0])
+		fmt.Printf("Switched to application: %v in project: %v \n", args[0], projectName)
 	},
 }
 
@@ -235,34 +231,38 @@ var applicationDescribeCmd = &cobra.Command{
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		var currentApplication string
+		var appName string
+		projectName := setNamespace(client)
 		if len(args) == 0 {
 			var err error
-			currentApplication, err = application.GetCurrent(client)
+			appName, err = application.GetCurrent(projectName)
 			checkError(err, "")
+			if appName == "" {
+				fmt.Printf("There's no active application in projectName %v", projectName)
+				os.Exit(1)
+			}
 		} else {
-			currentApplication = args[0]
+			appName = args[0]
 			//Check whether application exist or not
-			exists, err := application.Exists(client, currentApplication)
+			exists, err := application.Exists(client, appName)
 			checkError(err, "")
 			if !exists {
-				fmt.Printf("Application with the name %s does not exist\n", currentApplication)
+				fmt.Printf("Application with the name %s does not exist\n", appName)
 				os.Exit(1)
 			}
 		}
-		//Project
-		currentProject := project.GetCurrent(client)
+
 		// List of Component
-		componentList, err := component.List(client, currentApplication, currentProject)
+		componentList, err := component.List(client, appName, projectName)
 		checkError(err, "")
 		if len(componentList) == 0 {
-			fmt.Printf("Application %s has no components deployed.\n", currentApplication)
+			fmt.Printf("Application %s has no components deployed.\n", appName)
 			os.Exit(1)
 		}
-		fmt.Printf("Application %s has:\n", currentApplication)
+		fmt.Printf("Application %s has:\n", appName)
 
 		for _, currentComponent := range componentList {
-			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, currentApplication, currentProject)
+			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName, projectName)
 			checkError(err, "")
 			printComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
 		}
@@ -276,14 +276,20 @@ func init() {
 	// add flags from 'get' to application command
 	applicationCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
 
-	applicationListCmd.Flags().StringVarP(&projectName, "project", "p", "", "List all applications in the specified project")
-
 	applicationCmd.AddCommand(applicationListCmd)
 	applicationCmd.AddCommand(applicationDeleteCmd)
 	applicationCmd.AddCommand(applicationGetCmd)
 	applicationCmd.AddCommand(applicationCreateCmd)
 	applicationCmd.AddCommand(applicationSetCmd)
 	applicationCmd.AddCommand(applicationDescribeCmd)
+
+	//Adding `--project` flag
+	addProjectFlag(applicationListCmd)
+	addProjectFlag(applicationCreateCmd)
+	addProjectFlag(applicationDeleteCmd)
+	addProjectFlag(applicationDescribeCmd)
+	addProjectFlag(applicationSetCmd)
+	addProjectFlag(applicationGetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}

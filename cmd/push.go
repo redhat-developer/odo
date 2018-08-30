@@ -7,9 +7,7 @@ import (
 	"runtime"
 
 	"github.com/fatih/color"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"path/filepath"
@@ -35,30 +33,17 @@ var pushCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := color.Output
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
 
-		var componentName string
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+
+		var inputName string
 		if len(args) == 0 {
-			var err error
-			glog.V(4).Info("No component name passed, assuming current component")
-			componentName, err = component.GetCurrent(client, applicationName, projectName)
-			checkError(err, "unable to get current component")
-			if componentName == "" {
-				fmt.Println("No component is set as active.")
-				fmt.Println("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
-				os.Exit(1)
-			}
+			inputName = ""
 		} else {
-			componentName = args[0]
-			exists, err := component.Exists(client, componentName, applicationName, projectName)
-			checkError(err, "")
-			if !exists {
-				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)
-				os.Exit(1)
-			}
+			inputName = args[0]
 		}
+		componentName := getComponent(client, inputName, applicationName, projectName)
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
@@ -120,6 +105,11 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	pushCmd.Annotations = map[string]string{"command": "component"}
 	pushCmd.SetUsageTemplate(cmdUsageTemplate)
+
+	//Adding `--project` flag
+	addProjectFlag(pushCmd)
+	//Adding `--application` flag
+	addApplicationFlag(pushCmd)
 
 	rootCmd.AddCommand(pushCmd)
 }

@@ -5,9 +5,7 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -40,11 +38,11 @@ var componentGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		glog.V(4).Infof("component get called")
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
 
-		component, err := component.GetCurrent(client, applicationName, projectName)
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+
+		component, err := component.GetCurrent(applicationName, projectName)
 		checkError(err, "unable to get current component")
 		if componentShortFlag {
 			fmt.Print(component)
@@ -68,9 +66,9 @@ var componentSetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
 
 		exists, err := component.Exists(client, args[0], applicationName, projectName)
 		checkError(err, "")
@@ -79,7 +77,7 @@ var componentSetCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = component.SetCurrent(client, args[0], applicationName, projectName)
+		err = component.SetCurrent(args[0], applicationName, projectName)
 		checkError(err, "")
 		fmt.Printf("Switched to component: %v\n", args[0])
 	},
@@ -94,6 +92,13 @@ func init() {
 
 	componentCmd.AddCommand(componentGetCmd)
 	componentCmd.AddCommand(componentSetCmd)
+
+	//Adding `--project` flag
+	addProjectFlag(componentGetCmd)
+	addProjectFlag(componentSetCmd)
+	//Adding `--application` flag
+	addApplicationFlag(componentGetCmd)
+	addApplicationFlag(componentSetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}

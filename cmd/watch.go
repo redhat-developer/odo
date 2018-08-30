@@ -6,9 +6,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/golang/glog"
@@ -34,15 +32,15 @@ var watchCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := os.Stdout
 		client := getOcClient()
-		projectName := project.GetCurrent(client)
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "Unable to get current application.")
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
 
 		var componentName string
 		if len(args) == 0 {
 			var err error
 			glog.V(4).Info("No component name passed, assuming current component")
-			componentName, err = component.GetCurrent(client, applicationName, projectName)
+			componentName, err = component.GetCurrent(applicationName, projectName)
 			checkError(err, "")
 			if componentName == "" {
 				fmt.Println("No component is set as active.")
@@ -83,6 +81,12 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	watchCmd.Annotations = map[string]string{"command": "component"}
 	watchCmd.SetUsageTemplate(cmdUsageTemplate)
+
+	//Adding `--application` flag
+	addApplicationFlag(watchCmd)
+
+	//Adding `--project` flag
+	addProjectFlag(watchCmd)
 
 	rootCmd.AddCommand(watchCmd)
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/project"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
@@ -47,9 +46,16 @@ A full list of service types that can be deployed are available using: 'odo cata
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
+		setNamespace(client)
+		var applicationName string
+		var err error
+		if applicationFlag != "" && projectFlag != "" {
+			applicationName = getAppName(client)
+		} else {
+
+			applicationName, err = application.GetCurrentOrGetCreateSetDefault(client)
+			checkError(err, "")
+		}
 
 		// make sure the service type exists
 		serviceType := args[0]
@@ -93,7 +99,8 @@ A full list of service types that can be deployed are available using: 'odo cata
 		//validate service name
 		err = validateName(serviceName)
 		checkError(err, "")
-		exists, err := svc.SvcExists(client, serviceName, applicationName, projectName)
+		exists, err := svc.SvcExists(client, serviceName, applicationName)
+
 		checkError(err, "")
 		if exists {
 			fmt.Printf("%s service already exists in the current application.\n", serviceName)
@@ -119,14 +126,13 @@ var serviceDeleteCmd = &cobra.Command{
 
 		client := getOcClient()
 
-		// Get all necessary names (current application + project)
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
+		setNamespace(client)
+		applicationName := getAppName(client)
+
 		serviceName := args[0]
 
 		// Checks to see if the service actually exists
-		exists, err := svc.SvcExists(client, serviceName, applicationName, projectName)
+		exists, err := svc.SvcExists(client, serviceName, applicationName)
 		checkError(err, "unable to delete service because Service Catalog is not enabled in your cluster")
 		if !exists {
 			fmt.Printf("Service with the name %s does not exist in the current application\n", serviceName)
@@ -162,10 +168,11 @@ var serviceListCmd = &cobra.Command{
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
-		services, err := svc.List(client, applicationName, projectName)
+
+		setNamespace(client)
+		applicationName := getAppName(client)
+
+		services, err := svc.List(client, applicationName)
 		checkError(err, "Service Catalog is not enabled in your cluster")
 
 		if len(services) == 0 {
@@ -193,5 +200,16 @@ func init() {
 	serviceCmd.AddCommand(serviceCreateCmd)
 	serviceCmd.AddCommand(serviceDeleteCmd)
 	serviceCmd.AddCommand(serviceListCmd)
+
+	//Adding `--project` flag
+	addProjectFlag(serviceCreateCmd)
+	addProjectFlag(serviceDeleteCmd)
+	addProjectFlag(serviceListCmd)
+
+	//Adding `--application` flag
+	addApplicationFlag(serviceCreateCmd)
+	addApplicationFlag(serviceDeleteCmd)
+	addApplicationFlag(serviceListCmd)
+
 	rootCmd.AddCommand(serviceCmd)
 }

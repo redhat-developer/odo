@@ -290,30 +290,32 @@ func (c *Client) GetProjectNames() ([]string, error) {
 	return projectNames, nil
 }
 
-func (c *Client) CreateNewProject(name string) error {
+// CreateNewProject creates project with given projectName
+func (c *Client) CreateNewProject(projectName string) error {
 	projectRequest := &projectv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name: projectName,
 		},
 	}
 	_, err := c.projectClient.ProjectRequests().Create(projectRequest)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create new project %s", name)
+		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}
 	return nil
 }
 
-func (c *Client) SetCurrentProject(project string) error {
+// SetCurrentProject sets the given projectName to current project
+func (c *Client) SetCurrentProject(projectName string) error {
 	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
-		return errors.Wrapf(err, "unable to switch to %s project", project)
+		return errors.Wrapf(err, "unable to switch to %s project", projectName)
 	}
 
-	rawConfig.Contexts[rawConfig.CurrentContext].Namespace = project
+	rawConfig.Contexts[rawConfig.CurrentContext].Namespace = projectName
 
 	err = clientcmd.ModifyConfig(clientcmd.NewDefaultClientConfigLoadingRules(), rawConfig, true)
 	if err != nil {
-		return errors.Wrapf(err, "unable to switch to %s project", project)
+		return errors.Wrapf(err, "unable to switch to %s project", projectName)
 	}
 	return nil
 }
@@ -605,7 +607,6 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 
 	// Generate and create the DeploymentConfig
 	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars)
-
 	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
@@ -768,8 +769,7 @@ func updateEnvVar(dc *appsv1.DeploymentConfig, envVars []corev1.EnvVar) error {
 // projectName is the name of the project
 // gitURL equals to the git URL of the source and is equals to "" if the source is of type dir or binary
 // annotations contains the annotations for the BuildConfig file
-func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, gitURL string, annotations map[string]string) error {
-
+func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annotations map[string]string) error {
 	if gitURL == "" {
 		return errors.New("gitURL for UpdateBuildConfig must not be blank")
 	}
@@ -784,7 +784,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 		Type: buildv1.BuildSourceGit,
 	}
 
-	buildConfig, err := c.GetBuildConfigFromName(buildConfigName, projectName)
+	buildConfig, err := c.GetBuildConfigFromName(buildConfigName)
 	if err != nil {
 		return errors.Wrap(err, "unable to get the BuildConfig file")
 	}
@@ -805,7 +805,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 
 	// Retrieve the current DC
-	currentDC, err := c.GetDeploymentConfigFromName(name, c.Namespace)
+	currentDC, err := c.GetDeploymentConfigFromName(name)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
 	}
@@ -877,7 +877,7 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 	}
 
 	// Retrieve the current DC in order to obtain what the current inputPorts are..
-	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.Namespace)
+	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", commonObjectMeta.Name)
 	}
@@ -917,7 +917,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	imageNS = imageStream.ObjectMeta.Namespace
 
 	// Retrieve the current DC in order to obtain what the current inputPorts are..
-	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.Namespace)
+	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", commonObjectMeta.Name)
 	}
@@ -964,7 +964,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 // dcName is the name of the DeploymentConfig file to be updated
 // annotations contains the annotations for the DeploymentConfig file
 func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName, c.Namespace)
+	dc, err := c.GetDeploymentConfigFromName(dcName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
 	}
@@ -982,8 +982,8 @@ func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]strin
 // projectName is the name of the project
 // annotations are the updated annotations for the new deployment config
 // labels are the labels of the PVC created while setting up the supervisor
-func (c *Client) SetupForSupervisor(dcName string, projectName string, annotations map[string]string, labels map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName, projectName)
+func (c *Client) SetupForSupervisor(dcName string, annotations map[string]string, labels map[string]string) error {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
 	}
@@ -1011,8 +1011,8 @@ func (c *Client) SetupForSupervisor(dcName string, projectName string, annotatio
 // dcName is the name of the deployment config to be updated
 // projectName is the name of the project
 // annotations are the updated annotations for the new deployment config
-func (c *Client) CleanupAfterSupervisor(dcName string, projectName string, annotations map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName, projectName)
+func (c *Client) CleanupAfterSupervisor(dcName string, annotations map[string]string) error {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s ", dcName)
 	}
@@ -1296,7 +1296,7 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 	glog.V(4).Infof("Selectors used for deletion: %s", selector)
 
 	// Listing out serviceInstance because `DeleteCollection` method don't work on serviceInstance
-	svcCatList, err := c.GetServiceInstanceList(c.Namespace, selector)
+	svcCatList, err := c.GetServiceInstanceList(selector)
 	if err != nil {
 		return errors.Wrap(err, "unable to list service instance")
 	}
@@ -1308,7 +1308,6 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 		if err != nil {
 			return errors.Wrap(err, "unable to delete serviceBinding")
 		}
-
 		// now we perform the actual deletion
 		err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
@@ -1385,9 +1384,9 @@ func (c *Client) DeleteProject(name string) error {
 
 // GetLabelValues get label values of given label from objects in project that are matching selector
 // returns slice of unique label values
-func (c *Client) GetLabelValues(project string, label string, selector string) ([]string, error) {
+func (c *Client) GetLabelValues(label string, selector string) ([]string, error) {
 	// List DeploymentConfig according to selectors
-	dcList, err := c.appsClient.DeploymentConfigs(project).List(metav1.ListOptions{LabelSelector: selector})
+	dcList, err := c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
 	}
@@ -1404,9 +1403,9 @@ func (c *Client) GetLabelValues(project string, label string, selector string) (
 }
 
 // GetServiceInstanceList returns list service instances
-func (c *Client) GetServiceInstanceList(namespace string, selector string) ([]scv1beta1.ServiceInstance, error) {
+func (c *Client) GetServiceInstanceList(selector string) ([]scv1beta1.ServiceInstance, error) {
 	// List ServiceInstance according to given selectors
-	svcList, err := c.serviceCatalogClient.ServiceInstances(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	svcList, err := c.serviceCatalogClient.ServiceInstances(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list ServiceInstances")
 	}
@@ -1415,9 +1414,9 @@ func (c *Client) GetServiceInstanceList(namespace string, selector string) ([]sc
 }
 
 // GetBuildConfigFromName get BuildConfig by its name
-func (c *Client) GetBuildConfigFromName(name string, project string) (*buildv1.BuildConfig, error) {
+func (c *Client) GetBuildConfigFromName(name string) (*buildv1.BuildConfig, error) {
 	glog.V(4).Infof("Getting BuildConfig: %s", name)
-	bc, err := c.buildClient.BuildConfigs(project).Get(name, metav1.GetOptions{})
+	bc, err := c.buildClient.BuildConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
 	}
@@ -1824,7 +1823,8 @@ func removeVolumeMountFromDC(vm string, dc *appsv1.DeploymentConfig) bool {
 func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) error {
 
 	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		dc, err := c.GetDeploymentConfigFromName(dcName, c.Namespace)
+
+		dc, err := c.GetDeploymentConfigFromName(dcName)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get Deployment Config: %v", dcName)
 		}
@@ -1905,9 +1905,9 @@ func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, err
 
 // GetDeploymentConfigFromName returns the Deployment Config resource given
 // the Deployment Config name
-func (c *Client) GetDeploymentConfigFromName(name string, project string) (*appsv1.DeploymentConfig, error) {
+func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentConfig, error) {
 	glog.V(4).Infof("Getting DeploymentConfig: %s", name)
-	deploymentConfig, err := c.appsClient.DeploymentConfigs(project).Get(name, metav1.GetOptions{})
+	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
 	}
@@ -2433,8 +2433,8 @@ func getInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
 // GetEnvVarsFromDC retrieves the env vars from the DC
 // dcName is the name of the dc from which the env vars are retrieved
 // projectName is the name of the project
-func (c *Client) GetEnvVarsFromDC(dcName string, projectName string) ([]corev1.EnvVar, error) {
-	dc, err := c.GetDeploymentConfigFromName(dcName, projectName)
+func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
+	dc, err := c.GetDeploymentConfigFromName(dcName)
 	if err != nil {
 		return nil, errors.Wrap(err, "error occured while retrieving the dc")
 	}

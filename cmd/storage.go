@@ -5,15 +5,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
 var (
-	storageComponent       string
 	storageSize            string
 	storagePath            string
 	storageForceDeleteflag bool
@@ -41,10 +38,11 @@ var storageCreateCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
-		componentName := getComponent(client, storageComponent, applicationName, projectName)
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+		componentName := getComponent(client, componentFlag, applicationName, projectName)
+
 		var storageName string
 		if len(args) != 0 {
 			storageName = args[0]
@@ -52,7 +50,7 @@ var storageCreateCmd = &cobra.Command{
 			storageName = componentName + "-" + util.GenerateRandomString(4)
 		}
 		// validate storage path
-		err = validateStoragePath(client, storagePath, componentName, applicationName)
+		err := validateStoragePath(client, storagePath, componentName, applicationName)
 		checkError(err, "")
 
 		_, err = storage.Create(client, storageName, storageSize, storagePath, componentName, applicationName)
@@ -83,12 +81,13 @@ var storageUnmountCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
-		componentName := getComponent(client, storageComponent, applicationName, projectName)
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+		componentName := getComponent(client, componentFlag, applicationName, projectName)
 
 		var storageName string
+		var err error
 		// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
 		if string(args[0][0]) == "/" {
 			path := args[0]
@@ -129,8 +128,10 @@ var storageDeleteCmd = &cobra.Command{
 		client := getOcClient()
 
 		storageName := args[0]
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
+
+		setNamespace(client)
+		applicationName := getAppName(client)
+
 		exists, err := storage.Exists(client, storageName, applicationName)
 		checkError(err, "")
 		if !exists {
@@ -181,18 +182,19 @@ var storageListCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+
 		if storageAllListflag {
-			if storageComponent != "" {
+			if componentFlag != "" {
 				fmt.Println("Invalid arguments. Component name is not needed")
 				os.Exit(1)
 			}
 			printMountedStorageInAllComponent(client, applicationName, projectName)
 		} else {
 			// storageComponent is the input component name
-			componentName := getComponent(client, storageComponent, applicationName, projectName)
+			componentName := getComponent(client, componentFlag, applicationName, projectName)
 			printMountedStorageInComponent(client, componentName, applicationName)
 		}
 		printUnmountedStorage(client, applicationName)
@@ -212,10 +214,10 @@ var storageMountCmd = &cobra.Command{
 		client := getOcClient()
 
 		storageName := args[0]
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
-		componentName := getComponent(client, storageComponent, applicationName, projectName)
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+		componentName := getComponent(client, componentFlag, applicationName, projectName)
 
 		exists, err := storage.Exists(client, storageName, applicationName)
 		checkError(err, "unable to check if the storage exists in the current application")
@@ -237,20 +239,16 @@ var storageMountCmd = &cobra.Command{
 
 func init() {
 	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
-	storageCreateCmd.Flags().StringVar(&storageComponent, "component", "", "Component to add storage to. Defaults to active component.")
+	//storageCreateCmd.Flags().StringVar(&storageComponent, "component", "", "Component to add storage to. Defaults to active component.")
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageCreateCmd.MarkFlagRequired("path")
 	storageCreateCmd.MarkFlagRequired("size")
 
 	storageDeleteCmd.Flags().BoolVarP(&storageForceDeleteflag, "force", "f", false, "Delete storage without prompting")
 
-	storageUnmountCmd.Flags().StringVar(&storageComponent, "component", "", "Component from which the storage will be unmounted. Defaults to active component.")
-
-	storageListCmd.Flags().StringVar(&storageComponent, "component", "", "List storage for given component. Defaults to active component.")
 	storageListCmd.Flags().BoolVarP(&storageAllListflag, "all", "a", false, "List all storage in all components")
 
 	storageMountCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
-	storageMountCmd.Flags().StringVar(&storageComponent, "component", "", "Component to which storage will be mounted to.")
 	storageMountCmd.MarkFlagRequired("path")
 
 	storageCmd.AddCommand(storageCreateCmd)
@@ -258,6 +256,27 @@ func init() {
 	storageCmd.AddCommand(storageUnmountCmd)
 	storageCmd.AddCommand(storageListCmd)
 	storageCmd.AddCommand(storageMountCmd)
+
+	//Adding `--project` flag
+	addProjectFlag(storageCreateCmd)
+	addProjectFlag(storageDeleteCmd)
+	addProjectFlag(storageListCmd)
+	addProjectFlag(storageMountCmd)
+	addProjectFlag(storageUnmountCmd)
+
+	//Adding `--application` flag
+	addApplicationFlag(storageCreateCmd)
+	addApplicationFlag(storageDeleteCmd)
+	addApplicationFlag(storageListCmd)
+	addApplicationFlag(storageMountCmd)
+	addApplicationFlag(storageUnmountCmd)
+
+	//Adding `--component` flag
+	addComponentFlag(storageCreateCmd)
+	addComponentFlag(storageDeleteCmd)
+	addComponentFlag(storageListCmd)
+	addComponentFlag(storageMountCmd)
+	addComponentFlag(storageUnmountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}

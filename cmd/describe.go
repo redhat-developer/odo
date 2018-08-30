@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -20,30 +18,29 @@ var describeCmd = &cobra.Command{
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		// Application
-		currentApplication, err := application.GetCurrent(client)
-		checkError(err, "")
-		// Project
-		currentProject := project.GetCurrent(client)
-		var currentComponent string
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+
+		var componentName string
 		if len(args) == 0 {
-			var err error
-			currentComponent, err = component.GetCurrent(client, currentApplication, currentProject)
-			checkError(err, "")
+			componentName = getComponent(client, "", applicationName, projectName)
 		} else {
-			currentComponent = args[0]
-			//Check whether component exist or not
-			exists, err := component.Exists(client, currentComponent, currentApplication, currentProject)
+
+			componentName = args[0]
+
+			// Checks to see if the component actually exists
+			exists, err := component.Exists(client, componentName, applicationName, projectName)
 			checkError(err, "")
 			if !exists {
-				fmt.Printf("component with the name %s does not exist\n", currentComponent)
+				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
 				os.Exit(1)
 			}
 		}
-
-		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent, currentApplication, currentProject)
+		// currentComponent := getComponent(client, componentName, Application, Project)
+		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, componentName, applicationName, projectName)
 		checkError(err, "")
-		printComponentInfo(currentComponent, componentType, path, componentURL, appStore)
+		printComponentInfo(componentName, componentType, path, componentURL, appStore)
 	},
 }
 
@@ -51,6 +48,11 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	describeCmd.Annotations = map[string]string{"command": "component"}
 	describeCmd.SetUsageTemplate(cmdUsageTemplate)
+
+	//Adding `--project` flag
+	addProjectFlag(describeCmd)
+	//Adding `--application` flag
+	addApplicationFlag(describeCmd)
 
 	rootCmd.AddCommand(describeCmd)
 }

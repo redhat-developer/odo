@@ -4,15 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
-)
-
-var (
-	linkComponent string
 )
 
 var linkCmd = &cobra.Command{
@@ -35,11 +29,10 @@ is injected into the component.
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
 
-		componentName := getComponent(client, linkComponent, applicationName, projectName)
+		componentName := getComponent(client, componentFlag, applicationName, projectName)
 		serviceName := args[0]
 
 		exists, err := component.Exists(client, componentName, applicationName, projectName)
@@ -49,7 +42,7 @@ is injected into the component.
 			os.Exit(1)
 		}
 
-		exists, err = svc.SvcExists(client, serviceName, applicationName, projectName)
+		exists, err = svc.SvcExists(client, serviceName, applicationName)
 		checkError(err, "Unable to determine if service %s exists within the current namespace", serviceName)
 		if !exists {
 			fmt.Printf(`Service %s does not exist within the current namespace.
@@ -75,11 +68,14 @@ If not, then please delete the service and recreate it using 'odo service create
 }
 
 func init() {
-	linkCmd.PersistentFlags().StringVar(&linkComponent, "component", "", "Component to add link to, defaults to active component")
 
 	// Add a defined annotation in order to appear in the help menu
 	linkCmd.Annotations = map[string]string{"command": "component"}
 	linkCmd.SetUsageTemplate(cmdUsageTemplate)
+	//Adding `--project` flag
+	addProjectFlag(linkCmd)
+	//Adding `--application` flag
+	addApplicationFlag(linkCmd)
 
 	rootCmd.AddCommand(linkCmd)
 }

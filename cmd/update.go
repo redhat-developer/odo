@@ -8,7 +8,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -34,9 +33,9 @@ var updateCmd = &cobra.Command{
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
 
 		stdout := color.Output
 
@@ -60,14 +59,16 @@ var updateCmd = &cobra.Command{
 		var (
 			componentName string
 		)
+
+		projectName = setNamespace(client)
 		if len(args) == 0 {
-			componentName, err = component.GetCurrent(client, applicationName, projectName)
+			componentName, err := component.GetCurrent(applicationName, projectName)
 			checkError(err, "unable to get current component")
 			if len(componentName) == 0 {
-				appList, err := application.List(client)
+				appList, err := application.ListInProject(client)
 				checkError(err, "")
 				if len(appList) == 0 {
-					fmt.Println("Cannot update as no application exists in the current project")
+					fmt.Println("Cannot update as no application exists in the current projectName")
 					os.Exit(1)
 				}
 			}
@@ -121,6 +122,12 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	updateCmd.Annotations = map[string]string{"command": "component"}
 	updateCmd.SetUsageTemplate(cmdUsageTemplate)
+
+	//Adding `--application` flag
+	addApplicationFlag(updateCmd)
+
+	//Adding `--project` flag
+	addProjectFlag(updateCmd)
 
 	rootCmd.AddCommand(updateCmd)
 }

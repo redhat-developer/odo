@@ -3,9 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -29,12 +27,8 @@ var logCmd = &cobra.Command{
 		// Retrieve the client
 		client := getOcClient()
 
-		// Application
-		currentApplication, err := application.GetCurrent(client)
-		checkError(err, "")
-
-		// Project
-		currentProject := project.GetCurrent(client)
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
 
 		var argComponent string
 
@@ -43,10 +37,10 @@ var logCmd = &cobra.Command{
 		}
 
 		// Retrieve and set the currentComponent
-		currentComponent := getComponent(client, argComponent, currentApplication, currentProject)
+		currentComponent := getComponent(client, argComponent, applicationName, projectName)
 
 		// Retrieve the log
-		err = component.GetLogs(client, currentComponent, currentApplication, logFollow, stdout)
+		err := component.GetLogs(client, currentComponent, applicationName, logFollow, stdout)
 		checkError(err, "Unable to retrieve logs, does your component exist?")
 	},
 }
@@ -57,6 +51,11 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	logCmd.Annotations = map[string]string{"command": "component"}
 	logCmd.SetUsageTemplate(cmdUsageTemplate)
+
+	//Adding `--project` flag
+	addProjectFlag(logCmd)
+	//Adding `--application` flag
+	addApplicationFlag(logCmd)
 
 	rootCmd.AddCommand(logCmd)
 }

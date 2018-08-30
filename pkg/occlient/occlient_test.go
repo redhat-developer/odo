@@ -671,7 +671,7 @@ func TestCreateRoute(t *testing.T) {
 			service:    "mailserver",
 			portNumber: intstr.FromInt(8080),
 			labels: map[string]string{
-				"SLA":                              "High",
+				"SLA": "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "python",
 			},
@@ -684,7 +684,7 @@ func TestCreateRoute(t *testing.T) {
 			service:    "blog",
 			portNumber: intstr.FromInt(9100),
 			labels: map[string]string{
-				"SLA":                              "High",
+				"SLA": "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "golang",
 			},
@@ -980,7 +980,6 @@ func TestSetupForSupervisor(t *testing.T) {
 	tests := []struct {
 		name        string
 		dcName      string
-		projectName string
 		annotations map[string]string
 		labels      map[string]string
 		existingDc  appsv1.DeploymentConfig
@@ -988,15 +987,14 @@ func TestSetupForSupervisor(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:        "setup with normal correct values",
-			dcName:      "wildfly",
-			projectName: "project-testing",
+			name:   "setup with normal correct values",
+			dcName: "wildfly",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1030,7 +1028,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1051,15 +1049,14 @@ func TestSetupForSupervisor(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "setup with wrong pvc name",
-			dcName:      "wildfly",
-			projectName: "project-testing",
+			name:   "setup with wrong pvc name",
+			dcName: "wildfly",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1094,7 +1091,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1115,15 +1112,14 @@ func TestSetupForSupervisor(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:        "setup with wrong pvc specs",
-			dcName:      "wildfly",
-			projectName: "project-testing",
+			name:   "setup with wrong pvc specs",
+			dcName: "wildfly",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1158,7 +1154,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1178,15 +1174,14 @@ func TestSetupForSupervisor(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:        "setup with non existing dc",
-			dcName:      "wildfly",
-			projectName: "project-testing",
+			name:   "setup with non existing dc",
+			dcName: "wildfly",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1233,7 +1228,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				return true, &tt.createdPVC, nil
 			})
 
-			err := fkclient.SetupForSupervisor(tt.dcName, tt.projectName, tt.annotations, tt.labels)
+			err := fkclient.SetupForSupervisor(tt.dcName, tt.annotations, tt.labels)
 
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
@@ -1280,16 +1275,14 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 	tests := []struct {
 		name        string
 		dcName      string
-		projectName string
 		annotations map[string]string
 		existingDc  appsv1.DeploymentConfig
 		pvcName     string
 		wantErr     bool
 	}{
 		{
-			name:        "proper parameters and one volume,volumeMount and initContainer",
-			dcName:      "wildfly",
-			projectName: "project-testing",
+			name:   "proper parameters and one volume,volumeMount and initContainer",
+			dcName: "wildfly",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
@@ -1349,9 +1342,8 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "proper parameters and two volume,volumeMount and initContainer",
-			dcName:      "wildfly",
-			projectName: "project-testing",
+			name:   "proper parameters and two volume,volumeMount and initContainer",
+			dcName: "wildfly",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
@@ -1426,9 +1418,8 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "proper parameters and one volume,volumeMount and initContainer and non existing dc",
-			dcName:      "wildfly",
-			projectName: "project-testing",
+			name:   "proper parameters and one volume,volumeMount and initContainer and non existing dc",
+			dcName: "wildfly",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
@@ -1519,7 +1510,7 @@ func TestCleanupAfterSupervisor(t *testing.T) {
 				return true, nil, nil
 			})
 
-			err := fkclient.CleanupAfterSupervisor(tt.dcName, tt.projectName, tt.annotations)
+			err := fkclient.CleanupAfterSupervisor(tt.dcName, tt.annotations)
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
 				if (len(fkclientset.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
@@ -1594,14 +1585,12 @@ func TestGetBuildConfigFromName(t *testing.T) {
 	tests := []struct {
 		name                string
 		buildName           string
-		projectName         string
 		returnedBuildConfig buildv1.BuildConfig
 		wantErr             bool
 	}{
 		{
-			name:        "buildConfig with existing bc",
-			buildName:   "nodejs",
-			projectName: "project-app",
+			name:      "buildConfig with existing bc",
+			buildName: "nodejs",
 			returnedBuildConfig: buildv1.BuildConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nodejs",
@@ -1622,7 +1611,7 @@ func TestGetBuildConfigFromName(t *testing.T) {
 				return true, &tt.returnedBuildConfig, nil
 			})
 
-			build, err := fkclient.GetBuildConfigFromName(tt.buildName, tt.projectName)
+			build, err := fkclient.GetBuildConfigFromName(tt.buildName)
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
 				if (len(fkclientset.BuildClientset.Actions()) != 1) && (tt.wantErr != true) {
@@ -1644,7 +1633,6 @@ func TestUpdateBuildConfig(t *testing.T) {
 	tests := []struct {
 		name                string
 		buildConfigName     string
-		projectName         string
 		gitURL              string
 		annotations         map[string]string
 		existingBuildConfig buildv1.BuildConfig
@@ -1652,9 +1640,53 @@ func TestUpdateBuildConfig(t *testing.T) {
 		wantErr             bool
 	}{
 		{
+			name:            "git to local with proper parameters",
+			buildConfigName: "nodejs",
+			gitURL:          "",
+			annotations: map[string]string{
+				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
+				"app.kubernetes.io/component-source-type": "local",
+			},
+			existingBuildConfig: buildv1.BuildConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nodejs",
+				},
+				Spec: buildv1.BuildConfigSpec{
+					CommonSpec: buildv1.CommonSpec{
+						Source: buildv1.BuildSource{
+							Git: &buildv1.GitBuildSource{
+								URI: "https://github.com/sclorg/nodejs-ex",
+							},
+							Type: buildv1.BuildSourceGit,
+						},
+					},
+				},
+			},
+			updatedBuildConfig: buildv1.BuildConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nodejs",
+					Annotations: map[string]string{
+						"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
+						"app.kubernetes.io/component-source-type": "local",
+					},
+				},
+				Spec: buildv1.BuildConfigSpec{
+					CommonSpec: buildv1.CommonSpec{
+						Source: buildv1.BuildSource{
+							Git: &buildv1.GitBuildSource{
+								URI: bootstrapperURI,
+								Ref: bootstrapperRef,
+							},
+							Type: buildv1.BuildSourceGit,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name:            "local to git with proper parameters",
 			buildConfigName: "nodejs",
-			projectName:     "app",
 			gitURL:          "https://github.com/sclorg/nodejs-ex",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "https://github.com/sclorg/nodejs-ex",
@@ -1709,7 +1741,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 				return true, &tt.updatedBuildConfig, nil
 			})
 
-			err := fkclient.UpdateBuildConfig(tt.buildConfigName, tt.projectName, tt.gitURL, tt.annotations)
+			err := fkclient.UpdateBuildConfig(tt.buildConfigName, tt.gitURL, tt.annotations)
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
 				if (len(fkclientset.BuildClientset.Actions()) != 2) && (tt.wantErr != true) {
@@ -1758,7 +1790,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1784,7 +1816,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1811,7 +1843,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1838,7 +1870,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -2796,7 +2828,7 @@ func TestCreateService(t *testing.T) {
 			commonObjectMeta: metav1.ObjectMeta{
 				Name: "nodejs",
 				Labels: map[string]string{
-					"app":                              "apptmp",
+					"app": "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
@@ -3112,7 +3144,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 			return true, &tt.serviceList, nil
 		})
 
-		svcInstanceList, err := client.GetServiceInstanceList(tt.args.Project, tt.args.Selector)
+		svcInstanceList, err := client.GetServiceInstanceList(tt.args.Selector)
 
 		if !reflect.DeepEqual(tt.output, svcInstanceList) {
 			t.Errorf("expected output: %#v,got: %#v", tt.serviceList, svcInstanceList)

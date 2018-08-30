@@ -81,7 +81,7 @@ func DeleteService(client *occlient.Client, name string, applicationName string)
 }
 
 // List lists all the deployed services
-func List(client *occlient.Client, applicationName string, projectName string) ([]ServiceInfo, error) {
+func List(client *occlient.Client, applicationName string) ([]ServiceInfo, error) {
 	labels := map[string]string{
 		applabels.ApplicationLabel: applicationName,
 	}
@@ -91,7 +91,7 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 	applicationSelector := util.ConvertLabelsToSelector(labels)
 
 	// get service instance list based on given selector
-	serviceInstanceList, err := client.GetServiceInstanceList(projectName, applicationSelector)
+	serviceInstanceList, err := client.GetServiceInstanceList(applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list services")
 	}
@@ -124,9 +124,9 @@ func GetSvcByType(client *occlient.Client, serviceType string) (*occlient.Servic
 // serviceName is the service name to perform check for
 // The first returned parameter is a bool indicating if a service with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
-func SvcExists(client *occlient.Client, serviceName, applicationName, projectName string) (bool, error) {
+func SvcExists(client *occlient.Client, serviceName, applicationName string) (bool, error) {
 
-	serviceList, err := List(client, applicationName, projectName)
+	serviceList, err := List(client, applicationName)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the service list")
 	}
