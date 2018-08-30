@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"text/tabwriter"
+
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
@@ -14,6 +16,7 @@ import (
 var (
 	applicationShortFlag       bool
 	applicationForceDeleteFlag bool
+	projectName                string
 )
 
 // applicationCmd represents the app command
@@ -134,19 +137,39 @@ var applicationListCmd = &cobra.Command{
 	Long:  "List all applications in the current project.",
 	Example: `  # List all applications in the current project 
   odo app list
+
+  # List all applications in the specified project
+  odo app list --project myproject
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		apps, err := application.List(client)
-		checkError(err, "")
-		fmt.Printf("ACTIVE   NAME\n")
-		for _, app := range apps {
-			activeMark := " "
-			if app.Active {
-				activeMark = "*"
+		if projectName == "" {
+			projectName = project.GetCurrent(client)
+		} else {
+			exist, err := project.Exists(client, projectName)
+			checkError(err, "unable to check if project exists")
+			if !exist {
+				fmt.Printf("Project %s does not exist\n", projectName)
+				os.Exit(1)
 			}
-			fmt.Printf("  %s      %s\n", activeMark, app.Name)
+		}
+		apps, err := application.ListInProject(client, projectName)
+		checkError(err, "unable to get list of applications")
+		if len(apps) > 0 {
+			fmt.Printf("The project '%v' has the following applications:\n", projectName)
+			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(tabWriter, "ACTIVE", "\t", "NAME")
+			for _, app := range apps {
+				activeMark := " "
+				if app.Active {
+					activeMark = "*"
+				}
+				fmt.Fprintln(tabWriter, activeMark, "\t", app.Name)
+			}
+			tabWriter.Flush()
+		} else {
+			fmt.Printf("There are no applications deployed in the project '%v'.", projectName)
 		}
 	},
 }
@@ -233,6 +256,8 @@ func init() {
 	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
 	// add flags from 'get' to application command
 	applicationCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
+
+	applicationListCmd.Flags().StringVarP(&projectName, "project", "p", "", "List all applications in the specified project")
 
 	applicationCmd.AddCommand(applicationListCmd)
 	applicationCmd.AddCommand(applicationDeleteCmd)
