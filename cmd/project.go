@@ -182,12 +182,12 @@ var projectListCmd = &cobra.Command{
 			return
 		}
 		fmt.Printf("ACTIVE   NAME\n")
-		for _, app := range projects {
+		for _, project := range projects {
 			activeMark := " "
-			if app.Active {
+			if project.Active {
 				activeMark = "*"
 			}
-			fmt.Printf("  %s      %s\n", activeMark, app.Name)
+			fmt.Printf("  %s      %s\n", activeMark, project.Name)
 		}
 	},
 }

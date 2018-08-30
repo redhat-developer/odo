@@ -6,9 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -30,10 +28,8 @@ var componentDeleteCmd = &cobra.Command{
 		glog.V(4).Infof("args: %#v", strings.Join(args, " "))
 		client := getOcClient()
 
-		// Get all necessary names (current application + project)
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
 
 		// Get the current component if no arguments have been passed
 		var componentName string
@@ -68,7 +64,7 @@ var componentDeleteCmd = &cobra.Command{
 			checkError(err, "")
 			fmt.Printf("Component %s from application %s has been deleted\n", componentName, applicationName)
 
-			currentComponent, err := component.GetCurrent(client, applicationName, projectName)
+			currentComponent, err := component.GetCurrent(applicationName, projectName)
 			checkError(err, "Unable to get current component")
 
 			if currentComponent == "" {
@@ -89,6 +85,11 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
 	componentDeleteCmd.SetUsageTemplate(cmdUsageTemplate)
+
+	//Adding `--project` flag
+	addProjectFlag(componentDeleteCmd)
+	//Adding `--application` flag
+	addApplicationFlag(componentDeleteCmd)
 
 	rootCmd.AddCommand(componentDeleteCmd)
 }

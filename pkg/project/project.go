@@ -15,12 +15,14 @@ type ProjectInfo struct {
 	Active bool
 }
 
+// GetCurrent return current project
 func GetCurrent(client *occlient.Client) string {
 	project := client.GetCurrentProjectName()
 	return project
 }
 
-func SetCurrent(client *occlient.Client, project string) error {
+// SetCurrent sets the projectName as current project
+func SetCurrent(client *occlient.Client, projectName string) error {
 	currentProject := GetCurrent(client)
 
 	cfg, err := config.New()
@@ -29,16 +31,16 @@ func SetCurrent(client *occlient.Client, project string) error {
 	}
 	err = cfg.UnsetActiveApplication(currentProject)
 	if err != nil {
-		return errors.Wrap(err, "unable to unset active application of current project "+project)
+		return errors.Wrap(err, "unable to unset active application of current project "+projectName)
 	}
 	err = cfg.UnsetActiveComponent(currentProject)
 	if err != nil {
-		return errors.Wrap(err, "unable to unset active component of current project "+project)
+		return errors.Wrap(err, "unable to unset active component of current project "+projectName)
 	}
 
-	err = client.SetCurrentProject(project)
+	err = client.SetCurrentProject(projectName)
 	if err != nil {
-		return errors.Wrap(err, "unable to set current project to"+project)
+		return errors.Wrap(err, "unable to set current project to"+projectName)
 	}
 	return nil
 }
@@ -111,7 +113,7 @@ func List(client *occlient.Client) ([]ProjectInfo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot get all the projects")
 	}
-	projects := []ProjectInfo{}
+	var projects []ProjectInfo
 	for _, project := range allProjects {
 		isActive := false
 		if project == currentProject {
@@ -139,5 +141,5 @@ func Exists(client *occlient.Client, projectName string) (bool, error) {
 			return true, nil
 		}
 	}
-	return false, nil
+	return false, errors.Errorf(" %v project does not exist", projectName)
 }

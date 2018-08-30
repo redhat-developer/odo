@@ -5,9 +5,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -21,10 +19,11 @@ var componentListCmd = &cobra.Command{
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
-		currentComponent, err := component.GetCurrent(client, applicationName, projectName)
+
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+
+		currentComponent, err := component.GetCurrent(applicationName, projectName)
 		checkError(err, "")
 		components, err := component.List(client, applicationName, projectName)
 		checkError(err, "")
@@ -52,6 +51,11 @@ var componentListCmd = &cobra.Command{
 func init() {
 	// Add a defined annotation in order to appear in the help menu
 	componentListCmd.Annotations = map[string]string{"command": "component"}
+
+	//Adding `--project` flag
+	addProjectFlag(componentListCmd)
+	//Adding `--application` flag
+	addApplicationFlag(componentListCmd)
 
 	rootCmd.AddCommand(componentListCmd)
 }

@@ -241,18 +241,17 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 }
 
 // Delete whole component
-func Delete(client *occlient.Client, name string, applicationName string, projectName string) error {
+func Delete(client *occlient.Client, componentName string, applicationName string, projectName string) error {
 
 	cfg, err := config.New()
 	if err != nil {
-		return errors.Wrapf(err, "unable to create new configuration to delete %s", name)
+		return errors.Wrapf(err, "unable to create new configuration to delete %s", componentName)
 	}
 
-	labels := componentlabels.GetLabels(name, applicationName, false)
-
+	labels := componentlabels.GetLabels(componentName, applicationName, false)
 	err = client.Delete(labels)
 	if err != nil {
-		return errors.Wrapf(err, "error deleting component %s", name)
+		return errors.Wrapf(err, "error deleting component %s", componentName)
 	}
 
 	// Get a list of all components
@@ -267,37 +266,42 @@ func Delete(client *occlient.Client, name string, applicationName string, projec
 	// not to care for the update of the active component
 	activeComponent := cfg.GetActiveComponent(applicationName, projectName)
 	activeApplication := cfg.GetActiveApplication(projectName)
-	if activeComponent == name && activeApplication == applicationName {
+	if activeComponent == componentName && activeApplication == applicationName {
+		// We will *only* set a new component if either len(components) is zero, or the
+		// current component matches the one being deleted.
+		if current := cfg.GetActiveComponent(applicationName, projectName); current == componentName || len(components) == 0 {
 
-		// If there's more than one component, set it to the first one..
-		if len(components) > 0 {
-			err = cfg.SetActiveComponent(components[0].Name, applicationName, projectName)
+			// If there's more than one component, set it to the first one..
+			if len(components) > 0 {
+				err = cfg.SetActiveComponent(components[0].Name, applicationName, projectName)
 
-			if err != nil {
-				return errors.Wrapf(err, "unable to set current component to '%s'", name)
-			}
-		} else {
-			// Unset to blank
-			err = cfg.UnsetActiveComponent(projectName)
-			if err != nil {
-				return errors.Wrapf(err, "error unsetting current component while deleting %s", name)
+				if err != nil {
+					return errors.Wrapf(err, "unable to set current component to '%s'", componentName)
+				}
+			} else {
+				// Unset to blank
+				err = cfg.UnsetActiveComponent(projectName)
+				if err != nil {
+					return errors.Wrapf(err, "error unsetting current component while deleting %s", componentName)
+				}
 			}
 		}
-	}
 
+	}
 	return nil
 }
 
 // SetCurrent sets the given component to active in odo config file
-func SetCurrent(client *occlient.Client, name string, applicationName string, projectName string) error {
+
+func SetCurrent(componentName string, applicationName string, projectName string) error {
 	cfg, err := config.New()
 	if err != nil {
-		return errors.Wrapf(err, "unable to set current component %s", name)
+		return errors.Wrapf(err, "unable to set current component %s", componentName)
 	}
 
-	err = cfg.SetActiveComponent(name, applicationName, projectName)
+	err = cfg.SetActiveComponent(componentName, applicationName, projectName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to set current component %s", name)
+		return errors.Wrapf(err, "unable to set current component %s", componentName)
 	}
 
 	return nil
@@ -305,7 +309,7 @@ func SetCurrent(client *occlient.Client, name string, applicationName string, pr
 
 // GetCurrent component in active application
 // returns "" if there is no active component
-func GetCurrent(client *occlient.Client, applicationName string, projectName string) (string, error) {
+func GetCurrent(applicationName string, projectName string) (string, error) {
 	cfg, err := config.New()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get config")
@@ -402,11 +406,11 @@ func Build(client *occlient.Client, componentName string, applicationName string
 }
 
 // GetComponentType returns type of component in given application and project
-func GetComponentType(client *occlient.Client, componentName string, applicationName string, projectName string) (string, error) {
+func GetComponentType(client *occlient.Client, componentName string, applicationName string) (string, error) {
 
 	// filter according to component and application name
 	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, componentName, applabels.ApplicationLabel, applicationName)
-	componentImageTypes, err := client.GetLabelValues(projectName, componentlabels.ComponentTypeLabel, selector)
+	componentImageTypes, err := client.GetLabelValues(componentlabels.ComponentTypeLabel, selector)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get type of %s component")
 	}
@@ -431,15 +435,15 @@ func GetComponentType(client *occlient.Client, componentName string, application
 func List(client *occlient.Client, applicationName string, projectName string) ([]ComponentInfo, error) {
 
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
-	componentNames, err := client.GetLabelValues(projectName, componentlabels.ComponentLabel, applicationSelector)
+	componentNames, err := client.GetLabelValues(componentlabels.ComponentLabel, applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
 
-	components := []ComponentInfo{}
+	var components []ComponentInfo
 
 	for _, name := range componentNames {
-		componentImageType, err := GetComponentType(client, name, applicationName, projectName)
+		componentImageType, err := GetComponentType(client, name, applicationName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to list components")
 		}
@@ -461,7 +465,7 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		return "", "", errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	deploymentConfig, err := client.GetDeploymentConfigFromName(namespacedOpenShiftObject, projectName)
+	deploymentConfig, err := client.GetDeploymentConfigFromName(namespacedOpenShiftObject)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "unable to get source path for component %s", namespacedOpenShiftObject)
 	}
@@ -487,11 +491,8 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 
 	// STEP 1. Create the common Object Meta for updating.
 
-	// Retrieve the current project name
-	projectName := client.GetCurrentProjectName()
-
 	// Retrieve the old source type
-	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName, projectName)
+	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName, client.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get source of %s component", componentName)
 	}
@@ -507,7 +508,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 	annotations[componentSourceTypeAnnotation] = newSourceType
 
 	// Component Type
-	componentImageType, err := GetComponentType(client, componentName, applicationName, projectName)
+	componentImageType, err := GetComponentType(client, componentName, applicationName)
 	if err != nil {
 		return errors.Wrap(err, "unable to get component image type for updating")
 	}
@@ -532,7 +533,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		Annotations: annotations,
 	}
 
-	envVars, err := client.GetEnvVarsFromDC(namespacedOpenShiftObject, projectName)
+	envVars, err := client.GetEnvVarsFromDC(namespacedOpenShiftObject)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get env vars of %s component", componentName)
 	}
@@ -563,7 +564,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		}
 
 		// Cleanup after the supervisor
-		err = client.CleanupAfterSupervisor(namespacedOpenShiftObject, projectName, annotations)
+		err = client.CleanupAfterSupervisor(namespacedOpenShiftObject, annotations)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig  for %s component", componentName)
 		}
@@ -583,6 +584,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 
 		// Need to delete the old BuildConfig
 		err = client.DeleteBuildConfig(commonObjectMeta)
+
 		if err != nil {
 			return errors.Wrapf(err, "unable to delete BuildConfig for %s component", componentName)
 		}
@@ -600,7 +602,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		if newSourceType == "git" {
 
 			// Update the BuildConfig
-			err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, newSource, annotations)
+			err = client.UpdateBuildConfig(namespacedOpenShiftObject, newSource, annotations)
 			if err != nil {
 				return errors.Wrapf(err, "unable to update the build config %v", componentName)
 			}
@@ -619,6 +621,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 			// Update the sourceURL
 			sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
 			annotations[componentSourceURLAnnotation] = sourceURL
+
 			err = client.UpdateDCAnnotations(namespacedOpenShiftObject, annotations)
 		}
 
@@ -721,19 +724,19 @@ func getPortFromService(service *corev1.Service) (int32, error) {
 }
 
 // GetComponentDesc provides description such as source, url & storage about given component
-func GetComponentDesc(client *occlient.Client, currentComponent string, currentApplication string, currentProject string) (componentImageType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
+func GetComponentDesc(client *occlient.Client, componentName string, applicationName string, projectName string) (componentImageType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
 	// Component Type
-	componentImageType, err = GetComponentType(client, currentComponent, currentApplication, currentProject)
+	componentImageType, err = GetComponentType(client, componentName, applicationName)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
 	// Source
-	_, path, err = GetComponentSource(client, currentComponent, currentApplication, currentProject)
+	_, path, err = GetComponentSource(client, componentName, applicationName, projectName)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
 	// URL
-	urlList, err := urlpkg.List(client, currentComponent, currentApplication)
+	urlList, err := urlpkg.List(client, componentName, applicationName)
 	if len(urlList) != 0 {
 		componentURL = urlList[0].URL
 	}
@@ -741,11 +744,10 @@ func GetComponentDesc(client *occlient.Client, currentComponent string, currentA
 		return "", "", "", nil, errors.Wrap(err, "unable to get url list")
 	}
 	//Storage
-	appStore, err = storage.List(client, currentComponent, currentApplication)
+	appStore, err = storage.List(client, componentName, applicationName)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get storage list")
 	}
-
 	return componentImageType, path, componentURL, appStore, nil
 }
 

@@ -55,15 +55,12 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 }
 
 // Create a new application
-func Create(client *occlient.Client, applicationName string) error {
-	project := project.GetCurrent(client)
+func Create(client *occlient.Client, appName string) error {
 
-	exists, err := Exists(client, applicationName)
-	if err != nil {
-		return errors.Wrap(err, "unable to create new application")
-	}
+	exists, _ := Exists(client, appName)
+
 	if exists {
-		return fmt.Errorf("unable to create new application, %s application already exists", applicationName)
+		return fmt.Errorf("unable to create new application, %s application already exists", appName)
 	}
 
 	cfg, err := config.New()
@@ -71,7 +68,7 @@ func Create(client *occlient.Client, applicationName string) error {
 		return errors.Wrap(err, "unable to create new application")
 	}
 
-	err = cfg.AddApplication(applicationName, project)
+	err = cfg.AddApplication(appName, client.Namespace)
 	if err != nil {
 		return errors.Wrap(err, "unable to create new application")
 	}
@@ -80,15 +77,15 @@ func Create(client *occlient.Client, applicationName string) error {
 
 // List all applications in current project
 func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
-	return ListInProject(client, project.GetCurrent(client))
+	return ListInProject(client)
 }
 
 // ListInProject lists all applications in given project
 // Queries cluster and config file.
 // Shows also empty applications (empty applications are those that are just
 // mentioned in config file but don't have any object associated with it on cluster).
-func ListInProject(client *occlient.Client, project string) ([]config.ApplicationInfo, error) {
-	applications := []config.ApplicationInfo{}
+func ListInProject(client *occlient.Client) ([]config.ApplicationInfo, error) {
+	var applications []config.ApplicationInfo
 
 	cfg, err := config.New()
 	if err != nil {
@@ -97,13 +94,13 @@ func ListInProject(client *occlient.Client, project string) ([]config.Applicatio
 
 	// All applications of the current project from config file
 	for i := range cfg.ActiveApplications {
-		if cfg.ActiveApplications[i].Project == project {
+		if cfg.ActiveApplications[i].Project == client.Namespace {
 			applications = append(applications, cfg.ActiveApplications[i])
 		}
 	}
 
 	// Get applications from cluster
-	appNames, err := client.GetLabelValues(project, applabels.ApplicationLabel, applabels.ApplicationLabel)
+	appNames, err := client.GetLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications")
 	}
@@ -112,7 +109,7 @@ func ListInProject(client *occlient.Client, project string) ([]config.Applicatio
 		// skip applications that are already in the list (they were mentioned in config file)
 		found := false
 		for _, app := range applications {
-			if app.Project == project && app.Name == name {
+			if app.Project == client.Namespace && app.Name == name {
 				found = true
 			}
 		}
@@ -121,7 +118,7 @@ func ListInProject(client *occlient.Client, project string) ([]config.Applicatio
 				Name: name,
 				// if this application is not in config file, it can't be active
 				Active:  false,
-				Project: project,
+				Project: client.Namespace,
 			})
 		}
 	}
@@ -147,9 +144,7 @@ func Delete(client *occlient.Client, name string) error {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
 
-	project := project.GetCurrent(client)
-
-	err = cfg.DeleteApplication(name, project)
+	err = cfg.DeleteApplication(name, client.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
@@ -159,15 +154,13 @@ func Delete(client *occlient.Client, name string) error {
 
 // GetCurrent returns currently active application.
 // If no application is active this functions returns empty string
-func GetCurrent(client *occlient.Client) (string, error) {
-	project := project.GetCurrent(client)
-
+func GetCurrent(projectName string) (string, error) {
 	cfg, err := config.New()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
 
-	app := cfg.GetActiveApplication(project)
+	app := cfg.GetActiveApplication(projectName)
 	return app, nil
 }
 
@@ -178,11 +171,11 @@ func GetCurrent(client *occlient.Client) (string, error) {
 // Do not use for read operations like get, list; only for write operations like
 // create
 func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
-	currentApp, err := GetCurrent(client)
+	projectName := project.GetCurrent(client)
+	currentApp, err := GetCurrent(projectName)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
-
 	// if no Application is active use default
 	if currentApp == "" {
 		// get default application name
@@ -192,10 +185,7 @@ func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
 		}
 		currentApp = defaultName
 		// create if default application does not exist
-		exists, err := Exists(client, currentApp)
-		if err != nil {
-			return "", errors.Wrapf(err, "unable to check if app %v exists", currentApp)
-		}
+		exists, _ := Exists(client, currentApp)
 		if !exists {
 			if err := Create(client, currentApp); err != nil {
 				return "", errors.Wrapf(err, "unable to create app %v", currentApp)
@@ -210,22 +200,20 @@ func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
 }
 
 // SetCurrent set application as active
-func SetCurrent(client *occlient.Client, name string) error {
-	glog.V(4).Infof("Setting application %s as current.\n", name)
-
-	project := project.GetCurrent(client)
+func SetCurrent(client *occlient.Client, appName string) error {
+	glog.V(4).Infof("Setting application %s as current.\n", appName)
 
 	cfg, err := config.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
 	}
 
-	exists, err := Exists(client, name)
+	exists, err := Exists(client, appName)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
 	}
 	if !exists {
-		return fmt.Errorf("application %s doesn't exist", name)
+		return fmt.Errorf("application %s doesn't exist", appName)
 	}
 
 	// There might be a situation where application is not defined in local config
@@ -233,16 +221,19 @@ func SetCurrent(client *occlient.Client, name string) error {
 	// In that case we need to add application back to the the config before we set it as active.
 	found := false
 	for _, cfgApp := range cfg.ActiveApplications {
-		if cfgApp.Project == project && cfgApp.Name == name {
+		if cfgApp.Project == client.Namespace && cfgApp.Name == appName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		cfg.AddApplication(name, project)
+		err := cfg.AddApplication(appName, client.Namespace)
+		if err != nil {
+			return errors.Wrap(err, "unable to add application")
+		}
 	}
 
-	err = cfg.SetActiveApplication(name, project)
+	err = cfg.SetActiveApplication(appName, client.Namespace)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
 	}
@@ -250,16 +241,15 @@ func SetCurrent(client *occlient.Client, name string) error {
 	return nil
 }
 
-// Exists returns true if given application name exist
-func Exists(client *occlient.Client, name string) (bool, error) {
-	apps, err := List(client)
+func Exists(client *occlient.Client, appName string) (bool, error) {
+	apps, err := ListInProject(client)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to list applications")
 	}
 	for _, app := range apps {
-		if app.Name == name {
+		if app.Name == appName {
 			return true, nil
 		}
 	}
-	return false, nil
+	return false, errors.Errorf("application %v does not exist in project %v", appName, client.Namespace)
 }

@@ -5,16 +5,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/project"
+	"text/tabwriter"
+
 	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/spf13/cobra"
-	"text/tabwriter"
 )
 
 var (
-	urlComponent       string
-	urlApplication     string
 	urlForceDeleteFlag bool
 	urlPort            int
 )
@@ -53,28 +50,12 @@ The created URL can be used to access the specified component from outside the O
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
 
-		var app string
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+		componentName := getComponent(client, componentFlag, applicationName, projectName)
+
 		var urlName string
-
-		if urlApplication == "" {
-			app, err = application.GetCurrent(client)
-			checkError(err, "")
-		} else {
-			exists, err := application.Exists(client, urlApplication)
-			checkError(err, "unable to check if the application exists or not")
-			if !exists {
-				fmt.Printf("The application %s does not exists in the project %s\n", urlApplication, projectName)
-				os.Exit(1)
-			}
-			app = urlApplication
-		}
-
-		componentName := getComponent(client, urlComponent, app, projectName)
-
 		switch len(args) {
 		case 0:
 			urlName = componentName
@@ -112,11 +93,10 @@ var urlDeleteCmd = &cobra.Command{
 
 		// Initialization
 		client := getOcClient()
-		projectName := project.GetCurrent(client)
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
 
-		componentName := getComponent(client, urlComponent, applicationName, projectName)
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+		componentName := getComponent(client, componentFlag, applicationName, projectName)
 
 		urlName := args[0]
 
@@ -157,33 +137,18 @@ var urlListCmd = &cobra.Command{
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		projectName := project.GetCurrent(client)
 
-		var app string
-		var err error
+		projectName := setNamespace(client)
+		applicationName := getAppName(client)
+		componentName := getComponent(client, componentFlag, applicationName, projectName)
 
-		if urlApplication == "" {
-			app, err = application.GetCurrent(client)
-			checkError(err, "")
-		} else {
-			exists, err := application.Exists(client, urlApplication)
-			checkError(err, "unable to check if the application exists or not")
-			if !exists {
-				fmt.Printf("The application %s does not exists in the project %s\n", urlApplication, projectName)
-				os.Exit(1)
-			}
-			app = urlApplication
-		}
-
-		componentName := getComponent(client, urlComponent, app, projectName)
-
-		urls, err := url.List(client, componentName, app)
+		urls, err := url.List(client, componentName, applicationName)
 		checkError(err, "")
 
 		if len(urls) == 0 {
-			fmt.Printf("No URLs found for component %v in application %v\n", componentName, app)
+			fmt.Printf("No URLs found for component %v in application %v\n", componentName, applicationName)
 		} else {
-			fmt.Printf("Found the following URLs for component %v in application %v:\n", componentName, app)
+			fmt.Printf("Found the following URLs for component %v in application %v:\n", componentName, applicationName)
 
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
@@ -199,15 +164,9 @@ var urlListCmd = &cobra.Command{
 }
 
 func init() {
-	urlCreateCmd.Flags().StringVarP(&urlApplication, "application", "a", "", "create url for application")
-	urlCreateCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "create url for component")
 	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 
 	urlDeleteCmd.Flags().BoolVarP(&urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
-	urlDeleteCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "delete url for component")
-
-	urlListCmd.Flags().StringVarP(&urlApplication, "application", "a", "", "list URLs for application")
-	urlListCmd.Flags().StringVarP(&urlComponent, "component", "c", "", "list URLs for component")
 
 	urlCmd.AddCommand(urlListCmd)
 	urlCmd.AddCommand(urlDeleteCmd)
@@ -216,6 +175,21 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	urlCmd.Annotations = map[string]string{"command": "other"}
 	urlCmd.SetUsageTemplate(cmdUsageTemplate)
+
+	//Adding `--project` flag
+	addProjectFlag(urlListCmd)
+	addProjectFlag(urlCreateCmd)
+	addProjectFlag(urlDeleteCmd)
+
+	//Adding `--application` flag
+	addApplicationFlag(urlListCmd)
+	addApplicationFlag(urlDeleteCmd)
+	addApplicationFlag(urlCreateCmd)
+
+	//Adding `--component` flag
+	addComponentFlag(urlDeleteCmd)
+	addComponentFlag(urlListCmd)
+	addComponentFlag(urlCreateCmd)
 
 	rootCmd.AddCommand(urlCmd)
 }

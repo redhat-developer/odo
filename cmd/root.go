@@ -17,6 +17,9 @@ import (
 // Global variables
 var (
 	GlobalSkipConnectionCheck bool
+	projectFlag               string
+	applicationFlag           string
+	componentFlag             string
 )
 
 // Templates
