@@ -34,13 +34,13 @@ var catalogListCmd = &cobra.Command{
 
 var catalogListComponentCmd = &cobra.Command{
 	Use:   "components",
-	Short: "List all available component types.",
+	Short: "List all components available.",
 	Long:  "List all available component types from OpenShift's Image Builder.",
 	Example: `  # Get the supported components
   odo catalog list components
 
   # Search for a supported component
-  odo catalog search components nodejs
+  odo catalog search component nodejs
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -77,13 +77,13 @@ var catalogListComponentCmd = &cobra.Command{
 
 var catalogListServiceCmd = &cobra.Command{
 	Use:   "services",
-	Short: "Lists all the services from service catalog",
-	Long:  "Lists all the services from service catalog",
+	Short: "Lists all available services",
+	Long:  "Lists all available services",
 	Example: `  # List all services
   odo catalog list services
 
- # Search for a supported services
-  odo catalog search services mysql
+ # Search for a supported service
+  odo catalog search service mysql
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -111,7 +111,7 @@ This searches for a partial match for the given search term in all the available
 components & services.
 `,
 	Example: `  # Search for a component
-  odo catalog search components python
+  odo catalog search component python
 
   # Search for a service
   odo catalog search service mysql
@@ -119,7 +119,7 @@ components & services.
 }
 
 var catalogSearchComponentCmd = &cobra.Command{
-	Use:   "components",
+	Use:   "component",
 	Short: "Search component type in catalog",
 	Long: `Search component type in catalog.
 
@@ -128,7 +128,7 @@ components.
 `,
 	Args: cobra.ExactArgs(1),
 	Example: `  # Search for a component
-  odo catalog search components python
+  odo catalog search component python
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
@@ -149,7 +149,7 @@ components.
 }
 
 var catalogSearchServiceCmd = &cobra.Command{
-	Use:   "services",
+	Use:   "service",
 	Short: "Search service type in catalog",
 	Long: `Search service type in catalog.
 
@@ -157,7 +157,7 @@ This searches for a partial match for the given search term in all the available
 services from service catalog.
 `,
 	Example: `  # Search for a service
-  odo catalog search services mysql
+  odo catalog search service mysql
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

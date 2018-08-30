@@ -34,7 +34,7 @@ var serviceCreateCmd = &cobra.Command{
 
 If service name is not provided, service type value will be used.
 
-A full list of service types that can be deployed is available using: 'odo service catalog'`,
+A full list of service types that can be deployed are available using: 'odo catalog list services'`,
 	Example: `  # Create new mysql-persistent service from service catalog.
   odo service create mysql-persistent
 	`,
@@ -63,7 +63,7 @@ A full list of service types that can be deployed is available using: 'odo servi
 		exists, err = svc.SvcExists(client, serviceName, applicationName, projectName)
 		checkError(err, "")
 		if exists {
-			fmt.Printf("Service with the name %s already exists in the current application.\n", serviceName)
+			fmt.Printf("%s service already exists in the current application.\n", serviceName)
 			os.Exit(1)
 		}
 		err = svc.CreateService(client, serviceName, serviceType, applicationName)
@@ -76,13 +76,14 @@ var serviceDeleteCmd = &cobra.Command{
 	Use:   "delete <service_name>",
 	Short: "Delete an existing service",
 	Long:  "Delete an existing service",
-	Example: `  # Delete service named 'mysql-persistent'
+	Example: `  # Delete the service named 'mysql-persistent'
   odo service delete mysql-persistent
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		glog.V(4).Infof("service delete called")
-		glog.V(4).Infof("args: %#v", strings.Join(args, " "))
+
+		glog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
+
 		client := getOcClient()
 
 		// Get all necessary names (current application + project)
@@ -156,7 +157,6 @@ func init() {
 	serviceCmd.SetUsageTemplate(cmdUsageTemplate)
 	serviceCmd.AddCommand(serviceCreateCmd)
 	serviceCmd.AddCommand(serviceDeleteCmd)
-	//serviceCmd.AddCommand(serviceCatalogCmd)
 	serviceCmd.AddCommand(serviceListCmd)
 	rootCmd.AddCommand(serviceCmd)
 }
