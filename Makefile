@@ -57,7 +57,7 @@ generate-cli-structure:
 
 .PHONY: generate-cli-reference
 generate-cli-reference:
-	go run scripts/cli-reference/generate-cli-reference.go
+	go run scripts/cli-reference/generate-cli-reference.go > docs/cli-reference.md
 
 # create gzipped binaries in ./dist/release/
 # for uploading to GitHub release page
