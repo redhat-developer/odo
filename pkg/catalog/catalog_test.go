@@ -67,9 +67,6 @@ func TestVersionExist(t *testing.T) {
 				return true, testingutil.FakeImageStreams(tt.args.name, tt.args.namespace, tt.args.tags), nil
 			})
 
-			fakeClientSet.ImageClientset.PrependReactor("list", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, testingutil.FakeImageStreams(tt.args.name, "openshift", tt.args.tags), nil
-			})
 			// The function we are testing
 			doesItExist, err := VersionExists(client, tt.args.componentType, tt.args.componentVersion)
 
@@ -80,6 +77,10 @@ func TestVersionExist(t *testing.T) {
 			// Checks for error in positive cases
 			if tt.wantErr && doesItExist {
 				t.Errorf("VersionExist() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if len(fakeClientSet.ImageClientset.Actions()) != 2 { // 1 call for current project + 1 call from openshift project
+				t.Errorf("expected 2 ImageClientset.Actions() in VersionExist, got: %v", fakeClientSet.ImageClientset.Actions())
 			}
 
 			// Check if the output is the same as what's expected (tags)
@@ -162,6 +163,10 @@ func TestList(t *testing.T) {
 			//Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component List() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if len(fakeClientSet.ImageClientset.Actions()) != 2 { // 1 call for current project + 1 call from openshift project
+				t.Errorf("expected 2 ImageClientset.Actions() in List, got: %v", fakeClientSet.ImageClientset.Actions())
 			}
 
 			// Check if the output is the same as what's expected (tags)

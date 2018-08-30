@@ -125,10 +125,10 @@ Note:
 By default builder imagestreams from current project are used for building your application.
 But, if the builder imagestream corresponding to the type of requested component does not exist in the current project,
 builder imagestreams from openshift namespace are also considered. But if you would like to specifically use the default
-builder imagestream, you can fully qualify the component type using $project/$component_type:$version.
+builder imagestream, you can fully qualify the component type using `$project/$component_type:$version`.
 Accordingly following commands can also be used:
-* odo create openshift/nodejs:6 --local=.
-* odo create nodejs:6 --local=.
+* `odo create openshift/nodejs:6 --local=.`
+* `odo create nodejs:6 --local=.`
 
 For more details please refer https://github.com/redhat-developer/odo/blob/master/docs/cli-reference.md#create
 

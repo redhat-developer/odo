@@ -2037,11 +2037,12 @@ func TestIsTagInImageStream(t *testing.T) {
 
 func TestGetExposedPorts(t *testing.T) {
 	tests := []struct {
-		name        string
-		imagestream *imagev1.ImageStream
-		imageTag    string
-		wantErr     bool
-		want        []corev1.ContainerPort
+		name          string
+		imagestream   *imagev1.ImageStream
+		imageTag      string
+		wantErr       bool
+		want          []corev1.ContainerPort
+		wantActionCnt int
 	}{
 		{
 			name:        "Case: Valid image ports",
@@ -2054,12 +2055,14 @@ func TestGetExposedPorts(t *testing.T) {
 					Protocol:      "TCP",
 				},
 			},
+			wantActionCnt: 1,
 		},
 		{
-			name:        "Case: Invalid image tag",
-			imagestream: fakeImageStream("bar", "testing", []string{"latest"}),
-			imageTag:    "0.1",
-			wantErr:     true,
+			name:          "Case: Invalid image tag",
+			imagestream:   fakeImageStream("bar", "testing", []string{"latest"}),
+			imageTag:      "0.1",
+			wantErr:       true,
+			wantActionCnt: 0,
 		},
 	}
 	for _, tt := range tests {
@@ -2075,6 +2078,10 @@ func TestGetExposedPorts(t *testing.T) {
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("client.GetExposedPorts(imagestream imageTag) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if len(fkclientset.ImageClientset.Actions()) != tt.wantActionCnt {
+				t.Errorf("expected 1 ImageClientset.Actions() in GetExposedPorts, got: %v", fkclientset.ImageClientset.Actions())
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
