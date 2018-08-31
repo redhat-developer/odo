@@ -101,7 +101,7 @@ components & services.
   odo catalog search components python
 
   # Search for a service
-  odo catalog search service mysql
+  odo catalog search services mysql
 	`,
 }
 
