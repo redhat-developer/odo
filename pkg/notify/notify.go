@@ -29,10 +29,8 @@ func getLatestReleaseTag() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "error getting latest release")
 	}
-	version_string := string(body)
-	version_string = strings.TrimSuffix(version_string, "\n")
 
-	return version_string, nil
+	return strings.TrimSuffix(string(body), "\n"), nil
 }
 
 // CheckLatestReleaseTag returns the latest release tag if a newer latest
