@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -99,4 +100,25 @@ func ParseCreateCmdArgs(args []string) (string, string, string, string) {
 		componentVersion = versionSplit[1]
 	}
 	return componentImageName, componentType, componentName, componentVersion
+}
+
+const WIN = "windows"
+
+// Reads file path form URL file:///C:/path/to/file to C:\path\to\file
+func ReadFilePath(u *url.URL, os string) string {
+	location := u.Path
+	if os == WIN {
+		location = strings.Replace(u.Path, "/", "\\", -1)
+		location = location[1:]
+	}
+	return location
+}
+
+// Converts file path on windows to /C:/path/to/file to work in URL
+func GenFileUrl(location string, os string) string {
+	urlPath := location
+	if os == WIN {
+		urlPath = "/" + strings.Replace(location, "\\", "/", -1)
+	}
+	return "file://" + urlPath
 }

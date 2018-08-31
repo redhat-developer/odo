@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"runtime"
 
 	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"path/filepath"
 
@@ -69,8 +71,9 @@ var pushCmd = &cobra.Command{
 					fmt.Printf("Unable to push local directory:%s to component %s that uses binary %s.\n", componentLocal, componentName, sourcePath)
 					os.Exit(1)
 				}
-				sourcePath = componentLocal
+				sourcePath = util.GenFileUrl(componentLocal, runtime.GOOS)
 			}
+
 			u, err := url.Parse(sourcePath)
 			checkError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
 
@@ -78,18 +81,21 @@ var pushCmd = &cobra.Command{
 				fmt.Printf("Component %s has invalid source path %s", componentName, u.Scheme)
 				os.Exit(1)
 			}
-			_, err = os.Stat(u.Path)
+
+			localLocation := util.ReadFilePath(u, runtime.GOOS)
+
+			_, err = os.Stat(localLocation)
 			if err != nil {
 				checkError(err, "")
 			}
 
 			if sourceType == "local" {
-				glog.V(4).Infof("Copying directory %s to pod", u.Path)
-				err = component.PushLocal(client, componentName, applicationName, u.Path, os.Stdout, []string{})
+				glog.V(4).Infof("Copying directory %s to pod", localLocation)
+				err = component.PushLocal(client, componentName, applicationName, localLocation, os.Stdout, []string{})
 			} else {
-				dir := filepath.Dir(u.Path)
-				glog.V(4).Infof("Copying file %s to pod", u.Path)
-				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{u.Path})
+				dir := filepath.Dir(localLocation)
+				glog.V(4).Infof("Copying file %s to pod", localLocation)
+				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation})
 			}
 			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
 

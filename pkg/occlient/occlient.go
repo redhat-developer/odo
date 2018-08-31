@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -1769,7 +1770,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
 func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string) error {
-	dest := targetPath + "/" + path.Base(localPath)
+	dest := path.Join(targetPath, filepath.Base(localPath))
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
 	go func() {
@@ -1840,8 +1841,10 @@ func tar(tw *taro.Writer, fileName string, destFile string) error {
 	}
 	splitFileName := strings.Split(fileName, destFile)[1]
 
-	hdr.Name = destFile + splitFileName
-
+	// hdr.Name can have only '/' as path separator, next line makes sure there is no '\'
+	// in hdr.Name on Windows by replacing '\' to '/' in splitFileName. destFile is
+	// a result of path.Base() call and never have '\' in it.
+	hdr.Name = destFile + strings.Replace(splitFileName, "\\", "/", -1)
 	// write the header to the tarball archive
 	err = tw.WriteHeader(hdr)
 	if err != nil {
