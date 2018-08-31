@@ -14,8 +14,6 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
-
-	dockerapiv10 "github.com/openshift/api/image/docker10"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
@@ -23,10 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
-
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // fakeImageStream gets imagestream for the reactor
@@ -126,8 +123,8 @@ func fakeImageStreamImage(imageName string, ports []string) *imagev1.ImageStream
 				Name: "@sha256:9579a93ee",
 			},
 			DockerImageMetadata: runtime.RawExtension{
-				Object: &dockerapiv10.DockerImage{
-					ContainerConfig: dockerapiv10.DockerConfig{
+				Object: &dockerapi.DockerImage{
+					ContainerConfig: dockerapi.DockerConfig{
 						ExposedPorts: exposedPorts,
 					},
 				},
@@ -2953,5 +2950,267 @@ func TestGetServiceInstanceList(t *testing.T) {
 		} else if err != nil && !tt.wantErr {
 			t.Errorf("test failed, expected: no error, got error: %s", err.Error())
 		}
+	}
+}
+
+func TestGetClusterServicePlans(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		want    []scv1beta1.ClusterServicePlan
+		wantErr bool
+	}{
+		{
+			name:    "test case 1",
+			wantErr: false,
+			want: []scv1beta1.ClusterServicePlan{
+				{
+					Spec: scv1beta1.ClusterServicePlanSpec{
+						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+							Name: "1dda1477cace09730bd8ed7a6505607e",
+						},
+						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+							ExternalName: "dev",
+						},
+					},
+				},
+
+				{
+					Spec: scv1beta1.ClusterServicePlanSpec{
+						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+							Name: "1dda1477cace09730bd8ed7a6505607e",
+						},
+						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+							ExternalName: "prod",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	planList := scv1beta1.ClusterServicePlanList{
+		Items: []scv1beta1.ClusterServicePlan{
+			{
+				Spec: scv1beta1.ClusterServicePlanSpec{
+					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+						Name: "1dda1477cace09730bd8ed7a6505607e",
+					},
+					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+						ExternalName: "dev",
+					},
+				},
+			},
+
+			{
+				Spec: scv1beta1.ClusterServicePlanSpec{
+					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+						Name: "1dda1477cace09730bd8ed7a6505607e",
+					},
+					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+						ExternalName: "prod",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := FakeNew()
+
+			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &planList, nil
+			})
+
+			got, err := client.GetAllClusterServicePlans()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Client.GetClusterServicePlans() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("error is here Client.GetClusterServicePlans() = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetClusterServiceClasses(t *testing.T) {
+	tests := []struct {
+		name    string
+		want    []scv1beta1.ClusterServiceClass
+		wantErr bool
+	}{
+		{
+			name:    "test case 1",
+			wantErr: false,
+			want: []scv1beta1.ClusterServiceClass{
+				{
+					Spec: scv1beta1.ClusterServiceClassSpec{
+						CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+							ExternalName: "dh-mongodb-apb",
+							ExternalID:   "e9c042c4925dd0c7c25ceca4f5179e1c",
+						},
+					},
+				},
+				{
+					Spec: scv1beta1.ClusterServiceClassSpec{
+						CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+							ExternalName: "mongodb-persistent",
+							ExternalID:   "e2377e48-bfc5-11e8-81c3-c85b7664d300",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	classList := scv1beta1.ClusterServiceClassList{
+		Items: []scv1beta1.ClusterServiceClass{
+			{
+				Spec: scv1beta1.ClusterServiceClassSpec{
+					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+						ExternalName: "dh-mongodb-apb",
+						ExternalID:   "e9c042c4925dd0c7c25ceca4f5179e1c",
+					},
+				},
+			},
+			{
+				Spec: scv1beta1.ClusterServiceClassSpec{
+					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+						ExternalName: "mongodb-persistent",
+						ExternalID:   "e2377e48-bfc5-11e8-81c3-c85b7664d300",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := FakeNew()
+			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &classList, nil
+			})
+			got, err := client.GetClusterServiceClasses()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Client.GetClusterServicePlans() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("error is here Client.GetClusterServicePlans() = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetClusterServiceClassExternalNamesAndPlans(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		want    []Service
+		wantErr bool
+	}{
+		{
+			name: "test case 1",
+			want: []Service{
+				{Name: "dh-postgresql-apb", PlanList: []string{"dev", "prod"}},
+				{Name: "dh-mysql-apb", PlanList: []string{"dev", "prod"}},
+			},
+			wantErr: false,
+		},
+	}
+
+	classList := scv1beta1.ClusterServiceClassList{
+		Items: []scv1beta1.ClusterServiceClass{
+			{
+				Spec: scv1beta1.ClusterServiceClassSpec{
+					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+						ExternalName: "dh-postgresql-apb",
+						ExternalID:   "1dda1477cace09730bd8ed7a6505607e",
+					},
+				},
+			},
+			{
+				Spec: scv1beta1.ClusterServiceClassSpec{
+					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+						ExternalName: "dh-mysql-apb",
+						ExternalID:   "ddd528762894b277001df310a126d5ad",
+					},
+				},
+			},
+		},
+	}
+
+	planList := scv1beta1.ClusterServicePlanList{
+		Items: []scv1beta1.ClusterServicePlan{
+			// dh-postgresql-apb
+			{
+				Spec: scv1beta1.ClusterServicePlanSpec{
+					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+						Name: "1dda1477cace09730bd8ed7a6505607e",
+					},
+					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+						ExternalName: "dev",
+					},
+				},
+			},
+
+			{
+				Spec: scv1beta1.ClusterServicePlanSpec{
+					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+						Name: "1dda1477cace09730bd8ed7a6505607e",
+					},
+					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+						ExternalName: "prod",
+					},
+				},
+			},
+			// dh-mysql-apb
+			{
+				Spec: scv1beta1.ClusterServicePlanSpec{
+					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+						Name: "ddd528762894b277001df310a126d5ad",
+					},
+					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+						ExternalName: "dev",
+					},
+				},
+			},
+
+			{
+				Spec: scv1beta1.ClusterServicePlanSpec{
+					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+						Name: "ddd528762894b277001df310a126d5ad",
+					},
+					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+						ExternalName: "prod",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := FakeNew()
+			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &classList, nil
+			})
+
+			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (bool, runtime.Object, error) {
+
+				return true, &planList, nil
+			})
+
+			got, err := client.GetClusterServiceClassExternalNamesAndPlans()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Client.GetClusterServiceClassExternalNames() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Client.GetClusterServiceClassExternalNames() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
