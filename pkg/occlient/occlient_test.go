@@ -2081,7 +2081,7 @@ func TestGetExposedPorts(t *testing.T) {
 			}
 
 			if len(fkclientset.ImageClientset.Actions()) != tt.wantActionCnt {
-				t.Errorf("expected 1 ImageClientset.Actions() in GetExposedPorts, got: %v", fkclientset.ImageClientset.Actions())
+				t.Errorf("expected %d ImageClientset.Actions() in GetExposedPorts, got: %v", tt.wantActionCnt, fkclientset.ImageClientset.Actions())
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
@@ -2169,7 +2169,7 @@ func TestGetImageStream(t *testing.T) {
 
 			got, err := fkclient.GetImageStream(tt.imageNS, tt.imageName, tt.imageTag)
 			if len(fkclientset.ImageClientset.Actions()) != tt.wantActionsCnt {
-				t.Errorf("expected 1 ImageClientset.Actions() in GetImageStream, got %v", fkclientset.ImageClientset.Actions())
+				t.Errorf("expected %d ImageClientset.Actions() in GetImageStream, got %v", tt.wantActionsCnt, fkclientset.ImageClientset.Actions())
 			}
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("\nclient.GetImageStream(imageNS, imageName, imageTag) unexpected error %v, wantErr %v", err, tt.wantErr)
