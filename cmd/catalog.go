@@ -71,11 +71,6 @@ var catalogListComponentCmd = &cobra.Command{
 				fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(component.Tags, ","))
 			}
 			w.Flush()
-			fmt.Println(
-				`NOTE: There might be items in multiple projects.
-Items from the current project (marked with *) will take precedence.
-If you want to use an item from a different namespace, use the full name as <namespace>/<name>`,
-			)
 		}
 	},
 }
