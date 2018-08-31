@@ -24,6 +24,7 @@ import (
 var t = strconv.FormatInt(time.Now().Unix(), 10)
 var projName = fmt.Sprintf("odo-%s", t)
 var curProj string
+var testNamespacedImage = "https://raw.githubusercontent.com/bucharest-gold/centos7-s2i-nodejs/master/imagestreams/nodejs-centos7.json"
 
 const appTestName = "testing"
 
@@ -185,7 +186,7 @@ var _ = Describe("odoe2e", func() {
 		Context("when application exists", func() {
 			It("should be able to create new imagestream and find it in catalog list", func() {
 				curProj = strings.TrimSuffix(runCmd("oc project -q"), "\n")
-				cmd := fmt.Sprintf("oc create -f https://raw.githubusercontent.com/bucharest-gold/centos7-s2i-nodejs/master/imagestreams/nodejs-centos7.json -n %s", curProj)
+				cmd := fmt.Sprintf("oc create -f "+testNamespacedImage+" -n %s", curProj)
 				runCmd(cmd)
 				cmpList := runCmd("odo catalog list components")
 				Expect(cmpList).To(ContainSubstring(curProj))

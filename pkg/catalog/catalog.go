@@ -94,30 +94,34 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 	var imageStreams []imagev1.ImageStream
 	currentNamespace := client.GetCurrentProjectName()
-	var err error
 
 	// Fetch imagestreams from default openshift namespace
-	openshiftNSImageStreams, possibleError := client.GetImageStreams(occlient.OpenShiftNameSpace)
-	if possibleError != nil {
+	openshiftNSImageStreams, openshiftNSISFetchError := client.GetImageStreams(occlient.OpenShiftNameSpace)
+	if openshiftNSISFetchError != nil {
 		// Tolerate the error as it might only be a partial failure
 		// We may get the imagestreams from other Namespaces
-		err = errors.Wrapf(possibleError, "unable to get Image Streams from namespace %s", occlient.OpenShiftNameSpace)
+		//err = errors.Wrapf(openshiftNSISFetchError, "unable to get Image Streams from namespace %s", occlient.OpenShiftNameSpace)
 		// log it for debugging purposes
-		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", occlient.OpenShiftNameSpace, possibleError.Error())
+		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", occlient.OpenShiftNameSpace, openshiftNSISFetchError.Error())
 	}
 
 	// Fetch imagestreams from current namespace
-	currentNSImageStreams, possibleError := client.GetImageStreams(currentNamespace)
-	if possibleError != nil {
-		if err != nil {
-			// Failure to fetch images from any namespace, error out
-			return nil, errors.Wrapf(possibleError, "%s. unable to get Image Streams from namespace %s", err.Error(), currentNamespace)
-		}
-		// It is possible that the current namespace has no imagestreams -- a valid scenario
-		// But may be required for debugging purposes
-		err = errors.Wrapf(possibleError, "unable to get Image Streams from namespace %s", currentNamespace)
+	currentNSImageStreams, currentNSISFetchError := client.GetImageStreams(currentNamespace)
+	// If failure to fetch imagestreams from current namespace, log the failure for debugging purposes
+	if currentNSISFetchError != nil {
+		// Tolerate the error as it is totally a valid scenario to not have any imagestreams in current namespace
 		// log it for debugging purposes
-		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", currentNamespace, possibleError.Error())
+		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", currentNamespace, currentNSISFetchError.Error())
+	}
+
+	// If failure fetching imagestreams from both namespaces, error out
+	if openshiftNSISFetchError != nil && currentNSISFetchError != nil {
+		return nil, errors.Wrapf(
+			fmt.Errorf("%s.\n%s", openshiftNSISFetchError, currentNSISFetchError),
+			"Failed to fetch imagestreams from both openshift and %s namespaces.\nPlease ensure that a builder imagestream of required version for the component exists in either openshift or %s namespaces",
+			currentNamespace,
+			currentNamespace,
+		)
 	}
 
 	// Resultant imagestreams is list of imagestreams from current and openshift namespaces

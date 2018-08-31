@@ -391,13 +391,17 @@ func (c *Client) GetImageStreamsNames(namespace string) ([]string, error) {
 	return names, nil
 }
 
+// isTagInImageStream takes a imagestream and a tag and checks if the tag is present in the imagestream's status attribute
 func isTagInImageStream(is imagev1.ImageStream, imageTag string) bool {
+	// Loop through the tags in the imagestream's status attribute
 	for _, tag := range is.Status.Tags {
-		// look for matching tag
+		// look for a matching tag
 		if tag.Tag == imageTag {
+			// Return true if found
 			return true
 		}
 	}
+	// Return false if not found.
 	return false
 }
 

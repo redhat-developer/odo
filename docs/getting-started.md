@@ -122,14 +122,8 @@ Component 'nodejs' is now set as active component.
 
 Note:
 
-By default builder imagestreams from current project are used for building your application.
-But, if the builder imagestream corresponding to the type of requested component does not exist in the current project,
-builder imagestreams from openshift namespace are also considered. But if you would like to specifically use the default
-builder imagestream, you can fully qualify the component type using `$project/$component_type:$version`.
-Accordingly following commands can also be used:
-* `odo create openshift/nodejs:6 --local=.`
-* `odo create nodejs:6 --local=.`
-
+By default, builder images will be used from the default OpenShift namespace.
+You can explicitly supply a namespace by using: `odo create opesnshift/nodejs:8`
 For more details please refer https://github.com/redhat-developer/odo/blob/master/docs/cli-reference.md#create
 
 Now that a component is running we'll go ahead and push our initial source code!

@@ -30,15 +30,8 @@ var componentCreateCmd = &cobra.Command{
 
 If component name is not provided, component type value will be used for the name.
 
-The component type will be chosen by default from current project,
-but if specific version is requested for, it'll be used from either
-* current
-   or
-* openshift
-
-project(with search precendence in same order) where available.
-So, if you would like it to be specifically from openshift project, please fully qualify the
-component type as $project/$component_type:$version.
+By default, builder images will be used from the current namespace.
+You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest wil be chosen as the version.
 
 A full list of component types that can be deployed is available using: 'odo catalog list'`,
@@ -54,7 +47,7 @@ A full list of component types that can be deployed is available using: 'odo cat
   # Create new Node.js component with source from remote git repository.
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
 
-  # Create new Node.js component of version 6 using the builder image specifically from 'openshift' namespace
+  # Create a new Node.js component of version 6 from the 'openshift' namespace
   odo create openshift/nodejs:6 --local /nodejs-ex
 
   # Create new Wildfly component with binary named sample.war in './downloads' directory
@@ -189,13 +182,11 @@ A full list of component types that can be deployed is available using: 'odo cat
 	},
 }
 
-/*
- parseCreateCmdArgs returns
- 1. image name
- 2. component type i.e, builder image name
- 3. component name default value is component type else the user requested component name
- 4. component version which is by default latest else version passed with builder image name
-*/
+// parseCreateCmdArgs returns
+// 1. image name
+// 2. component type i.e, builder image name
+// 3. component name default value is component type else the user requested component name
+// 4. component version which is by default latest else version passed with builder image name
 func parseCreateCmdArgs(args []string) (string, string, string, string) {
 	// We don't have to check it anymore, Args check made sure that args has at least one item
 	// and no more than two

@@ -137,7 +137,7 @@ func TestList(t *testing.T) {
 			wantTags: []string{},
 		},
 		{
-			name: "Case 4: Valid image with output tags from current namespace",
+			name: "Case 4: Valid image with output tags from a different namespace",
 			args: args{
 				name:      "foobar",
 				namespace: "foo",

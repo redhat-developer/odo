@@ -72,9 +72,9 @@ var catalogListComponentCmd = &cobra.Command{
 			}
 			w.Flush()
 			fmt.Println(
-				`NOTE: There might be items in multiple project.
+				`NOTE: There might be items in multiple projects.
 Items from the current project (marked with *) will take precedence.
-In case you want to use an item from a different namespace, please fully qualify it as $namespace/$name`,
+If you want to use an item from a different namespace, use the full name as <namespace>/<name>`,
 			)
 		}
 	},
