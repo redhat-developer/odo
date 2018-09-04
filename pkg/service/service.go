@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 	"strings"
+	"sort"
 )
 
 // ServiceInfo holds all important information about one service
@@ -23,6 +24,8 @@ func ListCatalog(client *occlient.Client) ([]string, error) {
 	if err != nil {
 		return []string{}, errors.Wrapf(err, "unable to get cluster serviceClassExternalName")
 	}
+
+	sort.Strings(clusterServiceClasses)
 
 	return clusterServiceClasses, nil
 }
