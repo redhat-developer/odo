@@ -122,6 +122,10 @@ func init() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.CommandLine.Set("logtostderr", "true")
 
+	// Override the verbosity flag description
+	verbosity := pflag.Lookup("v")
+	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
+
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
 }
 
