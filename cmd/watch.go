@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"runtime"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -56,7 +58,7 @@ var watchCmd = &cobra.Command{
 			fmt.Printf("Component %s has invalid source path %s.", componentName, u.Scheme)
 			os.Exit(1)
 		}
-		watchPath := u.Path
+		watchPath := util.ReadFilePath(u, runtime.GOOS)
 
 		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout)
 		checkError(err, "Error while trying to watch %s", watchPath)

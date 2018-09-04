@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"net/url"
+	"runtime"
 	"strings"
 
 	"github.com/fatih/color"
@@ -113,8 +113,8 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 	labels[componentlabels.ComponentTypeVersion] = imageTag
 
 	// save source path as annotation
-	sourceURL := url.URL{Scheme: "file", Path: path}
-	annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+	sourceURL := util.GenFileUrl(path, runtime.GOOS)
+	annotations := map[string]string{componentSourceURLAnnotation: sourceURL}
 	annotations[componentSourceTypeAnnotation] = sourceType
 
 	// Namespace the component
@@ -410,8 +410,8 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 
 		labels := componentlabels.GetLabels(componentName, applicationName, true)
 
-		sourceURL := url.URL{Scheme: "file", Path: newSource}
-		annotations := map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+		sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
+		annotations := map[string]string{componentSourceURLAnnotation: sourceURL}
 		annotations[componentSourceTypeAnnotation] = newSourceType
 
 		err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, "", annotations)
@@ -445,8 +445,8 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 			}
 			err = Build(client, componentName, applicationName, true, true, stdout)
 		} else if newSourceType == "local" {
-			sourceURL := url.URL{Scheme: "file", Path: newSource}
-			annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+			sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
+			annotations = map[string]string{componentSourceURLAnnotation: sourceURL}
 			annotations[componentSourceTypeAnnotation] = newSourceType
 			err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, "", annotations)
 			if err != nil {
@@ -454,8 +454,8 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 			}
 			err = client.UpdateDCAnnotations(namespacedOpenShiftObject, annotations)
 		} else if newSourceType == "binary" {
-			sourceURL := url.URL{Scheme: "file", Path: newSource}
-			annotations = map[string]string{componentSourceURLAnnotation: sourceURL.String()}
+			sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
+			annotations = map[string]string{componentSourceURLAnnotation: sourceURL}
 			annotations[componentSourceTypeAnnotation] = newSourceType
 			err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, "", annotations)
 			if err != nil {
