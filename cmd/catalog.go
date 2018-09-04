@@ -50,14 +50,27 @@ var catalogListComponentCmd = &cobra.Command{
 		case 0:
 			fmt.Printf("No deployable components found\n")
 		default:
-
+			currentProject := client.GetCurrentProjectName()
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "TAGS")
+			fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS")
 			for _, component := range catalogList {
-				fmt.Fprintln(w, component.Name, "\t", strings.Join(component.Tags, ","))
+				componentName := component.Name
+				if component.Namespace == currentProject {
+					/*
+						If current namespace is same as the current component namespace,
+						Loop through every other component,
+						If there exists a component with same name but in different namespaces,
+						mark the one from current namespace with (*)
+					*/
+					for _, comp := range catalogList {
+						if comp.Name == component.Name && component.Namespace != comp.Namespace {
+							componentName = fmt.Sprintf("%s (*)", component.Name)
+						}
+					}
+				}
+				fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(component.Tags, ","))
 			}
 			w.Flush()
-
 		}
 	},
 }

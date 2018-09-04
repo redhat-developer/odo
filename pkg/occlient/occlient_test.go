@@ -15,6 +15,7 @@ import (
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 
+	dockerapiv10 "github.com/openshift/api/image/docker10"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +30,21 @@ import (
 )
 
 // fakeImageStream gets imagestream for the reactor
-func fakeImageStream(imageName string, namespace string) *imagev1.ImageStream {
+func fakeImageStream(imageName string, namespace string, strTags []string) *imagev1.ImageStream {
+	var tags []imagev1.NamedTagEventList
+	for _, tag := range strTags {
+		tags = append(tags, imagev1.NamedTagEventList{
+			Tag: tag,
+			Items: []imagev1.TagEvent{
+				{
+					DockerImageReference: "example/" + imageName + ":" + tag,
+					Generation:           1,
+					Image:                "sha256:9579a93ee",
+				},
+			},
+		})
+	}
+
 	return &imagev1.ImageStream{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      imageName,
@@ -37,16 +52,7 @@ func fakeImageStream(imageName string, namespace string) *imagev1.ImageStream {
 		},
 
 		Status: imagev1.ImageStreamStatus{
-			Tags: []imagev1.NamedTagEventList{
-				{
-					Tag: "latest",
-					Items: []imagev1.TagEvent{
-						{DockerImageReference: "example/" + imageName + ":latest"},
-						{Generation: 1},
-						{Image: imageName + "@sha256:9579a93ee"},
-					},
-				},
-			},
+			Tags: tags,
 		},
 	}
 }
@@ -54,7 +60,7 @@ func fakeImageStream(imageName string, namespace string) *imagev1.ImageStream {
 // fakeImageStreams lists the imagestreams for the reactor
 func fakeImageStreams(imageName string, namespace string) *imagev1.ImageStreamList {
 	return &imagev1.ImageStreamList{
-		Items: []imagev1.ImageStream{*fakeImageStream(imageName, namespace)},
+		Items: []imagev1.ImageStream{*fakeImageStream(imageName, namespace, []string{"latest"})},
 	}
 }
 
@@ -101,6 +107,32 @@ func fakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
 		},
 		Status: corev1.PodStatus{
 			Phase: status,
+		},
+	}
+}
+
+func fakeImageStreamImage(imageName string, ports []string) *imagev1.ImageStreamImage {
+	exposedPorts := make(map[string]struct{})
+	var s struct{}
+	for _, port := range ports {
+		exposedPorts[port] = s
+	}
+	return &imagev1.ImageStreamImage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s@@sha256:9579a93ee", imageName),
+		},
+		Image: imagev1.Image{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "@sha256:9579a93ee",
+			},
+			DockerImageMetadata: runtime.RawExtension{
+				Object: &dockerapiv10.DockerImage{
+					ContainerConfig: dockerapiv10.DockerConfig{
+						ExposedPorts: exposedPorts,
+					},
+				},
+			},
+			DockerImageReference: fmt.Sprintf("docker.io/centos/%s-36-centos7@s@sha256:9579a93ee", imageName),
 		},
 	}
 }
@@ -729,20 +761,23 @@ func TestParseImageName(t *testing.T) {
 		want1   string
 		want2   string
 		want3   string
+		want4   string
 		wantErr bool
 	}{
 		{
 			arg:     "nodejs:8",
-			want1:   "nodejs",
-			want2:   "8",
-			want3:   "",
+			want1:   "",
+			want2:   "nodejs",
+			want3:   "8",
+			want4:   "",
 			wantErr: false,
 		},
 		{
 			arg:     "nodejs@sha256:7e56ca37d1db225ebff79dd6d9fd2a9b8f646007c2afc26c67962b85dd591eb2",
-			want1:   "nodejs",
-			want2:   "",
-			want3:   "sha256:7e56ca37d1db225ebff79dd6d9fd2a9b8f646007c2afc26c67962b85dd591eb2",
+			want2:   "nodejs",
+			want1:   "",
+			want3:   "",
+			want4:   "sha256:7e56ca37d1db225ebff79dd6d9fd2a9b8f646007c2afc26c67962b85dd591eb2",
 			wantErr: false,
 		},
 		{
@@ -759,9 +794,10 @@ func TestParseImageName(t *testing.T) {
 		},
 		{
 			arg:     "nodejs",
-			want1:   "nodejs",
-			want2:   "latest",
-			want3:   "",
+			want1:   "",
+			want2:   "nodejs",
+			want3:   "latest",
+			want4:   "",
 			wantErr: false,
 		},
 		{
@@ -772,11 +808,19 @@ func TestParseImageName(t *testing.T) {
 			arg:     ":",
 			wantErr: true,
 		},
+		{
+			arg:     "myproject/nodejs:8",
+			want1:   "myproject",
+			want2:   "nodejs",
+			want3:   "8",
+			want4:   "",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		name := fmt.Sprintf("image name: '%s'", tt.arg)
 		t.Run(name, func(t *testing.T) {
-			got1, got2, got3, err := ParseImageName(tt.arg)
+			got1, got2, got3, got4, err := ParseImageName(tt.arg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseImageName() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -789,6 +833,9 @@ func TestParseImageName(t *testing.T) {
 			}
 			if got3 != tt.want3 {
 				t.Errorf("ParseImageName() got3 = %v, want %v", got3, tt.want3)
+			}
+			if got4 != tt.want4 {
+				t.Errorf("ParseImageName() got4 = %v, want %v", got4, tt.want4)
 			}
 		})
 	}
@@ -1847,7 +1894,7 @@ func TestNewAppS2I(t *testing.T) {
 			})
 
 			fkclientset.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, fakeImageStream(tt.args.name, tt.args.namespace), nil
+				return true, fakeImageStream(tt.args.name, tt.args.namespace, []string{"latest"}), nil
 			})
 
 			fkclientset.ImageClientset.PrependReactor("get", "imagestreamimages", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -1955,6 +2002,186 @@ func TestNewAppS2I(t *testing.T) {
 	}
 }
 
+func TestIsTagInImageStream(t *testing.T) {
+	tests := []struct {
+		name        string
+		imagestream imagev1.ImageStream
+		imageTag    string
+		wantErr     bool
+		want        bool
+	}{
+		{
+			name:        "Case: Valid image and image tag",
+			imagestream: *fakeImageStream("foo", "openshift", []string{"latest", "3.5"}),
+			imageTag:    "3.5",
+			want:        true,
+		},
+		{
+			name:        "Case: Invalid image tag",
+			imagestream: *fakeImageStream("bar", "testing", []string{"latest"}),
+			imageTag:    "0.1",
+			want:        false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got := isTagInImageStream(tt.imagestream, tt.imageTag)
+
+			if got != tt.want {
+				t.Errorf("GetImageStream() = %#v, want %#v\n\n", got, tt)
+			}
+		})
+	}
+}
+
+func TestGetExposedPorts(t *testing.T) {
+	tests := []struct {
+		name          string
+		imagestream   *imagev1.ImageStream
+		imageTag      string
+		wantErr       bool
+		want          []corev1.ContainerPort
+		wantActionCnt int
+	}{
+		{
+			name:        "Case: Valid image ports",
+			imagestream: fakeImageStream("python", "openshift", []string{"latest", "3.5"}),
+			imageTag:    "3.5",
+			want: []corev1.ContainerPort{
+				{
+					Name:          fmt.Sprintf("%d-%s", 8080, strings.ToLower(string("tcp"))),
+					ContainerPort: 8080,
+					Protocol:      "TCP",
+				},
+			},
+			wantActionCnt: 1,
+		},
+		{
+			name:          "Case: Invalid image tag",
+			imagestream:   fakeImageStream("bar", "testing", []string{"latest"}),
+			imageTag:      "0.1",
+			wantErr:       true,
+			wantActionCnt: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+			fkclient.namespace = "testing"
+
+			fkclientset.ImageClientset.PrependReactor("get", "imagestreamimages", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStreamImage("python", []string{"8080/tcp"}), nil
+			})
+
+			got, err := fkclient.GetExposedPorts(tt.imagestream, tt.imageTag)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("client.GetExposedPorts(imagestream imageTag) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if len(fkclientset.ImageClientset.Actions()) != tt.wantActionCnt {
+				t.Errorf("expected %d ImageClientset.Actions() in GetExposedPorts, got: %v", tt.wantActionCnt, fkclientset.ImageClientset.Actions())
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("client.GetExposedPorts = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetImageStream(t *testing.T) {
+	tests := []struct {
+		name           string
+		imageNS        string
+		imageName      string
+		imageTag       string
+		wantErr        bool
+		want           *imagev1.ImageStream
+		wantActionsCnt int
+	}{
+		{
+			name:           "Case: Valid request for imagestream of latest version and not namespace qualified",
+			imageNS:        "",
+			imageName:      "foo",
+			imageTag:       "latest",
+			want:           fakeImageStream("foo", "testing", []string{"latest"}),
+			wantActionsCnt: 1,
+		},
+		{
+			name:           "Case: Valid explicit request for specific namespace qualified imagestream of specific version",
+			imageNS:        "openshift",
+			imageName:      "foo",
+			imageTag:       "latest",
+			want:           fakeImageStream("foo", "openshift", []string{"latest", "3.5"}),
+			wantActionsCnt: 1,
+		},
+		{
+			name:           "Case: Valid request for specific imagestream of specific version not in current namespace",
+			imageNS:        "",
+			imageName:      "foo",
+			imageTag:       "3.5",
+			want:           fakeImageStream("foo", "openshift", []string{"latest", "3.5"}),
+			wantActionsCnt: 1, // Ideally supposed to be 2 but bcoz prependreactor is not parameter sensitive, the way it is mocked makes it 1
+		},
+		{
+			name:           "Case: Invalid request for non-current and non-openshift namespace imagestream/Non-existant imagestream",
+			imageNS:        "foo",
+			imageName:      "bar",
+			imageTag:       "3.5",
+			wantErr:        true,
+			wantActionsCnt: 1,
+		},
+		{
+			name:           "Case: Request for non-existant tag",
+			imageNS:        "",
+			imageName:      "foo",
+			imageTag:       "3.6",
+			wantErr:        true,
+			wantActionsCnt: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+			fkclient.namespace = "testing"
+			openshiftIS := fakeImageStream(tt.imageName, "openshift", []string{"latest", "3.5"})
+			currentNSIS := fakeImageStream(tt.imageName, "testing", []string{"latest"})
+
+			fkclientset.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.imageNS == "" {
+					if isTagInImageStream(*fakeImageStream("foo", "testing", []string{"latest"}), tt.imageTag) {
+						return true, currentNSIS, nil
+					} else if isTagInImageStream(*fakeImageStream("foo", "openshift", []string{"latest", "3.5"}), tt.imageTag) {
+						return true, openshiftIS, nil
+					}
+					return true, nil, fmt.Errorf("Requested imagestream %s with tag %s not found", tt.imageName, tt.imageTag)
+				}
+				if tt.imageNS == "testing" {
+					return true, currentNSIS, nil
+				}
+				if tt.imageNS == "openshift" {
+					return true, openshiftIS, nil
+				}
+				return true, nil, fmt.Errorf("Requested imagestream %s with tag %s not found", tt.imageName, tt.imageTag)
+			})
+
+			got, err := fkclient.GetImageStream(tt.imageNS, tt.imageName, tt.imageTag)
+			if len(fkclientset.ImageClientset.Actions()) != tt.wantActionsCnt {
+				t.Errorf("expected %d ImageClientset.Actions() in GetImageStream, got %v", tt.wantActionsCnt, fkclientset.ImageClientset.Actions())
+			}
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("\nclient.GetImageStream(imageNS, imageName, imageTag) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetImageStream() = %#v, want %#v and the current project name is %s\n\n", got, tt, fkclient.GetCurrentProjectName())
+			}
+		})
+	}
+}
+
 func TestGetImageStreams(t *testing.T) {
 
 	type args struct {
@@ -1985,9 +2212,11 @@ func TestGetImageStreams(t *testing.T) {
 							{
 								Tag: "latest",
 								Items: []imagev1.TagEvent{
-									{DockerImageReference: "example/ruby:latest"},
-									{Generation: 1},
-									{Image: "ruby@sha256:9579a93ee"},
+									{
+										DockerImageReference: "example/ruby:latest",
+										Generation:           1,
+										Image:                "sha256:9579a93ee",
+									},
 								},
 							},
 						},

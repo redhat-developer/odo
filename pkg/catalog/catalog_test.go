@@ -79,6 +79,10 @@ func TestVersionExist(t *testing.T) {
 				t.Errorf("VersionExist() unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
+			if len(fakeClientSet.ImageClientset.Actions()) != 2 { // 1 call for current project + 1 call from openshift project
+				t.Errorf("expected 2 ImageClientset.Actions() in VersionExist, got: %v", fakeClientSet.ImageClientset.Actions())
+			}
+
 			// Check if the output is the same as what's expected (tags)
 			// and only if output is more than 0 (something is actually returned)
 			if !tt.wantErr && !doesItExist {
@@ -132,6 +136,16 @@ func TestList(t *testing.T) {
 			wantErr:  true,
 			wantTags: []string{},
 		},
+		{
+			name: "Case 4: Valid image with output tags from a different namespace",
+			args: args{
+				name:      "foobar",
+				namespace: "foo",
+				tags:      []string{"1.0.0", "1.0.1", "0.0.1", "latest"},
+			},
+			wantErr:  false,
+			wantTags: []string{"1.0.0", "1.0.1", "0.0.1", "latest"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -149,6 +163,10 @@ func TestList(t *testing.T) {
 			//Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component List() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if len(fakeClientSet.ImageClientset.Actions()) != 2 { // 1 call for current project + 1 call from openshift project
+				t.Errorf("expected 2 ImageClientset.Actions() in List, got: %v", fakeClientSet.ImageClientset.Actions())
 			}
 
 			// Check if the output is the same as what's expected (tags)

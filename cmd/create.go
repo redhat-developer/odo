@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +30,11 @@ var componentCreateCmd = &cobra.Command{
 
 If component name is not provided, component type value will be used for the name.
 
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
+If version is not specified by default, latest wil be chosen as the version.
+
 A full list of component types that can be deployed is available using: 'odo catalog list'`,
-	Example: `  # Create new Node.js component with the source in current directory. 
+	Example: `  # Create new Node.js component with the source in current directory.
   odo create nodejs
 
   # A specific image version may also be specified
@@ -41,6 +45,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 
   # Create new Node.js component with source from remote git repository.
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
+
+  # Create a new Node.js component of version 6 from the 'openshift' namespace
+  odo create openshift/nodejs:6 --local /nodejs-ex
 
   # Create new Wildfly component with binary named sample.war in './downloads' directory
   odo create wildfly wildly --binary ./downloads/sample.war
@@ -79,22 +86,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
-		// We don't have to check it anymore, Args check made sure that args has at least one item
-		// and no more than two
-
-		// "Default" values
-		componentImageName := args[0]
-		componentType := args[0]
-		componentName := args[0]
-		componentVersion := "latest"
-
-		// Check if componentType includes ":", if so, then we need to spit it into using versions
-		if strings.ContainsAny(componentImageName, ":") {
-			versionSplit := strings.Split(args[0], ":")
-			componentType = versionSplit[0]
-			componentName = versionSplit[0]
-			componentVersion = versionSplit[1]
-		}
+		componentImageName, componentType, componentName, componentVersion := util.ParseCreateCmdArgs(args)
 
 		// Check to see if the catalog type actually exists
 		exists, err := catalog.Exists(client, componentType)

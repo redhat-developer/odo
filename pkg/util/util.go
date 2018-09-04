@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -57,5 +58,45 @@ func NamespaceOpenShiftObject(componentName string, applicationName string) (str
 	}
 
 	// Return the hyphenated namespaced name
-	return fmt.Sprintf("%s-%s", componentName, applicationName), nil
+	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
+}
+
+// ExtractComponentType returns only component type part from passed component type(default unqualified, fully qualified, versioned, etc...and their combinations) for use as component name
+// Possible types of parameters:
+// 1. "myproject/python:3.5" -- Return python
+// 2. "python:3.5" -- Return python
+// 3. nodejs -- Return nodejs
+func ExtractComponentType(namespacedVersionedComponentType string) string {
+	s := strings.Split(namespacedVersionedComponentType, "/")
+	versionedString := s[0]
+	if len(s) == 2 {
+		versionedString = s[1]
+	}
+	s = strings.Split(versionedString, ":")
+	return s[0]
+}
+
+// parseCreateCmdArgs returns
+// 1. image name
+// 2. component type i.e, builder image name
+// 3. component name default value is component type else the user requested component name
+// 4. component version which is by default latest else version passed with builder image name
+func ParseCreateCmdArgs(args []string) (string, string, string, string) {
+	// We don't have to check it anymore, Args check made sure that args has at least one item
+	// and no more than two
+
+	// "Default" values
+	componentImageName := args[0]
+	componentType := args[0]
+	componentName := ExtractComponentType(componentType)
+	componentVersion := "latest"
+
+	// Check if componentType includes ":", if so, then we need to spit it into using versions
+	if strings.ContainsAny(componentImageName, ":") {
+		versionSplit := strings.Split(args[0], ":")
+		componentType = versionSplit[0]
+		componentName = ExtractComponentType(componentType)
+		componentVersion = versionSplit[1]
+	}
+	return componentImageName, componentType, componentName, componentVersion
 }

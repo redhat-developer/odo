@@ -120,6 +120,12 @@ To push source code to the component run 'odo push'
 Component 'nodejs' is now set as active component.
 ```
 
+Note:
+
+By default, builder images will be used from the default OpenShift namespace.
+You can explicitly supply a namespace by using: `odo create opesnshift/nodejs:8`
+For more details please refer https://github.com/redhat-developer/odo/blob/master/docs/cli-reference.md#create
+
 Now that a component is running we'll go ahead and push our initial source code!
 
 ```sh

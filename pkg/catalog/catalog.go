@@ -1,16 +1,19 @@
 package catalog
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/golang/glog"
+	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 type CatalogImage struct {
-	Name string
-	Tags []string
+	Name      string
+	Namespace string
+	Tags      []string
 }
 
 // List lists all the available component types
@@ -54,7 +57,7 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 	}
 
 	for _, supported := range catalogList {
-		if componentType == supported.Name {
+		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
 			return true, nil
 		}
 	}
@@ -72,7 +75,7 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 
 	// Find the component and then return true if the version has been found
 	for _, supported := range catalogList {
-		if componentType == supported.Name {
+		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
 			// Now check to see if that version matches that components tag
 			for _, tag := range supported.Tags {
 				if componentVersion == tag {
@@ -87,12 +90,43 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 }
 
 // getDefaultBuilderImages returns the default builder images available in the
-// openshift namespace
+// openshift and the current namespaces
 func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
-	imageStreams, err := client.GetImageStreams(occlient.OpenShiftNameSpace)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get Image Streams")
+	var imageStreams []imagev1.ImageStream
+	currentNamespace := client.GetCurrentProjectName()
+
+	// Fetch imagestreams from default openshift namespace
+	openshiftNSImageStreams, openshiftNSISFetchError := client.GetImageStreams(occlient.OpenShiftNameSpace)
+	if openshiftNSISFetchError != nil {
+		// Tolerate the error as it might only be a partial failure
+		// We may get the imagestreams from other Namespaces
+		//err = errors.Wrapf(openshiftNSISFetchError, "unable to get Image Streams from namespace %s", occlient.OpenShiftNameSpace)
+		// log it for debugging purposes
+		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", occlient.OpenShiftNameSpace, openshiftNSISFetchError.Error())
 	}
+
+	// Fetch imagestreams from current namespace
+	currentNSImageStreams, currentNSISFetchError := client.GetImageStreams(currentNamespace)
+	// If failure to fetch imagestreams from current namespace, log the failure for debugging purposes
+	if currentNSISFetchError != nil {
+		// Tolerate the error as it is totally a valid scenario to not have any imagestreams in current namespace
+		// log it for debugging purposes
+		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", currentNamespace, currentNSISFetchError.Error())
+	}
+
+	// If failure fetching imagestreams from both namespaces, error out
+	if openshiftNSISFetchError != nil && currentNSISFetchError != nil {
+		return nil, errors.Wrapf(
+			fmt.Errorf("%s.\n%s", openshiftNSISFetchError, currentNSISFetchError),
+			"Failed to fetch imagestreams from both openshift and %s namespaces.\nPlease ensure that a builder imagestream of required version for the component exists in either openshift or %s namespaces",
+			currentNamespace,
+			currentNamespace,
+		)
+	}
+
+	// Resultant imagestreams is list of imagestreams from current and openshift namespaces
+	imageStreams = append(imageStreams, openshiftNSImageStreams...)
+	imageStreams = append(imageStreams, currentNSImageStreams...)
 
 	var builderImages []CatalogImage
 
@@ -120,7 +154,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 
 		// Append to the list of images if a "builder" tag was found
 		if buildImage {
-			builderImages = append(builderImages, CatalogImage{Name: imageStream.Name, Tags: allTags})
+			builderImages = append(builderImages, CatalogImage{Name: imageStream.Name, Namespace: imageStream.Namespace, Tags: allTags})
 		}
 
 	}

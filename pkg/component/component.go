@@ -52,7 +52,7 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 	labels := componentlabels.GetLabels(name, applicationName, true)
 
 	// Parse componentImageType before adding to labels
-	imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
+	_, imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse image name")
 	}
@@ -103,7 +103,7 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 	labels := componentlabels.GetLabels(name, applicationName, true)
 
 	// Parse componentImageType before adding to labels
-	imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
+	_, imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse image name")
 	}
