@@ -30,8 +30,7 @@ var componentCreateCmd = &cobra.Command{
 
 If component name is not provided, component type value will be used for the name.
 
-By default, builder images will be used from the current namespace.
-You can explicitly supply a namespace by using: odo create namespace/name:version
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest wil be chosen as the version.
 
 A full list of component types that can be deployed is available using: 'odo catalog list'`,
@@ -87,7 +86,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
-		componentImageName, componentType, componentName, componentVersion := parseCreateCmdArgs(args)
+		componentImageName, componentType, componentName, componentVersion := util.ParseCreateCmdArgs(args)
 
 		// Check to see if the catalog type actually exists
 		exists, err := catalog.Exists(client, componentType)
@@ -180,31 +179,6 @@ A full list of component types that can be deployed is available using: 'odo cat
 		checkError(err, "")
 		fmt.Printf("\nComponent '%s' is now set as active component.\n", componentName)
 	},
-}
-
-// parseCreateCmdArgs returns
-// 1. image name
-// 2. component type i.e, builder image name
-// 3. component name default value is component type else the user requested component name
-// 4. component version which is by default latest else version passed with builder image name
-func parseCreateCmdArgs(args []string) (string, string, string, string) {
-	// We don't have to check it anymore, Args check made sure that args has at least one item
-	// and no more than two
-
-	// "Default" values
-	componentImageName := args[0]
-	componentType := args[0]
-	componentName := util.ExtractComponentType(componentType)
-	componentVersion := "latest"
-
-	// Check if componentType includes ":", if so, then we need to spit it into using versions
-	if strings.ContainsAny(componentImageName, ":") {
-		versionSplit := strings.Split(args[0], ":")
-		componentType = versionSplit[0]
-		componentName = util.ExtractComponentType(componentType)
-		componentVersion = versionSplit[1]
-	}
-	return componentImageName, componentType, componentName, componentVersion
 }
 
 func init() {
