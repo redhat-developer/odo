@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/notify"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/spf13/cobra"
@@ -99,17 +100,27 @@ Find more information at https://github.com/redhat-developer/odo`,
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 
-	updateInfo := make(chan string)
-	go getLatestReleaseInfo(updateInfo)
-
-	checkError(rootCmd.Execute(), "")
-
-	select {
-	case message := <-updateInfo:
-		fmt.Println(message)
-	default:
-		glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
+	// checking the value of updatenotification in config
+	// before proceeding with fetching the latest version
+	cfg, err := config.New()
+	if err != nil {
+		fmt.Println("unable to fetch configuration from Odo config file.")
 	}
+	if cfg.GetUpdateNotification() == true {
+		updateInfo := make(chan string)
+		go getLatestReleaseInfo(updateInfo)
+
+		checkError(rootCmd.Execute(), "")
+		select {
+		case message := <-updateInfo:
+			fmt.Println(message)
+		default:
+			glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
+		}
+	} else {
+		checkError(rootCmd.Execute(), "")
+	}
+
 }
 
 func init() {

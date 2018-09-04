@@ -127,6 +127,14 @@ var _ = Describe("odoe2e", func() {
 		})
 	})
 
+	Context("odo utils config", func() {
+		It("should get true for updatenotification by defult", func() {
+			config := runCmd("odo utils config view")
+			Expect(config).To(ContainSubstring("true"))
+			Expect(config).To(ContainSubstring("UpdateNotification"))
+		})
+	})
+
 	Context("creating component without an application", func() {
 		It("should create the component in default application", func() {
 			runCmd("odo create php testcmp")

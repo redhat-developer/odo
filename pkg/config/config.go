@@ -16,6 +16,12 @@ const (
 	configFileName = "odo"
 )
 
+// OdoSettings holds all odo specific configurations
+type OdoSettings struct {
+	// Controls if an update notification is shown or not
+	UpdateNotification *bool `json:"updatenotification,omitempty"`
+}
+
 // ApplicationInfo holds all important information about one application
 type ApplicationInfo struct {
 	// name of the application
@@ -29,6 +35,9 @@ type ApplicationInfo struct {
 }
 
 type Config struct {
+
+	// odo specific configuration settings
+	OdoSettings OdoSettings `json:"settings"`
 	// remember active applications and components per project
 	// when project or applications is switched we can go back to last active app/component
 
@@ -110,6 +119,30 @@ func (c *ConfigInfo) writeToFile() error {
 	}
 
 	return nil
+}
+
+// SetConfiguration modifies Odo configurations in the config file
+// as of now only being used for updatenotification
+func (c *ConfigInfo) SetConfiguration(parameter string, value bool) error {
+	switch parameter {
+	case "updatenotification":
+		c.OdoSettings.UpdateNotification = &value
+	default:
+		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
+	}
+	err := c.writeToFile()
+	if err != nil {
+		return errors.Wrapf(err, "unable to set %s", parameter)
+	}
+	return nil
+}
+
+// GetupdateNotification returns the value of UpdateNotification from config
+func (c *ConfigInfo) GetUpdateNotification() bool {
+	if c.OdoSettings.UpdateNotification == nil {
+		return true
+	}
+	return *c.OdoSettings.UpdateNotification
 }
 
 // SetActiveComponent sets active component for given project and application.
