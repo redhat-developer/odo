@@ -79,13 +79,14 @@ else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.v
 endif
 
-.PHONY: test-demo
-test-demo:
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="katacodaDemo" -ginkgo.v
-
-.PHONY: test-update-e2e
-test-update-e2e:
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="updateE2e" -ginkgo.v
+# Run component e2e tests
+.PHONY: test-cmp-e2e
+test-cmp-e2e:
+ifdef TIMEOUT
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v -timeout $(TIMEOUT)
+else
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v
+endif
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
