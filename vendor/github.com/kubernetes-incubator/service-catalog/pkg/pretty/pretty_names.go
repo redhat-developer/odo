@@ -42,8 +42,13 @@ func ServiceInstanceName(instance *v1beta1.ServiceInstance) string {
 }
 
 // ClusterServiceBrokerName returns a string with the type and name of a broker
-func ClusterServiceBrokerName(brokerName string) string {
-	return fmt.Sprintf(`%s %q`, ClusterServiceBroker, brokerName)
+func ClusterServiceBrokerName(clusterServiceBrokerName string) string {
+	return fmt.Sprintf(`%s %q`, ClusterServiceBroker, clusterServiceBrokerName)
+}
+
+// ServiceBrokerName returns a string with the type and name of a broker
+func ServiceBrokerName(serviceBrokerName string) string {
+	return fmt.Sprintf(`%s %q`, ServiceBroker, serviceBrokerName)
 }
 
 // ClusterServiceClassName returns a string with the k8s name and external name if available.
@@ -54,6 +59,14 @@ func ClusterServiceClassName(serviceClass *v1beta1.ClusterServiceClass) string {
 	return Name(ClusterServiceClass, "", "")
 }
 
+// ServiceClassName returns a string with the k8s name and external name if available.
+func ServiceClassName(serviceClass *v1beta1.ServiceClass) string {
+	if serviceClass != nil {
+		return Name(ServiceClass, fmt.Sprintf("%s/%s", serviceClass.Namespace, serviceClass.Name), serviceClass.Spec.ExternalName)
+	}
+	return Name(ServiceClass, "", "")
+}
+
 // ClusterServicePlanName returns a string with the k8s name and external name if available.
 func ClusterServicePlanName(servicePlan *v1beta1.ClusterServicePlan) string {
 	if servicePlan != nil {
@@ -62,10 +75,26 @@ func ClusterServicePlanName(servicePlan *v1beta1.ClusterServicePlan) string {
 	return Name(ClusterServicePlan, "", "")
 }
 
+// ServicePlanName returns a string with the k8s name and external name if available.
+func ServicePlanName(servicePlan *v1beta1.ServicePlan) string {
+	if servicePlan != nil {
+		return Name(ServicePlan, fmt.Sprintf("%s/%s", servicePlan.Namespace, servicePlan.Name), servicePlan.Spec.ExternalName)
+	}
+	return Name(ServicePlan, "", "")
+}
+
 // FromServiceInstanceOfClusterServiceClassAtBrokerName returns a string in the form of "%s of %s at %s" to help in logging the full context.
 func FromServiceInstanceOfClusterServiceClassAtBrokerName(instance *v1beta1.ServiceInstance, serviceClass *v1beta1.ClusterServiceClass, brokerName string) string {
 	return fmt.Sprintf(
 		"%s of %s at %s",
 		ServiceInstanceName(instance), ClusterServiceClassName(serviceClass), ClusterServiceBrokerName(brokerName),
+	)
+}
+
+// FromServiceInstanceOfServiceClassAtBrokerName returns a string in the form of "%s of %s at %s" to help in logging the full context.
+func FromServiceInstanceOfServiceClassAtBrokerName(instance *v1beta1.ServiceInstance, serviceClass *v1beta1.ServiceClass, brokerName string) string {
+	return fmt.Sprintf(
+		"%s of %s at %s",
+		ServiceInstanceName(instance), ServiceClassName(serviceClass), ServiceBrokerName(brokerName),
 	)
 }

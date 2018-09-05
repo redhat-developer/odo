@@ -21,6 +21,8 @@ package plugin
 import (
 	"os"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -40,6 +42,12 @@ const (
 	// kubectl flags and environment variables.
 	EnvPluginNamespace = "KUBECTL_PLUGINS_CURRENT_NAMESPACE"
 
+	// EnvPluginGlobalFlagPrefix contains the prefix applied to any global kubectl flags
+	EnvPluginGlobalFlagPrefix = "KUBECTL_PLUGINS_GLOBAL_FLAG"
+
+	// EnvPluginVerbose is the -v=LEVEL flag
+	EnvPluginVerbose = EnvPluginGlobalFlagPrefix + "_V"
+
 	// EnvPluginPath overrides where plugins should be installed.
 	EnvPluginPath = "KUBECTL_PLUGINS_PATH"
 )
@@ -50,14 +58,28 @@ func IsPlugin() bool {
 	return ok
 }
 
-// BindEnvironmentVariables binds plugin-specific environment variables to command flags.
-func BindEnvironmentVariables(vip *viper.Viper) {
+// BindEnvironmentVariables connects the viper configuration back to a cobra command's flags.
+// Allows us to interact with the cobra flags normally, and while still
+// using viper's automatic environment variable binding.
+func BindEnvironmentVariables(vip *viper.Viper, cmd *cobra.Command) {
 	// KUBECTL_PLUGINS_CURRENT_NAMESPACE provides the final namespace
 	// computed by kubectl.
 	vip.BindEnv("namespace", EnvPluginNamespace)
+
+	// Manually bind relevant glog variables
+	vip.BindEnv("v", EnvPluginVerbose)
 
 	// kubectl intercepts all flags passed to a plugin, and replaces them
 	// with prefixed environment variables
 	// --foo becomes KUBECTL_PLUGINS_LOCAL_FLAG_FOO
 	vip.SetEnvPrefix(EnvPluginLocalFlagPrefix)
+
+	// Bind cobra flags to the viper-managed environment variables
+	vip.BindPFlags(cmd.Flags())
+	vip.AutomaticEnv()
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if !f.Changed && vip.IsSet(f.Name) {
+			cmd.Flags().Set(f.Name, vip.GetString(f.Name))
+		}
+	})
 }

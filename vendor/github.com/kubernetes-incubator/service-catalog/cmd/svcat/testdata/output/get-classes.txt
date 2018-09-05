@@ -1,3 +1,6 @@
-          NAME                  DESCRIPTION                         UUID                  
-+-----------------------+-------------------------+--------------------------------------+
-  user-provided-service   A user provided service   4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468  
+            NAME             NAMESPACE         DESCRIPTION         
++--------------------------+-----------+--------------------------+
+  user-provided-service                  A user provided service   
+  another-provided-service               Another provided service  
+  user-provided-service      default     A user provided service   
+  another-provided-service   default     Another provided service  

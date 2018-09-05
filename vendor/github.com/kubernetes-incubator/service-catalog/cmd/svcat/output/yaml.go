@@ -17,11 +17,14 @@ limitations under the License.
 package output
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // writeYAML writes the given obj to the given Writer in YAML format, indented
@@ -40,4 +43,37 @@ func writeYAML(w io.Writer, obj interface{}, n int) {
 	}
 
 	fmt.Fprint(w, y)
+}
+
+func writeParameters(w io.Writer, parameters *runtime.RawExtension) {
+	fmt.Fprintln(w, "\nParameters:")
+	if parameters == nil || string(parameters.Raw) == "" || string(parameters.Raw) == "{}" {
+		fmt.Fprintln(w, "  No parameters defined")
+		return
+	}
+	var params map[string]interface{}
+	err := json.Unmarshal(parameters.Raw, &params)
+	if err != nil {
+		// If it isn't formatted in json, just show the string representation of what is present
+		fmt.Fprintln(w, string(parameters.Raw))
+	} else {
+		writeYAML(w, params, 2)
+	}
+}
+
+func writeParametersFrom(w io.Writer, parametersFrom []v1beta1.ParametersFromSource) {
+	if len(parametersFrom) == 0 {
+		return
+	}
+
+	headerPrinted := false
+	for _, p := range parametersFrom {
+		if p.SecretKeyRef != nil {
+			if !headerPrinted {
+				fmt.Fprintln(w, "\nParameters From:")
+				headerPrinted = true
+			}
+			fmt.Fprintf(w, "  Secret: %s.%s\n", p.SecretKeyRef.Name, p.SecretKeyRef.Key)
+		}
+	}
 }

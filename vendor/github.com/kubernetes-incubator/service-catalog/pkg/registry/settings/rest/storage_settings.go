@@ -52,13 +52,12 @@ func (p StorageProvider) NewRESTStorage(
 		return nil, err
 	}
 
-	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(settings.GroupName, api.Registry, api.Scheme, api.ParameterCodec, api.Codecs)
+	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(settings.GroupName, api.Scheme, api.ParameterCodec, api.Codecs)
 
-	if apiResourceConfigSource.AnyResourcesForVersionEnabled(settingsapiv1alpha1.SchemeGroupVersion) {
+	if apiResourceConfigSource.AnyVersionForGroupEnabled(settingsapiv1alpha1.SchemeGroupVersion.Group) {
 		apiGroupInfo.VersionedResourcesStorageMap = map[string]map[string]rest.Storage{
 			settingsapiv1alpha1.SchemeGroupVersion.Version: storage,
 		}
-		apiGroupInfo.GroupMeta.GroupVersion = settingsapiv1alpha1.SchemeGroupVersion
 	}
 
 	return &apiGroupInfo, nil
@@ -89,7 +88,7 @@ func (p StorageProvider) v1alpha1Storage(
 	version := settingsapiv1alpha1.SchemeGroupVersion
 
 	storage := map[string]rest.Storage{}
-	if apiResourceConfigSource.ResourceEnabled(version.WithResource("podpresets")) {
+	if apiResourceConfigSource.VersionEnabled(version) {
 		podPresetStorage, err := podpreset.NewStorage(*podPresetOpts)
 		if err != nil {
 			return nil, err
