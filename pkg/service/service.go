@@ -6,8 +6,8 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
-	"strings"
 	"sort"
+	"strings"
 )
 
 // ServiceInfo holds all important information about one service
