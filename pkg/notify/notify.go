@@ -1,19 +1,17 @@
 package notify
 
 import (
-	"context"
+	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 )
 
 const (
-	// project GitHub organization name
-	ghorg = "redhat-developer"
-	// project GitHub repository name
-	ghrepo = "odo"
+	// URL to fetch latest version number
+	VersionFetchURL = "https://raw.githubusercontent.com/redhat-developer/odo/master/build/VERSION"
 	// URL of the installation shell script
 	InstallScriptURL = "https://raw.githubusercontent.com/redhat-developer/odo/master/scripts/install.sh"
 )
@@ -21,15 +19,18 @@ const (
 // getLatestReleaseTag polls odo's upstream GitHub repository to get the
 // tag of the latest release
 func getLatestReleaseTag() (string, error) {
-	client := github.NewClient(nil)
-	release, response, err := client.Repositories.GetLatestRelease(context.Background(), ghorg, ghrepo)
-	if response != nil {
-		defer response.Body.Close()
-	}
+
+	resp, err := http.Get(VersionFetchURL)
 	if err != nil {
 		return "", errors.Wrap(err, "error getting latest release")
 	}
-	return *release.TagName, nil
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "error getting latest release")
+	}
+
+	return strings.TrimSuffix(string(body), "\n"), nil
 }
 
 // CheckLatestReleaseTag returns the latest release tag if a newer latest
