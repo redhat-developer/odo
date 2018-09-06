@@ -3490,7 +3490,3 @@ func TestGetEnvVarsFromDC(t *testing.T) {
 		})
 	}
 }
-
-
-
-

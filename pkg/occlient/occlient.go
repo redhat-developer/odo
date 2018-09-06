@@ -2270,4 +2270,3 @@ func (c *Client) GetEnvVarsFromDC(dcName string, projectName string) ([]corev1.E
 
 	return dc.Spec.Template.Spec.Containers[0].Env, nil
 }
-

@@ -553,10 +553,11 @@ var _ = Describe("odoe2e", func() {
 		})
 	})
 })
-<<<<<<< 3a2d6037ac0798506a0ab6d7c2aff3300245cdee
-=======
 
 var _ = Describe("updateE2e", func() {
+	var t = strconv.FormatInt(time.Now().Unix(), 10)
+	var projName = fmt.Sprintf("odo-%s", t)
+	const appTestName = "testing"
 
 	const bootStrapSupervisorURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
 	const initContainerName = "copy-files-to-volume"
@@ -874,4 +875,3 @@ var _ = Describe("updateE2e", func() {
 		})
 	})
 })
->>>>>>> Adds the env flag to add the env variables to the component. Incase of git component the env vars are added to both the buildConfig and the deploymentConfig but incase of local/binary, only the deploymentConfig is updated.
