@@ -130,9 +130,9 @@ var applicationDeleteCmd = &cobra.Command{
 
 var applicationListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Lists all the applications",
-	Long:  "Lists all the applications",
-	Example: `  # List all applications
+	Short: "List all applications in the current project",
+	Long:  "List all applications in the current project.",
+	Example: `  # List all applications in the current project 
   odo app list
 	`,
 	Args: cobra.ExactArgs(0),
