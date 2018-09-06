@@ -1,5 +1,5 @@
-hash: 6675a9a83334a2942d8499f63480ceaad051d7e0aac13aedb07c53ea9f5b7b77
-updated: 2018-09-05T21:48:48.975403-07:00
+hash: 92df4ea3a464b3b4024ebbfce159f762d1f524918b78a637e948a0c7c6284f42
+updated: 2018-09-05T22:30:06.10732-07:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -69,7 +69,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubernetes-incubator/service-catalog
-  version: 6dfe967d8041ef707af9446eddff8b2de944ee88
+  version: 9d82b390b96d565e9301fdfe4ac822311e765a3c
   subpackages:
   - pkg/apis/servicecatalog
   - pkg/apis/servicecatalog/v1beta1
