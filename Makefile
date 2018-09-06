@@ -2,6 +2,7 @@ PROJECT := github.com/redhat-developer/odo
 GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor)
 BUILD_FLAGS := -ldflags="-w -X $(PROJECT)/cmd.GITCOMMIT=$(GITCOMMIT)"
+FILES := odo dist
 
 default: bin
 
@@ -33,6 +34,10 @@ lint:
 .PHONY: vet
 vet:
 	go vet $(PKGS)
+
+.PHONY: clean
+clean:
+	@rm -rf $(FILES)
 
 # install tools used for building, tests and  validations
 .PHONY: goget-tools
