@@ -6,6 +6,7 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
+	"sort"
 	"strings"
 )
 
@@ -23,6 +24,8 @@ func ListCatalog(client *occlient.Client) ([]string, error) {
 	if err != nil {
 		return []string{}, errors.Wrapf(err, "unable to get cluster serviceClassExternalName")
 	}
+
+	sort.Strings(clusterServiceClasses)
 
 	return clusterServiceClasses, nil
 }
