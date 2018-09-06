@@ -237,7 +237,9 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		scanner := bufio.NewScanner(pipeReader)
 		for scanner.Scan() {
 			line := scanner.Text()
-			yellowFprintln(out, line)
+			// color.Output is temporarily used as there is a error when passing in color.Output from cmd/create.go and casting to io.writer in windows
+			// TODO: Fix this in the future, more upstream in the code at cmd/create.go rather than within this function.
+			yellowFprintln(color.Output, line)
 		}
 	}()
 
