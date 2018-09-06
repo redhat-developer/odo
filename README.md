@@ -10,7 +10,8 @@ Odo (OpenShift do...) is a CLI tool that provides developers with **fast** and *
 
 #### Features
 
-  - **Multiple languages:** Odo supports Node.JS, Ruby, .Net Core, Perl, PHP and Python.
+  - **Multiple languages:** Odo supports Node.JS, Ruby, .Net Core, Perl, PHP, Python and Java (Spring Boot, WildFly, JBoss).
+  - **Access to multiple OpenShift images**: Odo supports both builder and service catalog images.
   - **Speed:** Building your source code *immediately* after saving and deployed to your cluster.
   - **Reproducible:** Allows for easy reproducibility by using tightly versioned Docker containers for your source code environment.
   - **Deployability:** Easily deploy a new version, or have Odo automatically build and re-deploy your code on each change.
