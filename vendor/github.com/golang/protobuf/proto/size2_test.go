@@ -55,7 +55,7 @@ func TestVarintSize(t *testing.T) {
 		{1 << 63, 10},
 	}
 	for _, tc := range testCases {
-		size := SizeVarint(tc.n)
+		size := sizeVarint(tc.n)
 		if size != tc.size {
 			t.Errorf("sizeVarint(%d) = %d, want %d", tc.n, size, tc.size)
 		}
