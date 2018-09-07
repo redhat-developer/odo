@@ -112,7 +112,7 @@ var projectDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a project",
 	Long:  "Delete a project and all resources deployed in the project being deleted",
-	Example: `  # Create a new project
+	Example: `  # Delete a project
   odo project delete myproject
 	`,
 	Args: cobra.ExactArgs(1),
