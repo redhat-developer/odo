@@ -73,7 +73,7 @@ prepare-release: cross
 
 .PHONY: test
 test:
-	go test -race $(PKGS)
+	go test -gcflags="-N -l" -race $(PKGS)
 
 # Run e2e tests
 .PHONY: test-e2e
