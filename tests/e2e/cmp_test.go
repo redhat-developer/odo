@@ -366,6 +366,7 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("odo app delete " + appTestName + " -f")
 
 			runCmd("odo project delete " + projName)
+			time.Sleep(15 * time.Second)
 			prjList := runCmd("odo project list")
 			Expect(prjList).NotTo(ContainSubstring(projName))
 		})

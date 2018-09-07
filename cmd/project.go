@@ -18,7 +18,7 @@ var projectCmd = &cobra.Command{
 	Use:   "project [options]",
 	Short: "Perform project operations",
 	Long:  "Perform project operations",
-	Example: fmt.Sprintf("%s\n%s\n%s\n%s",
+	Example: fmt.Sprintf("%s\n%s\n%s\n%s\n%s",
 		projectSetCmd.Example,
 		projectCreateCmd.Example,
 		projectListCmd.Example,
