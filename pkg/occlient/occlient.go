@@ -42,6 +42,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	oauthv1client "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -297,6 +298,44 @@ func (c *Client) isLoggedIn() bool {
 		return false
 	}
 	return true
+}
+
+// RunLogout logout current user from cluster
+func (c *Client) RunLogout() error {
+	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
+	if err != nil {
+		glog.V(1).Infof("%v: %v", err, "unable to get userinfo")
+	}
+
+	Conf, err := c.kubeConfig.ClientConfig()
+	if err != nil {
+		glog.V(1).Infof("%v: %v", err, "unable to get client config")
+	}
+	client, err := oauthv1client.NewForConfig(Conf)
+	if err != nil {
+		glog.V(1).Infof("%v: %v", err, "unable to create a new OauthV1Client")
+	}
+
+	if err := client.OAuthAccessTokens().Delete(Conf.BearerToken, &metav1.DeleteOptions{}); err != nil {
+		glog.V(1).Infof("%v", err)
+	}
+
+	rawConfig, err := c.kubeConfig.RawConfig()
+	if err != nil {
+		glog.V(1).Infof("%v: %v", err, "unable to switch to  project")
+	}
+	for key, value := range rawConfig.AuthInfos {
+		if key == rawConfig.Contexts[rawConfig.CurrentContext].AuthInfo {
+			value.Token = ""
+		}
+	}
+	err = clientcmd.ModifyConfig(clientcmd.NewDefaultClientConfigLoadingRules(), rawConfig, true)
+	if err != nil {
+		glog.V(1).Infof("%v: %v", err, "unable to write config to config file")
+	}
+
+	fmt.Printf("Logged \"%v\" out on \"%v\"\n", output.Name, Conf.Host)
+	return nil
 }
 
 // isServerUp returns true if server is up and running
