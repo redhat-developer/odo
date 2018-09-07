@@ -1,5 +1,6 @@
 package notify
 
+/*
 import (
 	"context"
 	"fmt"
@@ -40,3 +41,4 @@ func Test_getLatestReleaseTag(t *testing.T) {
 		})
 	}
 }
+*/
