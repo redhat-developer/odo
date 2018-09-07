@@ -364,7 +364,10 @@ var _ = Describe("odoCmpE2e", func() {
 	Context("cleaning up", func() {
 		It("should delete the application", func() {
 			runCmd("odo app delete " + appTestName + " -f")
-			runCmd("oc delete project " + projName)
+
+			runCmd("odo project delete " + projName)
+			prjList := runCmd("odo project list")
+			Expect(prjList).NotTo(ContainSubstring(projName))
 		})
 	})
 })
