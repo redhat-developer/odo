@@ -15,7 +15,7 @@ func Test_getLatestReleaseTag(t *testing.T) {
 		defer response.Body.Close()
 	}
 	if err != nil {
-		t.Errorf("error getting latest release TagName via API")
+		t.Errorf("error getting latest release TagName via API, error: %v", err)
 		return
 	}
 
@@ -31,8 +31,8 @@ func Test_getLatestReleaseTag(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			releaseTag, _ := getLatestReleaseTag()
-			if test.success == true {
+			releaseTag, err := getLatestReleaseTag()
+			if test.success == true && err == nil {
 				if !reflect.DeepEqual(fmt.Sprintf("v%s", releaseTag), *release.TagName) {
 					t.Errorf("Expected value is %s, got %s", releaseTag, *release.TagName)
 				}
