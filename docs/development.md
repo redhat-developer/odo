@@ -56,138 +56,79 @@ git push -f origin myfeature
 
 We follow Test Driven Development(TDD) workflow in our development process. You can read more about it [here](/docs/tdd-workflow.md).
 
-### Writing Unit tests
+### Unit tests
 
-#### Unit test for functions consuming client-go functions
+##### Introduction
 
-Unit-tests for the functions making API calls with client-go library 
-can be written by using package (fake)[https://godoc.org/k8s.io/client-go/kubernetes/fake].
+Unit-tests for ODO functions are written using package [fake](https://godoc.org/k8s.io/client-go/kubernetes/fake). This allows us to create a fake client, and then mock the API calls defined under [OpenShift client-go](https://github.com/openshift/client-go) and [k8s client-go](https://godoc.org/k8s.io/client-go).
 
-The way to mock the api calls is by mocking the actual api calls with functions defined in
-(client-go/testing)[https://godoc.org/k8s.io/client-go/testing]
-and using (pkg/testing)[https://golang.org/pkg/testing/] for writing the test.
+The tests are written in golang using [pkg/testing](https://golang.org/pkg/testing/) package.
 
+##### Writing unit tests
 
-##### How to write unit tests having API calls in a nutshell?
+ 1. Identify the APIs used by the function to be tested.
 
-1. Identify the API calls being made by the function during the execution
+ 2. Initialise the fake client along with the relevant clientsets.
 
-2. Initialise the relevant clientsets and clients 
+ 3. In the case of functions fetching or creating new objects through the APIs, add a [reactor](https://godoc.org/k8s.io/client-go/testing#Fake.AddReactor) interface returning fake objects. 
 
-3. In case of API calls which are returning any object 
-  which is later being processed inside the function, 
-  Implement fake functions and use them instead.
-  Use addreactor method for adding corresponding clientset ref:(here)[https://godoc.org/k8s.io/client-go/testing#Fake.AddReactor].
+ 4. Verify the objects returned
 
-4. Use https://godoc.org/k8s.io/client-go/testing#Fake.Actions 
-  for validating number of fake actions performed and the values with which the fake calls were made.
+##### Initialising fake client and creating fake objects
 
-##### Example of using fake for testing functions making API calls.
+Let us understand the initialisation of fake clients and thereafter creation of fake objects with an example. 
 
-Initialising a fakeclientset and fakeclient properly is the first thing. 
+The function `GetImageStreams` in [pkg/occlient.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient.go) fetches imagestream objects through the API:
 
-For example : 
-take the example of unit test for CreateRoute function in pkg/occlient/occlient.go 
 ```
-/ CreateRoute creates a route object for the given service and with the given
-// labels
-func (c *Client) CreateRoute(name string, serviceName string, labels map[string]string) (*routev1.Route, error) {
-	route := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
-		Spec: routev1.RouteSpec{
-			To: routev1.RouteTargetReference{
-				Kind: "Service",
-				Name: serviceName,
-			},
-		},
-	}
-	r, err := c.routeClient.Routes(c.namespace).Create(route)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating route")
-	}
-	return r, nil
+func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error) {
+        imageStreamList, err := c.imageClient.ImageStreams(namespace).List(metav1.ListOptions{})
+        if err != nil {
+                return nil, errors.Wrap(err, "unable to list imagestreams")
+        }
+        return imageStreamList.Items, nil
 }
-```
-
-Looking at the function body and identify how many API calls it is making while execution. 
-In this case CreateRoute is making only a single API call which is 
-```
-r, err := c.routeClient.Routes(c.namespace).Create(route)
-```
-
-for example,
-add the code for initialising fakeclientset & fakeclient for routeClient on the FakeNew function 
-```
-    fkclientset.RouteClientset = fakeRouteClientset.NewSimpleClientset()
-    client.routeClient = fkclientset.RouteClientset.Route()
-
-```
-Initialise a fakeclientset by calling fakeRouteClientset.NewSimpleClientset() 
-It returns a simple set of object tracker which can process, creates,updates and deletions 
-but without any validations. So it is recommended to implement validations separately if needed.
-
-Writing the test function for CreateRoute,
-
-call the initialisation function
-```
-fkclient, fkclientset := FakeNew()
-```
-
-Once fakeclientset and fakeclient is being sucessfully initialised 
-it's possible to make the method calls on the struct which got initialised using FakeNew().
-Here in this case it needs to validate the value with which the function is returining
-and the number of actions performed on routeclientset.
-
-
-Then after making that function call inside the test function,
-the number of actions performed can be validated using being validated Actions() method on clientset.
-
-for example in this case, `len(fkclientset.RouteClientset.Actions())` 
-returns number of actions performed on routeclientset
-
-and values are being validated later.
-Ref. (here)[https://github.com/redhat-developer/odo/pull/456/files#diff-54c1e3725d2cfb565cbd1cfdb02bd792R63]
-
-For the API calls which are returning objects that are later being processed inside the function body,
-adding reactors for the relevent actions is also needed.
-
-for example take a look at `GetDeploymentConfigsFromSelector` 
-https://github.com/redhat-developer/odo/blob/bbcf73f7a9c7af28429d7ec7a9dac274abe0c72a/pkg/occlient/occlient_test.go#L2474
-
-it is making an API call as below 
-```
-dcList, err := c.appsClient.DeploymentConfigs(c.namespace).List(metav1.ListOptions{
-                   LabelSelector: selector,
-})
-```
-which fetch the DeploymentConfigList which later being returned by the `GetDeploymentConfigsFromSelector` function.
-
-so for this we can add a reactor like below, 
-which will return tt.dcBefore(a dc object), nil(in place of error)
-we can keep the fist return value as `true` for all.
-
-```
-fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-    if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), tt.selector) {
-        return true, nil, fmt.Errorf("labels not matching with expected values, expected:%s, got:%s", tt.selector, action.(ktesting.ListAction).GetListRestrictions())
-    }    
-    return true, &listOfDC, nil
-})   
 
 ```
 
-so during the execution when 
-` c.appsClient.DeploymentConfigs(c.namespace).List(metav1.ListOptions{  LabelSelector: selector,})` is being called
-the above two values will be returned.
+1. For writing the tests, we start by initialising the fake client using the function `FakeNew()` which initialises the image clientset harnessed by 	`GetImageStreams` funtion:
 
-More examples can be found in https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient_test.go
+	`client, fkclientset := FakeNew()`
 
- - Reactor is an interface to allow the composition of reaction functions.
- - Verb is get, list, delete...
-For more info about reactors Ref: https://godoc.org/k8s.io/client-go/testing
+2. In the `GetImageStreams` funtions, the list of imagestreams is fetched through the API. While using fake client, this list can be emulated using a [`PrependReactor`](https://github.com/kubernetes/client-go/blob/master/testing/fake.go) interface:
+ 
+   ```
+	fkclientset.ImageClientset.PrependReactor("list", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+        	return true, fakeImageStreams(tt.args.name, tt.args.namespace), nil
+        })
+   ```
+
+   The `PrependReactor` expects `resource` and `verb` to be passed as arguments. We can get this information by looking into [`List` function for fake imagestream](https://github.com/openshift/client-go/blob/master/image/clientset/versioned/typed/image/v1/fake/fake_imagestream.go):
+
+
+   	```
+   	func (c *FakeImageStreams) List(opts v1.ListOptions) (result *image_v1.ImageStreamList, err error) {
+        	obj, err := c.Fake.Invokes(testing.NewListAction(imagestreamsResource, imagestreamsKind, c.ns, opts), &image_v1.ImageStreamList{})
+		...
+        }
+        
+  	func NewListAction(resource schema.GroupVersionResource, kind schema.GroupVersionKind, namespace string, opts interface{}) ListActionImpl {
+        	action := ListActionImpl{}
+        	action.Verb = "list"
+        	action.Resource = resource
+        	action.Kind = kind
+        	action.Namespace = namespace
+        	labelSelector, fieldSelector, _ := ExtractFromListOptions(opts)
+        	action.ListRestrictions = ListRestrictions{labelSelector, fieldSelector}
+
+        	return action
+  	}
+
+
+  The `List` function internally calls `NewListAction` defined in [k8s.io/client-go/testing/actions.go](https://github.com/kubernetes/client-go/blob/master/testing/actions.go).  From these functions, we see that the `resource` and `verb`to be passed into the `PrependReactor` interface are `imagestreams` and `list` respectively. 
+
+
+  You can see the entire test function `TestGetImageStream` in [pkg/occlient/occlient_test.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient_test.go)
 
 ## Dependency Management
 
