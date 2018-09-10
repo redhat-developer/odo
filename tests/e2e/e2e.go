@@ -1,6 +1,8 @@
 package e2e
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -83,6 +85,35 @@ func waitForCmdOut(cmd string, expOut string) bool {
 			}
 
 			if string(out) == expOut {
+				return true
+			}
+		}
+	}
+}
+
+// waitForDeleteCmd runs a command until it finds
+// the deleted resource to be absent in the list of relevant objects from cmd executed
+// It accepts 2 arguments, cmd (command to be run)
+// & object (the deleted object).
+// It times out if the command doesn't fetch the
+// expected output  within the timeout period (1m).
+func waitForDeleteCmd(cmd string, object string) bool {
+
+	pingTimeout := time.After(1 * time.Minute)
+	tick := time.Tick(time.Second)
+
+	for {
+		select {
+		case <-pingTimeout:
+			Fail("Timeout out after 1 minute")
+
+		case <-tick:
+			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
+			if err != nil {
+				Fail(err.Error())
+			}
+
+			if !strings.Contains(string(out), object) {
 				return true
 			}
 		}

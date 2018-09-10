@@ -32,7 +32,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	runCmd("oc project " + curProj)
+	runCmd("oc projects")
 })
 
 var _ = Describe("odoe2e", func() {
@@ -471,8 +471,8 @@ var _ = Describe("odoe2e", func() {
 			cmpList := runCmd("odo list")
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
 
-			// TODO: `odo project delete` once implemented
-			runCmd("oc delete project " + projName)
+			runCmd("odo project delete " + projName)
+			waitForDeleteCmd("odo project list", projName)
 		})
 	})
 })

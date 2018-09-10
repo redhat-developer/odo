@@ -3,23 +3,26 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 
 var (
-	projectShortFlag bool
+	projectShortFlag       bool
+	projectForceDeleteFlag bool
 )
 
 var projectCmd = &cobra.Command{
 	Use:   "project [options]",
 	Short: "Perform project operations",
 	Long:  "Perform project operations",
-	Example: fmt.Sprintf("%s\n%s\n%s\n%s",
+	Example: fmt.Sprintf("%s\n%s\n%s\n%s\n%s",
 		projectSetCmd.Example,
 		projectCreateCmd.Example,
 		projectListCmd.Example,
+		projectDeleteCmd.Example,
 		projectGetCmd.Example),
 	// 'odo project' is the same as 'odo project get'
 	// 'odo project <project_name>' is the same as 'odo project set <project_name>'
@@ -105,6 +108,46 @@ var projectCreateCmd = &cobra.Command{
 	},
 }
 
+var projectDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a project",
+	Long:  "Delete a project and all resources deployed in the project being deleted",
+	Example: `  # Delete a project
+  odo project delete myproject
+	`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		projectName := args[0]
+		client := getOcClient()
+
+		// Validate existence of the project to be deleted
+		isValidProject, err := project.Exists(client, projectName)
+		checkError(err, "Failed to delete project %s", projectName)
+		if !isValidProject {
+			fmt.Printf("The project %s does not exist. Please check the list of projects using `odo project list`", projectName)
+			os.Exit(1)
+		}
+
+		var confirmDeletion string
+		if projectForceDeleteFlag {
+			confirmDeletion = "y"
+		} else {
+			fmt.Printf("Are you sure you want to delete project %v? [y/N] ", projectName)
+			fmt.Scanln(&confirmDeletion)
+		}
+
+		if strings.ToLower(confirmDeletion) != "y" {
+			fmt.Printf("Aborting deletion of project: %v\n", projectName)
+		}
+
+		err = project.Delete(client, projectName)
+		if err != nil {
+			checkError(err, "")
+		}
+		fmt.Printf("Deleted project : %v\n", projectName)
+	},
+}
+
 var projectListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all the projects",
@@ -131,10 +174,12 @@ var projectListCmd = &cobra.Command{
 func init() {
 	projectGetCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "If true, display only the application name")
 	projectSetCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "If true, display only the application name")
+	projectDeleteCmd.Flags().BoolVarP(&projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
 	projectCmd.Flags().AddFlagSet(projectGetCmd.Flags())
 	projectCmd.AddCommand(projectGetCmd)
 	projectCmd.AddCommand(projectSetCmd)
 	projectCmd.AddCommand(projectCreateCmd)
+	projectCmd.AddCommand(projectDeleteCmd)
 	projectCmd.AddCommand(projectListCmd)
 
 	// Add a defined annotation in order to appear in the help menu
