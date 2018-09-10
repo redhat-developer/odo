@@ -6,8 +6,8 @@ import (
 
 var componentLogoutCmd = &cobra.Command{
 	Use:   "logout",
-	Short: "Log out of the active session out by clearing saved tokens",
-	Long:  "Log out of the active session out by clearing saved tokens",
+	Short: "Log out of the active session",
+	Long:  "Log out of the active session",
 	Example: `  # Logout
   odo logout
 	`,
