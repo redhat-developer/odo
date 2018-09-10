@@ -300,7 +300,7 @@ func (c *Client) isLoggedIn() bool {
 	return true
 }
 
-// RunLogout logout current user from cluster
+// RunLogout logs out the current user from cluster
 func (c *Client) RunLogout() error {
 	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
 	if err != nil {
