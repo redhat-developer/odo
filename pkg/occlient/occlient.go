@@ -1278,11 +1278,12 @@ func (c *Client) Delete(labels map[string]string) error {
 
 // DeleteServiceInstance takes labels as a input and based on it, deletes respective service instance
 func (c *Client) DeleteServiceInstance(labels map[string]string) error {
+	glog.V(4).Infof("Deleting Service Instance")
+
 	// convert labels to selector
 	selector := util.ConvertLabelsToSelector(labels)
 	glog.V(4).Infof("Selectors used for deletion: %s", selector)
-	// Service Instance
-	glog.V(4).Infof("Deleting Service Instance")
+
 	// Listing out serviceInstance because `DeleteCollection` method don't work on serviceInstance
 	svcCatList, err := c.GetServiceInstanceList(c.namespace, selector)
 	if err != nil {

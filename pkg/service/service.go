@@ -1,13 +1,15 @@
 package service
 
 import (
+	"strings"
+
+	"sort"
+
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
-	"sort"
-	"strings"
 )
 
 // ServiceInfo holds all important information about one service
@@ -78,9 +80,11 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 	labels := map[string]string{
 		applabels.ApplicationLabel: applicationName,
 	}
+
 	//since, service is associated with application, it consist of application label as well
 	// which we can give as a selector
 	applicationSelector := util.ConvertLabelsToSelector(labels)
+
 	// get service instance list based on given selector
 	serviceInstanceList, err := client.GetServiceInstanceList(projectName, applicationSelector)
 	if err != nil {
