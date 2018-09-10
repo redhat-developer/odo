@@ -120,6 +120,13 @@ var projectDeleteCmd = &cobra.Command{
 		projectName := args[0]
 		client := getOcClient()
 
+		// Validate existence of project to be deleted
+		isValidProject, err := project.Exists(client, projectName)
+		checkError(err, "Failed to delete project %s", projectName)
+		if !isValidProject {
+			fmt.Printf("The project %s does not exist. Please check the list of projects using `odo project list`", projectName)
+			os.Exit(1)
+		}
 		var confirmDeletion string
 		if projectForceDeleteFlag {
 			confirmDeletion = "y"
@@ -132,7 +139,7 @@ var projectDeleteCmd = &cobra.Command{
 			fmt.Printf("Aborting deletion of project: %v\n", projectName)
 		}
 
-		err := project.Delete(client, projectName)
+		err = project.Delete(client, projectName)
 		if err != nil {
 			checkError(err, "")
 		}

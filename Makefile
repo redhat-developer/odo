@@ -73,6 +73,8 @@ prepare-release: cross
 
 .PHONY: test
 test:
+	# Monkey(patching functions for unit tests) sometimes fails to patch a function if inlining is enabled.
+	# Hence disabling inlining with -gcflags="-N -l"
 	go test -gcflags="-N -l" -race $(PKGS)
 
 # Run e2e tests

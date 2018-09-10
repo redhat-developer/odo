@@ -1,8 +1,6 @@
 package project
 
 import (
-	"fmt"
-
 	"github.com/golang/glog"
 
 	"github.com/pkg/errors"
@@ -40,26 +38,11 @@ func Create(client *occlient.Client, projectName string) error {
 
 // Delete deletes the project with name projectName and sets the project with name currentProject as current project and returns errors if any
 func Delete(client *occlient.Client, projectName string) error {
-	validProject := false
 	currentProject := GetCurrent(client)
 
 	projects, err := List(client)
 	if err != nil {
 		return errors.Wrapf(err, "unable to fetch list of projects")
-	}
-
-	//Validate the delete requested project
-	for _, prj := range projects {
-		if prj.Name == projectName {
-			validProject = true
-			break
-		}
-	}
-	if !validProject {
-		return fmt.Errorf(
-			"Requested project %s does not exist.Please check the list of projects using `odo list`",
-			projectName,
-		)
 	}
 
 	//Iterate the project list and see the expected change post deletion

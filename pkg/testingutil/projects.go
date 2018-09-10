@@ -23,16 +23,3 @@ func FakeProjects() *v1.ProjectList {
 		},
 	}
 }
-
-/*
-func FakeOdoConfig() clientcmd_api.Config {
-	return clientcmd_api.Config{
-		Contexts: map[string]*clientcmd_api.Context {
-			"0.0.0.0/8443/testing": &clientcmd_api.Context {
-
-			}
-		}
-		CurrentContext:
-	}
-}
-*/

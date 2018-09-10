@@ -27,11 +27,6 @@ func TestDelete(t *testing.T) {
 			wantErr:     false,
 			projectName: "prj1",
 		},
-		{
-			name:        "Test delete non existant project",
-			wantErr:     true,
-			projectName: "prj4",
-		},
 	}
 
 	for _, tt := range tests {
