@@ -56,6 +56,83 @@ git push -f origin myfeature
 
 We follow Test Driven Development(TDD) workflow in our development process. You can read more about it [here](/docs/tdd-workflow.md).
 
+### Unit tests
+
+##### Introduction
+
+Unit-tests for Odo functions are written using package [fake](https://godoc.org/k8s.io/client-go/kubernetes/fake). This allows us to create a fake client, and then mock the API calls defined under [OpenShift client-go](https://github.com/openshift/client-go) and [k8s client-go](https://godoc.org/k8s.io/client-go).
+
+The tests are written in golang using the [pkg/testing](https://golang.org/pkg/testing/) package.
+
+##### Writing unit tests
+
+ 1. Identify the APIs used by the function to be tested.
+
+ 2. Initialise the fake client along with the relevant clientsets.
+
+ 3. In the case of functions fetching or creating new objects through the APIs, add a [reactor](https://godoc.org/k8s.io/client-go/testing#Fake.AddReactor) interface returning fake objects. 
+
+ 4. Verify the objects returned
+
+##### Initialising fake client and creating fake objects
+
+Let us understand the initialisation of fake clients and therefore the creation of fake objects with an example.
+
+The function `GetImageStreams` in [pkg/occlient.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient.go) fetches imagestream objects through the API:
+
+```go
+func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error) {
+        imageStreamList, err := c.imageClient.ImageStreams(namespace).List(metav1.ListOptions{})
+        if err != nil {
+                return nil, errors.Wrap(err, "unable to list imagestreams")
+        }
+        return imageStreamList.Items, nil
+}
+
+```
+
+1. For writing the tests, we start by initialising the fake client using the function `FakeNew()` which initialises the image clientset harnessed by 	`GetImageStreams` funtion:
+
+    ```go
+    client, fkclientset := FakeNew()
+    ```
+
+2. In the `GetImageStreams` funtions, the list of imagestreams is fetched through the API. While using fake client, this list can be emulated using a [`PrependReactor`](https://github.com/kubernetes/client-go/blob/master/testing/fake.go) interface:
+ 
+   ```go
+	fkclientset.ImageClientset.PrependReactor("list", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+        	return true, fakeImageStreams(tt.args.name, tt.args.namespace), nil
+        })
+   ```
+
+   The `PrependReactor` expects `resource` and `verb` to be passed in as arguments. We can get this information by looking at the [`List` function for fake imagestream](https://github.com/openshift/client-go/blob/master/image/clientset/versioned/typed/image/v1/fake/fake_imagestream.go):
+
+
+   	```go
+    func (c *FakeImageStreams) List(opts v1.ListOptions) (result *image_v1.ImageStreamList, err error) {
+        	obj, err := c.Fake.Invokes(testing.NewListAction(imagestreamsResource, imagestreamsKind, c.ns, opts), &image_v1.ImageStreamList{})
+		...
+    }
+        
+    func NewListAction(resource schema.GroupVersionResource, kind schema.GroupVersionKind, namespace string, opts interface{}) ListActionImpl {
+        	action := ListActionImpl{}
+        	action.Verb = "list"
+        	action.Resource = resource
+        	action.Kind = kind
+        	action.Namespace = namespace
+        	labelSelector, fieldSelector, _ := ExtractFromListOptions(opts)
+        	action.ListRestrictions = ListRestrictions{labelSelector, fieldSelector}
+
+        	return action
+    }
+    ```
+
+
+  The `List` function internally calls `NewListAction` defined in [k8s.io/client-go/testing/actions.go](https://github.com/kubernetes/client-go/blob/master/testing/actions.go).  From these functions, we see that the `resource` and `verb`to be passed into the `PrependReactor` interface are `imagestreams` and `list` respectively. 
+
+
+  You can see the entire test function `TestGetImageStream` in [pkg/occlient/occlient_test.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient_test.go)
+
 ## Dependency Management
 
 odo uses `glide` to manage dependencies.
