@@ -17,21 +17,31 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubectl/pkg/pluginutils"
+
+	_ "github.com/golang/glog" // Initialize glog flags
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/binding"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/broker"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/class"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/command"
+	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/completion"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/instance"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/plan"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/plugin"
-	"github.com/kubernetes-incubator/service-catalog/pkg"
+	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/versions"
+	svcatclient "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset"
 	"github.com/kubernetes-incubator/service-catalog/pkg/svcat"
+	"github.com/kubernetes-incubator/service-catalog/pkg/util/kube"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	k8sclient "k8s.io/client-go/kubernetes"
 )
 
 // These are build-time values, set during an official release
@@ -41,21 +51,25 @@ var (
 )
 
 func main() {
-	cmd := buildRootCommand()
+	// root command context
+	cxt := &command.Context{
+		Viper: viper.New(),
+	}
+	cmd := buildRootCommand(cxt)
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-func buildRootCommand() *cobra.Command {
-	// root command context
-	cxt := &command.Context{
-		Viper: viper.New(),
-	}
+func buildRootCommand(cxt *command.Context) *cobra.Command {
+	// Make cobra aware of select glog flags
+	// Enabling all flags causes unwanted deprecation warnings from glog to always print in plugin mode
+	pflag.CommandLine.AddGoFlag(flag.CommandLine.Lookup("v"))
+	pflag.CommandLine.AddGoFlag(flag.CommandLine.Lookup("logtostderr"))
+	pflag.CommandLine.Set("logtostderr", "true")
 
 	// root command flags
 	var opts struct {
-		Version     bool
 		KubeConfig  string
 		KubeContext string
 	}
@@ -66,50 +80,59 @@ func buildRootCommand() *cobra.Command {
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Enable tests to swap the output
-			cxt.Output = cmd.OutOrStdout()
-
-			// Initialize flags from environment variables
-			bindViperToCobra(cxt.Viper, cmd)
-
-			app, err := svcat.NewApp(opts.KubeConfig, opts.KubeContext)
-			cxt.App = app
-
-			return err
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if opts.Version {
-				printVersion(cxt)
-				return nil
+			if cxt.Output == nil {
+				cxt.Output = cmd.OutOrStdout()
 			}
 
+			// Initialize flags from kubectl plugin environment variables
+			if plugin.IsPlugin() {
+				plugin.BindEnvironmentVariables(cxt.Viper, cmd)
+			}
+
+			// Initialize the context if not already configured (by tests)
+			if cxt.App == nil {
+				k8sClient, svcatClient, namespace, err := getClients(opts.KubeConfig, opts.KubeContext)
+				if err != nil {
+					return err
+				}
+
+				app, err := svcat.NewApp(k8sClient, svcatClient, namespace)
+				if err != nil {
+					return err
+				}
+
+				cxt.App = app
+			}
+
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Fprint(cxt.Output, cmd.UsageString())
 			return nil
 		},
 	}
 
-	cmd.Flags().BoolVarP(&opts.Version, "version", "v", false, "Show the application version")
+	cmd.PersistentFlags().StringVar(&opts.KubeContext, "context", "", "name of the kubeconfig context to use.")
+	cmd.PersistentFlags().StringVar(&opts.KubeConfig, "kubeconfig", "", "path to kubeconfig file. Overrides $KUBECONFIG")
 
-	if plugin.IsPlugin() {
-		plugin.BindEnvironmentVariables(cxt.Viper)
-	} else {
-		cmd.PersistentFlags().StringVar(&opts.KubeContext, "kube-context", "", "name of the kube context to use")
-		cmd.PersistentFlags().StringVar(&opts.KubeConfig, "kubeconfig", "", "path to kubeconfig file. Overrides $KUBECONFIG")
-	}
-
+	cmd.AddCommand(newCreateCmd(cxt))
 	cmd.AddCommand(newGetCmd(cxt))
 	cmd.AddCommand(newDescribeCmd(cxt))
+	cmd.AddCommand(broker.NewRegisterCmd(cxt))
+	cmd.AddCommand(broker.NewDeregisterCmd(cxt))
 	cmd.AddCommand(instance.NewProvisionCmd(cxt))
 	cmd.AddCommand(instance.NewDeprovisionCmd(cxt))
 	cmd.AddCommand(binding.NewBindCmd(cxt))
 	cmd.AddCommand(binding.NewUnbindCmd(cxt))
 	cmd.AddCommand(newSyncCmd(cxt))
-	cmd.AddCommand(newInstallCmd(cxt))
+	if !plugin.IsPlugin() {
+		cmd.AddCommand(newInstallCmd(cxt))
+	}
+	cmd.AddCommand(newTouchCmd(cxt))
+	cmd.AddCommand(versions.NewVersionCmd(cxt))
+	cmd.AddCommand(newCompletionCmd(cxt))
 
 	return cmd
-}
-
-func printVersion(cxt *command.Context) {
-	fmt.Fprintf(cxt.Output, "svcat %s\n", pkg.VERSION)
 }
 
 func newSyncCmd(cxt *command.Context) *cobra.Command {
@@ -119,6 +142,16 @@ func newSyncCmd(cxt *command.Context) *cobra.Command {
 		Aliases: []string{"relist"},
 	}
 	cmd.AddCommand(broker.NewSyncCmd(cxt))
+
+	return cmd
+}
+
+func newCreateCmd(cxt *command.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create a user-defined resource",
+	}
+	cmd.AddCommand(class.NewCreateCmd(cxt))
 
 	return cmd
 }
@@ -153,22 +186,50 @@ func newDescribeCmd(cxt *command.Context) *cobra.Command {
 
 func newInstallCmd(cxt *command.Context) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "install",
+		Use:   "install",
+		Short: "Install Service Catalog related tools",
 	}
 	cmd.AddCommand(plugin.NewInstallCmd(cxt))
 
 	return cmd
 }
 
-// Bind the viper configuration back to the cobra command flags.
-// Allows us to interact with the cobra flags normally, and while still
-// using viper's automatic environment variable binding.
-func bindViperToCobra(vip *viper.Viper, cmd *cobra.Command) {
-	vip.BindPFlags(cmd.Flags())
-	vip.AutomaticEnv()
-	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		if !f.Changed && vip.IsSet(f.Name) {
-			cmd.Flags().Set(f.Name, vip.GetString(f.Name))
+func newTouchCmd(cxt *command.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "touch",
+		Short: "Force Service Catalog to reprocess a resource",
+	}
+	cmd.AddCommand(instance.NewTouchCommand(cxt))
+	return cmd
+}
+
+func newCompletionCmd(ctx *command.Context) *cobra.Command {
+	return completion.NewCompletionCmd(ctx)
+}
+
+// getClients loads api clients based on the plugin context if present, otherwise the specified kube config.
+func getClients(kubeConfig, kubeContext string) (k8sClient k8sclient.Interface, svcatClient svcatclient.Interface, namespaces string, err error) {
+	var restConfig *rest.Config
+	var config clientcmd.ClientConfig
+
+	if plugin.IsPlugin() {
+		restConfig, config, err = pluginutils.InitClientAndConfig()
+		if err != nil {
+			return nil, nil, "", fmt.Errorf("could not get Kubernetes config from kubectl plugin context: %s", err)
 		}
-	})
+	} else {
+		config = kube.GetConfig(kubeContext, kubeConfig)
+		restConfig, err = config.ClientConfig()
+		if err != nil {
+			return nil, nil, "", fmt.Errorf("could not get Kubernetes config for context %q: %s", kubeContext, err)
+		}
+	}
+
+	namespace, _, err := config.Namespace()
+	k8sClient, err = k8sclient.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	svcatClient, err = svcatclient.NewForConfig(restConfig)
+	return k8sClient, svcatClient, namespace, nil
 }

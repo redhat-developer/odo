@@ -13,8 +13,7 @@
 # Force dep to vendor the code generators, which aren't imported just used at dev time.
 # Picking a subpackage with Go code won't be necessary once https://github.com/golang/dep/pull/1545 is merged.
 required = [
-  "github.com/jteeuwen/go-bindata/go-bindata",
-  "k8s.io/code-generator/cmd/defaulter-gen",
+  "github.com/jteeuwen/go-bindata/go-bindata","k8s.io/code-generator/cmd/defaulter-gen",
   "k8s.io/code-generator/cmd/deepcopy-gen",
   "k8s.io/code-generator/cmd/conversion-gen",
   "k8s.io/code-generator/cmd/client-gen",
@@ -23,6 +22,7 @@ required = [
   "k8s.io/code-generator/cmd/openapi-gen",
   "k8s.io/gengo/args",
   "github.com/kubernetes/repo-infra/kazel",
+  "golang.org/x/lint/golint",
 ]
 
 # in sync with Kubernetes master (k8s 1.10 future release), but different from Kubernetes etcd version (3.1.10),
@@ -41,9 +41,35 @@ required = [
   name = "github.com/golang/glog"
   revision = "44145f04b68cf362d9c4df2182967c2275eaefed"
 
+# until https://github.com/operator-framework/getting-started/issues/16 is fixed
+# use the changes from 
+# https://github.com/kubernetes/apimachinery/commit/5a8013207d0d28c7fe98193e5b6cdbf92e98a000
+# which contains this change
+# https://github.com/json-iterator/go/commit/f2b4162afba35581b6d4a50d3b8f34e33c144682
+[[override]]
+  name = "github.com/json-iterator/go"
+  revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
+
+# explicit dependency by upsteram k8s.io/apiserver as the repository
+# is unversioned and untagged
+[[override]]
+  name = "k8s.io/kube-openapi"
+  revision = "91cfa479c814065e420cee7ed227db0f63a5854e"
+
+# explicit dependency by upsteram k8s.io/go-client as it is compatible
+# and does not build otherwise
+# vendor/k8s.io/client-go/plugin/pkg/client/auth/azure/azure.go:300:25: cannot call non-function spt.Token (type adal.Token)
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  revision = "1ff28809256a84bb6966640ff3d0371af82ccba4"
+
 [[constraint]]
   name = "github.com/Azure/go-autorest"
   version = "^9.1.0"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.2"
 
 [[constraint]]
   name = "github.com/spf13/viper"
@@ -51,27 +77,27 @@ required = [
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.9.1"
+  version = "kubernetes-1.11.0"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.9.1"
+  version = "kubernetes-1.11.0"
 
 [[constraint]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.9.1"
+  version = "kubernetes-1.11.0"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.9.1"
+  version = "kubernetes-1.11.0"
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.9.1"
+  version = "kubernetes-1.11.0"
 
 [[constraint]]
   name = "github.com/pmorie/go-open-service-broker-client"
-  version = "0.0.4"
+  version = "=0.0.10"
 
 [prune]
   non-go = true
@@ -84,5 +110,3 @@ required = [
   non-go = false
   go-tests = false
   unused-packages = false
-
-

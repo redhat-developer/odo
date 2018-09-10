@@ -25,45 +25,30 @@ import (
 )
 
 type describeCmd struct {
-	*command.Context
-	ns       string
-	name     string
-	traverse bool
+	*command.Namespaced
+	name string
 }
 
 // NewDescribeCmd builds a "svcat describe instance" command
 func NewDescribeCmd(cxt *command.Context) *cobra.Command {
-	describeCmd := &describeCmd{Context: cxt}
+	describeCmd := &describeCmd{Namespaced: command.NewNamespaced(cxt)}
 	cmd := &cobra.Command{
 		Use:     "instance NAME",
 		Aliases: []string{"instances", "inst"},
 		Short:   "Show details of a specific instance",
-		Example: `
+		Example: command.NormalizeExamples(`
   svcat describe instance wordpress-mysql-instance
-`,
+`),
 		PreRunE: command.PreRunE(describeCmd),
 		RunE:    command.RunE(describeCmd),
 	}
-	cmd.Flags().StringVarP(
-		&describeCmd.ns,
-		"namespace",
-		"n",
-		"default",
-		"The namespace in which to get the instance",
-	)
-	cmd.Flags().BoolVarP(
-		&describeCmd.traverse,
-		"traverse",
-		"t",
-		false,
-		"Whether or not to traverse from binding -> instance -> class/plan -> broker",
-	)
+	describeCmd.AddNamespaceFlags(cmd.Flags(), false)
 	return cmd
 }
 
 func (c *describeCmd) Validate(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("name is required")
+		return fmt.Errorf("an instance name is required")
 	}
 	c.name = args[0]
 
@@ -75,7 +60,7 @@ func (c *describeCmd) Run() error {
 }
 
 func (c *describeCmd) describe() error {
-	instance, err := c.App.RetrieveInstance(c.ns, c.name)
+	instance, err := c.App.RetrieveInstance(c.Namespace, c.name)
 	if err != nil {
 		return err
 	}
@@ -87,16 +72,6 @@ func (c *describeCmd) describe() error {
 		return err
 	}
 	output.WriteAssociatedBindings(c.Output, bindings)
-
-	if c.traverse {
-		class, plan, broker, err := c.App.InstanceParentHierarchy(instance)
-		if err != nil {
-			return fmt.Errorf("unable to traverse up the instance hierarchy (%s)", err)
-		}
-		output.WriteParentClass(c.Output, class)
-		output.WriteParentPlan(c.Output, plan)
-		output.WriteParentBroker(c.Output, broker)
-	}
 
 	return nil
 }

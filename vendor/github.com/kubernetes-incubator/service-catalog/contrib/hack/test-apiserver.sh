@@ -35,30 +35,42 @@ start-server.sh
 # setup. Kubectl was initially configured in a different script and
 # the port mapping may have changed by the time we get here.
 PORT=$(docker port etcd-svc-cat 443 | sed "s/.*://")
+echo $PORT
 D_HOST=${DOCKER_HOST:-localhost}
 D_HOST=${D_HOST#*//}   # remove leading proto://
 D_HOST=${D_HOST%:*}    # remove trailing port #
 NO_TTY=1 kubectl config set-cluster service-catalog-cluster --server=https://${D_HOST}:${PORT} --certificate-authority=/var/run/kubernetes-service-catalog/apiserver.crt
 
+
 # create a few resources
 set -x
-NO_TTY=1 kubectl create -f contrib/examples/apiserver/broker.yaml
+NO_TTY=1 kubectl config view
+NO_TTY=1 kubectl create -f contrib/examples/apiserver/clusterservicebroker.yaml
+NO_TTY=1 kubectl create -f contrib/examples/apiserver/servicebroker.yaml
+NO_TTY=1 kubectl create -f contrib/examples/apiserver/clusterserviceclass.yaml
 NO_TTY=1 kubectl create -f contrib/examples/apiserver/serviceclass.yaml
+NO_TTY=1 kubectl create -f contrib/examples/apiserver/clusterserviceplan.yaml
 NO_TTY=1 kubectl create -f contrib/examples/apiserver/serviceplan.yaml
 NO_TTY=1 kubectl create -f contrib/examples/apiserver/instance.yaml
 NO_TTY=1 kubectl create -f contrib/examples/apiserver/binding.yaml
 NO_TTY=1 kubectl create -f contrib/examples/apiserver/podpreset.yaml
 
-NO_TTY=1 kubectl get clusterservicebroker test-broker -o yaml
+NO_TTY=1 kubectl get clusterservicebroker test-clusterservicebroker -o yaml
+NO_TTY=1 kubectl get servicebroker test-servicebroker --namespace test-ns -o yaml
 NO_TTY=1 kubectl get clusterserviceclass d35b55b2-b1fd-4123-8045-5b9c619cb629 -o yaml
+NO_TTY=1 kubectl get serviceclass d0fe444d-5656-4c7a-ba1b-6c5884eefbb7 --namespace test-ns -o yaml
 NO_TTY=1 kubectl get clusterserviceplan 10e03cb7-b2cf-40dd-a954-16a382b92446 -o yaml
+NO_TTY=1 kubectl get serviceplan b20ac1c6-f6d5-4dd0-b30c-c33242ad2083 --namespace test-ns -o yaml
 NO_TTY=1 kubectl get serviceinstance test-instance --namespace test-ns -o yaml
 NO_TTY=1 kubectl get servicebinding test-binding --namespace test-ns -o yaml
 NO_TTY=1 kubectl get podpresets -o yaml
 NO_TTY=1 kubectl get podpresets db-config -o yaml
 
-NO_TTY=1 kubectl delete -f contrib/examples/apiserver/broker.yaml
+NO_TTY=1 kubectl delete -f contrib/examples/apiserver/clusterservicebroker.yaml
+NO_TTY=1 kubectl delete -f contrib/examples/apiserver/servicebroker.yaml
+NO_TTY=1 kubectl delete -f contrib/examples/apiserver/clusterserviceclass.yaml
 NO_TTY=1 kubectl delete -f contrib/examples/apiserver/serviceclass.yaml
+NO_TTY=1 kubectl delete -f contrib/examples/apiserver/clusterserviceplan.yaml
 NO_TTY=1 kubectl delete -f contrib/examples/apiserver/serviceplan.yaml
 NO_TTY=1 kubectl delete -f contrib/examples/apiserver/instance.yaml
 NO_TTY=1 kubectl delete -f contrib/examples/apiserver/binding.yaml

@@ -18,9 +18,12 @@ package servicecatalog_test
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/fake"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,7 +57,7 @@ var _ = Describe("Instances", func() {
 		It("Calls the generated v1beta1 List method with the specified namespace", func() {
 			namespace := si.Namespace
 
-			instances, err := sdk.RetrieveInstances(namespace)
+			instances, err := sdk.RetrieveInstances(namespace, "", "")
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(instances.Items).Should(ConsistOf(*si, *si2))
@@ -71,7 +74,7 @@ var _ = Describe("Instances", func() {
 			})
 			sdk.ServiceCatalogClient = badClient
 
-			_, err := sdk.RetrieveInstances(namespace)
+			_, err := sdk.RetrieveInstances(namespace, "", "")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).Should(ContainSubstring(errorMessage))
@@ -192,6 +195,58 @@ var _ = Describe("Instances", func() {
 			Expect(actions[0].Matches("list", "serviceinstances")).To(BeTrue())
 			opts := fields.Set{"spec.clusterServicePlanRef.name": plan.Name}
 			Expect(actions[0].(testing.ListActionImpl).GetListRestrictions().Fields.Matches(opts)).To(BeTrue())
+		})
+	})
+	Describe("UpdateInstance", func() {
+		It("Properly increments the update requests field", func() {
+			namespace := "cherry_namespace"
+			instanceName := "cherry"
+			className := "cherry_class"
+			planName := "cherry_plan"
+			params := make(map[string]string)
+			params["foo"] = "bar"
+			secrets := make(map[string]string)
+			secrets["username"] = "admin"
+			secrets["password"] = "abc123"
+			retries := 3
+
+			provisionedInstance, err := sdk.Provision(namespace, instanceName, "", className, planName, params, secrets)
+			Expect(err).To(BeNil())
+			// once for the provision request
+			actions := svcCatClient.Actions()
+			Expect(len(actions)).To(Equal(1))
+
+			Expect(sdk.TouchInstance(
+				provisionedInstance.Namespace,
+				provisionedInstance.Name,
+				retries,
+			)).To(BeNil())
+
+			// verify that the get and the update happened
+			actions = svcCatClient.Actions()
+			// once for the get = 2
+			// once for the update = 3
+			Expect(len(actions)).To(Equal(3))
+			getAction := actions[1]
+			updateAction := actions[2]
+			Expect(getAction.Matches("get", "serviceinstances")).To(BeTrue())
+			Expect(updateAction.Matches("update", "serviceinstances")).To(BeTrue())
+
+			// verify the details of the get
+			get, ok := getAction.(testing.GetActionImpl)
+			Expect(ok).To(BeTrue())
+			Expect(get.Name).To(Equal(instanceName))
+			Expect(get.Namespace).To(Equal(namespace))
+
+			// verify the details of the update
+			update, ok := updateAction.(testing.UpdateActionImpl)
+			Expect(ok).To(BeTrue())
+			Expect(update.Namespace).To(Equal(namespace))
+			obj, ok := update.Object.(*v1beta1.ServiceInstance)
+			Expect(ok).To(BeTrue())
+			Expect(obj.Name).To(Equal(instanceName))
+			// obj.Spec.UpdateRequests is an int64, so compare it to an int64
+			Expect(obj.Spec.UpdateRequests).To(Equal(int64(1)))
 		})
 	})
 	Describe("InstanceParentHierarchy", func() {
@@ -396,9 +451,10 @@ var _ = Describe("Instances", func() {
 		})
 	})
 	Describe("Provision", func() {
-		It("Calls the v1beta1 Create method with the passed in arguements", func() {
+		It("Calls the v1beta1 Create method with the passed in arguments", func() {
 			namespace := "cherry_namespace"
 			instanceName := "cherry"
+			externalID := "cherry-external-id"
 			className := "cherry_class"
 			planName := "cherry_plan"
 			params := make(map[string]string)
@@ -407,13 +463,14 @@ var _ = Describe("Instances", func() {
 			secrets["username"] = "admin"
 			secrets["password"] = "abc123"
 
-			service, err := sdk.Provision(namespace, instanceName, className, planName, params, secrets)
+			service, err := sdk.Provision(namespace, instanceName, externalID, className, planName, params, secrets)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(service.Namespace).To(Equal(namespace))
 			Expect(service.Name).To(Equal(instanceName))
 			Expect(service.Spec.PlanReference.ClusterServiceClassExternalName).To(Equal(className))
 			Expect(service.Spec.PlanReference.ClusterServicePlanExternalName).To(Equal(planName))
+			Expect(service.Spec.ExternalID).To(Equal(externalID))
 
 			actions := svcCatClient.Actions()
 			Expect(actions[0].Matches("create", "serviceinstances")).To(BeTrue())
@@ -436,6 +493,7 @@ var _ = Describe("Instances", func() {
 				},
 			}
 			Expect(objectFromRequest.Spec.ParametersFrom).Should(ConsistOf(param, param2))
+			Expect(objectFromRequest.Spec.ExternalID).To(Equal(externalID))
 		})
 		It("Bubbles up errors", func() {
 			errorMessage := "error retrieving list"
@@ -454,14 +512,14 @@ var _ = Describe("Instances", func() {
 			})
 			sdk.ServiceCatalogClient = badClient
 
-			service, err := sdk.Provision(namespace, instanceName, className, planName, params, secrets)
+			service, err := sdk.Provision(namespace, instanceName, "", className, planName, params, secrets)
 			Expect(service).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(errorMessage))
 		})
 	})
 	Describe("Deprovision", func() {
-		It("Calls the v1beta1 Delete method wiht the passed in service instance name", func() {
+		It("Calls the v1beta1 Delete method with the passed in service instance name", func() {
 			err := sdk.Deprovision(si.Namespace, si.Name)
 			Expect(err).NotTo(HaveOccurred())
 			actions := svcCatClient.Actions()
@@ -483,5 +541,52 @@ var _ = Describe("Instances", func() {
 		actions := badClient.Actions()
 		Expect(actions[0].Matches("delete", "serviceinstances")).To(BeTrue())
 		Expect(actions[0].(testing.DeleteActionImpl).Name).To(Equal(si.Name))
+	})
+	Describe("WaitForInstanceToNotExist", func() {
+		It("Calls the v1beta1 WaitForInstanceToNotExist method with the passed in service instance name", func() {
+			badClient := &fake.Clientset{}
+			badClient.AddReactor("get", "serviceinstances", func(action testing.Action) (bool, runtime.Object, error) {
+				return true, nil, apierrors.NewNotFound(v1beta1.Resource("serviceinstance"), "instance not found")
+			})
+			sdk.ServiceCatalogClient = badClient
+			timeout := 5 * time.Second
+			instance, err := sdk.WaitForInstanceToNotExist(si.Namespace, si.Name, 1*time.Second, &timeout)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(instance).To(BeNil())
+			actions := badClient.Actions()
+			Expect(actions[0].Matches("get", "serviceinstances")).To(BeTrue())
+			Expect(actions[0].(testing.GetActionImpl).Name).To(Equal("foobar"))
+			Expect(actions[0].(testing.GetActionImpl).Namespace).To(Equal("foobar_namespace"))
+		})
+	})
+	It("Bubbles up errors", func() {
+		si = &v1beta1.ServiceInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foobar",
+				Namespace: "foobar_namespace",
+			},
+			Spec: v1beta1.ServiceInstanceSpec{
+				ClusterServicePlanRef: &v1beta1.ClusterObjectReference{
+					Name: "not_real_plan",
+				},
+				ClusterServiceClassRef: &v1beta1.ClusterObjectReference{
+					Name: "not_real_class",
+				},
+			},
+		}
+		badClient := &fake.Clientset{}
+		badClient.AddReactor("get", "serviceinstances", func(action testing.Action) (bool, runtime.Object, error) {
+			return true, si, nil
+		})
+		sdk.ServiceCatalogClient = badClient
+		timeout := 1 * time.Second
+		instance, err := sdk.WaitForInstanceToNotExist(si.Namespace, si.Name, 1*time.Second, &timeout)
+		Expect(err).To(HaveOccurred())
+		Expect(strings.Contains(err.Error(), "timed out waiting for the condition"))
+		Expect(instance).ToNot(BeNil())
+		actions := badClient.Actions()
+		Expect(actions[0].Matches("get", "serviceinstances")).To(BeTrue())
+		Expect(actions[0].(testing.GetActionImpl).Name).To(Equal("foobar"))
+		Expect(actions[0].(testing.GetActionImpl).Namespace).To(Equal("foobar_namespace"))
 	})
 })

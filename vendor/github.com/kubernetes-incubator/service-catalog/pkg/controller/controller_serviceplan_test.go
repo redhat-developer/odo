@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,18 +27,19 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	clientgotesting "k8s.io/client-go/testing"
+	"reflect"
 )
 
-func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
-	getRemovedPlan := func() *v1beta1.ClusterServicePlan {
-		p := getTestClusterServicePlan()
+func TestReconcileServicePlanRemovedFromCatalog(t *testing.T) {
+	getRemovedPlan := func() *v1beta1.ServicePlan {
+		p := getTestServicePlan()
 		p.Status.RemovedFromBrokerCatalog = true
 		return p
 	}
 
 	cases := []struct {
 		name                    string
-		plan                    *v1beta1.ClusterServicePlan
+		plan                    *v1beta1.ServicePlan
 		instances               []v1beta1.ServiceInstance
 		catalogClientPrepFunc   func(*fake.Clientset)
 		shouldError             bool
@@ -47,7 +48,7 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 	}{
 		{
 			name:        "not removed from catalog",
-			plan:        getTestClusterServicePlan(),
+			plan:        getTestServicePlan(),
 			shouldError: false,
 		},
 		{
@@ -58,7 +59,7 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "PGUID"),
+					Fields: fields.OneTermEqualSelector("spec.servicePlanRef.name", "SPGUID"),
 				}
 
 				expectNumberOfActions(t, name, actions, 1)
@@ -73,7 +74,7 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "PGUID"),
+					Fields: fields.OneTermEqualSelector("spec.servicePlanRef.name", "SPGUID"),
 				}
 
 				expectNumberOfActions(t, name, actions, 2)
@@ -87,7 +88,7 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 			instances:   nil,
 			shouldError: true,
 			catalogClientPrepFunc: func(client *fake.Clientset) {
-				client.AddReactor("delete", "clusterserviceplans", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+				client.AddReactor("delete", "serviceplans", func(action clientgotesting.Action) (bool, runtime.Object, error) {
 					return true, nil, errors.New("oops")
 				})
 			},
@@ -95,7 +96,7 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "PGUID"),
+					Fields: fields.OneTermEqualSelector("spec.servicePlanRef.name", "SPGUID"),
 				}
 
 				expectNumberOfActions(t, name, actions, 2)
@@ -116,7 +117,7 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 			tc.catalogClientPrepFunc(fakeCatalogClient)
 		}
 
-		err := testController.reconcileClusterServicePlan(tc.plan)
+		err := reconcileServicePlan(t, testController, tc.plan)
 		if err != nil {
 			if !tc.shouldError {
 				t.Errorf("%v: unexpected error from method under test: %v", tc.name, err)
@@ -135,4 +136,13 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 			expectNumberOfActions(t, tc.name, actions, 0)
 		}
 	}
+}
+
+func reconcileServicePlan(t *testing.T, testController *controller, servicePlan *v1beta1.ServicePlan) error {
+	clone := servicePlan.DeepCopy()
+	err := testController.reconcileServicePlan(servicePlan)
+	if !reflect.DeepEqual(servicePlan, clone) {
+		t.Errorf("reconcileServicePlan shouldn't mutate input, but it does: %s", expectedGot(clone, servicePlan))
+	}
+	return err
 }
