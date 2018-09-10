@@ -44,6 +44,9 @@ func TestDelete(t *testing.T) {
 			})
 
 			var guard *monkey.PatchGuard
+			// While Unit testing an instance method which involves multiple nested function calls, it might end up being cumbersome mocking each and every nested method.
+			// github.com/bouk/monkey implements monkeypatching by rewriting the running executable at runtime and inserting a jump to the function you want called instead.
+			// Monkey PatchInstanceMethod replaces an instance method with replacement method
 			guard = monkey.PatchInstanceMethod(reflect.TypeOf(client), "SetCurrentProject", func(c *occlient.Client, project string) error {
 				guard.Unpatch()
 				defer guard.Restore()

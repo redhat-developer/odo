@@ -472,10 +472,7 @@ var _ = Describe("odoe2e", func() {
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
 
 			runCmd("odo project delete " + projName)
-			// Wait 15 secs to see the changes in list of projects post deletion of a project
-			time.Sleep(15 * time.Second)
-			prjList := runCmd("odo project list")
-			Expect(prjList).NotTo(ContainSubstring(projName))
+			waitForDeleteCmd("odo project list", projName)
 		})
 	})
 })

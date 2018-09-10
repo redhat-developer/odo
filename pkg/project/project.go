@@ -53,12 +53,12 @@ func Delete(client *occlient.Client, projectName string) error {
 	}
 
 	// If there will be any projects post the current deletion,
-	// Randomly choose a project from remainder of project list to set as current
+	// Choose the first project from remainder of the project list to set as current
 	if len(projects) > 0 {
 		currentProject = projects[0].Name
 	} else {
-		// Set the current project to NOPROJECT
-		currentProject = "NOPROJECT"
+		// Set the current project to empty string
+		currentProject = ""
 	}
 
 	// If current project is not same as the project to be deleted, set it as current
@@ -76,8 +76,8 @@ func Delete(client *occlient.Client, projectName string) error {
 		return errors.Wrap(err, "unable to delete project")
 	}
 
-	// If current project is not NOPROJECT, set currentProject as current project
-	if currentProject != "NOPROJECT" {
+	// If current project is not empty string, set currentProject as current project
+	if currentProject != "" {
 		glog.V(4).Infof("Setting the current project to %s\n", currentProject)
 		err = SetCurrent(client, currentProject)
 		if err != nil {
