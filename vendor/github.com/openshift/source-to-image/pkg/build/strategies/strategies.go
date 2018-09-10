@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift/source-to-image/pkg/api"
 	"github.com/openshift/source-to-image/pkg/build"
+	"github.com/openshift/source-to-image/pkg/build/strategies/dockerfile"
 	"github.com/openshift/source-to-image/pkg/build/strategies/onbuild"
 	"github.com/openshift/source-to-image/pkg/build/strategies/sti"
 	"github.com/openshift/source-to-image/pkg/docker"
@@ -29,7 +30,20 @@ func Strategy(client docker.Client, config *api.Config, overrides build.Override
 
 	startTime := time.Now()
 
-	image, err := docker.GetBuilderImage(client, config)
+	if len(config.AsDockerfile) != 0 {
+		builder, err = dockerfile.New(config, fileSystem)
+		if err != nil {
+			buildInfo.FailureReason = utilstatus.NewFailureReason(
+				utilstatus.ReasonGenericS2IBuildFailed,
+				utilstatus.ReasonMessageGenericS2iBuildFailed,
+			)
+			return nil, buildInfo, err
+		}
+		return builder, buildInfo, nil
+	}
+
+	dkr := docker.New(client, config.PullAuthentication)
+	image, err := docker.GetBuilderImage(dkr, config)
 	buildInfo.Stages = api.RecordStageAndStepInfo(buildInfo.Stages, api.StagePullImages, api.StepPullBuilderImage, startTime, time.Now())
 	if err != nil {
 		buildInfo.FailureReason = utilstatus.NewFailureReason(
@@ -40,7 +54,7 @@ func Strategy(client docker.Client, config *api.Config, overrides build.Override
 	}
 	config.HasOnBuild = image.OnBuild
 
-	if config.AssembleUser, err = docker.GetAssembleUser(client, config); err != nil {
+	if config.AssembleUser, err = docker.GetAssembleUser(dkr, config); err != nil {
 		buildInfo.FailureReason = utilstatus.NewFailureReason(
 			utilstatus.ReasonPullBuilderImageFailed,
 			utilstatus.ReasonMessagePullBuilderImageFailed,

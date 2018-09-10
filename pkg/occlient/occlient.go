@@ -79,8 +79,8 @@ type Client struct {
 	projectClient        projectclientset.ProjectV1Interface
 	serviceCatalogClient servicecatalogclienset.ServicecatalogV1beta1Interface
 	routeClient          routeclientset.RouteV1Interface
-	userClient           userclientset.UserV1Interface
-	kubeConfig           clientcmd.ClientConfig
+	UserClient           userclientset.UserV1Interface
+	KubeConfig           clientcmd.ClientConfig
 	namespace            string
 }
 
@@ -90,9 +90,9 @@ func New(connectionCheck bool) (*Client, error) {
 	// initialize client-go clients
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
-	client.kubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	config, err := client.kubeConfig.ClientConfig()
+	config, err := client.KubeConfig.ClientConfig()
 	if err != nil {
 		return nil, errors.New(err.Error() + errorMsg)
 	}
@@ -144,9 +144,9 @@ func New(connectionCheck bool) (*Client, error) {
 		return nil, err
 	}
 
-	client.userClient = userClient
+	client.UserClient = userClient
 
-	namespace, _, err := client.kubeConfig.Namespace()
+	namespace, _, err := client.KubeConfig.Namespace()
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func imageWithMetadata(image *imagev1.Image) error {
 func (c *Client) isLoggedIn() bool {
 	// ~ indicates current user
 	// Reference: https://github.com/openshift/origin/blob/master/pkg/oc/cli/cmd/whoami.go#L55
-	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
+	output, err := c.UserClient.Users().Get("~", metav1.GetOptions{})
 	glog.V(4).Infof("isLoggedIn err:  %#v \n output: %#v", err, output.Name)
 	if err != nil {
 		glog.V(4).Info(errors.Wrap(err, "error running command"))
@@ -298,7 +298,7 @@ func (c *Client) CreateNewProject(name string) error {
 }
 
 func (c *Client) SetCurrentProject(project string) error {
-	rawConfig, err := c.kubeConfig.RawConfig()
+	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to switch to %s project", project)
 	}
@@ -1983,7 +1983,7 @@ func (c *Client) GetServerVersion() (*serverInfo, error) {
 	var info serverInfo
 
 	// This will fetch the information about Server Address
-	config, err := c.kubeConfig.ClientConfig()
+	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get server's address")
 	}
@@ -2031,7 +2031,7 @@ func (c *Client) ExecCMDInContainer(podName string, cmd []string, stdout io.Writ
 			TTY:     tty,
 		}, scheme.ParameterCodec)
 
-	config, err := c.kubeConfig.ClientConfig()
+	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Kubernetes client config")
 	}
