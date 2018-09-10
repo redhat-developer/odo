@@ -20,8 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/apiserver/pkg/authentication/user"
-	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	sctestutil "github.com/kubernetes-incubator/service-catalog/test/util"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog"
@@ -48,14 +47,6 @@ func getTestInstanceCredential() *servicecatalog.ServiceBinding {
 			},
 		},
 	}
-}
-
-func contextWithUserName(userName string) genericapirequest.Context {
-	ctx := genericapirequest.NewContext()
-	userInfo := &user.DefaultInfo{
-		Name: userName,
-	}
-	return genericapirequest.WithUser(ctx, userInfo)
 }
 
 // TODO: Un-comment "spec-change" test case when there is a field
@@ -88,8 +79,10 @@ func TestInstanceCredentialUpdate(t *testing.T) {
 		//			shouldGenerationIncrement: true,
 		//		},
 	}
+	creatorUserName := "creator"
+	createContext := sctestutil.ContextWithUserName(creatorUserName)
 	for _, tc := range cases {
-		bindingRESTStrategies.PrepareForUpdate(nil, tc.newer, tc.older)
+		bindingRESTStrategies.PrepareForUpdate(createContext, tc.newer, tc.older)
 
 		expectedGeneration := tc.older.Generation
 		if tc.shouldGenerationIncrement {
@@ -105,12 +98,12 @@ func TestInstanceCredentialUpdate(t *testing.T) {
 // as the user changes for different modifications of the instance credential.
 func TestInstanceCredentialUserInfo(t *testing.T) {
 	// Enable the OriginatingIdentity feature
-	utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=true", scfeatures.OriginatingIdentity))
-	defer utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=false", scfeatures.OriginatingIdentity))
+	prevOrigIDEnablement := sctestutil.EnableOriginatingIdentity(t, true)
+	defer utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=%v", scfeatures.OriginatingIdentity, prevOrigIDEnablement))
 
 	creatorUserName := "creator"
 	createdInstanceCredential := getTestInstanceCredential()
-	createContext := contextWithUserName(creatorUserName)
+	createContext := sctestutil.ContextWithUserName(creatorUserName)
 	bindingRESTStrategies.PrepareForCreate(createContext, createdInstanceCredential)
 
 	if e, a := creatorUserName, createdInstanceCredential.Spec.UserInfo.Username; e != a {
@@ -122,7 +115,7 @@ func TestInstanceCredentialUserInfo(t *testing.T) {
 
 	//  updaterUserName := "updater"
 	//	updatedInstanceCredential := getTestInstanceCredential()
-	//	updateContext := contextWithUserName(updaterUserName)
+	//	updateContext := sctestutil.ContextWithUserName(updaterUserName)
 	//	bindingRESTStrategies.PrepareForUpdate(updateContext, updatedInstanceCredential, createdInstanceCredential)
 
 	//	if e, a := updaterUserName, updatedInstanceCredential.Spec.UserInfo.Username; e != a {
@@ -131,10 +124,36 @@ func TestInstanceCredentialUserInfo(t *testing.T) {
 
 	deleterUserName := "deleter"
 	deletedInstanceCredential := getTestInstanceCredential()
-	deleteContext := contextWithUserName(deleterUserName)
+	deleteContext := sctestutil.ContextWithUserName(deleterUserName)
 	bindingRESTStrategies.CheckGracefulDelete(deleteContext, deletedInstanceCredential, nil)
 
 	if e, a := deleterUserName, deletedInstanceCredential.Spec.UserInfo.Username; e != a {
 		t.Errorf("unexpected user info in deleted spec: expected %q, got %q", e, a)
+	}
+}
+
+// TestExternalIDSet checks that we set the ExternalID if the user doesn't provide it.
+func TestExternalIDSet(t *testing.T) {
+	createdInstanceCredential := getTestInstanceCredential()
+	creatorUserName := "creator"
+	createContext := sctestutil.ContextWithUserName(creatorUserName)
+	bindingRESTStrategies.PrepareForCreate(createContext, createdInstanceCredential)
+
+	if createdInstanceCredential.Spec.ExternalID == "" {
+		t.Error("Expected an ExternalID to be set, but got none")
+	}
+}
+
+// TestExternalIDUserProvided makes sure we don't modify a user-specified ExternalID.
+func TestExternalIDUserProvided(t *testing.T) {
+	userExternalID := "my-id"
+	createdInstanceCredential := getTestInstanceCredential()
+	createdInstanceCredential.Spec.ExternalID = userExternalID
+	creatorUserName := "creator"
+	createContext := sctestutil.ContextWithUserName(creatorUserName)
+	bindingRESTStrategies.PrepareForCreate(createContext, createdInstanceCredential)
+
+	if createdInstanceCredential.Spec.ExternalID != userExternalID {
+		t.Errorf("Modified user provided ExternalID to %q", createdInstanceCredential.Spec.ExternalID)
 	}
 }

@@ -27,7 +27,8 @@ const (
 	// // alpha: v1.4
 	// MyFeature() bool
 
-	// OriginatingIdentity controls whether the controller should include originating identity in the header of requests
+	// OriginatingIdentity controls whether the controller should include
+	// originating identity in the header of requests
 	// sent to brokers
 	//
 	// owner: @pmorie
@@ -46,6 +47,30 @@ const (
 	// owner: @droot
 	// alpha: v0.1.6
 	PodPreset utilfeature.Feature = "PodPreset"
+
+	// NamespacedServiceBroker enables namespaced variants of ServiceBrokers,
+	// ServiceClasses, and ServicePlans.
+	// owner: @eriknelson & @jeremyrickard
+	// alpha: v0.1.10
+	NamespacedServiceBroker utilfeature.Feature = "NamespacedServiceBroker"
+
+	// ResponseSchema enables the storage of the binding response schema
+	// in ServicePlans
+	// owner: @luksa
+	// alpha: v0.1.12
+	ResponseSchema utilfeature.Feature = "ResponseSchema"
+
+	// UpdateDashboardURL enables the update of DashboardURL in response
+	// to update service instance requests to brokers.
+	// owner: @jberkhahn
+	// alpha: v0.1.13
+	UpdateDashboardURL utilfeature.Feature = "UpdateDashboardURL"
+
+	// OriginatingIdentityLocking controls whether we lock OSB API resources
+	// for updating while we are still processing the current spec.
+	// owner: @nilebox
+	// alpha: v0.1.14
+	OriginatingIdentityLocking utilfeature.Feature = "OriginatingIdentityLocking"
 )
 
 func init() {
@@ -56,7 +81,11 @@ func init() {
 // To add a new feature, define a key for it above and add it here. The features will be
 // available throughout service catalog binaries.
 var defaultServiceCatalogFeatureGates = map[utilfeature.Feature]utilfeature.FeatureSpec{
-	PodPreset:              {Default: false, PreRelease: utilfeature.Alpha},
-	OriginatingIdentity:    {Default: false, PreRelease: utilfeature.Alpha},
-	AsyncBindingOperations: {Default: false, PreRelease: utilfeature.Alpha},
+	PodPreset:                  {Default: false, PreRelease: utilfeature.Alpha},
+	OriginatingIdentity:        {Default: true, PreRelease: utilfeature.GA},
+	AsyncBindingOperations:     {Default: false, PreRelease: utilfeature.Alpha},
+	NamespacedServiceBroker:    {Default: true, PreRelease: utilfeature.Alpha},
+	ResponseSchema:             {Default: false, PreRelease: utilfeature.Alpha},
+	UpdateDashboardURL:         {Default: false, PreRelease: utilfeature.Alpha},
+	OriginatingIdentityLocking: {Default: true, PreRelease: utilfeature.Alpha},
 }
