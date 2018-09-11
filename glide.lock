@@ -1,5 +1,5 @@
-hash: 0c127949cc8da04346181f3ba59ac136b2490477b2de0ea08c78225f781d2e1c
-updated: 2018-09-10T23:24:40.367029847+05:30
+hash: a5d44494468800aae83f5e6d90d56e690d2e2e105d9efdcd08aa7111b35f7d30
+updated: 2018-09-11T12:21:56.267856135+05:30
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -34,10 +34,6 @@ imports:
   - ptypes/timestamp
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
-- name: github.com/google/go-github
-  version: e48060a28fac52d0f1cb758bc8b87c07bac4a87d
-  subpackages:
-  - github
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/googleapis/gnostic
