@@ -32,8 +32,9 @@ type syncCmd struct {
 func NewSyncCmd(cxt *command.Context) *cobra.Command {
 	syncCmd := &syncCmd{Context: cxt}
 	rootCmd := &cobra.Command{
-		Use:     "broker [name]",
+		Use:     "broker NAME",
 		Short:   "Syncs service catalog for a service broker",
+		Example: command.NormalizeExamples(`svcat sync broker asb`),
 		PreRunE: command.PreRunE(syncCmd),
 		RunE:    command.RunE(syncCmd),
 	}
@@ -42,7 +43,7 @@ func NewSyncCmd(cxt *command.Context) *cobra.Command {
 
 func (c *syncCmd) Validate(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("name is required")
+		return fmt.Errorf("a broker name is required")
 	}
 	c.name = args[0]
 	return nil
@@ -59,6 +60,6 @@ func (c *syncCmd) sync() error {
 		return err
 	}
 
-	fmt.Fprintf(c.Output, "Successfully fetched catalog entries from the %s broker\n", c.name)
+	fmt.Fprintf(c.Output, "Synchronization requested for broker: %s\n", c.name)
 	return nil
 }

@@ -1,6 +1,9 @@
-# Installing Service Catalog
+---
+title: Install
+layout: docwithnav
+---
 
-Kubernetes 1.7 or higher clusters run the
+Kubernetes 1.9 or higher clusters run the
 [API Aggregator](https://kubernetes.io/docs/concepts/api-extension/apiserver-aggregation/),
 which is a specialized proxy server that sits in front of the core API Server.
 
@@ -19,7 +22,7 @@ The rest of this document details how to:
 
 ## Kubernetes Version
 
-Service Catalog requires a Kubernetes cluster v1.7 or later. You'll also need a 
+Service Catalog requires a Kubernetes cluster v1.9 or later. You'll also need a 
 [Kubernetes configuration file](https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/) 
 installed on your host. You need this file so you can use `kubectl` and 
 [`helm`](https://helm.sh) to communicate with the cluster. Many Kubernetes installation 
@@ -30,7 +33,7 @@ check with your tool or provider for details.
 
 Most interaction with the service catalog system is achieved through the 
 `kubectl` command line interface. As with the cluster version, Service Catalog
-requires `kubectl` version 1.7 or newer.
+requires `kubectl` version 1.9 or newer.
 
 First, check your version of `kubectl`:
 
@@ -38,7 +41,7 @@ First, check your version of `kubectl`:
 kubectl version
 ```
 
-Ensure that the server version and client versions are both `1.7` or above.
+Ensure that the server version and client versions are both `1.9` or above.
 
 If you need to upgrade your client, follow the 
 [installation instructions](https://kubernetes.io/docs/tasks/kubectl/install/) 
@@ -60,6 +63,10 @@ installation methods will automatically configure in-cluster DNS for you:
 - [`hack/local-up-cluster.sh`](https://github.com/kubernetes/kubernetes/blob/master/hack/local-up-cluster.sh)
 (in the Kubernetes repository)
 - Most cloud providers
+
+## Storage
+
+Apiserver requires etcd v3 to work. In future CRD support may be added.
 
 ## Helm
 
@@ -166,3 +173,75 @@ Service Catalog is simple:
 helm install svc-cat/catalog \
     --name catalog --namespace catalog
 ```
+
+# Installing the Service Catalog CLI
+
+Follow the appropriate instructions for your operating system to install svcat. The binary
+can be used by itself, or as a kubectl plugin.
+
+The snippets below install the latest version of svcat. We also publish binaries for
+our canary (master) builds, and tags using the following prefixes:
+
+* Latest release: https://download.svcat.sh/cli/latest
+* Tagged releases: https://download.svcat.sh/cli/VERSION
+  where `VERSION` is the release, for example `v0.1.20`.
+* Canary builds: https://download.svcat.sh/cli/canary
+* Previous canary builds: https://download.svcat.sh/cli/VERSION-GITDESCRIBE 
+  where `GITDESCRIBE` is the result of calling `git describe --tags`, for example `v0.1.20-1-g203c8ad`.
+
+## MacOS with Homebrew
+
+```
+brew update
+brew install kubernetes-service-catalog-client
+```
+
+## MacOS
+
+```
+curl -sLO https://download.svcat.sh/cli/latest/darwin/amd64/svcat
+chmod +x ./svcat
+mv ./svcat /usr/local/bin/
+svcat version --client
+```
+
+## Linux
+
+```
+curl -sLO https://download.svcat.sh/cli/latest/linux/amd64/svcat
+chmod +x ./svcat
+mv ./svcat /usr/local/bin/
+svcat version --client
+```
+
+## Windows
+
+The snippet below adds a directory to your PATH for the current session only.
+You will need to find a permanent location for it and add it to your PATH.
+
+```
+iwr 'https://download.svcat.sh/cli/latest/windows/amd64/svcat.exe' -UseBasicParsing -OutFile svcat.exe
+mkdir -f ~\bin
+$env:PATH += ";${pwd}\bin"
+svcat version --client
+```
+
+## Manual
+1. Download the appropriate binary for your operating system:
+    * macOS: https://download.svcat.sh/cli/latest/darwin/amd64/svcat
+    * Windows: https://download.svcat.sh/cli/latest/windows/amd64/svcat.exe
+    * Linux: https://download.svcat.sh/cli/latest/linux/amd64/svcat
+1. Make the binary executable.
+1. Move the binary to a directory on your PATH.
+
+## Plugin
+To use svcat as a plugin, run the following command after downloading:
+
+```console
+$ ./svcat install plugin
+Plugin has been installed to ~/.kube/plugins/svcat. Run kubectl plugin svcat --help for help using the plugin.
+```
+
+When operating as a plugin, the commands are the same with the addition of the global
+kubectl configuration flags. One exception is that boolean flags aren't supported
+when running in plugin mode, so instead of using `--flag` you must specify a value `--flag=true`.

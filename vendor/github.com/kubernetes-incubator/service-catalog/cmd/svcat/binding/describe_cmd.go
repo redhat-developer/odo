@@ -25,45 +25,35 @@ import (
 )
 
 type describeCmd struct {
-	*command.Context
-	ns       string
-	name     string
-	traverse bool
+	*command.Namespaced
+	name        string
+	showSecrets bool
 }
 
 // NewDescribeCmd builds a "svcat describe binding" command
 func NewDescribeCmd(cxt *command.Context) *cobra.Command {
-	describeCmd := &describeCmd{Context: cxt}
+	describeCmd := &describeCmd{Namespaced: command.NewNamespaced(cxt)}
 	cmd := &cobra.Command{
 		Use:     "binding NAME",
 		Aliases: []string{"bindings", "bnd"},
 		Short:   "Show details of a specific binding",
-		Example: `
-  svcat describe binding wordpress-mysql-binding
-`,
+		Example: command.NormalizeExamples(`svcat describe binding wordpress-mysql-binding`),
 		PreRunE: command.PreRunE(describeCmd),
 		RunE:    command.RunE(describeCmd),
 	}
-	cmd.Flags().StringVarP(
-		&describeCmd.ns,
-		"namespace",
-		"n",
-		"default",
-		"The namespace in which to get the binding",
-	)
-	cmd.Flags().BoolVarP(
-		&describeCmd.traverse,
-		"traverse",
-		"t",
+	describeCmd.AddNamespaceFlags(cmd.Flags(), false)
+	cmd.Flags().BoolVar(
+		&describeCmd.showSecrets,
+		"show-secrets",
 		false,
-		"Whether or not to traverse from binding -> instance -> class/plan -> broker",
+		"Output the decoded secret values. By default only the length of the secret is displayed",
 	)
 	return cmd
 }
 
 func (c *describeCmd) Validate(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("name is required")
+		return fmt.Errorf("a binding name is required")
 	}
 	c.name = args[0]
 
@@ -75,23 +65,15 @@ func (c *describeCmd) Run() error {
 }
 
 func (c *describeCmd) describe() error {
-	binding, err := c.App.RetrieveBinding(c.ns, c.name)
+	binding, err := c.App.RetrieveBinding(c.Namespace, c.name)
 	if err != nil {
 		return err
 	}
 
 	output.WriteBindingDetails(c.Output, binding)
 
-	if c.traverse {
-		instance, class, plan, broker, err := c.App.BindingParentHierarchy(binding)
-		if err != nil {
-			return fmt.Errorf("unable to traverse up the binding hierarchy (%s)", err)
-		}
-		output.WriteParentInstance(c.Output, instance)
-		output.WriteParentClass(c.Output, class)
-		output.WriteParentPlan(c.Output, plan)
-		output.WriteParentBroker(c.Output, broker)
-	}
+	secret, err := c.App.RetrieveSecretByBinding(binding)
+	output.WriteAssociatedSecret(c.Output, secret, err, c.showSecrets)
 
 	return nil
 }

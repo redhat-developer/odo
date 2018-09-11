@@ -21,6 +21,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog"
 )
@@ -566,13 +567,15 @@ func TestValidateServiceBinding(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		errs := internalValidateServiceBinding(tc.binding, tc.create)
-		if len(errs) != 0 && tc.valid {
-			t.Errorf("%v: unexpected error: %v", tc.name, errs)
-			continue
-		} else if len(errs) == 0 && !tc.valid {
-			t.Errorf("%v: unexpected success", tc.name)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			errs := internalValidateServiceBinding(tc.binding, tc.create)
+			errs = append(errs, validateServiceBindingStatus(&tc.binding.Status, field.NewPath("status"), false)...)
+			if len(errs) != 0 && tc.valid {
+				t.Errorf("unexpected error: %v", errs)
+			} else if len(errs) == 0 && !tc.valid {
+				t.Error("unexpected success")
+			}
+		})
 	}
 }
 
@@ -610,28 +613,29 @@ func TestInternalValidateServiceBindingUpdateAllowed(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		oldBinding := validServiceBinding()
-		if tc.onGoingSpecChange {
-			oldBinding.Generation = 2
-		} else {
-			oldBinding.Generation = 1
-		}
-		oldBinding.Status.ReconciledGeneration = 1
+		t.Run(tc.name, func(t *testing.T) {
+			oldBinding := validServiceBinding()
+			if tc.onGoingSpecChange {
+				oldBinding.Generation = 2
+			} else {
+				oldBinding.Generation = 1
+			}
+			oldBinding.Status.ReconciledGeneration = 1
 
-		newBinding := validServiceBinding()
-		if tc.newSpecChange {
-			newBinding.Generation = oldBinding.Generation + 1
-		} else {
-			newBinding.Generation = oldBinding.Generation
-		}
-		newBinding.Status.ReconciledGeneration = 1
+			newBinding := validServiceBinding()
+			if tc.newSpecChange {
+				newBinding.Generation = oldBinding.Generation + 1
+			} else {
+				newBinding.Generation = oldBinding.Generation
+			}
+			newBinding.Status.ReconciledGeneration = 1
 
-		errs := internalValidateServiceBindingUpdateAllowed(newBinding, oldBinding)
-		if len(errs) != 0 && tc.valid {
-			t.Errorf("%v: unexpected error: %v", tc.name, errs)
-			continue
-		} else if len(errs) == 0 && !tc.valid {
-			t.Errorf("%v: unexpected success", tc.name)
-		}
+			errs := internalValidateServiceBindingUpdateAllowed(newBinding, oldBinding)
+			if len(errs) != 0 && tc.valid {
+				t.Errorf("unexpected error: %v", errs)
+			} else if len(errs) == 0 && !tc.valid {
+				t.Error("unexpected success")
+			}
+		})
 	}
 }

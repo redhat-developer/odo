@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,13 +20,12 @@ import (
 	"github.com/golang/glog"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 
+	"github.com/kubernetes-incubator/service-catalog/pkg/pretty"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/tools/cache"
 )
-
-// Service class handlers and control-loop
 
 func (c *controller) serviceClassAdd(obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
@@ -42,7 +41,7 @@ func (c *controller) serviceClassUpdate(oldObj, newObj interface{}) {
 }
 
 func (c *controller) serviceClassDelete(obj interface{}) {
-	serviceClass, ok := obj.(*v1beta1.ClusterServiceClass)
+	serviceClass, ok := obj.(*v1beta1.ServiceClass)
 	if serviceClass == nil || !ok {
 		return
 	}
@@ -53,31 +52,37 @@ func (c *controller) serviceClassDelete(obj interface{}) {
 // reconcileServiceClassKey reconciles a ServiceClass due to controller resync
 // or an event on the ServiceClass.  Note that this is NOT the main
 // reconciliation loop for ServiceClass. ServiceClasses are primarily
-// reconciled in a separate flow when a ClusterServiceBroker is reconciled.
-func (c *controller) reconcileClusterServiceClassKey(key string) error {
-	plan, err := c.serviceClassLister.Get(key)
+// reconciled in a separate flow when a ServiceBroker is reconciled.
+func (c *controller) reconcileServiceClassKey(key string) error {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return err
+	}
+	pcb := pretty.NewContextBuilder(pretty.ServiceClass, namespace, name, "")
+	class, err := c.serviceClassLister.ServiceClasses(namespace).Get(name)
 	if errors.IsNotFound(err) {
-		glog.Infof("ClusterServiceClass %q: Not doing work because it has been deleted", key)
+		glog.Info(pcb.Message("Not doing work because the ServiceClass has been deleted"))
 		return nil
 	}
 	if err != nil {
-		glog.Infof("ClusterServiceClass %q: Unable to retrieve object from store: %v", key, err)
+		glog.Infof(pcb.Message("Unable to retrieve"))
 		return err
 	}
 
-	return c.reconcileClusterServiceClass(plan)
+	return c.reconcileServiceClass(class)
 }
 
-func (c *controller) reconcileClusterServiceClass(serviceClass *v1beta1.ClusterServiceClass) error {
-	glog.Infof("ClusterServiceClass %q (ExternalName: %q): processing", serviceClass.Name, serviceClass.Spec.ExternalName)
+func (c *controller) reconcileServiceClass(serviceClass *v1beta1.ServiceClass) error {
+	pcb := pretty.NewContextBuilder(pretty.ServiceClass, serviceClass.Namespace, serviceClass.Name, "")
+	glog.Info(pcb.Message("Processing"))
 
 	if !serviceClass.Status.RemovedFromBrokerCatalog {
 		return nil
 	}
 
-	glog.Infof("ClusterServiceClass %q (ExternalName: %q): has been removed from broker catalog; determining whether there are instances remaining", serviceClass.Name, serviceClass.Spec.ExternalName)
+	glog.Info(pcb.Message("Removed from broker catalog; determining whether there are instances remaining"))
 
-	serviceInstances, err := c.findServiceInstancesOnClusterServiceClass(serviceClass)
+	serviceInstances, err := c.findServiceInstancesOnServiceClass(serviceClass)
 	if err != nil {
 		return err
 	}
@@ -86,16 +91,16 @@ func (c *controller) reconcileClusterServiceClass(serviceClass *v1beta1.ClusterS
 		return nil
 	}
 
-	glog.Infof("ClusterServiceClass %q (ExternalName: %q): has been removed from broker catalog and has zero instances remaining; deleting", serviceClass.Name, serviceClass.Spec.ExternalName)
-	return c.serviceCatalogClient.ClusterServiceClasses().Delete(serviceClass.Name, &metav1.DeleteOptions{})
+	glog.Info(pcb.Message("Removed from broker catalog and has zero instances remaining; deleting"))
+	return c.serviceCatalogClient.ServiceClasses(serviceClass.Namespace).Delete(serviceClass.Name, &metav1.DeleteOptions{})
 }
 
-func (c *controller) findServiceInstancesOnClusterServiceClass(serviceClass *v1beta1.ClusterServiceClass) (*v1beta1.ServiceInstanceList, error) {
+func (c *controller) findServiceInstancesOnServiceClass(serviceClass *v1beta1.ServiceClass) (*v1beta1.ServiceInstanceList, error) {
 	fieldSet := fields.Set{
-		"spec.clusterServiceClassRef.name": serviceClass.Name,
+		"spec.serviceClassRef.name": serviceClass.Name,
 	}
 	fieldSelector := fields.SelectorFromSet(fieldSet).String()
 	listOpts := metav1.ListOptions{FieldSelector: fieldSelector}
 
-	return c.serviceCatalogClient.ServiceInstances(metav1.NamespaceAll).List(listOpts)
+	return c.serviceCatalogClient.ServiceInstances(serviceClass.Namespace).List(listOpts)
 }

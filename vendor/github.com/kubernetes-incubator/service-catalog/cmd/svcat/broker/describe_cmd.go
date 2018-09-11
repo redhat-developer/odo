@@ -26,9 +26,7 @@ import (
 
 type describeCmd struct {
 	*command.Context
-	ns       string
-	name     string
-	traverse bool
+	name string
 }
 
 // NewDescribeCmd builds a "svcat describe broker" command
@@ -38,9 +36,9 @@ func NewDescribeCmd(cxt *command.Context) *cobra.Command {
 		Use:     "broker NAME",
 		Aliases: []string{"brokers", "brk"},
 		Short:   "Show details of a specific broker",
-		Example: `
+		Example: command.NormalizeExamples(`
   svcat describe broker asb
-`,
+`),
 		PreRunE: command.PreRunE(describeCmd),
 		RunE:    command.RunE(describeCmd),
 	}
@@ -49,7 +47,7 @@ func NewDescribeCmd(cxt *command.Context) *cobra.Command {
 
 func (c *describeCmd) Validate(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("name is required")
+		return fmt.Errorf("a broker name is required")
 	}
 	c.name = args[0]
 

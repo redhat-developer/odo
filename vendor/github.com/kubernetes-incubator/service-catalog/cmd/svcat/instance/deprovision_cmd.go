@@ -19,36 +19,44 @@ package instance
 import (
 	"fmt"
 
+	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/output"
+	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/command"
 	"github.com/spf13/cobra"
 )
 
 type deprovisonCmd struct {
-	*command.Context
-	ns           string
+	*command.Namespaced
+	*command.Waitable
+
 	instanceName string
 }
 
 // NewDeprovisionCmd builds a "svcat deprovision" command
 func NewDeprovisionCmd(cxt *command.Context) *cobra.Command {
-	deprovisonCmd := &deprovisonCmd{Context: cxt}
+	deprovisonCmd := &deprovisonCmd{
+		Namespaced: command.NewNamespaced(cxt),
+		Waitable:   command.NewWaitable(),
+	}
 	cmd := &cobra.Command{
 		Use:   "deprovision NAME",
 		Short: "Deletes an instance of a service",
-		Example: `
+		Example: command.NormalizeExamples(`
   svcat deprovision wordpress-mysql-instance
-`,
+`),
 		PreRunE: command.PreRunE(deprovisonCmd),
 		RunE:    command.RunE(deprovisonCmd),
 	}
-	cmd.Flags().StringVarP(&deprovisonCmd.ns, "namespace", "n", "default",
-		"The namespace of the instance")
+	deprovisonCmd.AddNamespaceFlags(cmd.Flags(), false)
+	deprovisonCmd.AddWaitFlags(cmd)
+
 	return cmd
 }
 
 func (c *deprovisonCmd) Validate(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("name is required")
+		return fmt.Errorf("an instance name is required")
 	}
 	c.instanceName = args[0]
 
@@ -60,5 +68,25 @@ func (c *deprovisonCmd) Run() error {
 }
 
 func (c *deprovisonCmd) deprovision() error {
-	return c.App.Deprovision(c.ns, c.instanceName)
+	err := c.App.Deprovision(c.Namespace, c.instanceName)
+	if err != nil {
+		return err
+	}
+
+	if c.Wait {
+		fmt.Fprintln(c.Output, "Waiting for the instance to be deleted...")
+
+		var instance *v1beta1.ServiceInstance
+		instance, err = c.App.WaitForInstanceToNotExist(c.Namespace, c.instanceName, c.Interval, c.Timeout)
+
+		// The instance failed to deprovision cleanly, dump out more information on why
+		if instance != nil && c.App.IsInstanceFailed(instance) {
+			output.WriteInstanceDetails(c.Output, instance)
+		}
+	}
+
+	if err == nil {
+		output.WriteDeletedResourceName(c.Output, c.instanceName)
+	}
+	return err
 }
