@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,18 +27,19 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	clientgotesting "k8s.io/client-go/testing"
+	"reflect"
 )
 
-func TestReconcileClusterServiceClassRemovedFromCatalog(t *testing.T) {
-	getRemovedServiceClass := func() *v1beta1.ClusterServiceClass {
-		p := getTestClusterServiceClass()
+func TestReconcileServiceClassRemovedFromCatalog(t *testing.T) {
+	getRemovedServiceClass := func() *v1beta1.ServiceClass {
+		p := getTestServiceClass()
 		p.Status.RemovedFromBrokerCatalog = true
 		return p
 	}
 
 	cases := []struct {
 		name                    string
-		serviceClass            *v1beta1.ClusterServiceClass
+		serviceClass            *v1beta1.ServiceClass
 		instances               []v1beta1.ServiceInstance
 		catalogClientPrepFunc   func(*fake.Clientset)
 		shouldError             bool
@@ -47,7 +48,7 @@ func TestReconcileClusterServiceClassRemovedFromCatalog(t *testing.T) {
 	}{
 		{
 			name:         "not removed from catalog",
-			serviceClass: getTestClusterServiceClass(),
+			serviceClass: getTestServiceClass(),
 			shouldError:  false,
 		},
 		{
@@ -58,7 +59,7 @@ func TestReconcileClusterServiceClassRemovedFromCatalog(t *testing.T) {
 			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServiceClassRef.name", "SCGUID"),
+					Fields: fields.OneTermEqualSelector("spec.serviceClassRef.name", "SCGUID"),
 				}
 
 				expectNumberOfActions(t, name, actions, 1)
@@ -73,7 +74,7 @@ func TestReconcileClusterServiceClassRemovedFromCatalog(t *testing.T) {
 			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServiceClassRef.name", "SCGUID"),
+					Fields: fields.OneTermEqualSelector("spec.serviceClassRef.name", "SCGUID"),
 				}
 
 				expectNumberOfActions(t, name, actions, 2)
@@ -87,7 +88,7 @@ func TestReconcileClusterServiceClassRemovedFromCatalog(t *testing.T) {
 			instances:    nil,
 			shouldError:  true,
 			catalogClientPrepFunc: func(client *fake.Clientset) {
-				client.AddReactor("delete", "clusterserviceclasses", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+				client.AddReactor("delete", "serviceclasses", func(action clientgotesting.Action) (bool, runtime.Object, error) {
 					return true, nil, errors.New("oops")
 				})
 			},
@@ -95,7 +96,7 @@ func TestReconcileClusterServiceClassRemovedFromCatalog(t *testing.T) {
 			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServiceClassRef.name", "SCGUID"),
+					Fields: fields.OneTermEqualSelector("spec.serviceClassRef.name", "SCGUID"),
 				}
 
 				expectNumberOfActions(t, name, actions, 2)
@@ -116,7 +117,7 @@ func TestReconcileClusterServiceClassRemovedFromCatalog(t *testing.T) {
 			tc.catalogClientPrepFunc(fakeCatalogClient)
 		}
 
-		err := testController.reconcileClusterServiceClass(tc.serviceClass)
+		err := reconcileServiceClass(t, testController, tc.serviceClass)
 		if err != nil {
 			if !tc.shouldError {
 				t.Errorf("%v: unexpected error from method under test: %v", tc.name, err)
@@ -135,4 +136,13 @@ func TestReconcileClusterServiceClassRemovedFromCatalog(t *testing.T) {
 			expectNumberOfActions(t, tc.name, actions, 0)
 		}
 	}
+}
+
+func reconcileServiceClass(t *testing.T, testController *controller, serviceClass *v1beta1.ServiceClass) error {
+	clone := serviceClass.DeepCopy()
+	err := testController.reconcileServiceClass(serviceClass)
+	if !reflect.DeepEqual(serviceClass, clone) {
+		t.Errorf("reconcileServiceClass shouldn't mutate input, but it does: %s", expectedGot(clone, serviceClass))
+	}
+	return err
 }

@@ -74,7 +74,7 @@ var _ = framework.ServiceCatalogDescribe("walkthrough", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("Run walkthrough-example ", func() {
+	It("Runs through the walkthrough", func() {
 		var (
 			brokerName                     = upsbrokername
 			serviceclassName               = "user-provided-service"
@@ -108,7 +108,9 @@ var _ = framework.ServiceCatalogDescribe("walkthrough", func() {
 				Name: brokerName,
 			},
 			Spec: v1beta1.ClusterServiceBrokerSpec{
-				URL: url,
+				CommonServiceBrokerSpec: v1beta1.CommonServiceBrokerSpec{
+					URL: url,
+				},
 			},
 		}
 		broker, err := f.ServiceCatalogClientSet.ServicecatalogV1beta1().ClusterServiceBrokers().Create(broker)
@@ -127,6 +129,10 @@ var _ = framework.ServiceCatalogDescribe("walkthrough", func() {
 		By("Waiting for ClusterServiceClass to be ready")
 		err = util.WaitForClusterServiceClassToExist(f.ServiceCatalogClientSet.ServicecatalogV1beta1(), serviceclassID)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait serviceclass to be ready")
+
+		By("Waiting for ClusterServicePlan to be ready")
+		err = util.WaitForClusterServicePlanToExist(f.ServiceCatalogClientSet.ServicecatalogV1beta1(), serviceplanID)
+		Ω(err).ShouldNot(HaveOccurred(), "serviceplan never became ready")
 
 		// Provisioning a ServiceInstance and binding to it
 		By("Creating a namespace")

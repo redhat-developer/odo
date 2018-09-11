@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,17 +17,19 @@ limitations under the License.
 package serviceplan
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	scmeta "github.com/kubernetes-incubator/service-catalog/pkg/api/meta"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog"
 	"github.com/kubernetes-incubator/service-catalog/pkg/registry/servicecatalog/server"
+	"github.com/kubernetes-incubator/service-catalog/pkg/registry/servicecatalog/tableconvertor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1beta1 "k8s.io/apimachinery/pkg/apis/meta/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
@@ -35,15 +37,15 @@ import (
 )
 
 var (
-	errNotAClusterServicePlan = errors.New("not a ClusterServicePlan")
+	errNotAServicePlan = errors.New("not a ServicePlan")
 )
 
-// NewSingular returns a new shell of a service servicePlan, according to the given namespace and
+// NewSingular returns a new shell of a ServicePlan, according to the given namespace and
 // name
 func NewSingular(ns, name string) runtime.Object {
-	return &servicecatalog.ClusterServicePlan{
+	return &servicecatalog.ServicePlan{
 		TypeMeta: metav1.TypeMeta{
-			Kind: "ClusterServicePlan",
+			Kind: "ServicePlan",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -52,26 +54,26 @@ func NewSingular(ns, name string) runtime.Object {
 	}
 }
 
-// EmptyObject returns an empty servicePlan
+// EmptyObject returns an empty ServicePlan
 func EmptyObject() runtime.Object {
-	return &servicecatalog.ClusterServicePlan{}
+	return &servicecatalog.ServicePlan{}
 }
 
-// NewList returns a new shell of a servicePlan list
+// NewList returns a new shell of a ServicePlan list
 func NewList() runtime.Object {
-	return &servicecatalog.ClusterServicePlanList{
+	return &servicecatalog.ServicePlanList{
 		TypeMeta: metav1.TypeMeta{
-			Kind: "ClusterServicePlanList",
+			Kind: "ServicePlanList",
 		},
-		Items: []servicecatalog.ClusterServicePlan{},
+		Items: []servicecatalog.ServicePlan{},
 	}
 }
 
-// CheckObject returns a non-nil error if obj is not a servicePlan object
+// CheckObject returns a non-nil error if obj is not a ServicePlan object
 func CheckObject(obj runtime.Object) error {
-	_, ok := obj.(*servicecatalog.ClusterServicePlan)
+	_, ok := obj.(*servicecatalog.ServicePlan)
 	if !ok {
-		return errNotAClusterServicePlan
+		return errNotAServicePlan
 	}
 	return nil
 }
@@ -87,7 +89,7 @@ func Match(label labels.Selector, field fields.Selector) storage.SelectionPredic
 }
 
 // toSelectableFields returns a field set that represents the object for matching purposes.
-func toSelectableFields(servicePlan *servicecatalog.ClusterServicePlan) fields.Set {
+func toSelectableFields(servicePlan *servicecatalog.ServicePlan) fields.Set {
 	// The purpose of allocation with a given number of elements is to reduce
 	// amount of allocations needed to create the fields.Set. If you add any
 	// field here or the number of object-meta related fields changes, this should
@@ -95,8 +97,8 @@ func toSelectableFields(servicePlan *servicecatalog.ClusterServicePlan) fields.S
 	// You also need to modify
 	// pkg/apis/servicecatalog/v1beta1/conversion[_test].go
 	spSpecificFieldsSet := make(fields.Set, 4)
-	spSpecificFieldsSet["spec.clusterServiceBrokerName"] = servicePlan.Spec.ClusterServiceBrokerName
-	spSpecificFieldsSet["spec.clusterServiceClassRef.name"] = servicePlan.Spec.ClusterServiceClassRef.Name
+	spSpecificFieldsSet["spec.serviceBrokerName"] = servicePlan.Spec.ServiceBrokerName
+	spSpecificFieldsSet["spec.serviceClassRef.name"] = servicePlan.Spec.ServiceClassRef.Name
 	spSpecificFieldsSet["spec.externalName"] = servicePlan.Spec.ExternalName
 	spSpecificFieldsSet["spec.externalID"] = servicePlan.Spec.ExternalID
 	return generic.AddObjectMetaFieldsSet(spSpecificFieldsSet, &servicePlan.ObjectMeta, true)
@@ -104,20 +106,20 @@ func toSelectableFields(servicePlan *servicecatalog.ClusterServicePlan) fields.S
 
 // GetAttrs returns labels and fields of a given object for filtering purposes.
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
-	servicePlan, ok := obj.(*servicecatalog.ClusterServicePlan)
+	servicePlan, ok := obj.(*servicecatalog.ServicePlan)
 	if !ok {
-		return nil, nil, false, fmt.Errorf("given object is not a ClusterServicePlan")
+		return nil, nil, false, fmt.Errorf("given object is not a ServicePlan")
 	}
 	return labels.Set(servicePlan.ObjectMeta.Labels), toSelectableFields(servicePlan), servicePlan.Initializers != nil, nil
 }
 
 // NewStorage creates a new rest.Storage responsible for accessing
-// ClusterServicePlan resources
+// ServicePlan resources
 func NewStorage(opts server.Options) (rest.Storage, rest.Storage) {
 	prefix := "/" + opts.ResourcePrefix()
 
 	storageInterface, dFunc := opts.GetStorage(
-		&servicecatalog.ClusterServicePlan{},
+		&servicecatalog.ServicePlan{},
 		prefix,
 		servicePlanRESTStrategies,
 		NewList,
@@ -129,7 +131,7 @@ func NewStorage(opts server.Options) (rest.Storage, rest.Storage) {
 		NewFunc:     EmptyObject,
 		NewListFunc: NewList,
 		KeyRootFunc: opts.KeyRootFunc(),
-		KeyFunc:     opts.KeyFunc(false),
+		KeyFunc:     opts.KeyFunc(true),
 		// Retrieve the name field of the resource.
 		ObjectNameFunc: func(obj runtime.Object) (string, error) {
 			return scmeta.GetAccessor().Name(obj)
@@ -137,13 +139,35 @@ func NewStorage(opts server.Options) (rest.Storage, rest.Storage) {
 		// Used to match objects based on labels/fields for list.
 		PredicateFunc: Match,
 		// DefaultQualifiedResource should always be plural
-		DefaultQualifiedResource: servicecatalog.Resource("clusterserviceplans"),
+		DefaultQualifiedResource: servicecatalog.Resource("serviceplans"),
 
 		CreateStrategy: servicePlanRESTStrategies,
 		UpdateStrategy: servicePlanRESTStrategies,
 		DeleteStrategy: servicePlanRESTStrategies,
-		Storage:        storageInterface,
-		DestroyFunc:    dFunc,
+
+		TableConvertor: tableconvertor.NewTableConvertor(
+			[]metav1beta1.TableColumnDefinition{
+				{Name: "Name", Type: "string", Format: "name"},
+				{Name: "External-Name", Type: "string"},
+				{Name: "Broker", Type: "string"},
+				{Name: "Class", Type: "string"},
+				{Name: "Age", Type: "string"},
+			},
+			func(obj runtime.Object, m metav1.Object, name, age string) ([]interface{}, error) {
+				plan := obj.(*servicecatalog.ServicePlan)
+				cells := []interface{}{
+					name,
+					plan.Spec.ExternalName,
+					plan.Spec.ServiceBrokerName,
+					plan.Spec.ServiceClassRef.Name,
+					age,
+				}
+				return cells, nil
+			},
+		),
+
+		Storage:     storageInterface,
+		DestroyFunc: dFunc,
 	}
 
 	statusStore := store
@@ -159,19 +183,25 @@ type StatusREST struct {
 	store *registry.Store
 }
 
-// New returns a new ClusterServicePlan
+var (
+	_ rest.Storage = &StatusREST{}
+	_ rest.Getter  = &StatusREST{}
+	_ rest.Updater = &StatusREST{}
+)
+
+// New returns a new ServicePlan
 func (r *StatusREST) New() runtime.Object {
-	return &servicecatalog.ClusterServicePlan{}
+	return &servicecatalog.ServicePlan{}
 }
 
 // Get retrieves the object from the storage. It is required to support Patch
 // and to implement the rest.Getter interface.
-func (r *StatusREST) Get(ctx genericapirequest.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
+func (r *StatusREST) Get(ctx context.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
 	return r.store.Get(ctx, name, options)
 }
 
 // Update alters the status subset of an object and it
 // implements rest.Updater interface
-func (r *StatusREST) Update(ctx genericapirequest.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
+func (r *StatusREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
 	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation)
 }

@@ -20,6 +20,10 @@ spec:
         release: "{{ .Release.Name }}"
         releaseRevision: "{{ .Release.Revision }}"
         heritage: "{{ .Release.Service }}"
+      {{ if .Values.apiserver.annotations }}
+      annotations:
+{{ toYaml .Values.apiserver.annotations | indent 8 }}
+      {{- end }}
     spec:
       serviceAccountName: "{{ .Values.apiserver.serviceAccount }}"
       containers:
@@ -27,20 +31,15 @@ spec:
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         resources:
-          requests:
-            cpu: 100m
-            memory: 20Mi
-          limits:
-            cpu: 100m
-            memory: 30Mi
+{{ toYaml .Values.apiserver.resources | indent 10 }}
         args:
         - apiserver
         {{ if .Values.apiserver.audit.activated -}}
         - --audit-log-path
         - {{ .Values.apiserver.audit.logPath }}
         {{- end}}
-        - --admission-control
-        - "KubernetesNamespaceLifecycle,DefaultServicePlan,ServiceBindingsLifecycle,ServicePlanChangeValidator,BrokerAuthSarCheck"
+        - --enable-admission-plugins
+        - "NamespaceLifecycle,DefaultServicePlan,ServiceBindingsLifecycle,ServicePlanChangeValidator,BrokerAuthSarCheck"
         - --secure-port
         - "8443"
         - --storage-type
@@ -57,12 +56,19 @@ spec:
         {{- if not .Values.apiserver.auth.enabled }}
         - --disable-auth
         {{- end }}
-        {{- if .Values.originatingIdentityEnabled }}
         - --feature-gates
-        - OriginatingIdentity=true
+        - OriginatingIdentity={{.Values.originatingIdentityEnabled}}
+        {{- if .Values.namespacedServiceBrokerDisabled }}
+        - --feature-gates
+        - NamespacedServiceBroker=false
         {{- end }}
         {{- if .Values.apiserver.serveOpenAPISpec }}
         - --serve-openapi-spec
+        {{- end }}
+        {{- if .Values.apiserver.storage.etcd.tls.enabled }}
+        - --etcd-cafile=/var/run/etcd-client/etcd-client-ca.crt
+        - --etcd-certfile=/var/run/etcd-client/etcd-client.crt
+        - --etcd-keyfile=/var/run/etcd-client/etcd-client.key
         {{- end }}
         ports:
         - containerPort: 8443
@@ -70,6 +76,12 @@ spec:
         - name: apiserver-cert
           mountPath: /var/run/kubernetes-service-catalog
           readOnly: true
+        {{- if .Values.apiserver.storage.etcd.tls.enabled }}
+        - name: etcd-client-cert
+          mountPath: /var/run/etcd-client
+          readOnly: true
+        {{- end }}
+        {{- if .Values.apiserver.healthcheck.enabled }}
         readinessProbe:
           httpGet:
             port: 8443
@@ -90,17 +102,13 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 2
+        {{- end }}
       {{- if and (eq .Values.apiserver.storage.type "etcd") .Values.apiserver.storage.etcd.useEmbedded }}
       - name: etcd
-        image: quay.io/coreos/etcd:latest
-        imagePullPolicy: Always
+        image: {{ .Values.apiserver.storage.etcd.image }}
+        imagePullPolicy: {{ .Values.apiserver.storage.etcd.imagePullPolicy }}
         resources:
-          requests:
-            cpu: 100m
-            memory: 30Mi
-          limits:
-            cpu: 100m
-            memory: 40Mi
+{{ toYaml .Values.apiserver.storage.etcd.resources | indent 10 }}
         env:
         - name: ETCD_DATA_DIR
           value: /etcd-data-dir
@@ -134,6 +142,10 @@ spec:
           successThreshold: 1
           timeoutSeconds: 2
       {{- end }}
+      {{ if .Values.apiserver.nodeSelector }}
+      nodeSelector:
+         {{ .Values.apiserver.nodeSelector }}
+      {{ end }}
       volumes:
       - name: apiserver-cert
         secret:
@@ -155,4 +167,9 @@ spec:
       {{- else }}
         emptyDir: {}
       {{- end }}
+      {{- end }}
+      {{- if .Values.apiserver.storage.etcd.tls.enabled }}
+      - name: etcd-client-cert
+        secret:
+          secretName: {{ .Values.apiserver.storage.etcd.tls.clientCertSecretName }}
       {{- end }}

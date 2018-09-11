@@ -65,7 +65,7 @@ def test_account = params.TEST_ACCOUNT
 def test_zone    = params.TEST_ZONE ?: 'us-west1-b'
 def namespace    = 'catalog'
 def root_path    = 'src/github.com/kubernetes-incubator/service-catalog'
-def timeoutMin   = 30
+def timeoutMin   = 50
 def certFolder   = '/tmp/sc-certs'
 
 node {
@@ -122,7 +122,6 @@ node {
               --create-artifacts
         """
 
-	/*
         ansiColor('xterm-darker-gray') {
           // Run the e2e test framework
           sh """${env.ROOT}/contrib/jenkins/run_e2e.sh \
@@ -132,16 +131,16 @@ node {
                 --create-artifacts
           """
         }
-	*/
 
         echo 'Run succeeded.'
       }
     } catch (Exception e) {
       echo 'Run failed.'
+      print e
       currentBuild.result = 'FAILURE'
     } finally {
       archiveArtifacts artifacts: 'walkthrough*.txt', fingerprint: true
-      // archiveArtifacts artifacts: 'e2e*.txt', fingerprint: true
+      archiveArtifacts artifacts: 'e2e*.txt', fingerprint: true
       try {
         sh "rm -rf ${certFolder}"
         sh """${env.ROOT}/contrib/jenkins/cleanup_cluster.sh --kubeconfig ${KUBECONFIG}"""

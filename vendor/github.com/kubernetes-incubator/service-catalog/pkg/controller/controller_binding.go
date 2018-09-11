@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 
@@ -33,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/jsonpath"
 )
 
 const (
@@ -42,6 +44,7 @@ const (
 	errorEjectingBindReason                   string = "ErrorEjectingServiceBinding"
 	errorUnbindCallReason                     string = "UnbindCallFailed"
 	errorNonbindableClusterServiceClassReason string = "ErrorNonbindableServiceClass"
+	errorServiceInstanceRefsUnresolved        string = "ErrorInstanceRefsUnresolved"
 	errorServiceInstanceNotReadyReason        string = "ErrorInstanceNotReady"
 	errorServiceBindingOrphanMitigation       string = "ServiceBindingNeedsOrphanMitigation"
 	errorFetchingBindingFailedReason          string = "FetchingBindingFailed"
@@ -68,11 +71,11 @@ var bindingControllerKind = v1beta1.SchemeGroupVersion.WithKind("ServiceBinding"
 func (c *controller) bindingAdd(obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
-		pcb := pretty.NewContextBuilder(pretty.ServiceBinding, "", "")
+		pcb := pretty.NewContextBuilder(pretty.ServiceBinding, "", "", "")
 		glog.Errorf(pcb.Messagef("Couldn't get key for object %+v: %v", obj, err))
 		return
 	}
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, "", key)
+	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, "", key, "")
 
 	acc, err := meta.Accessor(obj)
 	if err != nil {
@@ -104,7 +107,7 @@ func (c *controller) bindingDelete(obj interface{}) {
 		return
 	}
 
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 	glog.V(4).Info(pcb.Messagef("Received DELETE event; no further processing will occur; resourceVersion %v", binding.ResourceVersion))
 }
 
@@ -113,7 +116,7 @@ func (c *controller) reconcileServiceBindingKey(key string) error {
 	if err != nil {
 		return err
 	}
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, namespace, name)
+	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, namespace, name, "")
 	binding, err := c.bindingLister.ServiceBindings(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
 		glog.Info(pcb.Message("Not doing work because the ServiceBinding has been deleted"))
@@ -153,7 +156,7 @@ func getReconciliationActionForServiceBinding(binding *v1beta1.ServiceBinding) R
 // An error is returned to indicate that the binding has not been fully
 // processed and should be resubmitted at a later time.
 func (c *controller) reconcileServiceBinding(binding *v1beta1.ServiceBinding) error {
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 	glog.V(6).Info(pcb.Messagef(`beginning to process resourceVersion: %v`, binding.ResourceVersion))
 
 	reconciliationAction := getReconciliationActionForServiceBinding(binding)
@@ -172,7 +175,7 @@ func (c *controller) reconcileServiceBinding(binding *v1beta1.ServiceBinding) er
 // reconcileServiceBindingAdd is responsible for handling the creation of new
 // service bindings.
 func (c *controller) reconcileServiceBindingAdd(binding *v1beta1.ServiceBinding) error {
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 
 	if isServiceBindingFailed(binding) {
 		glog.V(4).Info(pcb.Message("not processing event; status showed that it has failed"))
@@ -195,34 +198,84 @@ func (c *controller) reconcileServiceBindingAdd(binding *v1beta1.ServiceBinding)
 		return c.processServiceBindingOperationError(binding, readyCond)
 	}
 
-	if instance.Spec.ClusterServiceClassRef == nil || instance.Spec.ClusterServicePlanRef == nil {
-		// retry later
-		return fmt.Errorf("ClusterServiceClass or ClusterServicePlan references for Instance have not been resolved yet")
-	}
+	var prettyName string
+	var brokerClient osb.Client
+	var request *osb.BindRequest
+	var inProgressProperties *v1beta1.ServiceBindingPropertiesState
 
-	serviceClass, servicePlan, brokerName, brokerClient, err := c.getClusterServiceClassPlanAndClusterServiceBrokerForServiceBinding(instance, binding)
-	if err != nil {
-		return c.handleServiceBindingReconciliationError(binding, err)
-	}
+	if instance.Spec.ClusterServiceClassSpecified() {
+		if instance.Spec.ClusterServiceClassRef == nil || instance.Spec.ClusterServicePlanRef == nil {
+			// retry later
+			msg := fmt.Sprintf(`Binding cannot begin because ClusterServiceClass and ClusterServicePlan references for %s have not been resolved yet`, pretty.ServiceInstanceName(instance))
+			readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorServiceInstanceRefsUnresolved, msg)
+			return c.processServiceBindingOperationError(binding, readyCond)
+		}
 
-	if !isPlanBindable(serviceClass, servicePlan) {
-		msg := fmt.Sprintf(`References a non-bindable %s and Plan (%q) combination`, pretty.ClusterServiceClassName(serviceClass), instance.Spec.ClusterServicePlanExternalName)
-		readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorNonbindableClusterServiceClassReason, msg)
-		failedCond := newServiceBindingFailedCondition(v1beta1.ConditionTrue, errorNonbindableClusterServiceClassReason, msg)
-		return c.processBindFailure(binding, readyCond, failedCond, false)
-	}
+		serviceClass, servicePlan, brokerName, bClient, err := c.getClusterServiceClassPlanAndClusterServiceBrokerForServiceBinding(instance, binding)
+		if err != nil {
+			return c.handleServiceBindingReconciliationError(binding, err)
+		}
 
-	if !isServiceInstanceReady(instance) {
-		msg := fmt.Sprintf(`Binding cannot begin because referenced %s is not ready`, pretty.ServiceInstanceName(instance))
-		readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorServiceInstanceNotReadyReason, msg)
-		return c.processServiceBindingOperationError(binding, readyCond)
-	}
+		brokerClient = bClient
 
-	glog.V(4).Info(pcb.Message("Adding/Updating"))
+		if !isClusterServicePlanBindable(serviceClass, servicePlan) {
+			msg := fmt.Sprintf(`References a non-bindable %s and Plan (%q) combination`, pretty.ClusterServiceClassName(serviceClass), instance.Spec.ClusterServicePlanExternalName)
+			readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorNonbindableClusterServiceClassReason, msg)
+			failedCond := newServiceBindingFailedCondition(v1beta1.ConditionTrue, errorNonbindableClusterServiceClassReason, msg)
+			return c.processBindFailure(binding, readyCond, failedCond, false)
+		}
 
-	request, inProgressProperties, err := c.prepareBindRequest(binding, instance, serviceClass, servicePlan)
-	if err != nil {
-		return c.handleServiceBindingReconciliationError(binding, err)
+		if !isServiceInstanceReady(instance) {
+			msg := fmt.Sprintf(`Binding cannot begin because referenced %s is not ready`, pretty.ServiceInstanceName(instance))
+			readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorServiceInstanceNotReadyReason, msg)
+			return c.processServiceBindingOperationError(binding, readyCond)
+		}
+
+		glog.V(4).Info(pcb.Message("Adding/Updating"))
+
+		request, inProgressProperties, err = c.prepareBindRequest(binding, instance)
+		if err != nil {
+			return c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		prettyName = pretty.FromServiceInstanceOfClusterServiceClassAtBrokerName(instance, serviceClass, brokerName)
+
+	} else if instance.Spec.ServiceClassSpecified() {
+		if instance.Spec.ServiceClassRef == nil || instance.Spec.ServicePlanRef == nil {
+			// retry later
+			msg := fmt.Sprintf(`Binding cannot begin because ServiceClass and ServicePlan references for %s have not been resolved yet`, pretty.ServiceInstanceName(instance))
+			readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorServiceInstanceRefsUnresolved, msg)
+			return c.processServiceBindingOperationError(binding, readyCond)
+		}
+
+		serviceClass, servicePlan, brokerName, bClient, err := c.getServiceClassPlanAndServiceBrokerForServiceBinding(instance, binding)
+		if err != nil {
+			return c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		brokerClient = bClient
+
+		if !isServicePlanBindable(serviceClass, servicePlan) {
+			msg := fmt.Sprintf(`References a non-bindable %s and Plan (%q) combination`, pretty.ServiceClassName(serviceClass), instance.Spec.ClusterServicePlanExternalName)
+			readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorNonbindableClusterServiceClassReason, msg)
+			failedCond := newServiceBindingFailedCondition(v1beta1.ConditionTrue, errorNonbindableClusterServiceClassReason, msg)
+			return c.processBindFailure(binding, readyCond, failedCond, false)
+		}
+
+		if !isServiceInstanceReady(instance) {
+			msg := fmt.Sprintf(`Binding cannot begin because referenced %s is not ready`, pretty.ServiceInstanceName(instance))
+			readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorServiceInstanceNotReadyReason, msg)
+			return c.processServiceBindingOperationError(binding, readyCond)
+		}
+
+		glog.V(4).Info(pcb.Message("Adding/Updating"))
+
+		request, inProgressProperties, err = c.prepareBindRequest(binding, instance)
+		if err != nil {
+			return c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		prettyName = pretty.FromServiceInstanceOfServiceClassAtBrokerName(instance, serviceClass, brokerName)
 	}
 
 	if binding.Status.CurrentOperation == "" {
@@ -232,6 +285,8 @@ func (c *controller) reconcileServiceBindingAdd(binding *v1beta1.ServiceBinding)
 			// over with a fresh view of the binding.
 			return err
 		}
+		// recordStartOfServiceBindingOperation has updated the binding, so we need to continue in the next iteration
+		return nil
 	}
 
 	response, err := brokerClient.Bind(request)
@@ -249,10 +304,7 @@ func (c *controller) reconcileServiceBindingAdd(binding *v1beta1.ServiceBinding)
 			return c.processBindFailure(binding, nil, failedCond, true)
 		}
 
-		msg := fmt.Sprintf(
-			`Error creating ServiceBinding for %s: %s`,
-			pretty.FromServiceInstanceOfClusterServiceClassAtBrokerName(instance, serviceClass, brokerName), err,
-		)
+		msg := fmt.Sprintf(`Error creating ServiceBinding for %s: %s`, prettyName, err)
 		readyCond := newServiceBindingReadyCondition(v1beta1.ConditionFalse, errorBindCallReason, msg)
 
 		if c.reconciliationRetryDurationExceeded(binding.Status.OperationStartTime) {
@@ -295,7 +347,7 @@ func (c *controller) reconcileServiceBindingAdd(binding *v1beta1.ServiceBinding)
 
 func (c *controller) reconcileServiceBindingDelete(binding *v1beta1.ServiceBinding) error {
 	var err error
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 
 	if binding.DeletionTimestamp == nil && !binding.Status.OrphanMitigationInProgress {
 		// nothing to do...
@@ -342,6 +394,8 @@ func (c *controller) reconcileServiceBindingDelete(binding *v1beta1.ServiceBindi
 				// over with a fresh view of the binding.
 				return err
 			}
+			// recordStartOfServiceBindingOperation has updated the binding, so we need to continue in the next iteration
+			return nil
 		}
 	}
 
@@ -364,19 +418,45 @@ func (c *controller) reconcileServiceBindingDelete(binding *v1beta1.ServiceBindi
 		return c.processServiceBindingOperationError(binding, readyCond)
 	}
 
-	if instance.Spec.ClusterServiceClassRef == nil || instance.Spec.ClusterServicePlanRef == nil {
-		// TODO(#1562): ultimately here we need to use logic similar to what is done to determine the plan ID for
-		// deprovisioning. We need to allow a ServiceBinding to be deleted, with an unbind request sent to the broker,
-		// even if the ServiceInstance has been changed to a non-existent plan.
-		return fmt.Errorf("ClusterServiceClass or ClusterServicePlan references for Instance have not been resolved yet")
+	var brokerClient osb.Client
+	var prettyBrokerName string
+
+	if instance.Spec.ClusterServiceClassSpecified() {
+
+		if instance.Spec.ClusterServiceClassRef == nil {
+			return fmt.Errorf("ClusterServiceClass reference for Instance has not been resolved yet")
+		}
+		if instance.Status.ExternalProperties == nil || instance.Status.ExternalProperties.ClusterServicePlanExternalID == "" {
+			return fmt.Errorf("ClusterServicePlanExternalID for Instance has not been set yet")
+		}
+
+		serviceClass, brokerName, bClient, err := c.getClusterServiceClassAndClusterServiceBrokerForServiceBinding(instance, binding)
+		if err != nil {
+			return c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		brokerClient = bClient
+		prettyBrokerName = pretty.FromServiceInstanceOfClusterServiceClassAtBrokerName(instance, serviceClass, brokerName)
+
+	} else if instance.Spec.ServiceClassSpecified() {
+
+		if instance.Spec.ServiceClassRef == nil {
+			return fmt.Errorf("ServiceClass reference for Instance has not been resolved yet")
+		}
+		if instance.Status.ExternalProperties == nil || instance.Status.ExternalProperties.ServicePlanExternalID == "" {
+			return fmt.Errorf("ServicePlanExternalID for Instance has not been set yet")
+		}
+
+		serviceClass, brokerName, bClient, err := c.getServiceClassAndServiceBrokerForServiceBinding(instance, binding)
+		if err != nil {
+			return c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		brokerClient = bClient
+		prettyBrokerName = pretty.FromServiceInstanceOfServiceClassAtBrokerName(instance, serviceClass, brokerName)
 	}
 
-	serviceClass, servicePlan, brokerName, brokerClient, err := c.getClusterServiceClassPlanAndClusterServiceBrokerForServiceBinding(instance, binding)
-	if err != nil {
-		return c.handleServiceBindingReconciliationError(binding, err)
-	}
-
-	request, err := c.prepareUnbindRequest(binding, instance, serviceClass, servicePlan)
+	request, err := c.prepareUnbindRequest(binding, instance)
 	if err != nil {
 		return c.handleServiceBindingReconciliationError(binding, err)
 	}
@@ -384,8 +464,7 @@ func (c *controller) reconcileServiceBindingDelete(binding *v1beta1.ServiceBindi
 	response, err := brokerClient.Unbind(request)
 	if err != nil {
 		msg := fmt.Sprintf(
-			`Error unbinding from %s: %s`,
-			pretty.FromServiceInstanceOfClusterServiceClassAtBrokerName(instance, serviceClass, brokerName), err,
+			`Error unbinding from %s: %s`, prettyBrokerName, err,
 		)
 		readyCond := newServiceBindingReadyCondition(v1beta1.ConditionUnknown, errorUnbindCallReason, msg)
 
@@ -405,14 +484,29 @@ func (c *controller) reconcileServiceBindingDelete(binding *v1beta1.ServiceBindi
 	return c.processUnbindSuccess(binding)
 }
 
-// isPlanBindable returns whether the given ClusterServiceClass and ClusterServicePlan
+// isClusterServicePlanBindable returns whether the given ClusterServiceClass and ClusterServicePlan
 // combination is bindable.  Plans may override the service-level bindable
 // attribute, so if the plan provides a value, return that value.  Otherwise,
 // return the Bindable field of the ClusterServiceClass.
 //
 // Note: enforcing that the plan belongs to the given service class is the
 // responsibility of the caller.
-func isPlanBindable(serviceClass *v1beta1.ClusterServiceClass, plan *v1beta1.ClusterServicePlan) bool {
+func isClusterServicePlanBindable(serviceClass *v1beta1.ClusterServiceClass, plan *v1beta1.ClusterServicePlan) bool {
+	if plan.Spec.Bindable != nil {
+		return *plan.Spec.Bindable
+	}
+
+	return serviceClass.Spec.Bindable
+}
+
+// isServicePlanBindable returns whether the given ServiceClass and ServicePlan
+// combination is bindable.  Plans may override the service-level bindable
+// attribute, so if the plan provides a value, return that value.  Otherwise,
+// return the Bindable field of the ServiceClass.
+//
+// Note: enforcing that the plan belongs to the given service class is the
+// responsibility of the caller.
+func isServicePlanBindable(serviceClass *v1beta1.ServiceClass, plan *v1beta1.ServicePlan) bool {
 	if plan.Spec.Bindable != nil {
 		return *plan.Spec.Bindable
 	}
@@ -421,10 +515,15 @@ func isPlanBindable(serviceClass *v1beta1.ClusterServiceClass, plan *v1beta1.Clu
 }
 
 func (c *controller) injectServiceBinding(binding *v1beta1.ServiceBinding, credentials map[string]interface{}) error {
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 	glog.V(5).Info(pcb.Messagef(`Creating/updating Secret "%s/%s" with %d keys`,
 		binding.Namespace, binding.Spec.SecretName, len(credentials),
 	))
+
+	err := c.transformCredentials(binding.Spec.SecretTransforms, credentials)
+	if err != nil {
+		return fmt.Errorf(`Unexpected error while transforming credentials for ServiceBinding "%s/%s": %v`, binding.Namespace, binding.Name, err)
+	}
 
 	secretData := make(map[string][]byte)
 	for k, v := range credentials {
@@ -486,9 +585,61 @@ func (c *controller) injectServiceBinding(binding *v1beta1.ServiceBinding, crede
 	return err
 }
 
+func (c *controller) transformCredentials(transforms []v1beta1.SecretTransform, credentials map[string]interface{}) error {
+	for _, t := range transforms {
+		switch {
+		case t.AddKey != nil:
+			var value interface{}
+			if t.AddKey.JSONPathExpression != nil {
+				result, err := evaluateJSONPath(*t.AddKey.JSONPathExpression, credentials)
+				if err != nil {
+					return err
+				}
+				value = result
+			} else if t.AddKey.StringValue != nil {
+				value = *t.AddKey.StringValue
+			} else {
+				value = t.AddKey.Value
+			}
+			credentials[t.AddKey.Key] = value
+		case t.RenameKey != nil:
+			value, ok := credentials[t.RenameKey.From]
+			if ok {
+				credentials[t.RenameKey.To] = value
+				delete(credentials, t.RenameKey.From)
+			}
+		case t.AddKeysFrom != nil:
+			secret, err := c.kubeClient.CoreV1().
+				Secrets(t.AddKeysFrom.SecretRef.Namespace).
+				Get(t.AddKeysFrom.SecretRef.Name, metav1.GetOptions{})
+			if err != nil {
+				return err // TODO: if the Secret doesn't exist yet, can we perform the transform when it does?
+			}
+			for k, v := range secret.Data {
+				credentials[k] = v
+			}
+		case t.RemoveKey != nil:
+			delete(credentials, t.RemoveKey.Key)
+		}
+	}
+	return nil
+}
+
+func evaluateJSONPath(jsonPath string, credentials map[string]interface{}) (string, error) {
+	j := jsonpath.New("expression")
+	buf := new(bytes.Buffer)
+	if err := j.Parse(jsonPath); err != nil {
+		return "", err
+	}
+	if err := j.Execute(buf, credentials); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 func (c *controller) ejectServiceBinding(binding *v1beta1.ServiceBinding) error {
 	var err error
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 	glog.V(5).Info(pcb.Messagef(`Deleting Secret "%s/%s"`,
 		binding.Namespace, binding.Spec.SecretName,
 	))
@@ -525,7 +676,7 @@ func setServiceBindingConditionInternal(toUpdate *v1beta1.ServiceBinding,
 	status v1beta1.ConditionStatus,
 	reason, message string,
 	t metav1.Time) {
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, toUpdate.Namespace, toUpdate.Name)
+	pcb := pretty.NewBindingContextBuilder(toUpdate)
 	glog.Info(pcb.Message(message))
 	glog.V(5).Info(pcb.Messagef(
 		"Setting condition %q to %v",
@@ -575,7 +726,7 @@ func setServiceBindingConditionInternal(toUpdate *v1beta1.ServiceBinding,
 }
 
 func (c *controller) updateServiceBindingStatus(toUpdate *v1beta1.ServiceBinding) (*v1beta1.ServiceBinding, error) {
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, toUpdate.Namespace, toUpdate.Name)
+	pcb := pretty.NewBindingContextBuilder(toUpdate)
 	glog.V(4).Info(pcb.Message("Updating status"))
 	updatedBinding, err := c.serviceCatalogClient.ServiceBindings(toUpdate.Namespace).UpdateStatus(toUpdate)
 	if err != nil {
@@ -597,7 +748,7 @@ func (c *controller) updateServiceBindingCondition(
 	status v1beta1.ConditionStatus,
 	reason, message string) error {
 
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 	toUpdate := binding.DeepCopy()
 
 	setServiceBindingCondition(toUpdate, conditionType, status, reason, message)
@@ -610,7 +761,7 @@ func (c *controller) updateServiceBindingCondition(
 	if err != nil {
 		glog.Errorf(pcb.Messagef(
 			"Error updating %v condition to %v: %v",
-			status, err,
+			conditionType, status, err,
 		))
 	}
 	return err
@@ -724,7 +875,7 @@ func (c *controller) finishPollingServiceBinding(binding *v1beta1.ServiceBinding
 }
 
 func (c *controller) pollServiceBinding(binding *v1beta1.ServiceBinding) error {
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Name, binding.Namespace)
+	pcb := pretty.NewBindingContextBuilder(binding)
 	glog.V(4).Infof(pcb.Message("Processing"))
 
 	binding = binding.DeepCopy()
@@ -736,7 +887,7 @@ func (c *controller) pollServiceBinding(binding *v1beta1.ServiceBinding) error {
 		return c.processServiceBindingOperationError(binding, readyCond)
 	}
 
-	serviceClass, servicePlan, _, brokerClient, err := c.getClusterServiceClassPlanAndClusterServiceBrokerForServiceBinding(instance, binding)
+	brokerClient, err := c.getBrokerClientForServiceBinding(instance, binding)
 	if err != nil {
 		return c.handleServiceBindingReconciliationError(binding, err)
 	}
@@ -747,7 +898,7 @@ func (c *controller) pollServiceBinding(binding *v1beta1.ServiceBinding) error {
 	mitigatingOrphan := binding.Status.OrphanMitigationInProgress
 	deleting := binding.Status.CurrentOperation == v1beta1.ServiceBindingOperationUnbind || mitigatingOrphan
 
-	request, err := c.prepareServiceBindingLastOperationRequest(binding, instance, serviceClass, servicePlan)
+	request, err := c.prepareServiceBindingLastOperationRequest(binding, instance)
 	if err != nil {
 		return c.handleServiceBindingReconciliationError(binding, err)
 	}
@@ -781,7 +932,11 @@ func (c *controller) pollServiceBinding(binding *v1beta1.ServiceBinding) error {
 		return c.continuePollingServiceBinding(binding)
 	}
 
-	glog.V(4).Info(pcb.Messagef("Poll returned %q : %q", response.State, response.Description))
+	description := "(no description provided)"
+	if response.Description != nil {
+		description = *response.Description
+	}
+	glog.V(4).Info(pcb.Messagef("Poll returned %q : %q", response.State, description))
 
 	switch response.State {
 	case osb.StateInProgress:
@@ -861,11 +1016,6 @@ func (c *controller) pollServiceBinding(binding *v1beta1.ServiceBinding) error {
 
 		return c.finishPollingServiceBinding(binding)
 	case osb.StateFailed:
-		description := "(no description provided)"
-		if response.Description != nil {
-			description = *response.Description
-		}
-
 		if !deleting {
 			reason := errorBindCallReason
 			message := "Bind call failed: " + description
@@ -987,8 +1137,57 @@ func setServiceBindingLastOperation(binding *v1beta1.ServiceBinding, operationKe
 // prepareBindRequest creates a bind request object to be passed to the broker
 // client to create the given binding.
 func (c *controller) prepareBindRequest(
-	binding *v1beta1.ServiceBinding, instance *v1beta1.ServiceInstance, serviceClass *v1beta1.ClusterServiceClass, servicePlan *v1beta1.ClusterServicePlan) (
+	binding *v1beta1.ServiceBinding, instance *v1beta1.ServiceInstance) (
 	*osb.BindRequest, *v1beta1.ServiceBindingPropertiesState, error) {
+
+	var scExternalID string
+	var spExternalID string
+	var scBindingRetrievable bool
+
+	if instance.Spec.ClusterServiceClassSpecified() {
+
+		serviceClass, err := c.getClusterServiceClassForServiceBinding(instance, binding)
+		if err != nil {
+			return nil, nil, &operationError{
+				reason:  errorNonexistentClusterServiceClassReason,
+				message: err.Error(),
+			}
+		}
+
+		servicePlan, err := c.getClusterServicePlanForServiceBinding(instance, binding, serviceClass)
+		if err != nil {
+			return nil, nil, &operationError{
+				reason:  errorNonexistentClusterServicePlanReason,
+				message: err.Error(),
+			}
+		}
+
+		scExternalID = serviceClass.Spec.ExternalID
+		spExternalID = servicePlan.Spec.ExternalID
+		scBindingRetrievable = serviceClass.Spec.BindingRetrievable
+
+	} else if instance.Spec.ServiceClassSpecified() {
+
+		serviceClass, err := c.getServiceClassForServiceBinding(instance, binding)
+		if err != nil {
+			return nil, nil, &operationError{
+				reason:  errorNonexistentClusterServiceClassReason,
+				message: err.Error(),
+			}
+		}
+
+		servicePlan, err := c.getServicePlanForServiceBinding(instance, binding, serviceClass)
+		if err != nil {
+			return nil, nil, &operationError{
+				reason:  errorNonexistentClusterServicePlanReason,
+				message: err.Error(),
+			}
+		}
+
+		scExternalID = serviceClass.Spec.ExternalID
+		spExternalID = servicePlan.Spec.ExternalID
+		scBindingRetrievable = serviceClass.Spec.BindingRetrievable
+	}
 
 	ns, err := c.kubeClient.CoreV1().Namespaces().Get(instance.Namespace, metav1.GetOptions{})
 	if err != nil {
@@ -1018,14 +1217,23 @@ func (c *controller) prepareBindRequest(
 	}
 
 	appGUID := string(ns.UID)
+	clusterID := c.getClusterID()
+
+	requestContext := map[string]interface{}{
+		"platform":           ContextProfilePlatformKubernetes,
+		"namespace":          instance.Namespace,
+		clusterIdentifierKey: clusterID,
+	}
+
 	request := &osb.BindRequest{
 		BindingID:    binding.Spec.ExternalID,
 		InstanceID:   instance.Spec.ExternalID,
-		ServiceID:    serviceClass.Spec.ExternalID,
-		PlanID:       servicePlan.Spec.ExternalID,
+		ServiceID:    scExternalID,
+		PlanID:       spExternalID,
 		AppGUID:      &appGUID,
 		Parameters:   parameters,
 		BindResource: &osb.BindResource{AppGUID: &appGUID},
+		Context:      requestContext,
 	}
 
 	// Asynchronous binding operations are currently ALPHA and not
@@ -1033,7 +1241,7 @@ func (c *controller) prepareBindRequest(
 	// AsyncBindingOperations feature gate. This may be easily set
 	// by setting `asyncBindingOperationsEnabled=true` when
 	// deploying the Service Catalog via the Helm charts.
-	if serviceClass.Spec.BindingRetrievable &&
+	if scBindingRetrievable &&
 		utilfeature.DefaultFeatureGate.Enabled(scfeatures.AsyncBindingOperations) {
 
 		request.AcceptsIncomplete = true
@@ -1056,14 +1264,41 @@ func (c *controller) prepareBindRequest(
 // prepareUnbindRequest creates an unbind request object to be passed to the
 // broker client to delete the given binding.
 func (c *controller) prepareUnbindRequest(
-	binding *v1beta1.ServiceBinding, instance *v1beta1.ServiceInstance, serviceClass *v1beta1.ClusterServiceClass, servicePlan *v1beta1.ClusterServicePlan) (
+	binding *v1beta1.ServiceBinding, instance *v1beta1.ServiceInstance) (
 	*osb.UnbindRequest, error) {
+
+	var scExternalID string
+	var scBindingRetrievable bool
+	var planExternalID string
+
+	if instance.Spec.ClusterServiceClassSpecified() {
+
+		serviceClass, err := c.getClusterServiceClassForServiceBinding(instance, binding)
+		if err != nil {
+			return nil, c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		scExternalID = serviceClass.Spec.ExternalID
+		scBindingRetrievable = serviceClass.Spec.BindingRetrievable
+		planExternalID = instance.Status.ExternalProperties.ClusterServicePlanExternalID
+
+	} else if instance.Spec.ServiceClassSpecified() {
+
+		serviceClass, err := c.getServiceClassForServiceBinding(instance, binding)
+		if err != nil {
+			return nil, c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		scExternalID = serviceClass.Spec.ExternalID
+		scBindingRetrievable = serviceClass.Spec.BindingRetrievable
+		planExternalID = instance.Status.ExternalProperties.ServicePlanExternalID
+	}
 
 	request := &osb.UnbindRequest{
 		BindingID:  binding.Spec.ExternalID,
 		InstanceID: instance.Spec.ExternalID,
-		ServiceID:  serviceClass.Spec.ExternalID,
-		PlanID:     servicePlan.Spec.ExternalID,
+		ServiceID:  scExternalID,
+		PlanID:     planExternalID,
 	}
 
 	// Asynchronous binding operations is currently ALPHA and not
@@ -1071,7 +1306,7 @@ func (c *controller) prepareUnbindRequest(
 	// AsyncBindingOperations feature gate. This may be easily set
 	// by setting `asyncBindingOperationsEnabled=true` when
 	// deploying the Service Catalog via the Helm charts.
-	if serviceClass.Spec.BindingRetrievable &&
+	if scBindingRetrievable &&
 		utilfeature.DefaultFeatureGate.Enabled(scfeatures.AsyncBindingOperations) {
 
 		request.AcceptsIncomplete = true
@@ -1095,14 +1330,46 @@ func (c *controller) prepareUnbindRequest(
 // passed to the broker client to query the given binding's last operation
 // endpoint.
 func (c *controller) prepareServiceBindingLastOperationRequest(
-	binding *v1beta1.ServiceBinding, instance *v1beta1.ServiceInstance, serviceClass *v1beta1.ClusterServiceClass, servicePlan *v1beta1.ClusterServicePlan) (
+	binding *v1beta1.ServiceBinding, instance *v1beta1.ServiceInstance) (
 	*osb.BindingLastOperationRequest, error) {
+
+	var scExternalID string
+	var spExternalID string
+
+	if instance.Spec.ClusterServiceClassSpecified() {
+
+		serviceClass, err := c.getClusterServiceClassForServiceBinding(instance, binding)
+		if err != nil {
+			return nil, c.handleServiceBindingReconciliationError(binding, err)
+		}
+		servicePlan, err := c.getClusterServicePlanForServiceBinding(instance, binding, serviceClass)
+		if err != nil {
+			return nil, c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		scExternalID = serviceClass.Spec.ExternalID
+		spExternalID = servicePlan.Spec.ExternalID
+
+	} else if instance.Spec.ServiceClassSpecified() {
+
+		serviceClass, err := c.getServiceClassForServiceBinding(instance, binding)
+		if err != nil {
+			return nil, c.handleServiceBindingReconciliationError(binding, err)
+		}
+		servicePlan, err := c.getServicePlanForServiceBinding(instance, binding, serviceClass)
+		if err != nil {
+			return nil, c.handleServiceBindingReconciliationError(binding, err)
+		}
+
+		scExternalID = serviceClass.Spec.ExternalID
+		spExternalID = servicePlan.Spec.ExternalID
+	}
 
 	request := &osb.BindingLastOperationRequest{
 		InstanceID: instance.Spec.ExternalID,
 		BindingID:  binding.Spec.ExternalID,
-		ServiceID:  &serviceClass.Spec.ExternalID,
-		PlanID:     &servicePlan.Spec.ExternalID,
+		ServiceID:  &scExternalID,
+		PlanID:     &spExternalID,
 	}
 	if binding.Status.LastOperation != nil && *binding.Status.LastOperation != "" {
 		key := osb.OperationKey(*binding.Status.LastOperation)
@@ -1224,7 +1491,7 @@ func (c *controller) processServiceBindingGracefulDeletionSuccess(binding *v1bet
 		return err
 	}
 
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 	glog.Info(pcb.Message("Cleared finalizer"))
 
 	return nil
@@ -1321,7 +1588,7 @@ func (c *controller) handleServiceBindingPollingError(binding *v1beta1.ServiceBi
 	//	2) attempt to requeue in the polling queue
 	//		- if successful, we can return nil to avoid regular queue
 	//		- if failure, return err to fall back to regular queue
-	pcb := pretty.NewContextBuilder(pretty.ServiceBinding, binding.Namespace, binding.Name)
+	pcb := pretty.NewBindingContextBuilder(binding)
 	glog.V(4).Info(pcb.Messagef("Error during polling: %v", err))
 	return c.continuePollingServiceBinding(binding)
 }

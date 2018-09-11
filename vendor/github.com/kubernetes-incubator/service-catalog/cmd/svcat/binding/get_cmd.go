@@ -23,34 +23,33 @@ import (
 )
 
 type getCmd struct {
-	*command.Context
-	ns   string
+	*command.Namespaced
+	*command.Formatted
 	name string
 }
 
 // NewGetCmd builds a "svcat get bindings" command
 func NewGetCmd(cxt *command.Context) *cobra.Command {
-	getCmd := &getCmd{Context: cxt}
+	getCmd := &getCmd{
+		Namespaced: command.NewNamespaced(cxt),
+		Formatted:  command.NewFormatted(),
+	}
 	cmd := &cobra.Command{
-		Use:     "bindings [name]",
+		Use:     "bindings [NAME]",
 		Aliases: []string{"binding", "bnd"},
 		Short:   "List bindings, optionally filtered by name",
-		Example: `
+		Example: command.NormalizeExamples(`
   svcat get bindings
+  svcat get bindings --all-namespaces
   svcat get binding wordpress-mysql-binding
   svcat get binding -n ci concourse-postgres-binding
-`,
+`),
 		PreRunE: command.PreRunE(getCmd),
 		RunE:    command.RunE(getCmd),
 	}
 
-	cmd.Flags().StringVarP(
-		&getCmd.ns,
-		"namespace",
-		"n",
-		"default",
-		"The namespace from which to get the bindings",
-	)
+	getCmd.AddNamespaceFlags(cmd.Flags(), true)
+	getCmd.AddOutputFlags(cmd.Flags())
 	return cmd
 }
 
@@ -71,21 +70,21 @@ func (c *getCmd) Run() error {
 }
 
 func (c *getCmd) getAll() error {
-	bindings, err := c.App.RetrieveBindings(c.ns)
+	bindings, err := c.App.RetrieveBindings(c.Namespace)
 	if err != nil {
 		return err
 	}
 
-	output.WriteBindingList(c.Output, bindings.Items...)
+	output.WriteBindingList(c.Output, c.OutputFormat, bindings)
 	return nil
 }
 
 func (c *getCmd) get() error {
-	binding, err := c.App.RetrieveBinding(c.ns, c.name)
+	binding, err := c.App.RetrieveBinding(c.Namespace, c.name)
 	if err != nil {
 		return err
 	}
 
-	output.WriteBindingList(c.Output, *binding)
+	output.WriteBinding(c.Output, c.OutputFormat, *binding)
 	return nil
 }

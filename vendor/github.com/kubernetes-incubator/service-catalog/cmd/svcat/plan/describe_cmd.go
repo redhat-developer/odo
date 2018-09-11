@@ -28,7 +28,6 @@ import (
 
 type describeCmd struct {
 	*command.Context
-	traverse     bool
 	lookupByUUID bool
 	showSchemas  bool
 	uuid         string
@@ -42,20 +41,13 @@ func NewDescribeCmd(cxt *command.Context) *cobra.Command {
 		Use:     "plan NAME",
 		Aliases: []string{"plans", "pl"},
 		Short:   "Show details of a specific plan",
-		Example: `
+		Example: command.NormalizeExamples(`
   svcat describe plan standard800
   svcat describe plan --uuid 08e4b43a-36bc-447e-a81f-8202b13e339c
-`,
+`),
 		PreRunE: command.PreRunE(describeCmd),
 		RunE:    command.RunE(describeCmd),
 	}
-	cmd.Flags().BoolVarP(
-		&describeCmd.traverse,
-		"traverse",
-		"t",
-		false,
-		"Whether or not to traverse from plan -> class -> broker",
-	)
 	cmd.Flags().BoolVarP(
 		&describeCmd.lookupByUUID,
 		"uuid",
@@ -75,7 +67,7 @@ func NewDescribeCmd(cxt *command.Context) *cobra.Command {
 
 func (c *describeCmd) Validate(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("name or uuid is required")
+		return fmt.Errorf("a plan name or uuid is required")
 	}
 
 	if c.lookupByUUID {
@@ -122,15 +114,6 @@ func (c *describeCmd) describe() error {
 		return err
 	}
 	output.WriteAssociatedInstances(c.Output, instances)
-
-	if c.traverse {
-		broker, err := c.App.RetrieveBrokerByClass(class)
-		if err != nil {
-			return err
-		}
-		output.WriteParentClass(c.Output, class)
-		output.WriteParentBroker(c.Output, broker)
-	}
 
 	if c.showSchemas {
 		output.WritePlanSchemas(c.Output, plan)

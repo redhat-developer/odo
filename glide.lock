@@ -1,52 +1,8 @@
-hash: 0e3933b6297df4c747cd3c6ab3613b564ebe4fcd61aa3b778fb28917bfaa29d6
-updated: 2018-05-24T13:44:03.948397367-04:00
+hash: 92df4ea3a464b3b4024ebbfce159f762d1f524918b78a637e948a0c7c6284f42
+updated: 2018-09-10T16:14:01.508855404+05:30
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
-- name: github.com/docker/docker
-  version: fcdab531a6d9b133eaa3f2a3f6c11fd02a97de75
-  repo: https://github.com/openshift/moby-moby.git
-  subpackages:
-  - api
-  - api/types
-  - api/types/blkiodev
-  - api/types/container
-  - api/types/events
-  - api/types/filters
-  - api/types/image
-  - api/types/mount
-  - api/types/network
-  - api/types/registry
-  - api/types/strslice
-  - api/types/swarm
-  - api/types/swarm/runtime
-  - api/types/time
-  - api/types/versions
-  - api/types/volume
-  - builder/dockerfile/command
-  - builder/dockerfile/parser
-  - cli/config
-  - client
-  - pkg/homedir
-  - pkg/idtools
-  - pkg/ioutils
-  - pkg/jsonlog
-  - pkg/jsonmessage
-  - pkg/longpath
-  - pkg/mount
-  - pkg/stdcopy
-  - pkg/system
-  - pkg/term
-  - pkg/term/windows
-  - pkg/tlsconfig
-- name: github.com/docker/go-connections
-  version: 3ede32e2033de7505e6500d6c868c2b9ed9f169d
-  subpackages:
-  - nat
-  - sockets
-  - tlsconfig
-- name: github.com/docker/go-units
-  version: 9e638d38cf6977a37a8ea0078f3ee75a7cdb2dd1
 - name: github.com/docker/spdystream
   version: 449fdfce4d962303d702fec724ef0ad181c92528
   subpackages:
@@ -75,7 +31,7 @@ imports:
   - proto
   - sortkeys
 - name: github.com/golang/glog
-  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
   version: 1643683e1b54a9e88ad26d98f81400c8c9d9f4f9
   subpackages:
@@ -90,10 +46,6 @@ imports:
   version: e48060a28fac52d0f1cb758bc8b87c07bac4a87d
   subpackages:
   - github
-- name: github.com/google/go-querystring
-  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
-  subpackages:
-  - query
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/googleapis/gnostic
@@ -117,14 +69,20 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubernetes-incubator/service-catalog
-  version: 97ddbab04353b239c2d1e3c322b3826d82d39360
+  version: 9d82b390b96d565e9301fdfe4ac822311e765a3c
   subpackages:
   - pkg/apis/servicecatalog
   - pkg/apis/servicecatalog/v1beta1
   - pkg/apis/settings
   - pkg/apis/settings/v1alpha1
+  - pkg/client/clientset_generated/clientset
+  - pkg/client/clientset_generated/clientset/fake
   - pkg/client/clientset_generated/clientset/scheme
   - pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1
+  - pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1/fake
+  - pkg/client/clientset_generated/clientset/typed/settings/v1alpha1
+  - pkg/client/clientset_generated/clientset/typed/settings/v1alpha1/fake
+  - pkg/filter
 - name: github.com/mailru/easyjson
   version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
   subpackages:
@@ -134,7 +92,7 @@ imports:
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
+  version: 3fb116b820352b7f0c281308a4d6250c22d94e27
 - name: github.com/mattn/go-runewidth
   version: ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb
 - name: github.com/olekukonko/tablewriter
@@ -176,7 +134,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/openshift/api
-  version: 0d921e363e951d89f583292c60d013c318df64dc
+  version: 322a19404e375a4b2f59e081a61343404c49bf46
   subpackages:
   - apps/v1
   - build/v1
@@ -185,35 +143,42 @@ imports:
   - image/v1
   - project/v1
   - route/v1
+  - user/v1
 - name: github.com/openshift/client-go
   version: 42d4abb856ce41c204a6e24342f12be5b5cd9ab8
   subpackages:
+  - apps/clientset/versioned
+  - apps/clientset/versioned/fake
   - apps/clientset/versioned/scheme
   - apps/clientset/versioned/typed/apps/v1
+  - apps/clientset/versioned/typed/apps/v1/fake
+  - build/clientset/versioned
+  - build/clientset/versioned/fake
   - build/clientset/versioned/scheme
   - build/clientset/versioned/typed/build/v1
+  - build/clientset/versioned/typed/build/v1/fake
+  - image/clientset/versioned
+  - image/clientset/versioned/fake
   - image/clientset/versioned/scheme
   - image/clientset/versioned/typed/image/v1
+  - image/clientset/versioned/typed/image/v1/fake
+  - project/clientset/versioned
+  - project/clientset/versioned/fake
   - project/clientset/versioned/scheme
   - project/clientset/versioned/typed/project/v1
+  - project/clientset/versioned/typed/project/v1/fake
   - route/clientset/versioned
   - route/clientset/versioned/fake
   - route/clientset/versioned/scheme
   - route/clientset/versioned/typed/route/v1
   - route/clientset/versioned/typed/route/v1/fake
+  - user/clientset/versioned/scheme
+  - user/clientset/versioned/typed/user/v1
 - name: github.com/openshift/source-to-image
-  version: 27f0729d81fe0641486257252189b8dca856ea28
+  version: ac6dc9858fa90b751686436fea9a951f183c79bb
   subpackages:
-  - pkg/api
-  - pkg/errors
-  - pkg/scm/git
   - pkg/tar
-  - pkg/util
-  - pkg/util/cmd
-  - pkg/util/cygpath
   - pkg/util/fs
-  - pkg/util/glog
-  - pkg/util/user
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pkg/errors
@@ -224,14 +189,12 @@ imports:
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
-- package: github.com/golang/glog
-  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/spf13/cobra
   version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: golang.org/x/crypto
-  version: 159ae71589f303f9fbfd7528413e0fe944b9c1cb
+  version: 81e90905daefcd6fd217b62423c0908922eadb30
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
@@ -246,7 +209,7 @@ imports:
   - lex/httplex
   - websocket
 - name: golang.org/x/sys
-  version: 7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce
+  version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
   - unix
   - windows
@@ -358,35 +321,64 @@ imports:
   - discovery
   - discovery/fake
   - kubernetes
+  - kubernetes/fake
   - kubernetes/scheme
   - kubernetes/typed/admissionregistration/v1alpha1
+  - kubernetes/typed/admissionregistration/v1alpha1/fake
   - kubernetes/typed/admissionregistration/v1beta1
+  - kubernetes/typed/admissionregistration/v1beta1/fake
   - kubernetes/typed/apps/v1
+  - kubernetes/typed/apps/v1/fake
   - kubernetes/typed/apps/v1beta1
+  - kubernetes/typed/apps/v1beta1/fake
   - kubernetes/typed/apps/v1beta2
+  - kubernetes/typed/apps/v1beta2/fake
   - kubernetes/typed/authentication/v1
+  - kubernetes/typed/authentication/v1/fake
   - kubernetes/typed/authentication/v1beta1
+  - kubernetes/typed/authentication/v1beta1/fake
   - kubernetes/typed/authorization/v1
+  - kubernetes/typed/authorization/v1/fake
   - kubernetes/typed/authorization/v1beta1
+  - kubernetes/typed/authorization/v1beta1/fake
   - kubernetes/typed/autoscaling/v1
+  - kubernetes/typed/autoscaling/v1/fake
   - kubernetes/typed/autoscaling/v2beta1
+  - kubernetes/typed/autoscaling/v2beta1/fake
   - kubernetes/typed/batch/v1
+  - kubernetes/typed/batch/v1/fake
   - kubernetes/typed/batch/v1beta1
+  - kubernetes/typed/batch/v1beta1/fake
   - kubernetes/typed/batch/v2alpha1
+  - kubernetes/typed/batch/v2alpha1/fake
   - kubernetes/typed/certificates/v1beta1
+  - kubernetes/typed/certificates/v1beta1/fake
   - kubernetes/typed/core/v1
+  - kubernetes/typed/core/v1/fake
   - kubernetes/typed/events/v1beta1
+  - kubernetes/typed/events/v1beta1/fake
   - kubernetes/typed/extensions/v1beta1
+  - kubernetes/typed/extensions/v1beta1/fake
   - kubernetes/typed/networking/v1
+  - kubernetes/typed/networking/v1/fake
   - kubernetes/typed/policy/v1beta1
+  - kubernetes/typed/policy/v1beta1/fake
   - kubernetes/typed/rbac/v1
+  - kubernetes/typed/rbac/v1/fake
   - kubernetes/typed/rbac/v1alpha1
+  - kubernetes/typed/rbac/v1alpha1/fake
   - kubernetes/typed/rbac/v1beta1
+  - kubernetes/typed/rbac/v1beta1/fake
   - kubernetes/typed/scheduling/v1alpha1
+  - kubernetes/typed/scheduling/v1alpha1/fake
   - kubernetes/typed/settings/v1alpha1
+  - kubernetes/typed/settings/v1alpha1/fake
   - kubernetes/typed/storage/v1
+  - kubernetes/typed/storage/v1/fake
   - kubernetes/typed/storage/v1alpha1
+  - kubernetes/typed/storage/v1alpha1/fake
   - kubernetes/typed/storage/v1beta1
+  - kubernetes/typed/storage/v1beta1/fake
   - pkg/version
   - rest
   - rest/watch

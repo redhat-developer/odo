@@ -1,16 +1,7 @@
-# Developer's Guide to Service-Catalog
-
-Table of Contents
-- [Overview](#overview)
-- [Working on Issues](#working-on-issues)
-- [Prerequisites](#prerequisites)
-- [Workflow](#workflow)
-- [Building](#building)
-- [Testing](#testing)
-- [Advanced Build Steps](#advanced-build-steps)
-- [Dependency Management](#dependency-management)
-- [Deploying to Kubernetes](#deploying-to-kubernetes)
-- [Demo walkthrough](#demo-walkthrough)
+---
+title: Developer Guide
+layout: docwithnav
+---
 
 ## Overview
 
@@ -63,8 +54,9 @@ please include a line in the initial comment that looks like:
 
 	Closes: #1234
 
-where `1234` is the issue number. This allows Github to automatically
-close the issue when the PR is merged.
+where `1234` is the issue number. This allows Github to [automatically
+close the issue](https://help.github.com/articles/closing-issues-using-keywords/)
+when the PR is merged.
 
 Also, before you start working on your issue, please read our [Code Standards](./code-standards.md)
 document.
@@ -73,7 +65,7 @@ document.
 
 At a minimum you will need:
 
-* [Docker](https://www.docker.com) installed locally
+* [Docker](https://www.docker.com) 17.05+ installed locally
 * GNU Make
 * [git](https://git-scm.com)
 
@@ -85,7 +77,7 @@ also need:
 
 * A working Kubernetes cluster and `kubectl` installed in your local `PATH`,
   properly configured to access that cluster. The version of Kubernetes and
-  `kubectl` must be >= 1.7. See below for instructions on how to download these
+  `kubectl` must be >= 1.9. See below for instructions on how to download these
   versions of `kubectl`
 * [Helm](https://helm.sh) (Tiller) installed in your Kubernetes cluster and the
   `helm` binary in your `PATH`
@@ -159,6 +151,12 @@ Building outside the container is possible, but not officially supported.
 To build the service-catalog client, `svcat`:
 
     $ make svcat
+    
+The svcat cli binary is located at `bin/svcat/svcat`.
+    
+To install `svcat` to your $GOPATH/bin directory:
+
+    $ make svcat-install
 
 Note, this will do the basic build of the service catalog. There are more
 more [advanced build steps](#advanced-build-steps) below as well.
@@ -192,12 +190,18 @@ To deploy to Kubernetes, see the
 
 ## Testing
 
-There are two types of tests: unit and integration. The unit testcases
-can be run via the `test-unit` Makefile target, e.g.:
+There are three types of tests: unit, integration and e2e.
+
+### Unit Tests
+
+The unit testcases can be run via the `test-unit` Makefile target, e.g.:
 
     $ make test-unit
 
 These will execute any `*_test.go` files within the source tree.
+
+### Integration Tests
+
 The integration tests can be run via the `test-integration` Makefile target,
 e.g.:
 
@@ -207,6 +211,35 @@ The integration tests require the Kubernetes client (`kubectl`) so there is a
 script called `contrib/hack/kubectl` that will run it from within a
 Docker container. This avoids the need for you to download, or install it,
 youself. You may find it useful to add `contrib/hack` to your `PATH`.
+
+### e2e Tests
+
+The e2e tests require an existing kubernetes cluster with
+service-catalog deployed into it. The test runner needs the
+configuration to talk to the cluster and the service-catalog
+server. Since service-catalog can run aggregated, this is done by giving
+the same kubeconfig.
+
+    $ KUBECONFIG=~/.kube/config SERVICECATALOGCONFIG=~/.kube/config make test-e2e
+    
+Once built, the binary can also be run directly. Some example output is included below.
+
+```console
+$ e2e.test
+I0529 13:37:15.942348   21610 e2e.go:45] Starting e2e run "12ee92dc-6380-11e8-8a97-54e1ad543ebd" on Ginkgo node 1
+Running Suite: Service Catalog e2e suite
+========================================
+Random Seed: 1527626235 - Will randomize all specs
+Will run 3 of 3 specs
+
+< ... Test Output ... >
+
+•
+Ran 3 of 3 Specs in 47.271 seconds
+SUCCESS! -- 3 Passed | 0 Failed | 0 Pending | 0 Skipped PASS
+```
+
+### Test Running Tips
 
 The `test` Makefile target will run both the unit and integration tests, e.g.:
 
@@ -230,6 +263,8 @@ debugging using the `TEST_LOG_LEVEL` env variable. Log level 5 e.g.:
 
     $ TEST_LOG_LEVEL=5 make test-integration
 
+### Test Code Coverage
+
 To see how well these tests cover the source code, you can use:
 
     $ make coverage
@@ -237,6 +272,116 @@ To see how well these tests cover the source code, you can use:
 These will execute the tests and perform an analysis of how well they
 cover all code paths. The results are put into a file called:
 `coverage.html` at the root of the repo.
+
+As mentioned above, integration tests require a running Catalog API & ETCD image
+and a properly configured .kubeconfig.  When developing or drilling in on a
+specific test failure you may find it helpful to run Catalog in your "normal"
+environment and as long as you have properly configured your KUBECONFIG
+environment variable you can run integration tests much more quickly with a
+couple of commands:
+
+    $ make build-integration
+    $ ./integration.test -test.v -v 5 -logtostderr -test.run  TestPollServiceInstanceLastOperationSuccess/async_provisioning_with_error_on_second_poll
+
+The first command ensures the test integration executable is up-to-date.  The
+second command runs one specific test case with verbose logging and can be
+re-run over and over without having to wait for the start and stop of API and
+ETCD.  This example will execute the test case "async provisioning with error on
+second poll" within the integration test
+TestPollServiceInstanceLastOperationSuccess.
+
+### Golden Files
+The svcat tests rely on "[golden files](https://medium.com/@povilasve/go-advanced-tips-tricks-a872503ac859#a196)",
+a pattern used in the Go standard library, for testing command output. The expected
+output is stored in a file in the testdata directory, `cmd/svcat/testdata`, and 
+and then the test's output is compared against the "golden output" stored
+in that file. It helps avoid putting hard coded strings in the tests themselves.
+ 
+You do not edit the golden files by hand. When you need to update the golden
+files, run `make test-update-goldenfiles` or `go test ./cmd/svcat/... -update`,
+and the golden files are updated automatically with the results of the test run.
+
+For new tests, first you need to manually create the empty golden file into the destination 
+directory specified in your test, e.g. `touch cmd/svcat/testdata/mygoldenfile.txt`
+before updating the golden files. This only manages the contents of the golden files, 
+but doesn't create or delete them.
+
+Keep in mind that golden files help catch errors when the output unexpectedly changes.
+It's up to you to judge when you should run the tests with -update, 
+and to diff the changes in the golden file to ensure that the new output is correct.
+
+### Counterfeiter
+Certain tests use fakes generated with [Counterfeiter](http://github.com/maxbrunsfeld/counterfeiter). If you add a method
+to an interface (such as SvcatClient in pkg/svcat/service-catalog) you may need to regenerate the fake. You can install
+Counterfeiter by running `go get github.com/maxbrunsfeld/counterfeiter`.
+Then regenerate the fake with `counterfeiter ./pkg/svcat/service-catalog SvcatClient` and manually paste the boilerplate
+copyright comment into the the generated file.
+
+## FeatureGates
+Feature gates are a set of key=value pairs that describe experimental features
+and can be turned on or off by specifying the value when launching the Service
+Catalog executable (typically done in the Helm chart).  A new feature gate
+should be created when introducing new features that may break existing
+functionality or introduce instability.  See [FeatureGates](feature-gates.md)
+for more details.
+
+When adding a FeatureGate to Helm charts, define the variable
+`fooEnabled` with a value of `false` in [values.yaml](https://github.com/kubernetes-incubator/service-catalog/blob/master/charts/catalog/values.yaml).  In the [API Server](https://github.com/kubernetes-incubator/service-catalog/blob/master/charts/catalog/templates/apiserver-deployment.yaml) and [Controller](https://github.com/kubernetes-incubator/service-catalog/blob/master/charts/catalog/templates/controller-manager-deployment.yaml)
+templates, add the new FeatureGate:
+{% raw %}
+```yaml
+    - --feature-gates
+    - Foo={{.Values.fooEnabled}}
+```
+{% endraw %}
+
+When the feature has had enough testing and the community agrees to change the
+default to true, update [features.go](https://github.com/kubernetes-incubator/service-catalog/blob/master/pkg/features/features.go) and `values.yaml` changing the default for
+feature foo to `true`. And lastly update the appropriate information in the
+[FeatureGates doc](feature-gates.md).
+
+## Documentation
+
+Our documentation site is located at [svc-cat.io](https://svc-cat.io). The content files are located
+in the `docs/` directory, and the website framework in `docsite/`.
+
+To preview your changes, run `make docs-preview` and then open `http://localhost:4000` in
+your web browser. When you create a pull request, you can preview documentation changes by
+clicking on the `deploy/netlify` build check in your PR.
+
+## Making a Contribution
+
+Once you have compiled and tested your code locally, make a Pull
+Request. Create a branch on your local repo with a short descriptive
+name of the work you are doing. Make a commit with the work in it, and
+push it up to your remote fork on github. Come back to the code tab of
+the repository, and there should be a box suggesting to make a Pull
+Request.
+
+Pull requests are expected to have a few things before asking people to review the PR:
+
+* [Build the code](#building) with `make build` (for server-side changes) or `make svcat` (for cli changes).
+* [Run the tests](#testing) with `make test`.
+* Run the build checks with `make verify`. This helps catch compilation errors
+and code formatting/linting problems.
+* Added new tests or updated existing tests to verify your changes. If this is a svcat related change,
+you may need to [update the golden files](#golden-files).
+* Any associated documentation changes. You can preview documentation changes by
+clicking on the `deploy/netlify` build check on your pull request.
+
+Once the Pull Request has been created, it will automatically be built
+and the tests run. The unit and integration tests will run in travis,
+and Jenkins will run the e2e tests.
+
+You can use the [Prow /cc command](https://prow.k8s.io/command-help#cc)
+to request reviews from the maintainers of the project. This works even
+if you do not have status in the service-catalog project.
+
+On travis, a build is made up of two jobs, one builds our chosen
+golang version, and the other builds with future release candidates
+(rc). It is okay for the rc build to fail. The rc build will not fail
+the overall build, and exists to give us a warning as to what changes
+we will have to make to support future versions of golang.
 
 ## Advanced Build Steps
 
@@ -362,5 +507,5 @@ Gopkg.toml already, add a constraint for it and set the version.
 
 ## Demo walkthrough
 
-Check out the [introduction](./introduction.md) to get started with 
+Check out the [walkthrough](./walkthrough.md) to get started with 
 installation and a self-guided demo.

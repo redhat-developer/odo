@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	sctestutil "github.com/kubernetes-incubator/service-catalog/test/util"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +41,7 @@ import (
 
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	fakeosb "github.com/pmorie/go-open-service-broker-client/v2/fake"
+	generator "github.com/pmorie/go-open-service-broker-client/v2/generator"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
@@ -61,6 +63,7 @@ const (
 	testClusterServicePlanName            = "test-plan"
 	testNonbindableClusterServicePlanName = "test-nb-plan"
 	testInstanceLastOperation             = "InstanceLastOperation"
+	testClassExternalID                   = "12345"
 	testPlanExternalID                    = "34567"
 	testNonbindablePlanExternalID         = "nb34567"
 	testInstanceName                      = "test-instance"
@@ -109,7 +112,7 @@ func TestBasicFlows(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 			if tc.asyncForBindings {
 				// Enable the AsyncBindingOperations feature
 				utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=true", scfeatures.AsyncBindingOperations))
@@ -142,7 +145,7 @@ func TestBasicFlows(t *testing.T) {
 					t.Fatalf("error updating Instance: %v", err)
 				}
 
-				if err := util.WaitForInstanceReconciledGeneration(ct.client, testNamespace, testInstanceName, ct.instance.Status.ReconciledGeneration+1); err != nil {
+				if err := util.WaitForInstanceProcessedGeneration(ct.client, testNamespace, testInstanceName, ct.instance.Status.ReconciledGeneration+1); err != nil {
 					t.Fatalf("error waiting for instance to reconcile: %v", err)
 				}
 
@@ -228,8 +231,8 @@ func verifyUsernameInLastBrokerAction(t *testing.T, osbClient *fakeosb.FakeClien
 // as part of originating identity included in broker requests.
 func TestBasicFlowsWithOriginatingIdentity(t *testing.T) {
 	// Enable the OriginatingIdentity feature
-	utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=true", scfeatures.OriginatingIdentity))
-	defer utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=false", scfeatures.OriginatingIdentity))
+	prevOrigIDEnablement := sctestutil.EnableOriginatingIdentity(t, true)
+	defer utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=%v", scfeatures.OriginatingIdentity, prevOrigIDEnablement))
 
 	createChangeUsernameFunc := func(username string) func(*controllerTest) {
 		return func(ct *controllerTest) {
@@ -271,7 +274,7 @@ func TestBasicFlowsWithOriginatingIdentity(t *testing.T) {
 			t.Fatalf("error updating Instance: %v", err)
 		}
 
-		if err := util.WaitForInstanceReconciledGeneration(ct.client, testNamespace, testInstanceName, ct.instance.Status.ReconciledGeneration+1); err != nil {
+		if err := util.WaitForInstanceProcessedGeneration(ct.client, testNamespace, testInstanceName, ct.instance.Status.ReconciledGeneration+1); err != nil {
 			t.Fatalf("error waiting for instance to reconcile: %v", err)
 		}
 
@@ -382,7 +385,7 @@ func TestServiceInstanceDeleteWithAsyncUpdateInProgress(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 			var done int32 = 0
 			ct := controllerTest{
 				t:                            t,
@@ -476,7 +479,7 @@ func TestServiceInstanceDeleteWithAsyncProvisionInProgress(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 			var done int32 = 0
 			ct := controllerTest{
 				t:                            t,
@@ -549,7 +552,7 @@ func TestServiceBindingDeleteWithAsyncBindInProgress(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 
 			// Enable the AsyncBindingOperations feature
 			utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=true", scfeatures.AsyncBindingOperations))
@@ -604,6 +607,56 @@ func TestServiceBindingDeleteWithAsyncBindInProgress(t *testing.T) {
 				ct.binding = nil
 			})
 		})
+	}
+}
+
+func getProvisionResponseByPollCountReactions(numOfResponses int, stateProgressions []fakeosb.ProvisionReaction) fakeosb.DynamicProvisionReaction {
+	numberOfPolls := 0
+	numberOfStates := len(stateProgressions)
+
+	return func(_ *osb.ProvisionRequest) (*osb.ProvisionResponse, error) {
+		var reaction fakeosb.ProvisionReaction
+		if numberOfPolls > (numOfResponses*numberOfStates)-1 {
+			reaction = stateProgressions[numberOfStates-1]
+			glog.V(5).Infof("Provision instance state progressions done, ended on %v", reaction)
+		} else {
+			idx := numberOfPolls / numOfResponses
+			reaction = stateProgressions[idx]
+			glog.V(5).Infof("Provision instance state progression on %v (polls:%v, idx:%v)", reaction, numberOfPolls, idx)
+		}
+		numberOfPolls++
+		if reaction.Response != nil {
+			return &osb.ProvisionResponse{
+				Async:        reaction.Response.Async,
+				OperationKey: reaction.Response.OperationKey,
+			}, nil
+		}
+		return nil, reaction.Error
+	}
+}
+
+func getDeprovisionResponseByPollCountReactions(numOfResponses int, stateProgressions []fakeosb.DeprovisionReaction) fakeosb.DynamicDeprovisionReaction {
+	numberOfPolls := 0
+	numberOfStates := len(stateProgressions)
+
+	return func(_ *osb.DeprovisionRequest) (*osb.DeprovisionResponse, error) {
+		var reaction fakeosb.DeprovisionReaction
+		if numberOfPolls > (numOfResponses*numberOfStates)-1 {
+			reaction = stateProgressions[numberOfStates-1]
+			glog.V(5).Infof("Deprovision instance state progressions done, ended on %v", reaction)
+		} else {
+			idx := numberOfPolls / numOfResponses
+			reaction = stateProgressions[idx]
+			glog.V(5).Infof("Deprovision instance state progression on %v (polls:%v, idx:%v)", reaction, numberOfPolls, idx)
+		}
+		numberOfPolls++
+		if reaction.Response != nil {
+			return &osb.DeprovisionResponse{
+				Async:        reaction.Response.Async,
+				OperationKey: reaction.Response.OperationKey,
+			}, nil
+		}
+		return nil, reaction.Error
 	}
 }
 
@@ -668,6 +721,167 @@ func getLastOperationResponseByPollCountStates(numOfResponses int, stateProgress
 	return getLastOperationResponseByPollCountReactions(numOfResponses, reactionProgressions)
 }
 
+// newControllerTestTestController creates a new test controller injected with fake clients
+// and returns:
+//
+// - a fake kubernetes core api client
+// - a fake service catalog api client
+// - a fake osb client, with configuration for happy path testing
+// - a test controller
+// - the shared informers for the service catalog v1beta1 api
+// - a function for shutting down the API server
+// - a function for shutting down the controller.
+//
+// If there is an error, newTestController calls 'Fatal' on the injected
+// testing.T.
+func newControllerTestTestController(ct *controllerTest) (
+	*fake.Clientset,
+	clientset.Interface,
+	*restclient.Config,
+	*fakeosb.FakeClient,
+	controller.Controller,
+	informers.Interface,
+	func(),
+	func()) {
+	t := ct.t
+
+	// create a fake kube client
+	fakeKubeClient := &fake.Clientset{}
+	fakeKubeClient.Lock()
+	prependGetSecretNotFoundReaction(fakeKubeClient)
+	fakeKubeClient.Unlock()
+
+	// create an sc client and running server
+	catalogClient, catalogClientConfig, shutdownServer := getFreshApiserverAndClient(t, server.StorageTypeEtcd.String(), func() runtime.Object {
+		return &servicecatalog.ClusterServiceBroker{}
+	})
+
+	fakeOSBClient := fakeosb.NewFakeClient(getTestHappyPathBrokerClientConfig())
+	brokerClFunc := fakeosb.ReturnFakeClientFunc(fakeOSBClient)
+
+	// create informers
+	informerFactory := scinformers.NewSharedInformerFactory(catalogClient, 10*time.Second)
+	serviceCatalogSharedInformers := informerFactory.Servicecatalog().V1beta1()
+
+	// WARNING: Should you try to record more events than the buffer size
+	// passed here, the recording function will hang indefinitely.
+	fakeRecorder := record.NewFakeRecorder(50)
+
+	// create a test controller
+	testController, err := controller.NewController(
+		fakeKubeClient,
+		catalogClient.ServicecatalogV1beta1(),
+		serviceCatalogSharedInformers.ClusterServiceBrokers(),
+		serviceCatalogSharedInformers.ServiceBrokers(),
+		serviceCatalogSharedInformers.ClusterServiceClasses(),
+		serviceCatalogSharedInformers.ServiceClasses(),
+		serviceCatalogSharedInformers.ServiceInstances(),
+		serviceCatalogSharedInformers.ServiceBindings(),
+		serviceCatalogSharedInformers.ClusterServicePlans(),
+		serviceCatalogSharedInformers.ServicePlans(),
+		brokerClFunc,
+		24*time.Hour,
+		osb.LatestAPIVersion().HeaderValue(),
+		fakeRecorder,
+		7*24*time.Hour,
+		7*24*time.Hour,
+		controller.DefaultClusterIDConfigMapName,
+		controller.DefaultClusterIDConfigMapNamespace,
+	)
+	t.Log("controller start")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ct.client = catalogClient.ServicecatalogV1beta1()
+
+	ct.kubeClient = fakeKubeClient
+	ct.catalogClient = catalogClient
+	ct.catalogClientConfig = catalogClientConfig
+	ct.osbClient = fakeOSBClient
+	ct.controller = testController
+	ct.informers = serviceCatalogSharedInformers
+
+	if ct.setup != nil {
+		ct.setup(ct)
+	}
+
+	stopCh := make(chan struct{})
+
+	glog.V(4).Info("Waiting for caches to sync")
+	informerFactory.Start(stopCh)
+
+	glog.V(4).Info("Waiting for caches to sync")
+	informerFactory.WaitForCacheSync(stopCh)
+
+	controllerStopped := make(chan struct{})
+
+	go func() {
+		testController.Run(1, stopCh)
+		controllerStopped <- struct{}{}
+	}()
+
+	shutdownController := func() {
+		close(stopCh)
+		<-controllerStopped
+	}
+
+	if ct.broker != nil {
+		if ct.preCreateBroker != nil {
+			ct.kubeClient.Lock()
+			ct.preCreateBroker(ct)
+			ct.kubeClient.Unlock()
+		}
+		_, err := ct.client.ClusterServiceBrokers().Create(ct.broker)
+		if nil != err {
+			ct.t.Fatalf("error creating the broker %q (%q)", ct.broker.Name, err)
+		}
+		if !ct.skipVerifyingBrokerSuccess {
+			ct.broker = verifyBrokerCreated(ct.t, ct.client, ct.broker)
+		}
+		if ct.postCreateBroker != nil {
+			ct.postCreateBroker(ct)
+		}
+	}
+
+	if ct.instance != nil {
+		if ct.preCreateInstance != nil {
+			ct.kubeClient.Lock()
+			ct.preCreateInstance(ct)
+			ct.kubeClient.Unlock()
+		}
+		if _, err := ct.client.ServiceInstances(ct.instance.Namespace).Create(ct.instance); err != nil {
+			ct.t.Fatalf("error creating Instance: %v", err)
+		}
+		if !ct.skipVerifyingInstanceSuccess {
+			ct.instance = verifyInstanceCreated(ct.t, ct.client, ct.instance)
+		}
+		if ct.postCreateInstance != nil {
+			ct.postCreateInstance(ct)
+		}
+	}
+
+	if ct.binding != nil {
+		if ct.preCreateBinding != nil {
+			ct.kubeClient.Lock()
+			ct.preCreateBinding(ct)
+			ct.kubeClient.Unlock()
+		}
+		_, err := ct.client.ServiceBindings(ct.binding.Namespace).Create(ct.binding)
+		if err != nil {
+			ct.t.Fatalf("error creating Binding: %v", err)
+		}
+		if !ct.skipVerifyingBindingSuccess {
+			ct.binding = verifyBindingCreated(ct.t, ct.client, ct.binding)
+		}
+		if ct.postCreateBinding != nil {
+			ct.postCreateBinding(ct)
+		}
+	}
+
+	return fakeKubeClient, catalogClient, catalogClientConfig, fakeOSBClient, testController, serviceCatalogSharedInformers, shutdownServer, shutdownController
+}
+
 // newTestController creates a new test controller injected with fake clients
 // and returns:
 //
@@ -693,7 +907,9 @@ func newTestController(t *testing.T) (
 
 	// create a fake kube client
 	fakeKubeClient := &fake.Clientset{}
+	fakeKubeClient.Lock()
 	prependGetSecretNotFoundReaction(fakeKubeClient)
+	fakeKubeClient.Unlock()
 
 	// create an sc client and running server
 	catalogClient, catalogClientConfig, shutdownServer := getFreshApiserverAndClient(t, server.StorageTypeEtcd.String(), func() runtime.Object {
@@ -716,16 +932,21 @@ func newTestController(t *testing.T) (
 		fakeKubeClient,
 		catalogClient.ServicecatalogV1beta1(),
 		serviceCatalogSharedInformers.ClusterServiceBrokers(),
+		serviceCatalogSharedInformers.ServiceBrokers(),
 		serviceCatalogSharedInformers.ClusterServiceClasses(),
+		serviceCatalogSharedInformers.ServiceClasses(),
 		serviceCatalogSharedInformers.ServiceInstances(),
 		serviceCatalogSharedInformers.ServiceBindings(),
 		serviceCatalogSharedInformers.ClusterServicePlans(),
+		serviceCatalogSharedInformers.ServicePlans(),
 		brokerClFunc,
 		24*time.Hour,
 		osb.LatestAPIVersion().HeaderValue(),
 		fakeRecorder,
 		7*24*time.Hour,
 		7*24*time.Hour,
+		controller.DefaultClusterIDConfigMapName,
+		controller.DefaultClusterIDConfigMapNamespace,
 	)
 	t.Log("controller start")
 	if err != nil {
@@ -797,7 +1018,7 @@ func getTestCatalogResponse() *osb.CatalogResponse {
 		Services: []osb.Service{
 			{
 				Name:        testClusterServiceClassName,
-				ID:          "12345",
+				ID:          testClassExternalID,
 				Description: "a test service",
 				Bindable:    true,
 				Plans: []osb.Plan{
@@ -818,6 +1039,30 @@ func getTestCatalogResponse() *osb.CatalogResponse {
 			},
 		},
 	}
+}
+
+// getTestLargeCatalogResponse returns a sample large generated response to a get catalog request.
+func getTestLargeCatalogResponse() *osb.CatalogResponse {
+
+	g := generator.CreateGenerator(4, generator.Parameters{
+		Services: generator.ServiceRanges{
+			Plans:               5,
+			Tags:                6,
+			Metadata:            4,
+			Requires:            2,
+			Bindable:            10, // the odds of bindable are 9/10
+			BindingsRetrievable: 1,
+		},
+		Plans: generator.PlanRanges{
+			Metadata: 4,
+			Bindable: 10,
+			Free:     4,
+		},
+	})
+	generator.AssignPoolGoT(g)
+
+	catalog, _ := g.GetCatalog()
+	return catalog
 }
 
 // getTestBindCredentials returns binding credentials to include in the response
@@ -876,9 +1121,21 @@ func getTestBroker() *v1beta1.ClusterServiceBroker {
 	return &v1beta1.ClusterServiceBroker{
 		ObjectMeta: metav1.ObjectMeta{Name: testClusterServiceBrokerName},
 		Spec: v1beta1.ClusterServiceBrokerSpec{
-			URL: testBrokerURL,
+			CommonServiceBrokerSpec: v1beta1.CommonServiceBrokerSpec{
+				URL: testBrokerURL,
+			},
 		},
 	}
+}
+
+// getTestFilteredBroker returns a ClusterServiceBroker with restrictions to use for testing.
+func getTestFilteredBroker(serviceClassRestrictions, servicePlanRestrictions []string) *v1beta1.ClusterServiceBroker {
+	testBroker := getTestBroker()
+	testBroker.Spec.CatalogRestrictions = &v1beta1.CatalogRestrictions{
+		ServiceClass: serviceClassRestrictions,
+		ServicePlan:  servicePlanRestrictions,
+	}
+	return testBroker
 }
 
 // verifyBrokerCreated verifies that the specified broker has been created
@@ -1046,11 +1303,11 @@ type controllerTest struct {
 	// successfully should be skipped. This is useful for tests where the
 	// reconciliation is expected to fail.
 	skipVerifyingBrokerSuccess bool
-	// true if the verification that the broker was created and reconciled
+	// true if the verification that the instance was created and reconciled
 	// successfully should be skipped. This is useful for tests where the
 	// reconciliation is expected to fail.
 	skipVerifyingInstanceSuccess bool
-	// true if the verification that the broker was created and reconciled
+	// true if the verification that the binding was created and reconciled
 	// successfully should be skipped. This is useful for tests where the
 	// reconciliation is expected to fail.
 	skipVerifyingBindingSuccess bool
@@ -1110,7 +1367,7 @@ type controllerTest struct {
 // - delete broker
 // - clean up controller and API server
 func (ct *controllerTest) run(test func(*controllerTest)) {
-	kubeClient, catalogClient, catalogClientConfig, osbClient, controller, informers, shutdownServer, shutdownController := newTestController(ct.t)
+	kubeClient, catalogClient, catalogClientConfig, osbClient, controller, informers, shutdownServer, shutdownController := newControllerTestTestController(ct)
 	defer shutdownController()
 	defer shutdownServer()
 
@@ -1122,57 +1379,6 @@ func (ct *controllerTest) run(test func(*controllerTest)) {
 	ct.informers = informers
 
 	ct.client = catalogClient.ServicecatalogV1beta1()
-
-	if ct.setup != nil {
-		ct.setup(ct)
-	}
-
-	if ct.broker != nil {
-		if ct.preCreateBroker != nil {
-			ct.preCreateBroker(ct)
-		}
-		_, err := ct.client.ClusterServiceBrokers().Create(ct.broker)
-		if nil != err {
-			ct.t.Fatalf("error creating the broker %q (%q)", ct.broker.Name, err)
-		}
-		if !ct.skipVerifyingBrokerSuccess {
-			ct.broker = verifyBrokerCreated(ct.t, ct.client, ct.broker)
-		}
-		if ct.postCreateBroker != nil {
-			ct.postCreateBroker(ct)
-		}
-	}
-
-	if ct.instance != nil {
-		if ct.preCreateInstance != nil {
-			ct.preCreateInstance(ct)
-		}
-		if _, err := ct.client.ServiceInstances(ct.instance.Namespace).Create(ct.instance); err != nil {
-			ct.t.Fatalf("error creating Instance: %v", err)
-		}
-		if !ct.skipVerifyingInstanceSuccess {
-			ct.instance = verifyInstanceCreated(ct.t, ct.client, ct.instance)
-		}
-		if ct.postCreateInstance != nil {
-			ct.postCreateInstance(ct)
-		}
-	}
-
-	if ct.binding != nil {
-		if ct.preCreateBinding != nil {
-			ct.preCreateBinding(ct)
-		}
-		_, err := ct.client.ServiceBindings(ct.binding.Namespace).Create(ct.binding)
-		if err != nil {
-			ct.t.Fatalf("error creating Binding: %v", err)
-		}
-		if !ct.skipVerifyingBindingSuccess {
-			ct.binding = verifyBindingCreated(ct.t, ct.client, ct.binding)
-		}
-		if ct.postCreateBinding != nil {
-			ct.postCreateBinding(ct)
-		}
-	}
 
 	if test != nil {
 		test(ct)
@@ -1223,6 +1429,18 @@ func getLastBrokerAction(t *testing.T, osbClient *fakeosb.FakeClient, actionType
 	return brokerAction
 }
 
+// findBrokerAction finds actions of the given type made to the fake broker client.
+func findBrokerActions(t *testing.T, osbClient *fakeosb.FakeClient, actionType fakeosb.ActionType) []fakeosb.Action {
+	brokerActions := osbClient.Actions()
+	foundActions := make([]fakeosb.Action, 0, len(brokerActions))
+	for _, action := range brokerActions {
+		if action.Type == actionType {
+			foundActions = append(foundActions, action)
+		}
+	}
+	return foundActions
+}
+
 // convertParametersIntoRawExtension converts the specified map of parameters
 // into a RawExtension object that can be used in the Parameters field of
 // ServiceInstanceSpec or ServiceBindingSpec.
@@ -1232,4 +1450,15 @@ func convertParametersIntoRawExtension(t *testing.T, parameters map[string]inter
 		t.Fatalf("Failed to marshal parameters %v : %v", parameters, err)
 	}
 	return &runtime.RawExtension{Raw: marshalledParams}
+}
+
+func findKubeActions(kubeClient *fake.Clientset, verb, resource string) []clientgotesting.Action {
+	actions := kubeClient.Actions()
+	foundActions := make([]clientgotesting.Action, 0, len(actions))
+	for _, action := range actions {
+		if action.Matches(verb, resource) {
+			foundActions = append(foundActions, action)
+		}
+	}
+	return foundActions
 }
