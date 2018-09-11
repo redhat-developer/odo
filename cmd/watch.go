@@ -48,8 +48,13 @@ var watchCmd = &cobra.Command{
 			componentName = args[0]
 		}
 
-		_, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
+		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
 		checkError(err, "Unable to get source for %s component.", componentName)
+
+		if sourceType != "binary" && sourcePath != "local" {
+			fmt.Printf("Watch is supported by binary and local components only and source type of component %s is %s\n", componentName, sourceType)
+			os.Exit(1)
+		}
 
 		u, err := url.Parse(sourcePath)
 		checkError(err, "Unable to parse source %s from component %s.", sourcePath, componentName)
