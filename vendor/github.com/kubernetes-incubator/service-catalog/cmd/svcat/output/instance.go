@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	"github.com/olekukonko/tablewriter"
 )
 
 func getInstanceStatusCondition(status v1beta1.ServiceInstanceStatus) v1beta1.ServiceInstanceCondition {
@@ -40,8 +41,16 @@ func getInstanceStatusShort(status v1beta1.ServiceInstanceStatus) string {
 	return formatStatusShort(string(lastCond.Type), lastCond.Status, lastCond.Reason)
 }
 
-// WriteInstanceList prints a list of instances.
-func WriteInstanceList(w io.Writer, instances ...v1beta1.ServiceInstance) {
+func appendInstanceDashboardURL(status v1beta1.ServiceInstanceStatus, table *tablewriter.Table) {
+	if status.DashboardURL != nil {
+		dashboardURL := *status.DashboardURL
+		table.AppendBulk([][]string{
+			{"DashboardURL:", dashboardURL},
+		})
+	}
+}
+
+func writeInstanceListTable(w io.Writer, instanceList *v1beta1.ServiceInstanceList) {
 	t := NewListTable(w)
 	t.SetHeader([]string{
 		"Name",
@@ -51,17 +60,44 @@ func WriteInstanceList(w io.Writer, instances ...v1beta1.ServiceInstance) {
 		"Status",
 	})
 
-	for _, instance := range instances {
+	for _, instance := range instanceList.Items {
 		t.Append([]string{
 			instance.Name,
 			instance.Namespace,
-			instance.Spec.ClusterServiceClassExternalName,
-			instance.Spec.ClusterServicePlanExternalName,
+			instance.Spec.GetSpecifiedClusterServiceClass(),
+			instance.Spec.GetSpecifiedClusterServicePlan(),
 			getInstanceStatusShort(instance.Status),
 		})
 	}
 
 	t.Render()
+}
+
+// WriteInstanceList prints a list of instances.
+func WriteInstanceList(w io.Writer, outputFormat string, instanceList *v1beta1.ServiceInstanceList) {
+	switch outputFormat {
+	case FormatJSON:
+		writeJSON(w, instanceList)
+	case FormatYAML:
+		writeYAML(w, instanceList, 0)
+	case FormatTable:
+		writeInstanceListTable(w, instanceList)
+	}
+}
+
+// WriteInstance prints a single instance
+func WriteInstance(w io.Writer, outputFormat string, instance v1beta1.ServiceInstance) {
+	switch outputFormat {
+	case FormatJSON:
+		writeJSON(w, instance)
+	case FormatYAML:
+		writeYAML(w, instance, 0)
+	case FormatTable:
+		p := v1beta1.ServiceInstanceList{
+			Items: []v1beta1.ServiceInstance{instance},
+		}
+		writeInstanceListTable(w, &p)
+	}
 }
 
 // WriteParentInstance prints identifying information for a parent instance.
@@ -103,14 +139,18 @@ func WriteAssociatedInstances(w io.Writer, instances []v1beta1.ServiceInstance) 
 // WriteInstanceDetails prints an instance.
 func WriteInstanceDetails(w io.Writer, instance *v1beta1.ServiceInstance) {
 	t := NewDetailsTable(w)
-
 	t.AppendBulk([][]string{
 		{"Name:", instance.Name},
 		{"Namespace:", instance.Namespace},
 		{"Status:", getInstanceStatusFull(instance.Status)},
-		{"Class:", instance.Spec.ClusterServiceClassExternalName},
-		{"Plan:", instance.Spec.ClusterServicePlanExternalName},
 	})
-
+	appendInstanceDashboardURL(instance.Status, t)
+	t.AppendBulk([][]string{
+		{"Class:", instance.Spec.GetSpecifiedClusterServiceClass()},
+		{"Plan:", instance.Spec.GetSpecifiedClusterServicePlan()},
+	})
 	t.Render()
+
+	writeParameters(w, instance.Spec.Parameters)
+	writeParametersFrom(w, instance.Spec.ParametersFrom)
 }

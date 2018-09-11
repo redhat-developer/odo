@@ -1,8 +1,14 @@
-# Service Catalog docs
+---
+title: Documentation
+layout: docsportal
+cid: docs-home
+permalink: /docs/
+---
 
-Welcome to the documentation for Service Catalog. This page is an index for
-the articles in here. We recommend you start by reading the 
-[introduction](introduction.md), and then move on to the 
+# Service Catalog Documentation
+
+This page is an index for the articles in here. We recommend you start by reading the 
+[introduction](./concepts/index.md#introduction), and then move on to the 
 [installation instructions](./install.md). After you install, see our
 [walkthrough](./walkthrough.md) document to get started using Service Catalog.
 
@@ -12,6 +18,7 @@ Afterward, see the topics below.
 
 - [Installation instructions](install.md)
 - [Walkthrough](walkthrough.md)
+- [Service Catalog CLI](cli.md)
 - [The Service Catalog Resources In Depth](./resources.md)
 - [Passing parameters to ServiceInstances and ServiceBindings](parameters.md)
 
@@ -21,6 +28,11 @@ Afterward, see the topics below.
 - [Developer guide](./devguide.md)
 - [Design](./design.md)
 - [Notes on authentication](./auth.md)
+
+## Topics for operators:
+
+- [Using Namespaced Broker Resources](./namespaced-broker-resources.md)
+- [Filtering Broker Catalogs](./catalog-restrictions.md)
 
 ## Request for Comments
 

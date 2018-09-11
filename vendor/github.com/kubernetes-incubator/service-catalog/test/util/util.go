@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -26,9 +27,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apiserver/pkg/authentication/user"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	v1beta1servicecatalog "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
+	scfeatures "github.com/kubernetes-incubator/service-catalog/pkg/features"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 )
 
 // WaitForBrokerCondition waits for the status of the named broker to contain
@@ -98,8 +103,8 @@ func WaitForClusterServiceClassToExist(client v1beta1servicecatalog.Servicecatal
 	)
 }
 
-// WaitForClusterServiceClassToExist waits for the ClusterServiceClass with the given name
-// to exist.
+// WaitForClusterServicePlanToExist waits for the ClusterServicePlan
+// with the given name to exist.
 func WaitForClusterServicePlanToExist(client v1beta1servicecatalog.ServicecatalogV1beta1Interface, name string) error {
 	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
 		func() (bool, error) {
@@ -205,24 +210,50 @@ func WaitForInstanceToNotExist(client v1beta1servicecatalog.ServicecatalogV1beta
 	)
 }
 
-// WaitForInstanceReconciledGeneration waits for the status of the named instance to
+// WaitForInstanceProcessedGeneration waits for the status of the named instance to
 // have the specified reconciled generation.
-func WaitForInstanceReconciledGeneration(client v1beta1servicecatalog.ServicecatalogV1beta1Interface, namespace, name string, reconciledGeneration int64) error {
+func WaitForInstanceProcessedGeneration(client v1beta1servicecatalog.ServicecatalogV1beta1Interface, namespace, name string, processedGeneration int64) error {
 	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
 		func() (bool, error) {
-			glog.V(5).Infof("Waiting for instance %v/%v to have reconciled generation of %v", namespace, name, reconciledGeneration)
+			glog.V(5).Infof("Waiting for instance %v/%v to have processed generation of %v", namespace, name, processedGeneration)
 			instance, err := client.ServiceInstances(namespace).Get(name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting Instance %v/%v: %v", namespace, name, err)
 			}
 
-			if instance.Status.ReconciledGeneration == reconciledGeneration {
+			if instance.Status.ObservedGeneration >= processedGeneration &&
+				(isServiceInstanceReady(instance) || isServiceInstanceFailed(instance)) &&
+				!instance.Status.OrphanMitigationInProgress {
 				return true, nil
 			}
 
 			return false, nil
 		},
 	)
+}
+
+// isServiceInstanceConditionTrue returns whether the given instance has a given condition
+// with status true.
+func isServiceInstanceConditionTrue(instance *v1beta1.ServiceInstance, conditionType v1beta1.ServiceInstanceConditionType) bool {
+	for _, cond := range instance.Status.Conditions {
+		if cond.Type == conditionType {
+			return cond.Status == v1beta1.ConditionTrue
+		}
+	}
+
+	return false
+}
+
+// isServiceInstanceReady returns whether the given instance has a ready condition
+// with status true.
+func isServiceInstanceReady(instance *v1beta1.ServiceInstance) bool {
+	return isServiceInstanceConditionTrue(instance, v1beta1.ServiceInstanceConditionReady)
+}
+
+// isServiceInstanceFailed returns whether the instance has a failed condition with
+// status true.
+func isServiceInstanceFailed(instance *v1beta1.ServiceInstance) bool {
+	return isServiceInstanceConditionTrue(instance, v1beta1.ServiceInstanceConditionFailed)
 }
 
 // WaitForBindingCondition waits for the status of the named binding to contain
@@ -342,4 +373,39 @@ func AssertServiceBindingCondition(t *testing.T, binding *v1beta1.ServiceBinding
 	if !foundCondition {
 		t.Fatalf("%v condition not found", conditionType)
 	}
+}
+
+// AssertServiceInstanceConditionFalseOrAbsent asserts that the instance's status
+// either contains the given condition type with a status of False or does not
+// contain the given condition.
+func AssertServiceInstanceConditionFalseOrAbsent(t *testing.T, instance *v1beta1.ServiceInstance, conditionType v1beta1.ServiceInstanceConditionType) {
+	for _, condition := range instance.Status.Conditions {
+		if condition.Type == conditionType {
+			if e, a := v1beta1.ConditionFalse, condition.Status; e != a {
+				t.Fatalf("%v condition had unexpected status; expected %v, got %v", conditionType, e, a)
+			}
+		}
+	}
+}
+
+// EnableOriginatingIdentity enables the OriginatingIdentity feature gate.  Returns
+// the prior state of the gate.
+func EnableOriginatingIdentity(t *testing.T, enabled bool) (previousState bool) {
+	prevOrigIdentEnablement := utilfeature.DefaultFeatureGate.Enabled(scfeatures.OriginatingIdentity)
+	if prevOrigIdentEnablement != enabled {
+		err := utilfeature.DefaultFeatureGate.Set(fmt.Sprintf("%v=%v", scfeatures.OriginatingIdentity, enabled))
+		if err != nil {
+			t.Fatalf("Failed to enable originating identity feature: %v", err)
+		}
+	}
+	return prevOrigIdentEnablement
+}
+
+// ContextWithUserName creates a Context with the specified userName
+func ContextWithUserName(userName string) context.Context {
+	ctx := genericapirequest.NewContext()
+	userInfo := &user.DefaultInfo{
+		Name: userName,
+	}
+	return genericapirequest.WithUser(ctx, userInfo)
 }

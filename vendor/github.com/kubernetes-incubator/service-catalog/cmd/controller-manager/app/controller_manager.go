@@ -30,8 +30,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/kubernetes-incubator/service-catalog/pkg/api"
 	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -41,6 +41,7 @@ import (
 	"github.com/kubernetes-incubator/service-catalog/pkg/metrics"
 	"github.com/kubernetes-incubator/service-catalog/pkg/metrics/osbclientproxy"
 
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/server/healthz"
@@ -54,6 +55,8 @@ import (
 	_ "github.com/kubernetes-incubator/service-catalog/pkg/api"
 
 	"github.com/kubernetes-incubator/service-catalog/cmd/controller-manager/app/options"
+	servicecatalogv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	settingsv1alpha1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/settings/v1alpha1"
 	servicecataloginformers "github.com/kubernetes-incubator/service-catalog/pkg/client/informers_generated/externalversions"
 	"github.com/kubernetes-incubator/service-catalog/pkg/controller"
 
@@ -92,6 +95,10 @@ func Run(controllerManagerOptions *options.ControllerManagerServer) error {
 	// } else {
 	// 	glog.Errorf("unable to register configz: %s", err)
 	// }
+
+	if controllerManagerOptions.Port > 0 {
+		glog.Warning("program option --port is obsolete and ignored, specify --secure-port instead")
+	}
 
 	// Build the K8s kubeconfig / client / clientBuilder
 	glog.V(4).Info("Building k8s kubeconfig")
@@ -142,6 +149,14 @@ func Run(controllerManagerOptions *options.ControllerManagerServer) error {
 	}
 	serviceCatalogKubeconfig.Insecure = controllerManagerOptions.ServiceCatalogInsecureSkipVerify
 
+	// Initialize SSL/TLS configuration.  Ensures we have a certificate and key to use.
+	// This is the same code as what is done in the API Server.  By default, Helm created
+	// cert and key for us, this just ensures the files are found and are readable and
+	// creates self signed versions if not.
+	if err := controllerManagerOptions.SecureServingOptions.MaybeDefaultWithSelfSignedCerts("" /*AdvertiseAddress*/, nil /*alternateDNS*/, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {
+		return fmt.Errorf("failed to establish SecureServingOptions %v", err)
+	}
+
 	glog.V(4).Info("Starting http server and mux")
 	// Start http server and handlers
 	go func() {
@@ -165,18 +180,35 @@ func Run(controllerManagerOptions *options.ControllerManagerServer) error {
 			}
 		}
 		server := &http.Server{
-			Addr:    net.JoinHostPort(controllerManagerOptions.Address, strconv.Itoa(int(controllerManagerOptions.Port))),
+			Addr: net.JoinHostPort(controllerManagerOptions.SecureServingOptions.BindAddress.String(),
+				strconv.Itoa(int(controllerManagerOptions.SecureServingOptions.BindPort))),
 			Handler: mux,
 		}
-		glog.Fatal(server.ListenAndServe())
+		glog.Fatal(server.ListenAndServeTLS(controllerManagerOptions.SecureServingOptions.ServerCert.CertKey.CertFile,
+			controllerManagerOptions.SecureServingOptions.ServerCert.CertKey.KeyFile))
 	}()
 
 	// Create event broadcaster
 	glog.V(4).Info("Creating event broadcaster")
+	eventsScheme := runtime.NewScheme()
+	// We use ConfigMapLock/EndpointsLock which emit events for ConfigMap/Endpoints and hence we need core/v1 types for it
+	if err = corev1.AddToScheme(eventsScheme); err != nil {
+		return err
+	}
+	// We also emit events for our own types
+	if err = servicecatalogv1beta1.AddToScheme(eventsScheme); err != nil {
+		return err
+	}
+	if err = settingsv1alpha1.AddToScheme(eventsScheme); err != nil {
+		return err
+	}
+
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(glog.Infof)
-	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: k8sKubeClient.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(api.Scheme, v1.EventSource{Component: controllerManagerAgentName})
+	loggingWatch := eventBroadcaster.StartLogging(glog.Infof)
+	defer loggingWatch.Stop()
+	recordingWatch := eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: k8sKubeClient.CoreV1().Events("")})
+	defer recordingWatch.Stop()
+	recorder := eventBroadcaster.NewRecorder(eventsScheme, v1.EventSource{Component: controllerManagerAgentName})
 
 	// 'run' is the logic to run the controllers for the controller manager
 	run := func(stop <-chan struct{}) {
@@ -339,26 +371,34 @@ func StartControllers(s *options.ControllerManagerServer,
 		coreClient,
 		serviceCatalogClientBuilder.ClientOrDie(controllerManagerAgentName).ServicecatalogV1beta1(),
 		serviceCatalogSharedInformers.ClusterServiceBrokers(),
+		serviceCatalogSharedInformers.ServiceBrokers(),
 		serviceCatalogSharedInformers.ClusterServiceClasses(),
+		serviceCatalogSharedInformers.ServiceClasses(),
 		serviceCatalogSharedInformers.ServiceInstances(),
 		serviceCatalogSharedInformers.ServiceBindings(),
 		serviceCatalogSharedInformers.ClusterServicePlans(),
+		serviceCatalogSharedInformers.ServicePlans(),
 		osbclientproxy.NewClient,
 		s.ServiceBrokerRelistInterval,
 		s.OSBAPIPreferredVersion,
 		recorder,
 		s.ReconciliationRetryDuration,
 		s.OperationPollingMaximumBackoffDuration,
+		s.ClusterIDConfigMapName,
+		s.ClusterIDConfigMapNamespace,
 	)
 	if err != nil {
 		return err
 	}
 
-	glog.V(5).Info("Running controller")
-	go serviceCatalogController.Run(s.ConcurrentSyncs, stop)
-
 	glog.V(1).Info("Starting shared informers")
 	informerFactory.Start(stop)
+
+	glog.V(5).Info("Waiting for caches to sync")
+	informerFactory.WaitForCacheSync(stop)
+
+	glog.V(5).Info("Running controller")
+	go serviceCatalogController.Run(s.ConcurrentSyncs, stop)
 
 	select {}
 }
