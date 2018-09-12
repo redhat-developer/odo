@@ -1383,8 +1383,41 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 		})
 
 	if err != nil {
-		return errors.Wrap(err, "unable to create service instance")
+		return errors.Wrapf(err, "unable to create the service instance %s for the service type %s and plan %s", componentName, componentType, servicePlan)
 	}
+
+	// Create the secret containing the parameters of the plan selected.
+	err = c.CreateSecret(c.namespace, componentName, parameters)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create the secret %s for the service instance", componentName)
+	}
+
+	return nil
+}
+
+// Create a secret within the namespace of the service instance created using the service's parameters.
+func (c *Client) CreateSecret(namespace string, componentName string, params interface{}) error {
+
+	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
+		&scv1beta1.ServiceBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      componentName,
+				Namespace: namespace,
+			},
+			Spec: scv1beta1.ServiceBindingSpec{
+				//ExternalID: UUID,
+				ServiceInstanceRef: scv1beta1.LocalObjectReference{
+					Name: componentName,
+				},
+				SecretName: componentName,
+				Parameters: util.BuildParameters(params),
+			},
+		})
+
+	if err != nil {
+		return errors.Wrap(err, "Creation of the secret failed")
+	}
+
 	return nil
 }
 
