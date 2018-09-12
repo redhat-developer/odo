@@ -49,10 +49,6 @@ var _ = BeforeSuite(func() {
 	curProj = runCmd("oc project -q")
 })
 
-var _ = AfterSuite(func() {
-	runCmd("oc projects")
-})
-
 var _ = Describe("odoe2e", func() {
 	var t = strconv.FormatInt(time.Now().Unix(), 10)
 	var projName = fmt.Sprintf("odo-%s", t)
@@ -924,7 +920,6 @@ var _ = Describe("updateE2e", func() {
 			EnvVarTest("wildfly-"+appTestName, "binary", "keyvaluekey1value1")
 		})
 	})
-
 	Context("odo login", func() {
 		It("should login with username and password", func() {
 			runCmd("oc logout")
@@ -939,6 +934,17 @@ var _ = Describe("updateE2e", func() {
 			token := runCmd("oc whoami -t")
 			Expect(token).To(ContainSubstring(userToken))
 		})
-
+	})
+	Context("logout of the cluster", func() {
+		// test for odo logout
+		It("should logout the user from the cluster", func() {
+			logoutMsg := runCmd("odo logout")
+			Expect(logoutMsg).To(ContainSubstring("Logged"))
+			Expect(logoutMsg).To(ContainSubstring("out on"))
+		})
+		It("should throw error if user is not logged in", func() {
+			logoutMsg := runFailCmd("odo logout")
+			Expect(logoutMsg).To(Equal("Please log in to the cluster\n"))
+		})
 	})
 })
