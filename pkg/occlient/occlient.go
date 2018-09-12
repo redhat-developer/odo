@@ -478,6 +478,15 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 	return imageStream, nil
 }
 
+// GetSecrets returns the Secret object in the given namespace
+func (c *Client) GetSecret(namespace, name string) (*corev1.Secret, error) {
+	secret, err := c.kubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
+	}
+	return secret, nil
+}
+
 // GetExposedPorts retruns image namespace and list of ContainerPorts that are exposed by given image
 func (c *Client) GetExposedPorts(imageStream *imagev1.ImageStream, imageTag string) ([]corev1.ContainerPort, error) {
 	var containerPorts []corev1.ContainerPort
@@ -1417,6 +1426,34 @@ func (c *Client) CreateSecret(namespace string, componentName string, params int
 	if err != nil {
 		return errors.Wrap(err, "Creation of the secret failed")
 	}
+
+	return nil
+}
+
+// Link a secret to the DeploymentConfig of a component
+func (c *Client) LinkSecret(projectName, secretName, name string) error {
+	dc, err := c.appsClient.DeploymentConfigs(projectName).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "DeploymentConfig does not exist : %s", name)
+	}
+
+	// Add the Secret as EnvVar to the container
+	dc.Spec.Template.Spec.Containers[0].EnvFrom = []corev1.EnvFromSource{
+		{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+			},
+		},
+	}
+
+	// Update the DeploymentConfig
+	_, errUpdate := c.appsClient.DeploymentConfigs(projectName).Update(dc)
+	if errUpdate != nil {
+		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
+	}
+
+	// Update the DeploymentConfig
+	// TODO - Add logic to restart the DC
 
 	return nil
 }

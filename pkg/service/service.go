@@ -137,3 +137,27 @@ func SvcExists(client *occlient.Client, serviceName, applicationName, projectNam
 	}
 	return false, nil
 }
+
+// LinkSecret retrieves the secret of a service's instance and next add it to the DeploymentConfig of the component
+// as an EnvFrom. The parameters of the secret will then become available within the pod's as ENV variables
+// and by consequence the component will be able to consume them in order to by example configure a DataSource
+// to access a Database
+func LinkSecret(client *occlient.Client, projectName, secretName, applicationName string) error {
+
+	err := client.LinkSecret(projectName, secretName, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to link the secret to the component")
+	}
+	return nil
+}
+
+// GetSecrets checks whether a secret with the given name exists in the current namespace
+// The first returned parameter is a bool indicating if a secret with the given name already exists or not
+// The second returned parameter is the error that might occurs while execution
+func SecretExists(client *occlient.Client, secretName, namespace string) (bool, error) {
+	secret, err := client.GetSecret(namespace, secretName)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to get the secret %s", secret)
+	}
+	return true, nil
+}
