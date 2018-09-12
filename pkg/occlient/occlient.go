@@ -1431,10 +1431,10 @@ func (c *Client) CreateSecret(namespace string, componentName string, params int
 }
 
 // Link a secret to the DeploymentConfig of a component
-func (c *Client) LinkSecret(projectName, secretName, name string) error {
-	dc, err := c.appsClient.DeploymentConfigs(projectName).Get(name, metav1.GetOptions{})
+func (c *Client) LinkSecret(projectName, secretName, applicationName string) error {
+	dc, err := c.appsClient.DeploymentConfigs(projectName).Get(applicationName, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "DeploymentConfig does not exist : %s", name)
+		return errors.Wrapf(err, "DeploymentConfig does not exist : %s", applicationName)
 	}
 
 	// Add the Secret as EnvVar to the container
@@ -1452,8 +1452,18 @@ func (c *Client) LinkSecret(projectName, secretName, name string) error {
 		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
 	}
 
-	// Update the DeploymentConfig
-	// TODO - Add logic to restart the DC
+	// Create a request that we will pass to the Deployment Config in order to trigger a new deployment
+	request := &appsv1.DeploymentRequest{
+		Name:   applicationName,
+		Latest: true,
+		Force:  true,
+	}
+
+	// Redeploy the DeploymentConfig of the application
+	_, err = c.appsClient.DeploymentConfigs(projectName).Instantiate(applicationName, request)
+	if err != nil {
+		return errors.Wrapf(err, "Redeployment of the DeploymentConfig failed %s", applicationName)
+	}
 
 	return nil
 }
