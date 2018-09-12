@@ -51,15 +51,15 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         delete --force : Delete the given application
         describe : Describe the given application
         get --short : Get the active application
-        list : Lists all the applications
+        list : List all applications in the current project
         set : Set application as active
     catalog : Catalog related operations
         list : List all available component & service types.
-            components : List all available component types.
-            services : Lists all the services from service catalog
+            components : List all components available.
+            services : Lists all available services
         search : Search available component & service types.
-            components : Search component type in catalog
-            services : Search service type in catalog
+            component : Search component type in catalog
+            service : Search service type in catalog
     component --short : Components of application.
         get --short : Get currently active component
         set : Set active component.
@@ -71,6 +71,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
     log --follow : Retrieve the log for the given component.
     project --short : Perform project operations
         create : Create a new project
+        delete --force : Delete a project
         get --short : Get the active project
         list : List all the projects
         set --short : Set the current active project
@@ -90,8 +91,11 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         create --application --component --port : Create a URL for a component
         delete --component --force : Delete a URL
         list --application --component : List URLs
-    utils : Utilities for completion and terminal commands
+    utils : Utilities for completion, terminal commands and modifying Odo configurations
         completion : Output shell completion code
+        config : Modifies configuration settings
+            set : Set a value in odo config file
+            view : View current configuration values
         terminal : Add Odo terminal support to your development environment
     version : Print the client version information
     watch : Watch for changes, update component on change

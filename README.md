@@ -40,20 +40,20 @@ curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | 
 
 ```sh
 # Binary installation
-sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.10/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.11/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
 
 # Alternative, compressed tarball installation
-sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.10/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.11/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ```
 
 #### Linux
 
 ```sh
 # Binary installation
-sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.10/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.11/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
 
 # Alternative, compressed tarball installation
-sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.10/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.11/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ```
 
 #### Windows
@@ -120,21 +120,21 @@ Multiple component types are currently supported, like nodejs, perl, php, python
 
 ## CLI Structure
 ```sh
-odo --verbose : Odo (Openshift Do)
+odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : Odo (Openshift Do)
     app --short : Perform application operations
         create : Create an application
         delete --force : Delete the given application
         describe : Describe the given application
         get --short : Get the active application
-        list : Lists all the applications
+        list : List all applications in the current project
         set : Set application as active
     catalog : Catalog related operations
         list : List all available component & service types.
-            components : List all available component types.
-            services : Lists all the services from service catalog
+            components : List all components available.
+            services : Lists all available services
         search : Search available component & service types.
-            components : Search component type in catalog
-            services : Search service type in catalog
+            component : Search component type in catalog
+            service : Search service type in catalog
     component --short : Components of application.
         get --short : Get currently active component
         set : Set active component.
@@ -146,6 +146,7 @@ odo --verbose : Odo (Openshift Do)
     log --follow : Retrieve the log for the given component.
     project --short : Perform project operations
         create : Create a new project
+        delete --force : Delete a project
         get --short : Get the active project
         list : List all the projects
         set --short : Set the current active project
