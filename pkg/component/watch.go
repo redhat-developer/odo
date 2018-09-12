@@ -55,8 +55,8 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 		ignore := false
 		for _, pattern := range ignores {
 			// Don't watch:
-			// 	1. The main src directory as its files and sub-directories will already be watched
-			//	2. Anything in ignores
+			// 	1. The main src directory, as its files and sub-directories will already be watched
+			//	2. Anything it ignores
 			if matched, _ := regexp.MatchString(pattern, v); matched || v == path {
 				ignore = true
 				break
