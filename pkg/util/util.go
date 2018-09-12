@@ -1,8 +1,10 @@
 package util
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
 	"math/rand"
 	"net/url"
 	"strings"
@@ -121,4 +123,29 @@ func GenFileUrl(location string, os string) string {
 		urlPath = "/" + strings.Replace(location, "\\", "/", -1)
 	}
 	return "file://" + urlPath
+}
+
+// Convert String Array of Parameters to a Map[String]string
+func ParametersAsMap(params []string) map[string]string {
+	result := make(map[string]string, len(params))
+	for _, param := range params {
+		str := strings.Split(param, "=")
+		//fmt.Printf("Key : %s, val : %s \n",str[0],str[1])
+		result[str[0]] = str[1]
+	}
+
+	return result
+}
+
+// BuildParameters converts a map of variable assignments to a byte encoded json document,
+// which is what the ServiceCatalog API consumes.
+func BuildParameters(params interface{}) *runtime.RawExtension {
+	paramsJSON, err := json.Marshal(params)
+	if err != nil {
+		// This should never be hit because marshalling a map[string]string is pretty safe
+		// I'd rather throw a panic then force handling of an error that I don't think is possible.
+		panic(fmt.Errorf("unable to marshal the request parameters %v (%s)", params, err))
+	}
+
+	return &runtime.RawExtension{Raw: paramsJSON}
 }

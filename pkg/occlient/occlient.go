@@ -1360,7 +1360,7 @@ func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, er
 }
 
 // CreateServiceInstance creates service instance from service catalog
-func (c *Client) CreateServiceInstance(componentName string, componentType string, labels map[string]string) error {
+func (c *Client) CreateServiceInstance(componentName string, componentType string, servicePlan string, parameters interface{}, labels map[string]string) error {
 	// Creating Service Instance
 	_, err := c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
 		&scv1beta1.ServiceInstance{
@@ -1369,17 +1369,17 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 				APIVersion: "servicecatalog.k8s.io/v1beta1",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Finalizers: []string{"kubernetes-incubator/service-catalog"},
-				Name:       componentName,
-				Namespace:  c.namespace,
-				Labels:     labels,
+				Name:      componentName,
+				Namespace: c.namespace,
+				Labels:    labels,
 			},
 			Spec: scv1beta1.ServiceInstanceSpec{
 				PlanReference: scv1beta1.PlanReference{
 					ClusterServiceClassExternalName: componentType,
+					ClusterServicePlanExternalName:  servicePlan,
 				},
+				Parameters: util.BuildParameters(parameters),
 			},
-			Status: scv1beta1.ServiceInstanceStatus{},
 		})
 
 	if err != nil {

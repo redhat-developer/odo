@@ -55,11 +55,12 @@ func Search(client *occlient.Client, name string) ([]occlient.Service, error) {
 }
 
 // CreateService creates new service from serviceCatalog
-func CreateService(client *occlient.Client, serviceName string, serviceType string, applicationName string) error {
+func CreateService(client *occlient.Client, serviceName string, serviceType string, servicePlan string, parameters []string, applicationName string) error {
 	labels := componentlabels.GetLabels(serviceName, applicationName, true)
 	// save service type as label
 	labels[componentlabels.ComponentTypeLabel] = serviceType
-	err := client.CreateServiceInstance(serviceName, serviceType, labels)
+	mapOfParameters := util.ParametersAsMap(parameters)
+	err := client.CreateServiceInstance(serviceName, serviceType, servicePlan, mapOfParameters, labels)
 	if err != nil {
 		return errors.Wrap(err, "unable to create service instance")
 
