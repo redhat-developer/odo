@@ -169,7 +169,7 @@ var applicationListCmd = &cobra.Command{
 			}
 			tabWriter.Flush()
 		} else {
-			fmt.Printf("There are no applications deployed in the project '%v'.", projectName)
+			fmt.Printf("There are no applications deployed in the project '%v'.\n", projectName)
 		}
 	},
 }

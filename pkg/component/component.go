@@ -146,15 +146,19 @@ func Delete(client *occlient.Client, name string, applicationName string, projec
 		return errors.Wrapf(err, "error deleting component %s", name)
 	}
 
-	// Get a list of all active components
+	// Get a list of all components
 	components, err := List(client, applicationName, projectName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to retrieve list of components")
 	}
 
-	// We will *only* set a new component if either len(components) is zero, or the
-	// current component matches the one being deleted.
-	if current := cfg.GetActiveComponent(applicationName, projectName); current == name || len(components) == 0 {
+	// First check is that we want to only update the active component if the component which is getting deleted is the
+	// active component
+	// Second check is that we want to do updation only if it is happening for the active application otherwise we need
+	// not to care for the updation of the active component
+	activeComponent := cfg.GetActiveComponent(applicationName, projectName)
+	activeApplication := cfg.GetActiveApplication(projectName)
+	if activeComponent == name && activeApplication == applicationName {
 
 		// If there's more than one component, set it to the first one..
 		if len(components) > 0 {
@@ -165,7 +169,7 @@ func Delete(client *occlient.Client, name string, applicationName string, projec
 			}
 		} else {
 			// Unset to blank
-			err = cfg.UnsetActiveComponent(applicationName, projectName)
+			err = cfg.UnsetActiveComponent(projectName)
 			if err != nil {
 				return errors.Wrapf(err, "error unsetting current component while deleting %s", name)
 			}

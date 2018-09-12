@@ -134,19 +134,21 @@ var _ = Describe("odoe2e", func() {
 	})
 
 	Context("should list applications in other project", func() {
+		newProjName := strings.Replace(projName, "odo", "odo2", -1)
 		It("should create a new project", func() {
-			session := runCmd("odo project create " + projName + "-2")
-			Expect(session).To(ContainSubstring(projName + "-2"))
+			session := runCmd("odo project create " + newProjName)
+			Expect(session).To(ContainSubstring(newProjName))
 		})
 
 		It("should get the project", func() {
 			getProj := runCmd("odo project get --short")
-			Expect(strings.TrimSpace(getProj)).To(Equal(projName + "-2"))
+			Expect(strings.TrimSpace(getProj)).To(Equal(newProjName))
 		})
 
 		It("should show nice message when there is no application in project", func() {
 			appNames := runCmd("odo app list")
-			Expect(strings.TrimSpace(appNames)).To(Equal("There are no applications deployed in the project '" + projName + "-2'."))
+			Expect(strings.TrimSpace(appNames)).To(
+				Equal("There are no applications deployed in the project '" + newProjName + "'."))
 		})
 
 		It("should be able to list applications in other project", func() {
@@ -157,6 +159,11 @@ var _ = Describe("odoe2e", func() {
 		It("should set the other project as active", func() {
 			setProj := runCmd("odo project set --short " + projName)
 			Expect(strings.TrimSpace(setProj)).To(Equal(projName))
+		})
+
+		It("should be able to set an application as current", func() {
+			appName := runCmd("odo app set " + appTestName)
+			Expect(appName).To(ContainSubstring(appTestName))
 		})
 	})
 

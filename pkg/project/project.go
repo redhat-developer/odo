@@ -2,8 +2,8 @@ package project
 
 import (
 	"github.com/golang/glog"
-
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
@@ -21,7 +21,22 @@ func GetCurrent(client *occlient.Client) string {
 }
 
 func SetCurrent(client *occlient.Client, project string) error {
-	err := client.SetCurrentProject(project)
+	currentProject := GetCurrent(client)
+
+	cfg, err := config.New()
+	if err != nil {
+		return errors.Wrap(err, "unable to access config file")
+	}
+	err = cfg.UnsetActiveApplication(currentProject)
+	if err != nil {
+		return errors.Wrap(err, "unable to unset active application of current project "+project)
+	}
+	err = cfg.UnsetActiveComponent(currentProject)
+	if err != nil {
+		return errors.Wrap(err, "unable to unset active component of current project "+project)
+	}
+
+	err = client.SetCurrentProject(project)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current project to"+project)
 	}

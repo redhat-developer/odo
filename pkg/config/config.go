@@ -179,23 +179,16 @@ func (c *ConfigInfo) SetActiveComponent(component string, application string, pr
 	return nil
 }
 
-// Sets the active component as blank in the configuration file
-func (c *ConfigInfo) UnsetActiveComponent(application string, project string) error {
-
-	found := false
-
-	if c.ActiveApplications != nil {
-		for i, app := range c.ActiveApplications {
-			if app.Project == project && app.Name == application {
-				c.ActiveApplications[i].ActiveComponent = ""
-				found = true
-				break
-			}
-		}
+// Sets the active component as blank of the given project in the configuration file
+func (c *ConfigInfo) UnsetActiveComponent(project string) error {
+	if c.ActiveApplications == nil {
+		c.ActiveApplications = []ApplicationInfo{}
 	}
 
-	if !found {
-		return errors.Errorf("unable to find project %s / application %s in configuration file", project, application)
+	for i, app := range c.ActiveApplications {
+		if app.Project == project && c.ActiveApplications[i].ActiveComponent != "" {
+			c.ActiveApplications[i].ActiveComponent = ""
+		}
 	}
 
 	// Write the configuration to file
@@ -205,6 +198,25 @@ func (c *ConfigInfo) UnsetActiveComponent(application string, project string) er
 	}
 	return nil
 
+}
+
+// Sets the active application as blank of the given project in the configuration file
+func (c *ConfigInfo) UnsetActiveApplication(project string) error {
+	if c.ActiveApplications == nil {
+		c.ActiveApplications = []ApplicationInfo{}
+	}
+
+	for i, cfgApp := range c.ActiveApplications {
+		if cfgApp.Project == project && c.ActiveApplications[i].Active {
+			c.ActiveApplications[i].Active = false
+		}
+	}
+
+	err := c.writeToFile()
+	if err != nil {
+		return errors.Wrap(err, "unable to write configuration file")
+	}
+	return nil
 }
 
 // GetActiveComponent if no component is set as current returns empty string
