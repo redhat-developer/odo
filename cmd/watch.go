@@ -15,6 +15,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	ignores []string
+	delay   int
+)
+
 var watchCmd = &cobra.Command{
 	Use:   "watch [component name]",
 	Short: "Watch for changes, update component on change",
@@ -65,12 +70,16 @@ var watchCmd = &cobra.Command{
 		}
 		watchPath := util.ReadFilePath(u, runtime.GOOS)
 
-		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout)
+		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout, ignores, delay)
 		checkError(err, "Error while trying to watch %s", watchPath)
 	},
 }
 
 func init() {
+	// ignore git as it can change even if no source file changed
+	// for example some plugins providing git info in PS1 doing that
+	watchCmd.Flags().StringSliceVar(&ignores, "ignores", []string{".*\\.git.*"}, "Files and/or folders to be recursively ignored for watch")
+	watchCmd.Flags().IntVar(&delay, "delay", 1, "Time in seconds between a detection of a diff in component source to the push of diff. delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	// Add a defined annotation in order to appear in the help menu
 	watchCmd.Annotations = map[string]string{"command": "component"}
 	watchCmd.SetUsageTemplate(cmdUsageTemplate)

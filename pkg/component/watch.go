@@ -16,6 +16,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+func isIgnore(path string, patterns []string) bool {
+	for _, pattern := range patterns {
+		if matched, _ := regexp.MatchString(pattern, path); matched {
+			return true
+		}
+	}
+	return false
+}
+
+func stringinSlice(str string, strSlice []string) bool {
+	for _, ele := range strSlice {
+		if ele == str {
+			return true
+		}
+	}
+	return false
+}
+
 // addRecursiveWatch handles adding watches recursively for the path provided
 // and its subdirectories.  If a non-directory is specified, this call is a no-op.
 // Files matching glob pattern defined in ignores will be ignored.
@@ -46,6 +64,12 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 		}
 
 		if info.IsDir() {
+			// If the current directory matches any of the to ignore patterns, ignore them so that their contents are also not looked at
+			if isIgnore(newPath, ignores) {
+				glog.V(4).Infof("ignoring watch on path %s", newPath)
+				return filepath.SkipDir
+			}
+			// Append the folder we just walked on
 			folders = append(folders, newPath)
 		}
 		return nil
@@ -78,15 +102,8 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 // WatchAndPush watches path, if something changes in  that path it calls PushLocal
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
-func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer) error {
-	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s", path, componentName)
-
-	// it might be better to expose this as argument in the future
-	ignores := []string{
-		// ignore git as it can change even if no source file changed
-		// for example some plugins providing git info in PS1 doing that
-		".*\\.git.*",
-	}
+func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int) error {
+	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, ignores)
 
 	// these variables must be accessed while holding the changeLock
 	// mutex as they are shared between goroutines to communicate
@@ -120,7 +137,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 						break
 					}
 				}
-				if !alreadyInChangedFiles {
+				if !alreadyInChangedFiles && !isIgnore(event.Name, ignores) {
 					changedFiles = append(changedFiles, event.Name)
 				}
 
@@ -148,7 +165,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 		return fmt.Errorf("error watching source path %s: %v", path, err)
 	}
 
-	delay := 1 * time.Second
+	delay := time.Duration(delayInterval) * time.Second
 	ticker := time.NewTicker(delay)
 	showWaitingMessage := true
 	defer ticker.Stop()
