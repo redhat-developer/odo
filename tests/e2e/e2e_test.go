@@ -548,7 +548,7 @@ var _ = Describe("odoe2e", func() {
 			cmpList := runCmd("odo list")
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
 
-			runCmd("odo project delete " + projName)
+			runCmd("odo project delete " + projName + " -f")
 			waitForDeleteCmd("odo project list", projName)
 		})
 	})

@@ -301,7 +301,7 @@ func (c *Client) CreateNewProject(name string) error {
 	return nil
 }
 
-func (c *Client) SetCurrentProject(project string) error {
+var SetCurrentProject = func(project string, c *Client) error {
 	rawConfig, err := c.kubeConfig.RawConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to switch to %s project", project)

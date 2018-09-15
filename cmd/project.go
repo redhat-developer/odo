@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -124,7 +125,7 @@ var projectDeleteCmd = &cobra.Command{
 		isValidProject, err := project.Exists(client, projectName)
 		checkError(err, "Failed to delete project %s", projectName)
 		if !isValidProject {
-			fmt.Printf("The project %s does not exist. Please check the list of projects using `odo project list`", projectName)
+			fmt.Printf("The project %s does not exist. Please check the list of projects using `odo project list`\n", projectName)
 			os.Exit(1)
 		}
 
@@ -145,6 +146,21 @@ var projectDeleteCmd = &cobra.Command{
 			checkError(err, "")
 		}
 		fmt.Printf("Deleted project : %v\n", projectName)
+
+		// Wait for the delete operation to reflect in the projects list
+		time.Sleep(9 * time.Second)
+
+		// Get Current Project
+		currProject := project.GetCurrent(client)
+
+		// Check if List returns empty, if so, the currProject is showing old currentProject
+		// In openshift, when the project is deleted, it does not reset the current project in kube config file which is used by odo for current project
+		projects, err := project.List(client)
+		checkError(err, "")
+		if len(projects) != 0 {
+			fmt.Printf("%s has been set as active project\n", currProject)
+		}
+
 	},
 }
 
@@ -160,6 +176,10 @@ var projectListCmd = &cobra.Command{
 		client := getOcClient()
 		projects, err := project.List(client)
 		checkError(err, "")
+		if len(projects) == 0 {
+			fmt.Println("You are not a member of any projects. You can request a project to be created with the `odo project create <project_name>` command")
+			return
+		}
 		fmt.Printf("ACTIVE   NAME\n")
 		for _, app := range projects {
 			activeMark := " "

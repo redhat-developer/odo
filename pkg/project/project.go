@@ -36,7 +36,7 @@ func SetCurrent(client *occlient.Client, project string) error {
 		return errors.Wrap(err, "unable to unset active component of current project "+project)
 	}
 
-	err = client.SetCurrentProject(project)
+	err = occlient.SetCurrentProject(project, client)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current project to"+project)
 	}
@@ -67,15 +67,6 @@ func Delete(client *occlient.Client, projectName string) error {
 		}
 	}
 
-	// If there will be any projects post the current deletion,
-	// Choose the first project from remainder of the project list to set as current
-	if len(projects) > 0 {
-		currentProject = projects[0].Name
-	} else {
-		// Set the current project to empty string
-		currentProject = ""
-	}
-
 	// If current project is not same as the project to be deleted, set it as current
 	if currentProject != projectName {
 		// Set the project to be deleted as current inorder to be able to delete it
@@ -89,6 +80,16 @@ func Delete(client *occlient.Client, projectName string) error {
 	err = client.DeleteProject(projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to delete project")
+	}
+
+	SetCurrent(client, "")
+	// If there will be any projects post the current deletion,
+	// Choose the first project from remainder of the project list to set as current
+	if len(projects) > 0 {
+		currentProject = projects[0].Name
+	} else {
+		// Set the current project to empty string
+		currentProject = ""
 	}
 
 	// If current project is not empty string, set currentProject as current project

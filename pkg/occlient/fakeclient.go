@@ -53,5 +53,7 @@ func FakeNew() (*Client, *FakeClientset) {
 	fkclientset.ServiceCatalogClientSet = fakeServiceCatalogClientSet.NewSimpleClientset()
 	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.Servicecatalog()
 
+	client.namespace = "testing"
+
 	return &client, &fkclientset
 }

@@ -1,9 +1,8 @@
 package project
 
 // ToDo(@anmolbabu) uncomment tests when we have a nicer and cleaner way to stub occlient.go#ModifyConfig
-/*
+
 import (
-	"reflect"
 	"testing"
 
 	"github.com/redhat-developer/odo/pkg/occlient"
@@ -11,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
-
 
 func TestDelete(t *testing.T) {
 	tests := []struct {
@@ -25,9 +23,9 @@ func TestDelete(t *testing.T) {
 			projectName: "prj2",
 		},
 		{
-			name:        "Test only project delete",
+			name:        "Test delete the only remaining project",
 			wantErr:     false,
-			projectName: "prj1",
+			projectName: "testing",
 		},
 	}
 
@@ -36,8 +34,14 @@ func TestDelete(t *testing.T) {
 
 			// Fake the client with the appropriate arguments
 			client, fakeClientSet := occlient.FakeNew()
+			occlient.SetCurrentProject = func(project string, c *occlient.Client) error {
+				return nil
+			}
 
 			fakeClientSet.ProjClientset.PrependReactor("list", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.name == "Test delete the only remaining project" {
+					return true, testingutil.FakeOnlyOneExistingProjects(), nil
+				}
 				return true, testingutil.FakeProjects(), nil
 			})
 
@@ -55,4 +59,3 @@ func TestDelete(t *testing.T) {
 		})
 	}
 }
-*/
