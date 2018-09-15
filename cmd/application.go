@@ -9,7 +9,9 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +20,8 @@ var (
 	applicationForceDeleteFlag bool
 	projectName                string
 )
+
+var defaultAppPrefix = "app"
 
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
@@ -50,14 +54,37 @@ var applicationCreateCmd = &cobra.Command{
 	Example: `  # Create an application
   odo app create myapp
 	`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Args validation makes sure that there is exactly one argument
-		name := args[0]
+		var name string
+		client := getOcClient()
+		if len(args) == 1 {
+			// The only arg passed is the app name
+			name = args[0]
+		} else {
+			// Desired app name is not passed so, generate a new app name
+			// Fetch existing list of apps
+			apps, err := application.List(client)
+			checkError(err, "")
+			appNames := []string{}
+			// Collect the names of existing apps to avoid generated name being already used
+			for _, app := range apps {
+				appNames = append(appNames, app.Name)
+			}
+
+			// Get the desired app name prefix from odo config
+			cfg, err := config.New()
+			// If there's no prefix in config file, use safe default
+			if cfg.OdoSettings.Prefix == nil {
+				cfg.OdoSettings.Prefix = &defaultAppPrefix
+			}
+
+			// Generate a random name that's not already in use for the existing apps
+			name = util.GetRandomName(*cfg.OdoSettings.Prefix, appNames, "")
+		}
 		// validate application name
 		err := validateName(name)
 		checkError(err, "")
-		client := getOcClient()
 		fmt.Printf("Creating application: %v\n", name)
 		err = application.Create(client, name)
 		checkError(err, "")

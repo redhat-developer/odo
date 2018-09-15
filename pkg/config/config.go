@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strconv"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -19,7 +20,8 @@ const (
 // OdoSettings holds all odo specific configurations
 type OdoSettings struct {
 	// Controls if an update notification is shown or not
-	UpdateNotification *bool `json:"updatenotification,omitempty"`
+	UpdateNotification *bool   `json:"updatenotification,omitempty"`
+	Prefix             *string `json:"prefix,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -131,10 +133,16 @@ func (c *ConfigInfo) writeToFile() error {
 
 // SetConfiguration modifies Odo configurations in the config file
 // as of now only being used for updatenotification
-func (c *ConfigInfo) SetConfiguration(parameter string, value bool) error {
+func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 	switch parameter {
 	case "updatenotification":
-		c.OdoSettings.UpdateNotification = &value
+		val, err := strconv.ParseBool(value)
+		if err != nil {
+			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+		}
+		c.OdoSettings.UpdateNotification = &val
+	case "prefix":
+		c.OdoSettings.Prefix = &value
 	default:
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}

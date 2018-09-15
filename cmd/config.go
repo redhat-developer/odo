@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -64,11 +63,7 @@ UpdateNotification - Controls if an update notification is shown or not (true or
 		if err != nil {
 			return errors.Wrapf(err, "unable to set configuration")
 		}
-		value, err := strconv.ParseBool(args[1])
-		if err != nil {
-			return errors.Wrapf(err, "unable to set configuration")
-		}
-		return cfg.SetConfiguration(strings.ToLower(args[0]), value)
+		return cfg.SetConfiguration(strings.ToLower(args[0]), args[1])
 	},
 }
 

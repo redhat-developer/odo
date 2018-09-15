@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -972,7 +973,7 @@ func TestSetConfiguration(t *testing.T) {
 			}
 			cfg.Config = tt.existingConfig
 
-			cfg.SetConfiguration(tt.parameter, tt.want)
+			cfg.SetConfiguration(tt.parameter, strconv.FormatBool(tt.want))
 
 			// validating the value after executing Serconfiguration
 			if *cfg.OdoSettings.UpdateNotification != tt.want {
