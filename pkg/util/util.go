@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	randomdata "github.com/Pallinder/go-randomdata"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -44,6 +46,71 @@ func GenerateRandomString(n int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(b)
+}
+
+// StringInSlice returns if a passed string exists in the passed slice of strings
+func StringInSlice(checkStr string, strSlice []string) bool {
+	// Iterate the slice
+	for _, ele := range strSlice {
+		// if current element is same as element to search(checkStr), return true indicating checkStr found
+		if ele == checkStr {
+			return true
+		}
+	}
+	// Exited loop without finding required element(checkStr) in slice, so return false indicating checkStr not found in slice
+	return false
+}
+
+// GetRandomName returns a randomly generated name which can be used for naming odo and/or openshift entities
+// prefix: Desired prefix part of the name
+// existList: List to verify that the returned name does not already exist
+// preferredSuffix: Optional suffix if passed, will be checked if prefix-suffix does not exist in existList if not, will add an additional timestamp to make name unique
+// Returns randomname is prefix-suffix, if suffix is passed else generated. Aditionally, if the prefix-suffix is used, it'll be appended with additional 4 char string to take the form prefix-suffix-{a-z A-z}4+
+func GetRandomName(prefix string, existList []string, preferredSuffix string) string {
+	if preferredSuffix == "" {
+		// Generate suffix if not passed, using random country names generated from Pallinder/go-randomdata as suffix
+		preferredSuffix = strings.Replace(
+			strings.Replace(strings.Replace(
+				strings.Replace(
+					strings.Replace(
+						strings.ToLower(randomdata.Country(randomdata.FullCountry)),
+						" ",
+						"-",
+						-1,
+					),
+					".",
+					"-",
+					-1,
+				),
+				",",
+				"-",
+				-1,
+			),
+				"(",
+				"-",
+				-1,
+			),
+			")",
+			"-",
+			-1,
+		)
+	}
+	// name is prefix-suffix
+	name := fmt.Sprintf("%s-%s", prefix, preferredSuffix)
+	// check if generated name is already used in the existList
+	if StringInSlice(name, existList) {
+		prevName := name
+		// keep generating names until generated name is not unique. So, loop terminates when name is unique and hence for condition is false
+		for StringInSlice(prevName, existList) {
+			prevName = name
+			// Attempt unique name generation from prefix-suffix by concatenating prefix-suffix withrandom string of length 4
+			prevName = fmt.Sprintf("%s-%s", prevName, GenerateRandomString(4))
+		}
+		// If found to be unique, set name as generated name
+		name = prevName
+	}
+	// return name
+	return name
 }
 
 // Hyphenate applicationName and componentName
