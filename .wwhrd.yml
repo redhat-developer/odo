@@ -1,0 +1,14 @@
+---
+blacklist:
+  - GPL-2.0
+
+whitelist:
+  - Apache-2.0
+  - MIT
+  - NewBSD
+  - FreeBSD
+  - ISC
+
+exceptions:
+  - github.com/davecgh/go-spew/spew/...
+  - github.com/olekukonko/tablewriter

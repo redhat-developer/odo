@@ -16,7 +16,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-vendor vet #lint
+validate: gofmt check-vendor vet validate-vendor-licenses #lint
 
 .PHONY: gofmt
 gofmt:
@@ -26,6 +26,10 @@ gofmt:
 check-vendor:
 	./scripts/check-vendor.sh
 
+.PHONY: validate-vendor-licenses
+validate-vendor-licenses:
+	go get github.com/frapposelli/wwhrd
+	wwhrd check
 # golint errors are only recommendations
 .PHONY: lint
 lint:
