@@ -1,5 +1,11 @@
 # Development Guide
 
+- [Workflow](https://github.com/redhat-developer/odo/blob/master/docs/development.md#workflow)
+- [Unit Tests](https://github.com/redhat-developer/odo/blob/master/docs/development.md#unit-tests)
+- [Dependency Management](https://github.com/redhat-developer/odo/blob/master/docs/development.md#dependency-management)
+- [Release Guide](https://github.com/redhat-developer/odo/blob/master/docs/development.md#release-guide)
+- [Odo Bot](https://github.com/redhat-developer/odo/blob/master/docs/development.md#odo-bot)
+
 ## Workflow
 
 ### Fork the main repository
@@ -50,21 +56,51 @@ git push -f origin myfeature
 2. Click the "Compare and pull request" button next to your "myfeature" branch.
 3. Check out the pull request process for more details
 
-**Pull request description:** A PR should contain an accurate description of the feature being implemented as well as a link to an active issue (if any).
+### Requirements for a pull request
+
+A pull request should include:
+
+  - Descriptive context that outlines what has been changed and why
+  - A link to an active / open issue (if applicable)
+
+For example:
+
+  ```
+  # X feature added
+  X is a new feature that has been added to Odo to fix X issue
+  ...
+
+  X is used like so:
+  ...
+
+  Closes issue X.
+  ```
+
+Terminology we use:
+
+  - *WIP (Work in Progress):* If your PR is still in-progress, indicate this with a label or add WIP in your PR title
+
+### Reviewing a pull request
+
+What to look out for when reviewing a pull request:
+
+  - Have tests been added?
+  - Does this feature / fix work locally for me? 
+  - Am I able to understand the code correctly / have comments been added to the code?
 
 ### Test Driven Development
 
 We follow Test Driven Development(TDD) workflow in our development process. You can read more about it [here](/docs/tdd-workflow.md).
 
-### Unit tests
+## Unit Tests
 
-##### Introduction
+### Introduction
 
 Unit-tests for Odo functions are written using package [fake](https://godoc.org/k8s.io/client-go/kubernetes/fake). This allows us to create a fake client, and then mock the API calls defined under [OpenShift client-go](https://github.com/openshift/client-go) and [k8s client-go](https://godoc.org/k8s.io/client-go).
 
 The tests are written in golang using the [pkg/testing](https://golang.org/pkg/testing/) package.
 
-##### Writing unit tests
+### Writing unit tests
 
  1. Identify the APIs used by the function to be tested.
 
@@ -172,9 +208,9 @@ glide --version
 
 2. Run `glide update --strip-vendor` to update dependencies
 
-# Release guide
+## Release Guide
 
-## Making a release
+### Making a release
 
 Making artifacts for new release is automated. 
 When new git tag is created, Travis-ci deploy job automatically builds binaries and uploads it to GitHub release page.
@@ -203,8 +239,9 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 4. Verify that packages have been uploaded to rpm and deb repositories.
 5. Confirm the binaries are available in GitHub release page and update the file `build/VERSION` with latest version number.
 
-## odo-bot
-This is GitHub user that does all the automation.
+## Odo Bot
+
+[odo-bot](https://github.com/odo-bot) is the GitHub user that provides automation for certain tasks of Odo.
 
 ### Scripts using odo-bot
 
