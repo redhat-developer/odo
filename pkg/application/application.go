@@ -10,12 +10,23 @@ import (
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
-// getDefaultAppName returns application name to be used as a default name in case the user doesn't provide a name.
-// In future this function should generate name with unique suffix (app-xy1h), because there might be multiple applications.
-func getDefaultAppName() string {
-	return "app"
+// GetDefaultAppName returns randomly generated application name with unique configurable prefix suffixed by a randomly generated string which canbe used as a default name in case the user doesn't provide a name.
+func GetDefaultAppName(existingAppNames []string) (string, error) {
+	defaultAppPrefix := "app"
+	// Get the desired app name prefix from odo config
+	cfg, err := config.New()
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to generate random app name")
+	}
+	// If there's no prefix in config file, use safe default
+	if cfg.OdoSettings.Prefix == nil {
+		cfg.OdoSettings.Prefix = &defaultAppPrefix
+	}
+	appName := util.GetRandomName(*cfg.OdoSettings.Prefix, existingAppNames, "")
+	return appName, nil
 }
 
 // Create a new application
@@ -150,7 +161,11 @@ func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
 	// if no Application is active use default
 	if currentApp == "" {
 		// get default application name
-		currentApp = getDefaultAppName()
+		defaultName, err := GetDefaultAppName([]string{})
+		if err != nil {
+			return "", errors.Wrap(err, "unable to fetch/create an application to set as active")
+		}
+		currentApp = defaultName
 		// create if default application does not exist
 		exists, err := Exists(client, currentApp)
 		if err != nil {

@@ -96,7 +96,7 @@ var _ = Describe("odoe2e", func() {
 			Expect(getCmp).To(Equal("testcmp"))
 
 			getApp := runCmd("odo app get --short")
-			Expect(getApp).To(Equal("app"))
+			Expect(getApp).To(ContainSubstring("app-"))
 		})
 
 		It("should be able to delete the component", func() {

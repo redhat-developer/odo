@@ -9,9 +9,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/project"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -20,8 +18,6 @@ var (
 	applicationForceDeleteFlag bool
 	projectName                string
 )
-
-var defaultAppPrefix = "app"
 
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
@@ -72,15 +68,9 @@ var applicationCreateCmd = &cobra.Command{
 				appNames = append(appNames, app.Name)
 			}
 
-			// Get the desired app name prefix from odo config
-			cfg, err := config.New()
-			// If there's no prefix in config file, use safe default
-			if cfg.OdoSettings.Prefix == nil {
-				cfg.OdoSettings.Prefix = &defaultAppPrefix
-			}
-
 			// Generate a random name that's not already in use for the existing apps
-			name = util.GetRandomName(*cfg.OdoSettings.Prefix, appNames, "")
+			name, err = application.GetDefaultAppName(appNames)
+			checkError(err, "")
 		}
 		// validate application name
 		err := validateName(name)

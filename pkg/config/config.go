@@ -20,8 +20,9 @@ const (
 // OdoSettings holds all odo specific configurations
 type OdoSettings struct {
 	// Controls if an update notification is shown or not
-	UpdateNotification *bool   `json:"updatenotification,omitempty"`
-	Prefix             *string `json:"prefix,omitempty"`
+	UpdateNotification *bool `json:"updatenotification,omitempty"`
+	// Holds the prefix part of generated random application name
+	Prefix *string `json:"prefix,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
