@@ -1,5 +1,6 @@
 ---
 blacklist:
+  # https://www.apache.org/licenses/GPL-compatibility.html
   - GPL-2.0
 
 whitelist:
