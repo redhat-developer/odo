@@ -8,10 +8,6 @@ import (
 	"testing"
 )
 
-func TestGetOcDevConfigFile(t *testing.T) {
-	// TODO: implement this
-}
-
 func TestNew(t *testing.T) {
 
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
