@@ -79,7 +79,7 @@ func init() {
 	// ignore git as it can change even if no source file changed
 	// for example some plugins providing git info in PS1 doing that
 	watchCmd.Flags().StringSliceVar(&ignores, "ignores", []string{".*\\.git.*"}, "Files and/or folders to be recursively ignored for watch")
-	watchCmd.Flags().IntVar(&delay, "delay", 1, "Time in seconds between a detection of a diff in component source to the push of diff. delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+	watchCmd.Flags().IntVar(&delay, "delay", 1, "Time in seconds between a detection in code push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	// Add a defined annotation in order to appear in the help menu
 	watchCmd.Annotations = map[string]string{"command": "component"}
 	watchCmd.SetUsageTemplate(cmdUsageTemplate)
