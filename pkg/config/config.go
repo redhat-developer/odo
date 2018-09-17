@@ -77,7 +77,15 @@ func New() (*ConfigInfo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
-
+	// Check whether directory present or not
+	_, err = os.Stat(filepath.Dir(configFile))
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(configFile), 0755)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to create directory")
+		}
+	}
+	// Check whether config file is present or not
 	_, err = os.Stat(configFile)
 	if os.IsNotExist(err) {
 		file, err := os.Create(configFile)
