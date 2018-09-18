@@ -19,12 +19,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/redhat-developer/odo/pkg/util"
-
 	"github.com/fatih/color"
 	"github.com/golang/glog"
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
@@ -57,7 +57,6 @@ import (
 )
 
 const (
-	ocRequestTimeout   = 1 * time.Second
 	OpenShiftNameSpace = "openshift"
 
 	// The length of the string to be generated for names of resources
@@ -262,6 +261,15 @@ func isServerUp(server string) bool {
 		return false
 	}
 
+	ocRequestTimeout := config.DefaultTimeout * time.Second
+	// checking the value of timeout in config
+	// before proceeding with default timeout
+	cfg, configReadErr := config.New()
+	if configReadErr != nil {
+		glog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
+	} else {
+		ocRequestTimeout = time.Duration(cfg.GetTimeout()) * time.Second
+	}
 	glog.V(4).Infof("Trying to connect to server %v", u.Host)
 	_, connectionError := net.DialTimeout("tcp", u.Host, time.Duration(ocRequestTimeout))
 	if connectionError != nil {

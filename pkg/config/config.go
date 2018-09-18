@@ -16,6 +16,8 @@ import (
 const (
 	configEnvName  = "ODOCONFIG"
 	configFileName = "odo"
+	//DefaultTimeout for openshift server connection check
+	DefaultTimeout = 1
 )
 
 // OdoSettings holds all odo specific configurations
@@ -24,6 +26,8 @@ type OdoSettings struct {
 	UpdateNotification *bool `json:"updatenotification,omitempty"`
 	// Holds the prefix part of generated random application name
 	NamePrefix *string `json:"nameprefix,omitempty"`
+	// Timeout for openshift server connection check
+	Timeout *int `json:"timeout,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -134,20 +138,33 @@ func (c *ConfigInfo) writeToFile() error {
 }
 
 // SetConfiguration modifies Odo configurations in the config file
-// as of now only being used for updatenotification
+// as of now being used for timeout, updatenotification
 func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 	switch parameter {
+
+	case "timeout":
+		typedval, err := strconv.Atoi(value)
+		if err != nil {
+			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+		}
+		if typedval < 0 {
+			return errors.Errorf("cannot set timeout to less than 0")
+		}
+		c.OdoSettings.Timeout = &typedval
+
 	case "updatenotification":
 		val, err := strconv.ParseBool(strings.ToLower(value))
 		if err != nil {
 			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
 		}
 		c.OdoSettings.UpdateNotification = &val
+
 	case "nameprefix":
 		c.OdoSettings.NamePrefix = &value
 	default:
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}
+
 	err := c.writeToFile()
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s", parameter)
@@ -155,7 +172,16 @@ func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 	return nil
 }
 
-// GetupdateNotification returns the value of UpdateNotification from config
+// GetTimeout returns the value of Timeout from config
+func (c *ConfigInfo) GetTimeout() int {
+	// default timeout value is 1
+	if c.OdoSettings.Timeout == nil {
+		return DefaultTimeout
+	}
+	return *c.OdoSettings.Timeout
+}
+
+// GetUpdateNotification returns the value of UpdateNotification from config
 func (c *ConfigInfo) GetUpdateNotification() bool {
 	if c.OdoSettings.UpdateNotification == nil {
 		return true
