@@ -1433,6 +1433,40 @@ func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, er
 	return classList.Items, nil
 }
 
+// GetClusterServiceClass returns the required service class from the service name
+// serviceName is the name of the service
+// returns the required service class and the error
+func (c *Client) GetClusterServiceClass(serviceName string) (*scv1beta1.ClusterServiceClass, error) {
+	opts := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("spec.externalName", serviceName).String(),
+	}
+	searchResults, err := c.serviceCatalogClient.ClusterServiceClasses().List(opts)
+	if err != nil {
+		return nil, fmt.Errorf("unable to search classes by name (%s)", err)
+	}
+	if len(searchResults.Items) == 0 {
+		return nil, fmt.Errorf("class '%s' not found", serviceName)
+	}
+	if len(searchResults.Items) > 1 {
+		return nil, fmt.Errorf("more than one matching class found for '%s'", serviceName)
+	}
+	return &searchResults.Items[0], nil
+}
+
+// GetClusterPlansFromServiceName returns the plans associated with a service class
+// serviceName is the name of the service class whose plans are required
+// returns array of ClusterServicePlans or error
+func (c *Client) GetClusterPlansFromServiceName(serviceName string) ([]scv1beta1.ClusterServicePlan, error) {
+	opts := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("spec.clusterServiceClassRef.name", serviceName).String(),
+	}
+	searchResults, err := c.serviceCatalogClient.ClusterServicePlans().List(opts)
+	if err != nil {
+		return nil, fmt.Errorf("unable to search plans for service name '%s', (%s)", serviceName, err)
+	}
+	return searchResults.Items, nil
+}
+
 // CreateServiceInstance creates service instance from service catalog
 func (c *Client) CreateServiceInstance(serviceName string, serviceType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
 	serviceInstanceParameters, err := serviceInstanceParameters(parameters)

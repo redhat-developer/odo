@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 
 	"sort"
@@ -17,6 +19,23 @@ type ServiceInfo struct {
 	Name   string
 	Type   string
 	Status string
+}
+
+type ServiceClass struct {
+	Name              string
+	Bindable          bool
+	ShortDescription  string
+	LongDescription   string
+	Tags              []string
+	VersionsAvailable []string
+	ServiceBrokerName string
+}
+
+type ServicePlans struct {
+	Name        string
+	DisplayName string
+	Description string
+	Required    []string
 }
 
 // ListCatalog lists all the available service types
@@ -136,4 +155,83 @@ func SvcExists(client *occlient.Client, serviceName, applicationName, projectNam
 		}
 	}
 	return false, nil
+}
+
+// GetServiceClassAndPlans returns the service class details with the associated plans
+// serviceName is the name of the service class
+// the first parameter returned is the ServiceClass object
+// the second parameter returned is the array of ServicePlans associated with the service class
+func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (ServiceClass, []ServicePlans, error) {
+	result, err := client.GetClusterServiceClass(serviceName)
+	if err != nil {
+		return ServiceClass{}, nil, errors.Wrap(err, "unable to get the given service")
+	}
+
+	var meta map[string]interface{}
+	err = json.Unmarshal(result.Spec.ExternalMetadata.Raw, &meta)
+	if err != nil {
+		return ServiceClass{}, nil, errors.Wrap(err, "unable to unmarshal data the given service")
+	}
+
+	service := ServiceClass{
+		Name:              result.Spec.ExternalName,
+		Bindable:          result.Spec.Bindable,
+		ShortDescription:  result.Spec.Description,
+		Tags:              result.Spec.Tags,
+		ServiceBrokerName: result.Spec.ClusterServiceBrokerName,
+	}
+
+	if val, ok := meta["longDescription"]; ok {
+		service.LongDescription = val.(string)
+	}
+
+	if val, ok := meta["dependencies"]; ok {
+		versions := fmt.Sprint(val)
+		versions = strings.Replace(versions, "[", "", -1)
+		versions = strings.Replace(versions, "]", "", -1)
+		service.VersionsAvailable = strings.Split(versions, " ")
+	}
+
+	// get the plans according to the service name
+	planResults, err := client.GetClusterPlansFromServiceName(result.Name)
+	if err != nil {
+		return ServiceClass{}, nil, errors.Wrap(err, "unable to get plans for the given service")
+	}
+
+	var plans []ServicePlans
+	for _, result := range planResults {
+		plan := ServicePlans{
+			Name:        result.Spec.ExternalName,
+			Description: result.Spec.Description,
+		}
+
+		// get the display name from the external meta data
+		var externalMetaData map[string]interface{}
+		err = json.Unmarshal(result.Spec.ExternalMetadata.Raw, &externalMetaData)
+		if err != nil {
+			return ServiceClass{}, nil, errors.Wrap(err, "unable to unmarshal data the given service")
+		}
+
+		if val, ok := externalMetaData["displayName"]; ok {
+			plan.DisplayName = val.(string)
+		}
+
+		// get the create parameters
+		var createParameter map[string]interface{}
+		err = json.Unmarshal(result.Spec.ServiceInstanceCreateParameterSchema.Raw, &createParameter)
+		if err != nil {
+			return ServiceClass{}, nil, errors.Wrap(err, "unable to unmarshal data the given service")
+		}
+
+		if val, ok := createParameter["required"]; ok {
+			required := fmt.Sprint(val)
+			required = strings.Replace(required, "[", "", -1)
+			required = strings.Replace(required, "]", "", -1)
+			plan.Required = strings.Split(required, " ")
+		}
+
+		plans = append(plans, plan)
+	}
+
+	return service, plans, nil
 }
