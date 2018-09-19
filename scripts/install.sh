@@ -7,7 +7,7 @@ set -e
 OCDEV_VERSION="latest"
 
 # Latest released odo version
-LATEST_VERSION="v0.0.11"
+LATEST_VERSION="v0.0.12"
 
 GITHUB_RELEASES_URL="https://github.com/redhat-developer/odo/releases/download/${LATEST_VERSION}"
 BINTRAY_URL="https://dl.bintray.com/odo/odo/latest"
