@@ -1,12 +1,10 @@
-comment: false
+comment:
+  behavior: default
+
 
 coverage:
   status:
     project:
-      default:
-        target: auto
-        base: auto
+      default: off
     patch:
-      default:
-        target: auto
-        base: auto
+      default: off
