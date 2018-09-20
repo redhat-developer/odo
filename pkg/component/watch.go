@@ -186,7 +186,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 			if err != nil {
 				// Intentionally not exiting on error here.
 				// We don't want to break watch when push failed, it might be fixed with the next change.
-				glog.V(4).Info("Error from PushLocal: %v", err)
+				glog.V(4).Infof("Error from PushLocal: %v", err)
 			}
 			dirty = false
 			showWaitingMessage = true

@@ -34,7 +34,7 @@ func getDeploymentConfig(namespace string, componentName string, componentType s
 			Name:      fmt.Sprintf("%v-%v", componentName, applicationName),
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app": "app",
+				"app":                              "app",
 				"app.kubernetes.io/component-name": componentName,
 				"app.kubernetes.io/component-type": componentType,
 				"app.kubernetes.io/name":           applicationName,
