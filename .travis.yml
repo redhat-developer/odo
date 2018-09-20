@@ -30,7 +30,7 @@ jobs:
         # submit coverage.txt to codecov.io 
         - bash <(curl -s https://codecov.io/bash)
 
-    # Run e2e tests
+    # Run main e2e tests
     - <<: *base-test
       stage: test
       script:
@@ -38,7 +38,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer 
-        - make test-e2e
+        - make test-main-e2e
 
     # Run component e2e tests
     - <<: *base-test
