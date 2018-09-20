@@ -1816,10 +1816,8 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string) error {
 		//watchTar
 		for _, fileName := range files {
 			if checkFileExist(fileName) {
-				err := tar(tarWriter, fileName, path.Base(destPath))
-				if err != nil {
-					return err
-				}
+				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
+				return recursiveTar(path.Dir(srcPath), path.Base(srcPath), path.Dir(destPath), path.Base(destPath), tarWriter)
 
 			}
 		}

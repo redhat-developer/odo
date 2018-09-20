@@ -16,22 +16,20 @@ import (
 	"github.com/pkg/errors"
 )
 
-func isIgnore(path string, patterns []string) bool {
-	for _, pattern := range patterns {
-		if matched, _ := regexp.MatchString(pattern, path); matched {
-			return true
+// isRegExpMatch compiles strToMatch against each of the passed regExps
+// Parameters: a string strToMatch and a list of regexp patterns to match strToMatch with
+// Returns: true if there is any match else false
+func isRegExpMatch(strToMatch string, regExps []string) (bool, error) {
+	for _, regExp := range regExps {
+		matched, err := regexp.MatchString(regExp, strToMatch)
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
 		}
 	}
-	return false
-}
-
-func stringinSlice(str string, strSlice []string) bool {
-	for _, ele := range strSlice {
-		if ele == str {
-			return true
-		}
-	}
-	return false
+	return false, nil
 }
 
 // addRecursiveWatch handles adding watches recursively for the path provided
@@ -64,8 +62,12 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 		}
 
 		if info.IsDir() {
-			// If the current directory matches any of the to ignore patterns, ignore them so that their contents are also not looked at
-			if isIgnore(newPath, ignores) {
+			// If the current directory matches any of the ignore patterns, ignore them so that their contents are also not ignored
+			matched, err := isRegExpMatch(newPath, ignores)
+			if err != nil {
+				return errors.Wrapf(err, "unable to addRecursiveWatch on %s", newPath)
+			}
+			if matched {
 				glog.V(4).Infof("ignoring watch on path %s", newPath)
 				return filepath.SkipDir
 			}
@@ -129,6 +131,11 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				changeLock.Lock()
 				glog.V(4).Infof("filesystem watch event: %s", event)
 
+				stat, err := os.Lstat(event.Name)
+				if err != nil {
+					glog.V(4).Infof("Failed getting details of the changed file %s", event.Name)
+				}
+
 				// add file name to changedFiles only once
 				alreadyInChangedFiles := false
 				for _, cfile := range changedFiles {
@@ -137,8 +144,24 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 						break
 					}
 				}
-				if !alreadyInChangedFiles && !isIgnore(event.Name, ignores) {
-					changedFiles = append(changedFiles, event.Name)
+
+				// Filter out anything in ignores list from the list of changed files
+				// This is important inspite of not watching the
+				// ignores paths because, when a directory that is ignored, is deleted,
+				// because its parent is watched, the fsnotify automatically raises an event
+				// for it.
+				matched, err := isRegExpMatch(event.Name, ignores)
+				if err != nil {
+					watchError = errors.Wrap(err, "unable to watch changes")
+				}
+				if !alreadyInChangedFiles && !matched {
+					// In windows, every new file created under a sub-directory of the watched directory, raises 2 events:
+					// 1. Write event for the directory under which the file was created
+					// 2. Create event for the file that was created
+					// Ignore 1 to avoid duplicate events.
+					if !(stat.IsDir() && event.Op&fsnotify.Write == fsnotify.Write) {
+						changedFiles = append(changedFiles, event.Name)
+					}
 				}
 
 				lastChange = time.Now()
