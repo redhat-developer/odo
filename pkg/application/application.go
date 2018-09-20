@@ -92,7 +92,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 
 // Delete deletes the given application
 func Delete(client *occlient.Client, name string) error {
-	glog.V(4).Info("Deleting application %s", name)
+	glog.V(4).Infof("Deleting application %s", name)
 
 	labels := applabels.GetLabels(name, false)
 

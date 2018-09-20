@@ -256,7 +256,7 @@ func isServerUp(server string) bool {
 		return false
 	}
 
-	glog.V(4).Infof("Trying to connect to server %v - %v", u.Host)
+	glog.V(4).Infof("Trying to connect to server %v", u.Host)
 	_, connectionError := net.DialTimeout("tcp", u.Host, time.Duration(ocRequestTimeout))
 	if connectionError != nil {
 		glog.V(4).Info(errors.Wrap(connectionError, "unable to connect to server"))

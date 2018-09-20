@@ -13,7 +13,7 @@ jobs:
     - &base-test
       stage: test
       go_import_path: github.com/redhat-developer/odo
-      go: "1.10"
+      go: "1.11"
       install:
         - make goget-tools
       script:
@@ -68,7 +68,7 @@ jobs:
 
     - stage: deploy
       go_import_path:  github.com/redhat-developer/odo
-      go: "1.10"
+      go: "1.11"
       install:
         - make goget-tools
         - gem install fpm
