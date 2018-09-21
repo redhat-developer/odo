@@ -258,6 +258,39 @@ func TestParametersAsMap(t *testing.T) {
 
 }
 
+func TestGetDNS1123Name(t *testing.T) {
+
+	tests := []struct {
+		testName string
+		param    string
+		want     string
+	}{
+		{
+			testName: "Case: Test get DNS-1123 name for namespace and version qualified imagestream",
+			param:    "myproject/foo:3.5",
+			want:     "myproject-foo-3-5",
+		},
+		{
+			testName: "Case: Test get DNS-1123 name for doubly hyphenated string",
+			param:    "nodejs--myproject-foo-3.5",
+			want:     "nodejs-myproject-foo-3-5",
+		},
+	}
+
+	// Test that it "joins"
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			name := GetDNS1123Name(tt.param)
+			if tt.want != name {
+				t.Errorf("Expected %s, got %s", tt.want, name)
+			}
+		})
+	}
+
+}
+
 func TestGetRandomName(t *testing.T) {
 	type args struct {
 		prefix    string
@@ -438,37 +471,4 @@ func TestGenerateRandomString(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetDNS1123Name(t *testing.T) {
-
-	tests := []struct {
-		testName string
-		param    string
-		want     string
-	}{
-		{
-			testName: "Case: Test get DNS-1123 name for namespace and version qualified imagestream",
-			param:    "myproject/foo:3.5",
-			want:     "myproject-foo-3-5",
-		},
-		{
-			testName: "Case: Test get DNS-1123 name for doubly hyphenated string",
-			param:    "nodejs--myproject-foo-3.5",
-			want:     "nodejs-myproject-foo-3-5",
-		},
-	}
-
-	// Test that it "joins"
-
-	for _, tt := range tests {
-		t.Log("Running test: ", tt.testName)
-		t.Run(tt.testName, func(t *testing.T) {
-			name := GetDNS1123Name(tt.param)
-			if tt.want != name {
-				t.Errorf("Expected %s, got %s", tt.want, name)
-			}
-		})
-	}
-
 }

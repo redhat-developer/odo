@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
-	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -66,7 +65,11 @@ func getConfFolder() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(currentUser.HomeDir, ".kube"), nil
+	dir, err := ioutil.TempDir(currentUser.HomeDir, ".kube")
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
 }
 
 func cleanupEnv(confFile *os.File) error {

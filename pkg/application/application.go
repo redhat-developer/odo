@@ -19,13 +19,16 @@ func GetDefaultAppName(existingAppNames []string) (string, error) {
 	// Get the desired app name prefix from odo config
 	cfg, err := config.New()
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to generate random app name")
+		return "", errors.Wrap(err, "unable to generate random app name")
 	}
 	// If there's no prefix in config file, use safe default
 	if cfg.OdoSettings.Prefix == nil {
 		cfg.OdoSettings.Prefix = &defaultAppPrefix
 	}
-	appName := util.GetRandomName(*cfg.OdoSettings.Prefix, existingAppNames, "")
+	appName, err := util.GetRandomName(*cfg.OdoSettings.Prefix, existingAppNames, "", 3)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to generate random app name")
+	}
 	return appName, nil
 }
 

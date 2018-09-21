@@ -65,52 +65,51 @@ func StringInSlice(checkStr string, strSlice []string) bool {
 // prefix: Desired prefix part of the name
 // existList: List to verify that the returned name does not already exist
 // preferredSuffix: Optional suffix if passed, will be checked if prefix-suffix does not exist in existList if not, will add an additional timestamp to make name unique
+// retries: number of retries to try generating a unique name
 // Returns randomname is prefix-suffix, if suffix is passed else generated. Aditionally, if the prefix-suffix is used, it'll be appended with additional 4 char string to take the form prefix-suffix-{a-z A-z}4+
-func GetRandomName(prefix string, existList []string, preferredSuffix string) string {
+//           and error if requested number of retries also failed
+func GetRandomName(prefix string, existList []string, preferredSuffix string, retries int) (string, error) {
 	if preferredSuffix == "" {
 		// Generate suffix if not passed, using random country names generated from Pallinder/go-randomdata as suffix
-		preferredSuffix = strings.Replace(
-			strings.Replace(strings.Replace(
-				strings.Replace(
-					strings.Replace(
-						strings.ToLower(randomdata.Country(randomdata.FullCountry)),
-						" ",
-						"-",
-						-1,
-					),
-					".",
-					"-",
-					-1,
-				),
-				",",
-				"-",
-				-1,
-			),
-				"(",
-				"-",
-				-1,
-			),
-			")",
-			"-",
-			-1,
+		replacer := strings.NewReplacer(
+			" ", "-",
+			".", "-",
+			",", "-",
+			"(", "-",
+			")", "-",
 		)
+		preferredSuffix = replacer.Replace(strings.ToLower(randomdata.SillyName()))
 	}
 	// name is prefix-suffix
 	name := fmt.Sprintf("%s-%s", prefix, preferredSuffix)
+
+	//Create a map of existing app names for efficient iteration to find if the newly generated name is same as any of the already existing ones
+	existingApps := make(map[string]bool)
+	for _, appName := range existList {
+		existingApps[appName] = true
+	}
+
 	// check if generated name is already used in the existList
-	if StringInSlice(name, existList) {
+	if _, ok := existingApps[name]; ok {
 		prevName := name
+		trial := 0
 		// keep generating names until generated name is not unique. So, loop terminates when name is unique and hence for condition is false
-		for StringInSlice(prevName, existList) {
+		for ok {
+			trial = trial + 1
 			prevName = name
 			// Attempt unique name generation from prefix-suffix by concatenating prefix-suffix withrandom string of length 4
 			prevName = fmt.Sprintf("%s-%s", prevName, GenerateRandomString(4))
+			_, ok = existingApps[prevName]
+			if trial >= retries {
+				// Avoid infinite loops and fail after passed number of retries
+				return "", fmt.Errorf("failed to generate a unique name even after %d retrials", retries)
+			}
 		}
 		// If found to be unique, set name as generated name
 		name = prevName
 	}
 	// return name
-	return name
+	return name, nil
 }
 
 // Hyphenate applicationName and componentName
