@@ -82,7 +82,7 @@ var projectGetCmd = &cobra.Command{
 		project := project.GetCurrent(client)
 
 		if projectShortFlag {
-			fmt.Println(project)
+			fmt.Print(project)
 		} else {
 			fmt.Printf("The current project is: %v\n", project)
 		}
