@@ -4,7 +4,7 @@ set -e
 # The version of odo to install. Possible values - "master" and "latest"
 # master - builds from git master branch
 # latest - released versions specified by LATEST_VERSION variable
-OCDEV_VERSION="latest"
+ODO_VERSION="latest"
 
 # Latest released odo version
 LATEST_VERSION="v0.0.12"
@@ -115,7 +115,7 @@ Aborting now!
         brew tap kadel/odo
 
         echo "Installing odo..."
-        case "$OCDEV_VERSION" in
+        case "$ODO_VERSION" in
         master)
             brew install kadel/odo/odo -- HEAD
             ;;
@@ -130,7 +130,7 @@ Aborting now!
 
     distribution=$(get_distribution)
   	echo "# Detected distribution: $distribution"
-  	echo "# Installing odo version: $OCDEV_VERSION"
+  	echo "# Installing odo version: $ODO_VERSION"
 
     case "$distribution" in
 
@@ -143,7 +143,7 @@ Aborting now!
         $PRIVILEGED_EXECUTION "curl -L \"$DEBIAN_GPG_PUBLIC_KEY\" |  apt-key add -"
 
         echo "# Adding repository to /etc/apt/sources.list"
-        case "$OCDEV_VERSION" in
+        case "$ODO_VERSION" in
         master)
             $PRIVILEGED_EXECUTION "echo \"deb $DEBIAN_MASTER_REPOSITORY stretch main\" |  tee -a /etc/apt/sources.list"
             ;;
@@ -170,7 +170,7 @@ Aborting now!
         esac
 
         echo "# Adding odo repo under /etc/yum.repos.d/"
-        case "$OCDEV_VERSION" in
+        case "$ODO_VERSION" in
 
         master)
             $PRIVILEGED_EXECUTION "curl -L $RPM_MASTER_YUM_REPO -o /etc/yum.repos.d/bintray-odo-odo-rpm-dev.repo"
@@ -190,7 +190,7 @@ Aborting now!
 
         BINARY_URL=""
         TMP_DIR=$(mktemp -d)
-        case "$OCDEV_VERSION" in
+        case "$ODO_VERSION" in
         master)
             BINARY_URL="$BINTRAY_URL/$platform/odo"
             echo "# Downloading odo from $BINARY_URL"
