@@ -138,7 +138,7 @@ func init() {
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
-	flag.Parse()
+	flag.CommandLine.Parse([]string{})
 }
 
 func getLatestReleaseInfo(info chan<- string) {
