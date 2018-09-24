@@ -28,7 +28,6 @@ check-vendor:
 
 .PHONY: validate-vendor-licenses
 validate-vendor-licenses:
-	go get github.com/frapposelli/wwhrd
 	wwhrd check
 # golint errors are only recommendations
 .PHONY: lint
@@ -49,6 +48,7 @@ goget-tools:
 	go get -u github.com/Masterminds/glide
 	# go get -u golang.org/x/lint/golint
 	go get -u github.com/mitchellh/gox
+	go get github.com/frapposelli/wwhrd
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage
