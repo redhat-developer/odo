@@ -24,7 +24,7 @@ func FakeProjects() *v1.ProjectList {
 	}
 }
 
-// FakeProjects returns fake projectlist for use by API mock functions for Unit tests
+// FakeOnlyOneExistingProjects returns fake projectlist with single project for use by API mock functions for Unit tests testing delete of the only available project
 func FakeOnlyOneExistingProjects() *v1.ProjectList {
 	return &v1.ProjectList{
 		Items: []v1.Project{

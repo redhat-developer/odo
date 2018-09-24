@@ -301,6 +301,11 @@ func (c *Client) CreateNewProject(name string) error {
 	return nil
 }
 
+// SetCurrentProject sets the passed project as active in kube config file
+// Parameters:
+//	1. project to set as active
+//	2. the instance of client to be used to set the project as active
+// Returns: error. non nil error in case of errors, nil otherwise
 var SetCurrentProject = func(project string, c *Client) error {
 	rawConfig, err := c.kubeConfig.RawConfig()
 	if err != nil {
