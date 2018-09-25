@@ -270,3 +270,31 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 | Script      | What it is doing                          | Access via                                    |
 |-------------|-------------------------------------------|-----------------------------------------------|
 | .travis.yml | Uploading binaries to GitHub release page | Personal access token `deploy-github-release` |
+
+
+## Licenses
+
+A software license is a legal instrument governing the use or redistribution of software.
+License compatibility is a legal framework that allows for pieces of software with different software licenses to be distributed together.
+The need for such a framework arises because the different licenses can contain contradictory requirements, rendering it impossible to legally combine source code from separately-licensed software in order to create and publish a new program.
+
+Odo is Apache v2 licensed and we vendor a number of different packages for various reasons which adds the responsibility of being mindful of the
+compatibility of licenses of our vendor-ed packages with that of Odo. So, we decided, to add checks for the compatibility of every vendor-ed package of Odo, for which, we use the tool [wwhrd](https://github.com/frapposelli/wwhrd).
+Odo license compatibility checks are added as part of the base travis job which does the following on any new PR on the Odo repository for every vendor-ed package:
+
+1. Traverses every vendor-ed package, looking for its license file
+2. Detects the license of the vendor-ed package using the [wwhrd's](https://github.com/frapposelli/wwhrd) vendor-ed package [go-license](https://github.com/ryanuber/go-license)
+3. Next, using the configuration in .wwhrd.yml(more info below), the detected licenses are compared as under:
+    1. If detected license of the current package is in `blacklist` section, the package is considered as risky to use and hence the travis job fails on the PR indicating the un-trusted license
+    2. If detected license of the current package is in `whitelist` section, the package is considered a good fit
+    3. If detected license of the current package is in `exceptions` section, the package is considered to be trusted by the author of the PR. This section is like a workaround for those packages whose license cannot be detected by the tool.
+
+Whenever the new vendored package is either not considered a good fit, or not considered an exception by the compatibility checks , the travis job fails and consequently the PR will not be accepted.
+
+The true power of the license compatibility check employed by Odo lies in its configurability and the different sections of its configuration file .wwhrd.yml are as under:
+
+1. `blacklist`: Any license type under this category are considered non-compatible and hence the travis job on the pr is expected to fail
+2. `whitelist`: Any license type under this category is considered trusted by the travis job.
+3. `exceptions`: Any package specified as import path under this category, is considered as an exception by the travis job and not validated for its license type. This section should be used only when the [tool](https://github.com/ryanuber/go-license) fails to detect the license of the package.
+
+The license types under each of the above mentioned sections are expected to grow with addition of new vendor-ed packages of new(not already considered) license types and should be done so with ut-most care and it is the prime onus of the author of the PR to ensure license compatibilities manually before commiting any new changes to the .wwhrd.yml configuration file. If the author of the PR is unsure of the compatibility of licenses, the concerns can be raised on the PR and one of the reviewers will help the author with the same.
