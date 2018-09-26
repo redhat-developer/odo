@@ -130,7 +130,6 @@ func ParametersAsMap(params []string) map[string]string {
 	result := make(map[string]string, len(params))
 	for _, param := range params {
 		str := strings.Split(param, "=")
-		//fmt.Printf("Key : %s, val : %s \n",str[0],str[1])
 		result[str[0]] = str[1]
 	}
 
