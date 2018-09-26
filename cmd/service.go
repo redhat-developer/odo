@@ -55,7 +55,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 			os.Exit(1)
 		}
 		str := strings.Split(args[0], "/")
-		if len(str) == 1 {
+		if len(str) != 2 {
 			fmt.Printf("Service and plan should be defined using this convention <service_type>/<plan>.\n")
 			os.Exit(1)
 		}
