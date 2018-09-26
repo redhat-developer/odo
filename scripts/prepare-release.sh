@@ -37,3 +37,9 @@ for arch in `ls -1 $BIN_DIR/`;do
     echo "copying binary $source_file to release directory"
     cp $source_file $target_file
 done
+
+function release_sha() {
+  find $RELEASE_DIR -maxdepth 1 -type f | xargs sha256sum > $RELEASE_DIR/CHECKSUM
+}
+
+release_sha
