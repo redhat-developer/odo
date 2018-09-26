@@ -92,7 +92,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		exists, err := catalog.Exists(client, componentType)
 		checkError(err, "")
 		if !exists {
-			fmt.Printf("Invalid component type: %v\nRun 'odo catalog list' to see a list of supported components\n", componentType)
+			fmt.Printf("Invalid component type: %v\nRun 'odo catalog list components' to see a list of supported component types\n", componentType)
 			os.Exit(1)
 		}
 
@@ -100,7 +100,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		versionExists, err := catalog.VersionExists(client, componentType, componentVersion)
 		checkError(err, "")
 		if !versionExists {
-			fmt.Printf("Invalid component version: %v\nRun 'odo catalog list' to see a list of supported component versions\n", componentVersion)
+			fmt.Printf("Invalid component version: %v\nRun 'odo catalog list components' to see a list of supported component type versions\n", componentVersion)
 			os.Exit(1)
 		}
 
