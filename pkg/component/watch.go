@@ -133,7 +133,8 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 
 				stat, err := os.Lstat(event.Name)
 				if err != nil {
-					glog.V(4).Infof("Failed getting details of the changed file %s", event.Name)
+					glog.Errorf("Failed getting details of the changed file %s", event.Name)
+					watchError = errors.Wrap(err, "unable to watch changes")
 				}
 
 				// add file name to changedFiles only once

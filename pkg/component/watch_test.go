@@ -14,18 +14,25 @@ func TestIsRegExpMatch(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			testName:   "Test regexp matches ",
+			testName:   "Test regexp matches",
 			strToMatch: "/home/redhat/git-srcs/src/github.com/redhat-developer/nodejs-ex/.git/",
 			regExps:    []string{".*\\.git.*", "tests"},
 			want:       true,
 			wantErr:    false,
 		},
 		{
-			testName:   "Test regexp does not match ",
-			strToMatch: "/home/redhat/git-srcs/src/github.com/redhat-developer/nodejs-ex/git.git/",
+			testName:   "Test regexp does not match",
+			strToMatch: "/home/redhat/git-srcs/src/github.com/redhat-developer/nodejs-ex/gimmt.gimmt/",
 			regExps:    []string{".*\\.git.*", "tests"},
-			want:       true,
+			want:       false,
 			wantErr:    false,
+		},
+		{
+			testName:   "Test incorrect regexp",
+			strToMatch: "a(b",
+			regExps:    []string{"a(b"},
+			want:       false,
+			wantErr:    true,
 		},
 	}
 
@@ -38,6 +45,7 @@ func TestIsRegExpMatch(t *testing.T) {
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 
 			if tt.want != matched {
