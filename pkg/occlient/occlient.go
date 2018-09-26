@@ -1369,7 +1369,7 @@ func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, er
 }
 
 // CreateServiceInstance creates service instance from service catalog
-func (c *Client) CreateServiceInstance(componentName string, componentType string, servicePlan string, parameters interface{}, labels map[string]string) error {
+func (c *Client) CreateServiceInstance(componentName string, componentType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
 	// Creating Service Instance
 	_, err := c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
 		&scv1beta1.ServiceInstance{
@@ -1405,7 +1405,7 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 }
 
 // Create a secret within the namespace of the service instance created using the service's parameters.
-func (c *Client) CreateSecret(namespace string, componentName string, params interface{}) error {
+func (c *Client) CreateSecret(namespace string, componentName string, params map[string]string) error {
 
 	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
 		&scv1beta1.ServiceBinding{
