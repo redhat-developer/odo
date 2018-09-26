@@ -28,8 +28,7 @@ func setUp(config *config.ConfigInfo, testFile string) (*os.File, error) {
 			return nil, errors.Wrapf(err, "unable to write config %+v to mock config file %s", config, configFile)
 		}
 	}
-	setupEnv(configFile.Name())
-	return configFile, nil
+	return configFile, setupEnv(configFile.Name())
 }
 
 // The invocation of setupTempConfigFile puts the onus of invoking the configCleanUp as well
@@ -53,13 +52,6 @@ func setupEnv(odoconfigfile string) error {
 	return nil
 }
 
-func writeTempConfig(config []byte, f *os.File) error {
-	if _, err := f.Write(config); err != nil {
-		return err
-	}
-	return nil
-}
-
 func getConfFolder() (string, error) {
 	currentUser, err := user.Current()
 	if err != nil {
@@ -72,12 +64,11 @@ func getConfFolder() (string, error) {
 	return dir, nil
 }
 
-func cleanupEnv(confFile *os.File) error {
+func cleanupEnv(confFile *os.File, t *testing.T) {
 	defer os.Remove(confFile.Name())
 	if err := confFile.Close(); err != nil {
-		return err
+		t.Errorf("Failed to cleanup the test env. Error: %v", err)
 	}
-	return nil
 }
 
 func TestGetDefaultAppName(t *testing.T) {
@@ -117,7 +108,7 @@ func TestGetDefaultAppName(t *testing.T) {
 				t.Errorf("Failed to do required environment setup. Error %v", err)
 			}
 
-			defer cleanupEnv(configFile)
+			defer cleanupEnv(configFile, t)
 
 			name, err := GetDefaultAppName(tt.existingAppNames)
 			if err != nil {

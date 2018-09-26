@@ -936,12 +936,14 @@ func TestSetConfiguration(t *testing.T) {
 		parameter      string
 		existingConfig Config
 		want           bool
+		wantErr        bool
 	}{
 		{
 			name:           "updatenotification set nil to true",
 			parameter:      "updatenotification",
 			existingConfig: Config{},
 			want:           true,
+			wantErr:        false,
 		},
 		{
 			name:      "updatenotification set true to false",
@@ -951,7 +953,8 @@ func TestSetConfiguration(t *testing.T) {
 					UpdateNotification: &trueValue,
 				},
 			},
-			want: false,
+			want:    false,
+			wantErr: false,
 		},
 		{
 			name:      "updatenotification set false to true",
@@ -961,7 +964,8 @@ func TestSetConfiguration(t *testing.T) {
 					UpdateNotification: &falseValue,
 				},
 			},
-			want: true,
+			want:    true,
+			wantErr: false,
 		},
 	}
 
@@ -973,8 +977,11 @@ func TestSetConfiguration(t *testing.T) {
 			}
 			cfg.Config = tt.existingConfig
 
-			cfg.SetConfiguration(tt.parameter, strconv.FormatBool(tt.want))
+			err = cfg.SetConfiguration(tt.parameter, strconv.FormatBool(tt.want))
 
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Expected error: %v but got error %v", tt.wantErr, err)
+			}
 			// validating the value after executing Serconfiguration
 			if *cfg.OdoSettings.UpdateNotification != tt.want {
 				t.Errorf("unexpeced value after execution of SetConfiguration expected \ngot: %t \nexpected: %t\n", *cfg.OdoSettings.UpdateNotification, tt.want)
