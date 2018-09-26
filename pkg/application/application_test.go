@@ -25,7 +25,7 @@ func setUp(config *config.ConfigInfo, testFile string) (*os.File, error) {
 			return nil, errors.Wrapf(err, "unable to marshal config %+v", config.Config)
 		}
 		if _, err := configFile.Write(data); err != nil {
-			return nil, errors.Wrapf(err, "unable to write config %s to mock config file %s", config, configFile)
+			return nil, errors.Wrapf(err, "unable to write config %+v to mock config file %s", config, configFile)
 		}
 	}
 	setupEnv(configFile.Name())
