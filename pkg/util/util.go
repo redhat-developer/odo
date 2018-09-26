@@ -132,7 +132,6 @@ func ParametersAsMap(params []string) map[string]string {
 		str := strings.Split(param, "=")
 		result[str[0]] = str[1]
 	}
-
 	return result
 }
 
@@ -143,8 +142,7 @@ func BuildParameters(params interface{}) *runtime.RawExtension {
 	if err != nil {
 		// This should never be hit because marshalling a map[string]string is pretty safe
 		// I'd rather throw a panic then force handling of an error that I don't think is possible.
-		panic(fmt.Errorf("unable to marshal the request parameters %v (%s)", params, err))
+		fmt.Errorf("unable to marshal the request parameters %v (%s)", params, err)
 	}
-
 	return &runtime.RawExtension{Raw: paramsJSON}
 }
