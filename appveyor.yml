@@ -1,0 +1,33 @@
+version: "{build}"
+
+image: Visual Studio 2017
+
+clone_folder: C:\gopath\src\github.com\redhat-developer\odo
+
+environment:
+  GOPATH: C:\gopath
+  GOVERSION: 1.11
+
+platform:
+- x64
+
+init:
+# required to get around following error
+# error: unable to create file vendor/github.com/kubernetes-incubator/service-catalog/cmd/svcat/testdata/responses/catalog/clusterserviceplans_fieldSelector=spec.clusterServiceClassRef.name=4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468,spec.externalName=default.json: Filename too long
+- git config --system core.longpaths true
+
+install:
+- rmdir c:\go /s /q
+- appveyor DownloadFile https://storage.googleapis.com/golang/go%GOVERSION%.windows-amd64.msi
+- msiexec /i go%GOVERSION%.windows-amd64.msi /q
+- go version
+- go env
+- copy C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin\mingw32-make.exe C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin\make.exe
+- set PATH=%PATH%;C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin;%GOPATH%\bin
+- make goget-tools
+
+build_script:
+- make bin
+
+test_script:
+- make test
