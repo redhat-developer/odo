@@ -2,9 +2,11 @@ package component
 
 import (
 	"reflect"
+	"regexp"
 	"sort"
 	"testing"
 
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -85,6 +87,66 @@ func TestGetComponentPorts(t *testing.T) {
 			// and only if output is more than 0 (something is actually returned)
 			if len(output) > 0 && !(reflect.DeepEqual(output, tt.output)) {
 				t.Errorf("expected tags: %s, got: %s", tt.output, output)
+			}
+		})
+	}
+}
+
+func TestGetDefaultComponentName(t *testing.T) {
+	tests := []struct {
+		testName               string
+		componentType          string
+		existingComponentNames []string
+		wantErr                bool
+		wantRE                 string
+		needPrefix             bool
+	}{
+		{
+			testName:               "Case: App prefix not configured",
+			componentType:          "nodejs",
+			existingComponentNames: []string{},
+			wantErr:                false,
+			wantRE:                 "nodejs-*",
+			needPrefix:             false,
+		},
+		{
+			testName:               "Case: App prefix configured",
+			componentType:          "nodejs",
+			existingComponentNames: []string{},
+			wantErr:                false,
+			wantRE:                 "testing-nodejs-*",
+			needPrefix:             true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			var configInfo config.ConfigInfo
+			odoconfigfile := "odo-test-config"
+
+			configInfo = testingutil.FakeOdoConfig(tt.needPrefix, "")
+
+			configFile, err := testingutil.SetUp(&configInfo, odoconfigfile)
+			if err != nil {
+				t.Errorf("Failed to do required environment setup. Error %v", err)
+			}
+
+			defer testingutil.CleanupEnv(configFile, t)
+
+			name, err := GetDefaultComponentName(tt.componentType, tt.existingComponentNames)
+			if err != nil {
+				t.Errorf("Failed to setup mock environment. Error: %v", err)
+			}
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Expected err: %v, but err is %v", tt.wantErr, err)
+			}
+
+			r, _ := regexp.Compile(tt.wantRE)
+			match := r.MatchString(name)
+			if !match {
+				t.Errorf("Randomly generated application name %s does not match regexp %s", name, tt.wantRE)
 			}
 		})
 	}

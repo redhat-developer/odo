@@ -25,11 +25,58 @@ import (
 // it can be also file://
 const componentSourceURLAnnotation = "app.kubernetes.io/url"
 const componentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
+const componentRandomNamePartsMaxLen = 12
+const componentNameMaxRetries = 3
+const componentNameMaxLen = -1
 
 // ComponentInfo holds all important information about one component
 type ComponentInfo struct {
 	Name string
 	Type string
+}
+
+// GetDefaultComponentName generates a unique component name
+// Parameters: desired default component name(w/o prefix) and slice of existing component names
+// Returns: Unique component name and error if any
+func GetDefaultComponentName(componentPath string, componentPathType util.ComponentCreateType, componentType string, existingComponentList []ComponentInfo) (string, error) {
+	var prefix string
+
+	// Get component names from component list
+	var existingComponentNames []string
+	for _, componentInfo := range existingComponentList {
+		existingComponentNames = append(existingComponentNames, componentInfo.Name)
+	}
+
+	// Fetch config
+	cfg, err := config.New()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to generate random component name")
+	}
+
+	// If there's no prefix in config file, or its value is config.ConfigPrefixDir use safe default - the current directory along with component type
+	if cfg.OdoSettings.Prefix == nil || *cfg.OdoSettings.Prefix == config.ConfigPrefixDir {
+		prefix, err = util.GetComponentDir(componentPath, componentPathType)
+		if err != nil {
+			return "", errors.Wrap(err, "unable to generate random component name")
+		}
+		prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
+	} else {
+		// Set the required prefix into componentName
+		prefix = *cfg.OdoSettings.Prefix
+	}
+
+	// Generate unique name for the component using prefix and unique random suffix
+	componentName, err := util.GetRandomName(
+		fmt.Sprintf("%s-%s", prefix, componentType),
+		componentNameMaxLen,
+		existingComponentNames,
+		componentNameMaxRetries,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to generate random component name")
+	}
+
+	return componentName, nil
 }
 
 // validateSourceType check if given sourceType is supported

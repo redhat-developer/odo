@@ -90,7 +90,20 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
-		componentImageName, componentType, componentName, componentVersion := util.ParseCreateCmdArgs(args)
+		componentImageName, componentType, defaultComponentName, componentVersion := util.ParseCreateCmdArgs(args)
+
+		componentList, err := component.List(client, applicationName, projectName)
+		checkError(err, "")
+
+		// Get component names
+		var componentNames []string
+		for _, componentInfo := range componentList {
+			componentNames = append(componentNames, componentInfo.Name)
+		}
+
+		// Generate unique name for component
+		componentName, err := component.GetDefaultComponentName(defaultComponentName, componentNames)
+		checkError(err, "")
 
 		// Check to see if the catalog type actually exists
 		exists, err := catalog.Exists(client, componentType)
