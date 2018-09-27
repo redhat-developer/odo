@@ -154,8 +154,8 @@ func Delete(client *occlient.Client, name string, applicationName string, projec
 
 	// First check is that we want to only update the active component if the component which is getting deleted is the
 	// active component
-	// Second check is that we want to do updation only if it is happening for the active application otherwise we need
-	// not to care for the updation of the active component
+	// Second check is that we want to do an update only if it is happening for the active application otherwise we need
+	// not to care for the update of the active component
 	activeComponent := cfg.GetActiveComponent(applicationName, projectName)
 	activeApplication := cfg.GetActiveApplication(projectName)
 	if activeComponent == name && activeApplication == applicationName {
