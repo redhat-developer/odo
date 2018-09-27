@@ -54,7 +54,7 @@ var _ = Describe("odoe2e", func() {
 
 		It("should get the project", func() {
 			getProj := runCmd("odo project get --short")
-			Expect(strings.TrimSpace(getProj)).To(Equal(projName))
+			Expect(getProj).To(Equal(projName))
 		})
 
 		// Issue #630
@@ -105,7 +105,7 @@ var _ = Describe("odoe2e", func() {
 
 			It("should be created within the project", func() {
 				projName := runCmd("odo project get --short")
-				Expect(projName).To(ContainSubstring(projName))
+				Expect(projName).To(Equal(projName))
 			})
 
 			It("should be able to create another application", func() {
