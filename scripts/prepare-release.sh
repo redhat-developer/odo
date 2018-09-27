@@ -39,7 +39,9 @@ for arch in `ls -1 $BIN_DIR/`;do
 done
 
 function release_sha() {
-  find $RELEASE_DIR -maxdepth 1 -type f | xargs sha256sum > $RELEASE_DIR/CHECKSUM
+    for filename in $(find $RELEASE_DIR -maxdepth 1 ! -name SHA256_SUM -type f -printf '%f\n'); do
+        sha_sum=`sha256sum $RELEASE_DIR${filename}|awk '{ print $1 }'`; echo $sha_sum  $filename;
+    done > ${RELEASE_DIR}SHA256_SUM
 }
 
 release_sha
