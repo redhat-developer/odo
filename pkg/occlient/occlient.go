@@ -414,8 +414,7 @@ func isTagInImageStream(is imagev1.ImageStream, imageTag string) bool {
 func (c *Client) GetImageStream(imageNS string, imageName string, imageTag string) (*imagev1.ImageStream, error) {
 	var err error
 	var imageStream *imagev1.ImageStream
-	var currentProjectName string
-	currentProjectName = c.GetCurrentProjectName()
+	currentProjectName := c.GetCurrentProjectName()
 	/*
 		If User has not chosen image NS then,
 			1. Use image from current NS if available
@@ -986,7 +985,7 @@ func (c *Client) SetupForSupervisor(dcName string, projectName string, annotatio
 
 	addBootstrapVolumeMount(dc, dcName)
 
-	dc, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
 	}
@@ -1025,7 +1024,7 @@ func (c *Client) CleanupAfterSupervisor(dcName string, projectName string, annot
 		}
 	}
 
-	dc, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update deployment config %s", dcName)
 	}
