@@ -47,12 +47,18 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 	mode := file.Mode()
 	if mode.IsRegular() {
-		glog.V(4).Infof("adding watch on path %s", path)
-		err = watcher.Add(path)
+		matched, err := isRegExpMatch(path, ignores)
 		if err != nil {
-			return fmt.Errorf("error adding watcher for path %s: %v", path, err)
+			return errors.Wrapf(err, "unable to watcher on %s", path)
 		}
-		return nil
+		if !matched {
+			glog.V(4).Infof("adding watch on path %s", path)
+			err = watcher.Add(path)
+			if err != nil {
+				return fmt.Errorf("error adding watcher for path %s: %v", path, err)
+			}
+			return nil
+		}
 	}
 
 	folders := []string{}
@@ -131,10 +137,19 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				changeLock.Lock()
 				glog.V(4).Infof("filesystem watch event: %s", event)
 
-				stat, err := os.Lstat(event.Name)
-				if err != nil {
-					glog.Errorf("Failed getting details of the changed file %s", event.Name)
-					watchError = errors.Wrap(err, "unable to watch changes")
+				if !(event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename) {
+					stat, err := os.Lstat(event.Name)
+					if err != nil {
+						glog.Errorf("Failed getting details of the changed file %s", event.Name)
+						watchError = errors.Wrap(err, "unable to watch changes")
+					}
+					// In windows, every new file created under a sub-directory of the watched directory, raises 2 events:
+					// 1. Write event for the directory under which the file was created
+					// 2. Create event for the file that was created
+					// Ignore 1 to avoid duplicate events.
+					if stat.IsDir() && event.Op&fsnotify.Write == fsnotify.Write {
+						break
+					}
 				}
 
 				// add file name to changedFiles only once
@@ -152,17 +167,12 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				// because its parent is watched, the fsnotify automatically raises an event
 				// for it.
 				matched, err := isRegExpMatch(event.Name, ignores)
+				glog.V(4).Infof("Matching %s with %s\n.matched %v, err: %v", event.Name, ignores, matched, err)
 				if err != nil {
 					watchError = errors.Wrap(err, "unable to watch changes")
 				}
 				if !alreadyInChangedFiles && !matched {
-					// In windows, every new file created under a sub-directory of the watched directory, raises 2 events:
-					// 1. Write event for the directory under which the file was created
-					// 2. Create event for the file that was created
-					// Ignore 1 to avoid duplicate events.
-					if !(stat.IsDir() && event.Op&fsnotify.Write == fsnotify.Write) {
-						changedFiles = append(changedFiles, event.Name)
-					}
+					changedFiles = append(changedFiles, event.Name)
 				}
 
 				lastChange = time.Now()
@@ -211,26 +221,30 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 			for _, file := range changedFiles {
 				fmt.Fprintf(out, "File %s changed\n", file)
 			}
-			fmt.Fprintf(out, "Pushing files...\n")
-			fileInfo, err := os.Stat(path)
-			if err != nil {
-				return errors.Wrapf(err, "%s: file doesn't exist", path)
+			if len(changedFiles) > 0 {
+				fmt.Fprintf(out, "Pushing files...\n")
+				fileInfo, err := os.Stat(path)
+				if err != nil {
+					return errors.Wrapf(err, "%s: file doesn't exist", path)
+				}
+				if fileInfo.IsDir() {
+					glog.V(4).Infof("Copying files %s to pod", changedFiles)
+					err = PushLocal(client, componentName, applicationName, path, out, changedFiles)
+				} else {
+					pathDir := filepath.Dir(path)
+					glog.V(4).Infof("Copying file %s to pod", path)
+					err = PushLocal(client, componentName, applicationName, pathDir, out, []string{path})
+				}
+				if err != nil {
+					// Intentionally not exiting on error here.
+					// We don't want to break watch when push failed, it might be fixed with the next change.
+					glog.V(4).Infof("Error from PushLocal: %v", err)
+				}
+				dirty = false
+				showWaitingMessage = true
+				// Reset changedfiles
+				changedFiles = []string{}
 			}
-			if fileInfo.IsDir() {
-				glog.V(4).Infof("Copying files %s to pod", changedFiles)
-				err = PushLocal(client, componentName, applicationName, path, out, changedFiles)
-			} else {
-				pathDir := filepath.Dir(path)
-				glog.V(4).Infof("Copying file %s to pod", path)
-				err = PushLocal(client, componentName, applicationName, pathDir, out, []string{path})
-			}
-			if err != nil {
-				// Intentionally not exiting on error here.
-				// We don't want to break watch when push failed, it might be fixed with the next change.
-				glog.V(4).Infof("Error from PushLocal: %v", err)
-			}
-			dirty = false
-			showWaitingMessage = true
 		}
 		changeLock.Unlock()
 		<-ticker.C
