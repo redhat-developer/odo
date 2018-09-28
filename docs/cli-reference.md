@@ -20,26 +20,26 @@ Find more information at https://github.com/redhat-developer/odo
 
 #### List of Commands
 
-|          NAME           |                  DESCRIPTION                   |
-|-------------------------|------------------------------------------------|
-| [app](#app)             | Perform application operations                 |
-| [catalog](#catalog)     | Catalog related operations                     |
-| [component](#component) | Components of application.                     |
-| [create](#create)       | Create a new component                         |
-| [delete](#delete)       | Delete an existing component                   |
-| [describe](#describe)   | Describe the given component                   |
-| [link](#link)           | Link target component to source component      |
-| [list](#list)           | List all components in the current application |
-| [log](#log)             | Retrieve the log for the given component.      |
-| [project](#project)     | Perform project operations                     |
-| [push](#push)           | Push source code to a component                |
-| [service](#service)     | Perform service catalog operations             |
-| [storage](#storage)     | Perform storage operations                     |
-| [update](#update)       | Update the source code path of a component     |
-| [url](#url)             | Expose component to the outside world          |
-| [utils](#utils)         | Utilities for completion and terminal commands |
-| [version](#version)     | Print the client version information           |
-| [watch](#watch)         | Watch for changes, update component on change  |
+|          NAME           |                                 DESCRIPTION                                  |
+|-------------------------|------------------------------------------------------------------------------|
+| [app](#app)             | Perform application operations                                               |
+| [catalog](#catalog)     | Catalog related operations                                                   |
+| [component](#component) | Components of application.                                                   |
+| [create](#create)       | Create a new component                                                       |
+| [delete](#delete)       | Delete an existing component                                                 |
+| [describe](#describe)   | Describe the given component                                                 |
+| [link](#link)           | Link target component to source component                                    |
+| [list](#list)           | List all components in the current application                               |
+| [log](#log)             | Retrieve the log for the given component.                                    |
+| [project](#project)     | Perform project operations                                                   |
+| [push](#push)           | Push source code to a component                                              |
+| [service](#service)     | Perform service catalog operations                                           |
+| [storage](#storage)     | Perform storage operations                                                   |
+| [update](#update)       | Update the source code path of a component                                   |
+| [url](#url)             | Expose component to the outside world                                        |
+| [utils](#utils)         | Utilities for completion, terminal commands and modifying Odo configurations |
+| [version](#version)     | Print the client version information                                         |
+| [watch](#watch)         | Watch for changes, update component on change                                |
 
 
 #### CLI Structure
@@ -98,7 +98,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
             view : View current configuration values
         terminal : Add Odo terminal support to your development environment
     version : Print the client version information
-    watch : Watch for changes, update component on change
+    watch --delay --ignore : Watch for changes, update component on change
 
 ```
 
@@ -121,7 +121,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
   # Describe webapp application,
   odo app describe webapp
 	
-  # List all applications
+  # List all applications in the current project 
   odo app list
 	
   # Set an application as active
@@ -146,7 +146,7 @@ Performs application operations related to your OpenShift project.
   odo catalog list services
 
   # Search for a component
-  odo catalog search components python
+  odo catalog search component python
 
   # Search for a service
   odo catalog search service mysql
@@ -181,7 +181,7 @@ Catalog related operations
 > Example using create
 
 ```sh
-  # Create new Node.js component with the source in current directory. 
+  # Create new Node.js component with the source in current directory.
   odo create nodejs
 
   # A specific image version may also be specified
@@ -192,6 +192,9 @@ Catalog related operations
 
   # Create new Node.js component with source from remote git repository.
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
+
+  # Create a new Node.js component of version 6 from the 'openshift' namespace
+  odo create openshift/nodejs:6 --local /nodejs-ex
 
   # Create new Wildfly component with binary named sample.war in './downloads' directory
   odo create wildfly wildly --binary ./downloads/sample.war
@@ -208,6 +211,9 @@ Catalog related operations
 Create a new component to deploy on OpenShift.
 
 If component name is not provided, component type value will be used for the name.
+
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
+If version is not specified by default, latest wil be chosen as the version.
 
 A full list of component types that can be deployed is available using: 'odo catalog list'
 
@@ -313,6 +319,9 @@ Retrieve the log for the given component.
   # List all the projects
   odo project list
 	
+  # Delete a project
+  odo project delete myproject
+	
   # Get the active project
   odo project get
 	
@@ -352,7 +361,7 @@ Push source code to a component.
   # Create new mysql-persistent service from service catalog.
   odo service create mysql-persistent
 	
-  # Delete service named 'mysql-persistent'
+  # Delete the service named 'mysql-persistent'
   odo service delete mysql-persistent
 	
   # List all services in the application
@@ -478,10 +487,16 @@ The URLs that are generated using this command, can be used to access the deploy
   # Zsh terminal PS1 support
   source <(odo utils terminal zsh)
 
+
+   # Set a configuration value
+   odo utils config set UpdateNotification false
+	
+   # For viewing the current configuration
+   odo utils config view
 ```
 
 
-Utilities for completion and terminal commands
+Utilities for completion, terminal commands and modifying Odo configurations
 
 ## version
 
