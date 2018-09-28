@@ -114,9 +114,9 @@ var updateCmd = &cobra.Command{
 }
 
 func init() {
-	updateCmd.Flags().StringVar(&componentBinary, "binary", "", "binary artifact")
-	updateCmd.Flags().StringVar(&componentGit, "git", "", "git source")
-	updateCmd.Flags().StringVar(&componentLocal, "local", "", "Use local directory as a source for component.")
+	updateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "binary artifact")
+	updateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "git source")
+	updateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source for component.")
 
 	// Add a defined annotation in order to appear in the help menu
 	updateCmd.Annotations = map[string]string{"command": "component"}
