@@ -143,6 +143,12 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 						glog.Errorf("Failed getting details of the changed file %s", event.Name)
 						watchError = errors.Wrap(err, "unable to watch changes")
 					}
+					// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
+					// Avoid pushing such buffer files
+					if stat == nil {
+						break
+					}
+
 					// In windows, every new file created under a sub-directory of the watched directory, raises 2 events:
 					// 1. Write event for the directory under which the file was created
 					// 2. Create event for the file that was created
