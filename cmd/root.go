@@ -154,7 +154,9 @@ func getLatestReleaseInfo(info chan<- string) {
 			"Update using your package manager, or run\n" +
 			"curl " + notify.InstallScriptURL + " | sh\n" +
 			"to update manually, or visit https://github.com/redhat-developer/odo/releases\n" +
-			"---\n"
+			"---\n" +
+			"If you wish to disable the update notifications, you can disable it by running\n" +
+			"'odo utils config set UpdateNotification false'\n"
 	}
 }
 
