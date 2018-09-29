@@ -274,14 +274,14 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 
 ## Licenses
 
-[wwhrd](https://github.com/frapposelli/wwhrd) is used in odo for checking license
-compatibilities of vendor-ed packages with that of Odo(Apache 2.0 licensed).
+[wwhrd](https://github.com/frapposelli/wwhrd) is used in Odo for checking license
+compatibilities of vendored packages.
 
 Configuration for `wwhrd` is stored in
-[`.wwhrd.yml`](https://raw.githubusercontent.com/redhat-developer/odo/0e7941d3dd0dabef8d5b2c5ed9fcb16b0039ae90/.wwhrd.yml).
+[`.wwhrd.yml`](https://github.com/redhat-developer/odo/blob/master/.wwhrd.yml).
 
 The `whitelist` section is for licenses that are always allowed.
-Conversely, the `blacklist` section is for licenses that are never allowed and will
+The `blacklist` section is for licenses that are never allowed and will
 always fail a build. Any licenses that are not explicitly mentioned are considered
 to be in a `exceptions` and will need to be explicitly allowed by adding the import
 path to the exceptions.

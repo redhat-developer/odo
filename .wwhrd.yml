@@ -11,5 +11,7 @@ whitelist:
   - ISC
 
 exceptions:
+  # wwhrd currently does not detect ISC which is compatible with Odo so, add it under exceptions to avoid errors due to it being not recognised
   - github.com/davecgh/go-spew/spew/...
+  # wwhrd currently does not detect ISC which is compatible with Odo so, add it under exceptions to avoid errors due to it being not recognised
   - github.com/olekukonko/tablewriter
