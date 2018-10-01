@@ -182,9 +182,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 }
 
 func init() {
-	componentCreateCmd.Flags().StringVar(&componentBinary, "binary", "", "Use a binary as the source file for the component")
-	componentCreateCmd.Flags().StringVar(&componentGit, "git", "", "Use a git repository as the source file for the component")
-	componentCreateCmd.Flags().StringVar(&componentLocal, "local", "", "Use local directory as a source file for the component")
+	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
+	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
+	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
 	componentCreateCmd.Flags().StringSliceVar(&componentPorts, "port", []string{}, "Ports to be used when the component is created")
 
 	// Add a defined annotation in order to appear in the help menu
