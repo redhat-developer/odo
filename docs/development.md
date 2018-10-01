@@ -5,6 +5,7 @@
 - [Dependency Management](https://github.com/redhat-developer/odo/blob/master/docs/development.md#dependency-management)
 - [Release Guide](https://github.com/redhat-developer/odo/blob/master/docs/development.md#release-guide)
 - [Odo Bot](https://github.com/redhat-developer/odo/blob/master/docs/development.md#odo-bot)
+- [Licenses](https://github.com/redhat-developer/odo/blob/master/docs/development.md#licenses)
 
 ## Workflow
 
