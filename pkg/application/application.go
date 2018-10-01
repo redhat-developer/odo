@@ -42,14 +42,17 @@ func Create(client *occlient.Client, applicationName string) error {
 	return nil
 }
 
-// List all application in current project
+// List all applications in current project
+func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
+	return ListInProject(client, project.GetCurrent(client))
+}
+
+// ListInProject lists all applications in given project
 // Queries cluster and config file.
 // Shows also empty applications (empty applications are those that are just
 // mentioned in config file but don't have any object associated with it on cluster).
-func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
+func ListInProject(client *occlient.Client, project string) ([]config.ApplicationInfo, error) {
 	applications := []config.ApplicationInfo{}
-
-	project := project.GetCurrent(client)
 
 	cfg, err := config.New()
 	if err != nil {
