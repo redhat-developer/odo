@@ -10,25 +10,25 @@ import (
 
 func TestGetDefaultAppName(t *testing.T) {
 	tests := []struct {
-		testName         string
-		existingAppNames []string
-		wantErr          bool
-		wantRE           string
-		needPrefix       bool
+		testName     string
+		existingApps []config.ApplicationInfo
+		wantErr      bool
+		wantRE       string
+		needPrefix   bool
 	}{
 		{
-			testName:         "Case: App prefix not configured",
-			existingAppNames: []string{},
-			wantErr:          false,
-			wantRE:           "app-*",
-			needPrefix:       false,
+			testName:     "Case: App prefix not configured",
+			existingApps: []config.ApplicationInfo{},
+			wantErr:      false,
+			wantRE:       "app-*",
+			needPrefix:   false,
 		},
 		{
-			testName:         "Case: App prefix configured",
-			existingAppNames: []string{},
-			wantErr:          false,
-			wantRE:           "testing-*",
-			needPrefix:       true,
+			testName:     "Case: App prefix configured",
+			existingApps: []config.ApplicationInfo{},
+			wantErr:      false,
+			wantRE:       "testing-*",
+			needPrefix:   true,
 		},
 	}
 
@@ -47,7 +47,7 @@ func TestGetDefaultAppName(t *testing.T) {
 
 			defer testingutil.CleanupEnv(configFile, t)
 
-			name, err := GetDefaultAppName(tt.existingAppNames)
+			name, err := GetDefaultAppName(tt.existingApps)
 			if err != nil {
 				t.Errorf("Failed to setup mock environment. Error: %v", err)
 			}

@@ -94,28 +94,28 @@ func TestGetComponentPorts(t *testing.T) {
 
 func TestGetDefaultComponentName(t *testing.T) {
 	tests := []struct {
-		testName               string
-		componentType          string
-		existingComponentNames []string
-		wantErr                bool
-		wantRE                 string
-		needPrefix             bool
+		testName           string
+		componentType      string
+		existingComponents []ComponentInfo
+		wantErr            bool
+		wantRE             string
+		needPrefix         bool
 	}{
 		{
-			testName:               "Case: App prefix not configured",
-			componentType:          "nodejs",
-			existingComponentNames: []string{},
-			wantErr:                false,
-			wantRE:                 "nodejs-*",
-			needPrefix:             false,
+			testName:           "Case: App prefix not configured",
+			componentType:      "nodejs",
+			existingComponents: []ComponentInfo{},
+			wantErr:            false,
+			wantRE:             "nodejs-*",
+			needPrefix:         false,
 		},
 		{
-			testName:               "Case: App prefix configured",
-			componentType:          "nodejs",
-			existingComponentNames: []string{},
-			wantErr:                false,
-			wantRE:                 "testing-nodejs-*",
-			needPrefix:             true,
+			testName:           "Case: App prefix configured",
+			componentType:      "nodejs",
+			existingComponents: []ComponentInfo{},
+			wantErr:            false,
+			wantRE:             "testing-nodejs-*",
+			needPrefix:         true,
 		},
 	}
 
@@ -134,7 +134,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 
 			defer testingutil.CleanupEnv(configFile, t)
 
-			name, err := GetDefaultComponentName(tt.componentType, tt.existingComponentNames)
+			name, err := GetDefaultComponentName(tt.componentType, tt.existingComponents)
 			if err != nil {
 				t.Errorf("Failed to setup mock environment. Error: %v", err)
 			}

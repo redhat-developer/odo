@@ -62,14 +62,9 @@ var applicationCreateCmd = &cobra.Command{
 			// Fetch existing list of apps
 			apps, err := application.List(client)
 			checkError(err, "")
-			appNames := []string{}
-			// Collect the names of existing apps to avoid generated name being already used
-			for _, app := range apps {
-				appNames = append(appNames, app.Name)
-			}
 
 			// Generate a random name that's not already in use for the existing apps
-			name, err = application.GetDefaultAppName(appNames)
+			name, err = application.GetDefaultAppName(apps)
 			checkError(err, "")
 		}
 		// validate application name
