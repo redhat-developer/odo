@@ -237,20 +237,20 @@ var storageMountCmd = &cobra.Command{
 
 func init() {
 	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
-	storageCreateCmd.Flags().StringVarP(&storageComponent, "component", "c", "", "Component to add storage to. Defaults to active component.")
+	storageCreateCmd.Flags().StringVar(&storageComponent, "component", "", "Component to add storage to. Defaults to active component.")
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageCreateCmd.MarkFlagRequired("path")
 	storageCreateCmd.MarkFlagRequired("size")
 
 	storageDeleteCmd.Flags().BoolVarP(&storageForceDeleteflag, "force", "f", false, "Delete storage without prompting")
 
-	storageUnmountCmd.Flags().StringVarP(&storageComponent, "component", "c", "", "Component from which the storage will be unmounted. Defaults to active component.")
+	storageUnmountCmd.Flags().StringVar(&storageComponent, "component", "", "Component from which the storage will be unmounted. Defaults to active component.")
 
-	storageListCmd.Flags().StringVarP(&storageComponent, "component", "c", "", "List storage for given component. Defaults to active component.")
+	storageListCmd.Flags().StringVar(&storageComponent, "component", "", "List storage for given component. Defaults to active component.")
 	storageListCmd.Flags().BoolVarP(&storageAllListflag, "all", "a", false, "List all storage in all components")
 
 	storageMountCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
-	storageMountCmd.Flags().StringVarP(&storageComponent, "component", "c", "", "Component to which storage will be mounted to.")
+	storageMountCmd.Flags().StringVar(&storageComponent, "component", "", "Component to which storage will be mounted to.")
 	storageMountCmd.MarkFlagRequired("path")
 
 	storageCmd.AddCommand(storageCreateCmd)
