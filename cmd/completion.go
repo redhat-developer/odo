@@ -9,6 +9,48 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+
+	/*
+		__custom_func is called automatically when none of the auto-created (via cobra)
+		functions handle the given input
+
+		Currently the only case handled is 'odo create'
+
+		'odo create':
+		Handled by simply providing a list of name of the available components
+		(meaning no namespaces or versions are shown).
+		- 'awk' is first used in order to filter out the first line containing the "header" and any
+		trailing lines that might exist after the data.
+		- Then 'awk' is used again to use select only the name.
+		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
+
+		More information about writing bash completion functions can be found at
+		https://debian-administration.org/article/317/An_introduction_to_bash_completion_part_2 for
+	*/
+
+	bashCompletionFunc = `
+__custom_func() {
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD-1]}"
+	
+	case "${prev}" in
+		create)
+			local components=$(odo catalog list components | awk  '/NAME/{flag=1;next}/---/{flag=0}flag' | awk '{ print $1; }' | paste -sd " " -)
+			COMPREPLY=( $(compgen -W "${components}" -- ${cur}) )
+            return 0
+            ;;
+        *)
+        ;;
+    esac
+
+	return 0;
+}
+`
+)
+
 var completionCmd = &cobra.Command{
 	Use:   "completion SHELL",
 	Short: "Output shell completion code",
