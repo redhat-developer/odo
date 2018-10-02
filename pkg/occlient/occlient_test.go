@@ -1605,7 +1605,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 		name                string
 		buildConfigName     string
 		projectName         string
-		gitUrl              string
+		gitURL              string
 		annotations         map[string]string
 		existingBuildConfig buildv1.BuildConfig
 		updatedBuildConfig  buildv1.BuildConfig
@@ -1615,7 +1615,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 			name:            "git to local with proper parameters",
 			buildConfigName: "nodejs",
 			projectName:     "app",
-			gitUrl:          "",
+			gitURL:          "",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
@@ -1661,7 +1661,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 			name:            "local to git with proper parameters",
 			buildConfigName: "nodejs",
 			projectName:     "app",
-			gitUrl:          "https://github.com/sclorg/nodejs-ex",
+			gitURL:          "https://github.com/sclorg/nodejs-ex",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "https://github.com/sclorg/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "git",
@@ -1723,7 +1723,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 				return true, &tt.updatedBuildConfig, nil
 			})
 
-			err := fkclient.UpdateBuildConfig(tt.buildConfigName, tt.projectName, tt.gitUrl, tt.annotations)
+			err := fkclient.UpdateBuildConfig(tt.buildConfigName, tt.projectName, tt.gitURL, tt.annotations)
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
 				if (len(fkclientset.BuildClientset.Actions()) != 2) && (tt.wantErr != true) {
@@ -1752,7 +1752,7 @@ func TestNewAppS2I(t *testing.T) {
 		name         string
 		namespace    string
 		builderImage string
-		gitUrl       string
+		gitURL       string
 		labels       map[string]string
 		annotations  map[string]string
 		inputPorts   []string
@@ -1765,12 +1765,12 @@ func TestNewAppS2I(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name: "case 1: with valid gitUrl",
+			name: "case 1: with valid gitURL",
 			args: args{
 				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "https://github.com/openshift/ruby",
+				gitURL:       "https://github.com/openshift/ruby",
 				labels: map[string]string{
 					"app":                              "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
@@ -1788,12 +1788,12 @@ func TestNewAppS2I(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "case 2 : binary buildSource with gitUrl empty",
+			name: "case 2 : binary buildSource with gitURL empty",
 			args: args{
 				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "",
+				gitURL:       "",
 				labels: map[string]string{
 					"app":                              "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
@@ -1818,7 +1818,7 @@ func TestNewAppS2I(t *testing.T) {
 				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "https://github.com/openshift/ruby",
+				gitURL:       "https://github.com/openshift/ruby",
 				labels: map[string]string{
 					"app":                              "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
@@ -1843,7 +1843,7 @@ func TestNewAppS2I(t *testing.T) {
 				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "https://github.com/openshift/ruby",
+				gitURL:       "https://github.com/openshift/ruby",
 				labels: map[string]string{
 					"app":                              "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
@@ -1869,7 +1869,7 @@ func TestNewAppS2I(t *testing.T) {
 		// 	args: args{
 		// 		name:         "ruby",
 		// 		builderImage: "",
-		// 		gitUrl:       "https://github.com/openshift/ruby",
+		// 		gitURL:       "https://github.com/openshift/ruby",
 		// 		labels: map[string]string{
 		// 			"app": "apptmp",
 		// 			"app.kubernetes.io/component-name": "ruby",
@@ -1903,7 +1903,7 @@ func TestNewAppS2I(t *testing.T) {
 
 			err := fkclient.NewAppS2I(tt.args.name,
 				tt.args.builderImage,
-				tt.args.gitUrl,
+				tt.args.gitURL,
 				tt.args.labels,
 				tt.args.annotations,
 				tt.args.inputPorts)
@@ -1959,9 +1959,9 @@ func TestNewAppS2I(t *testing.T) {
 				// Check buildconfig objects
 				createdBC := fkclientset.BuildClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*buildv1.BuildConfig)
 
-				if tt.args.gitUrl != "" {
-					if createdBC.Spec.CommonSpec.Source.Git.URI != tt.args.gitUrl {
-						t.Errorf("git url is not matching with expected value, expected: %s, got %s", tt.args.gitUrl, createdBC.Spec.CommonSpec.Source.Git.URI)
+				if tt.args.gitURL != "" {
+					if createdBC.Spec.CommonSpec.Source.Git.URI != tt.args.gitURL {
+						t.Errorf("git url is not matching with expected value, expected: %s, got %s", tt.args.gitURL, createdBC.Spec.CommonSpec.Source.Git.URI)
 					}
 
 					if createdBC.Spec.CommonSpec.Source.Type != "Git" {
