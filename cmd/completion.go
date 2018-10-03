@@ -26,15 +26,25 @@ const (
 		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
 
 		'odo service create':
-		Handled by providing of available services
+		Handled by providing the available services
 		- 'cut' is used in order to remove the leading characters from the service names
 		- 'paste' is then used turn the multiple lines into a single line of names separated by spaces
 
 		'odo project delete|set':
-		Handled by providing of available projects
+		Handled by providing the available projects
 		- 'tail' is used in order to drop the first line which is sort of a "header"
 		- 'sed' is used to ensure that we only keep the project name
 		- 'paste' is then used turn the multiple lines into a single line of names separated by spaces
+
+		'odo storage delete|mount|unmount':
+		Handled by providing the available storage objects
+		It should be noted that this only works for the current component
+		- 'awk' is first used in order to filter out the first line containing the "header" and any
+		trailing lines that might exist after the first table.
+		- 'sed' is used to filter out any informative messages that might exist
+		- 'sed' is used again to remove empty lines
+		- Then 'awk' is used again to use select only the name.
+		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
 
 		More information about writing bash completion functions can be found at
 		https://debian-administration.org/article/317/An_introduction_to_bash_completion_part_2 for
@@ -76,7 +86,16 @@ __custom_func() {
               return 0
               ;;
           esac
-          ;;    
+          ;;
+        storage)
+          case "${verb}" in
+            delete|mount|unmount)
+              local storages=$(odo storage list | awk  '/NAME/{flag=1;next}/NAME/{flag=0}flag' | sed '/No/d' | sed '/^\s*$/d' | awk '{ print $1; }' | paste -sd " " -)
+              COMPREPLY=( $(compgen -W "${storages}" -- ${cur}) )
+              return 0
+              ;;
+          esac
+          ;;
       esac
     fi
 
