@@ -141,7 +141,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				if !(event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename) {
 					stat, err := os.Lstat(event.Name)
 					if err != nil {
-						// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
+						// Some of the editors like vim and gedit, generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 						// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
 						// which will terminate the watch
 						glog.Errorf("Failed getting details of the changed file %s. So, ignoring te event", event.Name)
