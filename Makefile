@@ -16,7 +16,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-vendor vet #lint
+validate: gofmt check-vendor vet validate-vendor-licenses #lint
 
 .PHONY: gofmt
 gofmt:
@@ -26,6 +26,9 @@ gofmt:
 check-vendor:
 	./scripts/check-vendor.sh
 
+.PHONY: validate-vendor-licenses
+validate-vendor-licenses:
+	wwhrd check
 # golint errors are only recommendations
 .PHONY: lint
 lint:
@@ -45,6 +48,7 @@ goget-tools:
 	go get -u github.com/Masterminds/glide
 	# go get -u golang.org/x/lint/golint
 	go get -u github.com/mitchellh/gox
+	go get github.com/frapposelli/wwhrd
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage

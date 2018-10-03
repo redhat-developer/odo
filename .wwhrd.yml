@@ -1,0 +1,17 @@
+---
+blacklist:
+  # https://www.apache.org/licenses/GPL-compatibility.html
+  - GPL-2.0
+
+whitelist:
+  - Apache-2.0
+  - MIT
+  - NewBSD
+  - FreeBSD
+  - ISC
+
+exceptions:
+  # wwhrd currently does not detect ISC which is compatible with Odo so, add it under exceptions to avoid errors due to it being not recognised
+  - github.com/davecgh/go-spew/spew/...
+  # wwhrd currently does not detect ISC which is compatible with Odo so, add it under exceptions to avoid errors due to it being not recognised
+  - github.com/olekukonko/tablewriter

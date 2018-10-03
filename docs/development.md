@@ -5,6 +5,7 @@
 - [Dependency Management](https://github.com/redhat-developer/odo/blob/master/docs/development.md#dependency-management)
 - [Release Guide](https://github.com/redhat-developer/odo/blob/master/docs/development.md#release-guide)
 - [Odo Bot](https://github.com/redhat-developer/odo/blob/master/docs/development.md#odo-bot)
+- [Licenses](https://github.com/redhat-developer/odo/blob/master/docs/development.md#licenses)
 
 ## Workflow
 
@@ -270,3 +271,21 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 | Script      | What it is doing                          | Access via                                    |
 |-------------|-------------------------------------------|-----------------------------------------------|
 | .travis.yml | Uploading binaries to GitHub release page | Personal access token `deploy-github-release` |
+
+
+## Licenses
+
+[wwhrd](https://github.com/frapposelli/wwhrd) is used in Odo for checking license
+compatibilities of vendored packages.
+
+Configuration for `wwhrd` is stored in
+[`.wwhrd.yml`](https://github.com/redhat-developer/odo/blob/master/.wwhrd.yml).
+
+The `whitelist` section is for licenses that are always allowed.
+The `blacklist` section is for licenses that are never allowed and will
+always fail a build. Any licenses that are not explicitly mentioned are considered
+to be in a `exceptions` and will need to be explicitly allowed by adding the import
+path to the exceptions.
+
+More details about the license compatibility check tool can be found
+[here](https://github.com/frapposelli/wwhrd)
