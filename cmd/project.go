@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -147,9 +146,6 @@ var projectDeleteCmd = &cobra.Command{
 		}
 		fmt.Printf("Deleted project : %v\n", projectName)
 
-		// Wait for the delete operation to reflect in the projects list
-		time.Sleep(9 * time.Second)
-
 		// Get Current Project
 		currProject := project.GetCurrent(client)
 
@@ -159,6 +155,9 @@ var projectDeleteCmd = &cobra.Command{
 		checkError(err, "")
 		if len(projects) != 0 {
 			fmt.Printf("%s has been set as active project\n", currProject)
+		} else {
+			// oc errors out as "error: you do not have rights to view project "$deleted_project"."
+			fmt.Printf("You are not a member of any projects. You can request a project to be created with the `odo project create <project_name>` command\n")
 		}
 
 	},

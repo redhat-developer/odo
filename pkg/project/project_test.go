@@ -1,13 +1,13 @@
 package project
 
-// ToDo(@anmolbabu) uncomment tests when we have a nicer and cleaner way to stub occlient.go#ModifyConfig
-
 import (
 	"testing"
 
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -34,6 +34,7 @@ func TestDelete(t *testing.T) {
 
 			// Fake the client with the appropriate arguments
 			client, fakeClientSet := occlient.FakeNew()
+			fkWatch := watch.NewFake()
 			occlient.SetCurrentProject = func(project string, c *occlient.Client) error {
 				return nil
 			}
@@ -47,6 +48,13 @@ func TestDelete(t *testing.T) {
 
 			fakeClientSet.ProjClientset.PrependReactor("delete", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, nil, nil
+			})
+
+			go func() {
+				fkWatch.Delete(testingutil.FakeProjectStatus(corev1.NamespacePhase(""), tt.projectName))
+			}()
+			fakeClientSet.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
 			})
 
 			// The function we are testing

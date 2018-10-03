@@ -47,6 +47,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -318,6 +319,7 @@ var SetCurrentProject = func(project string, c *Client) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to switch to %s project", project)
 	}
+	c.namespace = project
 	return nil
 }
 
@@ -1328,7 +1330,59 @@ func (c *Client) DeleteProject(name string) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to delete project")
 	}
-	return nil
+
+	// wait for delete to complete
+	w, err := c.projectClient.Projects().Watch(metav1.ListOptions{
+		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
+	})
+	if err != nil {
+		return errors.Wrapf(err, "unable to watch project")
+	}
+
+	defer w.Stop()
+	for {
+		val, ok := <-w.ResultChan()
+		// When marked for deletion... val looks like:
+		/*
+			val: {
+				Type:MODIFIED
+				Object:&Project{
+					ObjectMeta:k8s_io_apimachinery_pkg_apis_meta_v1.ObjectMeta{...},
+					Spec:ProjectSpec{...},
+					Status:ProjectStatus{
+						Phase:Terminating,
+					},
+				}
+			}
+		*/
+		// Post deletion val will look like:
+		/*
+			val: {
+				Type:DELETED
+				Object:&Project{
+					ObjectMeta:k8s_io_apimachinery_pkg_apis_meta_v1.ObjectMeta{...},
+					Spec:ProjectSpec{...},
+					Status:ProjectStatus{
+						Phase:,
+					},
+				}
+			}
+		*/
+		if !ok {
+			return fmt.Errorf("Received unexpected signal %+v on project watch channel", val)
+		}
+		// So we depend on val.Type as val.Object.Status.Phase is just empty string and not a mapped value constant
+		if prj, ok := val.Object.(*projectv1.Project); ok {
+			glog.V(4).Infof("Status of delete of project %s is %s", name, prj.Status.Phase)
+			switch prj.Status.Phase {
+			//prj.Status.Phase can only be "Terminating" or "Active" or ""
+			case "":
+				if val.Type == watch.Deleted {
+					return nil
+				}
+			}
+		}
+	}
 }
 
 // GetLabelValues get label values of given label from objects in project that are matching selector

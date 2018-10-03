@@ -1,7 +1,9 @@
 package testingutil
 
 import (
+	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/project/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -21,6 +23,16 @@ func FakeProjects() *v1.ProjectList {
 			getFakeProject("prj1"),
 			getFakeProject("prj2"),
 		},
+	}
+}
+
+// FakeProjectStatus returns fake project status for use by mock watch on project
+func FakeProjectStatus(prjStatus corev1.NamespacePhase, prjName string) *projectv1.Project {
+	return &projectv1.Project{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: prjName,
+		},
+		Status: projectv1.ProjectStatus{Phase: prjStatus},
 	}
 }
 

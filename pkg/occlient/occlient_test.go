@@ -18,6 +18,7 @@ import (
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -671,7 +672,7 @@ func TestCreateRoute(t *testing.T) {
 			service:    "mailserver",
 			portNumber: intstr.FromInt(8080),
 			labels: map[string]string{
-				"SLA":                              "High",
+				"SLA": "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "python",
 			},
@@ -684,7 +685,7 @@ func TestCreateRoute(t *testing.T) {
 			service:    "blog",
 			portNumber: intstr.FromInt(9100),
 			labels: map[string]string{
-				"SLA":                              "High",
+				"SLA": "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "golang",
 			},
@@ -996,7 +997,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1030,7 +1031,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1059,7 +1060,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1094,7 +1095,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1123,7 +1124,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1158,7 +1159,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1186,7 +1187,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                              "apptmp",
+				"app": "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1758,7 +1759,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1784,7 +1785,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1811,7 +1812,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1838,7 +1839,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                              "apptmp",
+						"app": "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -2796,7 +2797,7 @@ func TestCreateService(t *testing.T) {
 			commonObjectMeta: metav1.ObjectMeta{
 				Name: "nodejs",
 				Labels: map[string]string{
-					"app":                              "apptmp",
+					"app": "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
@@ -3770,6 +3771,49 @@ func Test_updateEnvVar(t *testing.T) {
 				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
 				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func TestDeleteProject(t *testing.T) {
+	tests := []struct {
+		name        string
+		projectName string
+		wantErr     bool
+	}{
+		{
+			name:        "phase: deleted",
+			projectName: "testing",
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fkclient, fkclientset := FakeNew()
+			fkWatch := watch.NewFake()
+
+			fkclientset.ProjClientset.PrependReactor("delete", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			go func() {
+				fkWatch.Delete(testingutil.FakeProjectStatus(corev1.NamespacePhase(""), tt.projectName))
+			}()
+			fkclientset.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			err := fkclient.DeleteProject(tt.projectName)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.projectName(string) unexpected error %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if len(fkclientset.ProjClientset.Actions()) != 2 {
+				t.Errorf("expected 1 action in DeleteProject got: %v", fkclientset.ProjClientset.Actions())
 			}
 		})
 	}
