@@ -30,6 +30,12 @@ const (
 		- 'cut' is used in order to remove the leading characters from the service names
 		- 'paste' is then used turn the multiple lines into a single line of names separated by spaces
 
+		'odo project delete|set':
+		Handled by providing of available projects
+		- 'tail' is used in order to drop the first line which is sort of a "header"
+		- 'sed' is used to ensure that we only keep the project name
+		- 'paste' is then used turn the multiple lines into a single line of names separated by spaces
+
 		More information about writing bash completion functions can be found at
 		https://debian-administration.org/article/317/An_introduction_to_bash_completion_part_2 for
 	*/
@@ -39,27 +45,42 @@ __custom_func() {
     local cur prev opts base
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-	prev="${COMP_WORDS[COMP_CWORD-1]}"
-	prevPrev="${COMP_WORDS[COMP_CWORD-2]}"
-	
-	case "${prev}" in
-		create)
-			case "${prevPrev}" in
-				odo)
-					local components=$(odo catalog list components | awk  '/NAME/{flag=1;next}/---/{flag=0}flag' | awk '{ print $1; }' | paste -sd " " -)
-					COMPREPLY=( $(compgen -W "${components}" -- ${cur}) )
-					return 0
-					;;
-				service)
-					local services=$(odo catalog list services | cut -c 3- | paste -sd " " -)
-					COMPREPLY=( $(compgen -W "${services}" -- ${cur}) )
-					return 0
-					;;
-			esac
-			;;
-    esac
 
-	return 0;
+    if [ "${#COMP_WORDS[@]}" -eq "3" ]; then # no entity has been entered, only a command like 'odo create'
+      local command="${COMP_WORDS[COMP_CWORD-1]}"
+      case "${command}" in
+    		create)
+    			local components=$(odo catalog list components | awk  '/NAME/{flag=1;next}/---/{flag=0}flag' | awk '{ print $1; }' | paste -sd " " -)
+    			COMPREPLY=( $(compgen -W "${components}" -- ${cur}) )
+          return 0
+          ;;
+      esac
+    elif [ "${#COMP_WORDS[@]}" -eq "4" ]; then # an entity followed by a command has been entered like 'odo service create'
+      local entity="${COMP_WORDS[COMP_CWORD-2]}"
+      local verb="${COMP_WORDS[COMP_CWORD-1]}"
+      case "${entity}" in
+        service)
+          case "${verb}" in
+            create)
+              local services=$(odo catalog list services | cut -c 3- | paste -sd " " -)
+              COMPREPLY=( $(compgen -W "${services}" -- ${cur}) )
+              return 0
+              ;;
+          esac
+          ;;
+        project)
+          case "${verb}" in
+            delete|set)
+              local projects=$(odo project list | tail -n +2 | sed 's/[^-a-zA-Z0-9]//g' | paste -sd " " -)
+              COMPREPLY=( $(compgen -W "${projects}" -- ${cur}) )
+              return 0
+              ;;
+          esac
+          ;;    
+      esac
+    fi
+
+  	return 0;
 }
 `
 )
