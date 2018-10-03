@@ -15,7 +15,7 @@ const (
 		__custom_func is called automatically when none of the auto-created (via cobra)
 		functions handle the given input
 
-		Currently the only case handled is 'odo create'
+		Currently the only cases handled are the following
 
 		'odo create':
 		Handled by simply providing a list of name of the available components
@@ -24,6 +24,11 @@ const (
 		trailing lines that might exist after the data.
 		- Then 'awk' is used again to use select only the name.
 		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
+
+		'odo service create':
+		Handled by providing of available services
+		- 'cut' is used in order to remove the leading characters from the service names
+		- 'paste' is then used turn the multiple lines into a single line of names separated by spaces
 
 		More information about writing bash completion functions can be found at
 		https://debian-administration.org/article/317/An_introduction_to_bash_completion_part_2 for
@@ -35,15 +40,23 @@ __custom_func() {
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
+	prevPrev="${COMP_WORDS[COMP_CWORD-2]}"
 	
 	case "${prev}" in
 		create)
-			local components=$(odo catalog list components | awk  '/NAME/{flag=1;next}/---/{flag=0}flag' | awk '{ print $1; }' | paste -sd " " -)
-			COMPREPLY=( $(compgen -W "${components}" -- ${cur}) )
-            return 0
-            ;;
-        *)
-        ;;
+			case "${prevPrev}" in
+				odo)
+					local components=$(odo catalog list components | awk  '/NAME/{flag=1;next}/---/{flag=0}flag' | awk '{ print $1; }' | paste -sd " " -)
+					COMPREPLY=( $(compgen -W "${components}" -- ${cur}) )
+					return 0
+					;;
+				service)
+					local services=$(odo catalog list services | cut -c 3- | paste -sd " " -)
+					COMPREPLY=( $(compgen -W "${services}" -- ${cur}) )
+					return 0
+					;;
+			esac
+			;;
     esac
 
 	return 0;
