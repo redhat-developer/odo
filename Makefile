@@ -75,9 +75,9 @@ prepare-release: cross
 test:
 	go test -race $(PKGS)
 
-# Run e2e tests
-.PHONY: test-e2e
-test-e2e:
+# Run main e2e tests
+.PHONY: test-main-e2e
+test-main-e2e:
 ifdef TIMEOUT
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.v -timeout $(TIMEOUT)
 else
@@ -91,6 +91,15 @@ ifdef TIMEOUT
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v
+endif
+
+# Run all e2e tests
+.PHONY: test-e2e
+test-e2e:
+ifdef TIMEOUT
+	go test -v github.com/redhat-developer/odo/tests/e2e -ginkgo.v -timeout $(TIMEOUT)
+else
+	go test -v github.com/redhat-developer/odo/tests/e2e -ginkgo.v
 endif
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
