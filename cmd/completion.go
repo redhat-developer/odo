@@ -46,6 +46,13 @@ const (
 		- Then 'awk' is used again to use select only the name.
 		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
 
+		'odo url delete':
+		Handled by providing the available urls
+		- 'awk' is first used in order to filter out the first line containing the "header".
+		We use the marker 'dummy' to make awk work until the end of the file
+		- Then 'awk' is used again to use select only the name.
+		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
+
 		More information about writing bash completion functions can be found at
 		https://debian-administration.org/article/317/An_introduction_to_bash_completion_part_2 for
 	*/
@@ -92,6 +99,15 @@ __custom_func() {
             delete|mount|unmount)
               local storages=$(odo storage list | awk  '/NAME/{flag=1;next}/NAME/{flag=0}flag' | sed '/No/d' | sed '/^\s*$/d' | awk '{ print $1; }' | paste -sd " " -)
               COMPREPLY=( $(compgen -W "${storages}" -- ${cur}) )
+              return 0
+              ;;
+          esac
+          ;;
+        url)
+          case "${verb}" in
+            delete)
+              local urls=$(odo url list | awk  '/NAME/{flag=1;next}/dummy/{flag=0}flag' | sed '/No/d' | sed '/^\s*$/d' | awk '{ print $1; }' | paste -sd " " -)
+              COMPREPLY=( $(compgen -W "${urls}" -- ${cur}) )
               return 0
               ;;
           esac
