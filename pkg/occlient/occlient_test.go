@@ -2421,7 +2421,7 @@ func TestWaitAndGetPod(t *testing.T) {
 		},
 
 		{
-			name: "phase:	unknown",
+			name:    "phase:	unknown",
 			podName: "ruby",
 			status:  corev1.PodUnknown,
 			wantErr: true,
