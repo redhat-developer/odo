@@ -1,0 +1,11 @@
+#!/bin/bash
+set -x
+set -eo pipefail
+
+# We now run the run script. If there is a custom one written in the 
+# source files, we use that instead.
+if [ -f /opt/app-root/src/.s2i/bin/run ]; then
+    exec /opt/app-root/src/.s2i/bin/run
+else
+    exec /usr/libexec/s2i/run
+fi

@@ -18,6 +18,7 @@ import (
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // componentSourceURLAnnotation is an source url from which component was build
@@ -71,7 +72,14 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	err = client.NewAppS2I(namespacedOpenShiftObject, componentImageType, url, labels, annotations, inputPorts)
+	// Create CommonObjectMeta to be passed in
+	commonObjectMeta := metav1.ObjectMeta{
+		Name:        namespacedOpenShiftObject,
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
+	err = client.NewAppS2I(commonObjectMeta, componentImageType, url, inputPorts)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
@@ -123,7 +131,15 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	err = client.BootstrapSupervisoredS2I(namespacedOpenShiftObject, componentImageType, labels, annotations, inputPorts)
+	// Create CommonObjectMeta to be passed in
+	commonObjectMeta := metav1.ObjectMeta{
+		Name:        namespacedOpenShiftObject,
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
+	// Bootstrap the deployment with SupervisorD
+	err = client.BootstrapSupervisoredS2I(commonObjectMeta, componentImageType, inputPorts)
 	if err != nil {
 		return err
 	}
@@ -222,11 +238,14 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	// Find Pod for component
 	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
+
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
 	pod, err := client.WaitAndGetPod(podSelector)
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
+
+	// Copy the files to the pod
 	glog.V(4).Infof("Copying to pod %s", pod.Name)
 	err = client.CopyFile(path, pod.Name, targetPath, files)
 	if err != nil {
@@ -248,7 +267,8 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}()
 
 	err = client.ExecCMDInContainer(pod.Name,
-		[]string{"/opt/app-root/bin/assemble-and-restart.sh"},
+		// We will use the assemble-and-restart script located within the supervisord container we've created
+		[]string{"/var/lib/supervisord/bin/assemble-and-restart"},
 		pipeWriter, pipeWriter, nil, false)
 	if err != nil {
 		return errors.Wrap(err, "unable to execute assemble script")
@@ -371,104 +391,144 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 // stdout is the io writer for streaming build logs on stdout
 func Update(client *occlient.Client, componentName string, applicationName string, newSourceType string, newSource string, stdout io.Writer) error {
 
+	// STEP 1. Create the common Object Meta for updating.
+
+	// Retrieve the current project name
+	projectName := client.GetCurrentProjectName()
+
+	// Retrieve the old source type
+	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName, projectName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get source of %s component", componentName)
+	}
+
 	// Namespace the application
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	projectName := client.GetCurrentProjectName()
+	// Create annotations
+	annotations := map[string]string{componentSourceURLAnnotation: newSource}
+	annotations[componentSourceTypeAnnotation] = newSourceType
 
-	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName, projectName)
+	// Component Type
+	componentImageType, err := GetComponentType(client, componentName, applicationName, projectName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get source of %s component", componentName)
+		return errors.Wrap(err, "unable to get component image type for updating")
 	}
+
+	// Parse componentImageType before adding to labels
+	_, imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse image name")
+	}
+
+	// Retrieve labels
+	// Save component type as label
+	labels := componentlabels.GetLabels(componentName, applicationName, true)
+	labels[componentlabels.ComponentTypeLabel] = imageName
+	labels[componentlabels.ComponentTypeVersion] = imageTag
+
+	// ObjectMetadata are the same for all generated objects
+	// Create common metadata that will be updated throughout all objects.
+	commonObjectMeta := metav1.ObjectMeta{
+		Name:        namespacedOpenShiftObject,
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
+	// STEP 2. Determine what the new source is going to be
 
 	glog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
 
 	if (oldSourceType == "local" || oldSourceType == "binary") && newSourceType == "git" {
 		// Steps to update component from local or binary to git
-		// - update odo annotations and labels to reflect changes
-		// - update BuildConfig source to have git repository https://example.com/myrepo as a source.
-		// - update and remove supervisor from dc
-		// - trigger build (wait for it to finish)
+		// 1. Create a BuildConfig
+		// 2. Update DeploymentConfig with the new image
+		// 3. Clean up
+		// 4. Build the application
 
-		annotations := map[string]string{componentSourceURLAnnotation: newSource}
-		annotations[componentSourceTypeAnnotation] = newSourceType
-		err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, newSource, annotations)
+		// CreateBuildConfig here!
+		glog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
+		err = client.CreateBuildConfig(commonObjectMeta, imageName, newSource)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
 		}
+
+		// Get the current BuildConfig since we're going to update DeploymentConfig
+		bc, err := client.GetBuildConfigFromName(namespacedOpenShiftObject, projectName)
+		if err != nil {
+			return errors.Wrapf(err, "unable to retrieve BuildConfig for %s component", componentName)
+		}
+
+		// Update / replace the current DeploymentConfig with a Git one (not SupervisorD!)
+		glog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
+		err = client.UpdateDCToGit(commonObjectMeta, bc.Spec.Output.To.Name)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update DeploymentConfig image for %s component", componentName)
+		}
+
+		// Cleanup after the supervisor
 		err = client.CleanupAfterSupervisor(namespacedOpenShiftObject, projectName, annotations)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig  for %s component", componentName)
 		}
+
+		// Finally, we build!
 		err = Build(client, componentName, applicationName, true, true, stdout)
 		if err != nil {
 			return errors.Wrapf(err, "unable to build the component %v", componentName)
 		}
+
 	} else if oldSourceType == "git" && (newSourceType == "binary" || newSourceType == "local") {
 		// Steps to update component from git to local or binary
-		// - update odo annotations and labels to reflect changes
-		// - update BuildConfig source to have s2i supervisor bootstrap repository as a source https://github.com/kadel/bootstrap-supervisored-s2i
-		// - trigger build (wait for it to finish)
-		// - update and add supervisor to dc
 
-		labels := componentlabels.GetLabels(componentName, applicationName, true)
-
+		// Update the sourceURL since it is not a local/binary file.
 		sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
-		annotations := map[string]string{componentSourceURLAnnotation: sourceURL}
-		annotations[componentSourceTypeAnnotation] = newSourceType
+		annotations[componentSourceURLAnnotation] = sourceURL
 
-		err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, "", annotations)
+		// Need to delete the old BuildConfig
+		err = client.DeleteBuildConfig(commonObjectMeta)
 		if err != nil {
-			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
-		}
-		err := Build(client, componentName, applicationName, false, true, stdout)
-		if err != nil {
-			return errors.Wrapf(err, "unable to build the component %v", componentName)
+			return errors.Wrapf(err, "unable to delete BuildConfig for %s component", componentName)
 		}
 
-		err = client.SetupForSupervisor(namespacedOpenShiftObject, projectName, annotations, labels)
+		// Update the DeploymentConfig
+		err = client.UpdateDCToSupervisor(commonObjectMeta, componentImageType)
 		if err != nil {
-			return errors.Wrapf(err, "unable to update DeploymentConfig  for %s component", componentName)
+			return errors.Wrapf(err, "unable to update DeploymentConfig for %s component", componentName)
 		}
+
 	} else {
 		// save source path as annotation
 		// this part is for updates where the source does not change or change from local to binary and vice versa
 
-		var annotations map[string]string
 		if newSourceType == "git" {
-			annotations = map[string]string{componentSourceURLAnnotation: newSource}
-			annotations[componentSourceTypeAnnotation] = newSourceType
+
+			// Update the BuildConfig
 			err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, newSource, annotations)
 			if err != nil {
 				return errors.Wrapf(err, "unable to update the build config %v", componentName)
 			}
+
+			// Update DeploymentConfig annotations as well
 			err = client.UpdateDCAnnotations(namespacedOpenShiftObject, annotations)
 			if err != nil {
 				return errors.Wrapf(err, "unable to update the deployment config %v", componentName)
 			}
+
+			// Build it
 			err = Build(client, componentName, applicationName, true, true, stdout)
-		} else if newSourceType == "local" {
+
+		} else if newSourceType == "local" || newSourceType == "binary" {
+
+			// Update the sourceURL
 			sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
-			annotations = map[string]string{componentSourceURLAnnotation: sourceURL}
-			annotations[componentSourceTypeAnnotation] = newSourceType
-			err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, "", annotations)
-			if err != nil {
-				return errors.Wrapf(err, "unable to update the build config %v", componentName)
-			}
-			err = client.UpdateDCAnnotations(namespacedOpenShiftObject, annotations)
-		} else if newSourceType == "binary" {
-			sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
-			annotations = map[string]string{componentSourceURLAnnotation: sourceURL}
-			annotations[componentSourceTypeAnnotation] = newSourceType
-			err = client.UpdateBuildConfig(namespacedOpenShiftObject, projectName, "", annotations)
-			if err != nil {
-				return errors.Wrapf(err, "unable to update the build config %v", componentName)
-			}
+			annotations[componentSourceURLAnnotation] = sourceURL
 			err = client.UpdateDCAnnotations(namespacedOpenShiftObject, annotations)
 		}
+
 		if err != nil {
 			return errors.Wrap(err, "unable to update the component")
 		}

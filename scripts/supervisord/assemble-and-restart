@@ -1,0 +1,19 @@
+#!/bin/bash
+set -x
+set -eo pipefail
+
+# S2i fails when /tmp/src/ is empty. 
+mkdir -p /tmp/src
+touch /tmp/src/.dummy
+
+# We now run the assembly script. If there is a custom one written in the 
+# source files, we use that instead.
+if [ -f /opt/app-root/src/.s2i/bin/assemble ]; then
+    /opt/app-root/src/.s2i/bin/assemble
+else
+    /usr/libexec/s2i/assemble
+fi
+
+# Restart supervisord in order to actualy run the application
+# This is a dumb way to start as supervisord does not have a restart function
+/var/lib/supervisord/bin/supervisord ctl stop run; /var/lib/supervisord/bin/supervisord ctl start run

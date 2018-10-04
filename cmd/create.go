@@ -119,14 +119,21 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
+		// Deploy the component with Git
 		if len(componentGit) != 0 {
+
+			// Use Git
 			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts)
 			checkError(err, "")
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
+
+			// Git is the only one using BuildConfig since we need to retrieve the git
 			err = component.Build(client, componentName, applicationName, true, true, stdout)
 			checkError(err, "")
+
 		} else if len(componentLocal) != 0 {
-			// we want to use and save absolute path for component
+
+			// Use the absolute path for the component
 			dir, err := filepath.Abs(componentLocal)
 			checkError(err, "")
 			fileInfo, err := os.Stat(dir)
@@ -135,28 +142,29 @@ A full list of component types that can be deployed is available using: 'odo cat
 				fmt.Println("Please provide a path to the directory")
 				os.Exit(1)
 			}
+
+			// Create
 			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts)
 			checkError(err, "")
-			fmt.Printf("Please wait, creating %s component ...\n", componentName)
-			err = component.Build(client, componentName, applicationName, false, true, stdout)
-			checkError(err, "")
+
 		} else if len(componentBinary) != 0 {
+			// Deploy the component with a binary
+
+			// Retrieve the path of the binary
 			path, err := filepath.Abs(componentBinary)
 			checkError(err, "")
 
+			// Create
 			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts)
 			checkError(err, "")
-			fmt.Printf("Please wait, creating %s component ...\n", componentName)
-			err = component.Build(client, componentName, applicationName, false, true, stdout)
-			checkError(err, "")
+
 		} else {
-			// we want to use and save absolute path for component
+			// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
 			dir, err := filepath.Abs("./")
 			checkError(err, "")
+
+			// Create
 			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts)
-			checkError(err, "")
-			fmt.Printf("Please wait, creating %s component ...\n", componentName)
-			err = component.Build(client, componentName, applicationName, false, true, stdout)
 			checkError(err, "")
 		}
 

@@ -24,14 +24,6 @@ func SourceTest(appTestName string, sourceType string, source string) {
 	// checking for source in dc
 	getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='{{index .metadata.annotations \"app.kubernetes.io/url\"}}'")
 	Expect(getDc).To(ContainSubstring(source))
-
-	// checking for source-type in bc
-	getDc = runCmd("oc get bc wildfly-" + appTestName + " -o go-template='{{index .metadata.annotations \"app.kubernetes.io/component-source-type\"}}'")
-	Expect(getDc).To(ContainSubstring(sourceType))
-
-	// checking for source in bc
-	getDc = runCmd("oc get bc wildfly-" + appTestName + " -o go-template='{{index .metadata.annotations \"app.kubernetes.io/url\"}}'")
-	Expect(getDc).To(ContainSubstring(source))
 }
 
 var _ = Describe("odoCmpE2e", func() {
@@ -97,17 +89,12 @@ var _ = Describe("odoCmpE2e", func() {
 			Expect(cmpList).To(ContainSubstring("wildfly"))
 
 			runCmd("oc get dc")
-			runCmd("oc get bc")
 		})
 
 		It("should update component from binary to binary", func() {
 			runCmd("wget -O " + tmpDir + "/sample-binary-testing-2.war " +
 				"'https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/85354d9ee8583a9c1e64a331425eede235b07a9e/sample%2520(1).war'")
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-2.war")
-
-			// checking bc for updates
-			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(bootStrapSupervisorURI))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -136,10 +123,6 @@ var _ = Describe("odoCmpE2e", func() {
 
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
 
-			// checking bc for updates
-			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(bootStrapSupervisorURI))
-
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
 				"{{range .spec.template.spec.initContainers}}" +
@@ -166,10 +149,6 @@ var _ = Describe("odoCmpE2e", func() {
 				tmpDir + "/katacoda-odo-backend-2")
 
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-2")
-
-			// checking bc for updates
-			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(bootStrapSupervisorURI))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -251,10 +230,6 @@ var _ = Describe("odoCmpE2e", func() {
 		It("should update component from git to binary", func() {
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 
-			// checking bc for updates
-			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(bootStrapSupervisorURI))
-
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
 				"{{range .spec.template.spec.initContainers}}" +
@@ -307,10 +282,6 @@ var _ = Describe("odoCmpE2e", func() {
 		It("should update component from git to local", func() {
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
 
-			// checking bc for updates
-			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(bootStrapSupervisorURI))
-
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
 				"{{range .spec.template.spec.initContainers}}" +
@@ -334,10 +305,6 @@ var _ = Describe("odoCmpE2e", func() {
 
 		It("should update component from local to binary", func() {
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
-
-			// checking bc for updates
-			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(bootStrapSupervisorURI))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
