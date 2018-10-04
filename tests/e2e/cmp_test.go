@@ -15,7 +15,7 @@ import (
 // SourceTest checks the component-source-type and the source url in the annotation of the bc and dc
 // appTestName is the name of the app
 // sourceType is the type of the source of the component i.e git/binary/local
-// source is the source of the component i.e gitUrl or path to the directory or binary file
+// source is the source of the component i.e gitURL or path to the directory or binary file
 func SourceTest(appTestName string, sourceType string, source string) {
 	// checking for source-type in dc
 	getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='{{index .metadata.annotations \"app.kubernetes.io/component-source-type\"}}'")

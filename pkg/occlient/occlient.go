@@ -524,9 +524,9 @@ func getAppRootVolumeName(dcName string) string {
 }
 
 // NewAppS2I create new application using S2I
-// gitUrl is the url of the git repo
+// gitURL is the url of the git repo
 // inputPorts is the array containing the string port values
-func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labels map[string]string, annotations map[string]string, inputPorts []string) error {
+func (c *Client) NewAppS2I(name string, builderImage string, gitURL string, labels map[string]string, annotations map[string]string, inputPorts []string) error {
 
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
 	if err != nil {
@@ -575,14 +575,14 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitUrl string, labe
 		return errors.Wrapf(err, "unable to create ImageStream for %s", name)
 	}
 
-	// if gitUrl is not set, error out
-	if gitUrl == "" {
-		return errors.New("unable to create buildSource with empty gitUrl")
+	// if gitURL is not set, error out
+	if gitURL == "" {
+		return errors.New("unable to create buildSource with empty gitURL")
 	}
 
 	buildSource := buildv1.BuildSource{
 		Git: &buildv1.GitBuildSource{
-			URI: gitUrl,
+			URI: gitURL,
 		},
 		Type: buildv1.BuildSourceGit,
 	}
@@ -913,17 +913,17 @@ func addBootstrapVolumeMount(dc *appsv1.DeploymentConfig, dcName string) {
 // UpdateBuildConfig updates the BuildConfig file
 // buildConfigName is the name of the BuildConfig file to be updated
 // projectName is the name of the project
-// gitUrl equals to the git URL of the source and is equals to "" if the source is of type dir or binary
+// gitURL equals to the git URL of the source and is equals to "" if the source is of type dir or binary
 // annotations contains the annotations for the BuildConfig file
-func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, gitUrl string, annotations map[string]string) error {
+func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, gitURL string, annotations map[string]string) error {
 	// generate BuildConfig
 	buildSource := buildv1.BuildSource{}
 
-	// if gitUrl set change buildSource to git and use given repo
-	if gitUrl != "" {
+	// if gitURL set change buildSource to git and use given repo
+	if gitURL != "" {
 		buildSource = buildv1.BuildSource{
 			Git: &buildv1.GitBuildSource{
-				URI: gitUrl,
+				URI: gitURL,
 			},
 			Type: buildv1.BuildSourceGit,
 		}
