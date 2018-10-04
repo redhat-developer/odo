@@ -1388,20 +1388,47 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 	return nil
 }
 
-// GetClusterServiceClassExternalNames returns the names of all the cluster service
+// Service struct holds the servicename and it's corresponding list of plans
+type Service struct {
+	Name     string
+	PlanList []string
+}
+
+// GetClusterServiceClassExternalNamesAndPlans returns the names of all the cluster service
 // classes in the cluster
-func (c *Client) GetClusterServiceClassExternalNames() ([]string, error) {
-	var classNames []string
+func (c *Client) GetClusterServiceClassExternalNamesAndPlans() ([]Service, error) {
+	var classNames []Service
 
 	classes, err := c.GetClusterServiceClasses()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get cluster service classes")
 	}
 
+	planListItems, err := c.GetAllClusterServicePlans()
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to get service plans")
+	}
 	for _, class := range classes {
-		classNames = append(classNames, class.Spec.ExternalName)
+		var planList []string
+		for _, plan := range planListItems {
+			if plan.Spec.ClusterServiceClassRef.Name == class.Spec.ExternalID {
+				planList = append(planList, plan.Spec.ExternalName)
+			}
+		}
+
+		classNames = append(classNames, Service{Name: class.Spec.ExternalName, PlanList: planList})
 	}
 	return classNames, nil
+}
+
+// GetAllClusterServicePlans returns list of available plans
+func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, error) {
+	planList, err := c.serviceCatalogClient.ClusterServicePlans().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get cluster service plan")
+	}
+
+	return planList.Items, nil
 }
 
 // imageStreamExists returns true if the given image stream exists in the given
@@ -1424,13 +1451,13 @@ func (c *Client) imageStreamExists(name string, namespace string) bool {
 // clusterServiceClassExists returns true if the given external name of the
 // cluster service class exists in the cluster, and false otherwise
 func (c *Client) clusterServiceClassExists(name string) bool {
-	clusterServiceClasses, err := c.GetClusterServiceClassExternalNames()
+	clusterServiceClasses, err := c.GetClusterServiceClassExternalNamesAndPlans()
 	if err != nil {
 		glog.V(4).Infof("unable to get cluster service classes' external names")
 	}
 
 	for _, class := range clusterServiceClasses {
-		if class == name {
+		if class.Name == name {
 			return true
 		}
 	}

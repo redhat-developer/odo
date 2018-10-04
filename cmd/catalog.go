@@ -94,10 +94,13 @@ var catalogListServiceCmd = &cobra.Command{
 		case 0:
 			fmt.Printf("No deployable services found\n")
 		default:
-			fmt.Println("The following services can be deployed:")
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "NAME", "\t", "PLANS")
 			for _, service := range catalogList {
-				fmt.Printf("- %v\n", service)
+				fmt.Fprintln(w, service.Name, "\t", strings.Join(service.PlanList, ","))
 			}
+			w.Flush()
+
 		}
 	},
 }
@@ -170,10 +173,13 @@ services from service catalog.
 		case 0:
 			fmt.Printf("No service matched the query: %v\n", searchTerm)
 		default:
-			fmt.Println("The following services were found:")
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "NAME", "\t", "PLANS")
 			for _, component := range components {
-				fmt.Printf("- %v\n", component)
+				fmt.Fprintln(w, component.Name, "\t", strings.Join(component.PlanList, ","))
 			}
+			w.Flush()
+
 		}
 	},
 }

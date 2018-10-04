@@ -20,21 +20,25 @@ type ServiceInfo struct {
 }
 
 // ListCatalog lists all the available service types
-func ListCatalog(client *occlient.Client) ([]string, error) {
+func ListCatalog(client *occlient.Client) ([]occlient.Service, error) {
 
-	clusterServiceClasses, err := client.GetClusterServiceClassExternalNames()
+	clusterServiceClasses, err := client.GetClusterServiceClassExternalNamesAndPlans()
 	if err != nil {
-		return []string{}, errors.Wrapf(err, "unable to get cluster serviceClassExternalName")
+		return nil, errors.Wrapf(err, "unable to get cluster serviceClassExternalName")
 	}
 
-	sort.Strings(clusterServiceClasses)
+	// Sorting service classes alphabetically
+	// Reference: https://golang.org/pkg/sort/#example_Slice
+	sort.Slice(clusterServiceClasses, func(i, j int) bool {
+		return clusterServiceClasses[i].Name < clusterServiceClasses[j].Name
+	})
 
 	return clusterServiceClasses, nil
 }
 
 // Search searches for the services
-func Search(client *occlient.Client, name string) ([]string, error) {
-	var result []string
+func Search(client *occlient.Client, name string) ([]occlient.Service, error) {
+	var result []occlient.Service
 	serviceList, err := ListCatalog(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list services")
@@ -42,7 +46,7 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 
 	// do a partial search in all the services
 	for _, service := range serviceList {
-		if strings.Contains(service, name) {
+		if strings.Contains(service.Name, name) {
 			result = append(result, service)
 		}
 	}
@@ -108,7 +112,7 @@ func SvcTypeExists(client *occlient.Client, serviceType string) (bool, error) {
 	}
 
 	for _, supported := range catalogList {
-		if serviceType == supported {
+		if serviceType == supported.Name {
 			return true, nil
 		}
 	}
