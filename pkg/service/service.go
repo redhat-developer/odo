@@ -68,7 +68,7 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 }
 
 // DeleteService will delete the service with the provided `name`
-func DeleteService(client *occlient.Client, name string, applicationName string, projectName string) error {
+func DeleteService(client *occlient.Client, name string, applicationName string) error {
 
 	labels := componentlabels.GetLabels(name, applicationName, false)
 	err := client.DeleteServiceInstance(labels)
