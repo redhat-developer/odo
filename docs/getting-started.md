@@ -199,3 +199,23 @@ Added storage nodestorage to nodejs
 ```
 
 That's it! Storage has been added your component with an allocated size of 1 Gb.
+
+## Extra OpenShift notes
+
+These are some extra installation / getting started instructions for your local OpenShift cluster.
+
+### Service Catalog
+
+In order to use the Service Catalog it must be enabled within your OpenShift cluster.
+
+Requirements:
+  - `minishift` version 1.22+
+
+If you are using `minishift` you'll need to start an OpenShift cluster with version 3.10.0+ and Service Catalog explicitly enabled.
+
+```sh
+# Deploy minishift
+MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker"
+```
+
+After you've enabled / started `minishift`, you'll be able to list the services via `odo catalog list services` and service catalog related operations via `odo service <verb> <servicename>`.
