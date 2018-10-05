@@ -39,10 +39,13 @@ for arch in `ls -1 $BIN_DIR/`;do
 done
 
 function release_sha() {
+    echo "generating SHA256_SUM for release packages"
     release_dir_files=`find $RELEASE_DIR -maxdepth 1 ! -name SHA256_SUM -type f -printf "%f\n"`
     for filename in $release_dir_files; do
         sha_sum=`sha256sum $RELEASE_DIR${filename}|awk '{ print $1 }'`; echo $sha_sum  $filename;
     done > ${RELEASE_DIR}SHA256_SUM
+    echo "the SHA256_SUM for release packages are:"
+    cat ${RELEASE_DIR}SHA256_SUM
 }
 
 release_sha
