@@ -451,15 +451,9 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 
 		// CreateBuildConfig here!
 		glog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
-		err = client.CreateBuildConfig(commonObjectMeta, imageName, newSource)
+		bc, err := client.CreateBuildConfig(commonObjectMeta, imageName, newSource)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
-		}
-
-		// Get the current BuildConfig since we're going to update DeploymentConfig
-		bc, err := client.GetBuildConfigFromName(namespacedOpenShiftObject, projectName)
-		if err != nil {
-			return errors.Wrapf(err, "unable to retrieve BuildConfig for %s component", componentName)
 		}
 
 		// Update / replace the current DeploymentConfig with a Git one (not SupervisorD!)

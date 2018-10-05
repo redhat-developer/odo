@@ -60,8 +60,7 @@ const (
 	// The length of the string to be generated for names of resources
 	nameLength = 5
 
-	// Docker image that will be use containing the supervisord binary as well
-	// as the assemble / run / restart scripts
+	// Image that will be used containing the supervisord binary and assembly scripts
 	// TODO: Move to Quay.io before we merge (discussion release versions, etc.)
 	bootstrapperImage = "docker.io/cdrage/supervisord-test:latest"
 
@@ -582,15 +581,9 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 	}
 
 	// Deploy BuildConfig to build the container with Git
-	err = c.CreateBuildConfig(commonObjectMeta, builderImage, gitURL)
+	buildConfig, err := c.CreateBuildConfig(commonObjectMeta, builderImage, gitURL)
 	if err != nil {
 		return errors.Wrapf(err, "unable to deploy BuildConfig for %s", commonObjectMeta.Name)
-	}
-
-	// Retrieve BuildConfig image commonObjectMeta.Name for the DeploymentConfig
-	buildConfig, err := c.GetBuildConfigFromName(commonObjectMeta.Name, c.GetCurrentProjectName())
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve BuildConfig image commonObjectMeta.Name")
 	}
 
 	// Generate and create the DeploymentConfig
@@ -794,6 +787,9 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 				} else {
 					dc.Spec.Template.Spec.Containers[index].VolumeMounts = append(dc.Spec.Template.Spec.Containers[index].VolumeMounts, volume)
 				}
+
+				// Break out since we've succeeded in updating the container we were looking for
+				break
 			}
 		}
 	}
@@ -2157,16 +2153,16 @@ func getContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 }
 
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
-func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string) error {
+func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string) (buildv1.BuildConfig, error) {
 
 	// Retrieve the namespace, image name and the appropriate tag
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
 	if err != nil {
-		return errors.Wrap(err, "unable to parse image name")
+		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to parse image name")
 	}
 	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve image stream for CreateBuildConfig")
+		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to retrieve image stream for CreateBuildConfig")
 	}
 	imageNS = imageStream.ObjectMeta.Namespace
 
@@ -2176,10 +2172,10 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	bc := generateBuildConfig(commonObjectMeta, gitURL, imageName+":"+imageTag, imageNS)
 	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
+		return buildv1.BuildConfig{}, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
 	}
 
-	return nil
+	return bc, nil
 }
 
 // findContainer finds the container
