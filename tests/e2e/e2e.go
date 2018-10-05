@@ -119,3 +119,37 @@ func waitForDeleteCmd(cmd string, object string) bool {
 		}
 	}
 }
+
+// waitForServiceCreateCmd runs a command until it finds
+// the deleted resource to be absent in the list of relevant objects from cmd executed
+// It accepts 3 arguments, cmd (command to be run)
+// object (the created object).
+// & status (the required status of the service)
+// It times out if the command doesn't fetch the
+// expected output  within the timeout period (5m).
+func waitForServiceCreateCmd(cmd string, object string, status string) bool {
+
+	pingTimeout := time.After(5 * time.Minute)
+	tick := time.Tick(time.Second)
+
+	for {
+		select {
+		case <-pingTimeout:
+			Fail("Timeout out after 5 minutes")
+
+		case <-tick:
+			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
+			if err != nil {
+				Fail(err.Error())
+			}
+
+			services := strings.Split(string(out), "\n")
+
+			for _, service := range services {
+				if strings.Contains(string(service), object) && strings.Contains(string(service), status) {
+					return true
+				}
+			}
+		}
+	}
+}
