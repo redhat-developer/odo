@@ -134,27 +134,32 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 		for {
 			select {
 			case event := <-watcher.Events:
+				isIgnoreEvent := false
 				changeLock.Lock()
 				glog.V(4).Infof("filesystem watch event: %s", event)
 
 				if !(event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename) {
 					stat, err := os.Lstat(event.Name)
 					if err != nil {
-						glog.Errorf("Failed getting details of the changed file %s", event.Name)
-						watchError = errors.Wrap(err, "unable to watch changes")
+						// Some of the editors like vim and gedit, generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
+						// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
+						// which will terminate the watch
+						glog.Errorf("Failed getting details of the changed file %s. Ignoring the change", event.Name)
 					}
 					// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
-					// Avoid pushing such buffer files
+					// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
+					// which will terminate the watch
 					if stat == nil {
-						break
+						glog.Errorf("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)
+						isIgnoreEvent = true
 					}
 
 					// In windows, every new file created under a sub-directory of the watched directory, raises 2 events:
 					// 1. Write event for the directory under which the file was created
 					// 2. Create event for the file that was created
 					// Ignore 1 to avoid duplicate events.
-					if stat.IsDir() && event.Op&fsnotify.Write == fsnotify.Write {
-						break
+					if isIgnoreEvent || (stat.IsDir() && event.Op&fsnotify.Write == fsnotify.Write) {
+						isIgnoreEvent = true
 					}
 				}
 
@@ -177,7 +182,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				if err != nil {
 					watchError = errors.Wrap(err, "unable to watch changes")
 				}
-				if !alreadyInChangedFiles && !matched {
+				if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
 					changedFiles = append(changedFiles, event.Name)
 				}
 
