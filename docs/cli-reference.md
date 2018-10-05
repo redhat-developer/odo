@@ -5,6 +5,7 @@
 ```sh
   # Creating and deploying a Node.js project
   git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
+  odo app create node-example-app
   odo create nodejs
   odo push
 
@@ -12,7 +13,9 @@
   odo url create
 ``` 
 
-Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code.
+OpenShift Do (Odo) is a CLI tool for OpenShift that uses simple, developer-focused language, so that developers don't need to be experts in Kubernetes and OpenShift in order to build and deploy applications. 
+
+Odo supports a fast, iterative development cycle. Developers can immediately start coding while Odo builds, pushes, and deploys the application in the background. Odo can watch for local changes to source files or binary and automatically pushes when there are changes.
 
 Find more information at https://github.com/redhat-developer/odo
 
