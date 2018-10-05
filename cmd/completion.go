@@ -12,10 +12,14 @@ import (
 const (
 
 	/*
-		__custom_func is called automatically when none of the auto-created (via cobra)
+
+		Completion support for bash only
+		TODO: Add proper support zsh as well
+
+		__custom_func is called when none of the auto-created (via cobra)
 		functions handle the given input
 
-		Currently the only cases handled are the following
+		Currently the cases handled are the following
 
 		'odo create':
 		Handled by simply providing a list of name of the available components
