@@ -44,7 +44,7 @@ function release_sha() {
     for filename in $release_dir_files; do
         sha_sum=`sha256sum $RELEASE_DIR${filename}|awk '{ print $1 }'`; echo $sha_sum  $filename;
     done > ${RELEASE_DIR}SHA256_SUM
-    echo "the SHA256_SUM for release packages are:"
+    echo "The SHA256 SUM for the release packages are:"
     cat ${RELEASE_DIR}SHA256_SUM
 }
 
