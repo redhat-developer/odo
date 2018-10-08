@@ -79,7 +79,7 @@ var serviceDeleteCmd = &cobra.Command{
 	Example: `  # Delete the service named 'mysql-persistent'
   odo service delete mysql-persistent
 	`,
-	Args: cobra.MaximumNArgs(1),
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		glog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
