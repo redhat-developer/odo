@@ -109,7 +109,7 @@ var serviceDeleteCmd = &cobra.Command{
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
-			err := svc.DeleteService(client, serviceName, applicationName, projectName)
+			err := svc.DeleteService(client, serviceName, applicationName)
 			checkError(err, "")
 			fmt.Printf("Service %s from application %s has been deleted\n", serviceName, applicationName)
 
