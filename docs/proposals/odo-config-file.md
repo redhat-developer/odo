@@ -1,7 +1,43 @@
-#### Abstracting config map and Secrets from the user 
+## Abstract
 
-By default values will come from configmaps or secrets, the name of configmap/secret keys will be same as environment variable names.
-configmap name should be unique for each component, so using a combination of appname + component name. eg: <app_name>-<component_name>
+When developers work with applications on openshift there should be a way
+to deal with configuration artifacts using odo.
+
+Implement a way for users to deal with environment variables 
+and configuration files for the applications deployed on openshift cluster 
+using odo. User does not need to be bothered about complex k8s/openshift 
+terminologies like configmaps or secrets,so abstracting 
+the complexity is a prime thing to consider here.
+
+
+## Motivation
+
+Most applications requires environment variables or configuration files.
+So while the developer works on openshift, developer should be able to
+add/edit/delete environment variables as well as configuration files 
+for the applications deployed on openshift.
+
+## Use Cases 
+
+1. As a developer I want to create environment variables for my application using odo.
+
+2. As a developer I want to be able to upload configuration files for my application using odo.
+
+
+## Design overview
+
+This section requires undestanding of three openshift terminologies
+
+1. Environment variables : https://docs.okd.io/latest/dev_guide/environment_variables.html
+2. ConfigMap : https://docs.okd.io/latest/dev_guide/configmaps.html
+3. Secrets : https://docs.okd.io/latest/dev_guide/secrets.html
+
+#### Abstracting config map and secrets from the user 
+
+By default values will come from configmaps or secrets, 
+the name of configmap/secret keys will be same as environment variable names.
+configmap name should be unique for each component, 
+so using a combination of appname + component name. eg: <app_name>-<component_name>
 
 *Problem with this way of implementing:*
 If the user goes into configmap using oc or webUI and modify key names then it becomes messy.
@@ -54,3 +90,8 @@ This will embed the file which is specified into a configmap and push to server,
 $odo config view file <component name>
 ```
 This will show the file name and mount path, also by using `--describe` flag for displaying the entire file into the terminal screen.
+
+## Future evolution
+
+
+
