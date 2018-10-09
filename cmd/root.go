@@ -94,6 +94,7 @@ Find more information at https://github.com/redhat-developer/odo`,
   odo url create`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 	},
+	BashCompletionFunction: bashCompletionFunc,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

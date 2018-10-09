@@ -9,6 +9,121 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+
+	/*
+
+		Completion support for bash only
+		TODO: Add proper support zsh as well
+
+		__custom_func is called when none of the auto-created (via cobra)
+		functions handle the given input
+
+		Currently the cases handled are the following
+
+		'odo create':
+		Handled by simply providing a list of name of the available components
+		(meaning no namespaces or versions are shown).
+		- 'awk' is first used in order to filter out the first line containing the "header" and any
+		trailing lines that might exist after the data.
+		- Then 'awk' is used again to use select only the name.
+		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
+
+		'odo service create':
+		Handled by providing the available services
+		- 'cut' is used in order to remove the leading characters from the service names
+		- 'paste' is then used turn the multiple lines into a single line of names separated by spaces
+
+		'odo project delete|set':
+		Handled by providing the available projects
+		- 'tail' is used in order to drop the first line which is sort of a "header"
+		- 'sed' is used to ensure that we only keep the project name
+		- 'paste' is then used turn the multiple lines into a single line of names separated by spaces
+
+		'odo storage delete|mount|unmount':
+		Handled by providing the available storage objects
+		It should be noted that this only works for the current component
+		- 'awk' is first used in order to filter out the first line containing the "header" and any
+		trailing lines that might exist after the first table.
+		- 'sed' is used to filter out any informative messages that might exist
+		- 'sed' is used again to remove empty lines
+		- Then 'awk' is used again to use select only the name.
+		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
+
+		'odo url delete':
+		Handled by providing the available urls
+		- 'awk' is first used in order to filter out the first line containing the "header".
+		We use the marker 'dummy' to make awk work until the end of the file
+		- Then 'awk' is used again to use select only the name.
+		- Finally 'paste' is used turn the multiple lines into a single line of names separated by spaces
+
+		More information about writing bash completion functions can be found at
+		https://debian-administration.org/article/317/An_introduction_to_bash_completion_part_2 for
+	*/
+
+	bashCompletionFunc = `
+__custom_func() {
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    if [ "${#COMP_WORDS[@]}" -eq "3" ]; then # no entity has been entered, only a command like 'odo create'
+      local command="${COMP_WORDS[COMP_CWORD-1]}"
+      case "${command}" in
+    		create)
+    			local components=$(odo catalog list components | awk  '/NAME/{flag=1;next}/---/{flag=0}flag' | awk '{ print $1; }' | paste -sd " " -)
+    			COMPREPLY=( $(compgen -W "${components}" -- ${cur}) )
+          return 0
+          ;;
+      esac
+    elif [ "${#COMP_WORDS[@]}" -eq "4" ]; then # an entity followed by a command has been entered like 'odo service create'
+      local entity="${COMP_WORDS[COMP_CWORD-2]}"
+      local verb="${COMP_WORDS[COMP_CWORD-1]}"
+      case "${entity}" in
+        service)
+          case "${verb}" in
+            create)
+              local services=$(odo catalog list services | cut -c 3- | paste -sd " " -)
+              COMPREPLY=( $(compgen -W "${services}" -- ${cur}) )
+              return 0
+              ;;
+          esac
+          ;;
+        project)
+          case "${verb}" in
+            delete|set)
+              local projects=$(odo project list | tail -n +2 | sed 's/[^-a-zA-Z0-9]//g' | paste -sd " " -)
+              COMPREPLY=( $(compgen -W "${projects}" -- ${cur}) )
+              return 0
+              ;;
+          esac
+          ;;
+        storage)
+          case "${verb}" in
+            delete|mount|unmount)
+              local storages=$(odo storage list | awk  '/NAME/{flag=1;next}/NAME/{flag=0}flag' | sed '/No/d' | sed '/^\s*$/d' | awk '{ print $1; }' | paste -sd " " -)
+              COMPREPLY=( $(compgen -W "${storages}" -- ${cur}) )
+              return 0
+              ;;
+          esac
+          ;;
+        url)
+          case "${verb}" in
+            delete)
+              local urls=$(odo url list | awk  '/NAME/{flag=1;next}/dummy/{flag=0}flag' | sed '/No/d' | sed '/^\s*$/d' | awk '{ print $1; }' | paste -sd " " -)
+              COMPREPLY=( $(compgen -W "${urls}" -- ${cur}) )
+              return 0
+              ;;
+          esac
+          ;;
+      esac
+    fi
+
+  	return 0;
+}
+`
+)
+
 var completionCmd = &cobra.Command{
 	Use:   "completion SHELL",
 	Short: "Output shell completion code",
