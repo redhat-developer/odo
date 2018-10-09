@@ -1,9 +1,0 @@
-#!/bin/bash
-set -x
-set -eo pipefail
-
-# Make sure that we have a directory already created for /opt/app-root with the correct permissions
-APP_ROOT=/opt/app-root
-mkdir -p $APP_ROOT/src
-fix-permissions $APP_ROOT/src
-fix-permissions $APP_ROOT
