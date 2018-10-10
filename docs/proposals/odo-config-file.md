@@ -207,7 +207,7 @@ odo utils config remove odoignore .git --local        # Removes .git from the l
 * *delete*: Deletes an entire configuration key with all it's values (in case of a list). If the key does not exist, this command should error with the corresponding message.
 * *remove*: Removes a value from a configuration key entry that is a list of values.  If the key does not exist or is not a list or the value does not exist, this command will error with the corresponding message.
 
-#### Describe configuration
+#### Describe configuration
 
 To get information about a specific configuration key:
 
