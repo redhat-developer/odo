@@ -241,6 +241,7 @@ func SetCurrent(client *occlient.Client, appName string) error {
 	return nil
 }
 
+// Exists returns true if given application (appName) exists
 func Exists(client *occlient.Client, appName string) (bool, error) {
 	apps, err := ListInProject(client)
 	if err != nil {

@@ -56,11 +56,8 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var (
-			componentName string
-		)
+		var componentName string
 
-		projectName = getAndSetNamespace(client)
 		if len(args) == 0 {
 			componentName, err := component.GetCurrent(applicationName, projectName)
 			checkError(err, "unable to get current component")
