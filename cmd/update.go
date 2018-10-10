@@ -34,7 +34,7 @@ var updateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		stdout := color.Output
@@ -60,7 +60,7 @@ var updateCmd = &cobra.Command{
 			componentName string
 		)
 
-		projectName = setNamespace(client)
+		projectName = getAndSetNamespace(client)
 		if len(args) == 0 {
 			componentName, err := component.GetCurrent(applicationName, projectName)
 			checkError(err, "unable to get current component")
@@ -74,7 +74,7 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			componentName = args[0]
-			exists, err := component.Exists(client, componentName, applicationName, projectName)
+			exists, err := component.Exists(client, componentName, applicationName)
 			checkError(err, "")
 			if !exists {
 				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)

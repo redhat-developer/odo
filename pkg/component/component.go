@@ -241,7 +241,7 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 }
 
 // Delete whole component
-func Delete(client *occlient.Client, componentName string, applicationName string, projectName string) error {
+func Delete(client *occlient.Client, componentName string, applicationName string) error {
 
 	cfg, err := config.New()
 	if err != nil {
@@ -255,7 +255,7 @@ func Delete(client *occlient.Client, componentName string, applicationName strin
 	}
 
 	// Get a list of all components
-	components, err := List(client, applicationName, projectName)
+	components, err := List(client, applicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to retrieve list of components")
 	}
@@ -264,23 +264,23 @@ func Delete(client *occlient.Client, componentName string, applicationName strin
 	// active component
 	// Second check is that we want to do an update only if it is happening for the active application otherwise we need
 	// not to care for the update of the active component
-	activeComponent := cfg.GetActiveComponent(applicationName, projectName)
-	activeApplication := cfg.GetActiveApplication(projectName)
+	activeComponent := cfg.GetActiveComponent(applicationName, client.Namespace)
+	activeApplication := cfg.GetActiveApplication(client.Namespace)
 	if activeComponent == componentName && activeApplication == applicationName {
 		// We will *only* set a new component if either len(components) is zero, or the
 		// current component matches the one being deleted.
-		if current := cfg.GetActiveComponent(applicationName, projectName); current == componentName || len(components) == 0 {
+		if current := cfg.GetActiveComponent(applicationName, client.Namespace); current == componentName || len(components) == 0 {
 
 			// If there's more than one component, set it to the first one..
 			if len(components) > 0 {
-				err = cfg.SetActiveComponent(components[0].Name, applicationName, projectName)
+				err = cfg.SetActiveComponent(components[0].Name, applicationName, client.Namespace)
 
 				if err != nil {
 					return errors.Wrapf(err, "unable to set current component to '%s'", componentName)
 				}
 			} else {
 				// Unset to blank
-				err = cfg.UnsetActiveComponent(projectName)
+				err = cfg.UnsetActiveComponent(client.Namespace)
 				if err != nil {
 					return errors.Wrapf(err, "error unsetting current component while deleting %s", componentName)
 				}
@@ -432,7 +432,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
-func List(client *occlient.Client, applicationName string, projectName string) ([]ComponentInfo, error) {
+func List(client *occlient.Client, applicationName string) ([]ComponentInfo, error) {
 
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	componentNames, err := client.GetLabelValues(componentlabels.ComponentLabel, applicationSelector)
@@ -636,9 +636,9 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 // componentName is the component name to perform check for
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
-func Exists(client *occlient.Client, componentName, applicationName, projectName string) (bool, error) {
+func Exists(client *occlient.Client, componentName, applicationName string) (bool, error) {
 
-	componentList, err := List(client, applicationName, projectName)
+	componentList, err := List(client, applicationName)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the component list")
 	}
@@ -724,14 +724,14 @@ func getPortFromService(service *corev1.Service) (int32, error) {
 }
 
 // GetComponentDesc provides description such as source, url & storage about given component
-func GetComponentDesc(client *occlient.Client, componentName string, applicationName string, projectName string) (componentImageType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
+func GetComponentDesc(client *occlient.Client, componentName string, applicationName string) (componentImageType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
 	// Component Type
 	componentImageType, err = GetComponentType(client, componentName, applicationName)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
 	// Source
-	_, path, err = GetComponentSource(client, componentName, applicationName, projectName)
+	_, path, err = GetComponentSource(client, componentName, applicationName, client.Namespace)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}

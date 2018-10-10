@@ -69,7 +69,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		var applicationName string
 		var err error
 		if applicationFlag != "" && projectFlag != "" {
@@ -110,7 +110,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		componentImageName, componentType, _, componentVersion := util.ParseCreateCmdArgs(args)
 
 		// Fetch list of existing components in-order to attempt generation of unique component name
-		componentList, err := component.List(client, applicationName, projectName)
+		componentList, err := component.List(client, applicationName)
 		checkError(err, "")
 
 		// Generate unique name for component
@@ -146,7 +146,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		// Validate component name
 		err = validateName(componentName)
 		checkError(err, "")
-		exists, err = component.Exists(client, componentName, applicationName, projectName)
+		exists, err = component.Exists(client, componentName, applicationName)
 		checkError(err, "")
 		if exists {
 			fmt.Printf("component with the name %s already exists in the current application\n", componentName)

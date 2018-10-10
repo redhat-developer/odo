@@ -33,7 +33,7 @@ var watchCmd = &cobra.Command{
 		stdout := os.Stdout
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		var componentName string

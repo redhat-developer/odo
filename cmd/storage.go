@@ -39,9 +39,9 @@ var storageCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName, projectName)
+		componentName := getComponent(client, componentFlag, applicationName)
 
 		var storageName string
 		if len(args) != 0 {
@@ -82,9 +82,9 @@ var storageUnmountCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName, projectName)
+		componentName := getComponent(client, componentFlag, applicationName)
 
 		var storageName string
 		var err error
@@ -129,7 +129,7 @@ var storageDeleteCmd = &cobra.Command{
 
 		storageName := args[0]
 
-		setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		exists, err := storage.Exists(client, storageName, applicationName)
@@ -183,7 +183,7 @@ var storageListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		if storageAllListflag {
@@ -191,10 +191,10 @@ var storageListCmd = &cobra.Command{
 				fmt.Println("Invalid arguments. Component name is not needed")
 				os.Exit(1)
 			}
-			printMountedStorageInAllComponent(client, applicationName, projectName)
+			printMountedStorageInAllComponent(client, applicationName)
 		} else {
 			// storageComponent is the input component name
-			componentName := getComponent(client, componentFlag, applicationName, projectName)
+			componentName := getComponent(client, componentFlag, applicationName)
 			printMountedStorageInComponent(client, componentName, applicationName)
 		}
 		printUnmountedStorage(client, applicationName)
@@ -215,9 +215,9 @@ var storageMountCmd = &cobra.Command{
 
 		storageName := args[0]
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName, projectName)
+		componentName := getComponent(client, componentFlag, applicationName)
 
 		exists, err := storage.Exists(client, storageName, applicationName)
 		checkError(err, "unable to check if the storage exists in the current application")
@@ -239,7 +239,6 @@ var storageMountCmd = &cobra.Command{
 
 func init() {
 	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
-	//storageCreateCmd.Flags().StringVar(&storageComponent, "component", "", "Component to add storage to. Defaults to active component.")
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageCreateCmd.MarkFlagRequired("path")
 	storageCreateCmd.MarkFlagRequired("size")

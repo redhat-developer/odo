@@ -46,7 +46,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		setNamespace(client)
+		getAndSetNamespace(client)
 		var applicationName string
 		var err error
 		if applicationFlag != "" && projectFlag != "" {
@@ -126,7 +126,7 @@ var serviceDeleteCmd = &cobra.Command{
 
 		client := getOcClient()
 
-		setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		serviceName := args[0]
@@ -169,7 +169,7 @@ var serviceListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		services, err := svc.List(client, applicationName)

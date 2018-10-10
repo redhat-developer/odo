@@ -20,12 +20,12 @@ var componentListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		currentComponent, err := component.GetCurrent(applicationName, projectName)
 		checkError(err, "")
-		components, err := component.List(client, applicationName, projectName)
+		components, err := component.List(client, applicationName)
 		checkError(err, "")
 
 		if len(components) == 0 {

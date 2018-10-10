@@ -51,9 +51,9 @@ The created URL can be used to access the specified component from outside the O
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName, projectName)
+		componentName := getComponent(client, componentFlag, applicationName)
 
 		var urlName string
 		switch len(args) {
@@ -94,9 +94,9 @@ var urlDeleteCmd = &cobra.Command{
 		// Initialization
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName, projectName)
+		componentName := getComponent(client, componentFlag, applicationName)
 
 		urlName := args[0]
 
@@ -138,9 +138,9 @@ var urlListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName, projectName)
+		componentName := getComponent(client, componentFlag, applicationName)
 
 		urls, err := url.List(client, componentName, applicationName)
 		checkError(err, "")

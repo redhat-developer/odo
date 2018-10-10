@@ -55,6 +55,7 @@ If no app name is passed, a default app name will be auto-generated.
 	Run: func(cmd *cobra.Command, args []string) {
 		var appName string
 		client := getOcClient()
+		projectName := getAndSetNamespace(client)
 		if len(args) == 1 {
 			// The only arg passed is the app name
 			appName = args[0]
@@ -71,12 +72,9 @@ If no app name is passed, a default app name will be auto-generated.
 		// validate application name
 		err := validateName(appName)
 		checkError(err, "")
-		fmt.Printf("Creating application: %v\n", appName)
-		err = application.Create(client, appName)
-
-		projectName := setNamespace(client)
 		fmt.Printf("Creating application: %v in project: %v \n", appName, projectName)
-
+		err = application.Create(client, appName)
+		checkError(err, "")
 		err = application.SetCurrent(client, appName)
 		checkError(err, "")
 		fmt.Printf("Switched to application: %v in project\n", appName, projectName)
@@ -93,7 +91,7 @@ var applicationGetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		app, err := application.GetCurrent(projectName)
 		checkError(err, "")
 		if applicationShortFlag {
@@ -118,7 +116,7 @@ var applicationDeleteCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		var appName string
 		// If name of the app to be deleted is not passed, consider the current app for deletion
 		if len(args) == 0 {
@@ -129,10 +127,11 @@ var applicationDeleteCmd = &cobra.Command{
 			// If app name passed, consider it for deletion
 			appName = args[0]
 		}
+
 		var confirmDeletion string
 
 		// Print App Information which will be deleted
-		err := printDeleteAppInfo(client, appName, projectName)
+		err := printDeleteAppInfo(client, appName)
 		checkError(err, "")
 
 		if applicationForceDeleteFlag {
@@ -166,7 +165,7 @@ var applicationListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		apps, err := application.ListInProject(client)
 		checkError(err, "unable to get list of applications")
 		if len(apps) > 0 {
@@ -206,7 +205,7 @@ var applicationSetCmd = &cobra.Command{
 		client := getOcClient()
 		appName := args[0]
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		// error if application does not exist
 		exists, err := application.Exists(client, appName)
 		checkError(err, "unable to check if application exists")
@@ -217,7 +216,7 @@ var applicationSetCmd = &cobra.Command{
 
 		err = application.SetCurrent(client, appName)
 		checkError(err, "")
-		fmt.Printf("Switched to application: %v in project: %v \n", args[0], projectName)
+		fmt.Printf("Switched to application: %v\n", args[0])
 	},
 }
 
@@ -232,7 +231,7 @@ var applicationDescribeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		var appName string
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		if len(args) == 0 {
 			var err error
 			appName, err = application.GetCurrent(projectName)
@@ -253,7 +252,7 @@ var applicationDescribeCmd = &cobra.Command{
 		}
 
 		// List of Component
-		componentList, err := component.List(client, appName, projectName)
+		componentList, err := component.List(client, appName)
 		checkError(err, "")
 		if len(componentList) == 0 {
 			fmt.Printf("Application %s has no components deployed.\n", appName)
@@ -262,7 +261,7 @@ var applicationDescribeCmd = &cobra.Command{
 		fmt.Printf("Application %s has:\n", appName)
 
 		for _, currentComponent := range componentList {
-			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName, projectName)
+			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
 			checkError(err, "")
 			printComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
 		}

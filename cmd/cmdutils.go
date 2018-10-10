@@ -18,14 +18,14 @@ import (
 )
 
 // printDeleteAppInfo will print things which will be deleted
-func printDeleteAppInfo(client *occlient.Client, appName string, projectName string) error {
-	componentList, err := component.List(client, appName, projectName)
+func printDeleteAppInfo(client *occlient.Client, appName string) error {
+	componentList, err := component.List(client, appName)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Component list")
 	}
 
 	for _, currentComponent := range componentList {
-		_, _, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName, projectName)
+		_, _, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}
@@ -46,9 +46,9 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 // getComponent returns the component to be used for the operation. If an input
 // component is specified, then it is returned if it exists, if not,
 // the current component is fetched and returned. If no component set, throws error
-func getComponent(client *occlient.Client, inputComponent string, applicationName string, projectName string) string {
+func getComponent(client *occlient.Client, inputComponent string, applicationName string) string {
 	if len(inputComponent) == 0 {
-		c, err := component.GetCurrent(applicationName, projectName)
+		c, err := component.GetCurrent(applicationName, client.Namespace)
 		checkError(err, "Could not get current component")
 		if c == "" {
 			fmt.Println("There is no component set")
@@ -56,7 +56,7 @@ func getComponent(client *occlient.Client, inputComponent string, applicationNam
 		}
 		return c
 	}
-	exists, err := component.Exists(client, inputComponent, applicationName, projectName)
+	exists, err := component.Exists(client, inputComponent, applicationName)
 	checkError(err, "")
 	if !exists {
 		fmt.Printf("Component %v does not exist\n", inputComponent)
@@ -137,8 +137,8 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 }
 
 // printMountedStorageInAllComponent prints all the mounted storage in all the components of the application and project
-func printMountedStorageInAllComponent(client *occlient.Client, applicationName string, projectName string) {
-	componentList, err := component.List(client, applicationName, projectName)
+func printMountedStorageInAllComponent(client *occlient.Client, applicationName string) {
+	componentList, err := component.List(client, applicationName)
 	checkError(err, "could not get component list")
 
 	// iterating over all the components in the given aplication and project
@@ -189,10 +189,11 @@ func getAppName(client *occlient.Client) string {
 	return applicationName
 }
 
-// setNamespace checks whether project flag is provided,
+// getAndSetNamespace checks whether project flag is provided,
 // if provided, it validates the name and sets it as namespace for further operations
 // if not provided, it fetches current namespace and sets it as namespace for further operations
-func setNamespace(client *occlient.Client) string {
+// getAndSetNamespace also return the project name
+func getAndSetNamespace(client *occlient.Client) string {
 	// projectFlag is `--project` flag
 	if projectFlag != "" {
 		_, err := project.Exists(client, projectFlag)
