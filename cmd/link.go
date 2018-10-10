@@ -29,13 +29,12 @@ is injected into the component.
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
-
-		componentName := getComponent(client, componentFlag, applicationName, projectName)
+		componentName := getComponent(client, componentFlag, applicationName)
 		serviceName := args[0]
 
-		exists, err := component.Exists(client, componentName, applicationName, projectName)
+		exists, err := component.Exists(client, componentName, applicationName)
 		checkError(err, "")
 		if !exists {
 			fmt.Printf("Component %v does not exist\n", componentName)

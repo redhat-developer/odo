@@ -34,7 +34,7 @@ var pushCmd = &cobra.Command{
 		stdout := color.Output
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		var inputName string
@@ -43,7 +43,7 @@ var pushCmd = &cobra.Command{
 		} else {
 			inputName = args[0]
 		}
-		componentName := getComponent(client, inputName, applicationName, projectName)
+		componentName := getComponent(client, inputName, applicationName)
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)

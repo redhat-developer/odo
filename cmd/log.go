@@ -27,7 +27,7 @@ var logCmd = &cobra.Command{
 		// Retrieve the client
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		var argComponent string
@@ -37,7 +37,7 @@ var logCmd = &cobra.Command{
 		}
 
 		// Retrieve and set the currentComponent
-		currentComponent := getComponent(client, argComponent, applicationName, projectName)
+		currentComponent := getComponent(client, argComponent, applicationName)
 
 		// Retrieve the log
 		err := component.GetLogs(client, currentComponent, applicationName, logFollow, stdout)

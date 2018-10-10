@@ -39,7 +39,7 @@ var componentGetCmd = &cobra.Command{
 		glog.V(4).Infof("component get called")
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		component, err := component.GetCurrent(applicationName, projectName)
@@ -67,10 +67,10 @@ var componentSetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 
-		projectName := setNamespace(client)
+		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
-		exists, err := component.Exists(client, args[0], applicationName, projectName)
+		exists, err := component.Exists(client, args[0], applicationName)
 		checkError(err, "")
 		if !exists {
 			fmt.Printf("Component %s does not exist in the current application\n", args[0])
