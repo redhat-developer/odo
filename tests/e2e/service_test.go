@@ -10,7 +10,8 @@ var _ = Describe("odoServiceE2e", func() {
 	Context("odo component creation", func() {
 		It("should be able to create a service", func() {
 			runCmd("odo service create mysql-persistent")
-			waitForServiceCreateCmd("odo service list | sed 1d", "mysql-persistent", "ProvisionedSuccessfully")
+			cmd := "oc get serviceinstance mysql-persistent -o go-template='{{ (index .status.conditions 0).reason}}'"
+			waitForServiceCreateCmd(cmd, "ProvisionedSuccessfully")
 		})
 
 		It("should be able to list the service", func() {
@@ -21,7 +22,7 @@ var _ = Describe("odoServiceE2e", func() {
 
 		It("should be able to delete a service", func() {
 			runCmd("odo service delete mysql-persistent -f")
-			waitForDeleteCmd("odo service list", "mysql-persistent")
+			waitForDeleteCmd("oc get serviceinstance", "mysql-persistent")
 		})
 	})
 })

@@ -65,18 +65,19 @@ func pingSvc(url string) {
 // waitForCmdOut runs a command until it gets
 // the expected output.
 // It accepts 2 arguments, cmd (command to be run)
-// & expOut (expected output).
+// timeout (the time to wait for the output)
+// check (function with output check logic)
 // It times out if the command doesn't fetch the
-// expected output  within the timeout period (1m).
-func waitForCmdOut(cmd string, expOut string) bool {
+// expected output  within the timeout period.
+func waitForCmdOut(cmd string, timeout int, check func(output string) bool) bool {
 
-	pingTimeout := time.After(1 * time.Minute)
+	pingTimeout := time.After(time.Duration(timeout) * time.Minute)
 	tick := time.Tick(time.Second)
 
 	for {
 		select {
 		case <-pingTimeout:
-			Fail("Timeout out after 1 minute")
+			Fail("Timeout out after " + string(timeout) + " minutes")
 
 		case <-tick:
 			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
@@ -84,72 +85,40 @@ func waitForCmdOut(cmd string, expOut string) bool {
 				Fail(err.Error())
 			}
 
-			if string(out) == expOut {
+			if check(string(out)) {
 				return true
 			}
 		}
 	}
+
 }
 
-// waitForDeleteCmd runs a command until it finds
-// the deleted resource to be absent in the list of relevant objects from cmd executed
-// It accepts 2 arguments, cmd (command to be run)
-// & object (the deleted object).
-// It times out if the command doesn't fetch the
-// expected output  within the timeout period (1m).
+// waitForEqualCmd calls the waitForCmdOut function to wait and check if the output is equal to the given string within 1 min
+// cmd is the command to run
+// expOut is the expected output
+func waitForEqualCmd(cmd string, expOut string) bool {
+
+	return waitForCmdOut(cmd, 1, func(output string) bool {
+		return output == expOut
+	})
+}
+
+// waitForEqualCmd calls the waitForCmdOut function to wait and check if the output is not equal to the given string within 1 min
+// cmd is the command to run
+// expOut is the expected output which should not be contained in the output string
 func waitForDeleteCmd(cmd string, object string) bool {
 
-	pingTimeout := time.After(1 * time.Minute)
-	tick := time.Tick(time.Second)
-
-	for {
-		select {
-		case <-pingTimeout:
-			Fail("Timeout out after 1 minute")
-
-		case <-tick:
-			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
-			if err != nil {
-				Fail(err.Error())
-			}
-
-			if !strings.Contains(string(out), object) {
-				return true
-			}
-		}
-	}
+	return waitForCmdOut(cmd, 1, func(output string) bool {
+		return !strings.Contains(output, object)
+	})
 }
 
-// waitForServiceCreateCmd runs a command until it finds
-// the deleted resource to be absent in the list of relevant objects from cmd executed
-// It accepts 3 arguments, cmd (command to be run)
-// object (the created object).
-// & status (the required status of the service)
-// It times out if the command doesn't fetch the
-// expected output  within the timeout period (5m).
-func waitForServiceCreateCmd(cmd string, object string, status string) bool {
+// waitForEqualCmd calls the waitForCmdOut function to wait and check if the output is equal to the given string within 5 mins
+// cmd is the command to run
+// expOut is the expected output
+func waitForServiceCreateCmd(cmd string, status string) bool {
 
-	pingTimeout := time.After(5 * time.Minute)
-	tick := time.Tick(time.Second)
-
-	for {
-		select {
-		case <-pingTimeout:
-			Fail("Timeout out after 5 minutes")
-
-		case <-tick:
-			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
-			if err != nil {
-				Fail(err.Error())
-			}
-
-			services := strings.Split(string(out), "\n")
-
-			for _, service := range services {
-				if strings.Contains(string(service), object) && strings.Contains(string(service), status) {
-					return true
-				}
-			}
-		}
-	}
+	return waitForCmdOut(cmd, 5, func(output string) bool {
+		return output == status
+	})
 }
