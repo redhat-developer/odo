@@ -61,7 +61,6 @@ const (
 	nameLength = 5
 
 	// Image that will be used containing the supervisord binary and assembly scripts
-	// TODO: change image tag to released version before merging
 	bootstrapperImage = "quay.io/openshiftdo/supervisord:latest"
 
 	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment
