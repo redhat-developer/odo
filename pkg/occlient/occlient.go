@@ -800,6 +800,7 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 			continue
 		} else {
 			dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, volume)
+			break
 		}
 	}
 
