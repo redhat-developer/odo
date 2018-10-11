@@ -29,6 +29,46 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+// fakeDeploymentConfig creates a fake DC.
+// we "dog food" our own functions by using our templates / functions to generate this fake deployment config
+func fakeDeploymentConfig(name string, image string) *appsv1.DeploymentConfig {
+
+	// save component type as label
+	labels := componentlabels.GetLabels(name, name, true)
+	labels[componentlabels.ComponentTypeLabel] = image
+	labels[componentlabels.ComponentTypeVersion] = "latest"
+
+	// save source path as annotation
+	annotations := map[string]string{"app.kubernetes.io/url": "github.com/foo/bar.git",
+		"app.kubernetes.io/component-source-type": "git",
+	}
+
+	// Create CommonObjectMeta to be passed in
+	commonObjectMeta := metav1.ObjectMeta{
+		Name:        name,
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
+	commonImageMeta := CommonImageMeta{
+		Name:      name,
+		Tag:       "latest",
+		Namespace: "openshift",
+		Ports:     []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}},
+	}
+
+	// Generate the DeploymentConfig that will be used.
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, image, commonImageMeta)
+
+	// Add the appropriate bootstrap volumes for SupervisorD
+	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
+	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
+	addBootstrapVolume(&dc, commonObjectMeta.Name)
+	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
+
+	return &dc
+}
+
 // fakeImageStream gets imagestream for the reactor
 func fakeImageStream(imageName string, namespace string, strTags []string) *imagev1.ImageStream {
 	var tags []imagev1.NamedTagEventList
@@ -1605,7 +1645,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 		name                string
 		buildConfigName     string
 		projectName         string
-		gitUrl              string
+		gitURL              string
 		annotations         map[string]string
 		existingBuildConfig buildv1.BuildConfig
 		updatedBuildConfig  buildv1.BuildConfig
@@ -1615,7 +1655,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 			name:            "local to git with proper parameters",
 			buildConfigName: "nodejs",
 			projectName:     "app",
-			gitUrl:          "https://github.com/sclorg/nodejs-ex",
+			gitURL:          "https://github.com/sclorg/nodejs-ex",
 			annotations: map[string]string{
 				"app.kubernetes.io/url":                   "https://github.com/sclorg/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "git",
@@ -1669,7 +1709,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 				return true, &tt.updatedBuildConfig, nil
 			})
 
-			err := fkclient.UpdateBuildConfig(tt.buildConfigName, tt.projectName, tt.gitUrl, tt.annotations)
+			err := fkclient.UpdateBuildConfig(tt.buildConfigName, tt.projectName, tt.gitURL, tt.annotations)
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
 				if (len(fkclientset.BuildClientset.Actions()) != 2) && (tt.wantErr != true) {
@@ -1698,7 +1738,7 @@ func TestNewAppS2I(t *testing.T) {
 		commonObjectMeta metav1.ObjectMeta
 		namespace        string
 		builderImage     string
-		gitUrl           string
+		gitURL           string
 		inputPorts       []string
 	}
 
@@ -1709,11 +1749,11 @@ func TestNewAppS2I(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name: "case 1: with valid gitUrl",
+			name: "case 1: with valid gitURL",
 			args: args{
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "https://github.com/openshift/ruby",
+				gitURL:       "https://github.com/openshift/ruby",
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
@@ -1734,11 +1774,11 @@ func TestNewAppS2I(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "case 2 : binary buildSource with gitUrl empty",
+			name: "case 2 : binary buildSource with gitURL empty",
 			args: args{
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "",
+				gitURL:       "",
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
@@ -1765,7 +1805,7 @@ func TestNewAppS2I(t *testing.T) {
 			args: args{
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "https://github.com/openshift/ruby",
+				gitURL:       "https://github.com/openshift/ruby",
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
@@ -1792,7 +1832,7 @@ func TestNewAppS2I(t *testing.T) {
 			args: args{
 				builderImage: "ruby:latest",
 				namespace:    "testing",
-				gitUrl:       "https://github.com/openshift/ruby",
+				gitURL:       "https://github.com/openshift/ruby",
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
@@ -1821,7 +1861,7 @@ func TestNewAppS2I(t *testing.T) {
 		// 	args: args{
 		// 		name:         "ruby",
 		// 		builderImage: "",
-		// 		gitUrl:       "https://github.com/openshift/ruby",
+		// 		gitURL:       "https://github.com/openshift/ruby",
 		// 		labels: map[string]string{
 		// 			"app": "apptmp",
 		// 			"app.kubernetes.io/component-name": "ruby",
@@ -1855,7 +1895,7 @@ func TestNewAppS2I(t *testing.T) {
 
 			err := fkclient.NewAppS2I(tt.args.commonObjectMeta,
 				tt.args.builderImage,
-				tt.args.gitUrl,
+				tt.args.gitURL,
 				tt.args.inputPorts)
 
 			if (err != nil) != tt.wantErr {
@@ -1864,7 +1904,7 @@ func TestNewAppS2I(t *testing.T) {
 
 			if err == nil {
 
-				if len(fkclientset.BuildClientset.Actions()) != 2 {
+				if len(fkclientset.BuildClientset.Actions()) != 1 {
 					t.Errorf("expected 1 BuildClientset.Actions() in NewAppS2I, got %v: %v", len(fkclientset.BuildClientset.Actions()), fkclientset.BuildClientset.Actions())
 				}
 
@@ -1909,9 +1949,9 @@ func TestNewAppS2I(t *testing.T) {
 				// Check buildconfig objects
 				createdBC := fkclientset.BuildClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*buildv1.BuildConfig)
 
-				if tt.args.gitUrl != "" {
-					if createdBC.Spec.CommonSpec.Source.Git.URI != tt.args.gitUrl {
-						t.Errorf("git url is not matching with expected value, expected: %s, got %s", tt.args.gitUrl, createdBC.Spec.CommonSpec.Source.Git.URI)
+				if tt.args.gitURL != "" {
+					if createdBC.Spec.CommonSpec.Source.Git.URI != tt.args.gitURL {
+						t.Errorf("git url is not matching with expected value, expected: %s, got %s", tt.args.gitURL, createdBC.Spec.CommonSpec.Source.Git.URI)
 					}
 
 					if createdBC.Spec.CommonSpec.Source.Type != "Git" {
@@ -2903,5 +2943,281 @@ func TestGetServiceInstanceList(t *testing.T) {
 		} else if err != nil && !tt.wantErr {
 			t.Errorf("test failed, expected: no error, got error: %s", err.Error())
 		}
+	}
+}
+
+func TestPatchCurrentDC(t *testing.T) {
+	type args struct {
+		name     string
+		dcBefore appsv1.DeploymentConfig
+		dcPatch  appsv1.DeploymentConfig
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		actions int
+	}{
+		{
+			name: "Case 1: Test patching",
+			args: args{
+				name:     "foo",
+				dcBefore: *fakeDeploymentConfig("foo", "foo"),
+				dcPatch:  generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo"}, "bar", []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}}),
+			},
+			wantErr: false,
+			actions: 2,
+		},
+		{
+			name: "Case 2: Test patching with the wrong name",
+			args: args{
+				name:     "foo",
+				dcBefore: *fakeDeploymentConfig("foo", "foo"),
+				dcPatch:  generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar", []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}}),
+			},
+			wantErr: true,
+			actions: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.args.dcBefore, nil
+			})
+
+			// Fake the "update"
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				if dc.Name != tt.args.dcPatch.Name {
+					return true, nil, fmt.Errorf("got different dc")
+				}
+				return true, nil, nil
+			})
+
+			// Run function PatchCurrentDC
+			err := fakeClient.PatchCurrentDC(tt.args.name, tt.args.dcPatch)
+
+			// Error checking PatchCurrentDC
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.PatchCurrentDC() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err == nil && !tt.wantErr {
+				// Check to see how many actions are being ran
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in PatchCurrentDC got: %v", tt.actions, fakeClientSet.Kubernetes.Actions())
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+
+		})
+	}
+}
+
+func TestUpdateDCToGit(t *testing.T) {
+	type args struct {
+		name     string
+		newImage string
+		dc       appsv1.DeploymentConfig
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		actions int
+	}{
+		{
+			name: "Case 1: Check the function works",
+			args: args{
+				name:     "foo",
+				newImage: "bar",
+				dc:       *fakeDeploymentConfig("foo", "foo"),
+			},
+			wantErr: false,
+			actions: 3,
+		},
+		{
+			name: "Case 2: Fail if the variable passed in is blank",
+			args: args{
+				name:     "foo",
+				newImage: "",
+				dc:       *fakeDeploymentConfig("foo", "foo"),
+			},
+			wantErr: true,
+			actions: 3,
+		},
+		{
+			name: "Case 3: Fail if image retrieved doesn't match the one we want to patch",
+			args: args{
+				name:     "foo",
+				newImage: "",
+				dc:       *fakeDeploymentConfig("foo2", "foo"),
+			},
+			wantErr: true,
+			actions: 3,
+		},
+		{
+			name: "Case 4: Check we can patch with a tag",
+			args: args{
+				name:     "foo",
+				newImage: "bar:latest",
+				dc:       *fakeDeploymentConfig("foo", "foo"),
+			},
+			wantErr: false,
+			actions: 3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.args.dc, nil
+			})
+
+			// Fake the "update"
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+
+				// Check name
+				if dc.Name != tt.args.dc.Name {
+					return true, nil, fmt.Errorf("got different dc")
+				}
+
+				// Check that the new patch actually has the new "image"
+				if !tt.wantErr == (dc.Spec.Template.Spec.Containers[0].Image != tt.args.newImage) {
+					return true, nil, fmt.Errorf("got %s image, suppose to get %s", dc.Spec.Template.Spec.Containers[0].Image, tt.args.newImage)
+				}
+
+				return true, nil, nil
+			})
+
+			// Run function UpdateDCToGit
+			err := fakeClient.UpdateDCToGit(metav1.ObjectMeta{Name: tt.args.name}, tt.args.newImage)
+
+			// Error checking UpdateDCToGit
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.UpdateDCToGit() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err == nil && !tt.wantErr {
+				// Check to see how many actions are being ran
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in UpdateDCToGit got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+
+		})
+	}
+}
+
+func TestUpdateDCToSupervisor(t *testing.T) {
+	type args struct {
+		name           string
+		imageName      string
+		expectedImage  string
+		imageNamespace string
+		dc             appsv1.DeploymentConfig
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		actions int
+	}{
+		{
+			name: "Case 1: Check the function works",
+			args: args{
+				name:           "foo",
+				imageName:      "nodejs",
+				expectedImage:  "nodejs",
+				imageNamespace: "openshift",
+				dc:             *fakeDeploymentConfig("foo", "foo"),
+			},
+			wantErr: false,
+			actions: 3,
+		},
+		{
+			name: "Case 2: Fail if unable to find container",
+			args: args{
+				name:           "testfoo",
+				imageName:      "foo",
+				expectedImage:  "foobar",
+				imageNamespace: "testing",
+				dc:             *fakeDeploymentConfig("foo", "foo"),
+			},
+			wantErr: true,
+			actions: 3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.args.dc, nil
+			})
+
+			// Fake the "update"
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+
+				// Check name
+				if dc.Name != tt.args.dc.Name {
+					return true, nil, fmt.Errorf("got different dc")
+				}
+
+				// Check that the new patch actually has parts of supervisord in it when it's used..
+
+				// Check that addBootstrapVolumeCopyInitContainer is the 1st initContainer and it exists
+				if !tt.wantErr == (dc.Spec.Template.Spec.InitContainers[0].Name != "copy-files-to-volume") {
+					return true, nil, fmt.Errorf("client.UpdateDCSupervisor() does not contain the copy-files-to-volume container within Spec.Template.Spec.InitContainers, found: %v", dc.Spec.Template.Spec.InitContainers[0].Name)
+				}
+
+				// Check that addBootstrapVolumeCopyInitContainer is the 2nd initContainer and it exists
+				if !tt.wantErr == (dc.Spec.Template.Spec.InitContainers[1].Name != "copy-supervisord") {
+					return true, nil, fmt.Errorf("client.UpdateDCSupervisor() does not contain the copy-supervisord container within Spec.Template.Spec.InitContainers, found: %v", dc.Spec.Template.Spec.InitContainers[1].Name)
+				}
+
+				return true, nil, nil
+			})
+
+			// Fake getting image stream
+			fakeClientSet.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStream(tt.args.expectedImage, tt.args.imageNamespace, []string{"latest"}), nil
+			})
+
+			// Run function UpdateDCToSupervisor
+			err := fakeClient.UpdateDCToSupervisor(metav1.ObjectMeta{Name: tt.args.name}, tt.args.imageName)
+
+			// Error checking UpdateDCToSupervisor
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.UpdateDCToSupervisor() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			// Check to see how many actions are being ran
+			if err == nil && !tt.wantErr {
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in UpdateDCToSupervisor got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+
+		})
 	}
 }

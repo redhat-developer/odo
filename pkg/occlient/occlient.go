@@ -817,7 +817,7 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 	// use to define each and every object we must change. Updating makes it easier.
 	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(currentDC)
 	if err != nil {
-		return errors.Wrapf(err, "unable to update DeploymentConfig config %s", name)
+		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
 	}
 
 	return nil
@@ -826,6 +826,11 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 // UpdateDCToGit replaces / updates the current DeplomentConfig with the appropriate
 // generated image from BuildConfig as well as the correct DeploymentConfig triggers for Git.
 func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName string) error {
+
+	// Fail if blank
+	if imageName == "" {
+		return errors.New("UpdateDCToGit imageName cannot be blank")
+	}
 
 	// Retrieve the current DC in order to obtain what the current inputPorts are..
 	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.namespace)
