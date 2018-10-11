@@ -165,8 +165,6 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 		// print unmounted storage of all the application
 		fmt.Printf("Storage that are not mounted to any component:\n")
 		tabWriterUnmounted.Flush()
-	} else {
-		fmt.Printf("No unmounted storage exists to mount\n")
 	}
 	fmt.Println("")
 }
