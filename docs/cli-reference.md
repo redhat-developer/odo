@@ -13,7 +13,7 @@
   odo url create
 ``` 
 
-OpenShift Do (Odo) is a CLI tool for OpenShift that uses simple, developer-focused language, so that developers don't need to be experts in Kubernetes and OpenShift in order to build and deploy applications. 
+OpenShift Do (Odo) is a CLI tool for OpenShift that uses simple, developer-focused terminology, so that developers don't need to be experts in Kubernetes and OpenShift in order to build and deploy applications. 
 
 Odo supports a fast, iterative development cycle. Developers can immediately start coding while Odo builds, pushes, and deploys the application in the background. Odo can watch for local changes to source files or binary and automatically pushes when there are changes.
 
@@ -213,10 +213,10 @@ Catalog related operations
 
 Create a new component to deploy on OpenShift.
 
-If component name is not provided, component type value will be used for the name.
+If the component name is not provided, then the component type value will also be used as the name.
 
-By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
-If version is not specified by default, latest wil be chosen as the version.
+By default, builder images from the current namespace will be used. You can explicitly supply a namespace by using: odo create namespace/name:version
+If version is not specified, latest wil be chosen as the version.
 
 A full list of component types that can be deployed is available using: 'odo catalog list'
 
@@ -268,7 +268,7 @@ Describe the given component.
 
 Link target component to source component
 
-If source component is not provided, the link is created to the current active
+If the source component is not provided, the link is created to the current active
 component.
 
 In the linking process, the environment variables containing the connection

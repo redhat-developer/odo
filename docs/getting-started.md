@@ -25,7 +25,7 @@ The quickest way to deploy a development OpenShift cluster is by using [minishif
 
 #### Running Minishift
 
-If you don't have a local development cluster, get started by running Minishift:
+If you lack a local development cluster, Minishift provides the easiest way of getting started:
 
 ```console
 $ minishift start       
@@ -83,7 +83,7 @@ Now we can move on to creating our application using `odo`.
 
 ### 2. Create an application
 
-An application is an umbrella under which you will build all the components (microservices) of your entire application.
+An application is an umbrella that will comprise all the components (microservices) you will build.
 
 Let's create an application:
 
@@ -161,7 +161,7 @@ URL created for component: nodejs
 nodejs - nodejs-myproject.192.168.42.147.nip.io
 ```
 
-Now just open the URL `nodejs-myproject.192.168.42.147.nip.io` in the browser and you will be able to view your deployed application.
+Now simply access the URL `nodejs-myproject.192.168.42.147.nip.io` in the browser and you will be able to view your deployed application.
 
 ### 5. Pushing new changes to the component
 
