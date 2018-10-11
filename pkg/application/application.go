@@ -210,6 +210,7 @@ func SetCurrent(client *occlient.Client, name string) error {
 	return nil
 }
 
+// Exists returns true if given application name exist
 func Exists(client *occlient.Client, name string) (bool, error) {
 	apps, err := List(client)
 	if err != nil {

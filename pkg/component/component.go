@@ -46,7 +46,7 @@ func validateSourceType(sourceType string) bool {
 	return false
 }
 
-// inputPorts is the array containing the string port values
+// CreateFromGit inputPorts is the array containing the string port values
 func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string) error {
 
 	labels := componentlabels.GetLabels(name, applicationName, true)
@@ -179,6 +179,7 @@ func Delete(client *occlient.Client, name string, applicationName string, projec
 	return nil
 }
 
+// SetCurrent sets the given component to active in odo config file
 func SetCurrent(client *occlient.Client, name string, applicationName string, projectName string) error {
 	cfg, err := config.New()
 	if err != nil {
@@ -476,7 +477,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 	return nil
 }
 
-// Checks whether a component with the given name exists in the current application or not
+// Exists checks whether a component with the given name exists in the current application or not
 // componentName is the component name to perform check for
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
@@ -567,7 +568,7 @@ func getPortFromService(service *corev1.Service) (int32, error) {
 
 }
 
-// Get Component Description
+// GetComponentDesc provides description such as source, url & storage about given component
 func GetComponentDesc(client *occlient.Client, currentComponent string, currentApplication string, currentProject string) (componentImageType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
 	// Component Type
 	componentImageType, err = GetComponentType(client, currentComponent, currentApplication, currentProject)
@@ -596,8 +597,7 @@ func GetComponentDesc(client *occlient.Client, currentComponent string, currentA
 	return componentImageType, path, componentURL, appStore, nil
 }
 
-// Get Component logs
-// follow the DeploymentConfig logs if follow is set to true
+// GetLogs follow the DeploymentConfig logs if follow is set to true
 func GetLogs(client *occlient.Client, componentName string, applicationName string, follow bool, stdout io.Writer) error {
 
 	// Namespace the component
