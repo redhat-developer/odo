@@ -142,6 +142,12 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	mountedStorageMap := make(map[string]string)
 	volumeMounts := client.GetVolumeMountsFromDC(dc)
 	for _, volumeMount := range volumeMounts {
+
+		// We should ignore emptyDir (related to supervisord implementation)
+		if client.IsVolumeAnEmptyDir(volumeMount.Name, dc) {
+			continue
+		}
+
 		pvcName := client.GetPVCNameFromVolumeMountName(volumeMount.Name, dc)
 		if pvcName == "" {
 			return nil, fmt.Errorf("no PVC associated with Volume Mount %v", volumeMount.Name)

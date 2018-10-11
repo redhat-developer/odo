@@ -14,6 +14,8 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
+
+	dockerapiv10 "github.com/openshift/api/image/docker10"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
@@ -21,10 +23,51 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
+
+// fakeDeploymentConfig creates a fake DC.
+// we "dog food" our own functions by using our templates / functions to generate this fake deployment config
+func fakeDeploymentConfig(name string, image string) *appsv1.DeploymentConfig {
+
+	// save component type as label
+	labels := componentlabels.GetLabels(name, name, true)
+	labels[componentlabels.ComponentTypeLabel] = image
+	labels[componentlabels.ComponentTypeVersion] = "latest"
+
+	// save source path as annotation
+	annotations := map[string]string{"app.kubernetes.io/url": "github.com/foo/bar.git",
+		"app.kubernetes.io/component-source-type": "git",
+	}
+
+	// Create CommonObjectMeta to be passed in
+	commonObjectMeta := metav1.ObjectMeta{
+		Name:        name,
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
+	commonImageMeta := CommonImageMeta{
+		Name:      name,
+		Tag:       "latest",
+		Namespace: "openshift",
+		Ports:     []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}},
+	}
+
+	// Generate the DeploymentConfig that will be used.
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, image, commonImageMeta)
+
+	// Add the appropriate bootstrap volumes for SupervisorD
+	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
+	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
+	addBootstrapVolume(&dc, commonObjectMeta.Name)
+	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
+
+	return &dc
+}
 
 // fakeImageStream gets imagestream for the reactor
 func fakeImageStream(imageName string, namespace string, strTags []string) *imagev1.ImageStream {
@@ -123,8 +166,8 @@ func fakeImageStreamImage(imageName string, ports []string) *imagev1.ImageStream
 				Name: "@sha256:9579a93ee",
 			},
 			DockerImageMetadata: runtime.RawExtension{
-				Object: &dockerapi.DockerImage{
-					ContainerConfig: dockerapi.DockerConfig{
+				Object: &dockerapiv10.DockerImage{
+					ContainerConfig: dockerapiv10.DockerConfig{
 						ExposedPorts: exposedPorts,
 					},
 				},
@@ -1609,52 +1652,6 @@ func TestUpdateBuildConfig(t *testing.T) {
 		wantErr             bool
 	}{
 		{
-			name:            "git to local with proper parameters",
-			buildConfigName: "nodejs",
-			projectName:     "app",
-			gitURL:          "",
-			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			existingBuildConfig: buildv1.BuildConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nodejs",
-				},
-				Spec: buildv1.BuildConfigSpec{
-					CommonSpec: buildv1.CommonSpec{
-						Source: buildv1.BuildSource{
-							Git: &buildv1.GitBuildSource{
-								URI: "https://github.com/sclorg/nodejs-ex",
-							},
-							Type: buildv1.BuildSourceGit,
-						},
-					},
-				},
-			},
-			updatedBuildConfig: buildv1.BuildConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nodejs",
-					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
-						"app.kubernetes.io/component-source-type": "local",
-					},
-				},
-				Spec: buildv1.BuildConfigSpec{
-					CommonSpec: buildv1.CommonSpec{
-						Source: buildv1.BuildSource{
-							Git: &buildv1.GitBuildSource{
-								URI: bootstrapperURI,
-								Ref: bootstrapperRef,
-							},
-							Type: buildv1.BuildSourceGit,
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
 			name:            "local to git with proper parameters",
 			buildConfigName: "nodejs",
 			projectName:     "app",
@@ -1668,15 +1665,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 					Name: "nodejs",
 				},
 				Spec: buildv1.BuildConfigSpec{
-					CommonSpec: buildv1.CommonSpec{
-						Source: buildv1.BuildSource{
-							Git: &buildv1.GitBuildSource{
-								URI: bootstrapperURI,
-								Ref: bootstrapperRef,
-							},
-							Type: buildv1.BuildSourceGit,
-						},
-					},
+					CommonSpec: buildv1.CommonSpec{},
 				},
 			},
 			updatedBuildConfig: buildv1.BuildConfig{
@@ -1746,13 +1735,11 @@ func TestUpdateBuildConfig(t *testing.T) {
 
 func TestNewAppS2I(t *testing.T) {
 	type args struct {
-		name         string
-		namespace    string
-		builderImage string
-		gitURL       string
-		labels       map[string]string
-		annotations  map[string]string
-		inputPorts   []string
+		commonObjectMeta metav1.ObjectMeta
+		namespace        string
+		builderImage     string
+		gitURL           string
+		inputPorts       []string
 	}
 
 	tests := []struct {
@@ -1764,19 +1751,21 @@ func TestNewAppS2I(t *testing.T) {
 		{
 			name: "case 1: with valid gitURL",
 			args: args{
-				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
 				gitURL:       "https://github.com/openshift/ruby",
-				labels: map[string]string{
-					"app":                              "apptmp",
-					"app.kubernetes.io/component-name": "ruby",
-					"app.kubernetes.io/component-type": "ruby",
-					"app.kubernetes.io/name":           "apptmp",
-				},
-				annotations: map[string]string{
-					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
-					"app.kubernetes.io/component-source-type": "git",
+				commonObjectMeta: metav1.ObjectMeta{
+					Name: "ruby",
+					Labels: map[string]string{
+						"app":                              "apptmp",
+						"app.kubernetes.io/component-name": "ruby",
+						"app.kubernetes.io/component-type": "ruby",
+						"app.kubernetes.io/name":           "apptmp",
+					},
+					Annotations: map[string]string{
+						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.kubernetes.io/component-source-type": "git",
+					},
 				},
 			},
 			wantedService: map[int32]corev1.Protocol{
@@ -1787,19 +1776,21 @@ func TestNewAppS2I(t *testing.T) {
 		{
 			name: "case 2 : binary buildSource with gitURL empty",
 			args: args{
-				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
 				gitURL:       "",
-				labels: map[string]string{
-					"app":                              "apptmp",
-					"app.kubernetes.io/component-name": "ruby",
-					"app.kubernetes.io/component-type": "ruby",
-					"app.kubernetes.io/name":           "apptmp",
-				},
-				annotations: map[string]string{
-					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
-					"app.kubernetes.io/component-source-type": "git",
+				commonObjectMeta: metav1.ObjectMeta{
+					Name: "ruby",
+					Labels: map[string]string{
+						"app":                              "apptmp",
+						"app.kubernetes.io/component-name": "ruby",
+						"app.kubernetes.io/component-type": "ruby",
+						"app.kubernetes.io/name":           "apptmp",
+					},
+					Annotations: map[string]string{
+						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.kubernetes.io/component-source-type": "git",
+					},
 				},
 				inputPorts: []string{"8081/tcp", "9100/udp"},
 			},
@@ -1812,19 +1803,21 @@ func TestNewAppS2I(t *testing.T) {
 		{
 			name: "case 3 : with a invalid port protocol",
 			args: args{
-				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
 				gitURL:       "https://github.com/openshift/ruby",
-				labels: map[string]string{
-					"app":                              "apptmp",
-					"app.kubernetes.io/component-name": "ruby",
-					"app.kubernetes.io/component-type": "ruby",
-					"app.kubernetes.io/name":           "apptmp",
-				},
-				annotations: map[string]string{
-					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
-					"app.kubernetes.io/component-source-type": "git",
+				commonObjectMeta: metav1.ObjectMeta{
+					Name: "ruby",
+					Labels: map[string]string{
+						"app":                              "apptmp",
+						"app.kubernetes.io/component-name": "ruby",
+						"app.kubernetes.io/component-type": "ruby",
+						"app.kubernetes.io/name":           "apptmp",
+					},
+					Annotations: map[string]string{
+						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.kubernetes.io/component-source-type": "git",
+					},
 				},
 				inputPorts: []string{"8081", "9100/blah"},
 			},
@@ -1837,19 +1830,21 @@ func TestNewAppS2I(t *testing.T) {
 		{
 			name: "case 4 : with a invalid port number",
 			args: args{
-				name:         "ruby",
 				builderImage: "ruby:latest",
 				namespace:    "testing",
 				gitURL:       "https://github.com/openshift/ruby",
-				labels: map[string]string{
-					"app":                              "apptmp",
-					"app.kubernetes.io/component-name": "ruby",
-					"app.kubernetes.io/component-type": "ruby",
-					"app.kubernetes.io/name":           "apptmp",
-				},
-				annotations: map[string]string{
-					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
-					"app.kubernetes.io/component-source-type": "git",
+				commonObjectMeta: metav1.ObjectMeta{
+					Name: "ruby",
+					Labels: map[string]string{
+						"app":                              "apptmp",
+						"app.kubernetes.io/component-name": "ruby",
+						"app.kubernetes.io/component-type": "ruby",
+						"app.kubernetes.io/name":           "apptmp",
+					},
+					Annotations: map[string]string{
+						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.kubernetes.io/component-source-type": "git",
+					},
 				},
 				inputPorts: []string{"8ad1", "9100/Udp"},
 			},
@@ -1887,22 +1882,20 @@ func TestNewAppS2I(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 
 			fkclientset.ImageClientset.PrependReactor("list", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, fakeImageStreams(tt.args.name, tt.args.namespace), nil
+				return true, fakeImageStreams(tt.args.commonObjectMeta.Name, tt.args.commonObjectMeta.Namespace), nil
 			})
 
 			fkclientset.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, fakeImageStream(tt.args.name, tt.args.namespace, []string{"latest"}), nil
+				return true, fakeImageStream(tt.args.commonObjectMeta.Name, tt.args.commonObjectMeta.Namespace, []string{"latest"}), nil
 			})
 
 			fkclientset.ImageClientset.PrependReactor("get", "imagestreamimages", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, fakeImageStreamImages(tt.args.name), nil
+				return true, fakeImageStreamImages(tt.args.commonObjectMeta.Name), nil
 			})
 
-			err := fkclient.NewAppS2I(tt.args.name,
+			err := fkclient.NewAppS2I(tt.args.commonObjectMeta,
 				tt.args.builderImage,
 				tt.args.gitURL,
-				tt.args.labels,
-				tt.args.annotations,
 				tt.args.inputPorts)
 
 			if (err != nil) != tt.wantErr {
@@ -1912,22 +1905,22 @@ func TestNewAppS2I(t *testing.T) {
 			if err == nil {
 
 				if len(fkclientset.BuildClientset.Actions()) != 1 {
-					t.Errorf("expected 1 BuildClientset.Actions() in NewAppS2I, got: %v", fkclientset.BuildClientset.Actions())
+					t.Errorf("expected 1 BuildClientset.Actions() in NewAppS2I, got %v: %v", len(fkclientset.BuildClientset.Actions()), fkclientset.BuildClientset.Actions())
 				}
 
 				if len(fkclientset.AppsClientset.Actions()) != 1 {
-					t.Errorf("expected 1 AppsClientset.Actions() in NewAppS2I, go: %v", fkclientset.AppsClientset.Actions())
+					t.Errorf("expected 1 AppsClientset.Actions() in NewAppS2I, got: %v", fkclientset.AppsClientset.Actions())
 				}
 
 				if len(fkclientset.Kubernetes.Actions()) != 1 {
-					t.Errorf("expected 1 Kubernetes.Actions() in NewAppS2I, go: %v", fkclientset.Kubernetes.Actions())
+					t.Errorf("expected 1 Kubernetes.Actions() in NewAppS2I, got: %v", fkclientset.Kubernetes.Actions())
 				}
 
 				var createdIS *imagev1.ImageStream
 
 				if len(tt.args.inputPorts) <= 0 {
-					if len(fkclientset.ImageClientset.Actions()) != 3 {
-						t.Errorf("expected 3 ImageClientset.Actions() in NewAppS2I, got: %v", fkclientset.ImageClientset.Actions())
+					if len(fkclientset.ImageClientset.Actions()) != 4 {
+						t.Errorf("expected 4 ImageClientset.Actions() in NewAppS2I, got %v: %v", len(fkclientset.ImageClientset.Actions()), fkclientset.ImageClientset.Actions())
 					}
 
 					// Check for imagestream objects
@@ -1941,16 +1934,16 @@ func TestNewAppS2I(t *testing.T) {
 					createdIS = fkclientset.ImageClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*imagev1.ImageStream)
 				}
 
-				if createdIS.Name != tt.args.name {
-					t.Errorf("imagestream name is not matching with expected name, expected: %s, got %s", tt.args.name, createdIS.Name)
+				if createdIS.Name != tt.args.commonObjectMeta.Name {
+					t.Errorf("imagestream name is not matching with expected name, expected: %s, got %s", tt.args.commonObjectMeta.Name, createdIS.Name)
 				}
 
-				if !reflect.DeepEqual(createdIS.Labels, tt.args.labels) {
-					t.Errorf("imagestream labels not matching with expected values, expected: %s, got %s", tt.args.labels, createdIS.Labels)
+				if !reflect.DeepEqual(createdIS.Labels, tt.args.commonObjectMeta.Labels) {
+					t.Errorf("imagestream labels not matching with expected values, expected: %s, got %s", tt.args.commonObjectMeta.Labels, createdIS.Labels)
 				}
 
-				if !reflect.DeepEqual(createdIS.Annotations, tt.args.annotations) {
-					t.Errorf("imagestream annotations not matching with expected values, expected: %s, got %s", tt.args.annotations, createdIS.Annotations)
+				if !reflect.DeepEqual(createdIS.Annotations, tt.args.commonObjectMeta.Annotations) {
+					t.Errorf("imagestream annotations not matching with expected values, expected: %s, got %s", tt.args.commonObjectMeta.Annotations, createdIS.Annotations)
 				}
 
 				// Check buildconfig objects
@@ -1973,8 +1966,8 @@ func TestNewAppS2I(t *testing.T) {
 
 				// Check deploymentconfig objects
 				createdDC := fkclientset.AppsClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*appsv1.DeploymentConfig)
-				if createdDC.Spec.Selector["deploymentconfig"] != tt.args.name {
-					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.args.name, createdDC.Spec.Selector["deploymentconfig"])
+				if createdDC.Spec.Selector["deploymentconfig"] != tt.args.commonObjectMeta.Name {
+					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.args.commonObjectMeta.Name, createdDC.Spec.Selector["deploymentconfig"])
 				}
 
 				createdSvc := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
@@ -2953,264 +2946,278 @@ func TestGetServiceInstanceList(t *testing.T) {
 	}
 }
 
-func TestGetClusterServicePlans(t *testing.T) {
-
+func TestPatchCurrentDC(t *testing.T) {
+	type args struct {
+		name     string
+		dcBefore appsv1.DeploymentConfig
+		dcPatch  appsv1.DeploymentConfig
+	}
 	tests := []struct {
 		name    string
-		want    []scv1beta1.ClusterServicePlan
+		args    args
 		wantErr bool
+		actions int
 	}{
 		{
-			name:    "test case 1",
+			name: "Case 1: Test patching",
+			args: args{
+				name:     "foo",
+				dcBefore: *fakeDeploymentConfig("foo", "foo"),
+				dcPatch:  generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo"}, "bar", []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}}),
+			},
 			wantErr: false,
-			want: []scv1beta1.ClusterServicePlan{
-				{
-					Spec: scv1beta1.ClusterServicePlanSpec{
-						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-							Name: "1dda1477cace09730bd8ed7a6505607e",
-						},
-						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-							ExternalName: "dev",
-						},
-					},
-				},
-
-				{
-					Spec: scv1beta1.ClusterServicePlanSpec{
-						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-							Name: "1dda1477cace09730bd8ed7a6505607e",
-						},
-						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-							ExternalName: "prod",
-						},
-					},
-				},
+			actions: 2,
+		},
+		{
+			name: "Case 2: Test patching with the wrong name",
+			args: args{
+				name:     "foo",
+				dcBefore: *fakeDeploymentConfig("foo", "foo"),
+				dcPatch:  generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar", []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}}),
 			},
+			wantErr: true,
+			actions: 2,
 		},
 	}
-
-	planList := scv1beta1.ClusterServicePlanList{
-		Items: []scv1beta1.ClusterServicePlan{
-			{
-				Spec: scv1beta1.ClusterServicePlanSpec{
-					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-						Name: "1dda1477cace09730bd8ed7a6505607e",
-					},
-					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName: "dev",
-					},
-				},
-			},
-
-			{
-				Spec: scv1beta1.ClusterServicePlanSpec{
-					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-						Name: "1dda1477cace09730bd8ed7a6505607e",
-					},
-					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName: "prod",
-					},
-				},
-			},
-		},
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, fakeClientSet := FakeNew()
+			fakeClient, fakeClientSet := FakeNew()
 
-			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &planList, nil
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.args.dcBefore, nil
 			})
 
-			got, err := client.GetAllClusterServicePlans()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.GetClusterServicePlans() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			// Fake the "update"
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				if dc.Name != tt.args.dcPatch.Name {
+					return true, nil, fmt.Errorf("got different dc")
+				}
+				return true, nil, nil
+			})
+
+			// Run function PatchCurrentDC
+			err := fakeClient.PatchCurrentDC(tt.args.name, tt.args.dcPatch)
+
+			// Error checking PatchCurrentDC
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.PatchCurrentDC() unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("error is here Client.GetClusterServicePlans() = %#v, want %#v", got, tt.want)
+
+			if err == nil && !tt.wantErr {
+				// Check to see how many actions are being ran
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in PatchCurrentDC got: %v", tt.actions, fakeClientSet.Kubernetes.Actions())
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
 			}
+
 		})
 	}
 }
 
-func TestGetClusterServiceClasses(t *testing.T) {
+func TestUpdateDCToGit(t *testing.T) {
+	type args struct {
+		name     string
+		newImage string
+		dc       appsv1.DeploymentConfig
+	}
 	tests := []struct {
 		name    string
-		want    []scv1beta1.ClusterServiceClass
+		args    args
 		wantErr bool
+		actions int
 	}{
 		{
-			name:    "test case 1",
+			name: "Case 1: Check the function works",
+			args: args{
+				name:     "foo",
+				newImage: "bar",
+				dc:       *fakeDeploymentConfig("foo", "foo"),
+			},
 			wantErr: false,
-			want: []scv1beta1.ClusterServiceClass{
-				{
-					Spec: scv1beta1.ClusterServiceClassSpec{
-						CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
-							ExternalName: "dh-mongodb-apb",
-							ExternalID:   "e9c042c4925dd0c7c25ceca4f5179e1c",
-						},
-					},
-				},
-				{
-					Spec: scv1beta1.ClusterServiceClassSpec{
-						CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
-							ExternalName: "mongodb-persistent",
-							ExternalID:   "e2377e48-bfc5-11e8-81c3-c85b7664d300",
-						},
-					},
-				},
+			actions: 3,
+		},
+		{
+			name: "Case 2: Fail if the variable passed in is blank",
+			args: args{
+				name:     "foo",
+				newImage: "",
+				dc:       *fakeDeploymentConfig("foo", "foo"),
 			},
+			wantErr: true,
+			actions: 3,
+		},
+		{
+			name: "Case 3: Fail if image retrieved doesn't match the one we want to patch",
+			args: args{
+				name:     "foo",
+				newImage: "",
+				dc:       *fakeDeploymentConfig("foo2", "foo"),
+			},
+			wantErr: true,
+			actions: 3,
+		},
+		{
+			name: "Case 4: Check we can patch with a tag",
+			args: args{
+				name:     "foo",
+				newImage: "bar:latest",
+				dc:       *fakeDeploymentConfig("foo", "foo"),
+			},
+			wantErr: false,
+			actions: 3,
 		},
 	}
-
-	classList := scv1beta1.ClusterServiceClassList{
-		Items: []scv1beta1.ClusterServiceClass{
-			{
-				Spec: scv1beta1.ClusterServiceClassSpec{
-					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
-						ExternalName: "dh-mongodb-apb",
-						ExternalID:   "e9c042c4925dd0c7c25ceca4f5179e1c",
-					},
-				},
-			},
-			{
-				Spec: scv1beta1.ClusterServiceClassSpec{
-					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
-						ExternalName: "mongodb-persistent",
-						ExternalID:   "e2377e48-bfc5-11e8-81c3-c85b7664d300",
-					},
-				},
-			},
-		},
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, fakeClientSet := FakeNew()
-			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &classList, nil
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.args.dc, nil
 			})
-			got, err := client.GetClusterServiceClasses()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.GetClusterServicePlans() error = %v, wantErr %v", err, tt.wantErr)
-				return
+
+			// Fake the "update"
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+
+				// Check name
+				if dc.Name != tt.args.dc.Name {
+					return true, nil, fmt.Errorf("got different dc")
+				}
+
+				// Check that the new patch actually has the new "image"
+				if !tt.wantErr == (dc.Spec.Template.Spec.Containers[0].Image != tt.args.newImage) {
+					return true, nil, fmt.Errorf("got %s image, suppose to get %s", dc.Spec.Template.Spec.Containers[0].Image, tt.args.newImage)
+				}
+
+				return true, nil, nil
+			})
+
+			// Run function UpdateDCToGit
+			err := fakeClient.UpdateDCToGit(metav1.ObjectMeta{Name: tt.args.name}, tt.args.newImage)
+
+			// Error checking UpdateDCToGit
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.UpdateDCToGit() unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("error is here Client.GetClusterServicePlans() = %#v, want %#v", got, tt.want)
+
+			if err == nil && !tt.wantErr {
+				// Check to see how many actions are being ran
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in UpdateDCToGit got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
 			}
+
 		})
 	}
 }
 
-func TestGetClusterServiceClassExternalNamesAndPlans(t *testing.T) {
-
+func TestUpdateDCToSupervisor(t *testing.T) {
+	type args struct {
+		name           string
+		imageName      string
+		expectedImage  string
+		imageNamespace string
+		dc             appsv1.DeploymentConfig
+	}
 	tests := []struct {
 		name    string
-		want    []Service
+		args    args
 		wantErr bool
+		actions int
 	}{
 		{
-			name: "test case 1",
-			want: []Service{
-				{Name: "dh-postgresql-apb", PlanList: []string{"dev", "prod"}},
-				{Name: "dh-mysql-apb", PlanList: []string{"dev", "prod"}},
+			name: "Case 1: Check the function works",
+			args: args{
+				name:           "foo",
+				imageName:      "nodejs",
+				expectedImage:  "nodejs",
+				imageNamespace: "openshift",
+				dc:             *fakeDeploymentConfig("foo", "foo"),
 			},
 			wantErr: false,
+			actions: 3,
+		},
+		{
+			name: "Case 2: Fail if unable to find container",
+			args: args{
+				name:           "testfoo",
+				imageName:      "foo",
+				expectedImage:  "foobar",
+				imageNamespace: "testing",
+				dc:             *fakeDeploymentConfig("foo", "foo"),
+			},
+			wantErr: true,
+			actions: 3,
 		},
 	}
-
-	classList := scv1beta1.ClusterServiceClassList{
-		Items: []scv1beta1.ClusterServiceClass{
-			{
-				Spec: scv1beta1.ClusterServiceClassSpec{
-					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
-						ExternalName: "dh-postgresql-apb",
-						ExternalID:   "1dda1477cace09730bd8ed7a6505607e",
-					},
-				},
-			},
-			{
-				Spec: scv1beta1.ClusterServiceClassSpec{
-					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
-						ExternalName: "dh-mysql-apb",
-						ExternalID:   "ddd528762894b277001df310a126d5ad",
-					},
-				},
-			},
-		},
-	}
-
-	planList := scv1beta1.ClusterServicePlanList{
-		Items: []scv1beta1.ClusterServicePlan{
-			// dh-postgresql-apb
-			{
-				Spec: scv1beta1.ClusterServicePlanSpec{
-					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-						Name: "1dda1477cace09730bd8ed7a6505607e",
-					},
-					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName: "dev",
-					},
-				},
-			},
-
-			{
-				Spec: scv1beta1.ClusterServicePlanSpec{
-					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-						Name: "1dda1477cace09730bd8ed7a6505607e",
-					},
-					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName: "prod",
-					},
-				},
-			},
-			// dh-mysql-apb
-			{
-				Spec: scv1beta1.ClusterServicePlanSpec{
-					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-						Name: "ddd528762894b277001df310a126d5ad",
-					},
-					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName: "dev",
-					},
-				},
-			},
-
-			{
-				Spec: scv1beta1.ClusterServicePlanSpec{
-					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-						Name: "ddd528762894b277001df310a126d5ad",
-					},
-					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName: "prod",
-					},
-				},
-			},
-		},
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, fakeClientSet := FakeNew()
-			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &classList, nil
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.args.dc, nil
 			})
 
-			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (bool, runtime.Object, error) {
+			// Fake the "update"
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
 
-				return true, &planList, nil
+				// Check name
+				if dc.Name != tt.args.dc.Name {
+					return true, nil, fmt.Errorf("got different dc")
+				}
+
+				// Check that the new patch actually has parts of supervisord in it when it's used..
+
+				// Check that addBootstrapVolumeCopyInitContainer is the 1st initContainer and it exists
+				if !tt.wantErr == (dc.Spec.Template.Spec.InitContainers[0].Name != "copy-files-to-volume") {
+					return true, nil, fmt.Errorf("client.UpdateDCSupervisor() does not contain the copy-files-to-volume container within Spec.Template.Spec.InitContainers, found: %v", dc.Spec.Template.Spec.InitContainers[0].Name)
+				}
+
+				// Check that addBootstrapVolumeCopyInitContainer is the 2nd initContainer and it exists
+				if !tt.wantErr == (dc.Spec.Template.Spec.InitContainers[1].Name != "copy-supervisord") {
+					return true, nil, fmt.Errorf("client.UpdateDCSupervisor() does not contain the copy-supervisord container within Spec.Template.Spec.InitContainers, found: %v", dc.Spec.Template.Spec.InitContainers[1].Name)
+				}
+
+				return true, nil, nil
 			})
 
-			got, err := client.GetClusterServiceClassExternalNamesAndPlans()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.GetClusterServiceClassExternalNames() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			// Fake getting image stream
+			fakeClientSet.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStream(tt.args.expectedImage, tt.args.imageNamespace, []string{"latest"}), nil
+			})
+
+			// Run function UpdateDCToSupervisor
+			err := fakeClient.UpdateDCToSupervisor(metav1.ObjectMeta{Name: tt.args.name}, tt.args.imageName)
+
+			// Error checking UpdateDCToSupervisor
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.UpdateDCToSupervisor() unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Client.GetClusterServiceClassExternalNames() = %v, want %v", got, tt.want)
+
+			// Check to see how many actions are being ran
+			if err == nil && !tt.wantErr {
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in UpdateDCToSupervisor got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
 			}
+
 		})
 	}
 }

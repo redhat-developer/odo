@@ -59,9 +59,12 @@ const (
 
 	// The length of the string to be generated for names of resources
 	nameLength = 5
-	// git repository that will be used for bootstraping
-	bootstrapperURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
-	bootstrapperRef = "v0.0.2"
+
+	// Image that will be used containing the supervisord binary and assembly scripts
+	bootstrapperImage = "quay.io/openshiftdo/supervisord:0.1.0"
+
+	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment
+	supervisordVolumeName = "odo-supervisord-shared-data"
 )
 
 // errorMsg is the message for user when invalid configuration error occurs
@@ -523,24 +526,27 @@ func getAppRootVolumeName(dcName string) string {
 	return fmt.Sprintf("%s-s2idata", dcName)
 }
 
-// NewAppS2I create new application using S2I
+// NewAppS2I is only used with "Git" as we need Build
 // gitURL is the url of the git repo
 // inputPorts is the array containing the string port values
-func (c *Client) NewAppS2I(name string, builderImage string, gitURL string, labels map[string]string, annotations map[string]string, inputPorts []string) error {
+func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputPorts []string) error {
 
+	glog.V(4).Infof("Using BuilderImage: %s", builderImage)
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse image name")
 	}
 	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
 	if err != nil {
-		return errors.Wrap(err, "Unable to create new app")
+		return errors.Wrap(err, "unable to retrieve ImageStream for NewAppS2I")
 	}
 	/*
-	 Set imageNS to the namespace of above fetched imagestream because, the namespace passed here can potentially be emptystring
-	 in which case, GetImageStream function resolves to correct namespace in accordance with priorities in GetImageStream
+	 Set imageNS to the commonObjectMeta.Namespace of above fetched imagestream because, the commonObjectMeta.Namespace passed here can potentially be emptystring
+	 in which case, GetImageStream function resolves to correct commonObjectMeta.Namespace in accordance with priorities in GetImageStream
 	*/
+
 	imageNS = imageStream.ObjectMeta.Namespace
+	glog.V(4).Infof("Using imageNS: %s", imageNS)
 
 	var containerPorts []corev1.ContainerPort
 	if len(inputPorts) == 0 {
@@ -550,7 +556,7 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitURL string, labe
 		}
 	} else {
 		if err != nil {
-			return errors.Wrapf(err, "unable to create s2i app for %s", name)
+			return errors.Wrapf(err, "unable to create s2i app for %s", commonObjectMeta.Name)
 		}
 		imageNS = imageStream.ObjectMeta.Namespace
 		containerPorts, err = getContainerPortsFromStrings(inputPorts)
@@ -559,20 +565,13 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitURL string, labe
 		}
 	}
 
-	// ObjectMetadata are the same for all generated objects
-	commonObjectMeta := metav1.ObjectMeta{
-		Name:        name,
-		Labels:      labels,
-		Annotations: annotations,
-	}
-
 	// generate and create ImageStream
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
 	}
 	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create ImageStream for %s", name)
+		return errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
 	}
 
 	// if gitURL is not set, error out
@@ -580,104 +579,39 @@ func (c *Client) NewAppS2I(name string, builderImage string, gitURL string, labe
 		return errors.New("unable to create buildSource with empty gitURL")
 	}
 
-	buildSource := buildv1.BuildSource{
-		Git: &buildv1.GitBuildSource{
-			URI: gitURL,
-		},
-		Type: buildv1.BuildSourceGit,
-	}
-
-	bc := buildv1.BuildConfig{
-		ObjectMeta: commonObjectMeta,
-		Spec: buildv1.BuildConfigSpec{
-			CommonSpec: buildv1.CommonSpec{
-				Output: buildv1.BuildOutput{
-					To: &corev1.ObjectReference{
-						Kind: "ImageStreamTag",
-						Name: name + ":latest",
-					},
-				},
-				Source: buildSource,
-				Strategy: buildv1.BuildStrategy{
-					SourceStrategy: &buildv1.SourceBuildStrategy{
-						From: corev1.ObjectReference{
-							Kind:      "ImageStreamTag",
-							Name:      imageName + ":" + imageTag,
-							Namespace: imageNS,
-						},
-					},
-				},
-			},
-		},
-	}
-	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
+	// Deploy BuildConfig to build the container with Git
+	buildConfig, err := c.CreateBuildConfig(commonObjectMeta, builderImage, gitURL)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create BuildConfig for %s", name)
+		return errors.Wrapf(err, "unable to deploy BuildConfig for %s", commonObjectMeta.Name)
 	}
 
-	// generate  and create DeploymentConfig
-	dc := appsv1.DeploymentConfig{
-		ObjectMeta: commonObjectMeta,
-		Spec: appsv1.DeploymentConfigSpec{
-			Replicas: 1,
-			Selector: map[string]string{
-				"deploymentconfig": name,
-			},
-			Template: &corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"deploymentconfig": name,
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Image: bc.Spec.Output.To.Name,
-							Name:  name,
-							Ports: containerPorts,
-						},
-					},
-				},
-			},
-			Triggers: []appsv1.DeploymentTriggerPolicy{
-				{
-					Type: "ConfigChange",
-				},
-				{
-					Type: "ImageChange",
-					ImageChangeParams: &appsv1.DeploymentTriggerImageChangeParams{
-						Automatic: true,
-						ContainerNames: []string{
-							name,
-						},
-						From: corev1.ObjectReference{
-							Kind: "ImageStreamTag",
-							Name: bc.Spec.Output.To.Name,
-						},
-					},
-				},
-			},
-		},
-	}
+	// Generate and create the DeploymentConfig
+	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts)
 	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
+		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
 
+	// Create a service
 	err = c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create Service for %s", name)
+		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
 	return nil
 
 }
 
-// BootstrapSupervisoredS2I uses s2i to inject Supervisor into builder image.
-// Supervisor keeps pod running (runs as pid1), so you it is possible to trigger assembly script inside running pod,
-// and than restart application using Supervisor without need to restart whole container.
-// inputPorts is the array containing the string port values
-func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labels map[string]string, annotations map[string]string, inputPorts []string) error {
+// BootstrapSupervisoredS2I uses S2I (Source To Image) to inject Supervisor into the application container.
+// Odo uses https://github.com/ochinchina/supervisord which is pre-built in a ready-to-deploy InitContainer.
+// The supervisord binary is copied over to the application container using a temporary volume and overrides
+// the built-in S2I run function for the supervisord run command instead.
+//
+// Supervisor keeps the pod running (as PID 1), so you it is possible to trigger assembly script inside running pod,
+// and than restart application using Supervisor without need to restart the container/Pod.
+//
+func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, builderImage string, inputPorts []string) error {
+
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
 
 	if err != nil {
@@ -688,8 +622,8 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		return errors.Wrap(err, "Failed to bootstrap supervisored")
 	}
 	/*
-	 Set imageNS to the namespace of above fetched imagestream because, the namespace passed here can potentially be emptystring
-	 in which case, GetImageStream function resolves to correct namespace in accordance with priorities in GetImageStream
+	 Set imageNS to the commonObjectMeta.Namespace of above fetched imagestream because, the commonObjectMeta.Namespace passed here can potentially be emptystring
+	 in which case, GetImageStream function resolves to correct commonObjectMeta.Namespace in accordance with priorities in GetImageStream
 	*/
 	imageNS = imageStream.ObjectMeta.Namespace
 
@@ -701,19 +635,12 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 		}
 	} else {
 		if err != nil {
-			return errors.Wrapf(err, "unable to bootstrap s2i supervisored for %s", name)
+			return errors.Wrapf(err, "unable to bootstrap s2i supervisored for %s", commonObjectMeta.Name)
 		}
 		containerPorts, err = getContainerPortsFromStrings(inputPorts)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get container ports from %v", inputPorts)
 		}
-	}
-
-	// ObjectMetadata are the same for all generated objects
-	commonObjectMeta := metav1.ObjectMeta{
-		Name:        name,
-		Labels:      labels,
-		Annotations: annotations,
 	}
 
 	// generate and create ImageStream
@@ -722,109 +649,39 @@ func (c *Client) BootstrapSupervisoredS2I(name string, builderImage string, labe
 	}
 	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create ImageStream for %s", name)
+		return errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
 	}
 
-	// generate BuildConfig
-	buildSource := buildv1.BuildSource{
-		Git: &buildv1.GitBuildSource{
-			URI: bootstrapperURI,
-			Ref: bootstrapperRef,
-		},
-		Type: buildv1.BuildSourceGit,
+	commonImageMeta := CommonImageMeta{
+		Name:      imageName,
+		Tag:       imageTag,
+		Namespace: imageNS,
+		Ports:     containerPorts,
 	}
 
-	bc := buildv1.BuildConfig{
-		ObjectMeta: commonObjectMeta,
-		Spec: buildv1.BuildConfigSpec{
-			CommonSpec: buildv1.CommonSpec{
-				Output: buildv1.BuildOutput{
-					To: &corev1.ObjectReference{
-						Kind: "ImageStreamTag",
-						Name: name + ":latest",
-					},
-				},
-				Source: buildSource,
-				Strategy: buildv1.BuildStrategy{
-					SourceStrategy: &buildv1.SourceBuildStrategy{
-						From: corev1.ObjectReference{
-							Kind:      "ImageStreamTag",
-							Name:      imageName + ":" + imageTag,
-							Namespace: imageNS,
-						},
-					},
-				},
-			},
-		},
-	}
-	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create BuildConfig for %s", name)
-	}
+	// Generate the DeploymentConfig that will be used.
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, builderImage, commonImageMeta)
 
-	// generate  and create DeploymentConfig
-	dc := appsv1.DeploymentConfig{
-		ObjectMeta: commonObjectMeta,
-		Spec: appsv1.DeploymentConfigSpec{
-			Replicas: 1,
-			Selector: map[string]string{
-				"deploymentconfig": name,
-			},
-			Template: &corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"deploymentconfig": name,
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Image: bc.Spec.Output.To.Name,
-							Name:  name,
-							Ports: containerPorts,
-						},
-					},
-				},
-			},
-			Triggers: []appsv1.DeploymentTriggerPolicy{
-				{
-					Type: "ConfigChange",
-				},
-				{
-					Type: "ImageChange",
-					ImageChangeParams: &appsv1.DeploymentTriggerImageChangeParams{
-						Automatic: true,
-						ContainerNames: []string{
-							name,
-							"copy-files-to-volume",
-						},
-						From: corev1.ObjectReference{
-							Kind: "ImageStreamTag",
-							Name: bc.Spec.Output.To.Name,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	addBootstrapInitContainer(&dc, name)
-	addBootstrapVolume(&dc, name)
-	addBootstrapVolumeMount(&dc, name)
+	// Add the appropriate bootstrap volumes for SupervisorD
+	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
+	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
+	addBootstrapVolume(&dc, commonObjectMeta.Name)
+	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
 
 	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", name)
+		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
 
 	err = c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create Service for %s", name)
+		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
-	_, err = c.CreatePVC(getAppRootVolumeName(name), "1Gi", labels)
+	// Setup PVC.
+	_, err = c.CreatePVC(getAppRootVolumeName(commonObjectMeta.Name), "1Gi", commonObjectMeta.Labels)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create PVC for %s", name)
+		return errors.Wrapf(err, "unable to create PVC for %s", commonObjectMeta.Name)
 	}
 
 	return nil
@@ -862,80 +719,27 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 	return nil
 }
 
-// AddBootstrapInitContainer adds the bootstrap init container to the deployment config
-// dc is the deployment config to be updated
-// dcName is the name of the deployment config
-func addBootstrapInitContainer(dc *appsv1.DeploymentConfig, dcName string) {
-	dc.Spec.Template.Spec.InitContainers = append(dc.Spec.Template.Spec.InitContainers,
-		corev1.Container{
-			Name:  "copy-files-to-volume",
-			Image: dc.Spec.Template.Spec.Containers[0].Image,
-			Command: []string{
-				"copy-files-to-volume",
-				"/opt/app-root",
-				"/mnt/app-root"},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      getAppRootVolumeName(dcName),
-					MountPath: "/mnt",
-				},
-			},
-		})
-}
-
-// addBootstrapVolume adds the bootstrap volume to the deployment config
-// dc is the deployment config to be updated
-// dcName is the name of the deployment config
-func addBootstrapVolume(dc *appsv1.DeploymentConfig, dcName string) {
-	dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, corev1.Volume{
-		Name: getAppRootVolumeName(dcName),
-		VolumeSource: corev1.VolumeSource{
-			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: getAppRootVolumeName(dcName),
-			},
-		},
-	})
-}
-
-// addBootstrapVolumeMount mounts the bootstrap volume to the deployment config
-// dc is the deployment config to be updated
-// dcName is the name of the deployment config
-func addBootstrapVolumeMount(dc *appsv1.DeploymentConfig, dcName string) {
-	for i := range dc.Spec.Template.Spec.Containers {
-		dc.Spec.Template.Spec.Containers[i].VolumeMounts = append(dc.Spec.Template.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
-			Name:      getAppRootVolumeName(dcName),
-			MountPath: "/opt/app-root",
-			SubPath:   "app-root",
-		})
-	}
-}
-
 // UpdateBuildConfig updates the BuildConfig file
 // buildConfigName is the name of the BuildConfig file to be updated
 // projectName is the name of the project
 // gitURL equals to the git URL of the source and is equals to "" if the source is of type dir or binary
 // annotations contains the annotations for the BuildConfig file
 func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, gitURL string, annotations map[string]string) error {
+
+	if gitURL == "" {
+		return errors.New("gitURL for UpdateBuildConfig must not be blank")
+	}
+
 	// generate BuildConfig
 	buildSource := buildv1.BuildSource{}
 
-	// if gitURL set change buildSource to git and use given repo
-	if gitURL != "" {
-		buildSource = buildv1.BuildSource{
-			Git: &buildv1.GitBuildSource{
-				URI: gitURL,
-			},
-			Type: buildv1.BuildSourceGit,
-		}
-	} else {
-		buildSource = buildv1.BuildSource{
-			Git: &buildv1.GitBuildSource{
-				URI: bootstrapperURI,
-				Ref: bootstrapperRef,
-			},
-			Type: buildv1.BuildSourceGit,
-		}
+	buildSource = buildv1.BuildSource{
+		Git: &buildv1.GitBuildSource{
+			URI: gitURL,
+		},
+		Type: buildv1.BuildSourceGit,
 	}
+
 	buildConfig, err := c.GetBuildConfigFromName(buildConfigName, projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to get the BuildConfig file")
@@ -946,6 +750,169 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 	if err != nil {
 		return errors.Wrap(err, "unable to update the component")
 	}
+	return nil
+}
+
+// PatchCurrentDC "patches" the current DeploymentConfig with a new one
+// however... we make sure that configurations such as:
+// - volumes
+// - environment variables
+// are correctly copied over / consistent without an issue.
+func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
+
+	// Retrieve the current DC
+	currentDC, err := c.GetDeploymentConfigFromName(name, c.namespace)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
+	}
+
+	// Find the container (don't want to use .Spec.Containers[0] in case the user has modified the DC...)
+	// in order to retrieve what the volumes are
+	foundCurrentDCContainer, err := findContainer(currentDC.Spec.Template.Spec.Containers, name)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to find current DeploymentConfig container %s", name)
+	}
+
+	// Append the existing VolumeMounts to the new DC. We use "range" and find the correct container rather than
+	// using .spec.Containers[0] *in case* the template ever changes and a new container has been added.
+	for index, container := range dc.Spec.Template.Spec.Containers {
+		// Find the container
+		if container.Name == name {
+			// Loop through all the volumes
+			for _, volume := range foundCurrentDCContainer.VolumeMounts {
+				// If it's the supervisord volume, ignore it.
+				if volume.Name == supervisordVolumeName {
+					continue
+				} else {
+					dc.Spec.Template.Spec.Containers[index].VolumeMounts = append(dc.Spec.Template.Spec.Containers[index].VolumeMounts, volume)
+				}
+
+				// Break out since we've succeeded in updating the container we were looking for
+				break
+			}
+		}
+	}
+
+	// Now the same with Volumes, again, ignoring the supervisord volume.
+	for _, volume := range currentDC.Spec.Template.Spec.Volumes {
+		if volume.Name == supervisordVolumeName {
+			continue
+		} else {
+			dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, volume)
+			break
+		}
+	}
+
+	// Replace the current spec with the new one
+	currentDC.Spec = dc.Spec
+
+	// Replace the old annotations with the new ones too
+	// the reason we do this is because Kubernetes handles metadata such as resourceVersion
+	// that should not be overriden.
+	currentDC.ObjectMeta.Annotations = dc.ObjectMeta.Annotations
+	currentDC.ObjectMeta.Labels = dc.ObjectMeta.Labels
+
+	// Update the current one that's deployed with the new Spec.
+	// despite the "patch" function name, we use update since `.Patch` requires
+	// use to define each and every object we must change. Updating makes it easier.
+	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(currentDC)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
+	}
+
+	return nil
+}
+
+// UpdateDCToGit replaces / updates the current DeplomentConfig with the appropriate
+// generated image from BuildConfig as well as the correct DeploymentConfig triggers for Git.
+func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName string) error {
+
+	// Fail if blank
+	if imageName == "" {
+		return errors.New("UpdateDCToGit imageName cannot be blank")
+	}
+
+	// Retrieve the current DC in order to obtain what the current inputPorts are..
+	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.namespace)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get DeploymentConfig %s", commonObjectMeta.Name)
+	}
+
+	// Find the container (don't want to use .Spec.Containers[0] in case the user has modified the DC...)
+	foundCurrentDCContainer, err := findContainer(currentDC.Spec.Template.Spec.Containers, commonObjectMeta.Name)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to find container %s", commonObjectMeta.Name)
+	}
+
+	// Generate the new DeploymentConfig
+	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports)
+
+	// Patch the current DC
+	err = c.PatchCurrentDC(commonObjectMeta.Name, dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", commonObjectMeta.Name)
+	}
+
+	return nil
+}
+
+// UpdateDCToSupervisor updates the current DeploymentConfig to a SupervisorD configuration.
+func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, componentImageType string) error {
+
+	// Parse the image
+	imageNS, imageName, imageTag, _, err := ParseImageName(componentImageType)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse image name for DeploymentConfig update")
+	}
+
+	// Retrieve the namespace of the corresponding component image
+	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
+	if err != nil {
+		return errors.Wrap(err, "unable to get image stream for CreateBuildConfig")
+	}
+	imageNS = imageStream.ObjectMeta.Namespace
+
+	// Retrieve the current DC in order to obtain what the current inputPorts are..
+	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.namespace)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get DeploymentConfig %s", commonObjectMeta.Name)
+	}
+
+	// Find the container (don't want to use .Spec.Containers[0] in case the user has modified the DC...)
+	foundCurrentDCContainer, err := findContainer(currentDC.Spec.Template.Spec.Containers, commonObjectMeta.Name)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to find container %s", commonObjectMeta.Name)
+	}
+
+	// Gather the common image data into one struct
+	commonImageMeta := CommonImageMeta{
+		Name:      imageName,
+		Tag:       imageTag,
+		Namespace: imageNS,
+		Ports:     foundCurrentDCContainer.Ports,
+	}
+
+	// Generate the SupervisorD Config
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta)
+
+	// Add the appropriate bootstrap volumes for SupervisorD
+	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
+	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
+	addBootstrapVolume(&dc, commonObjectMeta.Name)
+	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
+
+	// Patch the current DC with the new one
+	err = c.PatchCurrentDC(commonObjectMeta.Name, dc)
+	if err != nil {
+		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", commonObjectMeta.Name)
+	}
+
+	// Setup PVC
+	_, err = c.CreatePVC(getAppRootVolumeName(commonObjectMeta.Name), "1Gi", commonObjectMeta.Labels)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create PVC for %s", commonObjectMeta.Name)
+	}
+
 	return nil
 }
 
@@ -979,7 +946,7 @@ func (c *Client) SetupForSupervisor(dcName string, projectName string, annotatio
 
 	dc.Annotations = annotations
 
-	addBootstrapInitContainer(dc, dcName)
+	addBootstrapVolumeCopyInitContainer(dc, dcName)
 
 	addBootstrapVolume(dc, dcName)
 
@@ -1049,6 +1016,7 @@ func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
 
 // StartBuild starts new build as it is, returns name of the build stat was started
 func (c *Client) StartBuild(name string) (string, error) {
+	glog.V(4).Infof("Build %s started.", name)
 	buildRequest := buildv1.BuildRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -1565,6 +1533,18 @@ func (c *Client) DeletePVC(name string) error {
 	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).Delete(name, nil)
 }
 
+// DeleteBuildConfig deletes the given BuildConfig by name using CommonObjectMeta..
+func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
+
+	// Convert labels to selector
+	selector := util.ConvertLabelsToSelector(commonObjectMeta.Labels)
+	glog.V(4).Infof("DeleteBuldConfig selectors used for deletion: %s", selector)
+
+	// Delete BuildConfig
+	glog.V(4).Info("Deleting BuildConfigs with DeleteBuildConfig")
+	return c.buildClient.BuildConfigs(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+}
+
 // generateVolumeNameFromPVC generates a random volume name based on the name
 // of the given PVC
 func generateVolumeNameFromPVC(pvc string) string {
@@ -1681,9 +1661,18 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) []string {
 	var volumes []string
 	for _, volume := range dc.Spec.Template.Spec.Volumes {
+
+		// If PVC does not exist, we skip (as this is either EmptyDir or "shared-data" from SupervisorD
+		if volume.PersistentVolumeClaim == nil {
+			glog.V(4).Infof("Volume has no PVC, skipping %s", volume.Name)
+			continue
+		}
+
+		// If we find the PVC, add to volumes to be returned
 		if volume.PersistentVolumeClaim.ClaimName == pvc {
 			volumes = append(volumes, volume.Name)
 		}
+
 	}
 	return volumes
 }
@@ -2088,12 +2077,26 @@ func (c *Client) GetVolumeMountsFromDC(dc *appsv1.DeploymentConfig) []corev1.Vol
 	return volumeMounts
 }
 
+// IsVolumeAnEmptyDir returns true if the volume is an EmptyDir, false if not
+func (c *Client) IsVolumeAnEmptyDir(volumeMountName string, dc *appsv1.DeploymentConfig) bool {
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		if volume.Name == volumeMountName {
+			if volume.EmptyDir != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // GetPVCNameFromVolumeMountName returns the PVC associated with the given volume
 // An empty string is returned if the volume is not found
 func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv1.DeploymentConfig) string {
 	for _, volume := range dc.Spec.Template.Spec.Volumes {
 		if volume.Name == volumeMountName {
-			return volume.PersistentVolumeClaim.ClaimName
+			if volume.PersistentVolumeClaim != nil {
+				return volume.PersistentVolumeClaim.ClaimName
+			}
 		}
 	}
 	return ""
@@ -2152,4 +2155,40 @@ func getContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 		containerPorts = append(containerPorts, port)
 	}
 	return containerPorts, nil
+}
+
+// CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
+func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string) (buildv1.BuildConfig, error) {
+
+	// Retrieve the namespace, image name and the appropriate tag
+	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
+	if err != nil {
+		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to parse image name")
+	}
+	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
+	if err != nil {
+		return buildv1.BuildConfig{}, errors.Wrap(err, "unable to retrieve image stream for CreateBuildConfig")
+	}
+	imageNS = imageStream.ObjectMeta.Namespace
+
+	glog.V(4).Infof("Using namespace: %s for the CreateBuildConfig function", imageNS)
+
+	// Use BuildConfig to build the container with Git
+	bc := generateBuildConfig(commonObjectMeta, gitURL, imageName+":"+imageTag, imageNS)
+	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
+	if err != nil {
+		return buildv1.BuildConfig{}, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
+	}
+
+	return bc, nil
+}
+
+// findContainer finds the container
+func findContainer(containers []corev1.Container, name string) (corev1.Container, error) {
+	for _, container := range containers {
+		if container.Name == name {
+			return container, nil
+		}
+	}
+	return corev1.Container{}, errors.New("Unable to find container")
 }
