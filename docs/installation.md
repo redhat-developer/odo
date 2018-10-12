@@ -1,6 +1,6 @@
 # Installation Guide
 
-List of different installation methods:
+List of various installation methods:
 
 - [macOS](#macOS)
 - [Deb (Debian / Ubuntu)](#deb)

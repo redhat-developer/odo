@@ -16,7 +16,7 @@
 
 ### Clone your fork
 
-The commands below require that you have $GOPATH. We highly recommended you put odo code into your $GOPATH.
+The following commands assume that you have the $GOPATH environment variable properly set. We highly recommend you place odo code into $GOPATH.
 
 ```sh
 git clone https://github.com/$YOUR_GITHUB_USERNAME/odo.git $GOPATH/src/github.com/redhat-developer/odo
