@@ -3221,3 +3221,54 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 		})
 	}
 }
+
+func TestIsVolumeAnEmptyDir(t *testing.T) {
+	type args struct {
+		VolumeName string
+		dc         appsv1.DeploymentConfig
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantEmptyDir bool
+	}{
+		{
+			name: "Case 1 - Check that it is an emptyDir",
+			args: args{
+				VolumeName: supervisordVolumeName,
+				dc:         *fakeDeploymentConfig("foo", "bar"),
+			},
+			wantEmptyDir: true,
+		},
+		{
+			name: "Case 2 - Check a non-existent volume",
+			args: args{
+				VolumeName: "foobar",
+				dc:         *fakeDeploymentConfig("foo", "bar"),
+			},
+			wantEmptyDir: false,
+		},
+		{
+			name: "Case 3 - Check a volume that exists but is not emptyDir",
+			args: args{
+				VolumeName: "foo-s2idata",
+				dc:         *fakeDeploymentConfig("foo", "bar"),
+			},
+			wantEmptyDir: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, _ := FakeNew()
+
+			// Run function IsVolumeAnEmptyDir
+			isVolumeEmpty := fakeClient.IsVolumeAnEmptyDir(tt.args.VolumeName, &tt.args.dc)
+
+			// Error checking IsVolumeAnEmptyDir
+			if tt.wantEmptyDir != isVolumeEmpty {
+				t.Errorf(" client.IsVolumeAnEmptyDir() unexpected %v, wantEmptyDir %v", isVolumeEmpty, tt.wantEmptyDir)
+			}
+
+		})
+	}
+}
