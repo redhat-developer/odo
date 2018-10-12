@@ -3490,3 +3490,106 @@ func TestGetEnvVarsFromDC(t *testing.T) {
 		})
 	}
 }
+
+func Test_updateEnvVar(t *testing.T) {
+	type args struct {
+		dc           *appsv1.DeploymentConfig
+		inputEnvVars []corev1.EnvVar
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test case 1: tests with single container in dc and no existing env vars",
+			args: args{
+				dc: fakeDeploymentConfig("foo", "foo", nil),
+				inputEnvVars: []corev1.EnvVar{
+					{
+						Name:  "key",
+						Value: "value",
+					},
+					{
+						Name:  "key-1",
+						Value: "value-1",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test case 2: tests with single container in dc and existing env vars",
+			args: args{
+				dc: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key-1", Value: "key-1"}}),
+				inputEnvVars: []corev1.EnvVar{
+					{
+						Name:  "key-2",
+						Value: "value-2",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test case 3: tests with double container in dc",
+			args: args{
+				dc: &appsv1.DeploymentConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "wildfly-app",
+					},
+					Spec: appsv1.DeploymentConfigSpec{
+						Template: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Env: []corev1.EnvVar{},
+									},
+									{
+										Env: []corev1.EnvVar{},
+									},
+								},
+							},
+						},
+					},
+				},
+				inputEnvVars: []corev1.EnvVar{
+					{
+						Name:  "key",
+						Value: "value",
+					},
+					{
+						Name:  "key-1",
+						Value: "value-1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := updateEnvVar(tt.args.dc, tt.args.inputEnvVars)
+
+			if err == nil && !tt.wantErr {
+				found := false
+				for _, inputEnv := range tt.args.inputEnvVars {
+					for _, foundEnv := range tt.args.dc.Spec.Template.Spec.Containers[0].Env {
+						if reflect.DeepEqual(inputEnv, foundEnv) {
+							found = true
+						}
+					}
+				}
+				if !found {
+					t.Errorf("update env vars are not matching, expected dc to contain: %v", tt.args.inputEnvVars)
+				}
+
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
+	}
+}
