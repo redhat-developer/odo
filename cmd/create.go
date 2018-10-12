@@ -74,14 +74,25 @@ A full list of component types that can be deployed is available using: 'odo cat
 		projectName := project.GetCurrent(client)
 
 		checkFlag := 0
+		componentPath := ""
+		var componentPathType util.ComponentCreateType
 
 		if len(componentBinary) != 0 {
+			componentPath = componentBinary
+			componentPathType = util.BINARY
+			checkError(err, "")
 			checkFlag++
 		}
 		if len(componentGit) != 0 {
+			componentPath = componentGit
+			componentPathType = util.GIT
+			checkError(err, "")
 			checkFlag++
 		}
 		if len(componentLocal) != 0 {
+			componentPath = componentLocal
+			componentPathType = util.SOURCE
+			checkError(err, "")
 			checkFlag++
 		}
 
@@ -90,14 +101,20 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
-		componentImageName, componentType, defaultComponentName, componentVersion := util.ParseCreateCmdArgs(args)
+		componentImageName, componentType, _, componentVersion := util.ParseCreateCmdArgs(args)
 
 		// Fetch list of existing components in-order to attempt generation of unique component name
 		componentList, err := component.List(client, applicationName, projectName)
 		checkError(err, "")
 
 		// Generate unique name for component
-		componentName, err := component.GetDefaultComponentName(defaultComponentName, componentList)
+		componentName, err := component.GetDefaultComponentName(
+			componentPath,
+			componentPathType,
+			componentType,
+			componentList,
+		)
+		glog.V(4).Infof("Creating component with prefix:%s\nname %s\ncomponent type %s")
 		checkError(err, "")
 
 		// Check to see if the catalog type actually exists

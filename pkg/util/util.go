@@ -1,15 +1,16 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"github.com/golang/glog"
 	"math/rand"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
-	randomdata "github.com/Pallinder/go-randomdata"
+	"github.com/pkg/errors"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -48,6 +49,18 @@ func GenerateRandomString(n int) string {
 	return string(b)
 }
 
+// TruncateString truncates passed string to given length
+// Note: if -1 is passed, the original string is returned
+func TruncateString(str string, maxLen int) string {
+	if maxLen == -1 {
+		return str
+	}
+	if len(str) > maxLen {
+		return str[:maxLen]
+	}
+	return str
+}
+
 // StringInSlice returns if a passed string exists in the passed slice of strings
 func StringInSlice(checkStr string, strSlice []string) bool {
 	// Iterate the slice
@@ -63,34 +76,34 @@ func StringInSlice(checkStr string, strSlice []string) bool {
 
 // GetRandomName returns a randomly generated name which can be used for naming odo and/or openshift entities
 // prefix: Desired prefix part of the name
+// prefixMaxLen: Desired maximum length of prefix part of random name; if -1 is passed, no limit on length will be enforced
 // existList: List to verify that the returned name does not already exist
-// preferredSuffix: Optional suffix if passed, will be checked if prefix-suffix does not exist in existList if not, will add an additional timestamp to make name unique
 // retries: number of retries to try generating a unique name
-// Returns randomname is prefix-suffix, if suffix is passed else generated. Aditionally, if the prefix-suffix is used, it'll be appended with additional 4 char string to take the form prefix-suffix-{a-z A-z}4+
-//           and error if requested number of retries also failed
-func GetRandomName(prefix string, existList []string, preferredSuffix string, retries int) (string, error) {
-	if preferredSuffix == "" {
-		// Generate suffix if not passed, using random country names generated from Pallinder/go-randomdata as suffix
-		replacer := strings.NewReplacer(
-			" ", "-",
-			".", "-",
-			",", "-",
-			"(", "-",
-			")", "-",
-		)
-		preferredSuffix = replacer.Replace(strings.ToLower(randomdata.SillyName()))
-	}
-	// name is prefix-suffix
-	name := fmt.Sprintf("%s-%s", prefix, preferredSuffix)
+// Returns:
+//		1. randomname: is prefix-suffix, where:
+//				prefix: string passed as prefix or fetched current directory of length same as the passed prefixMaxLen
+//				suffix: 4 char random string
+//      2. error: if requested number of retries also failed to generate unique name
+func GetRandomName(prefix string, prefixMaxLen int, existList []string, retries int) (string, error) {
+	replacer := strings.NewReplacer(
+		" ", "-",
+		".", "-",
+		",", "-",
+		"(", "-",
+		")", "-",
+	)
 
-	//Create a map of existing app names for efficient iteration to find if the newly generated name is same as any of the already existing ones
-	existingApps := make(map[string]bool)
-	for _, appName := range existList {
-		existingApps[appName] = true
+	prefix = TruncateString(replacer.Replace(strings.ToLower(prefix)), prefixMaxLen)
+	name := fmt.Sprintf("%s-%s", prefix, GenerateRandomString(4))
+
+	//Create a map of existing names for efficient iteration to find if the newly generated name is same as any of the already existing ones
+	existingNames := make(map[string]bool)
+	for _, existingName := range existList {
+		existingNames[existingName] = true
 	}
 
 	// check if generated name is already used in the existList
-	if _, ok := existingApps[name]; ok {
+	if _, ok := existingNames[name]; ok {
 		prevName := name
 		trial := 0
 		// keep generating names until generated name is not unique. So, loop terminates when name is unique and hence for condition is false
@@ -99,7 +112,7 @@ func GetRandomName(prefix string, existList []string, preferredSuffix string, re
 			prevName = name
 			// Attempt unique name generation from prefix-suffix by concatenating prefix-suffix withrandom string of length 4
 			prevName = fmt.Sprintf("%s-%s", prevName, GenerateRandomString(4))
-			_, ok = existingApps[prevName]
+			_, ok = existingNames[prevName]
 			if trial >= retries {
 				// Avoid infinite loops and fail after passed number of retries
 				return "", fmt.Errorf("failed to generate a unique name even after %d retrials", retries)
@@ -110,6 +123,49 @@ func GetRandomName(prefix string, existList []string, preferredSuffix string, re
 	}
 	// return name
 	return name, nil
+}
+
+type ComponentCreateType string
+
+const (
+	GIT    ComponentCreateType = "git"
+	SOURCE ComponentCreateType = "source"
+	BINARY ComponentCreateType = "binary"
+	NONE   ComponentCreateType = ""
+)
+
+// GetComponentDir returns source repo name
+// Parameters:
+//		path: git url or source path or binary path
+//		paramType: One of ComponentCreateType as in GIT/SOURCE/BINARY
+// Returns: directory name
+func GetComponentDir(path string, paramType ComponentCreateType) (string, error) {
+	replacer := strings.NewReplacer(
+		" ", "-",
+		".", "-",
+		",", "-",
+		"(", "-",
+		")", "-",
+	)
+	retVal := ""
+	switch paramType {
+	case GIT:
+		retVal = strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".git")
+	case SOURCE:
+		retVal = filepath.Base(path)
+	case BINARY:
+		filename := filepath.Base(path)
+		var extension = filepath.Ext(filename)
+		retVal = filename[0 : len(filename)-len(extension)]
+	default:
+		currDir, err := os.Getwd()
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to generate a random name as getting current directory failed")
+		}
+		retVal = filepath.Base(currDir)
+	}
+	retVal = strings.TrimSpace(replacer.Replace(strings.ToLower(retVal)))
+	return retVal, nil
 }
 
 // Hyphenate applicationName and componentName

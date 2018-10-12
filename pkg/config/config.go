@@ -7,14 +7,16 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
 const (
-	configEnvName  = "ODOCONFIG"
-	configFileName = "odo"
+	configEnvName   = "ODOCONFIG"
+	configFileName  = "odo"
+	ConfigPrefixDir = "$DIR"
 )
 
 // OdoSettings holds all odo specific configurations
@@ -143,6 +145,7 @@ func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 		}
 		c.OdoSettings.UpdateNotification = &val
 	case "prefix":
+		value = strings.ToUpper(value)
 		c.OdoSettings.Prefix = &value
 	default:
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
