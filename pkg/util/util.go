@@ -1,11 +1,9 @@
 package util
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/golang/glog"
-	"k8s.io/apimachinery/pkg/runtime"
 	"math/rand"
 	"net/url"
 	"strings"
@@ -140,16 +138,4 @@ func ConvertKeyValueStringToMap(params []string) map[string]string {
 		}
 	}
 	return result
-}
-
-// BuildParameters converts a map of variable assignments to a byte encoded json document,
-// which is what the ServiceCatalog API consumes.
-func BuildParameters(params map[string]string) *runtime.RawExtension {
-	paramsJSON, err := json.Marshal(params)
-	if err != nil {
-		// This should never be hit because marshalling a map[string]string is pretty safe
-		// I'd rather throw a panic then force handling of an error that I don't think is possible.
-		fmt.Errorf("unable to marshal the request parameters %v (%s)", params, err)
-	}
-	return &runtime.RawExtension{Raw: paramsJSON}
 }
