@@ -40,7 +40,7 @@ var versionCmd = &cobra.Command{
 		fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
 
 		// turning off the flag which checks for login status
-		GlobalConnectionCheck = true
+		GlobalSkipConnectionCheck = true
 		// Lets fetch the info about the server
 		serverInfo, err := getOcClient().GetServerVersion()
 		checkError(err, "")
