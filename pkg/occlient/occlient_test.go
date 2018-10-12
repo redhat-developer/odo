@@ -2766,6 +2766,8 @@ func TestCreateServiceInstance(t *testing.T) {
 		componentName string
 		componentType string
 		labels        map[string]string
+		plan          string
+		parameters    map[string]string
 	}
 
 	tests := []struct {
@@ -2782,6 +2784,8 @@ func TestCreateServiceInstance(t *testing.T) {
 					"name":      "mongodb",
 					"namespace": "blog",
 				},
+				plan:       "dev",
+				parameters: map[string]string{},
 			},
 			wantErr: false,
 		},
@@ -2790,14 +2794,16 @@ func TestCreateServiceInstance(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 
-			err := fkclient.CreateServiceInstance(tt.args.componentName, tt.args.componentType, tt.args.labels)
+			err := fkclient.CreateServiceInstance(tt.args.componentName, tt.args.componentType, tt.args.plan, tt.args.parameters, tt.args.labels)
 			// Checks for error in positive cases
 			if tt.wantErr == false && (err != nil) {
 				t.Errorf(" client.CreateServiceInstance(componentName,componentType, labels) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			// Check for validating actions performed
-			if len(fkclientset.ServiceCatalogClientSet.Actions()) != 1 && tt.wantErr == false {
+			// creating a service instance also means creating a serviceBinding
+			// which is why we expect 2 actions
+			if len(fkclientset.ServiceCatalogClientSet.Actions()) != 2 && tt.wantErr == false {
 				t.Errorf("expected 1 action in CreateServiceInstace got: %v", fkclientset.ServiceCatalogClientSet.Actions())
 			}
 
