@@ -59,7 +59,7 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 	labels := componentlabels.GetLabels(serviceName, applicationName, true)
 	// save service type as label
 	labels[componentlabels.ComponentTypeLabel] = serviceType
-	mapOfParameters := util.ParametersAsMap(parameters)
+	mapOfParameters := util.ConvertKeyValueStringToMap(parameters)
 	err := client.CreateServiceInstance(serviceName, serviceType, servicePlan, mapOfParameters, labels)
 	if err != nil {
 		return errors.Wrap(err, "unable to create service instance")
