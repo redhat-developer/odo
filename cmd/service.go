@@ -39,11 +39,11 @@ var serviceCreateCmd = &cobra.Command{
 
 If service name is not provided, service type value will be used. The plan to be used must be passed along the service type
 using this convention <service_type>/<plan>. The parameters to configure the service are passed as a list of key=value pairs.
-The list of the parameters, their type is defined according to the plan selected.
+The list of the parameters and their type is defined according to the plan selected.
 
 A full list of service types that can be deployed are available using: 'odo catalog list services'`,
 	Example: `  # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
-  odo service create dh-postgresql-apb/dev my-postgresql-db -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6
+  odo service create dh-postgresql-apb/dev my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
