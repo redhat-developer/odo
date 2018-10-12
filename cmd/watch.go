@@ -51,7 +51,7 @@ var watchCmd = &cobra.Command{
 			componentName = args[0]
 		}
 
-		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
+		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
 		checkError(err, "Unable to get source for %s component.", componentName)
 
 		if sourceType != "binary" && sourceType != "local" {

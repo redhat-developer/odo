@@ -34,7 +34,7 @@ var pushCmd = &cobra.Command{
 		stdout := color.Output
 		client := getOcClient()
 
-		projectName := getAndSetNamespace(client)
+		getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		var inputName string
@@ -46,7 +46,7 @@ var pushCmd = &cobra.Command{
 		componentName := getComponent(client, inputName, applicationName)
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
-		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
+		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
 		checkError(err, "unable to get component source")
 		switch sourceType {
 		case "local", "binary":

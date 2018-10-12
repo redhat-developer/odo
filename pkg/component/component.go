@@ -291,8 +291,7 @@ func Delete(client *occlient.Client, componentName string, applicationName strin
 	return nil
 }
 
-// SetCurrent sets the given component to active in odo config file
-
+// SetCurrent sets the given componentName as active component
 func SetCurrent(componentName string, applicationName string, projectName string) error {
 	cfg, err := config.New()
 	if err != nil {
@@ -457,7 +456,7 @@ func List(client *occlient.Client, applicationName string) ([]ComponentInfo, err
 // The first returned string is component source type ("git" or "local" or "binary")
 // The second returned string is a source (url to git repository or local path or path to binary)
 // we retrieve the source type by looking up the DeploymentConfig that's deployed
-func GetComponentSource(client *occlient.Client, componentName string, applicationName string, projectName string) (string, string, error) {
+func GetComponentSource(client *occlient.Client, componentName string, applicationName string) (string, string, error) {
 
 	// Namespace the application
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -492,7 +491,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 	// STEP 1. Create the common Object Meta for updating.
 
 	// Retrieve the old source type
-	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName, client.Namespace)
+	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get source of %s component", componentName)
 	}
@@ -731,7 +730,7 @@ func GetComponentDesc(client *occlient.Client, componentName string, application
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
 	// Source
-	_, path, err = GetComponentSource(client, componentName, applicationName, client.Namespace)
+	_, path, err = GetComponentSource(client, componentName, applicationName)
 	if err != nil {
 		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
 	}
