@@ -925,7 +925,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	}
 
 	// Generate the SupervisorD Config
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta,foundCurrentDCContainer.Env)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, foundCurrentDCContainer.Env)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)

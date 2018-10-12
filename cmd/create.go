@@ -17,10 +17,10 @@ import (
 )
 
 var (
-	componentBinary string
-	componentGit    string
-	componentLocal  string
-	componentPorts  []string
+	componentBinary  string
+	componentGit     string
+	componentLocal   string
+	componentPorts   []string
 	componentEnvVars []string
 )
 
@@ -127,7 +127,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		if len(componentGit) != 0 {
 
 			// Use Git
-			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts,componentEnvVars)
+			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts, componentEnvVars)
 			checkError(err, "")
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 
@@ -148,7 +148,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			}
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts,componentEnvVars)
+			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars)
 			checkError(err, "")
 
 		} else if len(componentBinary) != 0 {
@@ -159,7 +159,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			checkError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts,componentEnvVars)
+			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts, componentEnvVars)
 			checkError(err, "")
 
 		} else {
@@ -168,7 +168,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			checkError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts,componentEnvVars)
+			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars)
 			checkError(err, "")
 		}
 

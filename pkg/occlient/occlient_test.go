@@ -2421,7 +2421,7 @@ func TestWaitAndGetPod(t *testing.T) {
 		},
 
 		{
-			name:    "phase:	unknown",
+			name: "phase:	unknown",
 			podName: "ruby",
 			status:  corev1.PodUnknown,
 			wantErr: true,
@@ -2965,7 +2965,7 @@ func TestPatchCurrentDC(t *testing.T) {
 			name: "Case 1: Test patching",
 			args: args{
 				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo"}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
@@ -2977,7 +2977,7 @@ func TestPatchCurrentDC(t *testing.T) {
 			name: "Case 2: Test patching with the wrong name",
 			args: args{
 				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar",
 					[]corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}},
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
@@ -3044,7 +3044,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "bar",
-				dc:       *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
 			actions: 3,
@@ -3054,7 +3054,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "",
-				dc:       *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3064,7 +3064,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "",
-				dc:       *fakeDeploymentConfig("foo2", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:       *fakeDeploymentConfig("foo2", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3074,7 +3074,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "bar:latest",
-				dc:       *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
 			actions: 3,
@@ -3150,7 +3150,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "nodejs",
 				expectedImage:  "nodejs",
 				imageNamespace: "openshift",
-				dc:             *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
 			actions: 3,
@@ -3162,7 +3162,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "foo",
 				expectedImage:  "foobar",
 				imageNamespace: "testing",
-				dc:             *fakeDeploymentConfig("foo", "foo",[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: true,
 			actions: 3,

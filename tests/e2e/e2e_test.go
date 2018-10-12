@@ -24,17 +24,17 @@ var testNamespacedImage = "https://raw.githubusercontent.com/bucharest-gold/cent
 // EnvVarTest checks the component container env vars in the build config for git and deployment config for git/binary/local
 // appTestName is the app of the app
 // sourceType is the type of the source of the component i.e git/binary/local
-func EnvVarTest(resourceName string, sourceType string) {
+func EnvVarTest(resourceName string, sourceType string, envString string) {
 
 	if sourceType == "git" {
 		// checking the values of the env vars pairs in bc
 		envVars := runCmd("oc get bc " + resourceName + " -o go-template='{{range .spec.strategy.sourceStrategy.env}}{{.name}}{{.value}}{{end}}'")
-		Expect(envVars).To(Equal("keyvaluekey1value1"))
+		Expect(envVars).To(Equal(envString))
 	}
 
 	// checking the values of the env vars pairs in dc
 	envVars := runCmd("oc get dc " + resourceName + " -o go-template='{{range .spec.template.spec.containers}}{{range .env}}{{.name}}{{.value}}{{end}}{{end}}'")
-	Expect(envVars).To(Equal("keyvaluekey1value1"))
+	Expect(envVars).To(Equal(envString))
 }
 
 func TestOdo(t *testing.T) {
@@ -633,7 +633,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).To(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "binary", "file://"+tmpDir+"/sample-binary-testing-2.war")
-			EnvVarTest("wildfly-"+appTestName, "binary")
+			EnvVarTest("wildfly-"+appTestName, "binary", "keyvaluekey1value1")
 		})
 
 		It("should update component from binary to local", func() {
@@ -665,7 +665,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).To(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "local", "file://"+tmpDir+"/katacoda-odo-backend-1")
-			EnvVarTest("wildfly-"+appTestName, "local")
+			EnvVarTest("wildfly-"+appTestName, "local", "keyvaluekey1value1")
 		})
 
 		It("should update component from local to local", func() {
@@ -697,7 +697,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).To(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "local", "file://"+tmpDir+"/katacoda-odo-backend-2")
-			EnvVarTest("wildfly-"+appTestName, "local")
+			EnvVarTest("wildfly-"+appTestName, "local", "keyvaluekey1value1")
 		})
 
 		It("should update component from local to git", func() {
@@ -726,7 +726,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "git", wildflyUri1)
-			EnvVarTest("wildfly-"+appTestName, "git")
+			EnvVarTest("wildfly-"+appTestName, "git", "keyvaluekey1value1")
 		})
 
 		It("should update component from git to git", func() {
@@ -755,7 +755,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "git", wildflyUri2)
-			EnvVarTest("wildfly-"+appTestName, "git")
+			EnvVarTest("wildfly-"+appTestName, "git", "keyvaluekey1value1")
 		})
 
 		It("should update component from git to binary", func() {
@@ -784,7 +784,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).To(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "binary", "file://"+tmpDir+"/sample-binary-testing-1.war")
-			EnvVarTest("wildfly-"+appTestName, "binary")
+			EnvVarTest("wildfly-"+appTestName, "binary", "keyvaluekey1value1")
 		})
 
 		It("should update component from binary to git", func() {
@@ -813,7 +813,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "git", wildflyUri1)
-			EnvVarTest("wildfly-"+appTestName, "git")
+			EnvVarTest("wildfly-"+appTestName, "git", "keyvaluekey1value1")
 		})
 
 		It("should update component from git to local", func() {
@@ -842,7 +842,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).To(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "local", "file://"+tmpDir+"/katacoda-odo-backend-1")
-			EnvVarTest("wildfly-"+appTestName, "local")
+			EnvVarTest("wildfly-"+appTestName, "local", "keyvaluekey1value1")
 		})
 
 		It("should update component from local to binary", func() {
@@ -871,7 +871,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(getDc).To(ContainSubstring("wildfly" + appRootVolumeName))
 
 			SourceTest(appTestName, "binary", "file://"+tmpDir+"/sample-binary-testing-1.war")
-			EnvVarTest("wildfly-"+appTestName, "binary")
+			EnvVarTest("wildfly-"+appTestName, "binary", "keyvaluekey1value1")
 		})
 	})
 })
