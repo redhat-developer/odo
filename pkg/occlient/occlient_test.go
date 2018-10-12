@@ -671,7 +671,7 @@ func TestCreateRoute(t *testing.T) {
 			service:    "mailserver",
 			portNumber: intstr.FromInt(8080),
 			labels: map[string]string{
-				"SLA": "High",
+				"SLA":                              "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "python",
 			},
@@ -684,7 +684,7 @@ func TestCreateRoute(t *testing.T) {
 			service:    "blog",
 			portNumber: intstr.FromInt(9100),
 			labels: map[string]string{
-				"SLA": "High",
+				"SLA":                              "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "golang",
 			},
@@ -994,7 +994,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1028,7 +1028,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1056,7 +1056,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1091,7 +1091,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1119,7 +1119,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1154,7 +1154,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1181,7 +1181,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1640,51 +1640,6 @@ func TestUpdateBuildConfig(t *testing.T) {
 		wantErr             bool
 	}{
 		{
-			name:            "git to local with proper parameters",
-			buildConfigName: "nodejs",
-			gitURL:          "",
-			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			existingBuildConfig: buildv1.BuildConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nodejs",
-				},
-				Spec: buildv1.BuildConfigSpec{
-					CommonSpec: buildv1.CommonSpec{
-						Source: buildv1.BuildSource{
-							Git: &buildv1.GitBuildSource{
-								URI: "https://github.com/sclorg/nodejs-ex",
-							},
-							Type: buildv1.BuildSourceGit,
-						},
-					},
-				},
-			},
-			updatedBuildConfig: buildv1.BuildConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nodejs",
-					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
-						"app.kubernetes.io/component-source-type": "local",
-					},
-				},
-				Spec: buildv1.BuildConfigSpec{
-					CommonSpec: buildv1.CommonSpec{
-						Source: buildv1.BuildSource{
-							Git: &buildv1.GitBuildSource{
-								URI: bootstrapperURI,
-								Ref: bootstrapperRef,
-							},
-							Type: buildv1.BuildSourceGit,
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
 			name:            "local to git with proper parameters",
 			buildConfigName: "nodejs",
 			gitURL:          "https://github.com/sclorg/nodejs-ex",
@@ -1790,7 +1745,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1816,7 +1771,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1843,7 +1798,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1870,7 +1825,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -2828,7 +2783,7 @@ func TestCreateService(t *testing.T) {
 			commonObjectMeta: metav1.ObjectMeta{
 				Name: "nodejs",
 				Labels: map[string]string{
-					"app": "apptmp",
+					"app":                              "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
