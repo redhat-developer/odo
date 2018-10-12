@@ -23,7 +23,7 @@ var serviceCmd = &cobra.Command{
 	Use:   "service",
 	Short: "Perform service catalog operations",
 	Long:  ` Perform service catalog operations, Limited to template service broker only.`,
-	Example: fmt.Sprintf("%s\n%s\n%s",
+	Example: fmt.Sprintf("%s\n%s\n%s\n%s",
 		serviceCreateCmd.Example,
 		serviceLinkCmd.Example,
 		serviceDeleteCmd.Example,
