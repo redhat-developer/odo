@@ -41,6 +41,9 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 			return "", errors.Wrap(err, "unable to generate random app name")
 		}
 		appName, err = util.GetRandomName(prefix, appPrefixMaxLen, existingAppNames, appNameMaxRetries)
+		if err != nil {
+			return "", errors.Wrap(err, "unable to generate random app name")
+		}
 	} else {
 		appName, err = util.GetRandomName(*cfg.OdoSettings.Prefix, appPrefixMaxLen, existingAppNames, appNameMaxRetries)
 	}

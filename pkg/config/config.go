@@ -14,8 +14,10 @@ import (
 )
 
 const (
-	configEnvName   = "ODOCONFIG"
-	configFileName  = "odo"
+	configEnvName  = "ODOCONFIG"
+	configFileName = "odo"
+	// ConfigPrefixDir The default value for config `prefix`.
+	// When set to $DIR, the directory name of component dir(or current-dir if not available) will be used as prefix for app and component names
 	ConfigPrefixDir = "$DIR"
 )
 

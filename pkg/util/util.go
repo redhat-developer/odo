@@ -125,13 +125,18 @@ func GetRandomName(prefix string, prefixMaxLen int, existList []string, retries 
 	return name, nil
 }
 
+// ComponentCreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
 type ComponentCreateType string
 
 const (
-	GIT    ComponentCreateType = "git"
+	// GIT as source of component
+	GIT ComponentCreateType = "git"
+	// SOURCE Local source path as source of component
 	SOURCE ComponentCreateType = "source"
+	// BINARY Local Binary as source of component
 	BINARY ComponentCreateType = "binary"
-	NONE   ComponentCreateType = ""
+	// NONE indicates there's no information about the type of source of the component
+	NONE ComponentCreateType = ""
 )
 
 // GetComponentDir returns source repo name
