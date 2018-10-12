@@ -38,6 +38,4 @@ import:
   version: v1.4.7
 - package: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
-- package: github.com/Pallinder/go-randomdata
-  version: 15df0648130a623e418886f81b2aaecd0a00547b
 
