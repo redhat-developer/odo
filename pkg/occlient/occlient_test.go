@@ -2084,6 +2084,175 @@ func TestGetExposedPorts(t *testing.T) {
 	}
 }
 
+func TestGetSecret(t *testing.T) {
+	tests := []struct {
+		name       string
+		secretNS   string
+		secretName string
+		wantErr    bool
+		want       *corev1.Secret
+	}{
+		{
+			name:       "Case: Valid request for retrieving a secret",
+			secretNS:   "",
+			secretName: "foo",
+			want: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "Case: Invalid request for retrieving a secret",
+			secretNS:   "",
+			secretName: "foo2",
+			want: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting Secret
+			fakeClientSet.Kubernetes.PrependReactor("get", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.want.Name != tt.secretName {
+					return true, nil, fmt.Errorf("'get' called with a different secret name")
+				}
+				return true, tt.want, nil
+			})
+
+			returnValue, err := fakeClient.GetSecret(tt.secretNS, tt.secretName)
+
+			// Check for validating return value
+			if err == nil && returnValue != tt.want {
+				t.Errorf("error in return value got: %v, expected %v", returnValue, tt.want)
+			}
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("\nclient.GetSecret(secretNS, secretName) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreateServiceBinding(t *testing.T) {
+	tests := []struct {
+		name        string
+		bindingNS   string
+		bindingName string
+		params      map[string]string
+		wantErr     bool
+	}{
+		{
+			name:        "Case: Valid request for creating a secret",
+			bindingNS:   "",
+			bindingName: "foo",
+			params: map[string]string{
+				"name": "value",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			err := fakeClient.CreateServiceBinding(tt.bindingNS, tt.bindingName, tt.params)
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.ServiceCatalogClientSet.Actions()) != 1 {
+					t.Errorf("expected 1 ServiceCatalogClientSet.Actions() in CreateServiceBinding, got: %v", fakeClientSet.ServiceCatalogClientSet.Actions())
+				}
+				createdBinding := fakeClientSet.ServiceCatalogClientSet.Actions()[0].(ktesting.CreateAction).GetObject().(*scv1beta1.ServiceBinding)
+				if createdBinding.Name != tt.bindingName {
+					t.Errorf("the name of servicebinding was not correct, expected: %s, got: %s", tt.bindingName, createdBinding.Name)
+				}
+				if !reflect.DeepEqual(createdBinding.Spec.Parameters, serviceInstanceParameters(tt.params)) {
+					t.Error("the parameters of servicebinding were not correct")
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+
+		})
+	}
+}
+
+func TestLinkSecret(t *testing.T) {
+	tests := []struct {
+		name            string
+		projectName     string
+		secretName      string
+		applicationName string
+		wantErr         bool
+	}{
+		{
+			name:            "Case: Unable to locate DeploymentConfig",
+			projectName:     "foo",
+			secretName:      "foo",
+			applicationName: "",
+			wantErr:         true,
+		},
+		{
+			name:            "Case: Unable to update DeploymentConfig",
+			projectName:     "",
+			secretName:      "foo",
+			applicationName: "foo",
+			wantErr:         true,
+		},
+		//TODO fix this somehow? It doesn't seem to work because of Instantiate doesn't play nice with fake
+		//{
+		//	name:        "Case: Valid creation of link",
+		//	projectName: "foo",
+		//	secretName: "foo",
+		//	applicationName: "foo",
+		//	wantErr: false,
+		//},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if len(tt.applicationName) == 0 {
+					return true, nil, fmt.Errorf("could not find dc")
+				}
+				return true, fakeDeploymentConfig(tt.applicationName, "foo"), nil
+			})
+
+			// Fake updating DC
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if len(tt.projectName) == 0 {
+					return true, nil, fmt.Errorf("could not update dc")
+				}
+				return true, fakeDeploymentConfig(tt.applicationName, "foo"), nil
+			})
+
+			err := fakeClient.LinkSecret(tt.projectName, tt.secretName, tt.applicationName)
+			if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			} else if err == nil && !tt.wantErr {
+				if len(fakeClientSet.AppsClientset.Actions()) != 2 {
+					t.Errorf("expected 2 AppsClientset.Actions() in LinkSecret, got: %v", fakeClientSet.AppsClientset.Actions())
+				}
+				//TODO enhance test if the Instantiate issue can be overcome
+			}
+		})
+	}
+}
+
 func TestGetImageStream(t *testing.T) {
 	tests := []struct {
 		name           string

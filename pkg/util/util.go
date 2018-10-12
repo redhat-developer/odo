@@ -125,7 +125,7 @@ func GenFileUrl(location string, os string) string {
 	return "file://" + urlPath
 }
 
-// Convert String Array of Parameters to a Map[String]string
+// Convert String Slice of Parameters to a Map[String]string
 func ParametersAsMap(params []string) map[string]string {
 	result := make(map[string]string, len(params))
 	for _, param := range params {

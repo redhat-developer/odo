@@ -1396,7 +1396,7 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 	}
 
 	// Create the secret containing the parameters of the plan selected.
-	err = c.CreateSecret(c.namespace, componentName, parameters)
+	err = c.CreateServiceBinding(c.namespace, componentName, parameters)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create the secret %s for the service instance", componentName)
 	}
@@ -1404,8 +1404,8 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 	return nil
 }
 
-// Create a secret within the namespace of the service instance created using the service's parameters.
-func (c *Client) CreateSecret(namespace string, componentName string, params map[string]string) error {
+// Create a ServiceBinding (essentially a secret) within the namespace of the service instance created using the service's parameters.
+func (c *Client) CreateServiceBinding(namespace string, componentName string, params map[string]string) error {
 
 	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
 		&scv1beta1.ServiceBinding{
@@ -1447,8 +1447,8 @@ func (c *Client) LinkSecret(projectName, secretName, applicationName string) err
 	}
 
 	// Update the DeploymentConfig
-	_, errUpdate := c.appsClient.DeploymentConfigs(projectName).Update(dc)
-	if errUpdate != nil {
+	_, err = c.appsClient.DeploymentConfigs(projectName).Update(dc)
+	if err != nil {
 		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
 	}
 
