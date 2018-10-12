@@ -16,6 +16,7 @@ import (
 var (
 	serviceForceDeleteFlag bool
 	parameters             []string
+	plan                   string
 )
 
 // serviceCmd represents the service command
@@ -32,7 +33,7 @@ var serviceCmd = &cobra.Command{
 }
 
 var serviceCreateCmd = &cobra.Command{
-	Use:   "create <service_type>/<plan> [service_name]",
+	Use:   "create <service_type> --plan <plan_name> [service_name]",
 	Short: "Create a new service",
 	Long: `Create a new service from service catalog using the plan defined and deploy it on OpenShift.
 
@@ -54,13 +55,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 			fmt.Printf("Parameters are mandatory to create a service (e.g -p key=val -p key=val). They are defined per plan.\n")
 			os.Exit(1)
 		}
-		str := strings.Split(args[0], "/")
-		if len(str) != 2 {
-			fmt.Printf("Service and plan should be defined using this convention <service_type>/<plan>.\n")
-			os.Exit(1)
-		}
-		serviceType := str[0]
-		servicePlan := str[1]
+		serviceType := args[0]
 		exists, err := svc.SvcTypeExists(client, serviceType)
 		checkError(err, "unable to create service because Service Catalog is not enabled in your cluster")
 		if !exists {
@@ -82,7 +77,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 			fmt.Printf("%s service already exists in the current application.\n", serviceName)
 			os.Exit(1)
 		}
-		err = svc.CreateService(client, serviceName, serviceType, servicePlan, parameters, applicationName)
+		err = svc.CreateService(client, serviceName, serviceType, plan, parameters, applicationName)
 		checkError(err, "")
 		fmt.Printf("Service '%s' was created.\n", serviceName)
 	},
@@ -195,7 +190,9 @@ var serviceListCmd = &cobra.Command{
 
 func init() {
 	serviceDeleteCmd.Flags().BoolVarP(&serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
-	serviceCreateCmd.Flags().StringArrayVarP(&parameters, "parameter", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>:<value")
+	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
+	serviceCreateCmd.Flags().StringArrayVarP(&parameters, "parameter", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
+	serviceCreateCmd.MarkFlagRequired("plan")
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
