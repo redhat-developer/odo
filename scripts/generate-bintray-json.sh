@@ -29,6 +29,17 @@ EOF
 done
 
 
+PACKAGE="odo"
+VERSION="latest"
+UPLOAD_DIR="latest"
+DESC="odo build for ${TRAVIS_BRANCH} branch"
+if [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then
+    DESC="odo build for PR #${TRAVIS_PULL_REQUEST}"
+    UPLOAD_DIR="pr${TRAVIS_PULL_REQUEST}"
+    VERSION="pr"
+fi
+
+
 
 # generate .bintray.json
 # this file contains all information on what will be upload to bintray
@@ -36,7 +47,7 @@ done
 cat > "./.bintray.json" <<EOF
 {
     "package": {
-        "name": "odo",
+        "name": "${PACKAGE}",
         "repo": "odo",
         "subject": "odo",
         "desc": "OpenShift Command line for Developers",
@@ -49,8 +60,8 @@ cat > "./.bintray.json" <<EOF
     },
 
     "version": {
-        "name": "latest",
-        "desc": "odo build from master branch",
+        "name": "${VERSION}",
+        "desc": "${DESC}",
         "released": "${DATE}",
         "vcs_tag": "${TRAVIS_COMMIT}",
         "attributes": [{"name": "TRAVIS_JOB_NUMBER", "values" : ["${TRAVIS_JOB_NUMBER}"], "type": "string"},
@@ -65,11 +76,11 @@ cat > "./.bintray.json" <<EOF
     "files":
         [
             {"includePattern": "dist\/bin\/([^\/]+)\/(.*)",
-             "uploadPattern": "./latest/\$1/\$2", 
+             "uploadPattern": "./${UPLOAD_DIR}/\$1/\$2", 
              "matrixParams": {"override": 1 }
             },
             {"includePattern": "dist/bin/info.txt",
-             "uploadPattern": "./latest/info.txt",
+             "uploadPattern": "./${UPLOAD_DIR}/info.txt",
              "matrixParams": {"override": 1 }
             }
         ],

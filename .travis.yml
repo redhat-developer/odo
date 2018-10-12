@@ -88,8 +88,9 @@ jobs:
           user: $BINTRAY_USER
           key: $BINTRAY_KEY
           skip_cleanup: true
-          on:
-            on: master
+        on:
+          repo: redhat-developer/odo
+          all_branches: true
         # upload gziped binaries to github release page
         - provider: releases
           api_key:
@@ -109,9 +110,12 @@ jobs:
             - make upload-packages
           on:
             tags: true
+            repo: redhat-developer/odo
         - provider: script
           skip_cleanup: true
           script:
             - make upload-packages
           on:
             branch: master
+            repo: redhat-developer/odo
+
