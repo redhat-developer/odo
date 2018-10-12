@@ -15,6 +15,7 @@ func TestGetDefaultAppName(t *testing.T) {
 		wantErr      bool
 		wantRE       string
 		needPrefix   bool
+		prefix       string
 	}{
 		{
 			testName:     "Case: App prefix not configured",
@@ -24,11 +25,20 @@ func TestGetDefaultAppName(t *testing.T) {
 			needPrefix:   false,
 		},
 		{
-			testName:     "Case: App prefix configured",
+			testName:     "Case: App prefix set to testing",
 			existingApps: []config.ApplicationInfo{},
 			wantErr:      false,
 			wantRE:       "testing-*",
 			needPrefix:   true,
+			prefix:       "testing",
+		},
+		{
+			testName:     "Case: App prefix set to $DIR",
+			existingApps: []config.ApplicationInfo{},
+			wantErr:      false,
+			wantRE:       "testing-*",
+			needPrefix:   true,
+			prefix:       "$DIR",
 		},
 	}
 
@@ -38,7 +48,7 @@ func TestGetDefaultAppName(t *testing.T) {
 			var configInfo config.ConfigInfo
 			odoconfigfile := "odo-test-config"
 
-			configInfo = testingutil.FakeOdoConfig(tt.needPrefix, "")
+			configInfo = testingutil.FakeOdoConfig(tt.needPrefix, tt.prefix)
 
 			configFile, err := testingutil.SetUp(&configInfo, odoconfigfile)
 			if err != nil {

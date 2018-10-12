@@ -114,7 +114,6 @@ A full list of component types that can be deployed is available using: 'odo cat
 			componentType,
 			componentList,
 		)
-		glog.V(4).Infof("Creating component with prefix:%s\nname %s\ncomponent type %s")
 		checkError(err, "")
 
 		// Check to see if the catalog type actually exists

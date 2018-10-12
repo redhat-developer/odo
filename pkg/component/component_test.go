@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -96,6 +97,8 @@ func TestGetDefaultComponentName(t *testing.T) {
 	tests := []struct {
 		testName           string
 		componentType      string
+		componentPath      string
+		componentPathType  util.ComponentCreateType
 		existingComponents []ComponentInfo
 		wantErr            bool
 		wantRE             string
@@ -104,6 +107,8 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix not configured",
 			componentType:      "nodejs",
+			componentPathType:  util.GIT,
+			componentPath:      "https://github.com/openshift/nodejs.git",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
 			wantRE:             "nodejs-*",
@@ -112,9 +117,21 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix configured",
 			componentType:      "nodejs",
+			componentPathType:  util.SOURCE,
+			componentPath:      "./testing",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
 			wantRE:             "testing-nodejs-*",
+			needPrefix:         true,
+		},
+		{
+			testName:           "Case: App prefix configured",
+			componentType:      "wildfly",
+			componentPathType:  util.BINARY,
+			componentPath:      "./testing.war",
+			existingComponents: []ComponentInfo{},
+			wantErr:            false,
+			wantRE:             "testing-wildfly-*",
 			needPrefix:         true,
 		},
 	}
@@ -134,7 +151,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 
 			defer testingutil.CleanupEnv(configFile, t)
 
-			name, err := GetDefaultComponentName(tt.componentType, tt.existingComponents)
+			name, err := GetDefaultComponentName(tt.componentPath, tt.componentPathType, tt.componentType, tt.existingComponents)
 			if err != nil {
 				t.Errorf("Failed to setup mock environment. Error: %v", err)
 			}
