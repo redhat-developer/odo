@@ -51,10 +51,6 @@ A full list of service types that can be deployed are available using: 'odo cata
 		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
-		if len(parameters) == 0 {
-			fmt.Printf("Parameters are mandatory to create a service (e.g -p key=val -p key=val). They are defined per plan.\n")
-			os.Exit(1)
-		}
 		serviceType := args[0]
 		exists, err := svc.SvcTypeExists(client, serviceType)
 		checkError(err, "unable to create service because Service Catalog is not enabled in your cluster")
