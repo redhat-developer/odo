@@ -81,7 +81,7 @@ jobs:
         - make packages
       script: skip
       deploy:
-        # upload binaries to bintray
+        # upload latest binaries to bintray (build from master)
         - provider: bintray
           repo: odo/odo
           file: ./.bintray.json
@@ -90,6 +90,7 @@ jobs:
           skip_cleanup: true
           on:
             on: master
+            repo: redhat-developer/odo
         # upload gziped binaries to github release page
         - provider: releases
           api_key:
@@ -102,16 +103,20 @@ jobs:
           on:
             tags: true
             repo: redhat-developer/odo
-        # upload packages to bintray repositories
+        # upload released packages to bintray repositories
         - provider: script
           skip_cleanup: true
           script:
             - make upload-packages
           on:
             tags: true
+            repo: redhat-developer/odo
+        # upload latest packages (build from master)
         - provider: script
           skip_cleanup: true
           script:
             - make upload-packages
           on:
             branch: master
+            repo: redhat-developer/odo
+
