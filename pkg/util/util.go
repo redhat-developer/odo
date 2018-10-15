@@ -124,7 +124,7 @@ func GenFileUrl(location string, os string) string {
 	return "file://" + urlPath
 }
 
-// Convert String Slice of Parameters to a Map[String]string
+// ConvertKeyValueStringToMap converts String Slice of Parameters to a Map[String]string
 // Each value of the slice is expected to be in the key=value format
 // Values that do not conform to this "spec", will be ignored
 func ConvertKeyValueStringToMap(params []string) map[string]string {

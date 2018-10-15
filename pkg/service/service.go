@@ -151,7 +151,7 @@ func LinkSecret(client *occlient.Client, projectName, secretName, applicationNam
 	return nil
 }
 
-// GetSecrets checks whether a secret with the given name exists in the current namespace
+// SecretExists checks whether a secret with the given name exists in the current namespace
 // The first returned parameter is a bool indicating if a secret with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func SecretExists(client *occlient.Client, secretName, namespace string) (bool, error) {
