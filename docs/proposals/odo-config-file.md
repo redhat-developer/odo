@@ -89,10 +89,10 @@ For some specific values, there will be the possibility to set them globally, as
 
 One of the goals of `odo` is to be easy to use for developers. This forces to translate some configuration possible in the underlying technology (OpenShift/Kubernetes) into a friendlier name that developers could easily understand. An example of this would be the amount of memory a component needs. In OpenShift, this is reflected by limits.memory and requests.memory, and dependening how you set these values influence the QoS of the deployment. In `odo` these should be simplified to `memory`, `min-memory` and `max-memory`. These are terms that any developer will most likely understand without looking at the documentation.
 
-* When `memory` is set, memory requests and limits are the same.
-* `min-memory` should be memory requests.
-* `max-memory` should be memory limits.
-* `memory` is exclusive with `min-memory` or `max-memory`. If set, min-mem and max-mem have the same value as `memory`.
+* When `memory` is set, memory requests and limits in k8s parlance and both have the same value.
+* `min-memory` should be memory requests in k8s parlance.
+* `max-memory` should be memory limits in k8s parlance.
+* `memory` is fill the value of `min-memory` or `max-memory` if these are not set. Otherwise, when both `min-memory` and `max-memory` are set, `memory` will have no effect, possibly trying to set the 3 values should yield a warning.
 
 #### Proposed flags
 
@@ -122,18 +122,18 @@ Configuration used to define how the deployment would be created:
 
 Configuration used to define how the CLI should behave:
 
-* app-name: (local) Preferred application name if none is defined
-* component-name: (local) Preferred component name if none is defined
+* app-name: (local) Preferred application name if none is defined. As this value is in the local configuration file, it will apply to every component created from the source code if not specific application name is provided, else, the one provided via command line will take precedence.
+* component-name: (local) Preferred component name if none is defined. As this value is in the local configuration file, it will apply to the created component from the source code if not specific component name is provided, else, the one provided via command line will take precedence. In case there is already a component with this name, an error should be provided on component creation.
 * odoignore: (local/global) list of files/patterns to ignore by default if no .odoignore file is provided, or when it's cerated. **This configuration can be global, as the developer might want to always ignore specific files (e.g. .git, .odo, ...) when pushing.**
 
 #### <a name="odo-file-format"></a> `odo` file format
 
 The format for both files should be human readable. Whether it's yaml, json or [toml](https://github.com/toml-lang/toml) is not the scope of this proposal to define, as it will be dictated by the engineering team implementing this feature. In any case, it should be possible to:
 
-* Visually interpret the content of a file (vi, cat)
-* Process the file in an easy way (grep, aqk, sed, jq|yq)
-* Be stored (and visualized) in version control system
-* Be used in any operating system (Linux, mac OS, windows)
+* Visually interpret the content of this file (vi, cat).
+* Process this file in an easy way (grep, aqk, sed, jq|yq) for automation.
+* Be stored (and visualized) in version control system as part of the application source code.
+* Be independent and usable from any operating system (Linux, mac OS, windows)
 
 Nevertheless, `odo` will provide a way to manipulate this file via a CLI command, as described in [managing configuration](#managing-configuration)
 
@@ -187,7 +187,8 @@ The verbs that add configuration are:
 When a user wants to update specific configuration.
 
 ```bash
-odo utils config list --global                # List all global config
+odo utils config update app-name example   # Updates app-name value
+odo utils config add odoignore .eclipse    # Adds .eclipse to the list of ignored files
 ```
 
 The verbs that add configuration are:
