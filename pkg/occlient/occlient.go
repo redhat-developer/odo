@@ -1371,8 +1371,12 @@ func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, er
 
 // CreateServiceInstance creates service instance from service catalog
 func (c *Client) CreateServiceInstance(componentName string, componentType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
-	// Creating Service Instance
-	_, err := c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
+	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create the service instance parameters")
+	}
+
+	_, err = c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
 		&scv1beta1.ServiceInstance{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ServiceInstance",
@@ -1388,7 +1392,7 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 					ClusterServiceClassExternalName: componentType,
 					ClusterServicePlanExternalName:  servicePlan,
 				},
-				Parameters: serviceInstanceParameters(parameters),
+				Parameters: serviceInstanceParameters,
 			},
 		})
 
@@ -1407,9 +1411,13 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 
 // CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
 // service instance created using the service's parameters.
-func (c *Client) CreateServiceBinding(namespace string, componentName string, params map[string]string) error {
+func (c *Client) CreateServiceBinding(namespace string, componentName string, parameters map[string]string) error {
+	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create the service instance parameters")
+	}
 
-	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
+	_, err = c.serviceCatalogClient.ServiceBindings(namespace).Create(
 		&scv1beta1.ServiceBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      componentName,
@@ -1421,7 +1429,7 @@ func (c *Client) CreateServiceBinding(namespace string, componentName string, pa
 					Name: componentName,
 				},
 				SecretName: componentName,
-				Parameters: serviceInstanceParameters(params),
+				Parameters: serviceInstanceParameters,
 			},
 		})
 
@@ -1434,14 +1442,12 @@ func (c *Client) CreateServiceBinding(namespace string, componentName string, pa
 
 // serviceInstanceParameters converts a map of variable assignments to a byte encoded json document,
 // which is what the ServiceCatalog API consumes.
-func serviceInstanceParameters(params map[string]string) *runtime.RawExtension {
+func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension, error) {
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
-		// This should never be hit because marshalling a map[string]string is pretty safe
-		// I'd rather throw a panic then force handling of an error that I don't think is possible.
-		fmt.Errorf("unable to marshal the request parameters %v (%s)", params, err)
+		return nil, err
 	}
-	return &runtime.RawExtension{Raw: paramsJSON}
+	return &runtime.RawExtension{Raw: paramsJSON}, nil
 }
 
 // LinkSecret links a secret to the DeploymentConfig of a component

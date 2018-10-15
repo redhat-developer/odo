@@ -2173,7 +2173,8 @@ func TestCreateServiceBinding(t *testing.T) {
 				if createdBinding.Name != tt.bindingName {
 					t.Errorf("the name of servicebinding was not correct, expected: %s, got: %s", tt.bindingName, createdBinding.Name)
 				}
-				if !reflect.DeepEqual(createdBinding.Spec.Parameters, serviceInstanceParameters(tt.params)) {
+				serviceInstanceParameters, _ := serviceInstanceParameters(tt.params)
+				if !reflect.DeepEqual(createdBinding.Spec.Parameters, serviceInstanceParameters) {
 					t.Error("the parameters of servicebinding were not correct")
 				}
 			} else if err == nil && tt.wantErr {
