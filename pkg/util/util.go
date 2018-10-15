@@ -85,15 +85,7 @@ func StringInSlice(checkStr string, strSlice []string) bool {
 //				suffix: 4 char random string
 //      2. error: if requested number of retries also failed to generate unique name
 func GetRandomName(prefix string, prefixMaxLen int, existList []string, retries int) (string, error) {
-	replacer := strings.NewReplacer(
-		" ", "-",
-		".", "-",
-		",", "-",
-		"(", "-",
-		")", "-",
-	)
-
-	prefix = TruncateString(replacer.Replace(strings.ToLower(prefix)), prefixMaxLen)
+	prefix = TruncateString(GetDNS1123Name(strings.ToLower(prefix)), prefixMaxLen)
 	name := fmt.Sprintf("%s-%s", prefix, GenerateRandomString(4))
 
 	//Create a map of existing names for efficient iteration to find if the newly generated name is same as any of the already existing ones
@@ -145,13 +137,6 @@ const (
 //		paramType: One of ComponentCreateType as in GIT/SOURCE/BINARY
 // Returns: directory name
 func GetComponentDir(path string, paramType ComponentCreateType) (string, error) {
-	replacer := strings.NewReplacer(
-		" ", "-",
-		".", "-",
-		",", "-",
-		"(", "-",
-		")", "-",
-	)
 	retVal := ""
 	switch paramType {
 	case GIT:
@@ -169,7 +154,7 @@ func GetComponentDir(path string, paramType ComponentCreateType) (string, error)
 		}
 		retVal = filepath.Base(currDir)
 	}
-	retVal = strings.TrimSpace(replacer.Replace(strings.ToLower(retVal)))
+	retVal = strings.TrimSpace(GetDNS1123Name(strings.ToLower(retVal)))
 	return retVal, nil
 }
 
@@ -251,6 +236,7 @@ func GenFileUrl(location string, os string) string {
 	return "file://" + urlPath
 }
 
+<<<<<<< HEAD
 // ConvertKeyValueStringToMap converts String Slice of Parameters to a Map[String]string
 // Each value of the slice is expected to be in the key=value format
 // Values that do not conform to this "spec", will be ignored
@@ -265,4 +251,19 @@ func ConvertKeyValueStringToMap(params []string) map[string]string {
 		}
 	}
 	return result
+=======
+// GetDNS1123Name Converts passed string into DNS-1123 string
+func GetDNS1123Name(str string) string {
+	replacer := strings.NewReplacer(
+		" ", "-",
+		".", "-",
+		",", "-",
+		"(", "-",
+		")", "-",
+		"/", "-",
+		":", "-",
+		"--", "-",
+	)
+	return strings.TrimSpace(replacer.Replace(strings.ToLower(str)))
+>>>>>>> Fix travis failures
 }

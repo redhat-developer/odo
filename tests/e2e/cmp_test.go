@@ -79,7 +79,7 @@ var _ = Describe("odoCmpE2e", func() {
 		It("should be able to create binary component", func() {
 			runCmd("wget -O " + tmpDir + "/sample-binary-testing-1.war " +
 				"https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/e5bc575ac8b14ba2b23d66b5cb4873657e1a1489/sample.war")
-			runCmd("odo create wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
+			runCmd("odo create wildfly wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 			runCmd("find " + tmpDir)
 
 			// Run push

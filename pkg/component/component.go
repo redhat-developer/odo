@@ -76,7 +76,7 @@ func GetDefaultComponentName(componentPath string, componentPathType util.Compon
 		return "", errors.Wrap(err, "unable to generate random component name")
 	}
 
-	return componentName, nil
+	return util.GetDNS1123Name(componentName), nil
 }
 
 // validateSourceType check if given sourceType is supported

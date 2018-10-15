@@ -50,7 +50,7 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "unable to generate random app name")
 	}
-	return appName, nil
+	return util.GetDNS1123Name(appName), nil
 }
 
 // Create a new application

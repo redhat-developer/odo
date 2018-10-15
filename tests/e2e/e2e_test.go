@@ -185,6 +185,8 @@ var _ = Describe("odoe2e", func() {
 
 	Describe("creating a component", func() {
 		Context("when application exists", func() {
+			var autoGenNodeJSCompName string
+
 			It("should be able to create new imagestream and find it in catalog list", func() {
 				curProj = strings.TrimSuffix(runCmd("oc project -q"), "\n")
 				cmd := fmt.Sprintf("oc create -f "+testNamespacedImage+" -n %s", curProj)
@@ -193,7 +195,7 @@ var _ = Describe("odoe2e", func() {
 				Expect(cmpList).To(ContainSubstring(curProj))
 			})
 
-			It("should create a component", func() {
+			It("should create a named component", func() {
 				runCmd("git clone https://github.com/openshift/nodejs-ex " +
 					tmpDir + "/nodejs-ex")
 
@@ -201,13 +203,18 @@ var _ = Describe("odoe2e", func() {
 				curProj = strings.TrimSuffix(runCmd("oc project -q"), "\n")
 				// Sleep until status tags and their annotations are created
 				time.Sleep(15 * time.Second)
+				runCmd("odo create " + curProj + "/nodejs nodejs --local " + tmpDir + "/nodejs-ex")
+				runCmd("odo push")
+			})
+
+			It("should create a component with auto-generated name", func() {
 				runCmd("odo create " + curProj + "/nodejs --local " + tmpDir + "/nodejs-ex")
 				runCmd("odo push")
 			})
 
 			It("should be the get the component created as active component", func() {
-				cmp := runCmd("odo component get --short")
-				Expect(cmp).To(Equal("nodejs"))
+				autoGenNodeJSCompName = runCmd("odo component get --short")
+				Expect(autoGenNodeJSCompName).To(ContainSubstring(fmt.Sprintf("nodejs-ex-%s-nodejs", curProj)))
 			})
 
 			It("should create the component within the application", func() {
@@ -221,7 +228,7 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able to create multiple components within the same application", func() {
-				runCmd("odo create php")
+				runCmd("odo create php php")
 			})
 
 			It("should list the newly created second component", func() {
@@ -235,13 +242,13 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able to set a component as active", func() {
-				cmpSet := runCmd("odo component set nodejs")
-				Expect(cmpSet).To(ContainSubstring("nodejs"))
+				cmpSet := runCmd(fmt.Sprintf("odo component set %s", autoGenNodeJSCompName))
+				Expect(cmpSet).To(ContainSubstring(autoGenNodeJSCompName))
 			})
 
 			It("should be able to retrieve logs", func() {
 				runCmd("odo log")
-				runCmd("odo log nodejs")
+				runCmd(fmt.Sprintf("odo log %s", autoGenNodeJSCompName))
 			})
 
 			It("should be able to create git component with required ports", func() {
