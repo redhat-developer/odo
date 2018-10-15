@@ -4,71 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"reflect"
 	"strconv"
 	"testing"
-
-	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
-
-func SetUp(config *ConfigInfo, testFile string) (*os.File, error) {
-	configFile, err := setupTempConfigFile(testFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create mock config file")
-	}
-	if config != nil {
-		data, err := yaml.Marshal(&config)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to marshal config %+v", config)
-		}
-		if _, err := configFile.Write(data); err != nil {
-			return nil, errors.Wrapf(err, "unable to write config %+v to mock config file %s", config, configFile.Name())
-		}
-	}
-	return configFile, setupEnv(configFile.Name())
-}
-
-// The invocation of setupTempConfigFile puts the onus of invoking the configCleanUp as well
-func setupTempConfigFile(confFile string) (*os.File, error) {
-	confFolder, err := getConfFolder()
-	if err != nil {
-		return nil, err
-	}
-	tmpfile, err := ioutil.TempFile(confFolder, confFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create test config file")
-	}
-	return tmpfile, nil
-}
-
-func setupEnv(odoconfigfile string) error {
-	err := os.Setenv("ODOCONFIG", odoconfigfile)
-	if err != nil {
-		return errors.Wrap(err, "unable to set ODOCONFIG to odo-test-config")
-	}
-	return nil
-}
-
-func getConfFolder() (string, error) {
-	currentUser, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-	dir, err := ioutil.TempDir(currentUser.HomeDir, ".kube")
-	if err != nil {
-		return "", err
-	}
-	return dir, nil
-}
-
-func CleanupEnv(confFile *os.File, t *testing.T) {
-	defer os.Remove(confFile.Name())
-	if err := confFile.Close(); err != nil {
-		t.Errorf("Failed to cleanup the test env. Error: %v", err)
-	}
-}
 
 func TestNew(t *testing.T) {
 
@@ -1107,20 +1046,3 @@ func TestGetupdateNotification(t *testing.T) {
 		})
 	}
 }
-
-//
-//func TestGet(t *testing.T) {
-//
-//}
-//
-//func TestSet(t *testing.T) {
-//
-//}
-//
-//func TestApplicationExists(t *testing.T) {
-//
-//}
-//
-//func TestAddApplication(t *testing.T) {
-//
-//}
