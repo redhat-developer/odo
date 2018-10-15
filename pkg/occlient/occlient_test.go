@@ -3243,7 +3243,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 1 - Check that it is an emptyDir",
 			args: args{
 				VolumeName: supervisordVolumeName,
-				dc:         *fakeDeploymentConfig("foo", "bar"),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil),
 			},
 			wantEmptyDir: true,
 		},
@@ -3251,7 +3251,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 2 - Check a non-existent volume",
 			args: args{
 				VolumeName: "foobar",
-				dc:         *fakeDeploymentConfig("foo", "bar"),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil),
 			},
 			wantEmptyDir: false,
 		},
@@ -3259,7 +3259,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 3 - Check a volume that exists but is not emptyDir",
 			args: args{
 				VolumeName: "foo-s2idata",
-				dc:         *fakeDeploymentConfig("foo", "bar"),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil),
 			},
 			wantEmptyDir: false,
 		},
