@@ -1370,7 +1370,7 @@ func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, er
 }
 
 // CreateServiceInstance creates service instance from service catalog
-func (c *Client) CreateServiceInstance(componentName string, componentType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
+func (c *Client) CreateServiceInstance(serviceName string, serviceType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
 	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create the service instance parameters")
@@ -1383,13 +1383,13 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 				APIVersion: "servicecatalog.k8s.io/v1beta1",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      componentName,
+				Name:      serviceName,
 				Namespace: c.namespace,
 				Labels:    labels,
 			},
 			Spec: scv1beta1.ServiceInstanceSpec{
 				PlanReference: scv1beta1.PlanReference{
-					ClusterServiceClassExternalName: componentType,
+					ClusterServiceClassExternalName: serviceType,
 					ClusterServicePlanExternalName:  servicePlan,
 				},
 				Parameters: serviceInstanceParameters,
@@ -1397,13 +1397,13 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 		})
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to create the service instance %s for the service type %s and plan %s", componentName, componentType, servicePlan)
+		return errors.Wrapf(err, "unable to create the service instance %s for the service type %s and plan %s", serviceName, serviceType, servicePlan)
 	}
 
 	// Create the secret containing the parameters of the plan selected.
-	err = c.CreateServiceBinding(c.namespace, componentName, parameters)
+	err = c.CreateServiceBinding(c.namespace, serviceName, parameters)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create the secret %s for the service instance", componentName)
+		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
 	}
 
 	return nil

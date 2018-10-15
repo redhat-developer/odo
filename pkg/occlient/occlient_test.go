@@ -2933,11 +2933,11 @@ func TestGetDeploymentConfigsFromSelector(t *testing.T) {
 
 func TestCreateServiceInstance(t *testing.T) {
 	type args struct {
-		componentName string
-		componentType string
-		labels        map[string]string
-		plan          string
-		parameters    map[string]string
+		serviceName string
+		serviceType string
+		labels      map[string]string
+		plan        string
+		parameters  map[string]string
 	}
 
 	tests := []struct {
@@ -2948,8 +2948,8 @@ func TestCreateServiceInstance(t *testing.T) {
 		{
 			name: "Create service instance",
 			args: args{
-				componentName: "jenkins",
-				componentType: "jenkins",
+				serviceName: "jenkins",
+				serviceType: "jenkins",
 				labels: map[string]string{
 					"name":      "mongodb",
 					"namespace": "blog",
@@ -2964,10 +2964,10 @@ func TestCreateServiceInstance(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 
-			err := fkclient.CreateServiceInstance(tt.args.componentName, tt.args.componentType, tt.args.plan, tt.args.parameters, tt.args.labels)
+			err := fkclient.CreateServiceInstance(tt.args.serviceName, tt.args.serviceType, tt.args.plan, tt.args.parameters, tt.args.labels)
 			// Checks for error in positive cases
 			if tt.wantErr == false && (err != nil) {
-				t.Errorf(" client.CreateServiceInstance(componentName,componentType, labels) unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf(" client.CreateServiceInstance(serviceName,serviceType, labels) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			// Check for validating actions performed
@@ -2981,11 +2981,11 @@ func TestCreateServiceInstance(t *testing.T) {
 			if !reflect.DeepEqual(createdServiceInstance.Labels, tt.args.labels) {
 				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.labels, createdServiceInstance.Labels)
 			}
-			if createdServiceInstance.Name != tt.args.componentName {
-				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.componentName, createdServiceInstance.Name)
+			if createdServiceInstance.Name != tt.args.serviceName {
+				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.serviceName, createdServiceInstance.Name)
 			}
-			if !reflect.DeepEqual(createdServiceInstance.Spec.ClusterServiceClassExternalName, tt.args.componentType) {
-				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.componentType, createdServiceInstance.Spec.ClusterServiceClassExternalName)
+			if !reflect.DeepEqual(createdServiceInstance.Spec.ClusterServiceClassExternalName, tt.args.serviceType) {
+				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.serviceType, createdServiceInstance.Spec.ClusterServiceClassExternalName)
 			}
 		})
 	}
