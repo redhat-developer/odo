@@ -105,19 +105,19 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 	return services, nil
 }
 
-// SvcTypeExists returns true if the given service type is valid, false if not
-func SvcTypeExists(client *occlient.Client, serviceType string) (bool, error) {
+// GetScvByType returns the matching (by type) service or nil of there are no matches
+func GetScvByType(client *occlient.Client, serviceType string) (*occlient.Service, error) {
 	catalogList, err := ListCatalog(client)
 	if err != nil {
-		return false, errors.Wrapf(err, "unable to list catalog")
+		return nil, errors.Wrapf(err, "unable to list catalog")
 	}
 
 	for _, supported := range catalogList {
 		if serviceType == supported.Name {
-			return true, nil
+			return &supported, nil
 		}
 	}
-	return false, nil
+	return nil, nil
 }
 
 // SvcExists Checks whether a service with the given name exists in the current application or not
