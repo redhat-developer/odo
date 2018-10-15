@@ -16,7 +16,7 @@ var (
 )
 
 var linkCmd = &cobra.Command{
-	Use:   "link <service> --component [source component]",
+	Use:   "link <service> --component [component]",
 	Short: "Link component to a service",
 	Long: `Link component to a service
 
@@ -58,14 +58,14 @@ is injected into the component.
 
 		// we also need to check whether there is a secret with the same name as the service
 		// the secret should have been created along with the secret
-		exists, err = svc.SecretExists(client, serviceName, projectName)
+		secret, err := client.GetSecret(serviceName, projectName)
 		checkError(err, "Secret %s should have been created along with the service! Please delete and recreate it", serviceName)
-		if !exists {
+		if secret == nil {
 			fmt.Printf("Secret %v does not exist\n", serviceName)
 			os.Exit(1)
 		}
 
-		err = svc.LinkSecret(client, projectName, serviceName, applicationName)
+		err = client.LinkSecret(serviceName, applicationName, projectName)
 		checkError(err, "")
 
 		fmt.Printf("Service %s has been successfully linked to the component %s.\n", serviceName, applicationName)

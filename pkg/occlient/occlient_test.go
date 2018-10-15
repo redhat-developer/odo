@@ -2127,7 +2127,7 @@ func TestGetSecret(t *testing.T) {
 				return true, tt.want, nil
 			})
 
-			returnValue, err := fakeClient.GetSecret(tt.secretNS, tt.secretName)
+			returnValue, err := fakeClient.GetSecret(tt.secretName, tt.secretNS)
 
 			// Check for validating return value
 			if err == nil && returnValue != tt.want {
@@ -2163,7 +2163,7 @@ func TestCreateServiceBinding(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
-			err := fakeClient.CreateServiceBinding(tt.bindingNS, tt.bindingName, tt.params)
+			err := fakeClient.CreateServiceBinding(tt.bindingName, tt.bindingNS, tt.params)
 
 			if err == nil && !tt.wantErr {
 				if len(fakeClientSet.ServiceCatalogClientSet.Actions()) != 1 {
@@ -2239,7 +2239,7 @@ func TestLinkSecret(t *testing.T) {
 				return true, fakeDeploymentConfig(tt.applicationName, "foo"), nil
 			})
 
-			err := fakeClient.LinkSecret(tt.projectName, tt.secretName, tt.applicationName)
+			err := fakeClient.LinkSecret(tt.secretName, tt.applicationName, tt.projectName)
 			if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {

@@ -480,7 +480,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 }
 
 // GetSecret returns the Secret object in the given namespace
-func (c *Client) GetSecret(namespace, name string) (*corev1.Secret, error) {
+func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
 	secret, err := c.kubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
@@ -1401,7 +1401,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 	}
 
 	// Create the secret containing the parameters of the plan selected.
-	err = c.CreateServiceBinding(c.namespace, serviceName, parameters)
+	err = c.CreateServiceBinding(serviceName, c.namespace, parameters)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
 	}
@@ -1411,7 +1411,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 
 // CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
 // service instance created using the service's parameters.
-func (c *Client) CreateServiceBinding(namespace string, componentName string, parameters map[string]string) error {
+func (c *Client) CreateServiceBinding(componentName string, namespace string, parameters map[string]string) error {
 	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create the service instance parameters")
@@ -1451,8 +1451,8 @@ func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension,
 }
 
 // LinkSecret links a secret to the DeploymentConfig of a component
-func (c *Client) LinkSecret(projectName, secretName, applicationName string) error {
-	dc, err := c.appsClient.DeploymentConfigs(projectName).Get(applicationName, metav1.GetOptions{})
+func (c *Client) LinkSecret(secretName, applicationName, namespace string) error {
+	dc, err := c.appsClient.DeploymentConfigs(namespace).Get(applicationName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "DeploymentConfig does not exist : %s", applicationName)
 	}
@@ -1467,7 +1467,7 @@ func (c *Client) LinkSecret(projectName, secretName, applicationName string) err
 	}
 
 	// Update the DeploymentConfig
-	_, err = c.appsClient.DeploymentConfigs(projectName).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
 	}
@@ -1480,7 +1480,7 @@ func (c *Client) LinkSecret(projectName, secretName, applicationName string) err
 	}
 
 	// Redeploy the DeploymentConfig of the application
-	_, err = c.appsClient.DeploymentConfigs(projectName).Instantiate(applicationName, request)
+	_, err = c.appsClient.DeploymentConfigs(namespace).Instantiate(applicationName, request)
 	if err != nil {
 		return errors.Wrapf(err, "Redeployment of the DeploymentConfig failed %s", applicationName)
 	}
