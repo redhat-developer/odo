@@ -65,7 +65,7 @@ is injected into the component.
 			os.Exit(1)
 		}
 
-		err = client.LinkSecret(serviceName, applicationName, projectName)
+		err = client.LinkSecret(serviceName, componentName, applicationName, projectName)
 		checkError(err, "")
 
 		fmt.Printf("Service %s has been successfully linked to the component %s.\n", serviceName, applicationName)

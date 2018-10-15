@@ -763,7 +763,7 @@ func updateEnvVar(dc *appsv1.DeploymentConfig, envVars []corev1.EnvVar) error {
 
 // UpdateBuildConfig updates the BuildConfig file
 // buildConfigName is the name of the BuildConfig file to be updated
-// projectName is the name of the project
+// namespace is the name of the project
 // gitURL equals to the git URL of the source and is equals to "" if the source is of type dir or binary
 // annotations contains the annotations for the BuildConfig file
 func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, gitURL string, annotations map[string]string) error {
@@ -977,7 +977,7 @@ func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]strin
 
 // SetupForSupervisor adds the supervisor to the deployment config
 // dcName is the name of the deployment config to be updated
-// projectName is the name of the project
+// namespace is the name of the project
 // annotations are the updated annotations for the new deployment config
 // labels are the labels of the PVC created while setting up the supervisor
 func (c *Client) SetupForSupervisor(dcName string, projectName string, annotations map[string]string, labels map[string]string) error {
@@ -1007,7 +1007,7 @@ func (c *Client) SetupForSupervisor(dcName string, projectName string, annotatio
 
 // CleanupAfterSupervisor removes the supervisor from the deployment config
 // dcName is the name of the deployment config to be updated
-// projectName is the name of the project
+// namespace is the name of the project
 // annotations are the updated annotations for the new deployment config
 func (c *Client) CleanupAfterSupervisor(dcName string, projectName string, annotations map[string]string) error {
 	dc, err := c.GetDeploymentConfigFromName(dcName, projectName)
@@ -1451,10 +1451,15 @@ func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension,
 }
 
 // LinkSecret links a secret to the DeploymentConfig of a component
-func (c *Client) LinkSecret(secretName, applicationName, namespace string) error {
-	dc, err := c.appsClient.DeploymentConfigs(namespace).Get(applicationName, metav1.GetOptions{})
+func (c *Client) LinkSecret(secretName, componentName, applicationName, namespace string) error {
+	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
-		return errors.Wrapf(err, "DeploymentConfig does not exist : %s", applicationName)
+		return err
+	}
+
+	dc, err := c.appsClient.DeploymentConfigs(namespace).Get(dcName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Unable to locate DeploymentConfig for component %s of application %s", componentName, applicationName)
 	}
 
 	// Add the Secret as EnvVar to the container
@@ -1466,7 +1471,7 @@ func (c *Client) LinkSecret(secretName, applicationName, namespace string) error
 		},
 	}
 
-	// Update the DeploymentConfig
+	// update the DeploymentConfig with the secret
 	_, err = c.appsClient.DeploymentConfigs(namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
@@ -1474,15 +1479,16 @@ func (c *Client) LinkSecret(secretName, applicationName, namespace string) error
 
 	// Create a request that we will pass to the Deployment Config in order to trigger a new deployment
 	request := &appsv1.DeploymentRequest{
-		Name:   applicationName,
+		Name:   dcName,
 		Latest: true,
 		Force:  true,
 	}
 
 	// Redeploy the DeploymentConfig of the application
-	_, err = c.appsClient.DeploymentConfigs(namespace).Instantiate(applicationName, request)
+	// This is needed for the newly added secret to be injected to the pod
+	_, err = c.appsClient.DeploymentConfigs(namespace).Instantiate(request.Name, request)
 	if err != nil {
-		return errors.Wrapf(err, "Redeployment of the DeploymentConfig failed %s", applicationName)
+		return errors.Wrapf(err, "Redeployment of the DeploymentConfig failed %s", request.Name)
 	}
 
 	return nil

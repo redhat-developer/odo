@@ -2190,29 +2190,32 @@ func TestCreateServiceBinding(t *testing.T) {
 func TestLinkSecret(t *testing.T) {
 	tests := []struct {
 		name            string
-		projectName     string
+		namespace       string
 		secretName      string
+		componentName   string
 		applicationName string
 		wantErr         bool
 	}{
 		{
 			name:            "Case: Unable to locate DeploymentConfig",
-			projectName:     "foo",
+			namespace:       "foo",
 			secretName:      "foo",
+			componentName:   "foo",
 			applicationName: "",
 			wantErr:         true,
 		},
 		{
 			name:            "Case: Unable to update DeploymentConfig",
-			projectName:     "",
+			namespace:       "",
 			secretName:      "foo",
+			componentName:   "foo",
 			applicationName: "foo",
 			wantErr:         true,
 		},
 		//TODO fix this somehow? It doesn't seem to work because of Instantiate doesn't play nice with fake
 		//{
 		//	name:        "Case: Valid creation of link",
-		//	projectName: "foo",
+		//	namespace: "foo",
 		//	secretName: "foo",
 		//	applicationName: "foo",
 		//	wantErr: false,
@@ -2223,23 +2226,25 @@ func TestLinkSecret(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
+			dcName := fmt.Sprintf("%s-%s", tt.componentName, tt.applicationName)
+
 			// Fake getting DC
 			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if len(tt.applicationName) == 0 {
 					return true, nil, fmt.Errorf("could not find dc")
 				}
-				return true, fakeDeploymentConfig(tt.applicationName, "foo"), nil
+				return true, fakeDeploymentConfig(dcName, "foo"), nil
 			})
 
 			// Fake updating DC
 			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if len(tt.projectName) == 0 {
+				if len(tt.namespace) == 0 {
 					return true, nil, fmt.Errorf("could not update dc")
 				}
-				return true, fakeDeploymentConfig(tt.applicationName, "foo"), nil
+				return true, fakeDeploymentConfig(dcName, "foo"), nil
 			})
 
-			err := fakeClient.LinkSecret(tt.secretName, tt.applicationName, tt.projectName)
+			err := fakeClient.LinkSecret(tt.secretName, tt.componentName, tt.applicationName, tt.namespace)
 			if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
