@@ -79,7 +79,8 @@ jobs:
         - make prepare-release
         - ./scripts/generate-bintray-json.sh
         - make packages
-      script: skip
+      script: 
+        - BINTRAY_USER=$BINTRAY_USER BINTRAY_KEY=$BINTRAY_KEY ./scripts/upload-pr-binaries.sh
       deploy:
         # upload latest binaries to bintray (build from master)
         - provider: bintray
