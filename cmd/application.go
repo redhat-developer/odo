@@ -111,15 +111,19 @@ var applicationDeleteCmd = &cobra.Command{
 	Example: `  # Delete the application
   odo app delete myapp
 	`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Please provide application name")
-		}
-		return nil
-	},
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		appName := args[0]
+		var appName string
+		// If name of app to be deleted is not passed, consider the current app for deletion
+		if len(args) == 0 {
+			var err error
+			appName, err = application.GetCurrent(client)
+			checkError(err, "")
+		} else {
+			// If app name passed, consider it for deletion
+			appName = args[0]
+		}
 		var confirmDeletion string
 		// Project
 		currentProject := project.GetCurrent(client)
@@ -137,7 +141,7 @@ var applicationDeleteCmd = &cobra.Command{
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := application.Delete(client, appName)
 			checkError(err, "")
-			fmt.Printf("Deleted application: %s\n", args[0])
+			fmt.Printf("Deleted application: %s\n", appName)
 		} else {
 			fmt.Printf("Aborting deletion of application: %v\n", appName)
 		}
