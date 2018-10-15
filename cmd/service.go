@@ -24,9 +24,8 @@ var serviceCmd = &cobra.Command{
 	Use:   "service",
 	Short: "Perform service catalog operations",
 	Long:  ` Perform service catalog operations, Limited to template service broker only.`,
-	Example: fmt.Sprintf("%s\n%s\n%s\n%s",
+	Example: fmt.Sprintf("%s\n%s\n%s",
 		serviceCreateCmd.Example,
-		serviceLinkCmd.Example,
 		serviceDeleteCmd.Example,
 		serviceListCmd.Example),
 	Args: cobra.RangeArgs(1, 3),
@@ -76,34 +75,6 @@ A full list of service types that can be deployed are available using: 'odo cata
 		err = svc.CreateService(client, serviceName, serviceType, plan, parameters, applicationName)
 		checkError(err, "")
 		fmt.Printf("Service '%s' was created.\n", serviceName)
-	},
-}
-
-var serviceLinkCmd = &cobra.Command{
-	Use:   "link <secret> <component_name>",
-	Short: "Link a secret of a service to a component",
-	Long:  "Link a secret of a service instance to a component and mount the secret information as Env Var",
-	Example: `  # Link the secret 'my-postgresql' to the component 'my-component'
-  odo service link my-postgresql my-component
-	`,
-	Args: cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
-		projectName := project.GetCurrent(client)
-		secretName := args[0]
-		applicationName := args[1]
-
-		// check to see if the secret exists
-		exists, err := svc.SecretExists(client, secretName, projectName)
-		checkError(err, "Secret %s doesn't exist within the current namespace", secretName)
-		if !exists {
-			fmt.Printf("Secret with the name %s does not exist in the current project\n", secretName)
-			os.Exit(1)
-		}
-		err = svc.LinkSecret(client, projectName, secretName, applicationName)
-		checkError(err, "")
-
-		fmt.Printf("Secret %s has been added to the component %s.\n", secretName, applicationName)
 	},
 }
 
@@ -194,7 +165,6 @@ func init() {
 	serviceCmd.Annotations = map[string]string{"command": "other"}
 	serviceCmd.SetUsageTemplate(cmdUsageTemplate)
 	serviceCmd.AddCommand(serviceCreateCmd)
-	serviceCmd.AddCommand(serviceLinkCmd)
 	serviceCmd.AddCommand(serviceDeleteCmd)
 	serviceCmd.AddCommand(serviceListCmd)
 	rootCmd.AddCommand(serviceCmd)

@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/project"
+	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -14,22 +16,21 @@ var (
 )
 
 var linkCmd = &cobra.Command{
-	Use:   "link <target component> --component [source component]",
-	Short: "Link target component to source component",
-	Long: `Link target component to source component
+	Use:   "link <service> --component [source component]",
+	Short: "Link component to a service",
+	Long: `Link component to a service
 
 If source component is not provided, the link is created to the current active
 component.
 
-In the linking process, the environment variables containing the connection
-information from target component are injected into the source component and
-printed to STDOUT.
+During the linking process, the secret that is created during the service creation (odo service create),
+is injected into the component.
 `,
-	Example: `  # Link current component to a component 'mariadb'
-  odo link mariadb
+	Example: `  # Link the current component to the 'my-postgresql' service
+  odo link my-postgresql
 
-  # Link 'mariadb' component to 'nodejs' component
-  odo link mariadb --component nodejs
+  # Link  component 'nodejs' to the 'my-postgresql' service
+  odo link my-postgresql --component nodejs
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -38,28 +39,36 @@ printed to STDOUT.
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
 
-		sourceComponent := getComponent(client, linkComponent, applicationName, projectName)
-		targetComponent := args[0]
+		componentName := getComponent(client, linkComponent, applicationName, projectName)
+		serviceName := args[0]
 
-		exists, err := component.Exists(client, sourceComponent, applicationName, projectName)
+		exists, err := component.Exists(client, componentName, applicationName, projectName)
 		checkError(err, "")
 		if !exists {
-			fmt.Printf("Component %v does not exist\n", sourceComponent)
+			fmt.Printf("Component %v does not exist\n", componentName)
+			os.Exit(1)
 		}
-		exists, err = component.Exists(client, targetComponent, applicationName, projectName)
-		checkError(err, "")
+
+		exists, err = svc.SvcExists(client, serviceName, applicationName, projectName)
+		checkError(err, "Service %s doesn't exist within the current namespace", serviceName)
 		if !exists {
-			fmt.Printf("Component %v does not exist\n", targetComponent)
+			fmt.Printf("Service with the name %s does not exist in the current project\n", serviceName)
+			os.Exit(1)
 		}
 
-		linkInfo, err := component.Link(client, sourceComponent, targetComponent, applicationName)
-		checkError(err, fmt.Sprintf("Failed to link %v to %v", targetComponent, sourceComponent))
-
-		fmt.Printf("Successfully linked %v to %v\n", targetComponent, sourceComponent)
-		fmt.Printf("The following environment variables have been injected in %v to connect to %v\n", linkInfo.SourceComponent, linkInfo.TargetComponent)
-		for _, env := range linkInfo.Envs {
-			fmt.Printf("- %v\n", env)
+		// we also need to check whether there is a secret with the same name as the service
+		// the secret should have been created along with the secret
+		exists, err = svc.SecretExists(client, serviceName, projectName)
+		checkError(err, "Secret %s should have been created along with the service! Please delete and recreate it", serviceName)
+		if !exists {
+			fmt.Printf("Secret %v does not exist\n", serviceName)
+			os.Exit(1)
 		}
+
+		err = svc.LinkSecret(client, projectName, serviceName, applicationName)
+		checkError(err, "")
+
+		fmt.Printf("Service %s has been successfully linked to the component %s.\n", serviceName, applicationName)
 	},
 }
 
