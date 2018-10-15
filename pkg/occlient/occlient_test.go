@@ -2973,7 +2973,7 @@ func TestCreateServiceInstance(t *testing.T) {
 			// Check for validating actions performed
 			// creating a service instance also means creating a serviceBinding
 			// which is why we expect 2 actions
-			if len(fkclientset.ServiceCatalogClientSet.Actions()) != 2 && tt.wantErr == false {
+			if len(fkclientset.ServiceCatalogClientSet.Actions()) != 2 && !tt.wantErr {
 				t.Errorf("expected 1 action in CreateServiceInstace got: %v", fkclientset.ServiceCatalogClientSet.Actions())
 			}
 
