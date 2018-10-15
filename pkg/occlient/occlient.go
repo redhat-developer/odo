@@ -479,7 +479,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 	return imageStream, nil
 }
 
-// GetSecrets returns the Secret object in the given namespace
+// GetSecret returns the Secret object in the given namespace
 func (c *Client) GetSecret(namespace, name string) (*corev1.Secret, error) {
 	secret, err := c.kubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
@@ -1405,7 +1405,8 @@ func (c *Client) CreateServiceInstance(componentName string, componentType strin
 	return nil
 }
 
-// Create a ServiceBinding (essentially a secret) within the namespace of the service instance created using the service's parameters.
+// CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
+// service instance created using the service's parameters.
 func (c *Client) CreateServiceBinding(namespace string, componentName string, params map[string]string) error {
 
 	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
@@ -1443,7 +1444,7 @@ func serviceInstanceParameters(params map[string]string) *runtime.RawExtension {
 	return &runtime.RawExtension{Raw: paramsJSON}
 }
 
-// Link a secret to the DeploymentConfig of a component
+// LinkSecret links a secret to the DeploymentConfig of a component
 func (c *Client) LinkSecret(projectName, secretName, applicationName string) error {
 	dc, err := c.appsClient.DeploymentConfigs(projectName).Get(applicationName, metav1.GetOptions{})
 	if err != nil {
