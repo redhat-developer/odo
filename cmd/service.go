@@ -44,7 +44,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 	Example: `  # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
   odo service create dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
 	`,
-	Args: cobra.RangeArgs(1, 1),
+	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)
