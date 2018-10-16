@@ -64,7 +64,6 @@ var applicationCreateCmd = &cobra.Command{
 			checkError(err, "")
 
 			// Generate a random name that's not already in use for the existing apps
-			fmt.Println("Now generating random name")
 			name, err = application.GetDefaultAppName(apps)
 			checkError(err, "")
 		}
