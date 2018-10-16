@@ -17,7 +17,7 @@ Thanks for understanding, and for contributing to the project!
 
 -->
 
-## What did you find missing in documentation?
+## What did you find missing in the documentation?
 
 
 ## What is the relevence of it?

@@ -12,5 +12,5 @@ Please do Link issues here.
 How to test changes?
 
 <!--
-Please descrbe the steps to test the PR
+Please describe the steps to test the PR
 -->
