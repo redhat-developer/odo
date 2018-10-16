@@ -763,7 +763,7 @@ func updateEnvVar(dc *appsv1.DeploymentConfig, envVars []corev1.EnvVar) error {
 
 // UpdateBuildConfig updates the BuildConfig file
 // buildConfigName is the name of the BuildConfig file to be updated
-// namespace is the name of the project
+// projectName is the name of the project
 // gitURL equals to the git URL of the source and is equals to "" if the source is of type dir or binary
 // annotations contains the annotations for the BuildConfig file
 func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, gitURL string, annotations map[string]string) error {
@@ -977,7 +977,7 @@ func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]strin
 
 // SetupForSupervisor adds the supervisor to the deployment config
 // dcName is the name of the deployment config to be updated
-// namespace is the name of the project
+// projectName is the name of the project
 // annotations are the updated annotations for the new deployment config
 // labels are the labels of the PVC created while setting up the supervisor
 func (c *Client) SetupForSupervisor(dcName string, projectName string, annotations map[string]string, labels map[string]string) error {
@@ -1007,7 +1007,7 @@ func (c *Client) SetupForSupervisor(dcName string, projectName string, annotatio
 
 // CleanupAfterSupervisor removes the supervisor from the deployment config
 // dcName is the name of the deployment config to be updated
-// namespace is the name of the project
+// projectName is the name of the project
 // annotations are the updated annotations for the new deployment config
 func (c *Client) CleanupAfterSupervisor(dcName string, projectName string, annotations map[string]string) error {
 	dc, err := c.GetDeploymentConfigFromName(dcName, projectName)
