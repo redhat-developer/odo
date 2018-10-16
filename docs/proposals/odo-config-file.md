@@ -4,7 +4,7 @@
 
 When developers work on creating an application, there's 2 phases they go through. First phase is creating the application initial implementation from scratch, and then iterate development on an existing application. While the developer works on the application, he might take some decisions on how the application should behave that should be preserved over time, but that are not source code but rather specific to how the application should behave in relation to the platform where it's running or in relation to the tool used to develop it.
 
-IDEs often use a configuration file to hold specific configuration for an application, workspace or the whole tool. These files are stored under the same control version system as where the source code lives, so that anytime a developer checks out that repository has control on how to configure that tool to work with that source code.
+IDEs often use a configuration file or directory to hold specific configuration for an application, workspace or the whole tool. These files and directories are stored under the same control version system as where the source code lives, so that anytime a developer checks out that repository has control on how to configure that tool to work with that source code.
 
 Git is another example of a tool that provides configuration, that can be related of every instance of any repository the user has or to a single instance. These are defined as global and local config. Git promoves the fact that local configuration is always more important than global configuration.
 
@@ -21,7 +21,7 @@ Provide a way to preserve conscisous decisions the developer has made that are o
 
 ## Design overview
 
-We need to provide a configuration file, `.odo`, that will hold specific configuration that `odo` will use on execution. This configuration might modify how the CLI work or how the component will work on the platform.
+We need to provide a configuration file `odo-config` in a configuration directory `.odo`, that will hold specific configuration that `odo` will use on execution. This configuration might modify how the CLI work or how the component will work on the platform.
 
 ### Scopes of configuration
 
@@ -31,17 +31,29 @@ explicitly configure each and every component independently.
 
 #### Local configuration
 
-Every component can be configured independently. We call this local configuration for the component as it only affects the component it references. This configuration will be stored in a file in the root directory of the component's source code. In this way, the configuration file can be added to version control system and preserved along with the application. If any other developer checks out the same source code he will get the same configuration as the original developer.
+Every component can be configured independently. We call this local configuration for the component as it only affects the component it references. This configuration will be stored in a file in `.odo` specific directory located at the root directory of the component's source code. In this way, the configuration file can be added to version control system and preserved along with the application. If any other developer checks out the same source code he will get the same configuration as the original developer.
+
+We propose to have a `.odo` folder in the root of the application's source code directory to store every odo local configurations.
+
+```bash
+<app-dir>/.odo/odo-config
+```
 
 A good representation of this is a developer that while on the development process realizes his application requires 2 GB of memory to run appropriately, he might decide to save that information in this configuration file. At a later moment, any other developer (or even him in the future) that decides to work on the same application will have this configuration definition along with his source code. `odo` should take into account this configuration definition and materialize when appropriate. The type of configuration, format and applicability will be described later in this document.
 
 #### Global configuration
 
-When working with multiple components it might be tedious to configure each and every component, or a user wants to have a default configuration value applied to each and every component he works with when no explicit (local) configuration exists. For this purpose, there should be a file, stored in the user's home directory, that should contain this configuration definitions. This configuration is global to every component the user works with.
+When working with multiple components it might be tedious to configure each and every component, or a user wants to have a default configuration value applied to each and every component he works with when no explicit (local) configuration exists. For this purpose, there should be a file, stored in the user's home directory's odo specific folder, that should contain this configuration definitions. This configuration is global to every component the user works with.
+
+We propose to have a `.odo` folder in the root of the users home directory to store every odo global configurations.
+
+```bash
+$HOME/.odo/odo-config
+```
 
 #### User explicit configuration
 
-Often times a user wants to use different configuration values than the provided in the configuration file. We need to provide a way to allow a developer to specify this new values he want to use. For that, the user needs to explicitly provide he values as CLI arguments to the speficic `odo` command.
+Often times a user wants to use different configuration values than the provided in the configuration file. We need to provide a way to allow a developer to specify this new values he want to use. For that, the user needs to explicitly provide the values as CLI arguments to the speficic `odo` command.
 
 An example of this would be:
 
@@ -51,14 +63,32 @@ odo create wildfly --memory 2GB
 
 In this previous example, the user is explicitly instructing `odo` to use 2GB of memory when creating a component based on wildfly.
 
+User explicit configuration will be stored in a local configuration file also in the odo`s specific local folder:
+
+```bash
+<app-dir>/.odo/odo-config.local
+```
+
+This user explicit configuration will be used in any subsequent command, avoiding the user the need to provide the flag every time. This file serves as configuration overrides. When explicitly setting additional configuration for a component, this configuration will be saved in the `.odo/odo-config.local`. Every time a flag is provided, it will overwrite the value in that file if it already existed, as new override value.
+
+There is no specific command that will manage this file. If a user needs to change/delete any value, he will need to manually edit this file. A value will be set in this file when odo is used.
+
+There's an additional purpose to this file an is for `odo` to automatically recognize the applied configuration to a component when the user changes directory into the application's source code dir, the same way as git does with .git directory and config.
+
+**NOTE:** The automatic detection of `.odo` configuration when a user changes directories, and the corresponding `odo` behavior, will be described in a different proposal.
+
+One caveat to this solution is that we need to guarantee that this file is not saved in version control system, as this is solely used as override for the specific user.
+
+
+
 ### <a name="configuration-precedence"></a> Configuration precedence
 
 As configuration can exist both locally and globally or only on one of these scopes, it seems obvious that there needs to be some rule managing the precedence and applicability of the configuration.
 
 The most explicit/concrete configuration wins over the less explicit one. In this case, providing a configuration value via a CLI argument always wins over any other existing configuration. If no explicit value is provided, then the configuration defined along with the component's source code wins over any other configuration. In case there is no explicit configuration or configuration for that single component then any global configuration (if existing) will be applied. In any other case, `odo`'s defaults will be used.
 
-|global|local|CLI flag|applied value|
-|--|--|--|-|
+|global|local|CLI flag or override|applied value|
+|--|--|--|--|
 |--|--|--|odo defaults|
 |Value A|--|--|Value A|
 |Value A|--|Value X|Value X|
@@ -70,18 +100,18 @@ The most explicit/concrete configuration wins over the less explicit one. In thi
 
 ### Configuration typology
 
-In the scop of this proposal, we refer to configuration in some different ways and it's worth noting what we meant in each case. What types of configuration will be supported and what use case they fullfil.
+In the scope of this proposal, we refer to configuration in some different ways and it's worth noting what we mean in each case. What types of configuration will be supported and what use case they fullfil.
 
 ### `odo` CLI behavior configuration
 
-Like every tool, there is configuration relative to how the tool behaves itself. An example of this would be a timeout that the CLI will apply when issuing commands to the server, or the ability to enable/disable checks for new versions. This configuration will always be global, and stored relative to the user's home directory. By default this configuration file will live in `$HOME/.kube/odo`
+Like many tools, there is configuration related to how the tool behaves itself. An example of this would be a timeout that the CLI should apply when issuing commands to the server, or the ability to enable/disable checks for new versions. This configuration will always be global, and stored relative to the user's odo directory in the user's home directory. By default this configuration file will live in `$HOME/.odo/odo-config`
 
 The [format](#odo-file-format) of this file is described later in the proposal.
 
 ### Application related configuration
 
-Some times what we want to configure is how the application/component will be deployed. Some components will
-require special characteristics, like a specific amount of memory. Some other times, what we want is to instruct `odo` to use an specific value to name our component if none is explicitly provided. This configuration will be stored locally to the component, along with the source code, in an `.odo` configuration file that can be saved into the version control system used, and share by anyone using the same application code.
+Sometimes what we want to configure is how the application/component will be deployed. Some components will
+require special characteristics, like a specific amount of memory. Some other times, what we want is to instruct `odo` to use an specific value to name our component if none is explicitly provided. This configuration will be stored locally to the component, along with the source code, in an `odo-config` configuration file, in an `.odo` specific directory, that can be saved into the version control system used, and share by anyone using the same application code.
 
 For some specific values, there will be the possibility to set them globally, as they will be used in that case for every component created, as defined in the [configuration precedence](#configuration-precedence) section. This values will be documented as being `global` configuration values.
 
@@ -96,7 +126,7 @@ One of the goals of `odo` is to be easy to use for developers. This forces to tr
 
 #### Proposed flags
 
-We need to define and delimit what information will be stored in this file. Configuration which can be local and global will be denoted. Otherwise, the configuration will only be local to the application .odo file.
+We need to define and delimit what information will be stored in this file. Configuration which can be local and global will be denoted. Otherwise, the configuration will only be local to the application's odo-config file.
 
 ### Deployment decoration
 
@@ -126,7 +156,7 @@ Configuration used to define how the CLI should behave:
 * component-name: (local) Preferred component name if none is defined. As this value is in the local configuration file, it will apply to the created component from the source code if not specific component name is provided, else, the one provided via command line will take precedence. In case there is already a component with this name, an error should be provided on component creation.
 * odoignore: (local/global) list of files/patterns to ignore by default if no .odoignore file is provided, or when it's cerated. **This configuration can be global, as the developer might want to always ignore specific files (e.g. .git, .odo, ...) when pushing.**
 
-#### <a name="odo-file-format"></a> `odo` file format
+#### <a name="odo-file-format"></a> `odo-config` file format
 
 The format for both files should be human readable. Whether it's yaml, json or [toml](https://github.com/toml-lang/toml) is not the scope of this proposal to define, as it will be dictated by the engineering team implementing this feature. In any case, it should be possible to:
 
@@ -139,11 +169,11 @@ Nevertheless, `odo` will provide a way to manipulate this file via a CLI command
 
 ### <a name="managing-configuration"></a> Managing configuration
 
-Developers will need to add configuration values to the `.odo` config files. This configuration management will be managed by a new command in `odo` CLI. As configuration will be of different types, there will be needs to additional verbs (to the regular ones) for managing this configuration.
+Developers will need to add configuration values to the `.odo/odo-config` config files. This configuration management will be managed by a new command in `odo` CLI. As configuration will be of different types, there will be needs to additional verbs (to the regular ones) for managing this configuration.
 
 #### Creating configuration
 
-There might be times that a developer would want to add/edit/remove values from the .odo configuration file. There should be a command to manage this file in the `odo` CLI. That command should be the same used to touch configuration of the global `odo` config file located in the users's home directory.
+There might be times that a developer would want to add/edit/remove values from the `.odo/odo-config` configuration file. There should be a command to manage this file in the `odo` CLI. That command should be the same used to touch configuration of the global `odo` config file located in the users's home directory.
 
 Currently that command is:
 
@@ -166,7 +196,7 @@ The verbs that add configuration are:
 * *create*: Creates a configuration entry with the value provided. If the key exists, this command should error with the corresponding message.
 * *add*: Adds a value to an existing config entry. The type of the entry should be a list. If the key does not exist, or is not a list, this command should error with the corresponding error message.
 
-*NOTE*: When creating a component, no configuration file will be created. If a developer thinks a configuration value is worth being stored in the `.odo` configuration file, he will need to use the previous command to create these files (whether global or local doesn't matter).
+**NOTE**: When creating a component, no configuration file will be created. If a developer thinks a configuration value is worth being stored in the `.odo/odo-config` configuration file, he will need to use the previous command to create these files (whether global or local doesn't matter).
 
 #### Listing configuration
 
