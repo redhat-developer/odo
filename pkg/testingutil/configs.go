@@ -14,6 +14,7 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
+// ConfigDetails struct holds configuration details(odo and/or kube config)
 type ConfigDetails struct {
 	FileName      string
 	Config        interface{}
