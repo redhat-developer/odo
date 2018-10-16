@@ -21,7 +21,7 @@ var componentLogoutCmd = &cobra.Command{
 
 func init() {
 	// Add a defined annotation in order to appear in the help menu
-	componentListCmd.Annotations = map[string]string{"command": "component"}
+	componentListCmd.Annotations = map[string]string{"command": "utility"}
 
 	rootCmd.AddCommand(componentLogoutCmd)
 }
