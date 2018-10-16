@@ -18,7 +18,6 @@ import (
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -2062,7 +2061,7 @@ func TestGetExposedPorts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
-			fkclient.namespace = "testing"
+			fkclient.Namespace = "testing"
 
 			fkclientset.ImageClientset.PrependReactor("get", "imagestreamimages", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, fakeImageStreamImage("python", []string{"8080/tcp"}), nil
@@ -2314,7 +2313,7 @@ func TestGetImageStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
-			fkclient.namespace = "testing"
+			fkclient.Namespace = "testing"
 			openshiftIS := fakeImageStream(tt.imageName, "openshift", []string{"latest", "3.5"})
 			currentNSIS := fakeImageStream(tt.imageName, "testing", []string{"latest"})
 
@@ -3771,49 +3770,6 @@ func Test_updateEnvVar(t *testing.T) {
 				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
 				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
-			}
-		})
-	}
-}
-
-func TestDeleteProject(t *testing.T) {
-	tests := []struct {
-		name        string
-		projectName string
-		wantErr     bool
-	}{
-		{
-			name:        "phase: deleted",
-			projectName: "testing",
-			wantErr:     false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			fkclient, fkclientset := FakeNew()
-			fkWatch := watch.NewFake()
-
-			fkclientset.ProjClientset.PrependReactor("delete", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, nil, nil
-			})
-
-			go func() {
-				fkWatch.Delete(testingutil.FakeProjectStatus(corev1.NamespacePhase(""), tt.projectName))
-			}()
-			fkclientset.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fkWatch, nil
-			})
-
-			err := fkclient.DeleteProject(tt.projectName)
-
-			if !tt.wantErr == (err != nil) {
-				t.Errorf(" client.projectName(string) unexpected error %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if len(fkclientset.ProjClientset.Actions()) != 2 {
-				t.Errorf("expected 1 action in DeleteProject got: %v", fkclientset.ProjClientset.Actions())
 			}
 		})
 	}

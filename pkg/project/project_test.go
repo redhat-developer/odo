@@ -1,6 +1,7 @@
 package project
 
 import (
+	"os"
 	"testing"
 
 	"github.com/redhat-developer/odo/pkg/occlient"
@@ -9,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestDelete(t *testing.T) {
@@ -29,15 +31,34 @@ func TestDelete(t *testing.T) {
 		},
 	}
 
+	odoConfigFile, kubeConfigFile, err := testingutil.SetUp(
+		testingutil.ConfigDetails{
+			FileName:      "odo-test-config",
+			Config:        testingutil.FakeOdoConfig("odo-test-config"),
+			ConfigPathEnv: "ODOCONFIG",
+		}, testingutil.ConfigDetails{
+			FileName:      "kube-test-config",
+			Config:        testingutil.FakeKubeClientConfig(),
+			ConfigPathEnv: "KUBECONFIG",
+		},
+	)
+	defer testingutil.CleanupEnv([]*os.File{odoConfigFile, kubeConfigFile}, t)
+	if err != nil {
+		t.Errorf("Failed to create mock odo and kube config files. Error %v", err)
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Fake the client with the appropriate arguments
 			client, fakeClientSet := occlient.FakeNew()
+
+			loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+			configOverrides := &clientcmd.ConfigOverrides{}
+			client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+
+			client.Namespace = "testing"
 			fkWatch := watch.NewFake()
-			occlient.SetCurrentProject = func(project string, c *occlient.Client) error {
-				return nil
-			}
 
 			fakeClientSet.ProjClientset.PrependReactor("list", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.name == "Test delete the only remaining project" {
@@ -58,7 +79,7 @@ func TestDelete(t *testing.T) {
 			})
 
 			// The function we are testing
-			err := Delete(client, tt.projectName)
+			err = Delete(client, tt.projectName)
 
 			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {

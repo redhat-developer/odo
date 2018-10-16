@@ -36,7 +36,7 @@ func SetCurrent(client *occlient.Client, project string) error {
 		return errors.Wrap(err, "unable to unset active component of current project "+project)
 	}
 
-	err = occlient.SetCurrentProject(project, client)
+	err = client.SetCurrentProject(project)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current project to"+project)
 	}

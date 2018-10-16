@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/runtime"
 	"net"
 	"net/url"
 	"os"
@@ -16,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -47,7 +48,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/version"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -85,8 +85,8 @@ type Client struct {
 	serviceCatalogClient servicecatalogclienset.ServicecatalogV1beta1Interface
 	routeClient          routeclientset.RouteV1Interface
 	userClient           userclientset.UserV1Interface
-	kubeConfig           clientcmd.ClientConfig
-	namespace            string
+	KubeConfig           clientcmd.ClientConfig
+	Namespace            string
 }
 
 func New(connectionCheck bool) (*Client, error) {
@@ -95,9 +95,9 @@ func New(connectionCheck bool) (*Client, error) {
 	// initialize client-go clients
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
-	client.kubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	config, err := client.kubeConfig.ClientConfig()
+	config, err := client.KubeConfig.ClientConfig()
 	if err != nil {
 		return nil, errors.New(err.Error() + errorMsg)
 	}
@@ -151,11 +151,11 @@ func New(connectionCheck bool) (*Client, error) {
 
 	client.userClient = userClient
 
-	namespace, _, err := client.kubeConfig.Namespace()
+	namespace, _, err := client.KubeConfig.Namespace()
 	if err != nil {
 		return nil, err
 	}
-	client.namespace = namespace
+	client.Namespace = namespace
 
 	// Skip this if connectionCheck is false
 	if !connectionCheck {
@@ -272,7 +272,7 @@ func isServerUp(server string) bool {
 }
 
 func (c *Client) GetCurrentProjectName() string {
-	return c.namespace
+	return c.Namespace
 }
 
 // GetProjectNames return list of existing projects that user has access to.
@@ -302,13 +302,8 @@ func (c *Client) CreateNewProject(name string) error {
 	return nil
 }
 
-// SetCurrentProject sets the passed project as active in kube config file
-// Parameters:
-//	1. project to set as active
-//	2. the instance of client to be used to set the project as active
-// Returns: error. non nil error in case of errors, nil otherwise
-var SetCurrentProject = func(project string, c *Client) error {
-	rawConfig, err := c.kubeConfig.RawConfig()
+func (c *Client) SetCurrentProject(project string) error {
+	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to switch to %s project", project)
 	}
@@ -319,7 +314,6 @@ var SetCurrentProject = func(project string, c *Client) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to switch to %s project", project)
 	}
-	c.namespace = project
 	return nil
 }
 
@@ -592,7 +586,7 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
 	}
-	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
+	_, err = c.imageClient.ImageStreams(c.Namespace).Create(&is)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
 	}
@@ -611,7 +605,7 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 	// Generate and create the DeploymentConfig
 	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars)
 
-	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
@@ -676,7 +670,7 @@ func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, bu
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
 	}
-	_, err = c.imageClient.ImageStreams(c.namespace).Create(&is)
+	_, err = c.imageClient.ImageStreams(c.Namespace).Create(&is)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create ImageStream for %s", commonObjectMeta.Name)
 	}
@@ -704,7 +698,7 @@ func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, bu
 		}
 	}
 
-	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
@@ -748,7 +742,7 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 			},
 		},
 	}
-	_, err := c.kubeClient.CoreV1().Services(c.namespace).Create(&svc)
+	_, err := c.kubeClient.CoreV1().Services(c.Namespace).Create(&svc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
@@ -795,7 +789,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 	}
 	buildConfig.Spec.Source = buildSource
 	buildConfig.Annotations = annotations
-	_, err = c.buildClient.BuildConfigs(c.namespace).Update(buildConfig)
+	_, err = c.buildClient.BuildConfigs(c.Namespace).Update(buildConfig)
 	if err != nil {
 		return errors.Wrap(err, "unable to update the component")
 	}
@@ -810,7 +804,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, projectName string, g
 func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 
 	// Retrieve the current DC
-	currentDC, err := c.GetDeploymentConfigFromName(name, c.namespace)
+	currentDC, err := c.GetDeploymentConfigFromName(name, c.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
 	}
@@ -864,7 +858,7 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 	// Update the current one that's deployed with the new Spec.
 	// despite the "patch" function name, we use update since `.Patch` requires
 	// use to define each and every object we must change. Updating makes it easier.
-	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(currentDC)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(currentDC)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
 	}
@@ -882,7 +876,7 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 	}
 
 	// Retrieve the current DC in order to obtain what the current inputPorts are..
-	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.namespace)
+	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", commonObjectMeta.Name)
 	}
@@ -922,7 +916,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	imageNS = imageStream.ObjectMeta.Namespace
 
 	// Retrieve the current DC in order to obtain what the current inputPorts are..
-	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.namespace)
+	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name, c.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", commonObjectMeta.Name)
 	}
@@ -969,13 +963,13 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 // dcName is the name of the DeploymentConfig file to be updated
 // annotations contains the annotations for the DeploymentConfig file
 func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName, c.namespace)
+	dc, err := c.GetDeploymentConfigFromName(dcName, c.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
 	}
 
 	dc.Annotations = annotations
-	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
 	}
@@ -1001,7 +995,7 @@ func (c *Client) SetupForSupervisor(dcName string, projectName string, annotatio
 
 	addBootstrapVolumeMount(dc, dcName)
 
-	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
 	}
@@ -1040,7 +1034,7 @@ func (c *Client) CleanupAfterSupervisor(dcName string, projectName string, annot
 		}
 	}
 
-	_, err = c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update deployment config %s", dcName)
 	}
@@ -1056,7 +1050,7 @@ func (c *Client) CleanupAfterSupervisor(dcName string, projectName string, annot
 // buildConfigName is the name of the buildConfig for which we are fetching the build name
 // returns the name of the latest build or the error
 func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
-	buildConfig, err := c.buildClient.BuildConfigs(c.namespace).Get(buildConfigName, metav1.GetOptions{})
+	buildConfig, err := c.buildClient.BuildConfigs(c.Namespace).Get(buildConfigName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get the latest build name")
 	}
@@ -1071,7 +1065,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 			Name: name,
 		},
 	}
-	result, err := c.buildClient.BuildConfigs(c.namespace).Instantiate(name, &buildRequest)
+	result, err := c.buildClient.BuildConfigs(c.Namespace).Instantiate(name, &buildRequest)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
 	}
@@ -1084,7 +1078,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 func (c *Client) WaitForBuildToFinish(buildName string) error {
 	glog.V(4).Infof("Waiting for %s  build to finish", buildName)
 
-	w, err := c.buildClient.Builds(c.namespace).Watch(metav1.ListOptions{
+	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fields.Set{"metadata.name": buildName}.AsSelector().String(),
 	})
 	if err != nil {
@@ -1114,7 +1108,7 @@ func (c *Client) WaitForBuildToFinish(buildName string) error {
 func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 	glog.V(4).Infof("Waiting for %s pod", selector)
 
-	w, err := c.kubeClient.CoreV1().Pods(c.namespace).Watch(metav1.ListOptions{
+	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -1148,7 +1142,7 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 	}
 
 	rd, err := c.buildClient.RESTClient().Get().
-		Namespace(c.namespace).
+		Namespace(c.Namespace).
 		Resource("builds").
 		Name(buildName).
 		SubResource("log").
@@ -1188,7 +1182,7 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followL
 
 	// RESTClient call to OpenShift
 	rd, err := c.appsClient.RESTClient().Get().
-		Namespace(c.namespace).
+		Namespace(c.Namespace).
 		Name(deploymentConfigName).
 		Resource("deploymentconfigs").
 		SubResource("log").
@@ -1242,43 +1236,43 @@ func (c *Client) Delete(labels map[string]string) error {
 	var errorList []string
 	// Delete DeploymentConfig
 	glog.V(4).Info("Deleting DeploymentConfigs")
-	err := c.appsClient.DeploymentConfigs(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err := c.appsClient.DeploymentConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
 	}
 	// Delete Route
 	glog.V(4).Info("Deleting Routes")
-	err = c.routeClient.Routes(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err = c.routeClient.Routes(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete route")
 	}
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs")
-	err = c.buildClient.BuildConfigs(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err = c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete buildconfig")
 	}
 	// Delete ImageStream
 	glog.V(4).Info("Deleting ImageStreams")
-	err = c.imageClient.ImageStreams(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err = c.imageClient.ImageStreams(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete imagestream")
 	}
 	// Delete Services
 	glog.V(4).Info("Deleting Services")
-	svcList, err := c.kubeClient.CoreV1().Services(c.namespace).List(metav1.ListOptions{LabelSelector: selector})
+	svcList, err := c.kubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to list services")
 	}
 	for _, svc := range svcList.Items {
-		err = c.kubeClient.CoreV1().Services(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		err = c.kubeClient.CoreV1().Services(c.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			errorList = append(errorList, "unable to delete service")
 		}
 	}
 	// PersistentVolumeClaim
 	glog.V(4).Infof("Deleting PersistentVolumeClaims")
-	err = c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err = c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete volume")
 	}
@@ -1301,7 +1295,7 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 	glog.V(4).Infof("Selectors used for deletion: %s", selector)
 
 	// Listing out serviceInstance because `DeleteCollection` method don't work on serviceInstance
-	svcCatList, err := c.GetServiceInstanceList(c.namespace, selector)
+	svcCatList, err := c.GetServiceInstanceList(c.Namespace, selector)
 	if err != nil {
 		return errors.Wrap(err, "unable to list service instance")
 	}
@@ -1309,13 +1303,13 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 	// Iterating over serviceInstance List and deleting one by one
 	for _, svc := range svcCatList {
 		// we need to delete the ServiceBinding before deleting the ServiceInstance
-		err = c.serviceCatalogClient.ServiceBindings(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		err = c.serviceCatalogClient.ServiceBindings(c.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrap(err, "unable to delete serviceBinding")
 		}
 
 		// now we perform the actual deletion
-		err = c.serviceCatalogClient.ServiceInstances(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrap(err, "unable to delete serviceInstance")
 		}
@@ -1380,6 +1374,9 @@ func (c *Client) DeleteProject(name string) error {
 				if val.Type == watch.Deleted {
 					return nil
 				}
+				if val.Type == watch.Error {
+					return fmt.Errorf("Failed watching the deletion of project %s", name)
+				}
 			}
 		}
 	}
@@ -1442,7 +1439,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 		return errors.Wrap(err, "unable to create the service instance parameters")
 	}
 
-	_, err = c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
+	_, err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Create(
 		&scv1beta1.ServiceInstance{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ServiceInstance",
@@ -1450,7 +1447,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceName,
-				Namespace: c.namespace,
+				Namespace: c.Namespace,
 				Labels:    labels,
 			},
 			Spec: scv1beta1.ServiceInstanceSpec{
@@ -1467,7 +1464,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 	}
 
 	// Create the secret containing the parameters of the plan selected.
-	err = c.CreateServiceBinding(serviceName, c.namespace, parameters)
+	err = c.CreateServiceBinding(serviceName, c.Namespace, parameters)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
 	}
@@ -1656,7 +1653,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 			},
 		},
 	}
-	r, err := c.routeClient.Routes(c.namespace).Create(route)
+	r, err := c.routeClient.Routes(c.Namespace).Create(route)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating route")
 	}
@@ -1665,7 +1662,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 
 // DeleteRoute deleted the given route
 func (c *Client) DeleteRoute(name string) error {
-	err := c.routeClient.Routes(c.namespace).Delete(name, &metav1.DeleteOptions{})
+	err := c.routeClient.Routes(c.Namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to delete route")
 	}
@@ -1674,7 +1671,7 @@ func (c *Client) DeleteRoute(name string) error {
 
 // ListRoutes lists all the routes based on the given label selector
 func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
-	routeList, err := c.routeClient.Routes(c.namespace).List(metav1.ListOptions{
+	routeList, err := c.routeClient.Routes(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
@@ -1725,7 +1722,7 @@ func (c *Client) CreatePVC(name string, size string, labels map[string]string) (
 		},
 	}
 
-	createdPvc, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).Create(pvc)
+	createdPvc, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(pvc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")
 	}
@@ -1734,7 +1731,7 @@ func (c *Client) CreatePVC(name string, size string, labels map[string]string) (
 
 // DeletePVC deletes the given PVC by name
 func (c *Client) DeletePVC(name string) error {
-	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).Delete(name, nil)
+	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(name, nil)
 }
 
 // DeleteBuildConfig deletes the given BuildConfig by name using CommonObjectMeta..
@@ -1746,7 +1743,7 @@ func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs with DeleteBuildConfig")
-	return c.buildClient.BuildConfigs(c.namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 }
 
 // generateVolumeNameFromPVC generates a random volume name based on the name
@@ -1784,7 +1781,7 @@ func (c *Client) AddPVCToDeploymentConfig(dc *appsv1.DeploymentConfig, pvc strin
 	)
 
 	glog.V(4).Infof("Updating DeploymentConfig: %v", dc)
-	_, err := c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update DeploymentConfig: %v", dc)
 	}
@@ -1826,7 +1823,7 @@ func removeVolumeMountFromDC(vm string, dc *appsv1.DeploymentConfig) bool {
 func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) error {
 
 	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		dc, err := c.GetDeploymentConfigFromName(dcName, c.namespace)
+		dc, err := c.GetDeploymentConfigFromName(dcName, c.Namespace)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get Deployment Config: %v", dcName)
 		}
@@ -1851,7 +1848,7 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 			return fmt.Errorf("could not find volumeMount: %v in Deployment Config: %v", volumeName, dc)
 		}
 
-		_, updateErr := c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 		return updateErr
 	})
 	if retryErr != nil {
@@ -1884,7 +1881,7 @@ func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) 
 // GetDeploymentConfigsFromSelector returns an array of Deployment Config
 // resources which match the given selector
 func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.DeploymentConfig, error) {
-	dcList, err := c.appsClient.DeploymentConfigs(c.namespace).List(metav1.ListOptions{
+	dcList, err := c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -1896,7 +1893,7 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 // GetServicesFromSelector returns an array of Service resources which match the
 // given selector
 func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, error) {
-	serviceList, err := c.kubeClient.CoreV1().Services(c.namespace).List(metav1.ListOptions{
+	serviceList, err := c.kubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -1919,7 +1916,7 @@ func (c *Client) GetDeploymentConfigFromName(name string, project string) (*apps
 
 // GetPVCsFromSelector returns the PVCs based on the given selector
 func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolumeClaim, error) {
-	pvcList, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).List(metav1.ListOptions{
+	pvcList, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -1968,7 +1965,7 @@ func (c *Client) GetOneDeploymentConfigFromSelector(selector string) (*appsv1.De
 // An error is thrown when exactly one Pod is not found.
 func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 
-	pods, err := c.kubeClient.CoreV1().Pods(c.namespace).List(metav1.ListOptions{
+	pods, err := c.kubeClient.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -2179,7 +2176,7 @@ func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar,
 
 	dc.Spec.Template.Spec.Containers[0].Env = append(dc.Spec.Template.Spec.Containers[0].Env, envs...)
 
-	_, err := c.appsClient.DeploymentConfigs(c.namespace).Update(dc)
+	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update Deployment Config %v", dc.Name)
 	}
@@ -2200,7 +2197,7 @@ func (c *Client) GetServerVersion() (*serverInfo, error) {
 	var info serverInfo
 
 	// This will fetch the information about Server Address
-	config, err := c.kubeConfig.ClientConfig()
+	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get server's address")
 	}
@@ -2236,7 +2233,7 @@ func (c *Client) ExecCMDInContainer(podName string, cmd []string, stdout io.Writ
 
 	req := c.kubeClient.CoreV1().RESTClient().
 		Post().
-		Namespace(c.namespace).
+		Namespace(c.Namespace).
 		Resource("pods").
 		Name(podName).
 		SubResource("exec").
@@ -2248,7 +2245,7 @@ func (c *Client) ExecCMDInContainer(podName string, cmd []string, stdout io.Writ
 			TTY:     tty,
 		}, scheme.ParameterCodec)
 
-	config, err := c.kubeConfig.ClientConfig()
+	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Kubernetes client config")
 	}
@@ -2308,13 +2305,13 @@ func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv
 
 // GetPVCFromName returns the PVC of the given name
 func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error) {
-	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).Get(pvcName, metav1.GetOptions{})
+	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
 }
 
 // UpdatePVCLabels updates the given PVC with the given labels
 func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error {
 	pvc.Labels = labels
-	_, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.namespace).Update(pvc)
+	_, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(pvc)
 	if err != nil {
 		return errors.Wrap(err, "unable to remove storage label from PVC")
 	}
@@ -2384,7 +2381,7 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	if len(envVars) > 0 {
 		bc.Spec.Strategy.SourceStrategy.Env = envVars
 	}
-	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
+	_, err = c.buildClient.BuildConfigs(c.Namespace).Create(&bc)
 	if err != nil {
 		return buildv1.BuildConfig{}, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
 	}
