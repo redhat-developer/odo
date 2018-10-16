@@ -72,12 +72,12 @@ If no app name is passed, a default app name will be auto-generated.
 		// validate application name
 		err := validateName(appName)
 		checkError(err, "")
-		fmt.Printf("Creating application: %v in project: %v \n", appName, projectName)
+		fmt.Printf("Creating application: %v in project: %v\n", appName, projectName)
 		err = application.Create(client, appName)
 		checkError(err, "")
 		err = application.SetCurrent(client, appName)
 		checkError(err, "")
-		fmt.Printf("Switched to application: %v in project\n", appName, projectName)
+		fmt.Printf("Switched to application: %v in project: %v\n", appName, projectName)
 	},
 }
 
@@ -102,7 +102,7 @@ var applicationGetCmd = &cobra.Command{
 			fmt.Printf("There's no active application.\nYou can create one by running 'odo application create <name>'.\n")
 			return
 		}
-		fmt.Printf("The current application is: %v\n", app)
+		fmt.Printf("The current application is: %v in project: %v\n", app, projectName)
 	},
 }
 
@@ -137,14 +137,14 @@ var applicationDeleteCmd = &cobra.Command{
 		if applicationForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete the application: %v? [y/N] ", appName)
+			fmt.Printf("Are you sure you want to delete the application: %v from project: %v? [y/N] ", appName, projectName)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := application.Delete(client, appName)
 			checkError(err, "")
-			fmt.Printf("Deleted application: %s\n", appName)
+			fmt.Printf("Deleted application: %s from project: %v\n", appName, projectName)
 		} else {
 			fmt.Printf("Aborting deletion of application: %v\n", appName)
 		}
@@ -205,7 +205,7 @@ var applicationSetCmd = &cobra.Command{
 		client := getOcClient()
 		appName := args[0]
 
-		getAndSetNamespace(client)
+		projectName := getAndSetNamespace(client)
 		// error if application does not exist
 		exists, err := application.Exists(client, appName)
 		checkError(err, "unable to check if application exists")
@@ -216,7 +216,7 @@ var applicationSetCmd = &cobra.Command{
 
 		err = application.SetCurrent(client, appName)
 		checkError(err, "")
-		fmt.Printf("Switched to application: %v\n", args[0])
+		fmt.Printf("Switched to application: %v in project: %v\n", args[0], projectName)
 	},
 }
 
@@ -237,7 +237,7 @@ var applicationDescribeCmd = &cobra.Command{
 			appName, err = application.GetCurrent(projectName)
 			checkError(err, "")
 			if appName == "" {
-				fmt.Printf("There's no active application in projectName %v", projectName)
+				fmt.Printf("There's no active application in project: %v", projectName)
 				os.Exit(1)
 			}
 		} else {
@@ -246,7 +246,7 @@ var applicationDescribeCmd = &cobra.Command{
 			exists, err := application.Exists(client, appName)
 			checkError(err, "")
 			if !exists {
-				fmt.Printf("Application with the name %s does not exist\n", appName)
+				fmt.Printf("Application with the name %s does not exist in %s \n", appName, projectName)
 				os.Exit(1)
 			}
 		}
