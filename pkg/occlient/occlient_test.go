@@ -671,7 +671,7 @@ func TestCreateRoute(t *testing.T) {
 			service:    "mailserver",
 			portNumber: intstr.FromInt(8080),
 			labels: map[string]string{
-				"SLA": "High",
+				"SLA":                              "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "python",
 			},
@@ -684,7 +684,7 @@ func TestCreateRoute(t *testing.T) {
 			service:    "blog",
 			portNumber: intstr.FromInt(9100),
 			labels: map[string]string{
-				"SLA": "High",
+				"SLA":                              "High",
 				"app.kubernetes.io/component-name": "backend",
 				"app.kubernetes.io/component-type": "golang",
 			},
@@ -996,7 +996,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1030,7 +1030,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1059,7 +1059,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1094,7 +1094,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1123,7 +1123,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1158,7 +1158,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "wildfly",
 						"app.kubernetes.io/component-type": "wildfly",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1186,7 +1186,7 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app": "apptmp",
+				"app":                              "apptmp",
 				"app.kubernetes.io/component-name": "ruby",
 				"app.kubernetes.io/component-type": "ruby",
 				"app.kubernetes.io/name":           "apptmp",
@@ -1758,7 +1758,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1784,7 +1784,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1811,7 +1811,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -1838,7 +1838,7 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app": "apptmp",
+						"app":                              "apptmp",
 						"app.kubernetes.io/component-name": "ruby",
 						"app.kubernetes.io/component-type": "ruby",
 						"app.kubernetes.io/name":           "apptmp",
@@ -2796,7 +2796,7 @@ func TestCreateService(t *testing.T) {
 			commonObjectMeta: metav1.ObjectMeta{
 				Name: "nodejs",
 				Labels: map[string]string{
-					"app": "apptmp",
+					"app":                              "apptmp",
 					"app.kubernetes.io/component-name": "ruby",
 					"app.kubernetes.io/component-type": "ruby",
 					"app.kubernetes.io/name":           "apptmp",
