@@ -46,6 +46,12 @@ A full list of service types that can be deployed are available using: 'odo cata
 	`,
 	Args: cobra.RangeArgs(1, 1),
 	Run: func(cmd *cobra.Command, args []string) {
+		// make sure that plan was supplied and exists
+		if len(plan) == 0 {
+			fmt.Printf("No plan was supplied.\nPlease select one\n")
+			os.Exit(1)
+		}
+
 		client := getOcClient()
 		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)
 		checkError(err, "")
@@ -60,11 +66,6 @@ A full list of service types that can be deployed are available using: 'odo cata
 			os.Exit(1)
 		}
 
-		// make sure that plan was supplied and exists
-		if len(plan) == 0 {
-			fmt.Printf("No plan was supplied for service %v.\nPlease select one of: %v\n", serviceType, strings.Join(matchingService.PlanList, ","))
-			os.Exit(1)
-		}
 		planFound := false
 		for _, candidatePlan := range matchingService.PlanList {
 			if plan == candidatePlan {
@@ -178,7 +179,7 @@ var serviceListCmd = &cobra.Command{
 func init() {
 	serviceDeleteCmd.Flags().BoolVarP(&serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
-	serviceCreateCmd.Flags().StringArrayVarP(&parameters, "parameter", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
+	serviceCreateCmd.Flags().StringArrayVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
