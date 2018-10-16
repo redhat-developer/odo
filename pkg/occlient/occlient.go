@@ -740,14 +740,14 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 
 // updateEnvVar updates the environmental variables to the container in the DC
 // dc is the deployment config to be updated
-// inputEnvVars is the array containing the corev1.EnvVar values
-func updateEnvVar(dc *appsv1.DeploymentConfig, inputEnvVars []corev1.EnvVar) error {
+// envVars is the array containing the corev1.EnvVar values
+func updateEnvVar(dc *appsv1.DeploymentConfig, envVars []corev1.EnvVar) error {
 	numContainers := len(dc.Spec.Template.Spec.Containers)
 	if numContainers != 1 {
 		return fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
 	}
 
-	dc.Spec.Template.Spec.Containers[0].Env = inputEnvVars
+	dc.Spec.Template.Spec.Containers[0].Env = envVars
 	return nil
 }
 
@@ -2190,7 +2190,8 @@ func getContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 }
 
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
-func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputEnvVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
+// envVars is the array containing the environment variables
+func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
 
 	// Retrieve the namespace, image name and the appropriate tag
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
@@ -2208,8 +2209,8 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	// Use BuildConfig to build the container with Git
 	bc := generateBuildConfig(commonObjectMeta, gitURL, imageName+":"+imageTag, imageNS)
 
-	if len(inputEnvVars) > 0 {
-		bc.Spec.Strategy.SourceStrategy.Env = inputEnvVars
+	if len(envVars) > 0 {
+		bc.Spec.Strategy.SourceStrategy.Env = envVars
 	}
 	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
 	if err != nil {

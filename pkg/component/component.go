@@ -49,6 +49,7 @@ func validateSourceType(sourceType string) bool {
 
 // CreateFromGit inputPorts is the array containing the string port values
 // inputPorts is the array containing the string port values
+// envVars is the array containing the environment variables
 func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string, envVars []string) error {
 
 	labels := componentlabels.GetLabels(name, applicationName, true)
@@ -108,6 +109,7 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
+// envVars is the array containing the environment variables
 func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string, envVars []string) error {
 	labels := componentlabels.GetLabels(name, applicationName, true)
 
