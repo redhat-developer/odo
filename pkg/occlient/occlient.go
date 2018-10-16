@@ -1414,7 +1414,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 func (c *Client) CreateServiceBinding(componentName string, namespace string, parameters map[string]string) error {
 	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create the service instance parameters")
+		return errors.Wrap(err, "unable to create the service instance parameters")
 	}
 
 	_, err = c.serviceCatalogClient.ServiceBindings(namespace).Create(
