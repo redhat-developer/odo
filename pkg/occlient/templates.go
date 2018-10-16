@@ -17,7 +17,7 @@ type CommonImageMeta struct {
 	Ports     []corev1.ContainerPort
 }
 
-func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, commonImageMeta CommonImageMeta) appsv1.DeploymentConfig {
+func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, commonImageMeta CommonImageMeta, envVar []corev1.EnvVar) appsv1.DeploymentConfig {
 
 	// Generates and deploys a DeploymentConfig with an InitContainer to copy over the SupervisorD binary.
 	return appsv1.DeploymentConfig{
@@ -38,7 +38,6 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 					},
 				},
 				Spec: corev1.PodSpec{
-
 					// The application container
 					Containers: []corev1.Container{
 						{
@@ -61,6 +60,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 									MountPath: "/var/lib/supervisord",
 								},
 							},
+							Env: envVar,
 						},
 					},
 
@@ -102,7 +102,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 	}
 }
 
-func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image string, containerPorts []corev1.ContainerPort) appsv1.DeploymentConfig {
+func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image string, containerPorts []corev1.ContainerPort, envVars []corev1.EnvVar) appsv1.DeploymentConfig {
 	return appsv1.DeploymentConfig{
 		ObjectMeta: commonObjectMeta,
 		Spec: appsv1.DeploymentConfigSpec{
@@ -122,6 +122,7 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 							Image: image,
 							Name:  commonObjectMeta.Name,
 							Ports: containerPorts,
+							Env:   envVars,
 						},
 					},
 				},

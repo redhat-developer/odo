@@ -48,7 +48,9 @@ func validateSourceType(sourceType string) bool {
 }
 
 // CreateFromGit inputPorts is the array containing the string port values
-func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string) error {
+// inputPorts is the array containing the string port values
+// envVars is the array containing the environment variables
+func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string, envVars []string) error {
 
 	labels := componentlabels.GetLabels(name, applicationName, true)
 
@@ -79,7 +81,7 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 		Annotations: annotations,
 	}
 
-	err = client.NewAppS2I(commonObjectMeta, componentImageType, url, inputPorts)
+	err = client.NewAppS2I(commonObjectMeta, componentImageType, url, inputPorts, envVars)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
@@ -107,7 +109,8 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
-func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string) error {
+// envVars is the array containing the environment variables
+func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string, envVars []string) error {
 	labels := componentlabels.GetLabels(name, applicationName, true)
 
 	// Parse componentImageType before adding to labels
@@ -139,7 +142,7 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 	}
 
 	// Bootstrap the deployment with SupervisorD
-	err = client.BootstrapSupervisoredS2I(commonObjectMeta, componentImageType, inputPorts)
+	err = client.BootstrapSupervisoredS2I(commonObjectMeta, componentImageType, inputPorts, envVars)
 	if err != nil {
 		return err
 	}
@@ -439,6 +442,11 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		Annotations: annotations,
 	}
 
+	envVars, err := client.GetEnvVarsFromDC(namespacedOpenShiftObject, projectName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get env vars of %s component", componentName)
+	}
+
 	// STEP 2. Determine what the new source is going to be
 
 	glog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
@@ -452,7 +460,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 
 		// CreateBuildConfig here!
 		glog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
-		bc, err := client.CreateBuildConfig(commonObjectMeta, imageName, newSource)
+		bc, err := client.CreateBuildConfig(commonObjectMeta, imageName, newSource, envVars)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
 		}

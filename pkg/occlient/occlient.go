@@ -529,7 +529,8 @@ func getAppRootVolumeName(dcName string) string {
 // NewAppS2I is only used with "Git" as we need Build
 // gitURL is the url of the git repo
 // inputPorts is the array containing the string port values
-func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputPorts []string) error {
+// envVars is the array containing the string env var values
+func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputPorts []string, envVars []string) error {
 
 	glog.V(4).Infof("Using BuilderImage: %s", builderImage)
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
@@ -565,6 +566,11 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 		}
 	}
 
+	inputEnvVars, err := getInputEnvVarsFromStrings(envVars)
+	if err != nil {
+		return errors.Wrapf(err, "error adding environment variables to the container")
+	}
+
 	// generate and create ImageStream
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
@@ -580,13 +586,14 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 	}
 
 	// Deploy BuildConfig to build the container with Git
-	buildConfig, err := c.CreateBuildConfig(commonObjectMeta, builderImage, gitURL)
+	buildConfig, err := c.CreateBuildConfig(commonObjectMeta, builderImage, gitURL, inputEnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "unable to deploy BuildConfig for %s", commonObjectMeta.Name)
 	}
 
 	// Generate and create the DeploymentConfig
-	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts)
+	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars)
+
 	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
@@ -610,7 +617,7 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 // Supervisor keeps the pod running (as PID 1), so you it is possible to trigger assembly script inside running pod,
 // and than restart application using Supervisor without need to restart the container/Pod.
 //
-func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, builderImage string, inputPorts []string) error {
+func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, builderImage string, inputPorts []string, envVars []string) error {
 
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
 
@@ -643,6 +650,11 @@ func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, bu
 		}
 	}
 
+	inputEnvs, err := getInputEnvVarsFromStrings(envVars)
+	if err != nil {
+		return errors.Wrapf(err, "error adding environment variables to the container")
+	}
+
 	// generate and create ImageStream
 	is := imagev1.ImageStream{
 		ObjectMeta: commonObjectMeta,
@@ -660,13 +672,20 @@ func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, bu
 	}
 
 	// Generate the DeploymentConfig that will be used.
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, builderImage, commonImageMeta)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, builderImage, commonImageMeta, inputEnvs)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
+
+	if len(inputEnvs) != 0 {
+		err = updateEnvVar(&dc, inputEnvs)
+		if err != nil {
+			return errors.Wrapf(err, "unable to add env vars to the container")
+		}
+	}
 
 	_, err = c.appsClient.DeploymentConfigs(c.namespace).Create(&dc)
 	if err != nil {
@@ -716,6 +735,19 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
+	return nil
+}
+
+// updateEnvVar updates the environmental variables to the container in the DC
+// dc is the deployment config to be updated
+// envVars is the array containing the corev1.EnvVar values
+func updateEnvVar(dc *appsv1.DeploymentConfig, envVars []corev1.EnvVar) error {
+	numContainers := len(dc.Spec.Template.Spec.Containers)
+	if numContainers != 1 {
+		return fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
+	}
+
+	dc.Spec.Template.Spec.Containers[0].Env = envVars
 	return nil
 }
 
@@ -845,7 +877,7 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 	}
 
 	// Generate the new DeploymentConfig
-	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports)
+	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports, foundCurrentDCContainer.Env)
 
 	// Patch the current DC
 	err = c.PatchCurrentDC(commonObjectMeta.Name, dc)
@@ -893,7 +925,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	}
 
 	// Generate the SupervisorD Config
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, foundCurrentDCContainer.Env)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -2158,7 +2190,8 @@ func getContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 }
 
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
-func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string) (buildv1.BuildConfig, error) {
+// envVars is the array containing the environment variables
+func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
 
 	// Retrieve the namespace, image name and the appropriate tag
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
@@ -2175,6 +2208,10 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 
 	// Use BuildConfig to build the container with Git
 	bc := generateBuildConfig(commonObjectMeta, gitURL, imageName+":"+imageTag, imageNS)
+
+	if len(envVars) > 0 {
+		bc.Spec.Strategy.SourceStrategy.Env = envVars
+	}
 	_, err = c.buildClient.BuildConfigs(c.namespace).Create(&bc)
 	if err != nil {
 		return buildv1.BuildConfig{}, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
@@ -2191,4 +2228,46 @@ func findContainer(containers []corev1.Container, name string) (corev1.Container
 		}
 	}
 	return corev1.Container{}, errors.New("Unable to find container")
+}
+
+// getInputEnvVarsFromStrings generates corev1.EnvVar values from the array of string key=value pairs
+// envVars is the array containing the key=value pairs
+func getInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
+	var inputEnvVars []corev1.EnvVar
+	var keys = make(map[string]int)
+	for _, env := range envVars {
+		splits := strings.Split(env, "=")
+		if len(splits) < 2 || len(splits) > 2 {
+			return nil, errors.New("invalid syntax for env, please specify a VariableName=Value pair")
+		}
+		_, ok := keys[splits[0]]
+		if ok {
+			return nil, errors.Errorf("multiple values found for VariableName: %s", splits[0])
+		} else {
+			keys[splits[0]] = 1
+		}
+
+		inputEnvVars = append(inputEnvVars, corev1.EnvVar{
+			Name:  splits[0],
+			Value: splits[1],
+		})
+	}
+	return inputEnvVars, nil
+}
+
+// GetEnvVarsFromDC retrieves the env vars from the DC
+// dcName is the name of the dc from which the env vars are retrieved
+// projectName is the name of the project
+func (c *Client) GetEnvVarsFromDC(dcName string, projectName string) ([]corev1.EnvVar, error) {
+	dc, err := c.GetDeploymentConfigFromName(dcName, projectName)
+	if err != nil {
+		return nil, errors.Wrap(err, "error occured while retrieving the dc")
+	}
+
+	numContainers := len(dc.Spec.Template.Spec.Containers)
+	if numContainers != 1 {
+		return nil, fmt.Errorf("expected exactly one container in Deployment Config %v, got %v", dc.Name, numContainers)
+	}
+
+	return dc.Spec.Template.Spec.Containers[0].Env, nil
 }
