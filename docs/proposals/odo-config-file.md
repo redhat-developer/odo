@@ -53,7 +53,7 @@ In this previous example, the user is explicitly instructing `odo` to use 2GB of
 
 ### <a name="configuration-precedence"></a> Configuration precedence
 
-As configuration can exist both localy and globaly or only on one of these scopes, it seems obvious that there needs to be some rule managing the precedence and applicability of the configuration.
+As configuration can exist both locally and globally or only on one of these scopes, it seems obvious that there needs to be some rule managing the precedence and applicability of the configuration.
 
 The most explicit/concrete configuration wins over the less explicit one. In this case, providing a configuration value via a CLI argument always wins over any other existing configuration. If no explicit value is provided, then the configuration defined along with the component's source code wins over any other configuration. In case there is no explicit configuration or configuration for that single component then any global configuration (if existing) will be applied. In any other case, `odo`'s defaults will be used.
 
