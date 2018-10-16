@@ -304,25 +304,25 @@ func (c *Client) isLoggedIn() bool {
 func (c *Client) RunLogout() error {
 	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
 	if err != nil {
-		glog.V(1).Infof("%v: %v", err, "unable to get userinfo")
+		glog.V(1).Infof("%v : unable to get userinfo", err)
 	}
 
-	Conf, err := c.kubeConfig.ClientConfig()
+	conf, err := c.kubeConfig.ClientConfig()
 	if err != nil {
-		glog.V(1).Infof("%v: %v", err, "unable to get client config")
+		glog.V(1).Infof("%v : unable to get client config", err)
 	}
-	client, err := oauthv1client.NewForConfig(Conf)
+	client, err := oauthv1client.NewForConfig(conf)
 	if err != nil {
-		glog.V(1).Infof("%v: %v", err, "unable to create a new OauthV1Client")
+		glog.V(1).Infof("%v : unable to create a new OauthV1Client", err)
 	}
 
-	if err := client.OAuthAccessTokens().Delete(Conf.BearerToken, &metav1.DeleteOptions{}); err != nil {
+	if err := client.OAuthAccessTokens().Delete(conf.BearerToken, &metav1.DeleteOptions{}); err != nil {
 		glog.V(1).Infof("%v", err)
 	}
 
 	rawConfig, err := c.kubeConfig.RawConfig()
 	if err != nil {
-		glog.V(1).Infof("%v: %v", err, "unable to switch to  project")
+		glog.V(1).Infof("%v : unable to switch to  project", err)
 	}
 	for key, value := range rawConfig.AuthInfos {
 		if key == rawConfig.Contexts[rawConfig.CurrentContext].AuthInfo {
@@ -331,10 +331,10 @@ func (c *Client) RunLogout() error {
 	}
 	err = clientcmd.ModifyConfig(clientcmd.NewDefaultClientConfigLoadingRules(), rawConfig, true)
 	if err != nil {
-		glog.V(1).Infof("%v: %v", err, "unable to write config to config file")
+		glog.V(1).Infof("%v : unable to write config to config file", err)
 	}
 
-	fmt.Printf("Logged \"%v\" out on \"%v\"\n", output.Name, Conf.Host)
+	fmt.Printf("Logged \"%v\" out on \"%v\"\n", output.Name, conf.Host)
 	return nil
 }
 

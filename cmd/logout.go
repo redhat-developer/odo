@@ -14,7 +14,8 @@ var componentLogoutCmd = &cobra.Command{
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		client.RunLogout()
+		err := client.RunLogout()
+		checkError(err, "")
 	},
 }
 
