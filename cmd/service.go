@@ -60,21 +60,28 @@ A full list of service types that can be deployed are available using: 'odo cata
 			os.Exit(1)
 		}
 
-		// make sure that plan was supplied and exists
 		if len(plan) == 0 {
-			fmt.Printf("No plan was supplied for service %v.\nPlease select one of: %v\n", serviceType, strings.Join(matchingService.PlanList, ","))
-			os.Exit(1)
-		}
-		planFound := false
-		for _, candidatePlan := range matchingService.PlanList {
-			if plan == candidatePlan {
-				planFound = true
-				break
+			// when the plan has not been supplied, if there is only one available plan, we select it
+			if len(matchingService.PlanList) == 1 {
+				plan = matchingService.PlanList[0]
+				glog.V(4).Info("Plan %s was automatically selected since it's the only one available for service %s", plan, serviceType)
+			} else {
+				fmt.Printf("No plan was supplied for service %v.\nPlease select one of: %v\n", serviceType, strings.Join(matchingService.PlanList, ","))
+				os.Exit(1)
 			}
-		}
-		if !planFound {
-			fmt.Printf("Plan %s is invalid for service %v.\nPlease select one of: %v\n", plan, serviceType, strings.Join(matchingService.PlanList, ","))
-			os.Exit(1)
+		} else {
+			// when the plan has been supplied, we need to make sure it exists
+			planFound := false
+			for _, candidatePlan := range matchingService.PlanList {
+				if plan == candidatePlan {
+					planFound = true
+					break
+				}
+			}
+			if !planFound {
+				fmt.Printf("Plan %s is invalid for service %v.\nPlease select one of: %v\n", plan, serviceType, strings.Join(matchingService.PlanList, ","))
+				os.Exit(1)
+			}
 		}
 
 		// if only one arg is given, then it is considered as service name and service type both
