@@ -243,15 +243,6 @@ func TestParametersAsMap(t *testing.T) {
 				"name3": "value3",
 			},
 		},
-		{
-			testName:   "slice with multiple elements some of which are erroneous",
-			sliceInput: []string{"name1=value1", "name2=value2", "dummy", "name3=value3", "name/value"},
-			expectedMap: map[string]string{
-				"name1": "value1",
-				"name2": "value2",
-				"name3": "value3",
-			},
-		},
 	}
 
 	for _, tt := range tests {

@@ -132,7 +132,7 @@ func ConvertKeyValueStringToMap(params []string) map[string]string {
 	for _, param := range params {
 		str := strings.Split(param, "=")
 		if len(str) != 2 {
-			glog.Warningf("Parameter %s is not in the expected key=value format", param)
+			glog.Fatalf("Parameter %s is not in the expected key=value format", param)
 		} else {
 			result[str[0]] = str[1]
 		}
