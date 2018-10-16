@@ -105,8 +105,8 @@ func List(client *occlient.Client, applicationName string, projectName string) (
 	return services, nil
 }
 
-// GetScvByType returns the matching (by type) service or nil of there are no matches
-func GetScvByType(client *occlient.Client, serviceType string) (*occlient.Service, error) {
+// GetSvcByType returns the matching (by type) service or nil of there are no matches
+func GetSvcByType(client *occlient.Client, serviceType string) (*occlient.Service, error) {
 	catalogList, err := ListCatalog(client)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list catalog")

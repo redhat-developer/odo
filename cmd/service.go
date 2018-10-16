@@ -42,7 +42,7 @@ The list of the parameters and their type is defined according to the plan selec
 
 A full list of service types that can be deployed are available using: 'odo catalog list services'`,
 	Example: `  # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
-  odo service create dh-postgresql-apb/dev my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
+  odo service create dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
 	`,
 	Args: cobra.RangeArgs(1, 1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -53,7 +53,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 
 		// make sure the service type exists
 		serviceType := args[0]
-		matchingService, err := svc.GetScvByType(client, serviceType)
+		matchingService, err := svc.GetSvcByType(client, serviceType)
 		checkError(err, "unable to create service because Service Catalog is not enabled in your cluster")
 		if matchingService == nil {
 			fmt.Printf("Service %v doesn't exist\nRun 'odo service catalog' to see a list of supported services.\n", serviceType)
