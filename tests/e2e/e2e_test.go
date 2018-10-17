@@ -942,7 +942,7 @@ var _ = Describe("updateE2e", func() {
 			Expect(logoutMsg).To(ContainSubstring("Logged"))
 			Expect(logoutMsg).To(ContainSubstring("out on"))
 			// validate using oc whoami
-			_ := runFailCmd("oc whoami")
+			runFailCmd("oc whoami")
 		})
 		It("should throw error if user is not logged in", func() {
 			logoutMsg := runFailCmd("odo logout")
