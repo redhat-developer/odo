@@ -29,7 +29,7 @@ is injected into the component.
 	Example: `  # Link the current component to the 'my-postgresql' service
   odo link my-postgresql
 
-  # Link  component 'nodejs' to the 'my-postgresql' service
+  # Link component 'nodejs' to the 'my-postgresql' service
   odo link my-postgresql --component nodejs
 	`,
 	Args: cobra.ExactArgs(1),
@@ -50,9 +50,9 @@ is injected into the component.
 		}
 
 		exists, err = svc.SvcExists(client, serviceName, applicationName, projectName)
-		checkError(err, "Unable to determine if Service %s exists within the current namespace", serviceName)
+		checkError(err, "Unable to determine if service %s exists within the current namespace", serviceName)
 		if !exists {
-			fmt.Printf(`Service %s doesn't exist within the current namespace.
+			fmt.Printf(`Service %s does not exist within the current namespace.
 Please perform 'odo service create %s ...' before attempting to link the service.`, serviceName, serviceName)
 			os.Exit(1)
 		}
@@ -61,8 +61,8 @@ Please perform 'odo service create %s ...' before attempting to link the service
 		// the secret should have been created along with the secret
 		_, err = client.GetSecret(serviceName, projectName)
 		if err != nil {
-			fmt.Printf(`Secret %s should have been created along with the service!
-If you previously created the service with 'odo service create...', then you might have to wait a few seconds until Openshift provisions it.
+			fmt.Printf(`Secret %s should have been created along with the service
+If you previously created the service with 'odo service create', then you may have to wait a few seconds until OpenShift provisions it.
 If not, then please delete the service and recreate it using 'odo service create %s`, serviceName, serviceName)
 			os.Exit(1)
 		}
