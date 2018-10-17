@@ -2233,7 +2233,7 @@ func TestLinkSecret(t *testing.T) {
 				if len(tt.applicationName) == 0 {
 					return true, nil, fmt.Errorf("could not find dc")
 				}
-				return true, fakeDeploymentConfig(dcName, "foo"), nil
+				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}), nil
 			})
 
 			// Fake updating DC
@@ -2241,7 +2241,7 @@ func TestLinkSecret(t *testing.T) {
 				if len(tt.namespace) == 0 {
 					return true, nil, fmt.Errorf("could not update dc")
 				}
-				return true, fakeDeploymentConfig(dcName, "foo"), nil
+				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}), nil
 			})
 
 			err := fakeClient.LinkSecret(tt.secretName, tt.componentName, tt.applicationName, tt.namespace)
