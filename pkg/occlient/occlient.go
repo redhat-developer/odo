@@ -488,7 +488,7 @@ func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
 	return secret, nil
 }
 
-// GetExposedPorts retruns image namespace and list of ContainerPorts that are exposed by given image
+// GetExposedPorts returns image namespace and list of ContainerPorts that are exposed by given image
 func (c *Client) GetExposedPorts(imageStream *imagev1.ImageStream, imageTag string) ([]corev1.ContainerPort, error) {
 	var containerPorts []corev1.ContainerPort
 

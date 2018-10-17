@@ -50,18 +50,21 @@ is injected into the component.
 		}
 
 		exists, err = svc.SvcExists(client, serviceName, applicationName, projectName)
-		checkError(err, "Service %s doesn't exist within the current namespace", serviceName)
+		checkError(err, "Unable to determine if Service %s exists within the current namespace", serviceName)
 		if !exists {
-			fmt.Printf("Service with the name %s does not exist in the current project\n", serviceName)
+			fmt.Printf(`Service %s doesn't exist within the current namespace.
+Please perform 'odo service create %s ...' before attempting to link the service.`, serviceName, serviceName)
 			os.Exit(1)
 		}
 
 		// we also need to check whether there is a secret with the same name as the service
 		// the secret should have been created along with the secret
 		secret, err := client.GetSecret(serviceName, projectName)
-		checkError(err, "Secret %s should have been created along with the service! Please delete and recreate it", serviceName)
+		checkError(err, `Secret %s should have been created along with the service!
+If you previously created the service with 'odo service create...', then you might have to wait a few seconds until Openshift provisions it.
+If not, then please delete the service and recreate it using 'odo service create %s`, serviceName, serviceName)
+
 		if secret == nil {
-			fmt.Printf("Secret %v does not exist\n", serviceName)
 			os.Exit(1)
 		}
 
