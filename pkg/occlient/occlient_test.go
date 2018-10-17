@@ -2084,6 +2084,181 @@ func TestGetExposedPorts(t *testing.T) {
 	}
 }
 
+func TestGetSecret(t *testing.T) {
+	tests := []struct {
+		name       string
+		secretNS   string
+		secretName string
+		wantErr    bool
+		want       *corev1.Secret
+	}{
+		{
+			name:       "Case: Valid request for retrieving a secret",
+			secretNS:   "",
+			secretName: "foo",
+			want: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "Case: Invalid request for retrieving a secret",
+			secretNS:   "",
+			secretName: "foo2",
+			want: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting Secret
+			fakeClientSet.Kubernetes.PrependReactor("get", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.want.Name != tt.secretName {
+					return true, nil, fmt.Errorf("'get' called with a different secret name")
+				}
+				return true, tt.want, nil
+			})
+
+			returnValue, err := fakeClient.GetSecret(tt.secretName, tt.secretNS)
+
+			// Check for validating return value
+			if err == nil && returnValue != tt.want {
+				t.Errorf("error in return value got: %v, expected %v", returnValue, tt.want)
+			}
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("\nclient.GetSecret(secretNS, secretName) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreateServiceBinding(t *testing.T) {
+	tests := []struct {
+		name        string
+		bindingNS   string
+		bindingName string
+		params      map[string]string
+		wantErr     bool
+	}{
+		{
+			name:        "Case: Valid request for creating a secret",
+			bindingNS:   "",
+			bindingName: "foo",
+			params: map[string]string{
+				"name": "value",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			err := fakeClient.CreateServiceBinding(tt.bindingName, tt.bindingNS, tt.params)
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.ServiceCatalogClientSet.Actions()) != 1 {
+					t.Errorf("expected 1 ServiceCatalogClientSet.Actions() in CreateServiceBinding, got: %v", fakeClientSet.ServiceCatalogClientSet.Actions())
+				}
+				createdBinding := fakeClientSet.ServiceCatalogClientSet.Actions()[0].(ktesting.CreateAction).GetObject().(*scv1beta1.ServiceBinding)
+				if createdBinding.Name != tt.bindingName {
+					t.Errorf("the name of servicebinding was not correct, expected: %s, got: %s", tt.bindingName, createdBinding.Name)
+				}
+				serviceInstanceParameters, _ := serviceInstanceParameters(tt.params)
+				if !reflect.DeepEqual(createdBinding.Spec.Parameters, serviceInstanceParameters) {
+					t.Error("the parameters of servicebinding were not correct")
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+
+		})
+	}
+}
+
+func TestLinkSecret(t *testing.T) {
+	tests := []struct {
+		name            string
+		namespace       string
+		secretName      string
+		componentName   string
+		applicationName string
+		wantErr         bool
+	}{
+		{
+			name:            "Case: Unable to locate DeploymentConfig",
+			namespace:       "foo",
+			secretName:      "foo",
+			componentName:   "foo",
+			applicationName: "",
+			wantErr:         true,
+		},
+		{
+			name:            "Case: Unable to update DeploymentConfig",
+			namespace:       "",
+			secretName:      "foo",
+			componentName:   "foo",
+			applicationName: "foo",
+			wantErr:         true,
+		},
+		//TODO fix this somehow? It doesn't seem to work because of Instantiate doesn't play nice with fake
+		//{
+		//	name:        "Case: Valid creation of link",
+		//	namespace: "foo",
+		//	secretName: "foo",
+		//	applicationName: "foo",
+		//	wantErr: false,
+		//},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			dcName := fmt.Sprintf("%s-%s", tt.componentName, tt.applicationName)
+
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if len(tt.applicationName) == 0 {
+					return true, nil, fmt.Errorf("could not find dc")
+				}
+				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}), nil
+			})
+
+			// Fake updating DC
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if len(tt.namespace) == 0 {
+					return true, nil, fmt.Errorf("could not update dc")
+				}
+				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}), nil
+			})
+
+			err := fakeClient.LinkSecret(tt.secretName, tt.componentName, tt.applicationName, tt.namespace)
+			if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			} else if err == nil && !tt.wantErr {
+				if len(fakeClientSet.AppsClientset.Actions()) != 2 {
+					t.Errorf("expected 2 AppsClientset.Actions() in LinkSecret, got: %v", fakeClientSet.AppsClientset.Actions())
+				}
+				//TODO enhance test if the Instantiate issue can be overcome
+			}
+		})
+	}
+}
+
 func TestGetImageStream(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -2763,9 +2938,11 @@ func TestGetDeploymentConfigsFromSelector(t *testing.T) {
 
 func TestCreateServiceInstance(t *testing.T) {
 	type args struct {
-		componentName string
-		componentType string
-		labels        map[string]string
+		serviceName string
+		serviceType string
+		labels      map[string]string
+		plan        string
+		parameters  map[string]string
 	}
 
 	tests := []struct {
@@ -2776,12 +2953,14 @@ func TestCreateServiceInstance(t *testing.T) {
 		{
 			name: "Create service instance",
 			args: args{
-				componentName: "jenkins",
-				componentType: "jenkins",
+				serviceName: "jenkins",
+				serviceType: "jenkins",
 				labels: map[string]string{
 					"name":      "mongodb",
 					"namespace": "blog",
 				},
+				plan:       "dev",
+				parameters: map[string]string{},
 			},
 			wantErr: false,
 		},
@@ -2790,14 +2969,16 @@ func TestCreateServiceInstance(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 
-			err := fkclient.CreateServiceInstance(tt.args.componentName, tt.args.componentType, tt.args.labels)
+			err := fkclient.CreateServiceInstance(tt.args.serviceName, tt.args.serviceType, tt.args.plan, tt.args.parameters, tt.args.labels)
 			// Checks for error in positive cases
 			if tt.wantErr == false && (err != nil) {
-				t.Errorf(" client.CreateServiceInstance(componentName,componentType, labels) unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf(" client.CreateServiceInstance(serviceName,serviceType, labels) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			// Check for validating actions performed
-			if len(fkclientset.ServiceCatalogClientSet.Actions()) != 1 && tt.wantErr == false {
+			// creating a service instance also means creating a serviceBinding
+			// which is why we expect 2 actions
+			if len(fkclientset.ServiceCatalogClientSet.Actions()) != 2 && !tt.wantErr {
 				t.Errorf("expected 1 action in CreateServiceInstace got: %v", fkclientset.ServiceCatalogClientSet.Actions())
 			}
 
@@ -2805,11 +2986,11 @@ func TestCreateServiceInstance(t *testing.T) {
 			if !reflect.DeepEqual(createdServiceInstance.Labels, tt.args.labels) {
 				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.labels, createdServiceInstance.Labels)
 			}
-			if createdServiceInstance.Name != tt.args.componentName {
-				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.componentName, createdServiceInstance.Name)
+			if createdServiceInstance.Name != tt.args.serviceName {
+				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.serviceName, createdServiceInstance.Name)
 			}
-			if !reflect.DeepEqual(createdServiceInstance.Spec.ClusterServiceClassExternalName, tt.args.componentType) {
-				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.componentType, createdServiceInstance.Spec.ClusterServiceClassExternalName)
+			if !reflect.DeepEqual(createdServiceInstance.Spec.ClusterServiceClassExternalName, tt.args.serviceType) {
+				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.serviceType, createdServiceInstance.Spec.ClusterServiceClassExternalName)
 			}
 		})
 	}

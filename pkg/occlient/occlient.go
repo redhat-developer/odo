@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/runtime"
 	"net"
 	"net/url"
 	"os"
@@ -478,7 +479,16 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 	return imageStream, nil
 }
 
-// GetExposedPorts retruns image namespace and list of ContainerPorts that are exposed by given image
+// GetSecret returns the Secret object in the given namespace
+func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
+	secret, err := c.kubeClient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
+	}
+	return secret, nil
+}
+
+// GetExposedPorts returns image namespace and list of ContainerPorts that are exposed by given image
 func (c *Client) GetExposedPorts(imageStream *imagev1.ImageStream, imageTag string) ([]corev1.ContainerPort, error) {
 	var containerPorts []corev1.ContainerPort
 
@@ -1291,6 +1301,13 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 
 	// Iterating over serviceInstance List and deleting one by one
 	for _, svc := range svcCatList {
+		// we need to delete the ServiceBinding before deleting the ServiceInstance
+		err = c.serviceCatalogClient.ServiceBindings(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			return errors.Wrap(err, "unable to delete serviceBinding")
+		}
+
+		// now we perform the actual deletion
 		err = c.serviceCatalogClient.ServiceInstances(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrap(err, "unable to delete serviceInstance")
@@ -1360,31 +1377,127 @@ func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, er
 }
 
 // CreateServiceInstance creates service instance from service catalog
-func (c *Client) CreateServiceInstance(componentName string, componentType string, labels map[string]string) error {
-	// Creating Service Instance
-	_, err := c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
+func (c *Client) CreateServiceInstance(serviceName string, serviceType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
+	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
+	if err != nil {
+		return errors.Wrap(err, "unable to create the service instance parameters")
+	}
+
+	_, err = c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
 		&scv1beta1.ServiceInstance{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ServiceInstance",
 				APIVersion: "servicecatalog.k8s.io/v1beta1",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Finalizers: []string{"kubernetes-incubator/service-catalog"},
-				Name:       componentName,
-				Namespace:  c.namespace,
-				Labels:     labels,
+				Name:      serviceName,
+				Namespace: c.namespace,
+				Labels:    labels,
 			},
 			Spec: scv1beta1.ServiceInstanceSpec{
 				PlanReference: scv1beta1.PlanReference{
-					ClusterServiceClassExternalName: componentType,
+					ClusterServiceClassExternalName: serviceType,
+					ClusterServicePlanExternalName:  servicePlan,
 				},
+				Parameters: serviceInstanceParameters,
 			},
-			Status: scv1beta1.ServiceInstanceStatus{},
 		})
 
 	if err != nil {
-		return errors.Wrap(err, "unable to create service instance")
+		return errors.Wrapf(err, "unable to create the service instance %s for the service type %s and plan %s", serviceName, serviceType, servicePlan)
 	}
+
+	// Create the secret containing the parameters of the plan selected.
+	err = c.CreateServiceBinding(serviceName, c.namespace, parameters)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
+	}
+
+	return nil
+}
+
+// CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
+// service instance created using the service's parameters.
+func (c *Client) CreateServiceBinding(componentName string, namespace string, parameters map[string]string) error {
+	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
+	if err != nil {
+		return errors.Wrap(err, "unable to create the service instance parameters")
+	}
+
+	_, err = c.serviceCatalogClient.ServiceBindings(namespace).Create(
+		&scv1beta1.ServiceBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      componentName,
+				Namespace: namespace,
+			},
+			Spec: scv1beta1.ServiceBindingSpec{
+				//ExternalID: UUID,
+				ServiceInstanceRef: scv1beta1.LocalObjectReference{
+					Name: componentName,
+				},
+				SecretName: componentName,
+				Parameters: serviceInstanceParameters,
+			},
+		})
+
+	if err != nil {
+		return errors.Wrap(err, "Creation of the secret failed")
+	}
+
+	return nil
+}
+
+// serviceInstanceParameters converts a map of variable assignments to a byte encoded json document,
+// which is what the ServiceCatalog API consumes.
+func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension, error) {
+	paramsJSON, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+	return &runtime.RawExtension{Raw: paramsJSON}, nil
+}
+
+// LinkSecret links a secret to the DeploymentConfig of a component
+func (c *Client) LinkSecret(secretName, componentName, applicationName, namespace string) error {
+	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return err
+	}
+
+	dc, err := c.appsClient.DeploymentConfigs(namespace).Get(dcName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Unable to locate DeploymentConfig for component %s of application %s", componentName, applicationName)
+	}
+
+	// Add the Secret as EnvVar to the container
+	dc.Spec.Template.Spec.Containers[0].EnvFrom = []corev1.EnvFromSource{
+		{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+			},
+		},
+	}
+
+	// update the DeploymentConfig with the secret
+	_, err = c.appsClient.DeploymentConfigs(namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
+	}
+
+	// Create a request that we will pass to the Deployment Config in order to trigger a new deployment
+	request := &appsv1.DeploymentRequest{
+		Name:   dcName,
+		Latest: true,
+		Force:  true,
+	}
+
+	// Redeploy the DeploymentConfig of the application
+	// This is needed for the newly added secret to be injected to the pod
+	_, err = c.appsClient.DeploymentConfigs(namespace).Instantiate(request.Name, request)
+	if err != nil {
+		return errors.Wrapf(err, "Redeployment of the DeploymentConfig failed %s", request.Name)
+	}
+
 	return nil
 }
 

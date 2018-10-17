@@ -13,7 +13,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var serviceForceDeleteFlag bool
+var (
+	serviceForceDeleteFlag bool
+	parameters             []string
+	plan                   string
+)
 
 // serviceCmd represents the service command
 var serviceCmd = &cobra.Command{
@@ -28,15 +32,17 @@ var serviceCmd = &cobra.Command{
 }
 
 var serviceCreateCmd = &cobra.Command{
-	Use:   "create <service_type> [service_name]",
+	Use:   "create <service_type> --plan <plan_name> [service_name]",
 	Short: "Create a new service",
-	Long: `Create a new service from service catalog to deploy on OpenShift.
+	Long: `Create a new service from service catalog using the plan defined and deploy it on OpenShift.
 
-If service name is not provided, service type value will be used.
+If service name is not provided, service type value will be used. The plan to be used must be passed along the service type
+using this convention <service_type>/<plan>. The parameters to configure the service are passed as a list of key=value pairs.
+The list of the parameters and their type is defined according to the plan selected.
 
 A full list of service types that can be deployed are available using: 'odo catalog list services'`,
-	Example: `  # Create new mysql-persistent service from service catalog.
-  odo service create mysql-persistent
+	Example: `  # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
+  odo service create dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -44,15 +50,42 @@ A full list of service types that can be deployed are available using: 'odo cata
 		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
+
+		// make sure the service type exists
 		serviceType := args[0]
-		exists, err := svc.SvcTypeExists(client, serviceType)
+		matchingService, err := svc.GetSvcByType(client, serviceType)
 		checkError(err, "unable to create service because Service Catalog is not enabled in your cluster")
-		if !exists {
+		if matchingService == nil {
 			fmt.Printf("Service %v doesn't exist\nRun 'odo service catalog' to see a list of supported services.\n", serviceType)
 			os.Exit(1)
 		}
+
+		if len(plan) == 0 {
+			// when the plan has not been supplied, if there is only one available plan, we select it
+			if len(matchingService.PlanList) == 1 {
+				plan = matchingService.PlanList[0]
+				glog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", plan, serviceType)
+			} else {
+				fmt.Printf("No plan was supplied for service %v.\nPlease select one of: %v\n", serviceType, strings.Join(matchingService.PlanList, ","))
+				os.Exit(1)
+			}
+		} else {
+			// when the plan has been supplied, we need to make sure it exists
+			planFound := false
+			for _, candidatePlan := range matchingService.PlanList {
+				if plan == candidatePlan {
+					planFound = true
+					break
+				}
+			}
+			if !planFound {
+				fmt.Printf("Plan %s is invalid for service %v.\nPlease select one of: %v\n", plan, serviceType, strings.Join(matchingService.PlanList, ","))
+				os.Exit(1)
+			}
+		}
+
 		// if only one arg is given, then it is considered as service name and service type both
-		serviceName := args[0]
+		serviceName := serviceType
 		// if two args are given, first is service type and second one is service name
 		if len(args) == 2 {
 			serviceName = args[1]
@@ -60,13 +93,13 @@ A full list of service types that can be deployed are available using: 'odo cata
 		//validate service name
 		err = validateName(serviceName)
 		checkError(err, "")
-		exists, err = svc.SvcExists(client, serviceName, applicationName, projectName)
+		exists, err := svc.SvcExists(client, serviceName, applicationName, projectName)
 		checkError(err, "")
 		if exists {
 			fmt.Printf("%s service already exists in the current application.\n", serviceName)
 			os.Exit(1)
 		}
-		err = svc.CreateService(client, serviceName, serviceType, applicationName)
+		err = svc.CreateService(client, serviceName, serviceType, plan, parameters, applicationName)
 		checkError(err, "")
 		fmt.Printf("Service '%s' was created.\n", serviceName)
 	},
@@ -151,6 +184,8 @@ var serviceListCmd = &cobra.Command{
 
 func init() {
 	serviceDeleteCmd.Flags().BoolVarP(&serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
+	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
+	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}

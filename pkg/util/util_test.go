@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"net/url"
+	"reflect"
 	"testing"
 )
 
@@ -212,4 +213,46 @@ func TestFilePathConversion(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParametersAsMap(t *testing.T) {
+
+	tests := []struct {
+		testName    string
+		sliceInput  []string
+		expectedMap map[string]string
+	}{
+		{
+			testName:    "empty slice",
+			sliceInput:  []string{},
+			expectedMap: map[string]string{},
+		},
+		{
+			testName:   "slice with single element",
+			sliceInput: []string{"name=value"},
+			expectedMap: map[string]string{
+				"name": "value",
+			},
+		},
+		{
+			testName:   "slice with multiple elements",
+			sliceInput: []string{"name1=value1", "name2=value2", "name3=value3"},
+			expectedMap: map[string]string{
+				"name1": "value1",
+				"name2": "value2",
+				"name3": "value3",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			resultingMap := ConvertKeyValueStringToMap(tt.sliceInput)
+			if !reflect.DeepEqual(tt.expectedMap, resultingMap) {
+				t.Errorf("Expected %s, got %s", tt.expectedMap, resultingMap)
+			}
+		})
+	}
+
 }

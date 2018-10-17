@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"fmt"
+	"github.com/golang/glog"
 	"math/rand"
 	"net/url"
 	"strings"
@@ -121,4 +122,20 @@ func GenFileUrl(location string, os string) string {
 		urlPath = "/" + strings.Replace(location, "\\", "/", -1)
 	}
 	return "file://" + urlPath
+}
+
+// ConvertKeyValueStringToMap converts String Slice of Parameters to a Map[String]string
+// Each value of the slice is expected to be in the key=value format
+// Values that do not conform to this "spec", will be ignored
+func ConvertKeyValueStringToMap(params []string) map[string]string {
+	result := make(map[string]string, len(params))
+	for _, param := range params {
+		str := strings.Split(param, "=")
+		if len(str) != 2 {
+			glog.Fatalf("Parameter %s is not in the expected key=value format", param)
+		} else {
+			result[str[0]] = str[1]
+		}
+	}
+	return result
 }
