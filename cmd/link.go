@@ -59,12 +59,11 @@ Please perform 'odo service create %s ...' before attempting to link the service
 
 		// we also need to check whether there is a secret with the same name as the service
 		// the secret should have been created along with the secret
-		secret, err := client.GetSecret(serviceName, projectName)
-		checkError(err, `Secret %s should have been created along with the service!
+		_, err = client.GetSecret(serviceName, projectName)
+		if err != nil {
+			fmt.Printf(`Secret %s should have been created along with the service!
 If you previously created the service with 'odo service create...', then you might have to wait a few seconds until Openshift provisions it.
 If not, then please delete the service and recreate it using 'odo service create %s`, serviceName, serviceName)
-
-		if secret == nil {
 			os.Exit(1)
 		}
 
