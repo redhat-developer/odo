@@ -1301,6 +1301,13 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 
 	// Iterating over serviceInstance List and deleting one by one
 	for _, svc := range svcCatList {
+		// we need to delete the ServiceBinding before deleting the ServiceInstance
+		err = c.serviceCatalogClient.ServiceBindings(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			return errors.Wrap(err, "unable to delete serviceBinding")
+		}
+
+		// now we perform the actual deletion
 		err = c.serviceCatalogClient.ServiceInstances(c.namespace).Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrap(err, "unable to delete serviceInstance")
