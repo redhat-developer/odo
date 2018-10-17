@@ -242,13 +242,13 @@ func getAndSetNamespace(client *occlient.Client) string {
 }
 
 func addProjectFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Project, defaults to active project")
+	cmd.Flags().StringVar(&projectFlag, "project", "", "Project, defaults to active project")
 }
 
 func addComponentFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&componentFlag, "component", "c", "", "Component, defaults to active component.")
+	cmd.Flags().StringVar(&componentFlag, "component", "", "Component, defaults to active component.")
 }
 
 func addApplicationFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&applicationFlag, "application", "", "Application, defaults to active application")
+	cmd.Flags().StringVar(&applicationFlag, "app", "", "Application, defaults to active application")
 }
