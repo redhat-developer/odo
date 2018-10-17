@@ -176,11 +176,8 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 func getAppName(client *occlient.Client) string {
 	// applicationFlag is `--application` flag
 	if applicationFlag != "" {
-
 		_, err := application.Exists(client, applicationFlag)
-		if err != nil {
-			checkError(err, "")
-		}
+		checkError(err, "")
 		return applicationFlag
 	}
 	applicationName, err := application.GetCurrent(client.Namespace)
@@ -197,9 +194,7 @@ func getAndSetNamespace(client *occlient.Client) string {
 	// projectFlag is `--project` flag
 	if projectFlag != "" {
 		_, err := project.Exists(client, projectFlag)
-		if err != nil {
-			checkError(err, "")
-		}
+		checkError(err, "")
 		client.Namespace = projectFlag
 		return projectFlag
 	}
