@@ -64,7 +64,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 			// when the plan has not been supplied, if there is only one available plan, we select it
 			if len(matchingService.PlanList) == 1 {
 				plan = matchingService.PlanList[0]
-				glog.V(4).Info("Plan %s was automatically selected since it's the only one available for service %s", plan, serviceType)
+				glog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", plan, serviceType)
 			} else {
 				fmt.Printf("No plan was supplied for service %v.\nPlease select one of: %v\n", serviceType, strings.Join(matchingService.PlanList, ","))
 				os.Exit(1)
