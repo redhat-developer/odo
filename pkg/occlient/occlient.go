@@ -1373,7 +1373,7 @@ func (c *Client) GetClusterServiceClasses() ([]scv1beta1.ClusterServiceClass, er
 func (c *Client) CreateServiceInstance(serviceName string, serviceType string, servicePlan string, parameters map[string]string, labels map[string]string) error {
 	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create the service instance parameters")
+		return errors.Wrap(err, "unable to create the service instance parameters")
 	}
 
 	_, err = c.serviceCatalogClient.ServiceInstances(c.namespace).Create(
