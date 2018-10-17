@@ -3639,7 +3639,7 @@ func TestGetEnvVarsFromDC(t *testing.T) {
 				return true, &tt.returnedDC, nil
 			})
 
-			envVars, err := fakeClient.GetEnvVarsFromDC(tt.dcName, tt.projectName)
+			envVars, err := fakeClient.GetEnvVarsFromDC(tt.dcName)
 
 			if err == nil && !tt.wantErr {
 				// Check for validating actions performed
