@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var componentLogoutCmd = &cobra.Command{
+var logoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Log out of the active session",
 	Long:  "Log out of the active session",
@@ -21,7 +21,8 @@ var componentLogoutCmd = &cobra.Command{
 
 func init() {
 	// Add a defined annotation in order to appear in the help menu
-	componentListCmd.Annotations = map[string]string{"command": "utility"}
+	logoutCmd.Annotations = map[string]string{"command": "utility"}
+	logoutCmd.SetUsageTemplate(cmdUsageTemplate)
 
-	rootCmd.AddCommand(componentLogoutCmd)
+	rootCmd.AddCommand(logoutCmd)
 }
