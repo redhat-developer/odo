@@ -347,7 +347,7 @@ var _ = Describe("odoe2e", func() {
 				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 				getRoute = strings.TrimSpace(getRoute)
 
-				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1")
+				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1")
 				if curlRoute {
 					grepBeforePush := runCmd("curl -s " + getRoute + " | grep 'Welcome to your Node.js application on OpenShift'")
 					log.Printf("Text before odo push: %s", strings.TrimSpace(grepBeforePush))
@@ -365,7 +365,7 @@ var _ = Describe("odoe2e", func() {
 				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 				getRoute = strings.TrimSpace(getRoute)
 
-				curlRoute := waitForCmdOut("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1")
+				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1")
 				if curlRoute {
 					grepAfterPush := runCmd("curl -s " + getRoute + " | grep -i odo")
 					log.Printf("Text after odo push: %s", strings.TrimSpace(grepAfterPush))
