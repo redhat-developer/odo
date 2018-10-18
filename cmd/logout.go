@@ -6,8 +6,8 @@ import (
 
 var logoutCmd = &cobra.Command{
 	Use:   "logout",
-	Short: "Log out of the active session",
-	Long:  "Log out of the active session",
+	Short: "Log out of the current OpenShift session",
+	Long:  "Log out of the current OpenShift session",
 	Example: `  # Logout
   odo logout
 	`,

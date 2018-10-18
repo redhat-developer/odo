@@ -307,7 +307,7 @@ func (c *Client) RunLogout() error {
 		glog.V(1).Infof("%v : unable to get userinfo", err)
 	}
 
-	conf, err := c.kubeConfig.ClientConfig()
+	conf, err := c.KubeConfig.ClientConfig()
 	if err != nil {
 		glog.V(1).Infof("%v : unable to get client config", err)
 	}
@@ -320,7 +320,7 @@ func (c *Client) RunLogout() error {
 		glog.V(1).Infof("%v", err)
 	}
 
-	rawConfig, err := c.kubeConfig.RawConfig()
+	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
 		glog.V(1).Infof("%v : unable to switch to  project", err)
 	}
