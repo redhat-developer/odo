@@ -515,4 +515,22 @@ var _ = Describe("odoe2e", func() {
 			waitForDeleteCmd("odo project list", projName)
 		})
 	})
+	Context("validate odo version cmd with oc version", func() {
+		// test for odo version
+		It("should show the version of OpenShift server", func() {
+			odoVersion := runCmd("odo version")
+
+			ocServer := runCmd("oc version|grep Server|cut -d ' ' -f 2")
+			ocVersion := runCmd("oc version|grep openshift|cut -d ' ' -f 2")
+			k8sVersion := runCmd("oc version|grep kubernetes|tail -1|cut -d ' ' -f 2")
+
+			Expect(odoVersion).To(ContainSubstring("Server"))
+			Expect(odoVersion).To(ContainSubstring(ocServer))
+			Expect(odoVersion).To(ContainSubstring("OpenShift"))
+			Expect(odoVersion).To(ContainSubstring(ocVersion))
+			Expect(odoVersion).To(ContainSubstring("Kubernetes"))
+			Expect(odoVersion).To(ContainSubstring(k8sVersion))
+		})
+	})
+
 })
