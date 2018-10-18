@@ -1564,6 +1564,53 @@ type Service struct {
 	PlanList []string
 }
 
+func (c *Client) GetServiceClass(className string) (class *scv1beta1.ClusterServiceClass, err error) {
+	classes, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{
+		FieldSelector: "spec.externalName==" + className,
+	})
+
+	if len(classes.Items) != 1 {
+		return nil, nil
+	}
+
+	return &classes.Items[0], err
+}
+
+func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta1.ClusterServiceClass, err error) {
+	categories = make(map[string][]scv1beta1.ClusterServiceClass)
+	classes, err := c.GetClusterServiceClasses()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get cluster service classes")
+	}
+
+	for _, class := range classes {
+		tags := class.Spec.Tags
+		var meta map[string]interface{}
+		json.Unmarshal(class.Spec.ExternalMetadata.Raw, &meta)
+		category := "other"
+		if len(tags) > 0 {
+			category = tags[0]
+		}
+		if len(category) > 0 {
+			categories[category] = append(categories[category], class)
+		}
+	}
+
+	return categories, err
+}
+
+func (c *Client) GetMatchingPlans(class scv1beta1.ClusterServiceClass) (plans map[string]scv1beta1.ClusterServicePlan, err error) {
+	planList, err := c.serviceCatalogClient.ClusterServicePlans().List(metav1.ListOptions{
+		FieldSelector: "spec.clusterServiceClassRef.name==" + class.Spec.ExternalID,
+	})
+
+	plans = make(map[string]scv1beta1.ClusterServicePlan)
+	for _, v := range planList.Items {
+		plans[v.Spec.ExternalName] = v
+	}
+	return plans, err
+}
+
 // GetClusterServiceClassExternalNamesAndPlans returns the names of all the cluster service
 // classes in the cluster
 func (c *Client) GetClusterServiceClassExternalNamesAndPlans() ([]Service, error) {
