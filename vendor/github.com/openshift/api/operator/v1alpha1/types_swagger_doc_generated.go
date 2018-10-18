@@ -76,6 +76,7 @@ var map_OperatorSpec = map[string]string{
 	"":                "OperatorSpec contains common fields for an operator to need.  It is intended to be anonymous included inside of the Spec struct for you particular operator.",
 	"managementState": "managementState indicates whether and how the operator should manage the component",
 	"imagePullSpec":   "imagePullSpec is the image to use for the component.",
+	"imagePullPolicy": "imagePullPolicy specifies the image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.",
 	"version":         "version is the desired state in major.minor.micro-patch.  Usually patch is ignored.",
 	"logging":         "logging contains glog parameters for the component pods.  It's always a command line arg for the moment",
 }
@@ -98,8 +99,8 @@ func (OperatorStatus) SwaggerDoc() map[string]string {
 	return map_OperatorStatus
 }
 
-var map_VersionAvailablity = map[string]string{
-	"":                "VersionAvailablity gives information about the synchronization and operational status of a particular version of the component",
+var map_VersionAvailability = map[string]string{
+	"":                "VersionAvailability gives information about the synchronization and operational status of a particular version of the component",
 	"version":         "version is the level this availability applies to",
 	"updatedReplicas": "updatedReplicas indicates how many replicas are at the desired state",
 	"readyReplicas":   "readyReplicas indicates how many replicas are ready and at the desired state",
@@ -107,8 +108,8 @@ var map_VersionAvailablity = map[string]string{
 	"generations":     "generations allows an operator to track what the generation of \"important\" resources was the last time we updated them",
 }
 
-func (VersionAvailablity) SwaggerDoc() map[string]string {
-	return map_VersionAvailablity
+func (VersionAvailability) SwaggerDoc() map[string]string {
+	return map_VersionAvailability
 }
 
 // AUTO-GENERATED FUNCTIONS END HERE
