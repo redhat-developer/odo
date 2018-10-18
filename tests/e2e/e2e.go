@@ -40,7 +40,7 @@ func waitForCmdOut(cmd string, timeout int, check func(output string) bool) bool
 	for {
 		select {
 		case <-pingTimeout:
-			Fail("Timeout out after " + string(timeout) + " minutes")
+			Fail(fmt.Sprintf("Timeout out after %v minutes", timeout))
 
 		case <-tick:
 			out, err := exec.Command("/bin/sh", "-c", cmd).Output()

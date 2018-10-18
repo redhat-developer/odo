@@ -110,7 +110,9 @@ A full list of service types that can be deployed are available using: 'odo cata
 		}
 		err = svc.CreateService(client, serviceName, serviceType, plan, parameters, applicationName)
 		util.CheckError(err, "")
-		fmt.Printf("Service '%s' was created.\n", serviceName)
+		fmt.Printf(`Service '%s' was created.
+Progress of the provisioning will not be reported and might take a long time.
+You can see the current status by executing 'odo service list'`, serviceName)
 	},
 }
 
@@ -174,7 +176,7 @@ var serviceListCmd = &cobra.Command{
 		util.GetAndSetNamespace(client)
 		applicationName := util.GetAppName(client)
 
-		services, err := svc.List(client, applicationName)
+		services, err := svc.ListWithDetailedStatus(client, applicationName)
 		util.CheckError(err, "Service Catalog is not enabled in your cluster")
 
 		if len(services) == 0 {
