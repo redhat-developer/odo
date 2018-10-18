@@ -45,4 +45,6 @@ import:
   version: v3.11.0
   subpackages:
   - pkg/oc/cli/login
+- package: github.com/manifoldco/promptui
+  version: v0.3.1
 

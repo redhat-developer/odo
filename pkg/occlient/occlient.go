@@ -2145,8 +2145,6 @@ func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta
 
 	for _, class := range classes {
 		tags := class.Spec.Tags
-		var meta map[string]interface{}
-		json.Unmarshal(class.Spec.ExternalMetadata.Raw, &meta)
 		category := "other"
 		if len(tags) > 0 {
 			category = tags[0]
