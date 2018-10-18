@@ -1,8 +1,10 @@
-hash: a5d44494468800aae83f5e6d90d56e690d2e2e105d9efdcd08aa7111b35f7d30
-updated: 2018-09-11T12:21:56.267856135+05:30
+hash: c35ab89beff8e7f9304a0b8f2df1c1e826fdb221b8e71f59d765284ee08b4b92
+updated: 2018-10-18T13:01:08.912467+02:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
+- name: github.com/chzyer/readline
+  version: 2972be24d48e78746da79ba8e24e8b488c9880de
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -52,6 +54,10 @@ imports:
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/json-iterator/go
   version: f2b4162afba35581b6d4a50d3b8f34e33c144682
+- name: github.com/juju/ansiterm
+  version: 720a0952cc2ac777afc295d9861263e2a4cf96a1
+  subpackages:
+  - tabwriter
 - name: github.com/kubernetes-incubator/service-catalog
   version: 9d82b390b96d565e9301fdfe4ac822311e765a3c
   subpackages:
@@ -67,6 +73,13 @@ imports:
   - pkg/client/clientset_generated/clientset/typed/settings/v1alpha1
   - pkg/client/clientset_generated/clientset/typed/settings/v1alpha1/fake
   - pkg/filter
+- name: github.com/lunixbochs/vtclean
+  version: 2d01aacdc34a083dca635ba869909f5fc0cd4f41
+- name: github.com/manifoldco/promptui
+  version: 157c96fb638a14d268b305cf2012582431fcc410
+  subpackages:
+  - list
+  - screenbuf
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
@@ -116,7 +129,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/openshift/api
-  version: 0b3bd79a90c98650f1715c3021b8e9dcf4a7069a
+  version: a46029836bdc207f9949fc5f4907f0bfd3cf7763
   subpackages:
   - apps/v1
   - build/v1
@@ -157,7 +170,7 @@ imports:
   - user/clientset/versioned/scheme
   - user/clientset/versioned/typed/user/v1
 - name: github.com/openshift/source-to-image
-  version: ac6dc9858fa90b751686436fea9a951f183c79bb
+  version: 9eb30303fd748ffa930371615635f1a3cddc97f0
   subpackages:
   - pkg/tar
   - pkg/util/fs
