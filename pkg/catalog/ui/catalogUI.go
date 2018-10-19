@@ -151,7 +151,8 @@ func isRequired(required []string, name string) bool {
 	return false
 }
 
-// Select the plan name from possible options, specifying which text should appear in the prompt
+// SelectPlanNameInteractively lets the user to select the plan name from possible options, specifying which text should appear
+// in the prompt
 func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptText string) string {
 	prompt := promptui.Select{
 		Label: promptText,
@@ -161,7 +162,8 @@ func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, 
 	return plan
 }
 
-// Enter the name of the service instance to create, defaulting to the provided default value and specifying both the prompt text and validation function for the name
+// EnterServiceNameInteractively lets the user enter the name of the service instance to create, defaulting to the provided
+// default value and specifying both the prompt text and validation function for the name
 func EnterServiceNameInteractively(defaultValue, promptText string, validateName func(string) error) string {
 	// if only one arg is given, ask to Name the service providing the class Name as default
 	instancePrompt := promptui.Prompt{
@@ -174,7 +176,8 @@ func EnterServiceNameInteractively(defaultValue, promptText string, validateName
 	return serviceName
 }
 
-// Select target service class from possible options, first filtering by categories then by class name
+// SelectClassInteractively lets the user select target service class from possible options, first filtering by categories then
+// by class name
 func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterServiceClass) (class scv1beta1.ClusterServiceClass, serviceType string) {
 	prompt := promptui.Select{
 		Label: "Which kind of service do you wish to create?",
@@ -203,7 +206,8 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	return uiClass.Class, uiClass.Name
 }
 
-// Enter the properties specified by the provided plan if not already specified by the passed values
+// EnterServicePropertiesInteractively lets the user enter the properties specified by the provided plan if not already
+// specified by the passed values
 func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, passedValues map[string]string) (values map[string]string) {
 	properties, _ := getProperties(svcPlan)
 	propsNb := len(properties)
