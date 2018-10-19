@@ -332,7 +332,7 @@ var _ = Describe("odoCmpE2e", func() {
 		It("should delete the application", func() {
 			runCmd("odo app delete " + appTestName + " -f")
 
-			runCmd("odo project delete " + projName)
+			runCmd("odo project delete " + projName + " -f")
 			waitForDeleteCmd("odo project list", projName)
 		})
 	})

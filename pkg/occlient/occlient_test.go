@@ -2061,7 +2061,7 @@ func TestGetExposedPorts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
-			fkclient.namespace = "testing"
+			fkclient.Namespace = "testing"
 
 			fkclientset.ImageClientset.PrependReactor("get", "imagestreamimages", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, fakeImageStreamImage("python", []string{"8080/tcp"}), nil
@@ -2313,7 +2313,7 @@ func TestGetImageStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
-			fkclient.namespace = "testing"
+			fkclient.Namespace = "testing"
 			openshiftIS := fakeImageStream(tt.imageName, "openshift", []string{"latest", "3.5"})
 			currentNSIS := fakeImageStream(tt.imageName, "testing", []string{"latest"})
 
