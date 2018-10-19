@@ -2,8 +2,12 @@ package ui
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"sort"
 )
 
@@ -13,55 +17,49 @@ type serviceInstanceCreateParameterSchema struct {
 }
 
 type property struct {
+	name        string
 	Title       string
 	Type        string
 	Description string
+	required    bool
 }
 
-type ServiceClass struct {
+type serviceClass struct {
 	Name            string
 	Description     string
 	LongDescription string
 	Class           scv1beta1.ClusterServiceClass
 }
 
-type ServiceClasses []ServiceClass
+type serviceClasses []serviceClass
 
-func (classes ServiceClasses) Len() int {
+func (classes serviceClasses) Len() int {
 	return len(classes)
 }
 
-func (classes ServiceClasses) Less(i, j int) bool {
+func (classes serviceClasses) Less(i, j int) bool {
 	return classes[i].Name < classes[j].Name
 }
 
-func (classes ServiceClasses) Swap(i, j int) {
+func (classes serviceClasses) Swap(i, j int) {
 	classes[i], classes[j] = classes[j], classes[i]
 }
 
-type Property struct {
-	Name        string
-	Title       string
-	Description string
-	Type        string
-	Required    bool
-}
+type properties []property
 
-type Properties []Property
-
-func (props Properties) Len() int {
+func (props properties) Len() int {
 	return len(props)
 }
 
-func (props Properties) Less(i, j int) bool {
-	if props[i].Required == props[j].Required {
-		return props[i].Name < props[j].Name
+func (props properties) Less(i, j int) bool {
+	if props[i].required == props[j].required {
+		return props[i].name < props[j].name
 	} else {
-		return props[i].Required && !props[j].Required
+		return props[i].required && !props[j].required
 	}
 }
 
-func (props Properties) Swap(i, j int) {
+func (props properties) Swap(i, j int) {
 	props[i], props[j] = props[j], props[i]
 }
 
@@ -95,9 +93,9 @@ func GetServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (key
 	return keys
 }
 
-// Convert the provided ClusterServiceClasses to ServiceClasses
-func GetUIServiceClasses(classes []scv1beta1.ClusterServiceClass) (uiClasses ServiceClasses) {
-	uiClasses = make(ServiceClasses, 0, len(classes))
+// Convert the provided ClusterServiceClasses to serviceClasses
+func getUIServiceClasses(classes []scv1beta1.ClusterServiceClass) (uiClasses serviceClasses) {
+	uiClasses = make(serviceClasses, 0, len(classes))
 	for _, v := range classes {
 		uiClasses = append(uiClasses, ConvertToUI(v))
 	}
@@ -107,14 +105,17 @@ func GetUIServiceClasses(classes []scv1beta1.ClusterServiceClass) (uiClasses Ser
 }
 
 // Convert the provided ClusterServiceClass to its UI representation
-func ConvertToUI(class scv1beta1.ClusterServiceClass) ServiceClass {
+func ConvertToUI(class scv1beta1.ClusterServiceClass) serviceClass {
 	var meta map[string]interface{}
-	json.Unmarshal(class.Spec.ExternalMetadata.Raw, &meta)
+	err := json.Unmarshal(class.Spec.ExternalMetadata.Raw, &meta)
+	if err != nil {
+		glog.V(4).Infof("Unable unmarshal Extension metadata for ClusterServiceClass '%v'", class.Spec.ExternalName)
+	}
 	longDescription := ""
 	if val, ok := meta["longDescription"]; ok {
 		longDescription = val.(string)
 	}
-	return ServiceClass{
+	return serviceClass{
 		Name:            class.Spec.ExternalName,
 		Description:     class.Spec.Description,
 		LongDescription: longDescription,
@@ -122,7 +123,7 @@ func ConvertToUI(class scv1beta1.ClusterServiceClass) ServiceClass {
 	}
 }
 
-func GetProperties(plan scv1beta1.ClusterServicePlan) (properties Properties, err error) {
+func getProperties(plan scv1beta1.ClusterServicePlan) (props properties, err error) {
 	paramBytes := plan.Spec.CommonServicePlanSpec.ServiceInstanceCreateParameterSchema.Raw
 	schema := serviceInstanceCreateParameterSchema{}
 
@@ -131,19 +132,15 @@ func GetProperties(plan scv1beta1.ClusterServicePlan) (properties Properties, er
 		return nil, errors.Wrapf(err, "Unable unmarshal response: %s", string(paramBytes[:]))
 	}
 
-	properties = make([]Property, 0, len(schema.Properties))
+	props = make(properties, 0, len(schema.Properties))
 	for k, v := range schema.Properties {
-		propertyOut := Property{}
-		propertyOut.Name = k
-		propertyOut.Title = v.Title
-		propertyOut.Description = v.Description
-		propertyOut.Type = v.Type
-		propertyOut.Required = isRequired(schema.Required, k)
-		properties = append(properties, propertyOut)
+		v.name = k
+		v.required = isRequired(schema.Required, k)
+		props = append(props, v)
 	}
 
-	sort.Sort(properties)
-	return properties, err
+	sort.Sort(props)
+	return props, err
 }
 
 func isRequired(required []string, name string) bool {
@@ -153,4 +150,82 @@ func isRequired(required []string, name string) bool {
 		}
 	}
 	return false
+}
+
+func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptLabel string) string {
+	prompt := promptui.Select{
+		Label: promptLabel,
+		Items: GetServicePlanNames(plans),
+	}
+	_, plan, _ := prompt.Run()
+	return plan
+}
+
+func SelectServiceNameInteractively(defaultValue, promptLabel string, validateName func(string) error) string {
+	// if only one arg is given, ask to Name the service providing the class Name as default
+	instancePrompt := promptui.Prompt{
+		Label:     promptLabel,
+		Default:   defaultValue,
+		AllowEdit: true,
+		Validate:  validateName,
+	}
+	serviceName, _ := instancePrompt.Run()
+	return serviceName
+}
+
+func SelectClassInteractively(client *occlient.Client) (class scv1beta1.ClusterServiceClass, serviceType string) {
+	classesByCategory, _ := client.GetServiceClassesByCategory()
+	prompt := promptui.Select{
+		Label: "Which kind of service do you wish to create?",
+		Items: GetServiceClassesCategories(classesByCategory),
+	}
+	_, category, _ := prompt.Run()
+	templates := &promptui.SelectTemplates{
+		Active:   "\U00002620 {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "\U00002620 {{ .Name | red | cyan }}",
+		Details: `
+--------- Service Class ----------
+{{ "Name:" | faint }}	{{ .Name }}
+{{ "Description:" | faint }}	{{ .Description }}
+{{ "Long:" | faint }}	{{ .LongDescription }}`,
+	}
+	uiClasses := getUIServiceClasses(classesByCategory[category])
+	prompt = promptui.Select{
+		Label:     "Which " + category + " service class should we use?",
+		Items:     uiClasses,
+		Templates: templates,
+	}
+	i, _, _ := prompt.Run()
+	uiClass := uiClasses[i]
+
+	return uiClass.Class, uiClass.Name
+}
+
+func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, passedValues map[string]string) (values map[string]string) {
+	properties, _ := getProperties(svcPlan)
+	propsNb := len(properties)
+	values = make(map[string]string, propsNb)
+
+	var i = 0
+	for i < propsNb && properties[i].required {
+		prop := properties[i]
+		if _, ok := passedValues[prop.name]; !ok {
+			prompt := promptui.Prompt{
+				Label:     fmt.Sprintf("Enter a value for %s property %s ", prop.Type, prop.Title),
+				AllowEdit: true,
+			}
+
+			result, _ := prompt.Run()
+			values[prop.name] = result
+		}
+
+		i++
+	}
+	// if we have non-required properties, ask if user wants to provide values
+	if i < propsNb-1 {
+		// todo
+	}
+
+	return values
 }
