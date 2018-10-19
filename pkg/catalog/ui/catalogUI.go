@@ -133,10 +133,6 @@ func getProperties(plan scv1beta1.ClusterServicePlan) (props properties, err err
 	props = make(properties, 0, len(schema.Properties))
 	for k, v := range schema.Properties {
 		v.name = k
-		// if title is not set, use name instead
-		if len(v.Title) == 0 {
-			v.Title = k
-		}
 		v.required = isRequired(schema.Required, k)
 		props = append(props, v)
 	}
@@ -221,7 +217,7 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, p
 		prop := properties[i]
 		if _, ok := passedValues[prop.name]; !ok {
 			prompt := promptui.Prompt{
-				Label:     fmt.Sprintf("Enter a value for %s property %s ", prop.Type, prop.Title),
+				Label:     fmt.Sprintf("Enter a value for %s property '%s' (%s)", prop.Type, prop.name, prop.Title),
 				AllowEdit: true,
 			}
 
