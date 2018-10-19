@@ -45,23 +45,7 @@ func (classes serviceClasses) Swap(i, j int) {
 	classes[i], classes[j] = classes[j], classes[i]
 }
 
-type properties []property
-
-func (props properties) Len() int {
-	return len(props)
-}
-
-func (props properties) Less(i, j int) bool {
-	if props[i].required == props[j].required {
-		return props[i].name < props[j].name
-	} else {
-		return props[i].required && !props[j].required
-	}
-}
-
-func (props properties) Swap(i, j int) {
-	props[i], props[j] = props[j], props[i]
-}
+type properties map[string]property
 
 // Retrieve the list of existing service class categories
 func getServiceClassesCategories(categories map[string][]scv1beta1.ClusterServiceClass) (keys []string) {
@@ -131,14 +115,13 @@ func getProperties(plan scv1beta1.ClusterServicePlan) (props properties, err err
 		return nil, errors.Wrapf(err, "Unable unmarshal response: %s", string(paramBytes[:]))
 	}
 
-	props = make(properties, 0, len(schema.Properties))
+	props = make(properties, len(schema.Properties))
 	for k, v := range schema.Properties {
 		v.name = k
 		v.required = isRequired(schema.Required, k)
-		props = append(props, v)
+		props[k] = v
 	}
 
-	sort.Sort(props)
 	return props, err
 }
 
@@ -223,28 +206,66 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 // specified by the passed values
 func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, passedValues map[string]string) (values map[string]string) {
 	properties, _ := getProperties(svcPlan)
-	propsNb := len(properties)
-	values = make(map[string]string, propsNb)
+	values = make(map[string]string, len(properties))
 
-	var i = 0
-	for i < propsNb && properties[i].required {
-		prop := properties[i]
-		if _, ok := passedValues[prop.name]; !ok {
-			prompt := promptui.Prompt{
-				Label:     fmt.Sprintf("Enter a value for %s property '%s' (%s)", prop.Type, prop.name, prop.Title),
-				AllowEdit: true,
+	// first deal with required properties
+	for name, prop := range properties {
+		if prop.required {
+			// if the property is required but we don't have a value for it in the passed values, prompt for it
+			if _, ok := passedValues[prop.name]; !ok {
+				prompt := promptui.Prompt{
+					Label:     fmt.Sprintf("Enter a value for %s property '%s' (%s)", prop.Type, prop.name, prop.Title),
+					AllowEdit: true,
+				}
+
+				result, err := prompt.Run()
+				handleError(err)
+				values[prop.name] = result
+
+				// remove property from list of properties to consider
+				delete(properties, name)
+				delete(passedValues, name)
 			}
+		}
+	}
 
-			result, err := prompt.Run()
-			handleError(err)
-			values[prop.name] = result
+	// then check if we still have passed values
+	for name, value := range passedValues {
+		// ignore property if not specified in the plan
+		if _, ok := properties[name]; !ok {
+			glog.V(4).Infof("Ignoring unknown property '%v'", name)
+		} else {
+			values[name] = value
 		}
 
-		i++
+		// remove property from list of properties to consider
+		delete(properties, name)
+		delete(passedValues, name)
 	}
-	// if we have non-required properties, ask if user wants to provide values
-	if i < propsNb-1 {
-		// todo
+
+	// finally check if we still have plan properties that have not been considered
+	if len(properties) > 0 {
+		trueOrFalse := []bool{true, false}
+		prompt := promptui.Select{
+			Label: "Do you want to provide values for non-required properties",
+			Items: trueOrFalse,
+		}
+
+		i, _, err := prompt.Run()
+		handleError(err)
+		if trueOrFalse[i] {
+
+			for _, prop := range properties {
+				prompt := promptui.Prompt{
+					Label:     fmt.Sprintf("Enter a value for %s property %s ", prop.Type, prop.Title),
+					AllowEdit: true,
+				}
+
+				result, err := prompt.Run()
+				handleError(err)
+				values[prop.name] = result
+			}
+		}
 	}
 
 	return values
