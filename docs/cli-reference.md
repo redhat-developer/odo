@@ -5,7 +5,6 @@
 ```sh
   # Creating and deploying a Node.js project
   git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
-  odo app create node-example-app
   odo create nodejs
   odo push
 
@@ -13,9 +12,7 @@
   odo url create
 ``` 
 
-OpenShift Do (Odo) is a CLI tool for OpenShift that uses simple, developer-focused terminology, so that developers don't need to be experts in Kubernetes and OpenShift in order to build and deploy applications. 
-
-Odo supports a fast, iterative development cycle. Developers can immediately start coding while Odo builds, pushes, and deploys the application in the background. Odo can watch for local changes to source files or binary and automatically pushes when there are changes.
+Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code.
 
 Find more information at https://github.com/redhat-developer/odo
 
@@ -31,7 +28,7 @@ Find more information at https://github.com/redhat-developer/odo
 | [create](#create)       | Create a new component                                                       |
 | [delete](#delete)       | Delete an existing component                                                 |
 | [describe](#describe)   | Describe the given component                                                 |
-| [link](#link)           | Link target component to source component                                    |
+| [link](#link)           | Link component to a service                                                  |
 | [list](#list)           | List all components in the current application                               |
 | [log](#log)             | Retrieve the log for the given component.                                    |
 | [project](#project)     | Perform project operations                                                   |
@@ -54,7 +51,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         delete --force : Delete the given application
         describe : Describe the given application
         get --short : Get the active application
-        list : List all applications in the current project
+        list --project : List all applications in the current project
         set : Set application as active
     catalog : Catalog related operations
         list : List all available component & service types.
@@ -66,10 +63,10 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
     component --short : Components of application.
         get --short : Get currently active component
         set : Set active component.
-    create --binary --git --local --port : Create a new component
+    create --binary --env --git --local --port : Create a new component
     delete --force : Delete an existing component
     describe : Describe the given component
-    link --component : Link target component to source component
+    link --component : Link component to a service
     list : List all components in the current application
     log --follow : Retrieve the log for the given component.
     project --short : Perform project operations
@@ -80,7 +77,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         set --short : Set the current active project
     push --local : Push source code to a component
     service : Perform service catalog operations
-        create : Create a new service
+        create --parameters --plan : Create a new service
         delete --force : Delete an existing service
         list : List all services in the current application
     storage : Perform storage operations
@@ -126,6 +123,9 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
 	
   # List all applications in the current project 
   odo app list
+
+  # List all applications in the specified project
+  odo app list --project myproject
 	
   # Set an application as active
   odo app set myapp
@@ -205,6 +205,9 @@ Catalog related operations
   # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
   odo create nodejs --port 8080,8100/tcp,9100/udp
 
+  # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
+  odo create nodejs --env key=value,key1=value1
+
   # For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
   odo create python --git https://github.com/openshift/django-ex.git
 	
@@ -213,10 +216,10 @@ Catalog related operations
 
 Create a new component to deploy on OpenShift.
 
-If the component name is not provided, then the component type value will also be used as the name.
+If component name is not provided, component type value will be used for the name.
 
-By default, builder images from the current namespace will be used. You can explicitly supply a namespace by using: odo create namespace/name:version
-If version is not specified, latest wil be chosen as the version.
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
+If version is not specified by default, latest wil be chosen as the version.
 
 A full list of component types that can be deployed is available using: 'odo catalog list'
 
@@ -252,28 +255,27 @@ Describe the given component.
 
 ## link
 
-`link <target component> --component [source component]`
+`link <service> --component [component]`
 
 > Example using link
 
 ```sh
-  # Link current component to a component 'mariadb'
-  odo link mariadb
+  # Link the current component to the 'my-postgresql' service
+  odo link my-postgresql
 
-  # Link 'mariadb' component to 'nodejs' component
-  odo link mariadb --component nodejs
+  # Link component 'nodejs' to the 'my-postgresql' service
+  odo link my-postgresql --component nodejs
 	
 ```
 
 
-Link target component to source component
+Link component to a service
 
-If the source component is not provided, the link is created to the current active
+If source component is not provided, the link is created to the current active
 component.
 
-In the linking process, the environment variables containing the connection
-information from target component are injected into the source component and
-printed to STDOUT.
+During the linking process, the secret that is created during the service creation (odo service create),
+is injected into the component.
 
 
 ## list
@@ -361,8 +363,8 @@ Push source code to a component.
 > Example using service
 
 ```sh
-  # Create new mysql-persistent service from service catalog.
-  odo service create mysql-persistent
+  # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
+  odo service create dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
 	
   # Delete the service named 'mysql-persistent'
   odo service delete mysql-persistent
