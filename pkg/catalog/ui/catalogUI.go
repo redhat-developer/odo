@@ -65,7 +65,7 @@ func (props properties) Swap(i, j int) {
 
 // Retrieve the list of existing service class categories
 // TODO: should match what the okd web console is doing
-func GetServiceClassesCategories(categories map[string][]scv1beta1.ClusterServiceClass) (keys []string) {
+func getServiceClassesCategories(categories map[string][]scv1beta1.ClusterServiceClass) (keys []string) {
 	keys = make([]string, len(categories))
 
 	i := 0
@@ -79,7 +79,7 @@ func GetServiceClassesCategories(categories map[string][]scv1beta1.ClusterServic
 	return keys
 }
 
-func GetServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (keys []string) {
+func getServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (keys []string) {
 	keys = make([]string, len(stringMap))
 
 	i := 0
@@ -97,7 +97,7 @@ func GetServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (key
 func getUIServiceClasses(classes []scv1beta1.ClusterServiceClass) (uiClasses serviceClasses) {
 	uiClasses = make(serviceClasses, 0, len(classes))
 	for _, v := range classes {
-		uiClasses = append(uiClasses, ConvertToUI(v))
+		uiClasses = append(uiClasses, convertToUI(v))
 	}
 
 	sort.Sort(uiClasses)
@@ -105,7 +105,7 @@ func getUIServiceClasses(classes []scv1beta1.ClusterServiceClass) (uiClasses ser
 }
 
 // Convert the provided ClusterServiceClass to its UI representation
-func ConvertToUI(class scv1beta1.ClusterServiceClass) serviceClass {
+func convertToUI(class scv1beta1.ClusterServiceClass) serviceClass {
 	var meta map[string]interface{}
 	err := json.Unmarshal(class.Spec.ExternalMetadata.Raw, &meta)
 	if err != nil {
@@ -155,7 +155,7 @@ func isRequired(required []string, name string) bool {
 func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptLabel string) string {
 	prompt := promptui.Select{
 		Label: promptLabel,
-		Items: GetServicePlanNames(plans),
+		Items: getServicePlanNames(plans),
 	}
 	_, plan, _ := prompt.Run()
 	return plan
@@ -177,7 +177,7 @@ func SelectClassInteractively(client *occlient.Client) (class scv1beta1.ClusterS
 	classesByCategory, _ := client.GetServiceClassesByCategory()
 	prompt := promptui.Select{
 		Label: "Which kind of service do you wish to create?",
-		Items: GetServiceClassesCategories(classesByCategory),
+		Items: getServiceClassesCategories(classesByCategory),
 	}
 	_, category, _ := prompt.Run()
 	templates := &promptui.SelectTemplates{
