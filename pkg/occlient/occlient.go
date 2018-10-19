@@ -71,6 +71,9 @@ const (
 
 	// waitForPodTimeOut controls how long we should wait for a pod before giving up
 	waitForPodTimeOut = 120 * time.Second
+
+	// ComponentPortAnnotationName annotation is used on the secrets that are created for each exposed port of the component
+	ComponentPortAnnotationName = "component-port"
 )
 
 // errorMsg is the message for user when invalid configuration error occurs
@@ -558,7 +561,7 @@ func getAppRootVolumeName(dcName string) string {
 // gitURL is the url of the git repo
 // inputPorts is the array containing the string port values
 // envVars is the array containing the string env var values
-func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputPorts []string, envVars []string) error {
+func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputPorts []string, envVars []string) error {
 
 	glog.V(4).Infof("Using BuilderImage: %s", builderImage)
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
@@ -627,13 +630,55 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 	}
 
 	// Create a service
-	err = c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
+	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
-	return nil
+	// Create secret(s)
+	err = c.createSecrets(componentName, commonObjectMeta, svc)
 
+	return err
+}
+
+// Create a secret for each port, containing the host and port of the component
+// This is done so other components can later inject the secret into the environment
+// and have the "coordinates" to communicate with this component
+func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.ObjectMeta, svc *corev1.Service) error {
+	originalName := commonObjectMeta.Name
+	for _, svcPort := range svc.Spec.Ports {
+		portAsString := fmt.Sprintf("%v", svcPort.Port)
+
+		// we need to create multiple secrets, so each one has to contain the port in it's name
+		// so we change the name of each secret by adding the port number
+		commonObjectMeta.Name = fmt.Sprintf("%v-%v", originalName, portAsString)
+
+		// we also add the port as an annotation to the secret
+		// this comes in handy when we need to "query" for the appropriate secret
+		// of a component based on the port
+		commonObjectMeta.Annotations[ComponentPortAnnotationName] = portAsString
+
+		err := c.CreateSecret(
+			commonObjectMeta,
+			map[string]string{
+				secretKeyName(componentName, "host"): svc.Name,
+				secretKeyName(componentName, "port"): portAsString,
+			})
+
+		if err != nil {
+			return errors.Wrapf(err, "unable to create Secret for %s", commonObjectMeta.Name)
+		}
+	}
+
+	// restore the original values of the fields we changed
+	commonObjectMeta.Name = originalName
+	delete(commonObjectMeta.Annotations, ComponentPortAnnotationName)
+
+	return nil
+}
+
+func secretKeyName(componentName, baseKeyName string) string {
+	return fmt.Sprintf("COMPONENT_%v_%v", strings.Replace(strings.ToUpper(componentName), "-", "_", -1), strings.ToUpper(baseKeyName))
 }
 
 // BootstrapSupervisoredS2I uses S2I (Source To Image) to inject Supervisor into the application container.
@@ -644,7 +689,7 @@ func (c *Client) NewAppS2I(commonObjectMeta metav1.ObjectMeta, builderImage stri
 // Supervisor keeps the pod running (as PID 1), so you it is possible to trigger assembly script inside running pod,
 // and than restart application using Supervisor without need to restart the container/Pod.
 //
-func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, builderImage string, inputPorts []string, envVars []string) error {
+func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta metav1.ObjectMeta, builderImage string, inputPorts []string, envVars []string) error {
 
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
 
@@ -719,9 +764,14 @@ func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, bu
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
 
-	err = c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
+	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
+	}
+
+	err = c.createSecrets(componentName, commonObjectMeta, svc)
+	if err != nil {
+		return err
 	}
 
 	// Setup PVC.
@@ -736,7 +786,7 @@ func (c *Client) BootstrapSupervisoredS2I(commonObjectMeta metav1.ObjectMeta, bu
 // CreateService generates and creates the service
 // commonObjectMeta is the ObjectMeta for the service
 // dc is the deploymentConfig to get the container ports
-func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort) error {
+func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort) (*corev1.Service, error) {
 	// generate and create Service
 	var svcPorts []corev1.ServicePort
 	for _, containerPort := range containerPorts {
@@ -758,9 +808,25 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 			},
 		},
 	}
-	_, err := c.kubeClient.CoreV1().Services(c.Namespace).Create(&svc)
+	createdSvc, err := c.kubeClient.CoreV1().Services(c.Namespace).Create(&svc)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
+		return nil, errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
+	}
+	return createdSvc, err
+}
+
+// CreateSecret generates and creates the secret
+// commonObjectMeta is the ObjectMeta for the service
+func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]string) error {
+
+	secret := corev1.Secret{
+		ObjectMeta: objectMeta,
+		Type:       corev1.SecretTypeOpaque,
+		StringData: data,
+	}
+	_, err := c.kubeClient.CoreV1().Secrets(c.Namespace).Create(&secret)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
 	}
 	return nil
 }
@@ -1365,6 +1431,12 @@ func (c *Client) Delete(labels map[string]string) error {
 	if err != nil {
 		errorList = append(errorList, "unable to delete volume")
 	}
+	// Secret
+	glog.V(4).Infof("Deleting Secret")
+	err = c.kubeClient.CoreV1().Secrets(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		errorList = append(errorList, "unable to delete secret")
+	}
 
 	// Error string
 	errString := strings.Join(errorList, ",")
@@ -1586,7 +1658,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 	}
 
 	// Create the secret containing the parameters of the plan selected.
-	err = c.CreateServiceBinding(serviceName, c.Namespace, parameters)
+	err = c.CreateServiceBinding(serviceName, c.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
 	}
@@ -1596,13 +1668,8 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 
 // CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
 // service instance created using the service's parameters.
-func (c *Client) CreateServiceBinding(componentName string, namespace string, parameters map[string]string) error {
-	serviceInstanceParameters, err := serviceInstanceParameters(parameters)
-	if err != nil {
-		return errors.Wrap(err, "unable to create the service instance parameters")
-	}
-
-	_, err = c.serviceCatalogClient.ServiceBindings(namespace).Create(
+func (c *Client) CreateServiceBinding(componentName string, namespace string) error {
+	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
 		&scv1beta1.ServiceBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      componentName,
@@ -1614,7 +1681,6 @@ func (c *Client) CreateServiceBinding(componentName string, namespace string, pa
 					Name: componentName,
 				},
 				SecretName: componentName,
-				Parameters: serviceInstanceParameters,
 			},
 		})
 
@@ -1648,13 +1714,15 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName, namespac
 	}
 
 	// Add the Secret as EnvVar to the container
-	dc.Spec.Template.Spec.Containers[0].EnvFrom = []corev1.EnvFromSource{
-		{
-			SecretRef: &corev1.SecretEnvSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+	dc.Spec.Template.Spec.Containers[0].EnvFrom =
+		append(
+			dc.Spec.Template.Spec.Containers[0].EnvFrom,
+			corev1.EnvFromSource{
+				SecretRef: &corev1.SecretEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+				},
 			},
-		},
-	}
+		)
 
 	// update the DeploymentConfig with the secret
 	_, err = c.appsClient.DeploymentConfigs(namespace).Update(dc)
@@ -1817,6 +1885,18 @@ func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
 	}
 
 	return routeNames, nil
+}
+
+// ListSecrets lists all the secrets based on the given label selector
+func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
+	secretList, err := c.kubeClient.CoreV1().Secrets(c.Namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get secret list")
+	}
+
+	return secretList.Items, nil
 }
 
 // CreatePVC creates a PVC resource in the cluster with the given name, size and
