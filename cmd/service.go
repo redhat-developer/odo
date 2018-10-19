@@ -101,7 +101,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 		if len(args) == 2 {
 			serviceName = args[1]
 		} else {
-			serviceName = ui.SelectServiceNameInteractively(serviceType, "How should we name your service ", validateName)
+			serviceName = ui.EnterServiceNameInteractively(serviceType, "How should we name your service ", validateName)
 		}
 
 		// check if the service we're trying to create doesn't already exist
@@ -109,7 +109,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 		checkError(err, "")
 		if exists {
 			fmt.Printf("%s service already exists in the current application.\n", serviceName)
-			ui.SelectServiceNameInteractively("", "Select a new name for your service ", validateName)
+			ui.EnterServiceNameInteractively("", "Select a new name for your service ", validateName)
 		}
 
 		err = svc.CreateService(client, serviceName, serviceType, plan, values, applicationName)
