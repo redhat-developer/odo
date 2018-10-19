@@ -63,7 +63,6 @@ func (props properties) Swap(i, j int) {
 }
 
 // Retrieve the list of existing service class categories
-// TODO: should match what the okd web console is doing
 func getServiceClassesCategories(categories map[string][]scv1beta1.ClusterServiceClass) (keys []string) {
 	keys = make([]string, len(categories))
 
