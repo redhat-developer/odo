@@ -3,10 +3,7 @@ package cmd
 import (
 	"fmt"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
-	"github.com/manifoldco/promptui"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/catalog/ui"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 	"os"
 	"strings"
@@ -57,10 +54,10 @@ A full list of service types that can be deployed are available using: 'odo cata
 		checkError(err, "")
 		projectName := project.GetCurrent(client)
 
-		var uiClass ui.ServiceClass
+		var class scv1beta1.ClusterServiceClass
 		var serviceType string
 		if len(args) == 0 {
-			uiClass, serviceType = selectClassInteractively(client)
+			class, serviceType = ui.SelectClassInteractively(client)
 		} else {
 			serviceType = args[0]
 
@@ -69,13 +66,11 @@ A full list of service types that can be deployed are available using: 'odo cata
 			checkError(err, "unable to create service because Service Catalog is not enabled in your cluster")
 			if class == nil {
 				glog.V(4).Infof("Unknown service class %s", serviceType)
-				uiClass, serviceType = selectClassInteractively(client)
+				*class, serviceType = ui.SelectClassInteractively(client)
 			}
-
-			uiClass = ui.ConvertToUI(*class)
 		}
 
-		plans, _ := client.GetMatchingPlans(uiClass.Class)
+		plans, _ := client.GetMatchingPlans(class)
 
 		var svcPlan scv1beta1.ClusterServicePlan
 		if len(plan) == 0 {
@@ -87,47 +82,26 @@ A full list of service types that can be deployed are available using: 'odo cata
 				}
 				glog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", plan, serviceType)
 			} else {
-				plan = selectPlanNameInteractively(plans, "Which service plan should we use ")
+				plan = ui.SelectPlanNameInteractively(plans, "Which service plan should we use ")
 				svcPlan = plans[plan]
 			}
 		} else {
 			var ok bool
 			svcPlan, ok = plans[plan]
 			if !ok {
-				plan = selectPlanNameInteractively(plans, fmt.Sprintf("Unknown plan '%s'. Here are the valid options ", plan))
+				plan = ui.SelectPlanNameInteractively(plans, fmt.Sprintf("Unknown plan '%s'. Here are the valid options ", plan))
 				svcPlan = plans[plan]
 			}
 		}
 
-		properties, _ := ui.GetProperties(svcPlan)
-
-		var i = 0
-		values := make(map[string]string)
 		passedValues := util.ConvertKeyValueStringToMap(parameters)
-		for i < len(properties) && properties[i].Required {
-			prop := properties[i]
-			if _, ok := passedValues[prop.Name]; !ok {
-				prompt := promptui.Prompt{
-					Label:     fmt.Sprintf("Enter a value for %s property %s ", prop.Type, prop.Title),
-					AllowEdit: true,
-				}
-
-				result, _ := prompt.Run()
-				values[prop.Name] = result
-			}
-
-			i++
-		}
-		// if we have non-required properties, ask if user wants to provide values
-		if i < len(properties)-1 {
-			// todo
-		}
+		values := ui.EnterServicePropertiesInteractively(svcPlan, passedValues)
 
 		serviceName := serviceType
 		if len(args) == 2 {
 			serviceName = args[1]
 		} else {
-			serviceName = selectServiceNameInteractively(serviceType, "How should we name your service ")
+			serviceName = ui.SelectServiceNameInteractively(serviceType, "How should we name your service ", validateName)
 		}
 
 		// check if the service we're trying to create doesn't already exist
@@ -135,64 +109,13 @@ A full list of service types that can be deployed are available using: 'odo cata
 		checkError(err, "")
 		if exists {
 			fmt.Printf("%s service already exists in the current application.\n", serviceName)
-			selectServiceNameInteractively("", "Select a new name for your service ")
+			ui.SelectServiceNameInteractively("", "Select a new name for your service ", validateName)
 		}
 
 		err = svc.CreateService(client, serviceName, serviceType, plan, values, applicationName)
 		checkError(err, "")
 		fmt.Printf("Service '%s' was created.\n", serviceName)
 	},
-}
-
-func selectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptLabel string) string {
-	prompt := promptui.Select{
-		Label: promptLabel,
-		Items: ui.GetServicePlanNames(plans),
-	}
-	_, plan, _ = prompt.Run()
-	return plan
-}
-
-func selectServiceNameInteractively(defaultValue, promptLabel string) string {
-	// if only one arg is given, ask to name the service providing the class name as default
-	instancePrompt := promptui.Prompt{
-		Label:     promptLabel,
-		Default:   defaultValue,
-		AllowEdit: true,
-		Validate:  validateName,
-	}
-	serviceName, _ := instancePrompt.Run()
-	return serviceName
-}
-
-func selectClassInteractively(client *occlient.Client) (uiClass ui.ServiceClass, serviceType string) {
-	classesByCategory, _ := client.GetServiceClassesByCategory()
-	prompt := promptui.Select{
-		Label: "Which kind of service do you wish to create?",
-		Items: ui.GetServiceClassesCategories(classesByCategory),
-	}
-	_, category, _ := prompt.Run()
-	templates := &promptui.SelectTemplates{
-		Active:   "\U00002620 {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
-		Selected: "\U00002620 {{ .Name | red | cyan }}",
-		Details: `
-			--------- Service Class ----------
-			{{ "Name:" | faint }}	{{ .Name }}
-			{{ "Description:" | faint }}	{{ .Description }}
-			{{ "Long:" | faint }}	{{ .LongDescription }}`,
-	}
-	uiClasses := ui.GetUIServiceClasses(classesByCategory[category])
-	prompt = promptui.Select{
-		Label:     "Which " + category + " service class should we use?",
-		Items:     uiClasses,
-		Templates: templates,
-	}
-	i, _, _ := prompt.Run()
-	uiClass = uiClasses[i]
-	serviceType = uiClass.Name
-
-	return uiClass, serviceType
 }
 
 var serviceDeleteCmd = &cobra.Command{
@@ -284,18 +207,4 @@ func init() {
 	serviceCmd.AddCommand(serviceDeleteCmd)
 	serviceCmd.AddCommand(serviceListCmd)
 	rootCmd.AddCommand(serviceCmd)
-}
-
-func getParametersAsMap(params []string) (parameters map[string]string, err error) {
-	parameters = make(map[string]string, len(params))
-	for _, value := range params {
-		equals := strings.IndexRune(value, '=')
-		if equals > 0 {
-			split := strings.Split(value, "=")
-			parameters[split[0]] = split[1]
-		} else {
-			return parameters, errors.Errorf("Invalid parameter, must follow 'name=value' format")
-		}
-	}
-	return parameters, nil
 }
