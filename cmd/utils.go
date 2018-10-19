@@ -11,7 +11,7 @@ var utilsCmd = &cobra.Command{
 	Use:   "utils",
 	Short: "Utilities for completion, terminal commands and modifying Odo configurations",
 	Long:  `Utilities for completion, terminal commands and modifying Odo configurations`,
-	Example: fmt.Sprintf("%s\n%s\n%s%s",
+	Example: fmt.Sprintf("%s\n%s\n%s\n%s",
 		completionCmd.Example,
 		terminalCmd.Example,
 		configurationSetCmd.Example,
