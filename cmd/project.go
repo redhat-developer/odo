@@ -154,10 +154,10 @@ var projectDeleteCmd = &cobra.Command{
 		projects, err := project.List(client)
 		checkError(err, "")
 		if len(projects) != 0 {
-			fmt.Printf("%s has been set as active project\n", currProject)
+			fmt.Printf("%s has been set as the active project\n", currProject)
 		} else {
 			// oc errors out as "error: you do not have rights to view project "$deleted_project"."
-			fmt.Printf("You are not a member of any projects. You can request a project to be created with the `odo project create <project_name>` command\n")
+			fmt.Printf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command\n")
 		}
 
 	},
@@ -176,7 +176,7 @@ var projectListCmd = &cobra.Command{
 		projects, err := project.List(client)
 		checkError(err, "")
 		if len(projects) == 0 {
-			fmt.Println("You are not a member of any projects. You can request a project to be created with the `odo project create <project_name>` command")
+			fmt.Println("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
 			return
 		}
 		fmt.Printf("ACTIVE   NAME\n")
