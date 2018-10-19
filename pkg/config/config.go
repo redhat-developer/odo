@@ -7,6 +7,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -140,7 +141,7 @@ func (c *ConfigInfo) writeToFile() error {
 func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 	switch parameter {
 	case "updatenotification":
-		val, err := strconv.ParseBool(value)
+		val, err := strconv.ParseBool(strings.ToLower(value))
 		if err != nil {
 			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
 		}
@@ -165,7 +166,7 @@ func (c *ConfigInfo) GetUpdateNotification() bool {
 	return *c.OdoSettings.UpdateNotification
 }
 
-// GetPrefix returns the value of Prefix from config
+// GetNamePrefix returns the value of Prefix from config
 func (c *ConfigInfo) GetNamePrefix() string {
 	if c.OdoSettings.NamePrefix == nil {
 		return ConfigPrefixDir

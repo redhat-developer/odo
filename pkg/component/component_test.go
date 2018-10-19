@@ -1,15 +1,14 @@
 package component
 
 import (
+	"os"
 	"reflect"
 	"regexp"
 	"sort"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
-	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -98,7 +97,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		testName           string
 		componentType      string
 		componentPath      string
-		componentPathType  util.ComponentCreateType
+		componentPathType  CreateType
 		existingComponents []ComponentInfo
 		wantErr            bool
 		wantRE             string
@@ -107,7 +106,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix not configured",
 			componentType:      "nodejs",
-			componentPathType:  util.GIT,
+			componentPathType:  GIT,
 			componentPath:      "https://github.com/openshift/nodejs.git",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -117,7 +116,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix configured",
 			componentType:      "nodejs",
-			componentPathType:  util.SOURCE,
+			componentPathType:  SOURCE,
 			componentPath:      "./testing",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -127,7 +126,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix configured",
 			componentType:      "wildfly",
-			componentPathType:  util.BINARY,
+			componentPathType:  BINARY,
 			componentPath:      "./testing.war",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -139,31 +138,99 @@ func TestGetDefaultComponentName(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			var configInfo config.ConfigInfo
-			odoconfigfile := "odo-test-config"
-
-			configInfo = testingutil.FakeOdoConfig(tt.needPrefix, "")
-
-			configFile, err := testingutil.SetUp(&configInfo, odoconfigfile)
+			odoConfigFile, kubeConfigFile, err := testingutil.SetUp(
+				testingutil.ConfigDetails{
+					FileName:      "odo-test-config",
+					Config:        testingutil.FakeOdoConfig("odo-test-config", false, ""),
+					ConfigPathEnv: "ODOCONFIG",
+				}, testingutil.ConfigDetails{
+					FileName:      "kube-test-config",
+					Config:        testingutil.FakeKubeClientConfig(),
+					ConfigPathEnv: "KUBECONFIG",
+				},
+			)
+			defer testingutil.CleanupEnv([]*os.File{odoConfigFile, kubeConfigFile}, t)
 			if err != nil {
-				t.Errorf("Failed to do required environment setup. Error %v", err)
+				t.Errorf("failed to setup test env. Error %v", err)
 			}
-
-			defer testingutil.CleanupEnv(configFile, t)
 
 			name, err := GetDefaultComponentName(tt.componentPath, tt.componentPathType, tt.componentType, tt.existingComponents)
 			if err != nil {
-				t.Errorf("Failed to setup mock environment. Error: %v", err)
+				t.Errorf("failed to setup mock environment. Error: %v", err)
 			}
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Expected err: %v, but err is %v", tt.wantErr, err)
+				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
 			}
 
 			r, _ := regexp.Compile(tt.wantRE)
 			match := r.MatchString(name)
 			if !match {
-				t.Errorf("Randomly generated application name %s does not match regexp %s", name, tt.wantRE)
+				t.Errorf("randomly generated application name %s does not match regexp %s", name, tt.wantRE)
+			}
+		})
+	}
+}
+
+func TestGetComponentDir(t *testing.T) {
+	type args struct {
+		path      string
+		paramType CreateType
+	}
+	tests := []struct {
+		testName string
+		args     args
+		want     string
+		wantErr  bool
+	}{
+		{
+			testName: "Case: Git URL",
+			args: args{
+				paramType: GIT,
+				path:      "https://github.com/openshift/nodejs-ex.git",
+			},
+			want:    "nodejs-ex",
+			wantErr: false,
+		},
+		{
+			testName: "Case: Source Path",
+			args: args{
+				paramType: SOURCE,
+				path:      "./testing",
+			},
+			wantErr: false,
+			want:    "testing",
+		},
+		{
+			testName: "Case: Binary path",
+			args: args{
+				paramType: BINARY,
+				path:      "./testing.war",
+			},
+			wantErr: false,
+			want:    "testing",
+		},
+		{
+			testName: "Case: No clue of any component",
+			args: args{
+				paramType: NONE,
+				path:      "",
+			},
+			wantErr: false,
+			want:    "component",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			name, err := GetComponentDir(tt.args.path, tt.args.paramType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
+			}
+
+			if name != tt.want {
+				t.Errorf("received name %s which does not match %s", name, tt.want)
 			}
 		})
 	}

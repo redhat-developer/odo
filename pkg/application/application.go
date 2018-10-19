@@ -149,26 +149,9 @@ func Delete(client *occlient.Client, name string) error {
 
 	project := project.GetCurrent(client)
 
-	currApp, err := GetCurrent(client)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get current app as part of deletion of app %s", name)
-	}
-
 	err = cfg.DeleteApplication(name, project)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
-	}
-
-	appsList, err := List(client)
-	if err != nil {
-		return errors.Wrapf(err, "unable to fetch list of projects")
-	}
-
-	if currApp == name && len(appsList) > 0 {
-		err = SetCurrent(client, appsList[0].Name)
-		if err != nil {
-			return errors.Wrapf(err, "unable to set app %s as active. Please use `odo app set $app_name` to manually set active app", appsList[0].Name)
-		}
 	}
 
 	return nil

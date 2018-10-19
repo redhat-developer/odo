@@ -38,16 +38,16 @@ func TestNew(t *testing.T) {
 			switch test.success {
 			case true:
 				if err != nil {
-					t.Errorf("Expected test to pass, but it failed with error: %v", err)
+					t.Errorf("expected test to pass, but it failed with error: %v", err)
 				}
 			case false:
 				if err == nil {
-					t.Errorf("Expected test to fail, but it passed!")
+					t.Errorf("expected test to fail, but it passed!")
 				}
 			}
 			if !reflect.DeepEqual(test.output, cfi) {
-				t.Errorf("Expected output: %#v", test.output)
-				t.Errorf("Actual output: %#v", cfi)
+				t.Errorf("expected output: %#v", test.output)
+				t.Errorf("actual output: %#v", cfi)
 			}
 		})
 	}
@@ -980,7 +980,7 @@ func TestSetConfiguration(t *testing.T) {
 			err = cfg.SetConfiguration(tt.parameter, strconv.FormatBool(tt.want))
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Expected error: %v but got error %v", tt.wantErr, err)
+				t.Errorf("expected error: %v but got error %v", tt.wantErr, err)
 			}
 			// validating the value after executing Serconfiguration
 			if *cfg.OdoSettings.UpdateNotification != tt.want {

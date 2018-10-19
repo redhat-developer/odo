@@ -1,6 +1,7 @@
 package application
 
 import (
+	"os"
 	"regexp"
 	"testing"
 
@@ -30,39 +31,44 @@ func TestGetDefaultAppName(t *testing.T) {
 			prefix:       "testing",
 		},
 		{
-			testName:     "Case: App prefix set to $DIR",
+			testName:     "Case: App prefix set to AUTOMATIC",
 			existingApps: []config.ApplicationInfo{},
-			wantRE:       "testing-*",
+			wantRE:       "application-*",
 			needPrefix:   true,
-			prefix:       "$DIR",
+			prefix:       "AUTOMATIC",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			var configInfo config.ConfigInfo
-			odoconfigfile := "odo-test-config"
 
-			configInfo = testingutil.FakeOdoConfig(tt.needPrefix, tt.prefix)
-
-			configFile, err := testingutil.SetUp(&configInfo, odoconfigfile)
+			odoConfigFile, kubeConfigFile, err := testingutil.SetUp(
+				testingutil.ConfigDetails{
+					FileName:      "odo-test-config",
+					Config:        testingutil.FakeOdoConfig("odo-test-config", tt.needPrefix, tt.prefix),
+					ConfigPathEnv: "ODOCONFIG",
+				}, testingutil.ConfigDetails{
+					FileName:      "kube-test-config",
+					Config:        testingutil.FakeKubeClientConfig(),
+					ConfigPathEnv: "KUBECONFIG",
+				},
+			)
+			defer testingutil.CleanupEnv([]*os.File{odoConfigFile, kubeConfigFile}, t)
 			if err != nil {
-				t.Errorf("Failed to do required environment setup. Error %v", err)
+				t.Errorf("failed setting up the test env. Error: %v", err)
 			}
-
-			defer testingutil.CleanupEnv(configFile, t)
 
 			name, err := GetDefaultAppName(tt.existingApps)
 			if err != nil {
-				t.Errorf("Failed to setup mock environment. Error: %v", err)
+				t.Errorf("failed to setup mock environment. Error: %v", err)
 			}
 
 			r, _ := regexp.Compile(tt.wantRE)
 			match := r.MatchString(name)
 			if !match {
 				fetchedConfig, _ := config.New()
-				t.Errorf("Randomly generated application name %s does not match regexp %s and config is %+v\nthe prefix is %s", name, tt.wantRE, fetchedConfig, *fetchedConfig.OdoSettings.Prefix)
+				t.Errorf("randomly generated application name %s does not match regexp %s and config is %+v\nthe prefix is %s", name, tt.wantRE, fetchedConfig, *fetchedConfig.OdoSettings.NamePrefix)
 			}
 		})
 	}

@@ -75,7 +75,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		checkFlag := 0
 		componentPath := ""
-		var componentPathType component.ComponentCreateType
+		var componentPathType component.CreateType
 
 		if len(componentBinary) != 0 {
 			componentPath = componentBinary

@@ -547,7 +547,7 @@ var _ = Describe("odoe2e", func() {
 			runCmd("odo app delete " + appTestName + " -f")
 
 			appGet := runCmd("odo app get --short")
-			Expect(appGet).To(ContainSubstring("e2e-"))
+			Expect(appGet).NotTo(ContainSubstring(appTestName))
 
 			appList := runCmd("odo app list")
 			Expect(appList).NotTo(ContainSubstring(appTestName))

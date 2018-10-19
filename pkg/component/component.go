@@ -31,18 +31,18 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 
-// ComponentCreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
-type ComponentCreateType string
+// CreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
+type CreateType string
 
 const (
 	// GIT as source of component
-	GIT ComponentCreateType = "git"
+	GIT CreateType = "git"
 	// SOURCE Local source path as source of component
-	SOURCE ComponentCreateType = "source"
+	SOURCE CreateType = "source"
 	// BINARY Local Binary as source of component
-	BINARY ComponentCreateType = "binary"
+	BINARY CreateType = "binary"
 	// NONE indicates there's no information about the type of source of the component
-	NONE ComponentCreateType = ""
+	NONE CreateType = ""
 )
 
 // ComponentInfo holds all important information about one component
@@ -54,9 +54,9 @@ type ComponentInfo struct {
 // GetComponentDir returns source repo name
 // Parameters:
 //		path: git url or source path or binary path
-//		paramType: One of ComponentCreateType as in GIT/SOURCE/BINARY
+//		paramType: One of CreateType as in GIT/SOURCE/BINARY
 // Returns: directory name
-func GetComponentDir(path string, paramType ComponentCreateType) (string, error) {
+func GetComponentDir(path string, paramType CreateType) (string, error) {
 	retVal := ""
 	switch paramType {
 	case GIT:
@@ -81,7 +81,7 @@ func GetComponentDir(path string, paramType ComponentCreateType) (string, error)
 // GetDefaultComponentName generates a unique component name
 // Parameters: desired default component name(w/o prefix) and slice of existing component names
 // Returns: Unique component name and error if any
-func GetDefaultComponentName(componentPath string, componentPathType ComponentCreateType, componentType string, existingComponentList []ComponentInfo) (string, error) {
+func GetDefaultComponentName(componentPath string, componentPathType CreateType, componentType string, existingComponentList []ComponentInfo) (string, error) {
 	var prefix string
 
 	// Get component names from component list

@@ -141,13 +141,6 @@ var applicationDeleteCmd = &cobra.Command{
 			err := application.Delete(client, appName)
 			checkError(err, "")
 			fmt.Printf("Deleted application: %s\n", appName)
-			app, err := application.GetCurrent(client)
-			checkError(err, "")
-			if app == "" {
-				fmt.Printf("There's no active application.\nYou can create one by running 'odo application create <name>'.\n")
-				return
-			}
-			fmt.Printf("The current active application is %s\n", app)
 		} else {
 			fmt.Printf("Aborting deletion of application: %v\n", appName)
 		}
@@ -158,7 +151,7 @@ var applicationListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all applications in the current project",
 	Long:  "List all applications in the current project.",
-	Example: `  # List all applications in the current project 
+	Example: `  # List all applications in the current project
   odo app list
 
   # List all applications in the specified project

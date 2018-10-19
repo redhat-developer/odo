@@ -128,7 +128,7 @@ func CleanupEnv(confFiles []*os.File, t *testing.T) {
 
 // FakeOdoConfig returns mock odo config
 // It takes a confPath which is the path to the config
-func FakeOdoConfig(confPath string) config.ConfigInfo {
+func FakeOdoConfig(confPath string, needNamePrefix bool, namePrefix string) config.ConfigInfo {
 	odoConfig := config.ConfigInfo{
 		Filename: confPath,
 		Config: config.Config{
@@ -141,6 +141,11 @@ func FakeOdoConfig(confPath string) config.ConfigInfo {
 				},
 			},
 		},
+	}
+	if needNamePrefix {
+		odoConfig.OdoSettings = config.OdoSettings{
+			NamePrefix: &namePrefix,
+		}
 	}
 	return odoConfig
 }
