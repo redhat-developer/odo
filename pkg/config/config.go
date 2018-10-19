@@ -7,7 +7,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -147,7 +146,6 @@ func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 		}
 		c.OdoSettings.UpdateNotification = &val
 	case "prefix":
-		value = strings.ToUpper(value)
 		c.OdoSettings.Prefix = &value
 	default:
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
@@ -165,6 +163,14 @@ func (c *ConfigInfo) GetUpdateNotification() bool {
 		return true
 	}
 	return *c.OdoSettings.UpdateNotification
+}
+
+// GetPrefix returns the value of Prefix from config
+func (c *ConfigInfo) GetPrefix() string {
+	if c.OdoSettings.Prefix == nil {
+		return ConfigPrefixDir
+	}
+	return *c.OdoSettings.Prefix
 }
 
 // SetActiveComponent sets active component for given project and application.

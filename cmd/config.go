@@ -49,6 +49,8 @@ UpdateNotification - Controls if an update notification is shown or not (true or
 	Example: `
    # Set a configuration value
    odo utils config set UpdateNotification false
+   odo utils config set Prefix "\$DIR"
+   odo utils config set Prefix app
 	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
@@ -83,6 +85,7 @@ var configurationViewCmd = &cobra.Command{
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 		fmt.Fprintln(w, "UpdateNotification", "\t", cfg.GetUpdateNotification())
+		fmt.Fprintln(w, "Prefix", "\t", cfg.GetPrefix())
 		w.Flush()
 	},
 }
