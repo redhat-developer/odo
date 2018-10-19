@@ -43,14 +43,15 @@ UpdateNotification - Controls if an update notification is shown or not (true or
 var configurationSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Set a value in odo config file",
-	Long: `Set an individual value in the Odo configuration file 
+	Long: `Set an individual value in the Odo configuration file
 Available Parameters:
-UpdateNotification - Controls if an update notification is shown or not (true or false)`,
+UpdateNotification - Controls if an update notification is shown or not (true or false)
+NamePrefix - Uses the value of this configurable as a prefix for naming app/component.If set to AUTOMATIC, the name will be auto generated based on name of component/component source/current directory`,
 	Example: `
    # Set a configuration value
    odo utils config set UpdateNotification false
-   odo utils config set Prefix "\$DIR"
-   odo utils config set Prefix app
+   odo utils config set Prefix "AUTOMATIC"
+   odo utils config set Prefix "app"
 	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
@@ -85,7 +86,7 @@ var configurationViewCmd = &cobra.Command{
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 		fmt.Fprintln(w, "UpdateNotification", "\t", cfg.GetUpdateNotification())
-		fmt.Fprintln(w, "Prefix", "\t", cfg.GetPrefix())
+		fmt.Fprintln(w, "NamePrefix", "\t", cfg.GetNamePrefix())
 		w.Flush()
 	},
 }

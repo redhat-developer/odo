@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -197,47 +195,6 @@ func GetRandomName(prefix string, prefixMaxLen int, existList []string, retries 
 	}
 	// return name
 	return name, nil
-}
-
-// ComponentCreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
-type ComponentCreateType string
-
-const (
-	// GIT as source of component
-	GIT ComponentCreateType = "git"
-	// SOURCE Local source path as source of component
-	SOURCE ComponentCreateType = "source"
-	// BINARY Local Binary as source of component
-	BINARY ComponentCreateType = "binary"
-	// NONE indicates there's no information about the type of source of the component
-	NONE ComponentCreateType = ""
-)
-
-// GetComponentDir returns source repo name
-// Parameters:
-//		path: git url or source path or binary path
-//		paramType: One of ComponentCreateType as in GIT/SOURCE/BINARY
-// Returns: directory name
-func GetComponentDir(path string, paramType ComponentCreateType) (string, error) {
-	retVal := ""
-	switch paramType {
-	case GIT:
-		retVal = strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".git")
-	case SOURCE:
-		retVal = filepath.Base(path)
-	case BINARY:
-		filename := filepath.Base(path)
-		var extension = filepath.Ext(filename)
-		retVal = filename[0 : len(filename)-len(extension)]
-	default:
-		currDir, err := os.Getwd()
-		if err != nil {
-			return "", errors.Wrapf(err, "unable to generate a random name as getting current directory failed")
-		}
-		retVal = filepath.Base(currDir)
-	}
-	retVal = strings.TrimSpace(GetDNS1123Name(strings.ToLower(retVal)))
-	return retVal, nil
 }
 
 // GetDNS1123Name Converts passed string into DNS-1123 string

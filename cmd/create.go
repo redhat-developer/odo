@@ -75,23 +75,23 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		checkFlag := 0
 		componentPath := ""
-		var componentPathType util.ComponentCreateType
+		var componentPathType component.ComponentCreateType
 
 		if len(componentBinary) != 0 {
 			componentPath = componentBinary
-			componentPathType = util.BINARY
+			componentPathType = component.BINARY
 			checkError(err, "")
 			checkFlag++
 		}
 		if len(componentGit) != 0 {
 			componentPath = componentGit
-			componentPathType = util.GIT
+			componentPathType = component.GIT
 			checkError(err, "")
 			checkFlag++
 		}
 		if len(componentLocal) != 0 {
 			componentPath = componentLocal
-			componentPathType = util.SOURCE
+			componentPathType = component.SOURCE
 			checkError(err, "")
 			checkFlag++
 		}

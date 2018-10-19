@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
@@ -35,8 +36,8 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 	}
 
 	// If there's no prefix in config file or it is equal to $DIR, use safe default which is the name of current directory
-	if cfg.OdoSettings.Prefix == nil || *cfg.OdoSettings.Prefix == config.ConfigPrefixDir {
-		prefix, err := util.GetComponentDir("", util.NONE)
+	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == config.ConfigPrefixDir {
+		prefix, err := component.GetComponentDir("", component.NONE)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to generate random app name")
 		}
@@ -45,7 +46,7 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 			return "", errors.Wrap(err, "unable to generate random app name")
 		}
 	} else {
-		appName, err = util.GetRandomName(*cfg.OdoSettings.Prefix, appPrefixMaxLen, existingAppNames, appNameMaxRetries)
+		appName, err = util.GetRandomName(*cfg.OdoSettings.NamePrefix, appPrefixMaxLen, existingAppNames, appNameMaxRetries)
 	}
 	if err != nil {
 		return "", errors.Wrap(err, "unable to generate random app name")

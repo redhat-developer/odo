@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -29,16 +31,57 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 
+// ComponentCreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
+type ComponentCreateType string
+
+const (
+	// GIT as source of component
+	GIT ComponentCreateType = "git"
+	// SOURCE Local source path as source of component
+	SOURCE ComponentCreateType = "source"
+	// BINARY Local Binary as source of component
+	BINARY ComponentCreateType = "binary"
+	// NONE indicates there's no information about the type of source of the component
+	NONE ComponentCreateType = ""
+)
+
 // ComponentInfo holds all important information about one component
 type ComponentInfo struct {
 	Name string
 	Type string
 }
 
+// GetComponentDir returns source repo name
+// Parameters:
+//		path: git url or source path or binary path
+//		paramType: One of ComponentCreateType as in GIT/SOURCE/BINARY
+// Returns: directory name
+func GetComponentDir(path string, paramType ComponentCreateType) (string, error) {
+	retVal := ""
+	switch paramType {
+	case GIT:
+		retVal = strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".git")
+	case SOURCE:
+		retVal = filepath.Base(path)
+	case BINARY:
+		filename := filepath.Base(path)
+		var extension = filepath.Ext(filename)
+		retVal = filename[0 : len(filename)-len(extension)]
+	default:
+		currDir, err := os.Getwd()
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to generate a random name as getting current directory failed")
+		}
+		retVal = filepath.Base(currDir)
+	}
+	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
+	return retVal, nil
+}
+
 // GetDefaultComponentName generates a unique component name
 // Parameters: desired default component name(w/o prefix) and slice of existing component names
 // Returns: Unique component name and error if any
-func GetDefaultComponentName(componentPath string, componentPathType util.ComponentCreateType, componentType string, existingComponentList []ComponentInfo) (string, error) {
+func GetDefaultComponentName(componentPath string, componentPathType ComponentCreateType, componentType string, existingComponentList []ComponentInfo) (string, error) {
 	var prefix string
 
 	// Get component names from component list
@@ -54,15 +97,15 @@ func GetDefaultComponentName(componentPath string, componentPathType util.Compon
 	}
 
 	// If there's no prefix in config file, or its value is config.ConfigPrefixDir use safe default - the current directory along with component type
-	if cfg.OdoSettings.Prefix == nil || *cfg.OdoSettings.Prefix == config.ConfigPrefixDir {
-		prefix, err = util.GetComponentDir(componentPath, componentPathType)
+	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == config.ConfigPrefixDir {
+		prefix, err = GetComponentDir(componentPath, componentPathType)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to generate random component name")
 		}
 		prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
 	} else {
 		// Set the required prefix into componentName
-		prefix = *cfg.OdoSettings.Prefix
+		prefix = *cfg.OdoSettings.NamePrefix
 	}
 
 	// Generate unique name for the component using prefix and unique random suffix

@@ -16,8 +16,8 @@ const (
 	configEnvName  = "ODOCONFIG"
 	configFileName = "odo"
 	// ConfigPrefixDir The default value for config `prefix`.
-	// When set to $DIR, the directory name of component dir(or current-dir if not available) will be used as prefix for app and component names
-	ConfigPrefixDir = "$DIR"
+	// When set to AUTOMATIC, the directory name of component dir(or current-dir if not available) will be used as prefix for app and component names
+	ConfigPrefixDir = "AUTOMATIC"
 )
 
 // OdoSettings holds all odo specific configurations
@@ -25,7 +25,7 @@ type OdoSettings struct {
 	// Controls if an update notification is shown or not
 	UpdateNotification *bool `json:"updatenotification,omitempty"`
 	// Holds the prefix part of generated random application name
-	Prefix *string `json:"prefix,omitempty"`
+	NamePrefix *string `json:"nameprefix,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -145,8 +145,8 @@ func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
 		}
 		c.OdoSettings.UpdateNotification = &val
-	case "prefix":
-		c.OdoSettings.Prefix = &value
+	case "nameprefix":
+		c.OdoSettings.NamePrefix = &value
 	default:
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}
@@ -166,11 +166,11 @@ func (c *ConfigInfo) GetUpdateNotification() bool {
 }
 
 // GetPrefix returns the value of Prefix from config
-func (c *ConfigInfo) GetPrefix() string {
-	if c.OdoSettings.Prefix == nil {
+func (c *ConfigInfo) GetNamePrefix() string {
+	if c.OdoSettings.NamePrefix == nil {
 		return ConfigPrefixDir
 	}
-	return *c.OdoSettings.Prefix
+	return *c.OdoSettings.NamePrefix
 }
 
 // SetActiveComponent sets active component for given project and application.
