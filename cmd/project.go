@@ -140,6 +140,7 @@ var projectDeleteCmd = &cobra.Command{
 			fmt.Printf("Aborting deletion of project: %v\n", projectName)
 		}
 
+		fmt.Printf("Deleting project %s...\n(this operation may take some time)\n", projectName)
 		err = project.Delete(client, projectName)
 		if err != nil {
 			checkError(err, "")
