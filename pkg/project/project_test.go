@@ -44,7 +44,7 @@ func TestDelete(t *testing.T) {
 	)
 	defer testingutil.CleanupEnv([]*os.File{odoConfigFile, kubeConfigFile}, t)
 	if err != nil {
-		t.Errorf("Failed to create mock odo and kube config files. Error %v", err)
+		t.Errorf("failed to create mock odo and kube config files. Error %v", err)
 	}
 
 	for _, tt := range tests {

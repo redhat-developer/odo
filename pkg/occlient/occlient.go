@@ -1364,7 +1364,7 @@ func (c *Client) DeleteProject(name string) error {
 			}
 		*/
 		if !ok {
-			return fmt.Errorf("Received unexpected signal %+v on project watch channel", val)
+			return fmt.Errorf("received unexpected signal %+v on project watch channel", val)
 		}
 		// So we depend on val.Type as val.Object.Status.Phase is just empty string and not a mapped value constant
 		if prj, ok := val.Object.(*projectv1.Project); ok {
@@ -1376,7 +1376,7 @@ func (c *Client) DeleteProject(name string) error {
 					return nil
 				}
 				if val.Type == watch.Error {
-					return fmt.Errorf("Failed watching the deletion of project %s", name)
+					return fmt.Errorf("failed watching the deletion of project %s", name)
 				}
 			}
 		}
