@@ -1564,9 +1564,10 @@ type Service struct {
 	PlanList []string
 }
 
-func (c *Client) GetServiceClass(className string) (class *scv1beta1.ClusterServiceClass, err error) {
+// GetServiceClass retrieves the ClusterServiceClass identified by the specified external name
+func (c *Client) GetServiceClass(externalName string) (class *scv1beta1.ClusterServiceClass, err error) {
 	classes, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{
-		FieldSelector: "spec.externalName==" + className,
+		FieldSelector: "spec.externalName==" + externalName,
 	})
 
 	if len(classes.Items) != 1 {
@@ -1576,6 +1577,7 @@ func (c *Client) GetServiceClass(className string) (class *scv1beta1.ClusterServ
 	return &classes.Items[0], err
 }
 
+// GetServiceClassesByCategory retrieves a map associating category name to ClusterServiceClasses matching the category
 func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta1.ClusterServiceClass, err error) {
 	categories = make(map[string][]scv1beta1.ClusterServiceClass)
 	classes, err := c.GetClusterServiceClasses()
@@ -1597,6 +1599,8 @@ func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta
 	return categories, err
 }
 
+// GetMatchingPlans retrieves a map associated service plan name to service plan instance associated with the specified service
+// class
 func (c *Client) GetMatchingPlans(class scv1beta1.ClusterServiceClass) (plans map[string]scv1beta1.ClusterServicePlan, err error) {
 	planList, err := c.serviceCatalogClient.ClusterServicePlans().List(metav1.ListOptions{
 		FieldSelector: "spec.clusterServiceClassRef.name==" + class.Spec.ExternalID,
