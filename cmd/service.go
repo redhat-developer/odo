@@ -57,7 +57,8 @@ A full list of service types that can be deployed are available using: 'odo cata
 		var class scv1beta1.ClusterServiceClass
 		var serviceType string
 		if len(args) == 0 {
-			class, serviceType = ui.SelectClassInteractively(client)
+			classesByCategory, _ := client.GetServiceClassesByCategory()
+			class, serviceType = ui.SelectClassInteractively(classesByCategory)
 		} else {
 			serviceType = args[0]
 
@@ -66,7 +67,8 @@ A full list of service types that can be deployed are available using: 'odo cata
 			checkError(err, "unable to create service because Service Catalog is not enabled in your cluster")
 			if class == nil {
 				glog.V(4).Infof("Unknown service class %s", serviceType)
-				*class, serviceType = ui.SelectClassInteractively(client)
+				classesByCategory, _ := client.GetServiceClassesByCategory()
+				*class, serviceType = ui.SelectClassInteractively(classesByCategory)
 			}
 		}
 

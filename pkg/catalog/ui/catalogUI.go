@@ -7,7 +7,6 @@ import (
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"sort"
 )
 
@@ -176,8 +175,7 @@ func EnterServiceNameInteractively(defaultValue, promptText string, validateName
 }
 
 // Select target service class from possible options, first filtering by categories then by class name
-func SelectClassInteractively(client *occlient.Client) (class scv1beta1.ClusterServiceClass, serviceType string) {
-	classesByCategory, _ := client.GetServiceClassesByCategory()
+func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterServiceClass) (class scv1beta1.ClusterServiceClass, serviceType string) {
 	prompt := promptui.Select{
 		Label: "Which kind of service do you wish to create?",
 		Items: getServiceClassesCategories(classesByCategory),
