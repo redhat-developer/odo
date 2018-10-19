@@ -1585,6 +1585,8 @@ func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta
 		return nil, errors.Wrap(err, "unable to get cluster service classes")
 	}
 
+	// todo: Should we replicate the classification performed in
+	// https://github.com/openshift/console/blob/master/frontend/public/components/utils/categorize-catalog-items.ts?
 	for _, class := range classes {
 		tags := class.Spec.Tags
 		category := "other"
