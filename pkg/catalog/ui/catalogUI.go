@@ -7,6 +7,7 @@ import (
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
+	"os"
 	"sort"
 )
 
@@ -150,6 +151,16 @@ func isRequired(required []string, name string) bool {
 	return false
 }
 
+func handleError(err error) {
+	if err != nil {
+		if err == promptui.ErrInterrupt {
+			os.Exit(-1)
+		} else {
+			glog.V(4).Infof("Encountered an error processing prompt: %v", err)
+		}
+	}
+}
+
 // SelectPlanNameInteractively lets the user to select the plan name from possible options, specifying which text should appear
 // in the prompt
 func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptText string) string {
@@ -157,7 +168,8 @@ func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, 
 		Label: promptText,
 		Items: getServicePlanNames(plans),
 	}
-	_, plan, _ := prompt.Run()
+	_, plan, err := prompt.Run()
+	handleError(err)
 	return plan
 }
 
@@ -171,7 +183,8 @@ func EnterServiceNameInteractively(defaultValue, promptText string, validateName
 		AllowEdit: true,
 		Validate:  validateName,
 	}
-	serviceName, _ := instancePrompt.Run()
+	serviceName, err := instancePrompt.Run()
+	handleError(err)
 	return serviceName
 }
 
@@ -199,7 +212,8 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 		Items:     uiClasses,
 		Templates: templates,
 	}
-	i, _, _ := prompt.Run()
+	i, _, err := prompt.Run()
+	handleError(err)
 	uiClass := uiClasses[i]
 
 	return uiClass.Class, uiClass.Name
@@ -221,7 +235,8 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, p
 				AllowEdit: true,
 			}
 
-			result, _ := prompt.Run()
+			result, err := prompt.Run()
+			handleError(err)
 			values[prop.name] = result
 		}
 
