@@ -11,6 +11,10 @@ import (
 	"sort"
 )
 
+type Validator func(string) error
+
+var validators map[string]Validator
+
 type serviceInstanceCreateParameterSchema struct {
 	Required   []string
 	Properties map[string]property
@@ -158,13 +162,13 @@ func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, 
 
 // EnterServiceNameInteractively lets the user enter the name of the service instance to create, defaulting to the provided
 // default value and specifying both the prompt text and validation function for the name
-func EnterServiceNameInteractively(defaultValue, promptText string, validateName func(string) error) string {
+func EnterServiceNameInteractively(defaultValue, promptText string, validateName Validator) string {
 	// if only one arg is given, ask to Name the service providing the class Name as default
 	instancePrompt := promptui.Prompt{
 		Label:     promptText,
 		Default:   defaultValue,
 		AllowEdit: true,
-		Validate:  validateName,
+		Validate:  promptui.ValidateFunc(validateName),
 	}
 	serviceName, err := instancePrompt.Run()
 	handleError(err)
