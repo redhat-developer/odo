@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/posener/complete"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -186,6 +187,27 @@ func init() {
 	serviceDeleteCmd.Flags().BoolVarP(&serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
+
+	Suggesters[GetCommandSuggesterName(serviceDeleteCmd)] = complete.PredictFunc(
+		func(args complete.Args) (completions []string) {
+			completions = make([]string, 0)
+			client := getOcClient()
+			applicationName, err := application.GetCurrent(client)
+			if err != nil {
+				return completions
+			}
+			projectName := project.GetCurrent(client)
+			services, err := svc.List(client, applicationName, projectName)
+			if err != nil {
+				return completions
+			}
+
+			for _, class := range services {
+				completions = append(completions, class.Name)
+			}
+
+			return completions
+		})
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
