@@ -12,35 +12,35 @@ var table = []TestUtil.TestTableEntry{
 		"standard", &survey.MultiSelect{
 			Message: "What days do you prefer:",
 			Options: []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"default (sunday, tuesday)", &survey.MultiSelect{
 			Message: "What days do you prefer:",
 			Options: []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"},
 			Default: []string{"Sunday", "Tuesday"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"default not found", &survey.MultiSelect{
 			Message: "What days do you prefer:",
 			Options: []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"},
 			Default: []string{"Sundayaa"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"no help - type ?", &survey.MultiSelect{
 			Message: "What days do you prefer:",
 			Options: []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"},
 			Default: []string{"Sundayaa"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"can navigate with j/k", &survey.MultiSelect{
 			Message: "What days do you prefer:",
 			Options: []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"},
 			Default: []string{"Sundayaa"},
-		}, &answer, nil,
+		}, &answer,
 	},
 }
 

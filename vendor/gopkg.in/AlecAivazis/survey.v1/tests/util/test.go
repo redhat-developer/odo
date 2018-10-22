@@ -8,10 +8,9 @@ import (
 )
 
 type TestTableEntry struct {
-	Name     string
-	Prompt   survey.Prompt
-	Value    interface{}
-	Validate func(interface{}) error
+	Name   string
+	Prompt survey.Prompt
+	Value  interface{}
 }
 
 func formatAnswer(ans interface{}) {
@@ -26,7 +25,7 @@ func RunTable(table []TestTableEntry) {
 		// tell the user what we are going to ask them
 		fmt.Println(entry.Name)
 		// perform the ask
-		err := survey.AskOne(entry.Prompt, entry.Value, entry.Validate)
+		err := survey.AskOne(entry.Prompt, entry.Value, nil)
 		if err != nil {
 			fmt.Printf("AskOne on %v's prompt failed: %v.", entry.Name, err.Error())
 			break
@@ -42,7 +41,7 @@ func RunErrorTable(table []TestTableEntry) {
 		// tell the user what we are going to ask them
 		fmt.Println(entry.Name)
 		// perform the ask
-		err := survey.AskOne(entry.Prompt, entry.Value, entry.Validate)
+		err := survey.AskOne(entry.Prompt, entry.Value, nil)
 		if err == nil {
 			fmt.Printf("AskOne on %v's prompt didn't fail.", entry.Name)
 			break

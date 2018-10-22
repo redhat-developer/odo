@@ -2,6 +2,8 @@ package survey
 
 import (
 	"errors"
+	"strings"
+
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 )
@@ -26,7 +28,6 @@ type Select struct {
 	PageSize      int
 	VimMode       bool
 	FilterMessage string
-	FilterFn      func(string, []string) []string
 	filter        string
 	selectedIndex int
 	useDefault    bool
@@ -153,13 +154,17 @@ func (s *Select) OnChange(line []rune, pos int, key rune) (newLine []rune, newPo
 }
 
 func (s *Select) filterOptions() []string {
-	if s.filter == "" {
+	filter := strings.ToLower(s.filter)
+	if filter == "" {
 		return s.Options
 	}
-	if s.FilterFn != nil {
-		return s.FilterFn(s.filter, s.Options)
+	answer := []string{}
+	for _, o := range s.Options {
+		if strings.Contains(strings.ToLower(o), filter) {
+			answer = append(answer, o)
+		}
 	}
-	return DefaultFilterFn(s.filter, s.Options)
+	return answer
 }
 
 func (s *Select) Prompt() (interface{}, error) {
@@ -175,7 +180,7 @@ func (s *Select) Prompt() (interface{}, error) {
 	if s.Default != "" {
 		// find the choice
 		for i, opt := range s.Options {
-			// if the option corresponds to the default
+			// if the option correponds to the default
 			if opt == s.Default {
 				// we found our initial value
 				sel = i

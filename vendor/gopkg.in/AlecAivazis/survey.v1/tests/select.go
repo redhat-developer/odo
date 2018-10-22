@@ -12,50 +12,50 @@ var goodTable = []TestUtil.TestTableEntry{
 		"standard", &survey.Select{
 			Message: "Choose a color:",
 			Options: []string{"red", "blue", "green"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"short", &survey.Select{
 			Message: "Choose a color:",
 			Options: []string{"red", "blue"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"default", &survey.Select{
 			Message: "Choose a color (should default blue):",
 			Options: []string{"red", "blue", "green"},
 			Default: "blue",
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"one", &survey.Select{
 			Message: "Choose one:",
 			Options: []string{"hello"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"no help, type ?", &survey.Select{
 			Message: "Choose a color:",
 			Options: []string{"red", "blue"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"passes through bottom", &survey.Select{
 			Message: "Choose one:",
 			Options: []string{"red", "blue"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"passes through top", &survey.Select{
 			Message: "Choose one:",
 			Options: []string{"red", "blue"},
-		}, &answer, nil,
+		}, &answer,
 	},
 	{
 		"can navigate with j/k", &survey.Select{
 			Message: "Choose one:",
 			Options: []string{"red", "blue", "green"},
-		}, &answer, nil,
+		}, &answer,
 	},
 }
 
@@ -63,7 +63,7 @@ var badTable = []TestUtil.TestTableEntry{
 	{
 		"no options", &survey.Select{
 			Message: "Choose one:",
-		}, &answer, nil,
+		}, &answer,
 	},
 }
 
