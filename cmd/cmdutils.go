@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/posener/complete"
+	"github.com/spf13/cobra"
 	"os"
 	"strings"
 
@@ -13,6 +15,21 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
+
+const OdoCompleteArgsAnnotation = "odo_complete_args"
+
+var Suggesters = make(map[string]complete.Predictor)
+
+func GetCommandSuggesterName(command *cobra.Command) string {
+	return command.Name()
+}
+func GetFlagSuggesterName(command *cobra.Command, flag string) string {
+	return command.Name() + "_" + flag
+}
+
+func GetArgSuggesterName(command *cobra.Command, position int) string {
+	return command.Name() + "_arg_" + string(position)
+}
 
 // printDeleteAppInfo will print things which will be deleted
 func printDeleteAppInfo(client *occlient.Client, appName string, currentProject string) error {
