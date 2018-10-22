@@ -2,13 +2,13 @@ package ui
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
 	"os"
 	"sort"
+	"strings"
 )
 
 type Validator func(string) error
@@ -21,7 +21,7 @@ type serviceInstanceCreateParameterSchema struct {
 }
 
 type property struct {
-	name        string
+	Name        string
 	Title       string
 	Type        string
 	Description string
@@ -121,7 +121,7 @@ func getProperties(plan scv1beta1.ClusterServicePlan) (props properties, err err
 
 	props = make(properties, len(schema.Properties))
 	for k, v := range schema.Properties {
-		v.name = k
+		v.Name = k
 		v.required = isRequired(schema.Required, k)
 		props[k] = v
 	}
@@ -178,15 +178,22 @@ func EnterServiceNameInteractively(defaultValue, promptText string, validateName
 // SelectClassInteractively lets the user select target service class from possible options, first filtering by categories then
 // by class name
 func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterServiceClass) (class scv1beta1.ClusterServiceClass, serviceType string) {
+	templates := &promptui.SelectTemplates{
+		Active:   promptui.IconSelect + " {{ . | cyan }}",
+		Inactive: "  {{ . | cyan }}",
+		Selected: promptui.IconGood + " Selected category: {{ . | yellow }}",
+	}
 	prompt := promptui.Select{
-		Label: "Which kind of service do you wish to create?",
-		Items: getServiceClassesCategories(classesByCategory),
+		Label:     "Which kind of service do you wish to create",
+		Items:     getServiceClassesCategories(classesByCategory),
+		Templates: templates,
 	}
 	_, category, _ := prompt.Run()
-	templates := &promptui.SelectTemplates{
-		Active:   "\U00002620 {{ .Name | cyan }}",
+
+	templates = &promptui.SelectTemplates{
+		Active:   promptui.IconSelect + " {{ .Name | cyan }}",
 		Inactive: "  {{ .Name | cyan }}",
-		Selected: "\U00002620 {{ .Name | red | cyan }}",
+		Selected: promptui.IconGood + " Selected service class: {{ .Name | yellow | cyan }}",
 		Details: `
 --------- Service Class ----------
 {{ "Name:" | faint }}	{{ .Name }}
@@ -195,7 +202,7 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	}
 	uiClasses := getUIServiceClasses(classesByCategory[category])
 	prompt = promptui.Select{
-		Label:     "Which " + category + " service class should we use?",
+		Label:     "Which " + category + " service class should we use",
 		Items:     uiClasses,
 		Templates: templates,
 	}
@@ -216,15 +223,8 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, p
 	for name, prop := range properties {
 		if prop.required {
 			// if the property is required but we don't have a value for it in the passed values, prompt for it
-			if _, ok := passedValues[prop.name]; !ok {
-				prompt := promptui.Prompt{
-					Label:     fmt.Sprintf("Enter a value for %s property '%s' (%s)", prop.Type, prop.name, prop.Title),
-					AllowEdit: true,
-				}
-
-				result, err := prompt.Run()
-				handleError(err)
-				values[prop.name] = result
+			if _, ok := passedValues[prop.Name]; !ok {
+				addValueFor(prop, values)
 
 				// remove property from list of properties to consider
 				delete(properties, name)
@@ -250,9 +250,13 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, p
 	// finally check if we still have plan properties that have not been considered
 	if len(properties) > 0 {
 		trueOrFalse := []bool{true, false}
+		templates := &promptui.SelectTemplates{
+			Selected: promptui.IconGood + " Provide values for non-required properties: {{ . | yellow }}",
+		}
 		prompt := promptui.Select{
-			Label: "Do you want to provide values for non-required properties",
-			Items: trueOrFalse,
+			Label:     "Provide values for non-required properties",
+			Items:     trueOrFalse,
+			Templates: templates,
 		}
 
 		i, _, err := prompt.Run()
@@ -260,17 +264,49 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, p
 		if trueOrFalse[i] {
 
 			for _, prop := range properties {
-				prompt := promptui.Prompt{
-					Label:     fmt.Sprintf("Enter a value for %s property %s ", prop.Type, prop.Title),
-					AllowEdit: true,
-				}
-
-				result, err := prompt.Run()
-				handleError(err)
-				values[prop.name] = result
+				addValueFor(prop, values)
 			}
 		}
 	}
 
 	return values
+}
+
+var (
+	propTemplates = &promptui.PromptTemplates{
+		Invalid: "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
+		Valid:   "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
+		Success: promptui.IconGood + " Property {{ .Name | yellow }} set to: ",
+	}
+	funcMapInit = false
+)
+
+func addValueFor(prop property, values map[string]string) {
+	if !funcMapInit {
+		funcMap := promptui.FuncMap
+		funcMap["propDesc"] = func(prop property) string {
+			msg := ""
+			if len(prop.Title) > 0 {
+				msg = prop.Title
+			} else if len(prop.Description) > 0 {
+				msg = prop.Description
+			}
+
+			if len(msg) > 0 {
+				msg = " (" + strings.TrimSpace(msg) + ")"
+			}
+
+			return funcMap["yellow"].(func(interface{}) string)(prop.Name) + msg
+		}
+		funcMapInit = true
+	}
+
+	prompt := promptui.Prompt{
+		Label:     prop,
+		AllowEdit: true,
+		Templates: propTemplates,
+	}
+	result, err := prompt.Run()
+	handleError(err)
+	values[prop.Name] = result
 }
