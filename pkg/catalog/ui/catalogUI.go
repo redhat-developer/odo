@@ -2,12 +2,14 @@ package ui
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -274,12 +276,54 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, p
 
 var (
 	propTemplates = &promptui.PromptTemplates{
-		Invalid: "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
-		Valid:   "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
+		Invalid: promptui.IconBad + "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
+		Valid:   promptui.IconGood + "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
 		Success: promptui.IconGood + " Property {{ .Name | yellow }} set to: ",
 	}
 	funcMapInit = false
 )
+
+type chainedValidator struct {
+	validators []Validator
+}
+
+func (cv chainedValidator) validate(input string) error {
+	for _, v := range cv.validators {
+		err := v(input)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getValidatorFor(prop property) Validator {
+	cv := chainedValidator{}
+	if prop.required {
+		cv.validators = append(cv.validators, func(s string) error {
+			if len(s) == 0 {
+				return errors.New("A value is required")
+			} else {
+				return nil
+			}
+		})
+	}
+
+	switch prop.Type {
+	case "integer":
+		cv.validators = append(cv.validators, func(s string) error {
+			_, err := strconv.Atoi(s)
+			if err != nil {
+				return errors.New(fmt.Sprintf("Invalid integer value '%s': %s", s, err))
+			} else {
+				return nil
+			}
+		})
+	}
+
+	return cv.validate
+}
 
 func addValueFor(prop property, values map[string]string) {
 	if !funcMapInit {
@@ -305,6 +349,7 @@ func addValueFor(prop property, values map[string]string) {
 		Label:     prop,
 		AllowEdit: true,
 		Templates: propTemplates,
+		Validate:  promptui.ValidateFunc(getValidatorFor(prop)),
 	}
 	result, err := prompt.Run()
 	handleError(err)
