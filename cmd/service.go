@@ -188,6 +188,23 @@ func init() {
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 
+	serviceCreateCmd.Annotations = map[string]string{OdoCompleteArgsAnnotation: "2"}
+	Suggesters[GetCommandSuggesterName(serviceCreateCmd)] = complete.PredictFunc(
+		func(args complete.Args) (completions []string) {
+			completions = make([]string, 0)
+			client := getOcClient()
+			services, err := svc.ListCatalog(client)
+			if err != nil {
+				return completions
+			}
+
+			for _, class := range services {
+				completions = append(completions, class.Name)
+			}
+
+			return completions
+		})
+
 	Suggesters[GetCommandSuggesterName(serviceDeleteCmd)] = complete.PredictFunc(
 		func(args complete.Args) (completions []string) {
 			completions = make([]string, 0)
