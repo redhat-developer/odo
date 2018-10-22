@@ -1116,11 +1116,11 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 		return nil, errors.Wrapf(err, "unable to watch pod")
 	}
 	defer w.Stop()
-	for {
-		val, ok := <-w.ResultChan()
-		if !ok {
-			break
-		}
+
+	const timeoutInSeconds = 30
+	duration := timeoutInSeconds * time.Second
+	select {
+	case val := <-w.ResultChan():
 		if e, ok := val.Object.(*corev1.Pod); ok {
 			glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
 			switch e.Status.Phase {
@@ -1130,9 +1130,14 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 			case corev1.PodFailed, corev1.PodUnknown:
 				return nil, errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
 			}
+		} else {
+			return nil, errors.Errorf("unable to convert event object to Pod")
 		}
+	case <-time.After(duration):
+		return nil, errors.Errorf("waited %s but couldn't find pod matching '%s' sel", duration, selector)
 	}
-	return nil, errors.Errorf("unknown error while waiting for pod matchin '%s' selector", selector)
+
+	return nil, errors.Errorf("unknown error while waiting for pod matching '%s' selector", selector)
 }
 
 // FollowBuildLog stream build log to stdout
