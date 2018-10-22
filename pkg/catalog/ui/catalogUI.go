@@ -280,7 +280,6 @@ var (
 		Valid:   promptui.IconGood + "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
 		Success: promptui.IconGood + " Property {{ .Name | yellow }} set to: ",
 	}
-	funcMapInit = false
 )
 
 type chainedValidator struct {
@@ -301,50 +300,18 @@ func (cv chainedValidator) validate(input string) error {
 func getValidatorFor(prop property) Validator {
 	cv := chainedValidator{}
 	if prop.required {
-		cv.validators = append(cv.validators, func(s string) error {
-			if len(s) == 0 {
-				return errors.New("A value is required")
-			} else {
-				return nil
-			}
-		})
+		cv.validators = append(cv.validators, validators[OdoDefaultRequired])
 	}
 
 	switch prop.Type {
 	case "integer":
-		cv.validators = append(cv.validators, func(s string) error {
-			_, err := strconv.Atoi(s)
-			if err != nil {
-				return errors.New(fmt.Sprintf("Invalid integer value '%s': %s", s, err))
-			} else {
-				return nil
-			}
-		})
+		cv.validators = append(cv.validators, validators[OdoDefaultInteger])
 	}
 
 	return cv.validate
 }
 
 func addValueFor(prop property, values map[string]string) {
-	if !funcMapInit {
-		funcMap := promptui.FuncMap
-		funcMap["propDesc"] = func(prop property) string {
-			msg := ""
-			if len(prop.Title) > 0 {
-				msg = prop.Title
-			} else if len(prop.Description) > 0 {
-				msg = prop.Description
-			}
-
-			if len(msg) > 0 {
-				msg = " (" + strings.TrimSpace(msg) + ")"
-			}
-
-			return funcMap["yellow"].(func(interface{}) string)(prop.Name) + msg
-		}
-		funcMapInit = true
-	}
-
 	prompt := promptui.Prompt{
 		Label:     prop,
 		AllowEdit: true,
@@ -354,4 +321,42 @@ func addValueFor(prop property, values map[string]string) {
 	result, err := prompt.Run()
 	handleError(err)
 	values[prop.Name] = result
+}
+
+const OdoDefaultRequired = "odo_default_required"
+const OdoDefaultInteger = "odo_default_integer"
+
+func init() {
+	funcMap := promptui.FuncMap
+	funcMap["propDesc"] = func(prop property) string {
+		msg := ""
+		if len(prop.Title) > 0 {
+			msg = prop.Title
+		} else if len(prop.Description) > 0 {
+			msg = prop.Description
+		}
+
+		if len(msg) > 0 {
+			msg = " (" + strings.TrimSpace(msg) + ")"
+		}
+
+		return funcMap["yellow"].(func(interface{}) string)(prop.Name) + msg
+	}
+
+	validators[OdoDefaultRequired] = func(s string) error {
+		if len(s) == 0 {
+			return errors.New("A value is required")
+		} else {
+			return nil
+		}
+	}
+
+	validators[OdoDefaultInteger] = func(s string) error {
+		_, err := strconv.Atoi(s)
+		if err != nil {
+			return errors.New(fmt.Sprintf("Invalid integer value '%s': %s", s, err))
+		} else {
+			return nil
+		}
+	}
 }
