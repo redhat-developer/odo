@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
-	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
+	"gopkg.in/AlecAivazis/survey.v1"
+	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 )
 
-type Validator func(string) error
+type Validator func(interface{}) error
 
-var validators map[string]Validator
+var validators = make(map[string]Validator)
 
 type serviceInstanceCreateParameterSchema struct {
 	Required   []string
@@ -28,27 +29,6 @@ type property struct {
 	Type        string
 	Description string
 	required    bool
-}
-
-type serviceClass struct {
-	Name            string
-	Description     string
-	LongDescription string
-	Class           scv1beta1.ClusterServiceClass
-}
-
-type serviceClasses []serviceClass
-
-func (classes serviceClasses) Len() int {
-	return len(classes)
-}
-
-func (classes serviceClasses) Less(i, j int) bool {
-	return classes[i].Name < classes[j].Name
-}
-
-func (classes serviceClasses) Swap(i, j int) {
-	classes[i], classes[j] = classes[j], classes[i]
 }
 
 type properties map[string]property
@@ -82,34 +62,27 @@ func getServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (key
 	return keys
 }
 
-// Convert the provided ClusterServiceClasses to serviceClasses
-func getUIServiceClasses(classes []scv1beta1.ClusterServiceClass) (uiClasses serviceClasses) {
-	uiClasses = make(serviceClasses, 0, len(classes))
+func getServiceClassMap(classes []scv1beta1.ClusterServiceClass) (classMap map[string]scv1beta1.ClusterServiceClass) {
+	classMap = make(map[string]scv1beta1.ClusterServiceClass, len(classes))
 	for _, v := range classes {
-		uiClasses = append(uiClasses, convertToUI(v))
+		classMap[v.Spec.ExternalName] = v
 	}
 
-	sort.Sort(uiClasses)
-	return uiClasses
+	return classMap
 }
 
-// Convert the provided ClusterServiceClass to its UI representation
-func convertToUI(class scv1beta1.ClusterServiceClass) serviceClass {
-	var meta map[string]interface{}
-	err := json.Unmarshal(class.Spec.ExternalMetadata.Raw, &meta)
-	if err != nil {
-		glog.V(4).Infof("Unable unmarshal Extension metadata for ClusterServiceClass '%v'", class.Spec.ExternalName)
+func getServiceClassNames(stringMap map[string]scv1beta1.ClusterServiceClass) (keys []string) {
+	keys = make([]string, len(stringMap))
+
+	i := 0
+	for k := range stringMap {
+		keys[i] = k
+		i++
 	}
-	longDescription := ""
-	if val, ok := meta["longDescription"]; ok {
-		longDescription = val.(string)
-	}
-	return serviceClass{
-		Name:            class.Spec.ExternalName,
-		Description:     class.Spec.Description,
-		LongDescription: longDescription,
-		Class:           class,
-	}
+
+	sort.Strings(keys)
+
+	return keys
 }
 
 func getProperties(plan scv1beta1.ClusterServicePlan) (props properties, err error) {
@@ -142,7 +115,7 @@ func isRequired(required []string, name string) bool {
 
 func handleError(err error) {
 	if err != nil {
-		if err == promptui.ErrInterrupt {
+		if err == terminal.InterruptErr {
 			os.Exit(-1)
 		} else {
 			glog.V(4).Infof("Encountered an error processing prompt: %v", err)
@@ -152,27 +125,25 @@ func handleError(err error) {
 
 // SelectPlanNameInteractively lets the user to select the plan name from possible options, specifying which text should appear
 // in the prompt
-func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptText string) string {
-	prompt := promptui.Select{
-		Label: promptText,
-		Items: getServicePlanNames(plans),
+func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptText string) (plan string) {
+	prompt := &survey.Select{
+		Message: promptText,
+		Options: getServicePlanNames(plans),
 	}
-	_, plan, err := prompt.Run()
+	err := survey.AskOne(prompt, &plan, nil)
 	handleError(err)
 	return plan
 }
 
 // EnterServiceNameInteractively lets the user enter the name of the service instance to create, defaulting to the provided
 // default value and specifying both the prompt text and validation function for the name
-func EnterServiceNameInteractively(defaultValue, promptText string, validateName Validator) string {
+func EnterServiceNameInteractively(defaultValue, promptText string, validateName Validator) (serviceName string) {
 	// if only one arg is given, ask to Name the service providing the class Name as default
-	instancePrompt := promptui.Prompt{
-		Label:     promptText,
-		Default:   defaultValue,
-		AllowEdit: true,
-		Validate:  promptui.ValidateFunc(validateName),
+	instancePrompt := &survey.Input{
+		Message: promptText,
+		Default: defaultValue,
 	}
-	serviceName, err := instancePrompt.Run()
+	err := survey.AskOne(instancePrompt, &serviceName, survey.Validator(validateName))
 	handleError(err)
 	return serviceName
 }
@@ -180,39 +151,23 @@ func EnterServiceNameInteractively(defaultValue, promptText string, validateName
 // SelectClassInteractively lets the user select target service class from possible options, first filtering by categories then
 // by class name
 func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterServiceClass) (class scv1beta1.ClusterServiceClass, serviceType string) {
-	templates := &promptui.SelectTemplates{
-		Active:   promptui.IconSelect + " {{ . | cyan }}",
-		Inactive: "  {{ . | cyan }}",
-		Selected: promptui.IconGood + " Selected category: {{ . | yellow }}",
+	var category string
+	prompt := &survey.Select{
+		Message: "Which kind of service do you wish to create",
+		Options: getServiceClassesCategories(classesByCategory),
 	}
-	prompt := promptui.Select{
-		Label:     "Which kind of service do you wish to create",
-		Items:     getServiceClassesCategories(classesByCategory),
-		Templates: templates,
-	}
-	_, category, _ := prompt.Run()
-
-	templates = &promptui.SelectTemplates{
-		Active:   promptui.IconSelect + " {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
-		Selected: promptui.IconGood + " Selected service class: {{ .Name | yellow | cyan }}",
-		Details: `
---------- Service Class ----------
-{{ "Name:" | faint }}	{{ .Name }}
-{{ "Description:" | faint }}	{{ .Description }}
-{{ "Long:" | faint }}	{{ .LongDescription }}`,
-	}
-	uiClasses := getUIServiceClasses(classesByCategory[category])
-	prompt = promptui.Select{
-		Label:     "Which " + category + " service class should we use",
-		Items:     uiClasses,
-		Templates: templates,
-	}
-	i, _, err := prompt.Run()
+	err := survey.AskOne(prompt, &category, nil)
 	handleError(err)
-	uiClass := uiClasses[i]
 
-	return uiClass.Class, uiClass.Name
+	classes := getServiceClassMap(classesByCategory[category])
+	prompt = &survey.Select{
+		Message: "Which " + category + " service class should we use",
+		Options: getServiceClassNames(classes),
+	}
+	err = survey.AskOne(prompt, &serviceType, nil)
+	handleError(err)
+
+	return classes[serviceType], serviceType
 }
 
 // EnterServicePropertiesInteractively lets the user enter the properties specified by the provided plan if not already
@@ -251,19 +206,13 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, p
 
 	// finally check if we still have plan properties that have not been considered
 	if len(properties) > 0 {
-		trueOrFalse := []bool{true, false}
-		templates := &promptui.SelectTemplates{
-			Selected: promptui.IconGood + " Provide values for non-required properties: {{ . | yellow }}",
+		fillOptionalProps := false
+		confirm := &survey.Confirm{
+			Message: "Provide values for non-required properties",
 		}
-		prompt := promptui.Select{
-			Label:     "Provide values for non-required properties",
-			Items:     trueOrFalse,
-			Templates: templates,
-		}
-
-		i, _, err := prompt.Run()
+		err := survey.AskOne(confirm, &fillOptionalProps, nil)
 		handleError(err)
-		if trueOrFalse[i] {
+		if fillOptionalProps {
 
 			for _, prop := range properties {
 				addValueFor(prop, values)
@@ -274,19 +223,11 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, p
 	return values
 }
 
-var (
-	propTemplates = &promptui.PromptTemplates{
-		Invalid: promptui.IconBad + "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
-		Valid:   promptui.IconGood + "Enter a value for {{ .Type }} property {{ . | propDesc }}: ",
-		Success: promptui.IconGood + " Property {{ .Name | yellow }} set to: ",
-	}
-)
-
 type chainedValidator struct {
 	validators []Validator
 }
 
-func (cv chainedValidator) validate(input string) error {
+func (cv chainedValidator) validate(input interface{}) error {
 	for _, v := range cv.validators {
 		err := v(input)
 		if err != nil {
@@ -312,13 +253,11 @@ func getValidatorFor(prop property) Validator {
 }
 
 func addValueFor(prop property, values map[string]string) {
-	prompt := promptui.Prompt{
-		Label:     prop,
-		AllowEdit: true,
-		Templates: propTemplates,
-		Validate:  promptui.ValidateFunc(getValidatorFor(prop)),
+	var result string
+	prompt := &survey.Input{
+		Message: fmt.Sprintf("Enter a value for %s property %s:", prop.Type, propDesc(prop)),
 	}
-	result, err := prompt.Run()
+	err := survey.AskOne(prompt, &result, survey.Validator(getValidatorFor(prop)))
 	handleError(err)
 	values[prop.Name] = result
 }
@@ -326,32 +265,26 @@ func addValueFor(prop property, values map[string]string) {
 const OdoDefaultRequired = "odo_default_required"
 const OdoDefaultInteger = "odo_default_integer"
 
+func propDesc(prop property) string {
+	msg := ""
+	if len(prop.Title) > 0 {
+		msg = prop.Title
+	} else if len(prop.Description) > 0 {
+		msg = prop.Description
+	}
+
+	if len(msg) > 0 {
+		msg = " (" + strings.TrimSpace(msg) + ")"
+	}
+
+	return prop.Name + msg
+}
+
 func init() {
-	funcMap := promptui.FuncMap
-	funcMap["propDesc"] = func(prop property) string {
-		msg := ""
-		if len(prop.Title) > 0 {
-			msg = prop.Title
-		} else if len(prop.Description) > 0 {
-			msg = prop.Description
-		}
+	validators[OdoDefaultRequired] = survey.Required
 
-		if len(msg) > 0 {
-			msg = " (" + strings.TrimSpace(msg) + ")"
-		}
-
-		return funcMap["yellow"].(func(interface{}) string)(prop.Name) + msg
-	}
-
-	validators[OdoDefaultRequired] = func(s string) error {
-		if len(s) == 0 {
-			return errors.New("A value is required")
-		} else {
-			return nil
-		}
-	}
-
-	validators[OdoDefaultInteger] = func(s string) error {
+	validators[OdoDefaultInteger] = func(ans interface{}) error {
+		s := ans.(string)
 		_, err := strconv.Atoi(s)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Invalid integer value '%s': %s", s, err))
