@@ -68,13 +68,6 @@ func createCompletion(root *cobra.Command) complete.Command {
 		}
 	}
 
-	/*if s, ok := root.Annotations[cmd.OdoCompleteArgsAnnotation]; ok {
-		argsNb, _ := strconv.Atoi(s)
-		for i := 1; i < argsNb; i++ {
-
-		}
-	}*/
-
 	suggester, ok := cmd.Suggesters[cmd.GetCommandSuggesterName(root)]
 	if !ok {
 		suggester = complete.PredictNothing

@@ -16,8 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-const OdoCompleteArgsAnnotation = "odo_complete_args"
-
 var Suggesters = make(map[string]complete.Predictor)
 
 func GetCommandSuggesterName(command *cobra.Command) string {
@@ -25,10 +23,6 @@ func GetCommandSuggesterName(command *cobra.Command) string {
 }
 func GetFlagSuggesterName(command *cobra.Command, flag string) string {
 	return command.Name() + "_" + flag
-}
-
-func GetArgSuggesterName(command *cobra.Command, position int) string {
-	return command.Name() + "_arg_" + string(position)
 }
 
 // printDeleteAppInfo will print things which will be deleted
