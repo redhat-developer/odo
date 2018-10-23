@@ -19,7 +19,7 @@ var configurationCmd = &cobra.Command{
 
 Available Parameters:
 UpdateNotification - Controls if an update notification is shown or not (true or false)
-NamePrefix - Uses the value of this configurable as a prefix for naming app/component.If set to empty string, the name will be auto generated based on name of component/component source/current directory`,
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix`,
 	Example: fmt.Sprintf("%s\n%s\n",
 		configurationViewCmd.Example,
 		configurationSetCmd.Example),
