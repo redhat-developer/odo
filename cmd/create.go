@@ -29,10 +29,7 @@ var componentCreateCmd = &cobra.Command{
 	Short: "Create a new component",
 	Long: `Create a new component to deploy on OpenShift.
 
-If component name is not provided, a random name $dir-$component_type-$random-4-char-str, where $dir  will be generated as per the following:
-Create using git url: repo name is $dir
-Create using local path: Directory name of the source in the local path
-Create using binary path: The name of the binary without its extension
+If a component name is not provided, it'll be auto-generated.
 
 By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest wil be chosen as the version.

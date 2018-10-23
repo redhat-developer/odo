@@ -47,8 +47,7 @@ var applicationCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create an application",
 	Long: `Create an application.
-If no app name is passed, a default app name will be generated as per $dir-$random-4-char-str or if prefix configured, $prefix-$random-4-char-str
-else, passed app name will be used.
+If no app name is passed, a default app name will be auto-generated.
 	`,
 	Example: `  # Create an application
   odo app create myapp
@@ -118,7 +117,7 @@ var applicationDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
 		var appName string
-		// If name of app to be deleted is not passed, consider the current app for deletion
+		// If name of the app to be deleted is not passed, consider the current app for deletion
 		if len(args) == 0 {
 			var err error
 			appName, err = application.GetCurrent(client)

@@ -19,7 +19,7 @@ const (
 	appNameMaxRetries = 3
 )
 
-// GetDefaultAppName returns randomly generated application name with unique configurable prefix suffixed by a randomly generated string which canbe used as a default name in case the user doesn't provide a name.
+// GetDefaultAppName returns randomly generated application name with unique configurable prefix suffixed by a randomly generated string which can be used as a default name in case the user doesn't provide a name.
 func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 	var appName string
 	var existingAppNames []string

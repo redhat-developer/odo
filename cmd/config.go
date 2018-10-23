@@ -47,7 +47,7 @@ var configurationSetCmd = &cobra.Command{
 	Long: `Set an individual value in the Odo configuration file
 Available Parameters:
 UpdateNotification - Controls if an update notification is shown or not (true or false)
-NamePrefix - Uses the value of this configurable as a prefix for naming app/component.If set to empty string, the name will be auto generated based on name of component/component source/current directory`,
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.`,
 	Example: `
    # Set a configuration value
    odo utils config set UpdateNotification false
