@@ -2204,6 +2204,11 @@ func (c *Client) GetServerVersion() (*serverInfo, error) {
 	}
 	info.Address = config.Host
 
+	// checking if the server is reachable
+	if !isServerUp(config.Host) {
+		return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
+	}
+
 	// This will fetch the information about OpenShift Version
 	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
 	if err != nil {
