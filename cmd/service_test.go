@@ -24,12 +24,6 @@ func TestCompletions(t *testing.T) {
 			handler: Suggesters[getCommandSuggesterNameFrom("create")],
 			want:    []string{"foo", "bar", "boo"},
 		},
-		{
-			name:    "Completing service create with input returns only service classes matching the specified prefix",
-			handler: Suggesters[getCommandSuggesterNameFrom("create")],
-			last:    "b",
-			want:    []string{"bar", "boo"},
-		},
 	}
 
 	client, fakeClientSet := occlient.FakeNew()
