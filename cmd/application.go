@@ -46,9 +46,13 @@ var applicationCmd = &cobra.Command{
 var applicationCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create an application",
-	Long:  "Create an application",
+	Long: `Create an application.
+If no app name is passed, a default app name will be generated as per $dir-$random-4-char-str or if prefix configured, $prefix-$random-4-char-str
+else, passed app name will be used.
+	`,
 	Example: `  # Create an application
   odo app create myapp
+  odo app create
 	`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {

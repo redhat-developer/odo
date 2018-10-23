@@ -111,6 +111,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
 ```sh
   # Create an application
   odo app create myapp
+  odo app create
 	
   # Get the currently active application
   odo app get
@@ -121,7 +122,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
   # Describe webapp application,
   odo app describe webapp
 	
-  # List all applications in the current project 
+  # List all applications in the current project
   odo app list
 
   # List all applications in the specified project
@@ -216,7 +217,10 @@ Catalog related operations
 
 Create a new component to deploy on OpenShift.
 
-If component name is not provided, component type value will be used for the name.
+If component name is not provided, a random name $dir-$component_type-$random-4-char-str, where $dir  will be generated as per the following:
+Create using git url: repo name is $dir
+Create using local path: Directory name of the source in the local path
+Create using binary path: The name of the binary without its extension
 
 By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest wil be chosen as the version.
@@ -495,6 +499,8 @@ The URLs that are generated using this command, can be used to access the deploy
 
    # Set a configuration value
    odo utils config set UpdateNotification false
+   odo utils config set NamePrefix ""
+   odo utils config set NamePrefix "app"
 	
    # For viewing the current configuration
    odo utils config view
