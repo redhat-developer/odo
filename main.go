@@ -46,16 +46,17 @@ func createCompletion(root *cobra.Command) complete.Command {
 		if flag.Hidden {
 			return
 		}
-		suggester, ok := cmd.Suggesters[cmd.GetFlagSuggesterName(root, flag.Name)]
+		var handler complete.Predictor
+		handler, ok := cmd.Suggesters[cmd.GetFlagSuggesterName(root, flag.Name)]
 		if !ok {
-			suggester = complete.PredictAnything
+			handler = complete.PredictAnything
 		}
 
 		if len(flag.Shorthand) > 0 {
-			rootCmp.Flags["-"+flag.Shorthand] = suggester
+			rootCmp.Flags["-"+flag.Shorthand] = handler
 		}
 
-		rootCmp.Flags["--"+flag.Name] = suggester
+		rootCmp.Flags["--"+flag.Name] = handler
 	}
 	root.LocalFlags().VisitAll(addFlags)
 	root.InheritedFlags().VisitAll(addFlags)
@@ -68,11 +69,12 @@ func createCompletion(root *cobra.Command) complete.Command {
 		}
 	}
 
-	suggester, ok := cmd.Suggesters[cmd.GetCommandSuggesterName(root)]
+	var handler complete.Predictor
+	handler, ok := cmd.Suggesters[cmd.GetCommandSuggesterName(root)]
 	if !ok {
-		suggester = complete.PredictNothing
+		handler = complete.PredictNothing
 	}
-	rootCmp.Args = suggester
+	rootCmp.Args = handler
 
 	return rootCmp
 }

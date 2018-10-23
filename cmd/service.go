@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/posener/complete"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -188,26 +189,31 @@ func init() {
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 
-	Suggesters[GetCommandSuggesterName(serviceCreateCmd)] = complete.PredictFunc(
-		func(args complete.Args) (completions []string) {
+	Suggesters[GetCommandSuggesterName(serviceCreateCmd)] = completionHandler{
+		client: func() *occlient.Client {
+			return getOcClient()
+		},
+		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
 			completions = make([]string, 0)
-			client := getOcClient()
-			services, err := svc.ListCatalog(client)
+			services, err := client.GetClusterServiceClasses()
 			if err != nil {
 				return completions
 			}
 
 			for _, class := range services {
-				completions = append(completions, class.Name)
+				completions = append(completions, class.Spec.ExternalName)
 			}
 
 			return completions
-		})
+		},
+	}
 
-	Suggesters[GetCommandSuggesterName(serviceDeleteCmd)] = complete.PredictFunc(
-		func(args complete.Args) (completions []string) {
+	Suggesters[GetCommandSuggesterName(serviceDeleteCmd)] = completionHandler{
+		client: func() *occlient.Client {
+			return getOcClient()
+		},
+		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
 			completions = make([]string, 0)
-			client := getOcClient()
 			applicationName, err := application.GetCurrent(client)
 			if err != nil {
 				return completions
@@ -223,7 +229,8 @@ func init() {
 			}
 
 			return completions
-		})
+		},
+	}
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
