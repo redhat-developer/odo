@@ -13,6 +13,10 @@ import (
 	"strings"
 )
 
+const defaultRequiredValidatorKey = "odo_default_required"
+const defaultIntegerValidatorKey = "odo_default_integer"
+
+// Validator is a function that validates that the provided string is conform to expectations or return an error
 type Validator func(string) error
 
 var validators map[string]Validator
@@ -300,12 +304,12 @@ func (cv chainedValidator) validate(input string) error {
 func getValidatorFor(prop property) Validator {
 	cv := chainedValidator{}
 	if prop.required {
-		cv.validators = append(cv.validators, validators[OdoDefaultRequired])
+		cv.validators = append(cv.validators, validators[defaultRequiredValidatorKey])
 	}
 
 	switch prop.Type {
 	case "integer":
-		cv.validators = append(cv.validators, validators[OdoDefaultInteger])
+		cv.validators = append(cv.validators, validators[defaultIntegerValidatorKey])
 	}
 
 	return cv.validate
@@ -322,9 +326,6 @@ func addValueFor(prop property, values map[string]string) {
 	handleError(err)
 	values[prop.Name] = result
 }
-
-const OdoDefaultRequired = "odo_default_required"
-const OdoDefaultInteger = "odo_default_integer"
 
 func init() {
 	funcMap := promptui.FuncMap
@@ -343,20 +344,18 @@ func init() {
 		return funcMap["yellow"].(func(interface{}) string)(prop.Name) + msg
 	}
 
-	validators[OdoDefaultRequired] = func(s string) error {
+	validators[defaultRequiredValidatorKey] = func(s string) error {
 		if len(s) == 0 {
-			return errors.New("A value is required")
-		} else {
-			return nil
+			return errors.New("a value is required")
 		}
+		return nil
 	}
 
-	validators[OdoDefaultInteger] = func(s string) error {
+	validators[defaultIntegerValidatorKey] = func(s string) error {
 		_, err := strconv.Atoi(s)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid integer value '%s': %s", s, err))
-		} else {
-			return nil
+			return fmt.Errorf("invalid integer value '%s': %s", s, err)
 		}
+		return nil
 	}
 }
