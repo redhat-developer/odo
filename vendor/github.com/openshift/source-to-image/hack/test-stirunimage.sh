@@ -74,7 +74,7 @@ pushd ${WORK_DIR}
 
 test_debug "cloning source into working dir"
 
-git clone https://github.com/openshift/cakephp-ex &> "${WORK_DIR}/s2i-git-clone.log"
+git clone https://github.com/sclorg/cakephp-ex &> "${WORK_DIR}/s2i-git-clone.log"
 check_result $? "${WORK_DIR}/s2i-git-clone.log"
 
 test_debug "s2i build with relative path without file://"
@@ -136,8 +136,14 @@ docker run test >& "${WORK_DIR}/s2i-override-run.log"
 grep "Running custom run" "${WORK_DIR}/s2i-override-run.log"
 check_result $? "${WORK_DIR}/s2i-override-run.log"
 
+test_debug "s2i build with add-host option"
+set +e
+s2i build https://github.com/openshift/ruby-hello-world centos/ruby-23-centos7 --add-host rubygems.org:0.0.0.0 test-ruby-app &> "${WORK_DIR}/s2i-add-host.log"
+grep "Gem::RemoteFetcher::FetchError: Errno::ECONNREFUSED" "${WORK_DIR}/s2i-add-host.log"
+check_result $? "${WORK_DIR}/s2i-add-host.log"
+set -e
 test_debug "s2i build with remote git repo"
-s2i build https://github.com/openshift/cakephp-ex docker.io/centos/php-70-centos7 test --loglevel=5 &> "${WORK_DIR}/s2i-git-proto.log"
+s2i build https://github.com/sclorg/cakephp-ex docker.io/centos/php-70-centos7 test --loglevel=5 &> "${WORK_DIR}/s2i-git-proto.log"
 check_result $? "${WORK_DIR}/s2i-git-proto.log"
 
 test_debug "s2i build with runtime image"
@@ -145,7 +151,7 @@ s2i build --ref=10.x --context-dir=helloworld https://github.com/wildfly/quickst
 check_result $? "${WORK_DIR}/s2i-runtime-image.log"
 
 test_debug "s2i build with Dockerfile output"
-s2i build https://github.com/openshift/cakephp-ex docker.io/centos/php-70-centos7 --as-dockerfile=${WORK_DIR}/asdockerfile/Dockerfile --loglevel=5 >& "${WORK_DIR}/s2i-dockerfile.log"
+s2i build https://github.com/sclorg/cakephp-ex docker.io/centos/php-70-centos7 --as-dockerfile=${WORK_DIR}/asdockerfile/Dockerfile --loglevel=5 >& "${WORK_DIR}/s2i-dockerfile.log"
 check_result $? "${WORK_DIR}/s2i-dockerfile.log"
 
 

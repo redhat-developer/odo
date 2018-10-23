@@ -7,7 +7,7 @@ var (
 	EastAsianWidth bool
 
 	// DefaultCondition is a condition in current locale
-	DefaultCondition = &Condition{EastAsianWidth}
+	DefaultCondition = &Condition{}
 )
 
 func init() {
@@ -17,6 +17,8 @@ func init() {
 	} else {
 		EastAsianWidth = env == "1"
 	}
+	// update DefaultCondition
+	DefaultCondition.EastAsianWidth = EastAsianWidth
 }
 
 type interval struct {
