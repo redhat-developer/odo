@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"regexp"
 	"testing"
 )
 
@@ -255,4 +256,155 @@ func TestParametersAsMap(t *testing.T) {
 		})
 	}
 
+}
+
+func TestGetDNS1123Name(t *testing.T) {
+
+	tests := []struct {
+		testName string
+		param    string
+		want     string
+	}{
+		{
+			testName: "Case: Test get DNS-1123 name for namespace and version qualified imagestream",
+			param:    "myproject/foo:3.5",
+			want:     "myproject-foo-3-5",
+		},
+		{
+			testName: "Case: Test get DNS-1123 name for doubly hyphenated string",
+			param:    "nodejs--myproject-foo-3.5",
+			want:     "nodejs-myproject-foo-3-5",
+		},
+	}
+
+	// Test that it "joins"
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			name := GetDNS1123Name(tt.param)
+			if tt.want != name {
+				t.Errorf("Expected %s, got %s", tt.want, name)
+			}
+		})
+	}
+
+}
+
+func TestGetRandomName(t *testing.T) {
+	type args struct {
+		prefix    string
+		existList []string
+	}
+	tests := []struct {
+		testName string
+		args     args
+		// want is regexp if expectConflictResolution is true else its a full name
+		want string
+	}{
+		{
+			testName: "Case: Optional suffix passed and prefix-suffix as a name is not already used",
+			args: args{
+				prefix: "odo",
+				existList: []string{
+					"odo-auth",
+					"odo-pqrs",
+				},
+			},
+			want: "odo-[a-z]{4}",
+		},
+		{
+			testName: "Case: Optional suffix passed and prefix-suffix as a name is already used",
+			args: args{
+				prefix: "nodejs-ex-nodejs",
+				existList: []string{
+					"nodejs-ex-nodejs-yvrp",
+					"nodejs-ex-nodejs-abcd",
+				},
+			},
+			want: "nodejs-ex-nodejs-[a-z]{4}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			name, err := GetRandomName(tt.args.prefix, -1, tt.args.existList, 3)
+			if err != nil {
+				t.Errorf("failed to generate a random name. Error %v", err)
+			}
+
+			r, _ := regexp.Compile(tt.want)
+			match := r.MatchString(name)
+			if !match {
+				t.Errorf("Received name %s which does not match %s", name, tt.want)
+			}
+		})
+	}
+}
+
+func TestTruncateString(t *testing.T) {
+	tests := []struct {
+		testName  string
+		str       string
+		strLength int
+		want      string
+	}{
+		{
+			testName:  "Case: Truncate string to greater length",
+			str:       "qw",
+			strLength: 4,
+			want:      "qw",
+		},
+		{
+			testName:  "Case: Truncate string to lesser length",
+			str:       "rtyu",
+			strLength: 3,
+			want:      "rty",
+		},
+		{
+			testName:  "Case: Truncate string to -1 length",
+			str:       "Odo",
+			strLength: -1,
+			want:      "Odo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			receivedStr := TruncateString(tt.str, tt.strLength)
+			if tt.want != receivedStr {
+				t.Errorf("Truncated string %s is not same as %s", receivedStr, tt.want)
+			}
+		})
+	}
+}
+
+func TestGenerateRandomString(t *testing.T) {
+	tests := []struct {
+		testName  string
+		strLength int
+	}{
+		{
+			testName:  "Case: Generate random string of length 4",
+			strLength: 4,
+		},
+		{
+			testName:  "Case: Generate random string of length 3",
+			strLength: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			name := GenerateRandomString(tt.strLength)
+			r, _ := regexp.Compile(fmt.Sprintf("[a-z]{%d}", tt.strLength))
+			match := r.MatchString(name)
+			if !match {
+				t.Errorf("Randomly generated string %s which does not match regexp %s", name, fmt.Sprintf("[a-z]{%d}", tt.strLength))
+			}
+		})
+	}
 }

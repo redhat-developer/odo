@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -19,7 +18,8 @@ var configurationCmd = &cobra.Command{
 	Long: `Modifies Odo specific configuration settings within the config file.
 
 Available Parameters:
-UpdateNotification - Controls if an update notification is shown or not (true or false)`,
+UpdateNotification - Controls if an update notification is shown or not (true or false)
+NamePrefix - Uses the value of this configurable as a prefix for naming app/component.If set to empty string, the name will be auto generated based on name of component/component source/current directory`,
 	Example: fmt.Sprintf("%s\n%s\n",
 		configurationViewCmd.Example,
 		configurationSetCmd.Example),
@@ -44,12 +44,15 @@ UpdateNotification - Controls if an update notification is shown or not (true or
 var configurationSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Set a value in odo config file",
-	Long: `Set an individual value in the Odo configuration file 
+	Long: `Set an individual value in the Odo configuration file
 Available Parameters:
-UpdateNotification - Controls if an update notification is shown or not (true or false)`,
+UpdateNotification - Controls if an update notification is shown or not (true or false)
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.`,
 	Example: `
    # Set a configuration value
    odo utils config set UpdateNotification false
+   odo utils config set NamePrefix ""
+   odo utils config set NamePrefix "app"
 	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
@@ -64,11 +67,7 @@ UpdateNotification - Controls if an update notification is shown or not (true or
 		if err != nil {
 			return errors.Wrapf(err, "unable to set configuration")
 		}
-		value, err := strconv.ParseBool(args[1])
-		if err != nil {
-			return errors.Wrapf(err, "unable to set configuration")
-		}
-		return cfg.SetConfiguration(strings.ToLower(args[0]), value)
+		return cfg.SetConfiguration(strings.ToLower(args[0]), args[1])
 	},
 }
 
@@ -88,6 +87,7 @@ var configurationViewCmd = &cobra.Command{
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 		fmt.Fprintln(w, "UpdateNotification", "\t", cfg.GetUpdateNotification())
+		fmt.Fprintln(w, "NamePrefix", "\t", cfg.GetNamePrefix())
 		w.Flush()
 	},
 }

@@ -108,7 +108,7 @@ func waitForEqualCmd(cmd string, expOut string) bool {
 // expOut is the expected output which should not be contained in the output string
 func waitForDeleteCmd(cmd string, object string) bool {
 
-	return waitForCmdOut(cmd, 1, func(output string) bool {
+	return waitForCmdOut(cmd, 5, func(output string) bool {
 		return !strings.Contains(output, object)
 	})
 }

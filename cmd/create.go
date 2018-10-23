@@ -29,7 +29,7 @@ var componentCreateCmd = &cobra.Command{
 	Short: "Create a new component",
 	Long: `Create a new component to deploy on OpenShift.
 
-If component name is not provided, component type value will be used for the name.
+If a component name is not provided, it'll be auto-generated.
 
 By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest wil be chosen as the version.
@@ -74,14 +74,25 @@ A full list of component types that can be deployed is available using: 'odo cat
 		projectName := project.GetCurrent(client)
 
 		checkFlag := 0
+		componentPath := ""
+		var componentPathType component.CreateType
 
 		if len(componentBinary) != 0 {
+			componentPath = componentBinary
+			componentPathType = component.BINARY
+			checkError(err, "")
 			checkFlag++
 		}
 		if len(componentGit) != 0 {
+			componentPath = componentGit
+			componentPathType = component.GIT
+			checkError(err, "")
 			checkFlag++
 		}
 		if len(componentLocal) != 0 {
+			componentPath = componentLocal
+			componentPathType = component.SOURCE
+			checkError(err, "")
 			checkFlag++
 		}
 
@@ -90,7 +101,20 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
-		componentImageName, componentType, componentName, componentVersion := util.ParseCreateCmdArgs(args)
+		componentImageName, componentType, _, componentVersion := util.ParseCreateCmdArgs(args)
+
+		// Fetch list of existing components in-order to attempt generation of unique component name
+		componentList, err := component.List(client, applicationName, projectName)
+		checkError(err, "")
+
+		// Generate unique name for component
+		componentName, err := component.GetDefaultComponentName(
+			componentPath,
+			componentPathType,
+			componentType,
+			componentList,
+		)
+		checkError(err, "")
 
 		// Check to see if the catalog type actually exists
 		exists, err := catalog.Exists(client, componentType)

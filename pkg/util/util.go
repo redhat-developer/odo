@@ -1,13 +1,15 @@
 package util
 
 import (
-	"errors"
 	"fmt"
-	"github.com/golang/glog"
 	"math/rand"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/golang/glog"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -138,4 +140,74 @@ func ConvertKeyValueStringToMap(params []string) map[string]string {
 		}
 	}
 	return result
+}
+
+// TruncateString truncates passed string to given length
+// Note: if -1 is passed, the original string is returned
+func TruncateString(str string, maxLen int) string {
+	if maxLen == -1 {
+		return str
+	}
+	if len(str) > maxLen {
+		return str[:maxLen]
+	}
+	return str
+}
+
+// GetRandomName returns a randomly generated name which can be used for naming odo and/or openshift entities
+// prefix: Desired prefix part of the name
+// prefixMaxLen: Desired maximum length of prefix part of random name; if -1 is passed, no limit on length will be enforced
+// existList: List to verify that the returned name does not already exist
+// retries: number of retries to try generating a unique name
+// Returns:
+//		1. randomname: is prefix-suffix, where:
+//				prefix: string passed as prefix or fetched current directory of length same as the passed prefixMaxLen
+//				suffix: 4 char random string
+//      2. error: if requested number of retries also failed to generate unique name
+func GetRandomName(prefix string, prefixMaxLen int, existList []string, retries int) (string, error) {
+	prefix = TruncateString(GetDNS1123Name(strings.ToLower(prefix)), prefixMaxLen)
+	name := fmt.Sprintf("%s-%s", prefix, GenerateRandomString(4))
+
+	//Create a map of existing names for efficient iteration to find if the newly generated name is same as any of the already existing ones
+	existingNames := make(map[string]bool)
+	for _, existingName := range existList {
+		existingNames[existingName] = true
+	}
+
+	// check if generated name is already used in the existList
+	if _, ok := existingNames[name]; ok {
+		prevName := name
+		trial := 0
+		// keep generating names until generated name is not unique. So, loop terminates when name is unique and hence for condition is false
+		for ok {
+			trial = trial + 1
+			prevName = name
+			// Attempt unique name generation from prefix-suffix by concatenating prefix-suffix withrandom string of length 4
+			prevName = fmt.Sprintf("%s-%s", prevName, GenerateRandomString(4))
+			_, ok = existingNames[prevName]
+			if trial >= retries {
+				// Avoid infinite loops and fail after passed number of retries
+				return "", fmt.Errorf("failed to generate a unique name even after %d retrials", retries)
+			}
+		}
+		// If found to be unique, set name as generated name
+		name = prevName
+	}
+	// return name
+	return name, nil
+}
+
+// GetDNS1123Name Converts passed string into DNS-1123 string
+func GetDNS1123Name(str string) string {
+	replacer := strings.NewReplacer(
+		" ", "-",
+		".", "-",
+		",", "-",
+		"(", "-",
+		")", "-",
+		"/", "-",
+		":", "-",
+		"--", "-",
+	)
+	return strings.TrimSpace(replacer.Replace(strings.ToLower(str)))
 }

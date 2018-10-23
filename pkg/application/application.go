@@ -7,15 +7,51 @@ import (
 	"github.com/pkg/errors"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
-// getDefaultAppName returns application name to be used as a default name in case the user doesn't provide a name.
-// In future this function should generate name with unique suffix (app-xy1h), because there might be multiple applications.
-func getDefaultAppName() string {
-	return "app"
+const (
+	appPrefixMaxLen   = 12
+	appNameMaxRetries = 3
+)
+
+// GetDefaultAppName returns randomly generated application name with unique configurable prefix suffixed by a randomly generated string which can be used as a default name in case the user doesn't provide a name.
+func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
+	var appName string
+	var existingAppNames []string
+
+	// Get list of app names
+	for _, app := range existingApps {
+		existingAppNames = append(existingAppNames, app.Name)
+	}
+
+	// Get the desired app name prefix from odo config
+	cfg, err := config.New()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to fetch config")
+	}
+
+	// If there's no prefix in config file or it is equal to $DIR, use safe default which is the name of current directory
+	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == "" {
+		prefix, err := component.GetComponentDir("", component.NONE)
+		if err != nil {
+			return "", errors.Wrap(err, "unable to generate random app name")
+		}
+		appName, err = util.GetRandomName(prefix, appPrefixMaxLen, existingAppNames, appNameMaxRetries)
+		if err != nil {
+			return "", errors.Wrap(err, "unable to generate random app name")
+		}
+	} else {
+		appName, err = util.GetRandomName(*cfg.OdoSettings.NamePrefix, appPrefixMaxLen, existingAppNames, appNameMaxRetries)
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "unable to generate random app name")
+	}
+	return util.GetDNS1123Name(appName), nil
 }
 
 // Create a new application
@@ -150,7 +186,11 @@ func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
 	// if no Application is active use default
 	if currentApp == "" {
 		// get default application name
-		currentApp = getDefaultAppName()
+		defaultName, err := GetDefaultAppName([]config.ApplicationInfo{})
+		if err != nil {
+			return "", errors.Wrap(err, "unable to fetch/create an application to set as active")
+		}
+		currentApp = defaultName
 		// create if default application does not exist
 		exists, err := Exists(client, currentApp)
 		if err != nil {

@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -20,6 +22,8 @@ const (
 type OdoSettings struct {
 	// Controls if an update notification is shown or not
 	UpdateNotification *bool `json:"updatenotification,omitempty"`
+	// Holds the prefix part of generated random application name
+	NamePrefix *string `json:"nameprefix,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -131,10 +135,16 @@ func (c *ConfigInfo) writeToFile() error {
 
 // SetConfiguration modifies Odo configurations in the config file
 // as of now only being used for updatenotification
-func (c *ConfigInfo) SetConfiguration(parameter string, value bool) error {
+func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 	switch parameter {
 	case "updatenotification":
-		c.OdoSettings.UpdateNotification = &value
+		val, err := strconv.ParseBool(strings.ToLower(value))
+		if err != nil {
+			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+		}
+		c.OdoSettings.UpdateNotification = &val
+	case "nameprefix":
+		c.OdoSettings.NamePrefix = &value
 	default:
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}
@@ -151,6 +161,14 @@ func (c *ConfigInfo) GetUpdateNotification() bool {
 		return true
 	}
 	return *c.OdoSettings.UpdateNotification
+}
+
+// GetNamePrefix returns the value of Prefix from config
+func (c *ConfigInfo) GetNamePrefix() string {
+	if c.OdoSettings.NamePrefix == nil {
+		return ""
+	}
+	return *c.OdoSettings.NamePrefix
 }
 
 // SetActiveComponent sets active component for given project and application.

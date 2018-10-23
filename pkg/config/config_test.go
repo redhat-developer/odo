@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -37,16 +38,16 @@ func TestNew(t *testing.T) {
 			switch test.success {
 			case true:
 				if err != nil {
-					t.Errorf("Expected test to pass, but it failed with error: %v", err)
+					t.Errorf("expected test to pass, but it failed with error: %v", err)
 				}
 			case false:
 				if err == nil {
-					t.Errorf("Expected test to fail, but it passed!")
+					t.Errorf("expected test to fail, but it passed!")
 				}
 			}
 			if !reflect.DeepEqual(test.output, cfi) {
-				t.Errorf("Expected output: %#v", test.output)
-				t.Errorf("Actual output: %#v", cfi)
+				t.Errorf("expected output: %#v", test.output)
+				t.Errorf("actual output: %#v", cfi)
 			}
 		})
 	}
@@ -935,12 +936,14 @@ func TestSetConfiguration(t *testing.T) {
 		parameter      string
 		existingConfig Config
 		want           bool
+		wantErr        bool
 	}{
 		{
 			name:           "updatenotification set nil to true",
 			parameter:      "updatenotification",
 			existingConfig: Config{},
 			want:           true,
+			wantErr:        false,
 		},
 		{
 			name:      "updatenotification set true to false",
@@ -950,7 +953,8 @@ func TestSetConfiguration(t *testing.T) {
 					UpdateNotification: &trueValue,
 				},
 			},
-			want: false,
+			want:    false,
+			wantErr: false,
 		},
 		{
 			name:      "updatenotification set false to true",
@@ -960,7 +964,8 @@ func TestSetConfiguration(t *testing.T) {
 					UpdateNotification: &falseValue,
 				},
 			},
-			want: true,
+			want:    true,
+			wantErr: false,
 		},
 	}
 
@@ -972,8 +977,11 @@ func TestSetConfiguration(t *testing.T) {
 			}
 			cfg.Config = tt.existingConfig
 
-			cfg.SetConfiguration(tt.parameter, tt.want)
+			err = cfg.SetConfiguration(tt.parameter, strconv.FormatBool(tt.want))
 
+			if (err != nil) != tt.wantErr {
+				t.Errorf("expected error: %v but got error %v", tt.wantErr, err)
+			}
 			// validating the value after executing Serconfiguration
 			if *cfg.OdoSettings.UpdateNotification != tt.want {
 				t.Errorf("unexpeced value after execution of SetConfiguration expected \ngot: %t \nexpected: %t\n", *cfg.OdoSettings.UpdateNotification, tt.want)
@@ -1038,20 +1046,3 @@ func TestGetupdateNotification(t *testing.T) {
 		})
 	}
 }
-
-//
-//func TestGet(t *testing.T) {
-//
-//}
-//
-//func TestSet(t *testing.T) {
-//
-//}
-//
-//func TestApplicationExists(t *testing.T) {
-//
-//}
-//
-//func TestAddApplication(t *testing.T) {
-//
-//}
