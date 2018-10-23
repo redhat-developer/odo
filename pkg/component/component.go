@@ -96,8 +96,8 @@ func GetDefaultComponentName(componentPath string, componentPathType CreateType,
 		return "", errors.Wrap(err, "unable to generate random component name")
 	}
 
-	// If there's no prefix in config file, or its value is config.ConfigPrefixDir use safe default - the current directory along with component type
-	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == config.ConfigPrefixDir {
+	// If there's no prefix in config file, or its value is empty string use safe default - the current directory along with component type
+	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == "" {
 		prefix, err = GetComponentDir(componentPath, componentPathType)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to generate random component name")

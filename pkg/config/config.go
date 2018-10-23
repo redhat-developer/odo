@@ -16,9 +16,6 @@ import (
 const (
 	configEnvName  = "ODOCONFIG"
 	configFileName = "odo"
-	// ConfigPrefixDir The default value for config `prefix`.
-	// When set to AUTOMATIC, the directory name of component dir(or current-dir if not available) will be used as prefix for app and component names
-	ConfigPrefixDir = "AUTOMATIC"
 )
 
 // OdoSettings holds all odo specific configurations
@@ -169,7 +166,7 @@ func (c *ConfigInfo) GetUpdateNotification() bool {
 // GetNamePrefix returns the value of Prefix from config
 func (c *ConfigInfo) GetNamePrefix() string {
 	if c.OdoSettings.NamePrefix == nil {
-		return ConfigPrefixDir
+		return ""
 	}
 	return *c.OdoSettings.NamePrefix
 }

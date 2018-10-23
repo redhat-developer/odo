@@ -31,11 +31,11 @@ func TestGetDefaultAppName(t *testing.T) {
 			prefix:       "testing",
 		},
 		{
-			testName:     "Case: App prefix set to AUTOMATIC",
+			testName:     "Case: App prefix set to empty string",
 			existingApps: []config.ApplicationInfo{},
 			wantRE:       "application-*",
 			needPrefix:   true,
-			prefix:       "AUTOMATIC",
+			prefix:       "",
 		},
 	}
 
