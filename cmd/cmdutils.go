@@ -16,11 +16,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
+// Suggesters records available completion handlers for commands and flags
 var Suggesters = make(map[string]complete.Predictor)
 
+// GetCommandSuggesterName retrieves the completion handler identifier associated with the specified command. The associated
+// handler should provide completions for valid values for the specified command's arguments.
 func GetCommandSuggesterName(command *cobra.Command) string {
 	return command.Name()
 }
+
+// GetFlagSuggesterName retrieves the completion handler identifier associated with the specified command and flag name. The
+// associated handler should provide completion for valid values for the specified command's flag.
 func GetFlagSuggesterName(command *cobra.Command, flag string) string {
 	return command.Name() + "_" + flag
 }
