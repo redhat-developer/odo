@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
 	"testing"
 )
@@ -24,6 +26,11 @@ func TestCompletions(t *testing.T) {
 			handler: Suggesters[getCommandSuggesterNameFrom("create")],
 			want:    []string{"foo", "bar", "boo"},
 		},
+		{
+			name:    "Completing service delete without input returns all available service instances",
+			handler: Suggesters[getCommandSuggesterNameFrom("delete")],
+			want:    []string{"foo"},
+		},
 	}
 
 	client, fakeClientSet := occlient.FakeNew()
@@ -33,6 +40,24 @@ func TestCompletions(t *testing.T) {
 				fakeClusterServiceClass("foo"),
 				fakeClusterServiceClass("bar"),
 				fakeClusterServiceClass("boo"),
+			},
+		}, nil
+	})
+	fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &v1beta1.ServiceInstanceList{
+			Items: []v1beta1.ServiceInstance{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"app.kubernetes.io/name": "foo", componentlabels.ComponentLabel: "foo", componentlabels.ComponentTypeLabel: "service"},
+					},
+					Status: v1beta1.ServiceInstanceStatus{
+						Conditions: []v1beta1.ServiceInstanceCondition {
+							{
+								Reason: "some reason",
+							},
+						},
+					},
+				},
 			},
 		}, nil
 	})
