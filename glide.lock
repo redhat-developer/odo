@@ -1,5 +1,5 @@
-hash: a5d44494468800aae83f5e6d90d56e690d2e2e105d9efdcd08aa7111b35f7d30
-updated: 2018-10-23T14:21:01.768837+02:00
+hash: 037d20f5e3ddb5e663b685cab1fe6a666dfb905f0c61056711643d84c29f71f3
+updated: 2018-10-24T10:56:49.841134+02:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -120,7 +120,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/openshift/api
-  version: a46029836bdc207f9949fc5f4907f0bfd3cf7763
+  version: ab94c17d53098bd73dcfbbc26c6ce078959b361f
   subpackages:
   - apps/v1
   - build/v1
@@ -161,7 +161,7 @@ imports:
   - user/clientset/versioned/scheme
   - user/clientset/versioned/typed/user/v1
 - name: github.com/openshift/source-to-image
-  version: 9eb30303fd748ffa930371615635f1a3cddc97f0
+  version: 3c34ff83e47ae6947b157f053fd119bc378635ba
   subpackages:
   - pkg/tar
   - pkg/util/fs
