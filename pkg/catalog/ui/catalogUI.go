@@ -194,7 +194,8 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 		Items:     getServiceClassesCategories(classesByCategory),
 		Templates: templates,
 	}
-	_, category, _ := prompt.Run()
+	_, category, err := prompt.Run()
+	handleError(err)
 
 	templates = &promptui.SelectTemplates{
 		Active:   promptui.IconSelect + " {{ .Name | cyan }}",
