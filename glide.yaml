@@ -37,6 +37,8 @@ import:
   version: v1.4.7
 - package: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
+- package: gopkg.in/AlecAivazis/survey.v1
+  version: v1.6.2
 - package: github.com/posener/complete
   version: v1.1.2
 - package: github.com/gobwas/glob
@@ -45,6 +47,3 @@ import:
   version: v3.11.0
   subpackages:
   - pkg/oc/cli/login
-- package: github.com/manifoldco/promptui
-  version: v0.3.1
-
