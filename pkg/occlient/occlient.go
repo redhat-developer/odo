@@ -2411,8 +2411,8 @@ func getInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
 	var inputEnvVars []corev1.EnvVar
 	var keys = make(map[string]int)
 	for _, env := range envVars {
-		splits := strings.Split(env, "=")
-		if len(splits) < 2 || len(splits) > 2 {
+		splits := strings.SplitN(env, "=", 2)
+		if len(splits) < 2 {
 			return nil, errors.New("invalid syntax for env, please specify a VariableName=Value pair")
 		}
 		_, ok := keys[splits[0]]

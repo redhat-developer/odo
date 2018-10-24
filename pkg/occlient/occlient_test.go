@@ -3506,12 +3506,37 @@ func Test_getInputEnvVarsFromStrings(t *testing.T) {
 		{
 			name:    "Test case 4: one env var with multiple values",
 			envVars: []string{"key=value", "key1=value1=value2"},
-			wantErr: true,
+			wantedEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key",
+					Value: "value",
+				},
+				{
+					Name:  "key1",
+					Value: "value1=value2",
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name:    "Test case 5: two env var with same key",
 			envVars: []string{"key=value", "key=value1"},
 			wantErr: true,
+		},
+		{
+			name:    "Test case 6: one env var with base64 encoded value",
+			envVars: []string{"key=value", "key1=SSd2ZSBnb3QgYSBsb3ZlbHkgYnVuY2ggb2YgY29jb251dHMhCg=="},
+			wantedEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key",
+					Value: "value",
+				},
+				{
+					Name:  "key1",
+					Value: "SSd2ZSBnb3QgYSBsb3ZlbHkgYnVuY2ggb2YgY29jb251dHMhCg==",
+				},
+			},
+			wantErr: false,
 		},
 	}
 
