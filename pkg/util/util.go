@@ -211,3 +211,18 @@ func GetDNS1123Name(str string) string {
 	)
 	return strings.TrimSpace(replacer.Replace(strings.ToLower(str)))
 }
+
+// SliceDifference returns the values of s2 that do not exist in s1
+func SliceDifference(s1 []string, s2 []string) []string {
+	mb := map[string]bool{}
+	for _, x := range s1 {
+		mb[x] = true
+	}
+	difference := []string{}
+	for _, x := range s2 {
+		if _, ok := mb[x]; !ok {
+			difference = append(difference, x)
+		}
+	}
+	return difference
+}

@@ -241,6 +241,7 @@ This describes the service and the associated plans.
 					{"Display Name", plan.DisplayName},
 					{"Short Description", plan.Description},
 					{"Required", strings.Join(plan.Required, ", ")},
+					{"Optional", strings.Join(plan.Optional, ", ")},
 				}
 				table.AppendBulk(planData)
 			}

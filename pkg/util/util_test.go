@@ -408,3 +408,46 @@ func TestGenerateRandomString(t *testing.T) {
 		})
 	}
 }
+
+func TestSliceDifference(t *testing.T) {
+	tests := []struct {
+		testName       string
+		slice1         []string
+		slice2         []string
+		expectedResult []string
+	}{
+		{
+			testName:       "Empty slices",
+			slice1:         []string{},
+			slice2:         []string{},
+			expectedResult: []string{},
+		},
+		{
+			testName:       "Single different slices",
+			slice1:         []string{"a"},
+			slice2:         []string{"b"},
+			expectedResult: []string{"b"},
+		},
+		{
+			testName:       "Single same slices",
+			slice1:         []string{"a"},
+			slice2:         []string{"a"},
+			expectedResult: []string{},
+		},
+		{
+			testName:       "Large slices with matching and non matching items",
+			slice1:         []string{"a", "b", "c", "d", "e"},
+			slice2:         []string{"e", "a", "u", "1", "d"},
+			expectedResult: []string{"u", "1"},
+		},
+	}
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			result := SliceDifference(tt.slice1, tt.slice2)
+			if !reflect.DeepEqual(tt.expectedResult, result) {
+				t.Errorf("Expected %v, got %v", tt.expectedResult, result)
+			}
+		})
+	}
+}

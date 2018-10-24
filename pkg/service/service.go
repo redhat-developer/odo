@@ -36,6 +36,7 @@ type ServicePlans struct {
 	DisplayName string
 	Description string
 	Required    []string
+	Optional    []string
 }
 
 // ListCatalog lists all the available service types
@@ -228,6 +229,19 @@ func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (Servi
 			required = strings.Replace(required, "[", "", -1)
 			required = strings.Replace(required, "]", "", -1)
 			plan.Required = strings.Split(required, " ")
+		}
+
+		// set the optional properties by inspecting additionalProperties
+		// and if it's true, then
+		if val, ok := createParameter["properties"]; ok {
+			propertiesMap, ok := val.(map[string]interface{})
+			if ok {
+				allPropertyNames := make([]string, 0, len(propertiesMap))
+				for k := range propertiesMap {
+					allPropertyNames = append(allPropertyNames, k)
+				}
+				plan.Optional = util.SliceDifference(plan.Required, allPropertyNames)
+			}
 		}
 
 		plans = append(plans, plan)
