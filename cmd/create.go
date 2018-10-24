@@ -215,11 +215,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 		if len(componentGit) == 0 {
 			fmt.Printf("To push source code to the component run 'odo push'\n")
 		}
-
 		// after component is successfully created, set is as active
-		err = component.SetCurrent(componentName, applicationName, projectName)
-		checkError(err, "")
 		err = application.SetCurrent(client, applicationName)
+		checkError(err, "")
+		err = component.SetCurrent(componentName, applicationName, projectName)
 		checkError(err, "")
 		fmt.Printf("\nComponent '%s' is now set as active component.\n", componentName)
 	},
