@@ -19,7 +19,7 @@ const defaultIntegerValidatorKey = "odo_default_integer"
 // Validator is a function that validates that the provided string is conform to expectations or return an error
 type Validator func(string) error
 
-var validators map[string]Validator
+var validators = make(map[string]Validator)
 
 type serviceInstanceCreateParameterSchema struct {
 	Required   []string
