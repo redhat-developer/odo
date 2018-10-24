@@ -63,12 +63,15 @@ A full list of service types that can be deployed are available using: 'odo cata
 			serviceType = args[0]
 
 			// make sure the class exists
-			class, err := client.GetServiceClass(serviceType)
+			classPtr, err := client.GetServiceClass(serviceType)
 			checkError(err, "unable to create service because Service Catalog is not enabled in your cluster")
-			if class == nil {
+			if classPtr == nil {
 				glog.V(4).Infof("Unknown service class %s", serviceType)
-				classesByCategory, _ := client.GetServiceClassesByCategory()
-				*class, serviceType = ui.SelectClassInteractively(classesByCategory)
+				classesByCategory, err := client.GetServiceClassesByCategory()
+				checkError(err, "unable to retrieve the service class categories")
+				class, serviceType = ui.SelectClassInteractively(classesByCategory)
+			} else {
+				class = *classPtr
 			}
 		}
 
