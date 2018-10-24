@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
-	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/project"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -211,18 +209,9 @@ This describes the service and the associated plans.
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getOcClient()
-		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
-		projectName := project.GetCurrent(client)
 		serviceName := args[0]
-		exists, err := svc.SvcExists(client, serviceName, applicationName, projectName)
-		checkError(err, "Failed to get the service")
-		if !exists {
-			fmt.Printf("The service %s does not exist.\n", serviceName)
-			os.Exit(1)
-		}
 		service, plans, err := svc.GetServiceClassAndPlans(client, serviceName)
-		checkError(err, "Failed to get the service")
+		checkError(err, "")
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetBorder(false)
