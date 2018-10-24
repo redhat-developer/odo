@@ -3,8 +3,6 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"os"
-
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -12,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"os"
 )
 
 // Global variables
