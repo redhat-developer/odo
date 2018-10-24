@@ -51,7 +51,7 @@ func TestCompletions(t *testing.T) {
 						Labels: map[string]string{"app.kubernetes.io/name": "foo", componentlabels.ComponentLabel: "foo", componentlabels.ComponentTypeLabel: "service"},
 					},
 					Status: v1beta1.ServiceInstanceStatus{
-						Conditions: []v1beta1.ServiceInstanceCondition {
+						Conditions: []v1beta1.ServiceInstanceCondition{
 							{
 								Reason: "some reason",
 							},
