@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/posener/complete"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
 	"testing"
 )
