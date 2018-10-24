@@ -8,7 +8,6 @@ import (
 	"github.com/onsi/gomega/gexec"
 
 	"fmt"
-	"net/http"
 	"os/exec"
 	"time"
 )
@@ -24,42 +23,6 @@ func runCmd(cmdS string) string {
 	Expect(err).NotTo(HaveOccurred())
 
 	return string(session.Out.Contents())
-}
-
-func pingSvc(url string) {
-	var ep bool = false
-	pingTimeout := time.After(5 * time.Minute)
-	tick := time.Tick(time.Second)
-
-	for {
-		select {
-		case <-pingTimeout:
-			Fail("could not ping the specific service in given time: 5 minutes")
-
-		case <-tick:
-			httpTimeout := time.Duration(10 * time.Second)
-			client := http.Client{
-				Timeout: httpTimeout,
-			}
-
-			response, err := client.Get(url)
-			if err != nil {
-				time.Sleep(1 * time.Second)
-				continue
-			}
-
-			if response.Status == "200 OK" {
-				ep = true
-
-			} else {
-				Fail("for service")
-			}
-		}
-
-		if ep {
-			break
-		}
-	}
 }
 
 // waitForCmdOut runs a command until it gets
