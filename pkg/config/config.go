@@ -173,13 +173,13 @@ func (c *ConfigInfo) GetNamePrefix() string {
 
 // SetActiveComponent sets active component for given project and application.
 // application must exist
-func (c *ConfigInfo) SetActiveComponent(component string, application string, project string) error {
+func (c *ConfigInfo) SetActiveComponent(componentName string, applicationName string, projectName string) error {
 	found := false
 
 	if c.ActiveApplications != nil {
 		for i, app := range c.ActiveApplications {
-			if app.Project == project && app.Name == application {
-				c.ActiveApplications[i].ActiveComponent = component
+			if app.Project == projectName && app.Name == applicationName {
+				c.ActiveApplications[i].ActiveComponent = componentName
 				found = true
 				break
 			}
@@ -187,12 +187,12 @@ func (c *ConfigInfo) SetActiveComponent(component string, application string, pr
 	}
 
 	if !found {
-		return errors.Errorf("unable to set %s component as active, application %s in %s project doesn't exists", component, application, project)
+		return errors.Errorf("unable to set %s componentName as active, applicationName %s in %s projectName doesn't exists", componentName, applicationName, projectName)
 	}
 
 	err := c.writeToFile()
 	if err != nil {
-		return errors.Wrapf(err, "unable to set %s as active component", component)
+		return errors.Wrapf(err, "unable to set %s as active componentName", componentName)
 	}
 	return nil
 }

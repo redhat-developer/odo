@@ -171,8 +171,7 @@ func GetCurrent(projectName string) (string, error) {
 // Do not use for read operations like get, list; only for write operations like
 // create
 func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
-	projectName := project.GetCurrent(client)
-	currentApp, err := GetCurrent(projectName)
+	currentApp, err := GetCurrent(client.Namespace)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
@@ -201,6 +200,11 @@ func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
 
 // SetCurrent set application as active
 func SetCurrent(client *occlient.Client, appName string) error {
+	// also sets project to the given project
+	err := project.SetCurrent(client, client.Namespace)
+	if err != nil {
+		return errors.Wrap(err, "unable to set current project")
+	}
 	glog.V(4).Infof("Setting application %s as current.\n", appName)
 
 	cfg, err := config.New()
