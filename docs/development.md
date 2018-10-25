@@ -225,9 +225,7 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 
     There is a helper script [scripts/bump-version.sh](/scripts/bump-version.sh) that should change version number in all files listed above (expect odo.rb).
 
-    To update the CLI Structure in README.md, run `make generate-cli-structure` and update the section in [README.md](/README.md#cli-structure)
-
-    To update the CLI reference documentation in docs/cli-reference.md, run `make generate-cli-structure > docs/cli-reference.md`.
+    To update the CLI reference documentation in docs/cli-reference.md, run `make generate-cli-reference`, which will update `docs/cli-reference.md`.
 
 2. Merge the above PR
 
