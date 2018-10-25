@@ -7,6 +7,7 @@ import (
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/pkg/errors"
 	"gopkg.in/AlecAivazis/survey.v1"
+	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"os"
 	"sort"
@@ -164,14 +165,40 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	handleError(err)
 
 	classes := getServiceClassMap(classesByCategory[category])
+	core.TemplateFuncs["foo"] = func(index int, pageEntries []string) string {
+		selected := pageEntries[index]
+		class := classes[selected]
+		return fmt.Sprintf("Name: %s\nDescription: %s\nLong: %s", class.GetExternalName(), class.GetDescription(), getLongDescription(class))
+	}
+
+	survey.SelectQuestionTemplate = survey.SelectQuestionTemplate + `
+===
+{{- if not .ShowAnswer}}
+	{{(foo .SelectedIndex .PageEntries)}}
+{{- end}}`
+
 	prompt = &survey.Select{
 		Message: "Which " + category + " service class should we use",
 		Options: getServiceClassNames(classes),
 	}
+
 	err = survey.AskOne(prompt, &serviceType, nil)
 	handleError(err)
 
 	return classes[serviceType], serviceType
+}
+
+// Convert the provided ClusterServiceClass to its UI representation
+func getLongDescription(class scv1beta1.ClusterServiceClass) (longDescription string) {
+	var meta map[string]interface{}
+	err := json.Unmarshal(class.Spec.ExternalMetadata.Raw, &meta)
+	if err != nil {
+		glog.V(4).Infof("Unable unmarshal Extension metadata for ClusterServiceClass '%v'", class.Spec.ExternalName)
+	}
+	if val, ok := meta["longDescription"]; ok {
+		longDescription = val.(string)
+	}
+	return
 }
 
 // EnterServicePropertiesInteractively lets the user enter the properties specified by the provided plan if not already
