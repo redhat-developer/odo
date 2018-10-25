@@ -1,5 +1,5 @@
-hash: 037d20f5e3ddb5e663b685cab1fe6a666dfb905f0c61056711643d84c29f71f3
-updated: 2018-10-24T10:56:49.841134+02:00
+hash: fe373f5781909c5aed9fbde174ebf97f19d01b5abc56d3b7ab571b33bd79d73e
+updated: 2018-10-25T17:19:13.517749+02:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -76,7 +76,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 3fb116b820352b7f0c281308a4d6250c22d94e27
 - name: github.com/mattn/go-runewidth
-  version: e2d73ac2237ade1266fd3667a39f9cf31c7799ff
+  version: b20a3daf6a39840c202fd42cc23d53607162b045
 - name: github.com/modern-go/concurrent
   version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
 - name: github.com/modern-go/reflect2
@@ -170,7 +170,7 @@ imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/posener/complete
-  version: ffc2cf5e958af5ac4156a886153c7cadd24a521a
+  version: dcda3199365ca2a5f24aea4c42aa56f6a197d117
   subpackages:
   - cmd
   - cmd/install
