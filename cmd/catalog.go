@@ -188,17 +188,17 @@ services from service catalog.
 
 var catalogDescribeCmd = &cobra.Command{
 	Use:   "describe",
-	Short: "describe catalog item.",
+	Short: "Describe catalog item",
 	Long:  "Describe the given catalog item from OpenShift",
 	Args:  cobra.ExactArgs(1),
 	Example: `  # Describe the given service
   odo catalog describe service mysql-persistent
-`,
+	`,
 }
 
 var catalogDescribeServiceCmd = &cobra.Command{
 	Use:   "service",
-	Short: "Describe service in catalog",
+	Short: "Describe a service",
 	Long: `Describe a service type.
 
 This describes the service and the associated plans.
