@@ -188,8 +188,8 @@ services from service catalog.
 
 var catalogDescribeCmd = &cobra.Command{
 	Use:   "describe",
-	Short: "describe given service.",
-	Long:  "Describe given service from OpenShift",
+	Short: "describe catalog item.",
+	Long:  "Describe the given catalog item from OpenShift",
 	Args:  cobra.ExactArgs(1),
 	Example: `  # Describe the given service
   odo catalog describe service mysql-persistent
@@ -240,8 +240,8 @@ This describes the service and the associated plans.
 					{"Name", plan.Name},
 					{"Display Name", plan.DisplayName},
 					{"Short Description", plan.Description},
-					{"Required", strings.Join(plan.Required, ", ")},
-					{"Optional", strings.Join(plan.Optional, ", ")},
+					{"Required Parameters", strings.Join(plan.Required, ", ")},
+					{"Optional Parameters", strings.Join(plan.Optional, ", ")},
 				}
 				table.AppendBulk(planData)
 			}
