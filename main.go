@@ -14,15 +14,15 @@ func main() {
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
 
-	// AddFlags adds the completion flags to the program flags,
-	// in case of using non-default flag set, it is possible to pass
-	// it as an argument.
-	// it is possible to set custom flags name
-	// so when one will type 'self -h', he will see '-complete' to install the
-	// completion and -uncomplete to uninstall it.
+	// AddFlags adds the completion flags to the program flags, specifying custom names
 	cmp.CLI.InstallName = "complete"
 	cmp.CLI.UninstallName = "uncomplete"
 	cmp.AddFlags(nil)
+
+	// add the completion flags to the root command, though they won't appear in completions
+	root.Flags().AddGoFlagSet(flag.CommandLine)
+	// override usage so that flag.Parse uses root command's usage instead of default one when invoked with -h
+	flag.Usage = usage
 
 	// parse the flags - both the program's flags and the completion flags
 	flag.Parse()
@@ -37,6 +37,10 @@ func main() {
 
 	// Call commands
 	cmd.Execute()
+}
+
+func usage() {
+	_ = cmd.RootCmd().Usage()
 }
 
 func createCompletion(root *cobra.Command) complete.Command {
