@@ -20,7 +20,7 @@ var configurationCmd = &cobra.Command{
 Available Parameters:
 UpdateNotification - Controls if an update notification is shown or not (true or false)
 NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix`,
-	Example: fmt.Sprintf("%s\n%s\n",
+	Example: fmt.Sprintf("%s\n%s",
 		configurationViewCmd.Example,
 		configurationSetCmd.Example),
 	Aliases: []string{"configuration"},
@@ -48,12 +48,11 @@ var configurationSetCmd = &cobra.Command{
 Available Parameters:
 UpdateNotification - Controls if an update notification is shown or not (true or false)
 NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.`,
-	Example: `
-   # Set a configuration value
+	Example: `  # Set a configuration value
    odo utils config set UpdateNotification false
    odo utils config set NamePrefix ""
    odo utils config set NamePrefix "app"
-	`,
+  `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("Please provide a parameter name and value")
@@ -75,9 +74,9 @@ var configurationViewCmd = &cobra.Command{
 	Use:   "view",
 	Short: "View current configuration values",
 	Long:  "View current configuration values",
-	Example: `
-   # For viewing the current configuration
-   odo utils config view`,
+	Example: `  # For viewing the current configuration
+   odo utils config view
+  `,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.New()
