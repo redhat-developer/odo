@@ -28,7 +28,7 @@ check-vendor:
 
 .PHONY: validate-vendor-licenses
 validate-vendor-licenses:
-	wwhrd check
+	wwhrd check -q
 # golint errors are only recommendations
 .PHONY: lint
 lint:
