@@ -70,6 +70,9 @@ const (
 	supervisordVolumeName = "odo-supervisord-shared-data"
 )
 
+// WaitForPodTimeOut controls how long we should wait for a pod before giving up
+var WaitForPodTimeOut = 30 * time.Second
+
 // errorMsg is the message for user when invalid configuration error occurs
 const errorMsg = `
 Please login to your server: 
@@ -1116,23 +1119,44 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 		return nil, errors.Wrapf(err, "unable to watch pod")
 	}
 	defer w.Stop()
-	for {
-		val, ok := <-w.ResultChan()
-		if !ok {
-			break
-		}
-		if e, ok := val.Object.(*corev1.Pod); ok {
-			glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
-			switch e.Status.Phase {
-			case corev1.PodRunning:
-				glog.V(4).Infof("Pod %s is running.", e.Name)
-				return e, nil
-			case corev1.PodFailed, corev1.PodUnknown:
-				return nil, errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
+
+	podChannel := make(chan *corev1.Pod)
+	watchErrorChannel := make(chan error)
+
+	go func() {
+	loop:
+		for {
+			val, ok := <-w.ResultChan()
+			if !ok {
+				watchErrorChannel <- errors.New("watch channel was closed")
+				break loop
+			}
+			if e, ok := val.Object.(*corev1.Pod); ok {
+				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				switch e.Status.Phase {
+				case corev1.PodRunning:
+					glog.V(4).Infof("Pod %s is running.", e.Name)
+					podChannel <- e
+					break loop
+				case corev1.PodFailed, corev1.PodUnknown:
+					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
+					break loop
+				}
+			} else {
+				watchErrorChannel <- errors.New("unable to convert event object to Pod")
+				break loop
 			}
 		}
+	}()
+
+	select {
+	case val := <-podChannel:
+		return val, nil
+	case err := <-watchErrorChannel:
+		return nil, err
+	case <-time.After(WaitForPodTimeOut):
+		return nil, errors.Errorf("waited %s but couldn't find pod matching '%s' sel", WaitForPodTimeOut, selector)
 	}
-	return nil, errors.Errorf("unknown error while waiting for pod matchin '%s' selector", selector)
 }
 
 // FollowBuildLog stream build log to stdout
