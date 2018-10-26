@@ -71,7 +71,7 @@ const (
 )
 
 // WaitForPodTimeOut controls how long we should wait for a pod before giving up
-var WaitForPodTimeOut = 30 * time.Second
+var WaitForPodTimeOut = 60 * time.Second
 
 // errorMsg is the message for user when invalid configuration error occurs
 const errorMsg = `
