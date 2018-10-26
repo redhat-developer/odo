@@ -170,6 +170,34 @@ func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error
 
   You can see the entire test function `TestGetImageStream` in [pkg/occlient/occlient_test.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient_test.go)
 
+
+## Integration tests
+
+Integration tests, otherwise known as end-2-end (e2e) tests are used within Odo.
+
+All tests can be found in the `tests/e2e` directory and can be called using functions within `makefile`.
+
+Requirements:
+
+ - A `minishift` or OpenShift environment with Service Catalog enabled
+ - `odo` and `oc` binaries in $PATH
+
+To deploy an e2e test:
+
+```sh
+# The entire suite
+make test-e2e
+
+# Just the main tests
+make test-main-e2e
+
+# Just component tests
+make test-cmp-e2e
+
+# Just service catalog tests
+make test-service-e2e
+```
+
 ## Dependency Management
 
 odo uses `glide` to manage dependencies.
