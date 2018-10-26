@@ -138,6 +138,7 @@ var projectDeleteCmd = &cobra.Command{
 
 		if strings.ToLower(confirmDeletion) != "y" {
 			fmt.Printf("Aborting deletion of project: %v\n", projectName)
+			os.Exit(1)
 		}
 
 		fmt.Printf("Deleting project %s...\n(this operation may take some time)\n", projectName)
