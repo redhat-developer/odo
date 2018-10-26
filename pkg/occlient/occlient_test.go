@@ -3,6 +3,7 @@ package occlient
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -175,6 +176,58 @@ func fakeImageStreamImage(imageName string, ports []string) *imagev1.ImageStream
 			DockerImageReference: fmt.Sprintf("docker.io/centos/%s-36-centos7@s@sha256:9579a93ee", imageName),
 		},
 	}
+}
+
+func fakePlanExternalMetaDataRaw() ([][]byte, error) {
+	planExternalMetaData1 := make(map[string]string)
+	planExternalMetaData1["displayName"] = "plan-name-1"
+
+	planExternalMetaData2 := make(map[string]string)
+	planExternalMetaData2["displayName"] = "plan-name-2"
+
+	planExternalMetaDataRaw1, err := json.Marshal(planExternalMetaData1)
+	if err != nil {
+		return nil, errors.Wrap(err, "")
+	}
+
+	planExternalMetaDataRaw2, err := json.Marshal(planExternalMetaData2)
+	if err != nil {
+		return nil, errors.Wrap(err, "")
+	}
+
+	var data [][]byte
+	data = append(data, planExternalMetaDataRaw1)
+	data = append(data, planExternalMetaDataRaw2)
+
+	return data, nil
+}
+
+func fakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
+	planServiceInstanceCreateParameterSchema1 := make(map[string][]string)
+	planServiceInstanceCreateParameterSchema1["required"] = []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"}
+
+	planServiceInstanceCreateParameterSchema2 := make(map[string][]string)
+	planServiceInstanceCreateParameterSchema2["required"] = []string{"PLAN_DATABASE_USERNAME_2", "PLAN_DATABASE_PASSWORD"}
+
+	planServiceInstanceCreateParameterSchemaRaw1, err := json.Marshal(planServiceInstanceCreateParameterSchema1)
+	if err != nil {
+		if err != nil {
+			return nil, errors.Wrap(err, "")
+		}
+	}
+
+	planServiceInstanceCreateParameterSchemaRaw2, err := json.Marshal(planServiceInstanceCreateParameterSchema2)
+	if err != nil {
+		if err != nil {
+			return nil, errors.Wrap(err, "")
+		}
+	}
+
+	var data [][]byte
+	data = append(data, planServiceInstanceCreateParameterSchemaRaw1)
+	data = append(data, planServiceInstanceCreateParameterSchemaRaw2)
+
+	return data, nil
 }
 
 func TestGetPVCNameFromVolumeMountName(t *testing.T) {
@@ -2991,6 +3044,306 @@ func TestCreateServiceInstance(t *testing.T) {
 			}
 			if !reflect.DeepEqual(createdServiceInstance.Spec.ClusterServiceClassExternalName, tt.args.serviceType) {
 				t.Errorf("labels in created serviceInstance is not matching expected labels, expected: %v, got: %v", tt.args.serviceType, createdServiceInstance.Spec.ClusterServiceClassExternalName)
+			}
+		})
+	}
+}
+
+func TestGetClusterServiceClass(t *testing.T) {
+	classExternalMetaData := make(map[string]interface{})
+	classExternalMetaData["longDescription"] = "example long description"
+	classExternalMetaData["dependencies"] = []string{"docker.io/centos/7", "docker.io/centos/8"}
+
+	classExternalMetaDataRaw, err := json.Marshal(classExternalMetaData)
+	if err != nil {
+		fmt.Printf("error occured %v during marshalling", err)
+		return
+	}
+
+	type args struct {
+		serviceName string
+	}
+	tests := []struct {
+		name                    string
+		args                    args
+		returnedServicesClasses *scv1beta1.ClusterServiceClassList
+		wantedServiceClass      *scv1beta1.ClusterServiceClass
+		wantErr                 bool
+	}{
+		{
+			name: "test case 1: with one valid service class returned",
+			args: args{
+				serviceName: "class name",
+			},
+			returnedServicesClasses: &scv1beta1.ClusterServiceClassList{
+				Items: []scv1beta1.ClusterServiceClass{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "1dda1477cace09730bd8ed7a6505607e"},
+						Spec: scv1beta1.ClusterServiceClassSpec{
+							CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+								ExternalName:     "class name",
+								Bindable:         false,
+								Description:      "example description",
+								Tags:             []string{"php", "java"},
+								ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
+							},
+							ClusterServiceBrokerName: "broker name",
+						},
+					},
+				},
+			},
+			wantedServiceClass: &scv1beta1.ClusterServiceClass{
+				ObjectMeta: metav1.ObjectMeta{Name: "1dda1477cace09730bd8ed7a6505607e"},
+				Spec: scv1beta1.ClusterServiceClassSpec{
+					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+						ExternalName:     "class name",
+						Bindable:         false,
+						Description:      "example description",
+						Tags:             []string{"php", "java"},
+						ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
+					},
+					ClusterServiceBrokerName: "broker name",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test case 2: with two service classes returned",
+			args: args{
+				serviceName: "class name",
+			},
+			returnedServicesClasses: &scv1beta1.ClusterServiceClassList{
+				Items: []scv1beta1.ClusterServiceClass{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "1dda1477cace09730bd8ed7a6505607e"},
+						Spec: scv1beta1.ClusterServiceClassSpec{
+							CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+								ExternalName:     "class name",
+								Bindable:         false,
+								Description:      "example description",
+								Tags:             []string{"php", "java"},
+								ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
+							},
+							ClusterServiceBrokerName: "broker name",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "1dda1477cace09730bd8ed7a6505607e"},
+						Spec: scv1beta1.ClusterServiceClassSpec{
+							CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+								ExternalName:     "class name",
+								Bindable:         false,
+								Description:      "example description",
+								Tags:             []string{"java"},
+								ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
+							},
+							ClusterServiceBrokerName: "broker name 1",
+						},
+					},
+				},
+			},
+			wantedServiceClass: &scv1beta1.ClusterServiceClass{},
+			wantErr:            true,
+		},
+		{
+			name: "test case 3: with no service classes returned",
+			args: args{
+				serviceName: "class name",
+			},
+			returnedServicesClasses: &scv1beta1.ClusterServiceClassList{
+				Items: []scv1beta1.ClusterServiceClass{},
+			},
+			wantedServiceClass: &scv1beta1.ClusterServiceClass{},
+			wantErr:            true,
+		},
+	}
+
+	for _, tt := range tests {
+		client, fakeClientSet := FakeNew()
+
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			if action.(ktesting.ListAction).GetListRestrictions().Fields.String() != fmt.Sprintf("spec.externalName=%v", tt.args.serviceName) {
+				t.Errorf("got a different service name got: %v , expected: %v", action.(ktesting.ListAction).GetListRestrictions().Fields.String(), fmt.Sprintf("spec.externalName=%v", tt.args.serviceName))
+			}
+			return true, tt.returnedServicesClasses, nil
+		})
+
+		gotServiceClass, err := client.GetClusterServiceClass(tt.args.serviceName)
+		if err == nil && !tt.wantErr {
+			if len(fakeClientSet.ServiceCatalogClientSet.Actions()) != 1 {
+				t.Errorf("expected 1 action in GetServiceClassAndPlans got: %v", fakeClientSet.ServiceCatalogClientSet.Actions())
+			}
+
+			if !reflect.DeepEqual(gotServiceClass.Spec, tt.wantedServiceClass.Spec) {
+				t.Errorf("different service class spec value expected got: %v , expected: %v", gotServiceClass.Spec, tt.wantedServiceClass.Spec)
+			}
+			if !reflect.DeepEqual(gotServiceClass.Name, tt.wantedServiceClass.Name) {
+				t.Errorf("different service class name value expected got: %v , expected: %v", gotServiceClass.Name, tt.wantedServiceClass.Name)
+			}
+		} else if err == nil && tt.wantErr {
+			t.Error("test failed, expected: false, got true")
+		} else if err != nil && !tt.wantErr {
+			t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+		}
+	}
+
+}
+
+func TestGetClusterPlansFromServiceName(t *testing.T) {
+	planExternalMetaDataRaw, err := fakePlanExternalMetaDataRaw()
+	if err != nil {
+		fmt.Printf("error occured %v during marshalling", err)
+		return
+	}
+
+	planServiceInstanceCreateParameterSchemasRaw, err := fakePlanServiceInstanceCreateParameterSchemasRaw()
+	if err != nil {
+		fmt.Printf("error occured %v during marshalling", err)
+		return
+	}
+
+	type args struct {
+		serviceClassName string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []scv1beta1.ClusterServicePlan
+		wantErr bool
+	}{
+		{
+			name:    "test case 1 : plans found for the service class",
+			args:    args{serviceClassName: "1dda1477cace09730bd8ed7a6505607e"},
+			wantErr: false,
+			want: []scv1beta1.ClusterServicePlan{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "67042296c7c95e84142f21f58da2ebfe",
+					},
+					Spec: scv1beta1.ClusterServicePlanSpec{
+						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+							Name: "1dda1477cace09730bd8ed7a6505607e",
+						},
+						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+							ExternalName:                         "dev",
+							Description:                          "this is a example description 1",
+							ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
+							ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[0]},
+						},
+					},
+				},
+
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "7f88be6129622f72554c20af879a8ce0",
+					},
+					Spec: scv1beta1.ClusterServicePlanSpec{
+						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+							Name: "1dda1477cace09730bd8ed7a6505607e",
+						},
+						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+							ExternalName:                         "prod",
+							Description:                          "this is a example description 2",
+							ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[1]},
+							ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[1]},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "test case 2 : no plans found for the service class",
+			args:    args{serviceClassName: "1dda1477cace09730bd8"},
+			wantErr: false,
+			want:    []scv1beta1.ClusterServicePlan{},
+		},
+	}
+
+	planList := scv1beta1.ClusterServicePlanList{
+		Items: []scv1beta1.ClusterServicePlan{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "67042296c7c95e84142f21f58da2ebfe",
+				},
+				Spec: scv1beta1.ClusterServicePlanSpec{
+					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+						Name: "1dda1477cace09730bd8ed7a6505607e",
+					},
+					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+						ExternalName:                         "dev",
+						Description:                          "this is a example description 1",
+						ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
+						ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[0]},
+					},
+				},
+			},
+
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "7f88be6129622f72554c20af879a8ce0",
+				},
+				Spec: scv1beta1.ClusterServicePlanSpec{
+					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
+						Name: "1dda1477cace09730bd8ed7a6505607e",
+					},
+					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
+						ExternalName:                         "prod",
+						Description:                          "this is a example description 2",
+						ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[1]},
+						ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[1]},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := FakeNew()
+
+			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (bool, runtime.Object, error) {
+				var pList []scv1beta1.ClusterServicePlan
+				for _, plan := range planList.Items {
+					if plan.Spec.ClusterServiceClassRef.Name == strings.Split(action.(ktesting.ListAction).GetListRestrictions().Fields.String(), "=")[1] {
+						pList = append(pList, plan)
+					}
+				}
+
+				return true, &scv1beta1.ClusterServicePlanList{Items: pList}, nil
+			})
+
+			gotPlans, err := client.GetClusterPlansFromServiceName(tt.args.serviceClassName)
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.ServiceCatalogClientSet.Actions()) != 1 {
+					t.Errorf("expected 2 actions in GetServiceClassAndPlans got: %v", fakeClientSet.ServiceCatalogClientSet.Actions())
+				}
+
+				for _, wantedServicePlan := range tt.want {
+					found := false
+					for _, gotServicePlan := range gotPlans {
+						if reflect.DeepEqual(wantedServicePlan.Spec.ExternalName, gotServicePlan.Spec.ExternalName) {
+							found = true
+						} else {
+							continue
+						}
+
+						if !reflect.DeepEqual(wantedServicePlan.Name, gotServicePlan.Name) {
+							t.Errorf("different plan name expected got: %v , expected: %v", wantedServicePlan.Name, gotServicePlan.Name)
+						}
+
+						if !reflect.DeepEqual(wantedServicePlan.Spec, gotServicePlan.Spec) {
+							t.Errorf("different plan spec value expected got: %v , expected: %v", wantedServicePlan.Spec, gotServicePlan.Spec)
+						}
+					}
+
+					if !found {
+						t.Errorf("service plan %v not found", wantedServicePlan.Spec.ExternalName)
+					}
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
 			}
 		})
 	}

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/olekukonko/tablewriter"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -15,9 +16,10 @@ var catalogCmd = &cobra.Command{
 	Use:   "catalog [options]",
 	Short: "Catalog related operations",
 	Long:  "Catalog related operations",
-	Example: fmt.Sprintf("%s\n%s",
+	Example: fmt.Sprintf("%s\n%s\n%s",
 		catalogListCmd.Example,
-		catalogSearchCmd.Example),
+		catalogSearchCmd.Example,
+		catalogDescribeCmd.Example),
 }
 
 var catalogListCmd = &cobra.Command{
@@ -184,13 +186,81 @@ services from service catalog.
 	},
 }
 
+var catalogDescribeCmd = &cobra.Command{
+	Use:   "describe",
+	Short: "Describe catalog item",
+	Long:  "Describe the given catalog item from OpenShift",
+	Args:  cobra.ExactArgs(1),
+	Example: `  # Describe the given service
+  odo catalog describe service mysql-persistent
+	`,
+}
+
+var catalogDescribeServiceCmd = &cobra.Command{
+	Use:   "service",
+	Short: "Describe a service",
+	Long: `Describe a service type.
+
+This describes the service and the associated plans.
+`,
+	Example: `  # Describe a service
+  odo catalog describe service mysql-persistent
+	`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getOcClient()
+		serviceName := args[0]
+		service, plans, err := svc.GetServiceClassAndPlans(client, serviceName)
+		checkError(err, "")
+
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetBorder(false)
+		table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+		serviceData := [][]string{
+			{"Name", service.Name},
+			{"Bindable", fmt.Sprint(service.Bindable)},
+			{"Operated by the broker", service.ServiceBrokerName},
+			{"Short Description", service.ShortDescription},
+			{"Long Description", service.LongDescription},
+			{"Versions Available", strings.Join(service.VersionsAvailable, ",")},
+			{"Tags", strings.Join(service.Tags, ",")},
+		}
+
+		table.AppendBulk(serviceData)
+
+		table.Append([]string{""})
+
+		if len(plans) > 0 {
+			table.Append([]string{"PLANS"})
+			for _, plan := range plans {
+				table.Append([]string{".......................", "....................................................."})
+
+				planData := [][]string{
+					{"Name", plan.Name},
+					{"Display Name", plan.DisplayName},
+					{"Short Description", plan.Description},
+					{"Required Parameters", strings.Join(plan.Required, ", ")},
+					{"Optional Parameters", strings.Join(plan.Optional, ", ")},
+				}
+				table.AppendBulk(planData)
+			}
+			table.Render()
+		} else {
+			fmt.Printf("No plans found for service %s\n", serviceName)
+		}
+	},
+}
+
 func init() {
 	catalogCmd.AddCommand(catalogSearchCmd)
 	catalogCmd.AddCommand(catalogListCmd)
+	catalogCmd.AddCommand(catalogDescribeCmd)
 	catalogListCmd.AddCommand(catalogListComponentCmd)
 	catalogListCmd.AddCommand(catalogListServiceCmd)
 	catalogSearchCmd.AddCommand(catalogSearchComponentCmd)
 	catalogSearchCmd.AddCommand(catalogSearchServiceCmd)
+	catalogDescribeCmd.AddCommand(catalogDescribeServiceCmd)
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
 	catalogCmd.SetUsageTemplate(cmdUsageTemplate)
