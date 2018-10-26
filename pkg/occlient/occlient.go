@@ -2210,7 +2210,7 @@ func (c *Client) GetServerVersion() (*serverInfo, error) {
 	}
 
 	// This will fetch the information about OpenShift Version
-	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
+	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version").Do().Raw()
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get OpenShift Version")
 	}
