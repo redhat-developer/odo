@@ -323,7 +323,7 @@ func GetCurrent(applicationName string, projectName string) (string, error) {
 // During copying binary components, path represent base directory path to binary and files contains path of binary
 // During copying local source components, path represent base directory path whereas files is empty
 // During `odo watch`, path represent base directory path whereas files contains list of changed Files
-func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
+var PushLocal = func(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
 	const targetPath = "/opt/app-root/src"
 
 	// Find DeploymentConfig for component

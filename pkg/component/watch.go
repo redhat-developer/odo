@@ -107,10 +107,12 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	return nil
 }
 
+var UserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch based on user request")
+
 // WatchAndPush watches path, if something changes in  that path it calls PushLocal
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
-func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int) error {
+func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int, extChan chan string) error {
 	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, ignores)
 
 	// these variables must be accessed while holding the changeLock
@@ -129,10 +131,17 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 		return fmt.Errorf("error setting up filesystem watcher: %v", err)
 	}
 	defer watcher.Close()
+	defer close(extChan)
 
 	go func() {
 		for {
 			select {
+			case extMsg := <-extChan:
+				if extMsg == "Stop" {
+					changeLock.Lock()
+					watchError = UserRequestedWatchExit
+					changeLock.Unlock()
+				}
 			case event := <-watcher.Events:
 				isIgnoreEvent := false
 				changeLock.Lock()
@@ -209,6 +218,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", path, err)
 	}
+	extChan <- "Start"
 
 	delay := time.Duration(delayInterval) * time.Second
 	ticker := time.NewTicker(delay)
