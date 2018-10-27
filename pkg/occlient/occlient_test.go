@@ -3,10 +3,11 @@ package occlient
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"

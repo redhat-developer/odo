@@ -85,3 +85,50 @@ func waitForServiceCreateCmd(cmd string, status string) bool {
 		return output == status
 	})
 }
+
+func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check func(output string) bool) (bool, error) {
+	var cmd *exec.Cmd
+
+	cmdStrParts := strings.Split(cmdStr, " ")
+	cmdName := cmdStrParts[0]
+	if len(cmdStrParts) > 1 {
+		cmdStrParts = cmdStrParts[1:]
+		cmd = exec.Command(cmdName, cmdStrParts...)
+	} else {
+		cmd = exec.Command(cmdName)
+	}
+
+	pingTimeout := time.After(timeout)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return false, err
+	}
+
+	buff := make([]byte, 1048576)
+	tick := time.Tick(1 * time.Second)
+
+	if err := cmd.Start(); err != nil {
+		return false, err
+	}
+
+	for {
+		select {
+		case <-pingTimeout:
+			Fail("Timeout out after " + string(timeout) + " minutes")
+		case <-tick:
+			n, err := stdout.Read(buff)
+			if err != nil {
+				return false, err
+			}
+			if n > 0 {
+				s := string(buff[:n])
+				if check(s) {
+					if err := cmd.Process.Kill(); err != nil {
+						return true, err
+					}
+					return true, nil
+				}
+			}
+		}
+	}
+}
