@@ -1186,20 +1186,3 @@ func TestGetupdateNotification(t *testing.T) {
 		})
 	}
 }
-
-//
-//func TestGet(t *testing.T) {
-//
-//}
-//
-//func TestSet(t *testing.T) {
-//
-//}
-//
-//func TestApplicationExists(t *testing.T) {
-//
-//}
-//
-//func TestAddApplication(t *testing.T) {
-//
-//}
