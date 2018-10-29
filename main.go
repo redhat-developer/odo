@@ -51,7 +51,7 @@ func createCompletion(root *cobra.Command) complete.Command {
 			return
 		}
 		var handler complete.Predictor
-		handler, ok := cmd.Suggesters[cmd.GetFlagSuggesterName(root, flag.Name)]
+		handler, ok := cmd.GetCommandFlagHandler(root, flag.Name)
 		if !ok {
 			handler = complete.PredictAnything
 		}
@@ -74,7 +74,7 @@ func createCompletion(root *cobra.Command) complete.Command {
 	}
 
 	var handler complete.Predictor
-	handler, ok := cmd.Suggesters[cmd.GetCommandSuggesterName(root)]
+	handler, ok := cmd.GetCommandHandler(root)
 	if !ok {
 		handler = complete.PredictNothing
 	}

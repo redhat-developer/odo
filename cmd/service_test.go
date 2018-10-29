@@ -17,18 +17,18 @@ func TestCompletions(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		handler completionHandler
+		handler contextualizedPredictor
 		last    string
 		want    []string
 	}{
 		{
 			name:    "Completing service create without input returns all available service class external names",
-			handler: Suggesters[getCommandSuggesterNameFrom("create")],
+			handler: serviceClassCompletionHandler,
 			want:    []string{"foo", "bar", "boo"},
 		},
 		{
 			name:    "Completing service delete without input returns all available service instances",
-			handler: Suggesters[getCommandSuggesterNameFrom("delete")],
+			handler: serviceCompletionHandler,
 			want:    []string{"foo"},
 		},
 	}
@@ -64,10 +64,7 @@ func TestCompletions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := complete.Args{Last: tt.last}
-			tt.handler.client = func() *occlient.Client {
-				return client
-			}
-			got := tt.handler.Predict(a)
+			got := tt.handler(a, client)
 			if !equal(got, tt.want) {
 				t.Errorf("Failed %s: got: %q, want: %q", t.Name(), got, tt.want)
 			}

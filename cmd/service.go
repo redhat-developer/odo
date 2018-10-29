@@ -192,53 +192,46 @@ var serviceListCmd = &cobra.Command{
 	},
 }
 
+var serviceCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
+	completions = make([]string, 0)
+	projectName := getAndSetNamespace(client)
+			applicationName, err := application.GetCurrent(projectName)
+	if err != nil {
+		return completions
+	}
+
+	services, err := svc.List(client, applicationName)
+	if err != nil {
+		return completions
+	}
+
+	for _, class := range services {
+		completions = append(completions, class.Name)
+	}
+
+	return completions
+}
+var serviceClassCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
+	completions = make([]string, 0)
+	services, err := client.GetClusterServiceClasses()
+	if err != nil {
+		return completions
+	}
+
+	for _, class := range services {
+		completions = append(completions, class.Spec.ExternalName)
+	}
+
+	return completions
+}
+
 func init() {
 	serviceDeleteCmd.Flags().BoolVarP(&serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 
-	Suggesters[GetCommandSuggesterName(serviceCreateCmd)] = completionHandler{
-		client: func() *occlient.Client {
-			return util.GetOcClient()
-		},
-		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
-			completions = make([]string, 0)
-			services, err := client.GetClusterServiceClasses()
-			if err != nil {
-				return completions
-			}
-
-			for _, class := range services {
-				completions = append(completions, class.Spec.ExternalName)
-			}
-
-			return completions
-		},
-	}
-
-	Suggesters[GetCommandSuggesterName(serviceDeleteCmd)] = completionHandler{
-		client: func() *occlient.Client {
-			return util.GetOcClient()
-		},
-		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
-			completions = make([]string, 0)
-			projectName := getAndSetNamespace(client)
-			applicationName, err := application.GetCurrent(projectName)
-			if err != nil {
-				return completions
-			}
-			services, err := svc.List(client, applicationName)
-			if err != nil {
-				return completions
-			}
-
-			for _, class := range services {
-				completions = append(completions, class.Name)
-			}
-
-			return completions
-		},
-	}
+	RegisterCommandHandler(serviceCreateCmd, serviceClassCompletionHandler)
+	RegisterCommandHandler(serviceDeleteCmd, serviceCompletionHandler)
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
