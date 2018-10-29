@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	util2 "github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"path/filepath"
 	"strings"
@@ -68,9 +69,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 		stdout := color.Output
 		glog.V(4).Infof("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
 
-		client := getOcClient()
+		client := util2.GetOcClient()
 		applicationName, err := application.GetCurrentOrGetCreateSetDefault(client)
-		checkError(err, "")
+		util2.CheckError(err, "")
 		projectName := project.GetCurrent(client)
 
 		checkFlag := 0
@@ -80,19 +81,19 @@ A full list of component types that can be deployed is available using: 'odo cat
 		if len(componentBinary) != 0 {
 			componentPath = componentBinary
 			componentPathType = component.BINARY
-			checkError(err, "")
+			util2.CheckError(err, "")
 			checkFlag++
 		}
 		if len(componentGit) != 0 {
 			componentPath = componentGit
 			componentPathType = component.GIT
-			checkError(err, "")
+			util2.CheckError(err, "")
 			checkFlag++
 		}
 		if len(componentLocal) != 0 {
 			componentPath = componentLocal
 			componentPathType = component.SOURCE
-			checkError(err, "")
+			util2.CheckError(err, "")
 			checkFlag++
 		}
 
@@ -105,7 +106,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// Fetch list of existing components in-order to attempt generation of unique component name
 		componentList, err := component.List(client, applicationName, projectName)
-		checkError(err, "")
+		util2.CheckError(err, "")
 
 		// Generate unique name for component
 		componentName, err := component.GetDefaultComponentName(
@@ -114,11 +115,11 @@ A full list of component types that can be deployed is available using: 'odo cat
 			componentType,
 			componentList,
 		)
-		checkError(err, "")
+		util2.CheckError(err, "")
 
 		// Check to see if the catalog type actually exists
 		exists, err := catalog.Exists(client, componentType)
-		checkError(err, "")
+		util2.CheckError(err, "")
 		if !exists {
 			fmt.Printf("Invalid component type: %v\nRun 'odo catalog list components' to see a list of supported component types\n", componentType)
 			os.Exit(1)
@@ -126,7 +127,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// Check to see if that particular version exists
 		versionExists, err := catalog.VersionExists(client, componentType, componentVersion)
-		checkError(err, "")
+		util2.CheckError(err, "")
 		if !versionExists {
 			fmt.Printf("Invalid component version: %v\nRun 'odo catalog list components' to see a list of supported component type versions\n", componentVersion)
 			os.Exit(1)
@@ -139,9 +140,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// Validate component name
 		err = validateName(componentName)
-		checkError(err, "")
+		util2.CheckError(err, "")
 		exists, err = component.Exists(client, componentName, applicationName, projectName)
-		checkError(err, "")
+		util2.CheckError(err, "")
 		if exists {
 			fmt.Printf("component with the name %s already exists in the current application\n", componentName)
 			os.Exit(1)
@@ -152,20 +153,20 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 			// Use Git
 			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts, componentEnvVars)
-			checkError(err, "")
+			util2.CheckError(err, "")
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 
 			// Git is the only one using BuildConfig since we need to retrieve the git
 			err = component.Build(client, componentName, applicationName, true, true, stdout)
-			checkError(err, "")
+			util2.CheckError(err, "")
 
 		} else if len(componentLocal) != 0 {
 
 			// Use the absolute path for the component
 			dir, err := filepath.Abs(componentLocal)
-			checkError(err, "")
+			util2.CheckError(err, "")
 			fileInfo, err := os.Stat(dir)
-			checkError(err, "")
+			util2.CheckError(err, "")
 			if !fileInfo.IsDir() {
 				fmt.Println("Please provide a path to the directory")
 				os.Exit(1)
@@ -173,31 +174,31 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 			// Create
 			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars)
-			checkError(err, "")
+			util2.CheckError(err, "")
 
 		} else if len(componentBinary) != 0 {
 			// Deploy the component with a binary
 
 			// Retrieve the path of the binary
 			path, err := filepath.Abs(componentBinary)
-			checkError(err, "")
+			util2.CheckError(err, "")
 
 			// Create
 			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts, componentEnvVars)
-			checkError(err, "")
+			util2.CheckError(err, "")
 
 		} else {
 			// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
 			dir, err := filepath.Abs("./")
-			checkError(err, "")
+			util2.CheckError(err, "")
 
 			// Create
 			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars)
-			checkError(err, "")
+			util2.CheckError(err, "")
 		}
 
 		ports, err := component.GetComponentPorts(client, componentName, applicationName)
-		checkError(err, "")
+		util2.CheckError(err, "")
 		fmt.Printf("Component '%s' was created", componentName)
 
 		if len(ports) > 1 {
@@ -212,7 +213,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// after component is successfully created, set is as active
 		err = component.SetCurrent(client, componentName, applicationName, projectName)
-		checkError(err, "")
+		util2.CheckError(err, "")
 		fmt.Printf("\nComponent '%s' is now set as active component.\n", componentName)
 	},
 }

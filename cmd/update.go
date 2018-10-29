@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"path/filepath"
 
@@ -33,9 +34,9 @@ var updateCmd = &cobra.Command{
   odo update wildfly --binary ./downloads/sample.war
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
+		util.CheckError(err, "")
 		projectName := project.GetCurrent(client)
 
 		stdout := color.Output
@@ -62,10 +63,10 @@ var updateCmd = &cobra.Command{
 		)
 		if len(args) == 0 {
 			componentName, err = component.GetCurrent(client, applicationName, projectName)
-			checkError(err, "unable to get current component")
+			util.CheckError(err, "unable to get current component")
 			if len(componentName) == 0 {
 				appList, err := application.List(client)
-				checkError(err, "")
+				util.CheckError(err, "")
 				if len(appList) == 0 {
 					fmt.Println("Cannot update as no application exists in the current project")
 					os.Exit(1)
@@ -74,7 +75,7 @@ var updateCmd = &cobra.Command{
 		} else {
 			componentName = args[0]
 			exists, err := component.Exists(client, componentName, applicationName, projectName)
-			checkError(err, "")
+			util.CheckError(err, "")
 			if !exists {
 				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)
 				os.Exit(1)
@@ -88,26 +89,26 @@ var updateCmd = &cobra.Command{
 
 		if len(componentGit) != 0 {
 			err := component.Update(client, componentName, applicationName, "git", componentGit, stdout)
-			checkError(err, "")
+			util.CheckError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := filepath.Abs(componentLocal)
-			checkError(err, "")
+			util.CheckError(err, "")
 			fileInfo, err := os.Stat(dir)
-			checkError(err, "")
+			util.CheckError(err, "")
 			if !fileInfo.IsDir() {
 				fmt.Println("Please provide a path to the directory")
 				os.Exit(1)
 			}
 			err = component.Update(client, componentName, applicationName, "local", dir, stdout)
-			checkError(err, "")
+			util.CheckError(err, "")
 			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
 		} else if len(componentBinary) != 0 {
 			path, err := filepath.Abs(componentBinary)
-			checkError(err, "")
+			util.CheckError(err, "")
 			err = component.Update(client, componentName, applicationName, "binary", path, stdout)
-			checkError(err, "")
+			util.CheckError(err, "")
 			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
 		}
 	},

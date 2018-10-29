@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	util2 "github.com/redhat-developer/odo/pkg/odo/util"
 	"net/url"
 	"os"
 	"runtime"
@@ -34,9 +35,9 @@ var pushCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := color.Output
-		client := getOcClient()
+		client := util2.GetOcClient()
 		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
+		util2.CheckError(err, "")
 		projectName := project.GetCurrent(client)
 
 		var componentName string
@@ -44,7 +45,7 @@ var pushCmd = &cobra.Command{
 			var err error
 			glog.V(4).Info("No component name passed, assuming current component")
 			componentName, err = component.GetCurrent(client, applicationName, projectName)
-			checkError(err, "unable to get current component")
+			util2.CheckError(err, "unable to get current component")
 			if componentName == "" {
 				fmt.Println("No component is set as active.")
 				fmt.Println("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
@@ -53,7 +54,7 @@ var pushCmd = &cobra.Command{
 		} else {
 			componentName = args[0]
 			exists, err := component.Exists(client, componentName, applicationName, projectName)
-			checkError(err, "")
+			util2.CheckError(err, "")
 			if !exists {
 				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)
 				os.Exit(1)
@@ -62,7 +63,7 @@ var pushCmd = &cobra.Command{
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName, projectName)
-		checkError(err, "unable to get component source")
+		util2.CheckError(err, "unable to get component source")
 		switch sourceType {
 		case "local", "binary":
 			// use value of '--dir' as source if it was used
@@ -75,7 +76,7 @@ var pushCmd = &cobra.Command{
 			}
 
 			u, err := url.Parse(sourcePath)
-			checkError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
+			util2.CheckError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
 
 			if u.Scheme != "" && u.Scheme != "file" {
 				fmt.Printf("Component %s has invalid source path %s", componentName, u.Scheme)
@@ -86,7 +87,7 @@ var pushCmd = &cobra.Command{
 
 			_, err = os.Stat(localLocation)
 			if err != nil {
-				checkError(err, "")
+				util2.CheckError(err, "")
 			}
 
 			if sourceType == "local" {
@@ -97,7 +98,7 @@ var pushCmd = &cobra.Command{
 				glog.V(4).Infof("Copying file %s to pod", localLocation)
 				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation})
 			}
-			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			util2.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
 
 		case "git":
 			// currently we don't support changing build type
@@ -107,7 +108,7 @@ var pushCmd = &cobra.Command{
 				os.Exit(1)
 			}
 			err := component.Build(client, componentName, applicationName, true, true, stdout)
-			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			util2.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
 		fmt.Printf("changes successfully pushed to component: %v\n", componentName)

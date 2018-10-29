@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
 
@@ -28,11 +29,11 @@ var componentDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		glog.V(4).Infof("component delete called")
 		glog.V(4).Infof("args: %#v", strings.Join(args, " "))
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		// Get all necessary names (current application + project)
 		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
+		util.CheckError(err, "")
 		projectName := project.GetCurrent(client)
 
 		// Get the current component if no arguments have been passed
@@ -48,7 +49,7 @@ var componentDeleteCmd = &cobra.Command{
 
 			// Checks to see if the component actually exists
 			exists, err := component.Exists(client, componentName, applicationName, projectName)
-			checkError(err, "")
+			util.CheckError(err, "")
 			if !exists {
 				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
 				os.Exit(1)
@@ -65,11 +66,11 @@ var componentDeleteCmd = &cobra.Command{
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := component.Delete(client, componentName, applicationName, projectName)
-			checkError(err, "")
+			util.CheckError(err, "")
 			fmt.Printf("Component %s from application %s has been deleted\n", componentName, applicationName)
 
 			currentComponent, err := component.GetCurrent(client, applicationName, projectName)
-			checkError(err, "Unable to get current component")
+			util.CheckError(err, "Unable to get current component")
 
 			if currentComponent == "" {
 				fmt.Println("No default component has been set")

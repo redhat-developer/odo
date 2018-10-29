@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -45,9 +46,9 @@ var catalogListComponentCmd = &cobra.Command{
   odo catalog search component nodejs
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		catalogList, err := catalog.List(client)
-		checkError(err, "unable to list components")
+		util.CheckError(err, "unable to list components")
 		switch len(catalogList) {
 		case 0:
 			fmt.Printf("No deployable components found\n")
@@ -89,9 +90,9 @@ var catalogListServiceCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		catalogList, err := svc.ListCatalog(client)
-		checkError(err, "unable to list services because Service Catalog is not enabled in your cluster")
+		util.CheckError(err, "unable to list services because Service Catalog is not enabled in your cluster")
 		switch len(catalogList) {
 		case 0:
 			fmt.Printf("No deployable services found\n")
@@ -136,10 +137,10 @@ components.
   odo catalog search component python
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		searchTerm := args[0]
 		components, err := catalog.Search(client, searchTerm)
-		checkError(err, "unable to search for components")
+		util.CheckError(err, "unable to search for components")
 
 		switch len(components) {
 		case 0:
@@ -166,10 +167,10 @@ services from service catalog.
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		searchTerm := args[0]
 		components, err := svc.Search(client, searchTerm)
-		checkError(err, "unable to search for services")
+		util.CheckError(err, "unable to search for services")
 
 		switch len(components) {
 		case 0:
@@ -208,10 +209,10 @@ This describes the service and the associated plans.
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		serviceName := args[0]
 		service, plans, err := svc.GetServiceClassAndPlans(client, serviceName)
-		checkError(err, "")
+		util.CheckError(err, "")
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetBorder(false)

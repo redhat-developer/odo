@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/application"
@@ -34,23 +35,23 @@ is injected into the component.
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		applicationName, err := application.GetCurrent(client)
-		checkError(err, "")
+		util.CheckError(err, "")
 		projectName := project.GetCurrent(client)
 
 		componentName := getComponent(client, linkComponent, applicationName, projectName)
 		serviceName := args[0]
 
 		exists, err := component.Exists(client, componentName, applicationName, projectName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		if !exists {
 			fmt.Printf("Component %v does not exist\n", componentName)
 			os.Exit(1)
 		}
 
 		exists, err = svc.SvcExists(client, serviceName, applicationName, projectName)
-		checkError(err, "Unable to determine if service %s exists within the current namespace", serviceName)
+		util.CheckError(err, "Unable to determine if service %s exists within the current namespace", serviceName)
 		if !exists {
 			fmt.Printf(`Service %s does not exist within the current namespace.
 Please perform 'odo service create %s ...' before attempting to link the service.`, serviceName, serviceName)
@@ -68,7 +69,7 @@ If not, then please delete the service and recreate it using 'odo service create
 		}
 
 		err = client.LinkSecret(serviceName, componentName, applicationName, projectName)
-		checkError(err, "")
+		util.CheckError(err, "")
 
 		fmt.Printf("Service %s has been successfully linked to the component %s.\n", serviceName, applicationName)
 	},
