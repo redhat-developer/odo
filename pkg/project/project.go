@@ -84,6 +84,17 @@ func Delete(client *occlient.Client, projectName string) error {
 		return errors.Wrap(err, "unable to delete project")
 	}
 
+	// delete from config
+	cfg, err := config.New()
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete project from config file")
+	}
+
+	err = cfg.DeleteProject(projectName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete project from config file")
+	}
+
 	// If there will be any projects post the current deletion,
 	// Choose the first project from remainder of the project list to set as current
 	if len(projects) > 0 {
