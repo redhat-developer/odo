@@ -5,6 +5,7 @@ import (
 	"github.com/posener/complete"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
@@ -17,7 +18,7 @@ func TestCompletions(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		handler contextualizedPredictor
+		handler completion.ContextualizedPredictor
 		last    string
 		want    []string
 	}{
