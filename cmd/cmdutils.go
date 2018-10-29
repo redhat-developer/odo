@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/posener/complete"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/spf13/cobra"
 	"os"
 	"strings"
-
-	"github.com/posener/complete"
-	"github.com/spf13/cobra"
 
 	"text/tabwriter"
 
@@ -82,7 +82,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string) error {
 func getComponent(client *occlient.Client, inputComponent string, applicationName string) string {
 	if len(inputComponent) == 0 {
 		c, err := component.GetCurrent(applicationName, client.Namespace)
-		checkError(err, "Could not get current component")
+		util.CheckError(err, "Could not get current component")
 		if c == "" {
 			fmt.Println("There is no component set")
 			os.Exit(1)
@@ -90,7 +90,7 @@ func getComponent(client *occlient.Client, inputComponent string, applicationNam
 		return c
 	}
 	exists, err := component.Exists(client, inputComponent, applicationName)
-	checkError(err, "")
+	util.CheckError(err, "")
 	if !exists {
 		fmt.Printf("Component %v does not exist\n", inputComponent)
 		os.Exit(1)
@@ -152,7 +152,7 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 	fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH")
 
 	storageListMounted, err := storage.ListMounted(client, componentName, applicationName)
-	checkError(err, "could not get mounted storage list")
+	util.CheckError(err, "could not get mounted storage list")
 
 	// iterating over all mounted storage and put in the mount storage table
 	if len(storageListMounted) > 0 {
@@ -172,7 +172,7 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 // printMountedStorageInAllComponent prints all the mounted storage in all the components of the application and project
 func printMountedStorageInAllComponent(client *occlient.Client, applicationName string) {
 	componentList, err := component.List(client, applicationName)
-	checkError(err, "could not get component list")
+	util.CheckError(err, "could not get component list")
 
 	// iterating over all the components in the given aplication and project
 	for _, component := range componentList {
@@ -190,7 +190,7 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 	fmt.Fprintln(tabWriterUnmounted, "NAME", "\t", "SIZE")
 
 	storageListUnmounted, err := storage.ListUnmounted(client, applicationName)
-	checkError(err, "could not get unmounted storage list")
+	util.CheckError(err, "could not get unmounted storage list")
 
 	// iterating over all unmounted storage and put in the unmount storage table
 	if len(storageListUnmounted) > 0 {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
 
@@ -45,18 +46,18 @@ var projectSetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
-		client := getOcClient()
+		client := util.GetOcClient()
 		current := project.GetCurrent(client)
 
 		exists, err := project.Exists(client, projectName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		if !exists {
 			fmt.Printf("The project %s does not exist\n", projectName)
 			os.Exit(1)
 		}
 
 		err = project.SetCurrent(client, projectName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		if projectShortFlag {
 			fmt.Print(projectName)
 		} else {
@@ -78,7 +79,7 @@ var projectGetCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		project := project.GetCurrent(client)
 
 		if projectShortFlag {
@@ -99,11 +100,11 @@ var projectCreateCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
-		client := getOcClient()
+		client := util.GetOcClient()
 		err := project.Create(client, projectName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		err = project.SetCurrent(client, projectName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		fmt.Printf("New project created and now using project : %v\n", projectName)
 	},
 }
@@ -118,11 +119,11 @@ var projectDeleteCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		// Validate existence of the project to be deleted
 		isValidProject, err := project.Exists(client, projectName)
-		checkError(err, "Failed to delete project %s", projectName)
+		util.CheckError(err, "Failed to delete project %s", projectName)
 		if !isValidProject {
 			fmt.Printf("The project %s does not exist. Please check the list of projects using `odo project list`\n", projectName)
 			os.Exit(1)
@@ -144,7 +145,7 @@ var projectDeleteCmd = &cobra.Command{
 		fmt.Printf("Deleting project %s...\n(this operation may take some time)\n", projectName)
 		err = project.Delete(client, projectName)
 		if err != nil {
-			checkError(err, "")
+			util.CheckError(err, "")
 		}
 		fmt.Printf("Deleted project : %v\n", projectName)
 
@@ -154,7 +155,7 @@ var projectDeleteCmd = &cobra.Command{
 		// Check if List returns empty, if so, the currProject is showing old currentProject
 		// In openshift, when the project is deleted, it does not reset the current project in kube config file which is used by odo for current project
 		projects, err := project.List(client)
-		checkError(err, "")
+		util.CheckError(err, "")
 		if len(projects) != 0 {
 			fmt.Printf("%s has been set as the active project\n", currProject)
 		} else {
@@ -174,9 +175,9 @@ var projectListCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 		projects, err := project.List(client)
-		checkError(err, "")
+		util.CheckError(err, "")
 		if len(projects) == 0 {
 			fmt.Println("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
 			return

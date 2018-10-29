@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -17,7 +18,7 @@ var describeCmd = &cobra.Command{
 	`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		getAndSetNamespace(client)
 		applicationName := getAppName(client)
@@ -31,14 +32,14 @@ var describeCmd = &cobra.Command{
 
 			// Checks to see if the component actually exists
 			exists, err := component.Exists(client, componentName, applicationName)
-			checkError(err, "")
+			util.CheckError(err, "")
 			if !exists {
 				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
 				os.Exit(1)
 			}
 		}
 		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, componentName, applicationName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		printComponentInfo(componentName, componentType, path, componentURL, appStore)
 	},
 }

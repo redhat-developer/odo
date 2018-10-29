@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
 
@@ -40,10 +41,10 @@ var versionCmd = &cobra.Command{
 		fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
 
 		// turning off the flag which checks for login status
-		GlobalSkipConnectionCheck = true
+		util.GlobalSkipConnectionCheck = true
 		// Lets fetch the info about the server
-		serverInfo, err := getOcClient().GetServerVersion()
-		checkError(err, "")
+		serverInfo, err := util.GetOcClient().GetServerVersion()
+		util.CheckError(err, "")
 		fmt.Printf("\n"+
 			"Server: %v\n"+
 			"OpenShift: %v\n"+

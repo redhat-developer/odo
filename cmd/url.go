@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
 
@@ -49,7 +50,7 @@ The created URL can be used to access the specified component from outside the O
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		getAndSetNamespace(client)
 		applicationName := getAppName(client)
@@ -75,7 +76,7 @@ The created URL can be used to access the specified component from outside the O
 
 		fmt.Printf("Adding URL to component: %v\n", componentName)
 		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		fmt.Printf("URL created for component: %v\n\n"+
 			"%v - %v\n", componentName, urlRoute.Name, url.GetUrlString(*urlRoute))
 	},
@@ -92,7 +93,7 @@ var urlDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// Initialization
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		getAndSetNamespace(client)
 		applicationName := getAppName(client)
@@ -101,7 +102,7 @@ var urlDeleteCmd = &cobra.Command{
 		urlName := args[0]
 
 		exists, err := url.Exists(client, urlName, componentName, applicationName)
-		checkError(err, "")
+		util.CheckError(err, "")
 
 		if !exists {
 			fmt.Printf("The URL %s does not exist within the component %s\n", urlName, componentName)
@@ -119,7 +120,7 @@ var urlDeleteCmd = &cobra.Command{
 		if strings.ToLower(confirmDeletion) == "y" {
 
 			err = url.Delete(client, urlName, applicationName)
-			checkError(err, "")
+			util.CheckError(err, "")
 			fmt.Printf("Deleted URL: %v\n", urlName)
 		} else {
 			fmt.Printf("Aborting deletion of url: %v\n", urlName)
@@ -136,14 +137,14 @@ var urlListCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		getAndSetNamespace(client)
 		applicationName := getAppName(client)
 		componentName := getComponent(client, componentFlag, applicationName)
 
 		urls, err := url.List(client, componentName, applicationName)
-		checkError(err, "")
+		util.CheckError(err, "")
 
 		if len(urls) == 0 {
 			fmt.Printf("No URLs found for component %v in application %v\n", componentName, applicationName)

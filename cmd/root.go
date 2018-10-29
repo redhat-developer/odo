@@ -3,20 +3,16 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"os"
-
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/notify"
-	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 // Global variables
 var (
-	GlobalSkipConnectionCheck bool
 	projectFlag               string
 	applicationFlag           string
 	componentFlag             string
@@ -111,13 +107,13 @@ func Execute() {
 	// before proceeding with fetching the latest version
 	cfg, err := config.New()
 	if err != nil {
-		checkError(err, "")
+		util.CheckError(err, "")
 	}
 	if cfg.GetUpdateNotification() == true {
 		updateInfo := make(chan string)
 		go getLatestReleaseInfo(updateInfo)
 
-		checkError(rootCmd.Execute(), "")
+		util.CheckError(rootCmd.Execute(), "")
 		select {
 		case message := <-updateInfo:
 			fmt.Println(message)
@@ -125,7 +121,7 @@ func Execute() {
 			glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
 	} else {
-		checkError(rootCmd.Execute(), "")
+		util.CheckError(rootCmd.Execute(), "")
 	}
 
 }
@@ -136,7 +132,7 @@ func init() {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
-	rootCmd.PersistentFlags().BoolVar(&GlobalSkipConnectionCheck, "skip-connection-check", false, "Skip cluster check")
+	rootCmd.PersistentFlags().BoolVar(&util.GlobalSkipConnectionCheck, "skip-connection-check", false, "Skip cluster check")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.CommandLine.Set("logtostderr", "true")
 
@@ -164,28 +160,5 @@ func getLatestReleaseInfo(info chan<- string) {
 			"---\n" +
 			"If you wish to disable the update notifications, you can disable it by running\n" +
 			"'odo utils config set UpdateNotification false'\n"
-	}
-}
-
-func getOcClient() *occlient.Client {
-	client, err := occlient.New(GlobalSkipConnectionCheck)
-	checkError(err, "")
-	return client
-}
-
-// checkError prints the cause of the given error and exits the code with an
-// exit code of 1.
-// If the context is provided, then that is printed, if not, then the cause is
-// detected using errors.Cause(err)
-func checkError(err error, context string, a ...interface{}) {
-	if err != nil {
-		glog.V(4).Infof("Error:\n%v", err)
-		if context == "" {
-			fmt.Println(errors.Cause(err))
-		} else {
-			fmt.Printf(fmt.Sprintf("%s\n", context), a...)
-		}
-
-		os.Exit(1)
 	}
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 
 	"github.com/golang/glog"
@@ -37,13 +38,13 @@ var componentGetCmd = &cobra.Command{
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		glog.V(4).Infof("component get called")
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		component, err := component.GetCurrent(applicationName, projectName)
-		checkError(err, "unable to get current component")
+		util.CheckError(err, "unable to get current component")
 		if componentShortFlag {
 			fmt.Print(component)
 		} else {
@@ -65,20 +66,20 @@ var componentSetCmd = &cobra.Command{
   `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		exists, err := component.Exists(client, args[0], applicationName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		if !exists {
 			fmt.Printf("Component %s does not exist in the current application\n", args[0])
 			os.Exit(1)
 		}
 
 		err = component.SetCurrent(args[0], applicationName, projectName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		fmt.Printf("Switched to component: %v\n", args[0])
 	},
 }

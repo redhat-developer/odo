@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"io"
 	"os"
 
@@ -140,7 +141,7 @@ Auto completion supports both bash and zsh. Output is to STDOUT.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		err := Generate(cmd, args)
-		checkError(err, "")
+		util.CheckError(err, "")
 
 		return nil
 	},

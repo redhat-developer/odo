@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -25,7 +26,7 @@ var logCmd = &cobra.Command{
 		stdout := os.Stdout
 
 		// Retrieve the client
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		getAndSetNamespace(client)
 		applicationName := getAppName(client)
@@ -41,7 +42,7 @@ var logCmd = &cobra.Command{
 
 		// Retrieve the log
 		err := component.GetLogs(client, currentComponent, applicationName, logFollow, stdout)
-		checkError(err, "Unable to retrieve logs, does your component exist?")
+		util.CheckError(err, "Unable to retrieve logs, does your component exist?")
 	},
 }
 

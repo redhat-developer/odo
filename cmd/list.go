@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"text/tabwriter"
 
@@ -18,15 +19,15 @@ var componentListCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 
 		projectName := getAndSetNamespace(client)
 		applicationName := getAppName(client)
 
 		currentComponent, err := component.GetCurrent(applicationName, projectName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		components, err := component.List(client, applicationName)
-		checkError(err, "")
+		util.CheckError(err, "")
 
 		if len(components) == 0 {
 			fmt.Println("There are no components deployed.")
