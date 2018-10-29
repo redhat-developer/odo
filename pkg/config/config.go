@@ -140,6 +140,7 @@ func (c *ConfigInfo) writeToFile() error {
 // SetConfiguration modifies Odo configurations in the config file
 // as of now being used for timeout, updatenotification
 func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
+	// processing values according to the parameter names
 	switch parameter {
 
 	case "timeout":

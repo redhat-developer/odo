@@ -53,10 +53,8 @@ Timeout - Timeout (in seconds) for OpenShift server connection check`,
 	Example: `
    # Set a configuration value
    odo utils config set UpdateNotification false
-   odo utils config set NamePrefix ""
    odo utils config set NamePrefix "app"
    odo utils config set timeout 20
-   odo utils config set timeout 0
 	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {

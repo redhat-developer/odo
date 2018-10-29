@@ -935,13 +935,13 @@ func TestGetTimeout(t *testing.T) {
 		want           int
 	}{
 		{
-			name:           "validating value 1 from config in default case",
+			name:           "Case 1: validating value 1 from config in default case",
 			existingConfig: Config{},
 			want:           1,
 		},
 
 		{
-			name: "validating value 0 from config",
+			name: "Case 2: validating value 0 from config",
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
 					Timeout: &zeroValue,
@@ -951,7 +951,7 @@ func TestGetTimeout(t *testing.T) {
 		},
 
 		{
-			name: "validating value 5 from config",
+			name: "Case 3: validating value 5 from config",
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
 					Timeout: &nonzeroValue,
@@ -998,7 +998,7 @@ func TestSetConfiguration(t *testing.T) {
 	}{
 		// updatenotification
 		{
-			name:           "updatenotification set nil to true",
+			name:           "Case 1: updatenotification set nil to true",
 			parameter:      "updatenotification",
 			value:          "true",
 			existingConfig: Config{},
@@ -1006,7 +1006,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:      "updatenotification set true to false",
+			name:      "Case 2: updatenotification set true to false",
 			parameter: "updatenotification",
 			value:     "false",
 			existingConfig: Config{
@@ -1018,7 +1018,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      "updatenotification set false to true",
+			name:      "Case 3: updatenotification set false to true",
 			parameter: "updatenotification",
 			value:     "true",
 			existingConfig: Config{
@@ -1031,7 +1031,7 @@ func TestSetConfiguration(t *testing.T) {
 		},
 
 		{
-			name:           "updatenotification invalid value",
+			name:           "Case 4: updatenotification invalid value",
 			parameter:      "updatenotification",
 			value:          "invalid_value",
 			existingConfig: Config{},
@@ -1040,7 +1040,7 @@ func TestSetConfiguration(t *testing.T) {
 
 		// timeout
 		{
-			name:      "Timeout set to 5 from 0",
+			name:      "Case 5: Timeout set to 5 from 0",
 			parameter: "timeout",
 			value:     "5",
 			existingConfig: Config{
@@ -1052,7 +1052,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           "Timeout set to 300",
+			name:           "Case 6: Timeout set to 300",
 			parameter:      "timeout",
 			value:          "300",
 			existingConfig: Config{},
@@ -1060,7 +1060,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:           "Timeout set to 0",
+			name:           "Case 7: Timeout set to 0",
 			parameter:      "timeout",
 			value:          "0",
 			existingConfig: Config{},
@@ -1068,14 +1068,14 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:           "Timeout set to -1",
+			name:           "Case 8: Timeout set to -1",
 			parameter:      "timeout",
 			value:          "-1",
 			existingConfig: Config{},
 			wantErr:        true,
 		},
 		{
-			name:           "Timeout invalid value",
+			name:           "Case 9: Timeout invalid value",
 			parameter:      "timeout",
 			value:          "this",
 			existingConfig: Config{},
@@ -1083,7 +1083,7 @@ func TestSetConfiguration(t *testing.T) {
 		},
 		// invalid parameter
 		{
-			name:           "invalid parameter",
+			name:           "Case 10: invalid parameter",
 			parameter:      "invalid_parameter",
 			existingConfig: Config{},
 			wantErr:        true,
@@ -1148,12 +1148,12 @@ func TestGetupdateNotification(t *testing.T) {
 		want           bool
 	}{
 		{
-			name:           "updatenotification nil",
+			name:           "Case 1: updatenotification nil",
 			existingConfig: Config{},
 			want:           true,
 		},
 		{
-			name: "updatenotification true",
+			name: "Case 2: updatenotification true",
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
 					UpdateNotification: &trueValue,
@@ -1162,7 +1162,7 @@ func TestGetupdateNotification(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "updatenotification false",
+			name: "Case 3: updatenotification false",
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
 					UpdateNotification: &falseValue,

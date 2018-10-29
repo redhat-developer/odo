@@ -83,22 +83,22 @@ var _ = Describe("odoe2e", func() {
 
 	Context("odo utils config", func() {
 		It("should get true for updatenotification by default", func() {
-			config_output := runCmd("odo utils config view")
-			Expect(config_output).To(ContainSubstring("true"))
-			Expect(config_output).To(ContainSubstring("UpdateNotification"))
+			configOutput := runCmd("odo utils config view")
+			Expect(configOutput).To(ContainSubstring("true"))
+			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
 		})
 		It("should be checking to see if timeout is the same as the constant", func() {
-			config_output := runCmd("odo utils config view|grep Timeout")
-			Expect(config_output).To(ContainSubstring(fmt.Sprintf("%d", config.DefaultTimeout)))
+			configOutput := runCmd("odo utils config view|grep Timeout")
+			Expect(configOutput).To(ContainSubstring(fmt.Sprintf("%d", config.DefaultTimeout)))
 		})
 		It("should be checking to see if config values are the same as the configured ones", func() {
 			runCmd("odo utils config set updatenotification false")
 			runCmd("odo utils config set timeout 5")
-			config_output := runCmd("odo utils config view|grep UpdateNotification")
-			Expect(config_output).To(ContainSubstring("false"))
-			Expect(config_output).To(ContainSubstring("UpdateNotification"))
-			config_output = runCmd("odo utils config view|grep Timeout")
-			Expect(config_output).To(ContainSubstring("5"))
+			configOutput := runCmd("odo utils config view|grep UpdateNotification")
+			Expect(configOutput).To(ContainSubstring("false"))
+			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
+			configOutput = runCmd("odo utils config view|grep Timeout")
+			Expect(configOutput).To(ContainSubstring("5"))
 		})
 	})
 
