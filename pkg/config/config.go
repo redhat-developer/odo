@@ -378,3 +378,18 @@ func (c *ConfigInfo) DeleteApplication(application string, project string) error
 	}
 	return nil
 }
+
+// DeleteProject deletes applications belonging to the given project from the config file
+func (c *ConfigInfo) DeleteProject(projectName string) error {
+	for i := len(c.ActiveApplications) - 1; i >= 0; i-- {
+		// remove current item from array
+		if c.ActiveApplications[i].Project == projectName {
+			c.ActiveApplications = append(c.ActiveApplications[:i], c.ActiveApplications[i+1:]...)
+		}
+	}
+	err := c.writeToFile()
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete project from config")
+	}
+	return nil
+}
