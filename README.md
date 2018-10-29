@@ -4,15 +4,15 @@
 
 ![Powered by OpenShift](/docs/img/powered_by_openshift.png)
 
-#### [What is Odo?](#what-is-odo-1)
-#### [Why did we create Odo?](#why-did-we-create-odo-1)
-#### [Who is Odo for?](#who-is-odo-for-1)
-#### [Setup and installation](#setup-and-installation-1)
-#### [Deploying an application using Odo](#deploying-a-nodejs-application-using-odo)
-#### [Additional documentation](#additional-documentation-1)
-#### [Community, Discussion, Contribution and Support](#community-discussion-contribution-and-support-1)
-#### [Glossary](#glossary-1)
-#### [CLI Structure](#cli-structure-1)
+- [What is Odo?](#what-is-odo)
+- [Why did we create Odo?](#why-did-we-create-odo)
+- [Who is Odo for?](#who-is-odo-for)
+- [Setup and installation](#setup-and-installation)
+- [Deploying an application using Odo](#deploying-a-nodejs-application-using-odo)
+- [Additional documentation](#additional-documentation)
+- [Community, Discussion, Contribution and Support](#community-discussion-contribution-and-support)
+- [Glossary](#glossary)
+- [CLI Structure](#cli-structure)
 
 
 ## What is Odo?
