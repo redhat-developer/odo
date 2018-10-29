@@ -4152,3 +4152,116 @@ func Test_updateEnvVar(t *testing.T) {
 		})
 	}
 }
+
+func Test_findContainer(t *testing.T) {
+	type args struct {
+		name       string
+		containers []corev1.Container
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Case 1 - Find the container",
+			args: args{
+				name: "foo",
+				containers: []corev1.Container{
+					{
+						Name: "foo",
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/tmp",
+								Name:      "test-pvc",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case 2 - Error if container not found",
+			args: args{
+				name: "foo2",
+				containers: []corev1.Container{
+					{
+						Name: "foo",
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/tmp",
+								Name:      "test-pvc",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 3 - Error when passing in blank container name",
+			args: args{
+				name: "",
+				containers: []corev1.Container{
+					{
+						Name: "foo",
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/tmp",
+								Name:      "test-pvc",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 4 - Check against multiple containers (rather than one)",
+			args: args{
+				name: "foo",
+				containers: []corev1.Container{
+					{
+						Name: "bar",
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/tmp",
+								Name:      "test-pvc",
+							},
+						},
+					},
+					{
+						Name: "foo",
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/tmp",
+								Name:      "test-pvc",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Run function findContainer
+			container, err := findContainer(tt.args.containers, tt.args.name)
+
+			// Check that the container matches the name
+			if err == nil && container.Name != tt.args.name {
+				t.Errorf("Wrong container returned, wanted container %v, got %v", tt.args.name, container.Name)
+			}
+
+			if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+
+		})
+	}
+}

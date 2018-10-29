@@ -2431,11 +2431,17 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 
 // findContainer finds the container
 func findContainer(containers []corev1.Container, name string) (corev1.Container, error) {
+
+	if name == "" {
+		return corev1.Container{}, errors.New("Invalid parameter for findContainer, unable to find a blank container")
+	}
+
 	for _, container := range containers {
 		if container.Name == name {
 			return container, nil
 		}
 	}
+
 	return corev1.Container{}, errors.New("Unable to find container")
 }
 
