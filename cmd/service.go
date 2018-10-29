@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/posener/complete"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -186,6 +188,49 @@ func init() {
 	serviceDeleteCmd.Flags().BoolVarP(&serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
+
+	Suggesters[GetCommandSuggesterName(serviceCreateCmd)] = completionHandler{
+		client: func() *occlient.Client {
+			return getOcClient()
+		},
+		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
+			completions = make([]string, 0)
+			services, err := client.GetClusterServiceClasses()
+			if err != nil {
+				return completions
+			}
+
+			for _, class := range services {
+				completions = append(completions, class.Spec.ExternalName)
+			}
+
+			return completions
+		},
+	}
+
+	Suggesters[GetCommandSuggesterName(serviceDeleteCmd)] = completionHandler{
+		client: func() *occlient.Client {
+			return getOcClient()
+		},
+		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
+			completions = make([]string, 0)
+			applicationName, err := application.GetCurrent(client)
+			if err != nil {
+				return completions
+			}
+			projectName := project.GetCurrent(client)
+			services, err := svc.List(client, applicationName, projectName)
+			if err != nil {
+				return completions
+			}
+
+			for _, class := range services {
+				completions = append(completions, class.Name)
+			}
+
+			return completions
+		},
+	}
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}

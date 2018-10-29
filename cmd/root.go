@@ -95,6 +95,11 @@ Find more information at https://github.com/redhat-developer/odo`,
 	BashCompletionFunction: bashCompletionFunc,
 }
 
+// RootCmd exposes the root command to main package to allow inspection by completion code
+func RootCmd() *cobra.Command {
+	return rootCmd
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {

@@ -9,6 +9,7 @@ whitelist:
   - NewBSD
   - FreeBSD
   - ISC
+  - MPL-2.0
 
 exceptions:
   # wwhrd currently does not detect ISC which is compatible with Odo so, add it under exceptions to avoid errors due to it being not recognised
