@@ -133,6 +133,12 @@ var applicationDeleteCmd = &cobra.Command{
 		// Print App Information which will be deleted
 		err := printDeleteAppInfo(client, appName)
 		checkError(err, "")
+		exists, err := application.Exists(client, appName)
+		checkError(err, "")
+		if !exists {
+			fmt.Printf("Application %v does not exist\n", appName)
+			os.Exit(1)
+		}
 
 		if applicationForceDeleteFlag {
 			confirmDeletion = "y"
