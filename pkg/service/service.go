@@ -31,12 +31,19 @@ type ServiceClass struct {
 	ServiceBrokerName string
 }
 
+type ServicePlanParameter struct {
+	Name            string
+	HasDefaultValue bool
+	DefaultValue    interface{}
+	Type            string
+	Required        bool
+}
+
 type ServicePlans struct {
 	Name        string
 	DisplayName string
 	Description string
-	Required    []string
-	Optional    []string
+	Parameters  []ServicePlanParameter
 }
 
 // ListCatalog lists all the available service types
@@ -224,11 +231,15 @@ func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (Servi
 			return ServiceClass{}, nil, errors.Wrap(err, "unable to unmarshal data the given service")
 		}
 
+		// record the values specified in the "required" field
+		// these parameters are not trully required from a user perspective
+		// since some of the parameters might have default values
+		requiredParameterNames := []string{}
 		if val, ok := createParameter["required"]; ok {
 			required := fmt.Sprint(val)
 			required = strings.Replace(required, "[", "", -1)
 			required = strings.Replace(required, "]", "", -1)
-			plan.Required = strings.Split(required, " ")
+			requiredParameterNames = strings.Split(required, " ")
 		}
 
 		// set the optional properties by inspecting additionalProperties
@@ -236,11 +247,37 @@ func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (Servi
 		if val, ok := createParameter["properties"]; ok {
 			propertiesMap, ok := val.(map[string]interface{})
 			if ok {
-				allPropertyNames := make([]string, 0, len(propertiesMap))
-				for k := range propertiesMap {
-					allPropertyNames = append(allPropertyNames, k)
+				allServicePlanParameters := make([]ServicePlanParameter, 0, len(propertiesMap))
+
+				for propertyName, propertyValues := range propertiesMap {
+					servicePlanParameter := ServicePlanParameter{
+						Name: propertyName,
+					}
+
+					// we set the Required flag is the name of parameter
+					// is one of the parameters indicated as required
+					for _, name := range requiredParameterNames {
+						if name == propertyName {
+							servicePlanParameter.Required = true
+						}
+					}
+
+					propertyValuesMap, ok := propertyValues.(map[string]interface{})
+					if ok {
+						propertyDefaultValue, hasDefaultValue := propertyValuesMap["default"]
+						if hasDefaultValue {
+							servicePlanParameter.HasDefaultValue = true
+							servicePlanParameter.DefaultValue = propertyDefaultValue
+						}
+						if propertyType, ok := propertyValuesMap["type"]; ok {
+							// the type of the "type" value is always a string, so we just convert it
+							servicePlanParameter.Type = fmt.Sprintf("%v", propertyType)
+						}
+					}
+					allServicePlanParameters = append(allServicePlanParameters, servicePlanParameter)
 				}
-				plan.Optional = util.SliceDifference(plan.Required, allPropertyNames)
+
+				plan.Parameters = allServicePlanParameters
 			}
 		}
 

@@ -233,15 +233,47 @@ This describes the service and the associated plans.
 
 		if len(plans) > 0 {
 			table.Append([]string{"PLANS"})
+
 			for _, plan := range plans {
-				table.Append([]string{".......................", "....................................................."})
+
+				// create the display values for required  and optional parameters
+				requiredWithMandatoryUserInputParameterNames := []string{}
+				requiredWithOptionalUserInputParameterNames := []string{}
+				optionalParameterDisplay := []string{}
+				for _, parameter := range plan.Parameters {
+					if parameter.Required {
+						// until we have a better solution for displaying the plan data (like a separate table perhaps)
+						// this is simplest thing to do
+						if parameter.HasDefaultValue {
+							defaultValueStr := fmt.Sprintf("%v", parameter.DefaultValue)
+							requiredWithOptionalUserInputParameterNames = append(
+								requiredWithOptionalUserInputParameterNames,
+								fmt.Sprintf("%s (default: '%s')", parameter.Name, defaultValueStr))
+						} else {
+							requiredWithMandatoryUserInputParameterNames = append(requiredWithMandatoryUserInputParameterNames, parameter.Name)
+						}
+
+					} else {
+						optionalParameterDisplay = append(optionalParameterDisplay, parameter.Name)
+					}
+				}
+
+				table.Append([]string{"***********************", "*****************************************************"})
+				planLineSeparator := []string{"-----------------", "-----------------"}
 
 				planData := [][]string{
 					{"Name", plan.Name},
+					planLineSeparator,
 					{"Display Name", plan.DisplayName},
+					planLineSeparator,
 					{"Short Description", plan.Description},
-					{"Required Parameters", strings.Join(plan.Required, ", ")},
-					{"Optional Parameters", strings.Join(plan.Optional, ", ")},
+					planLineSeparator,
+					{"Required Params without a default value", strings.Join(requiredWithMandatoryUserInputParameterNames, ", ")},
+					planLineSeparator,
+					{"Required Params with a default value", strings.Join(requiredWithOptionalUserInputParameterNames, ", ")},
+					planLineSeparator,
+					{"Optional Params", strings.Join(optionalParameterDisplay, ", ")},
+					{"", ""},
 				}
 				table.AppendBulk(planData)
 			}

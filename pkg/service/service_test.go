@@ -10,8 +10,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 	"reflect"
+	"sort"
 	"testing"
 )
+
+// M is an alias for map[string]interface{}
+type M map[string]interface{}
 
 func fakePlanExternalMetaDataRaw() ([][]byte, error) {
 	planExternalMetaData1 := make(map[string]string)
@@ -38,11 +42,37 @@ func fakePlanExternalMetaDataRaw() ([][]byte, error) {
 }
 
 func fakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
-	planServiceInstanceCreateParameterSchema1 := make(map[string][]string)
+	planServiceInstanceCreateParameterSchema1 := make(M)
 	planServiceInstanceCreateParameterSchema1["required"] = []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"}
+	planServiceInstanceCreateParameterSchema1["properties"] = map[string]M{
+		"PLAN_DATABASE_URI": {
+			"default": "someuri",
+			"type":    "string",
+		},
+		"PLAN_DATABASE_USERNAME": {
+			"default": "name",
+			"type":    "string",
+		},
+		"PLAN_DATABASE_PASSWORD": {
+			"type": "string",
+		},
+		"SOME_OTHER": {
+			"default": "other",
+			"type":    "string",
+		},
+	}
 
-	planServiceInstanceCreateParameterSchema2 := make(map[string][]string)
+	planServiceInstanceCreateParameterSchema2 := make(M)
 	planServiceInstanceCreateParameterSchema2["required"] = []string{"PLAN_DATABASE_USERNAME_2", "PLAN_DATABASE_PASSWORD"}
+	planServiceInstanceCreateParameterSchema2["properties"] = map[string]M{
+		"PLAN_DATABASE_USERNAME_2": {
+			"default": "user2",
+			"type":    "string",
+		},
+		"PLAN_DATABASE_PASSWORD": {
+			"type": "string",
+		},
+	}
 
 	planServiceInstanceCreateParameterSchemaRaw1, err := json.Marshal(planServiceInstanceCreateParameterSchema1)
 	if err != nil {
@@ -167,13 +197,55 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 					Name:        "dev",
 					Description: "this is a example description 1",
 					DisplayName: "plan-name-1",
-					Required:    []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"},
+					Parameters: []ServicePlanParameter{
+						{
+							Name:            "PLAN_DATABASE_URI",
+							Required:        true,
+							DefaultValue:    "someuri",
+							HasDefaultValue: true,
+							Type:            "string",
+						},
+						{
+							Name:            "PLAN_DATABASE_USERNAME",
+							Required:        true,
+							DefaultValue:    "name",
+							HasDefaultValue: true,
+							Type:            "string",
+						},
+						{
+							Name:            "PLAN_DATABASE_PASSWORD",
+							Required:        true,
+							HasDefaultValue: false,
+							Type:            "string",
+						},
+						{
+							Name:            "SOME_OTHER",
+							Required:        false,
+							DefaultValue:    "other",
+							HasDefaultValue: true,
+							Type:            "string",
+						},
+					},
 				},
 				{
 					Name:        "prod",
 					Description: "this is a example description 2",
 					DisplayName: "plan-name-2",
-					Required:    []string{"PLAN_DATABASE_USERNAME_2", "PLAN_DATABASE_PASSWORD"},
+					Parameters: []ServicePlanParameter{
+						{
+							Name:            "PLAN_DATABASE_USERNAME_2",
+							Required:        true,
+							DefaultValue:    "user2",
+							HasDefaultValue: true,
+							Type:            "string",
+						},
+						{
+							Name:            "PLAN_DATABASE_PASSWORD",
+							Required:        true,
+							HasDefaultValue: false,
+							Type:            "string",
+						},
+					},
 				},
 			},
 			wantErr: false,
@@ -229,6 +301,12 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 			}
 
 			for _, wantedServicePlan := range tt.wantedServicePlans {
+
+				// make sure that the plans are sorted so we can compare them later
+				sort.Slice(wantedServicePlan.Parameters, func(i, j int) bool {
+					return wantedServicePlan.Parameters[i].Name < wantedServicePlan.Parameters[j].Name
+				})
+
 				found := false
 				for _, gotServicePlan := range servicePlans {
 					if reflect.DeepEqual(wantedServicePlan.Name, gotServicePlan.Name) {
@@ -237,16 +315,21 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 						continue
 					}
 
-					if !reflect.DeepEqual(wantedServicePlan.Required, gotServicePlan.Required) {
-						t.Errorf("different plan required value expected got: %v , expected: %v", wantedServicePlan.Required, gotServicePlan.Required)
+					// make sure that the plans are sorted so we can compare them
+					sort.Slice(gotServicePlan.Parameters, func(i, j int) bool {
+						return gotServicePlan.Parameters[i].Name < gotServicePlan.Parameters[j].Name
+					})
+
+					if !reflect.DeepEqual(wantedServicePlan.Parameters, gotServicePlan.Parameters) {
+						t.Errorf("Different plan parameters value. Expected: %v , got: %v", gotServicePlan.Parameters, wantedServicePlan.Parameters)
 					}
 
 					if !reflect.DeepEqual(wantedServicePlan.DisplayName, gotServicePlan.DisplayName) {
-						t.Errorf("different plan display name value expected got: %v , expected: %v", wantedServicePlan.DisplayName, gotServicePlan.DisplayName)
+						t.Errorf("Different plan display name value. Expected: %v , got: %v", gotServicePlan.DisplayName, wantedServicePlan.DisplayName)
 					}
 
 					if !reflect.DeepEqual(wantedServicePlan.Description, gotServicePlan.Description) {
-						t.Errorf("different plan description value expected got: %v , expected: %v", wantedServicePlan.Description, gotServicePlan.Description)
+						t.Errorf("Different plan description value. Expected: %v , got: %v", gotServicePlan.Description, wantedServicePlan.Description)
 					}
 				}
 
