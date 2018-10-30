@@ -68,10 +68,10 @@ const (
 
 	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment
 	supervisordVolumeName = "odo-supervisord-shared-data"
-)
 
-// WaitForPodTimeOut controls how long we should wait for a pod before giving up
-var WaitForPodTimeOut = 60 * time.Second
+	// waitForPodTimeOut controls how long we should wait for a pod before giving up
+	waitForPodTimeOut = 60 * time.Second
+)
 
 // errorMsg is the message for user when invalid configuration error occurs
 const errorMsg = `
@@ -1157,8 +1157,8 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 		return val, nil
 	case err := <-watchErrorChannel:
 		return nil, err
-	case <-time.After(WaitForPodTimeOut):
-		return nil, errors.Errorf("waited %s but couldn't find pod matching '%s' sel", WaitForPodTimeOut, selector)
+	case <-time.After(waitForPodTimeOut):
+		return nil, errors.Errorf("waited %s but couldn't find pod matching '%s' sel", waitForPodTimeOut, selector)
 	}
 }
 
