@@ -26,8 +26,18 @@ install:
 - set PATH=%PATH%;C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin;%GOPATH%\bin
 - make goget-tools
 
-build_script:
-- make bin
-
 test_script:
 - make test
+
+build_script:
+- make cross
+
+artifacts:
+  - path: dist\bin\linux-amd64\odo
+    name: Linux-amd64 binary
+  - path: dist\bin\linux-arm\odo
+    name: Linux-arm binary
+  - path: dist\bin\darwin-amd64\odo
+    name: OS-X binary
+  - path: dist\bin\windows-amd64\odo.exe
+    name: Windows-amd64 binary
