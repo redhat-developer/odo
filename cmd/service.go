@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"os"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/posener/complete"
+	"github.com/redhat-developer/odo/pkg/occlient"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
@@ -221,12 +222,12 @@ func init() {
 		},
 		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
 			completions = make([]string, 0)
-			applicationName, err := application.GetCurrent(client)
+			projectName := getAndSetNamespace(client)
+			applicationName, err := application.GetCurrent(projectName)
 			if err != nil {
 				return completions
 			}
-			projectName := project.GetCurrent(client)
-			services, err := svc.List(client, applicationName, projectName)
+			services, err := svc.List(client, applicationName)
 			if err != nil {
 				return completions
 			}
