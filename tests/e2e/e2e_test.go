@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/config"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -81,10 +82,23 @@ var _ = Describe("odoe2e", func() {
 	})
 
 	Context("odo utils config", func() {
-		It("should get true for updatenotification by defult", func() {
-			config := runCmd("odo utils config view")
-			Expect(config).To(ContainSubstring("true"))
-			Expect(config).To(ContainSubstring("UpdateNotification"))
+		It("should get true for updatenotification by default", func() {
+			configOutput := runCmd("odo utils config view")
+			Expect(configOutput).To(ContainSubstring("true"))
+			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
+		})
+		It("should be checking to see if timeout is the same as the constant", func() {
+			configOutput := runCmd("odo utils config view|grep Timeout")
+			Expect(configOutput).To(ContainSubstring(fmt.Sprintf("%d", config.DefaultTimeout)))
+		})
+		It("should be checking to see if config values are the same as the configured ones", func() {
+			runCmd("odo utils config set updatenotification false")
+			runCmd("odo utils config set timeout 5")
+			configOutput := runCmd("odo utils config view|grep UpdateNotification")
+			Expect(configOutput).To(ContainSubstring("false"))
+			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
+			configOutput = runCmd("odo utils config view|grep Timeout")
+			Expect(configOutput).To(ContainSubstring("5"))
 		})
 	})
 

@@ -19,15 +19,16 @@ var configurationCmd = &cobra.Command{
 
 Available Parameters:
 UpdateNotification - Controls if an update notification is shown or not (true or false)
-NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix`,
-	Example: fmt.Sprintf("%s\n%s",
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
+Timeout - Timeout (in seconds) for OpenShift server connection check`,
+	Example: fmt.Sprintf("%s\n%s\n",
 		configurationViewCmd.Example,
 		configurationSetCmd.Example),
 	Aliases: []string{"configuration"},
 	// 'odo utils config' is the same as 'odo utils config --help'
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) >= 1 && args[0] != "view" && args[0] != "set" {
-			return fmt.Errorf("Unknown command, use set or view")
+			return fmt.Errorf(`Unknown command, use "set" or "view"`)
 		}
 		return nil
 	}, Run: func(cmd *cobra.Command, args []string) {
@@ -45,14 +46,17 @@ var configurationSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Set a value in odo config file",
 	Long: `Set an individual value in the Odo configuration file
+
 Available Parameters:
 UpdateNotification - Controls if an update notification is shown or not (true or false)
-NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.`,
-	Example: `  # Set a configuration value
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.
+Timeout - Timeout (in seconds) for OpenShift server connection check`,
+	Example: `
+   # Set a configuration value
    odo utils config set UpdateNotification false
-   odo utils config set NamePrefix ""
    odo utils config set NamePrefix "app"
-  `,
+   odo utils config set timeout 20
+	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("Please provide a parameter name and value")
@@ -61,6 +65,7 @@ NamePrefix - Default prefix is the current directory name. Use this value to set
 		} else {
 			return nil
 		}
+
 	}, RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.New()
 		if err != nil {
@@ -87,6 +92,7 @@ var configurationViewCmd = &cobra.Command{
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 		fmt.Fprintln(w, "UpdateNotification", "\t", cfg.GetUpdateNotification())
 		fmt.Fprintln(w, "NamePrefix", "\t", cfg.GetNamePrefix())
+		fmt.Fprintln(w, "Timeout", "\t", cfg.GetTimeout())
 		w.Flush()
 	},
 }
