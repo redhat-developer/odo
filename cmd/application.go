@@ -136,7 +136,7 @@ var applicationDeleteCmd = &cobra.Command{
 		exists, err := application.Exists(client, appName)
 		checkError(err, "")
 		if !exists {
-			fmt.Printf("Application %v does not exist\n", appName)
+			fmt.Printf("Application %v in project %v does not exist\n", appName, projectName)
 			os.Exit(1)
 		}
 
