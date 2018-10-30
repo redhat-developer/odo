@@ -70,11 +70,11 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		client := util2.GetOcClient()
 
-		projectName := getAndSetNamespace(client)
+		projectName := util2.GetAndSetNamespace(client)
 		var applicationName string
 		var err error
-		if applicationFlag != "" && projectFlag != "" {
-			applicationName = getAppName(client)
+		if util2.ApplicationFlag != "" && util2.ProjectFlag != "" {
+			applicationName = util2.GetAppName(client)
 		} else {
 			applicationName, err = application.GetCurrentOrGetCreateSetDefault(client)
 			util2.CheckError(err, "")

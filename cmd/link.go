@@ -30,9 +30,9 @@ is injected into the component.
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
-		projectName := getAndSetNamespace(client)
-		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName)
+		projectName := util.GetAndSetNamespace(client)
+		applicationName := util.GetAppName(client)
+		componentName := util.GetComponent(client, util.ComponentFlag, applicationName)
 		serviceName := args[0]
 
 		exists, err := component.Exists(client, componentName, applicationName)

@@ -11,13 +11,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Global variables
-var (
-	projectFlag               string
-	applicationFlag           string
-	componentFlag             string
-)
-
 // Templates
 var rootUsageTemplate = `Usage:{{if .Runnable}}
   {{if .HasAvailableFlags}}{{appendIfNotPresent .UseLine "[flags]"}}{{else}}{{.UseLine}}{{end}}{{end}}{{if .HasAvailableSubCommands}}

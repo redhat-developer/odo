@@ -48,11 +48,11 @@ A full list of service types that can be deployed are available using: 'odo cata
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
-		getAndSetNamespace(client)
+		util.GetAndSetNamespace(client)
 		var applicationName string
 		var err error
-		if applicationFlag != "" && projectFlag != "" {
-			applicationName = getAppName(client)
+		if util.ApplicationFlag != "" && util.ProjectFlag != "" {
+			applicationName = util.GetAppName(client)
 		} else {
 
 			applicationName, err = application.GetCurrentOrGetCreateSetDefault(client)
@@ -128,8 +128,8 @@ var serviceDeleteCmd = &cobra.Command{
 
 		client := util.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		util.GetAndSetNamespace(client)
+		applicationName := util.GetAppName(client)
 
 		serviceName := args[0]
 
@@ -171,8 +171,8 @@ var serviceListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		util.GetAndSetNamespace(client)
+		applicationName := util.GetAppName(client)
 
 		services, err := svc.List(client, applicationName)
 		util.CheckError(err, "Service Catalog is not enabled in your cluster")
@@ -189,39 +189,6 @@ var serviceListCmd = &cobra.Command{
 		}
 		w.Flush()
 	},
-}
-
-var serviceCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
-	completions = make([]string, 0)
-	projectName := getAndSetNamespace(client)
-			applicationName, err := application.GetCurrent(projectName)
-	if err != nil {
-		return completions
-	}
-
-	services, err := svc.List(client, applicationName)
-	if err != nil {
-		return completions
-	}
-
-	for _, class := range services {
-		completions = append(completions, class.Name)
-	}
-
-	return completions
-}
-var serviceClassCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
-	completions = make([]string, 0)
-	services, err := client.GetClusterServiceClasses()
-	if err != nil {
-		return completions
-	}
-
-	for _, class := range services {
-		completions = append(completions, class.Spec.ExternalName)
-	}
-
-	return completions
 }
 
 func init() {

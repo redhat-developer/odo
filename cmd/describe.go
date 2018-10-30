@@ -20,12 +20,12 @@ var describeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		util.GetAndSetNamespace(client)
+		applicationName := util.GetAppName(client)
 
 		var componentName string
 		if len(args) == 0 {
-			componentName = getComponent(client, "", applicationName)
+			componentName = util.GetComponent(client, "", applicationName)
 		} else {
 
 			componentName = args[0]

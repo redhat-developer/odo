@@ -56,7 +56,7 @@ If no app name is passed, a default app name will be auto-generated.
 	Run: func(cmd *cobra.Command, args []string) {
 		var appName string
 		client := util.GetOcClient()
-		projectName := getAndSetNamespace(client)
+		projectName := util.GetAndSetNamespace(client)
 		if len(args) == 1 {
 			// The only arg passed is the app name
 			appName = args[0]
@@ -92,7 +92,7 @@ var applicationGetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
-		projectName := getAndSetNamespace(client)
+		projectName := util.GetAndSetNamespace(client)
 		app, err := application.GetCurrent(projectName)
 		util.CheckError(err, "")
 		if applicationShortFlag {
@@ -117,7 +117,7 @@ var applicationDeleteCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
-		projectName := getAndSetNamespace(client)
+		projectName := util.GetAndSetNamespace(client)
 		var appName string
 		// If name of the app to be deleted is not passed, consider the current app for deletion
 		if len(args) == 0 {
@@ -172,7 +172,7 @@ var applicationListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
 
-		projectName := getAndSetNamespace(client)
+		projectName := util.GetAndSetNamespace(client)
 		apps, err := application.ListInProject(client)
 		util.CheckError(err, "unable to get list of applications")
 		if len(apps) > 0 {
@@ -212,7 +212,7 @@ var applicationSetCmd = &cobra.Command{
 		client := util.GetOcClient()
 		appName := args[0]
 
-		projectName := getAndSetNamespace(client)
+		projectName := util.GetAndSetNamespace(client)
 		// error if application does not exist
 		exists, err := application.Exists(client, appName)
 		util.CheckError(err, "unable to check if application exists")
@@ -238,7 +238,7 @@ var applicationDescribeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
 		var appName string
-		projectName := getAndSetNamespace(client)
+		projectName := util.GetAndSetNamespace(client)
 		if len(args) == 0 {
 			var err error
 			appName, err = application.GetCurrent(projectName)

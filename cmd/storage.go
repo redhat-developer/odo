@@ -40,9 +40,9 @@ var storageCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util2.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName)
+		util2.GetAndSetNamespace(client)
+		applicationName := util2.GetAppName(client)
+		componentName := util2.GetComponent(client, util2.ComponentFlag, applicationName)
 
 		var storageName string
 		if len(args) != 0 {
@@ -83,9 +83,9 @@ var storageUnmountCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util2.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName)
+		util2.GetAndSetNamespace(client)
+		applicationName := util2.GetAppName(client)
+		componentName := util2.GetComponent(client, util2.ComponentFlag, applicationName)
 
 		var storageName string
 		var err error
@@ -130,8 +130,8 @@ var storageDeleteCmd = &cobra.Command{
 
 		storageName := args[0]
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		util2.GetAndSetNamespace(client)
+		applicationName := util2.GetAppName(client)
 
 		exists, err := storage.Exists(client, storageName, applicationName)
 		util2.CheckError(err, "")
@@ -184,18 +184,18 @@ var storageListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util2.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		util2.GetAndSetNamespace(client)
+		applicationName := util2.GetAppName(client)
 
 		if storageAllListflag {
-			if componentFlag != "" {
+			if util2.ComponentFlag != "" {
 				fmt.Println("Invalid arguments. Component name is not needed")
 				os.Exit(1)
 			}
 			printMountedStorageInAllComponent(client, applicationName)
 		} else {
 			// storageComponent is the input component name
-			componentName := getComponent(client, componentFlag, applicationName)
+			componentName := util2.GetComponent(client, util2.ComponentFlag, applicationName)
 			printMountedStorageInComponent(client, componentName, applicationName)
 		}
 		printUnmountedStorage(client, applicationName)
@@ -216,9 +216,9 @@ var storageMountCmd = &cobra.Command{
 
 		storageName := args[0]
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
-		componentName := getComponent(client, componentFlag, applicationName)
+		util2.GetAndSetNamespace(client)
+		applicationName := util2.GetAppName(client)
+		componentName := util2.GetComponent(client, util2.ComponentFlag, applicationName)
 
 		exists, err := storage.Exists(client, storageName, applicationName)
 		util2.CheckError(err, "unable to check if the storage exists in the current application")

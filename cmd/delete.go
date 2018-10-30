@@ -29,8 +29,8 @@ var componentDeleteCmd = &cobra.Command{
 		glog.V(4).Infof("args: %#v", strings.Join(args, " "))
 		client := util.GetOcClient()
 
-		projectName := getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		projectName := util.GetAndSetNamespace(client)
+		applicationName := util.GetAppName(client)
 
 		// Get the current component if no arguments have been passed
 		var componentName string
@@ -38,7 +38,7 @@ var componentDeleteCmd = &cobra.Command{
 		// If no arguments have been passed, get the current component
 		// else, use the first argument and check to see if it exists
 		if len(args) == 0 {
-			componentName = getComponent(client, "", applicationName)
+			componentName = util.GetComponent(client, "", applicationName)
 		} else {
 
 			componentName = args[0]

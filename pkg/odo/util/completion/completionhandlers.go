@@ -2,21 +2,18 @@ package completion
 
 import (
 	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/service"
 )
 
 // ServiceCompletionHandler provides service name completion for the current project and application
 var ServiceCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
 	completions = make([]string, 0)
-	applicationName, err := application.GetCurrent(client)
-	if err != nil {
-		return completions
-	}
-	projectName := project.GetCurrent(client)
-	services, err := service.List(client, applicationName, projectName)
+	util.GetAndSetNamespace(client)
+	applicationName := util.GetAppName(client)
+
+	services, err := service.List(client, applicationName)
 	if err != nil {
 		return completions
 	}

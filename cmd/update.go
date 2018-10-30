@@ -35,8 +35,8 @@ var updateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := util.GetOcClient()
 
-		projectName := getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		projectName := util.GetAndSetNamespace(client)
+		applicationName := util.GetAppName(client)
 
 		stdout := color.Output
 

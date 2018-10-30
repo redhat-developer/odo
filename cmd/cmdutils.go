@@ -3,16 +3,15 @@ package cmd
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/spf13/cobra"
 	"os"
 	"strings"
 
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -41,28 +40,6 @@ func printDeleteAppInfo(client *occlient.Client, appName string) error {
 
 	}
 	return nil
-}
-
-// getComponent returns the component to be used for the operation. If an input
-// component is specified, then it is returned if it exists, if not,
-// the current component is fetched and returned. If no component set, throws error
-func getComponent(client *occlient.Client, inputComponent string, applicationName string) string {
-	if len(inputComponent) == 0 {
-		c, err := component.GetCurrent(applicationName, client.Namespace)
-		util.CheckError(err, "Could not get current component")
-		if c == "" {
-			fmt.Println("There is no component set")
-			os.Exit(1)
-		}
-		return c
-	}
-	exists, err := component.Exists(client, inputComponent, applicationName)
-	util.CheckError(err, "")
-	if !exists {
-		fmt.Printf("Component %v does not exist\n", inputComponent)
-		os.Exit(1)
-	}
-	return inputComponent
 }
 
 // printComponentInfo prints Component Information like path, URL & storage
@@ -172,45 +149,14 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 	fmt.Println("")
 }
 
-// GetAppName returns application name from the provided flag or if flag is not provided, it will return current application name
-func getAppName(client *occlient.Client) string {
-	// applicationFlag is `--application` flag
-	if applicationFlag != "" {
-		_, err := application.Exists(client, applicationFlag)
-		checkError(err, "")
-		return applicationFlag
-	}
-	applicationName, err := application.GetCurrent(client.Namespace)
-	checkError(err, "unable to get current application")
-
-	return applicationName
-}
-
-// getAndSetNamespace checks whether project flag is provided,
-// if provided, it validates the name and sets it as namespace for further operations
-// if not provided, it fetches current namespace and sets it as namespace for further operations
-// getAndSetNamespace also return the project name
-func getAndSetNamespace(client *occlient.Client) string {
-	// projectFlag is `--project` flag
-	if projectFlag != "" {
-		_, err := project.Exists(client, projectFlag)
-		checkError(err, "")
-		client.Namespace = projectFlag
-		return projectFlag
-	}
-	client.Namespace = project.GetCurrent(client)
-	return project.GetCurrent(client)
-
-}
-
 func addProjectFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&projectFlag, "project", "", "Project, defaults to active project")
+	cmd.Flags().StringVar(&util.ProjectFlag, "project", "", "Project, defaults to active project")
 }
 
 func addComponentFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&componentFlag, "component", "", "Component, defaults to active component.")
+	cmd.Flags().StringVar(&util.ComponentFlag, "component", "", "Component, defaults to active component.")
 }
 
 func addApplicationFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&applicationFlag, "app", "", "Application, defaults to active application")
+	cmd.Flags().StringVar(&util.ApplicationFlag, "app", "", "Application, defaults to active application")
 }
