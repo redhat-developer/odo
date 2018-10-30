@@ -261,6 +261,8 @@ func isServerUp(server string) bool {
 		return false
 	}
 
+	// initialising the default timeout, this will be used
+	// when the value is not readable from config
 	ocRequestTimeout := config.DefaultTimeout * time.Second
 	// checking the value of timeout in config
 	// before proceeding with default timeout
