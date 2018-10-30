@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	util2 "github.com/redhat-developer/odo/pkg/odo/util"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"net/url"
 	"os"
 	"runtime"
@@ -32,17 +32,17 @@ var watchCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := os.Stdout
-		client := util2.GetOcClient()
+		client := odoutil.GetOcClient()
 
-		projectName := util2.GetAndSetNamespace(client)
-		applicationName := util2.GetAppName(client)
+		projectName := odoutil.GetAndSetNamespace(client)
+		applicationName := odoutil.GetAppName(client)
 
 		var componentName string
 		if len(args) == 0 {
 			var err error
 			glog.V(4).Info("No component name passed, assuming current component")
 			componentName, err = component.GetCurrent(applicationName, projectName)
-			util2.CheckError(err, "")
+			odoutil.CheckError(err, "")
 			if componentName == "" {
 				fmt.Println("No component is set as active.")
 				fmt.Println("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
@@ -53,7 +53,7 @@ var watchCmd = &cobra.Command{
 		}
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
-		util2.CheckError(err, "Unable to get source for %s component.", componentName)
+		odoutil.CheckError(err, "Unable to get source for %s component.", componentName)
 
 		if sourceType != "binary" && sourceType != "local" {
 			fmt.Printf("Watch is supported by binary and local components only and source type of component %s is %s\n", componentName, sourceType)
@@ -61,7 +61,7 @@ var watchCmd = &cobra.Command{
 		}
 
 		u, err := url.Parse(sourcePath)
-		util2.CheckError(err, "Unable to parse source %s from component %s.", sourcePath, componentName)
+		odoutil.CheckError(err, "Unable to parse source %s from component %s.", sourcePath, componentName)
 
 		if u.Scheme != "" && u.Scheme != "file" {
 			fmt.Printf("Component %s has invalid source path %s.", componentName, u.Scheme)
@@ -70,7 +70,7 @@ var watchCmd = &cobra.Command{
 		watchPath := util.ReadFilePath(u, runtime.GOOS)
 
 		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout, ignores, delay)
-		util2.CheckError(err, "Error while trying to watch %s", watchPath)
+		odoutil.CheckError(err, "Error while trying to watch %s", watchPath)
 	},
 }
 
