@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/posener/complete"
-	"github.com/spf13/cobra"
 	"os"
 	"strings"
+
+	"github.com/posener/complete"
+	"github.com/spf13/cobra"
 
 	"text/tabwriter"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
-	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
