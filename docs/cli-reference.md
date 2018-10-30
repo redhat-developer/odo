@@ -20,26 +20,26 @@ Find more information at https://github.com/redhat-developer/odo
 
 #### List of Commands
 
-|          NAME           |                                 DESCRIPTION                                  |
-|-------------------------|------------------------------------------------------------------------------|
-| [app](#app)             | Perform application operations                                               |
-| [catalog](#catalog)     | Catalog related operations                                                   |
-| [component](#component) | Components of application.                                                   |
-| [create](#create)       | Create a new component                                                       |
-| [delete](#delete)       | Delete an existing component                                                 |
-| [describe](#describe)   | Describe the given component                                                 |
-| [link](#link)           | Link component to a service                                                  |
-| [list](#list)           | List all components in the current application                               |
-| [log](#log)             | Retrieve the log for the given component.                                    |
-| [project](#project)     | Perform project operations                                                   |
-| [push](#push)           | Push source code to a component                                              |
-| [service](#service)     | Perform service catalog operations                                           |
-| [storage](#storage)     | Perform storage operations                                                   |
-| [update](#update)       | Update the source code path of a component                                   |
-| [url](#url)             | Expose component to the outside world                                        |
-| [utils](#utils)         | Utilities for completion, terminal commands and modifying Odo configurations |
-| [version](#version)     | Print the client version information                                         |
-| [watch](#watch)         | Watch for changes, update component on change                                |
+|          NAME           |                           DESCRIPTION                            |
+|-------------------------|------------------------------------------------------------------|
+| [app](#app)             | Perform application operations                                   |
+| [catalog](#catalog)     | Catalog related operations                                       |
+| [component](#component) | Components of application.                                       |
+| [create](#create)       | Create a new component                                           |
+| [delete](#delete)       | Delete an existing component                                     |
+| [describe](#describe)   | Describe the given component                                     |
+| [link](#link)           | Link component to a service                                      |
+| [list](#list)           | List all components in the current application                   |
+| [log](#log)             | Retrieve the log for the given component.                        |
+| [project](#project)     | Perform project operations                                       |
+| [push](#push)           | Push source code to a component                                  |
+| [service](#service)     | Perform service catalog operations                               |
+| [storage](#storage)     | Perform storage operations                                       |
+| [update](#update)       | Update the source code path of a component                       |
+| [url](#url)             | Expose component to the outside world                            |
+| [utils](#utils)         | Utilities for terminal commands and modifying Odo configurations |
+| [version](#version)     | Print the client version information                             |
+| [watch](#watch)         | Watch for changes, update component on change                    |
 
 
 #### CLI Structure
@@ -54,6 +54,8 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         list --project : List all applications in the current project
         set : Set application as active
     catalog : Catalog related operations
+        describe : Describe catalog item
+            service : Describe a service
         list : List all available component & service types.
             components : List all components available.
             services : Lists all available services
@@ -91,8 +93,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         create --application --component --port : Create a URL for a component
         delete --component --force : Delete a URL
         list --application --component : List URLs
-    utils : Utilities for completion, terminal commands and modifying Odo configurations
-        completion : Output shell completion code
+    utils : Utilities for terminal commands and modifying Odo configurations
         config : Modifies configuration settings
             set : Set a value in odo config file
             view : View current configuration values
@@ -154,6 +155,9 @@ Performs application operations related to your OpenShift project.
 
   # Search for a service
   odo catalog search service mysql
+	
+  # Describe the given service
+  odo catalog describe service mysql-persistent
 	
 ```
 
@@ -481,30 +485,24 @@ The URLs that are generated using this command, can be used to access the deploy
 > Example using utils
 
 ```sh
-  # Bash autocompletion support
-  source <(odo utils completion bash)
-
-  # Zsh autocompletion support
-  source <(odo utils completion zsh)
-
   # Bash terminal PS1 support
   source <(odo utils terminal bash)
 
   # Zsh terminal PS1 support
   source <(odo utils terminal zsh)
 
-
-   # Set a configuration value
+  # Set a configuration value
    odo utils config set UpdateNotification false
    odo utils config set NamePrefix ""
    odo utils config set NamePrefix "app"
-	
-   # For viewing the current configuration
+  
+  # For viewing the current configuration
    odo utils config view
+  
 ```
 
 
-Utilities for completion, terminal commands and modifying Odo configurations
+Utilities for terminal commands and modifying Odo configurations
 
 ## version
 

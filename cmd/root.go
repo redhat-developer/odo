@@ -91,7 +91,6 @@ Find more information at https://github.com/redhat-developer/odo`,
   odo url create`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 	},
-	BashCompletionFunction: bashCompletionFunc,
 }
 
 // RootCmd exposes the root command to main package to allow inspection by completion code
