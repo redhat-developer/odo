@@ -24,12 +24,12 @@ func TestCompletions(t *testing.T) {
 	}{
 		{
 			name:    "Completing service create without input returns all available service class external names",
-			handler: serviceClassCompletionHandler,
+			handler: completion.ServiceClassCompletionHandler,
 			want:    []string{"foo", "bar", "boo"},
 		},
 		{
 			name:    "Completing service delete without input returns all available service instances",
-			handler: serviceCompletionHandler,
+			handler: completion.ServiceCompletionHandler,
 			want:    []string{"foo"},
 		},
 	}

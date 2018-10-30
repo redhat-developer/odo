@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
@@ -231,8 +229,8 @@ func init() {
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 
-	completion.RegisterCommandHandler(serviceCreateCmd, serviceClassCompletionHandler)
-	completion.RegisterCommandHandler(serviceDeleteCmd, serviceCompletionHandler)
+	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
+	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
