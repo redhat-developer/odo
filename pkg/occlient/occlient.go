@@ -63,7 +63,7 @@ const (
 	nameLength = 5
 
 	// Image that will be used containing the supervisord binary and assembly scripts
-	bootstrapperImage = "quay.io/openshiftdo/supervisord:0.1.0"
+	bootstrapperImage = "quay.io/openshiftdo/supervisord:0.2.0"
 
 	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment
 	supervisordVolumeName = "odo-supervisord-shared-data"
