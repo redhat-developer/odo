@@ -2,12 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 	"strings"
 	"text/tabwriter"
-
-	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/pkg/occlient"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
@@ -48,22 +47,22 @@ A full list of service types that can be deployed are available using: 'odo cata
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
-		getAndSetNamespace(client)
+		client := util.GetOcClient()
+		util.GetAndSetNamespace(client)
 		var applicationName string
 		var err error
-		if applicationFlag != "" && projectFlag != "" {
-			applicationName = getAppName(client)
+		if util.ApplicationFlag != "" && util.ProjectFlag != "" {
+			applicationName = util.GetAppName(client)
 		} else {
 
 			applicationName, err = application.GetCurrentOrGetCreateSetDefault(client)
-			checkError(err, "")
+			util.CheckError(err, "")
 		}
 
 		// make sure the service type exists
 		serviceType := args[0]
 		matchingService, err := svc.GetSvcByType(client, serviceType)
-		checkError(err, "unable to create service because Service Catalog is not enabled in your cluster")
+		util.CheckError(err, "unable to create service because Service Catalog is not enabled in your cluster")
 		if matchingService == nil {
 			fmt.Printf("Service %v doesn't exist\nRun 'odo service catalog' to see a list of supported services.\n", serviceType)
 			os.Exit(1)
@@ -101,16 +100,16 @@ A full list of service types that can be deployed are available using: 'odo cata
 		}
 		//validate service name
 		err = validateName(serviceName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		exists, err := svc.SvcExists(client, serviceName, applicationName)
 
-		checkError(err, "")
+		util.CheckError(err, "")
 		if exists {
 			fmt.Printf("%s service already exists in the current application.\n", serviceName)
 			os.Exit(1)
 		}
 		err = svc.CreateService(client, serviceName, serviceType, plan, parameters, applicationName)
-		checkError(err, "")
+		util.CheckError(err, "")
 		fmt.Printf("Service '%s' was created.\n", serviceName)
 	},
 }
@@ -127,16 +126,16 @@ var serviceDeleteCmd = &cobra.Command{
 
 		glog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
 
-		client := getOcClient()
+		client := util.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		util.GetAndSetNamespace(client)
+		applicationName := util.GetAppName(client)
 
 		serviceName := args[0]
 
 		// Checks to see if the service actually exists
 		exists, err := svc.SvcExists(client, serviceName, applicationName)
-		checkError(err, "unable to delete service because Service Catalog is not enabled in your cluster")
+		util.CheckError(err, "unable to delete service because Service Catalog is not enabled in your cluster")
 		if !exists {
 			fmt.Printf("Service with the name %s does not exist in the current application\n", serviceName)
 			os.Exit(1)
@@ -152,7 +151,7 @@ var serviceDeleteCmd = &cobra.Command{
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := svc.DeleteService(client, serviceName, applicationName)
-			checkError(err, "")
+			util.CheckError(err, "")
 			fmt.Printf("Service %s from application %s has been deleted\n", serviceName, applicationName)
 
 		} else {
@@ -170,13 +169,13 @@ var serviceListCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
+		client := util.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		util.GetAndSetNamespace(client)
+		applicationName := util.GetAppName(client)
 
 		services, err := svc.List(client, applicationName)
-		checkError(err, "Service Catalog is not enabled in your cluster")
+		util.CheckError(err, "Service Catalog is not enabled in your cluster")
 
 		if len(services) == 0 {
 			fmt.Println("There are no services deployed for this application")
@@ -197,48 +196,8 @@ func init() {
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 
-	Suggesters[GetCommandSuggesterName(serviceCreateCmd)] = completionHandler{
-		client: func() *occlient.Client {
-			return getOcClient()
-		},
-		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
-			completions = make([]string, 0)
-			services, err := client.GetClusterServiceClasses()
-			if err != nil {
-				return completions
-			}
-
-			for _, class := range services {
-				completions = append(completions, class.Spec.ExternalName)
-			}
-
-			return completions
-		},
-	}
-
-	Suggesters[GetCommandSuggesterName(serviceDeleteCmd)] = completionHandler{
-		client: func() *occlient.Client {
-			return getOcClient()
-		},
-		predictor: func(args complete.Args, client *occlient.Client) (completions []string) {
-			completions = make([]string, 0)
-			projectName := getAndSetNamespace(client)
-			applicationName, err := application.GetCurrent(projectName)
-			if err != nil {
-				return completions
-			}
-			services, err := svc.List(client, applicationName)
-			if err != nil {
-				return completions
-			}
-
-			for _, class := range services {
-				completions = append(completions, class.Name)
-			}
-
-			return completions
-		},
-	}
+	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
+	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}

@@ -9,10 +9,9 @@ import (
 // utilsCmd represents the utils command
 var utilsCmd = &cobra.Command{
 	Use:   "utils",
-	Short: "Utilities for completion, terminal commands and modifying Odo configurations",
-	Long:  `Utilities for completion, terminal commands and modifying Odo configurations`,
-	Example: fmt.Sprintf("%s\n%s\n%s\n%s",
-		completionCmd.Example,
+	Short: "Utilities for terminal commands and modifying Odo configurations",
+	Long:  `Utilities for terminal commands and modifying Odo configurations`,
+	Example: fmt.Sprintf("%s\n%s\n%s",
 		terminalCmd.Example,
 		configurationSetCmd.Example,
 		configurationViewCmd.Example),
@@ -27,7 +26,6 @@ func init() {
 
 	configurationCmd.SetUsageTemplate(cmdUsageTemplate)
 	utilsCmd.AddCommand(configurationCmd)
-	utilsCmd.AddCommand(completionCmd)
 	utilsCmd.AddCommand(terminalCmd)
 	rootCmd.AddCommand(utilsCmd)
 }

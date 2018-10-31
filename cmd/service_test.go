@@ -5,6 +5,7 @@ import (
 	"github.com/posener/complete"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
@@ -17,18 +18,18 @@ func TestCompletions(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		handler completionHandler
+		handler completion.ContextualizedPredictor
 		last    string
 		want    []string
 	}{
 		{
 			name:    "Completing service create without input returns all available service class external names",
-			handler: Suggesters[getCommandSuggesterNameFrom("create")],
+			handler: completion.ServiceClassCompletionHandler,
 			want:    []string{"foo", "bar", "boo"},
 		},
 		{
 			name:    "Completing service delete without input returns all available service instances",
-			handler: Suggesters[getCommandSuggesterNameFrom("delete")],
+			handler: completion.ServiceCompletionHandler,
 			want:    []string{"foo"},
 		},
 	}
@@ -64,10 +65,7 @@ func TestCompletions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := complete.Args{Last: tt.last}
-			tt.handler.client = func() *occlient.Client {
-				return client
-			}
-			got := tt.handler.Predict(a)
+			got := tt.handler(a, client)
 			if !equal(got, tt.want) {
 				t.Errorf("Failed %s: got: %q, want: %q", t.Name(), got, tt.want)
 			}

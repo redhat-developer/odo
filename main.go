@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/cmd"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -51,7 +52,7 @@ func createCompletion(root *cobra.Command) complete.Command {
 			return
 		}
 		var handler complete.Predictor
-		handler, ok := cmd.Suggesters[cmd.GetFlagSuggesterName(root, flag.Name)]
+		handler, ok := completion.GetCommandFlagHandler(root, flag.Name)
 		if !ok {
 			handler = complete.PredictAnything
 		}
@@ -74,7 +75,7 @@ func createCompletion(root *cobra.Command) complete.Command {
 	}
 
 	var handler complete.Predictor
-	handler, ok := cmd.Suggesters[cmd.GetCommandSuggesterName(root)]
+	handler, ok := completion.GetCommandHandler(root)
 	if !ok {
 		handler = complete.PredictNothing
 	}

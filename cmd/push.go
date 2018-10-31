@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"net/url"
 	"os"
 	"runtime"
@@ -32,10 +33,10 @@ var pushCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := color.Output
-		client := getOcClient()
+		client := odoutil.GetOcClient()
 
-		getAndSetNamespace(client)
-		applicationName := getAppName(client)
+		odoutil.GetAndSetNamespace(client)
+		applicationName := odoutil.GetAppName(client)
 
 		var inputName string
 		if len(args) == 0 {
@@ -43,11 +44,11 @@ var pushCmd = &cobra.Command{
 		} else {
 			inputName = args[0]
 		}
-		componentName := getComponent(client, inputName, applicationName)
+		componentName := odoutil.GetComponent(client, inputName, applicationName)
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
-		checkError(err, "unable to get component source")
+		odoutil.CheckError(err, "unable to get component source")
 		switch sourceType {
 		case "local", "binary":
 			// use value of '--dir' as source if it was used
@@ -60,7 +61,7 @@ var pushCmd = &cobra.Command{
 			}
 
 			u, err := url.Parse(sourcePath)
-			checkError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
+			odoutil.CheckError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
 
 			if u.Scheme != "" && u.Scheme != "file" {
 				fmt.Printf("Component %s has invalid source path %s", componentName, u.Scheme)
@@ -71,7 +72,7 @@ var pushCmd = &cobra.Command{
 
 			_, err = os.Stat(localLocation)
 			if err != nil {
-				checkError(err, "")
+				odoutil.CheckError(err, "")
 			}
 
 			if sourceType == "local" {
@@ -82,7 +83,7 @@ var pushCmd = &cobra.Command{
 				glog.V(4).Infof("Copying file %s to pod", localLocation)
 				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation})
 			}
-			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			odoutil.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
 
 		case "git":
 			// currently we don't support changing build type
@@ -92,7 +93,7 @@ var pushCmd = &cobra.Command{
 				os.Exit(1)
 			}
 			err := component.Build(client, componentName, applicationName, true, true, stdout)
-			checkError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			odoutil.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
 		fmt.Printf("changes successfully pushed to component: %v\n", componentName)

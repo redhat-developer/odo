@@ -2,53 +2,19 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/spf13/cobra"
 	"os"
 	"strings"
-
-	"github.com/posener/complete"
-	"github.com/spf13/cobra"
 
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
-
-type completionHandler struct {
-	client    clientLoader
-	predictor contextualizedPredictor
-}
-
-type clientLoader func() *occlient.Client
-type contextualizedPredictor func(args complete.Args, client *occlient.Client) []string
-
-func (ch completionHandler) Predict(args complete.Args) []string {
-	return ch.predictor(args, ch.client())
-}
-
-// Suggesters records available completion handlers for commands and flags
-var Suggesters = make(map[string]completionHandler)
-
-// GetCommandSuggesterName retrieves the completion handler identifier associated with the specified command. The associated
-// handler should provide completions for valid values for the specified command's arguments.
-func GetCommandSuggesterName(command *cobra.Command) string {
-	return getCommandSuggesterNameFrom(command.Name())
-}
-
-func getCommandSuggesterNameFrom(commandName string) string {
-	return commandName
-}
-
-// GetFlagSuggesterName retrieves the completion handler identifier associated with the specified command and flag name. The
-// associated handler should provide completion for valid values for the specified command's flag.
-func GetFlagSuggesterName(command *cobra.Command, flag string) string {
-	return getCommandSuggesterNameFrom(command.Name()) + "_" + flag
-}
 
 // printDeleteAppInfo will print things which will be deleted
 func printDeleteAppInfo(client *occlient.Client, appName string) error {
@@ -74,28 +40,6 @@ func printDeleteAppInfo(client *occlient.Client, appName string) error {
 
 	}
 	return nil
-}
-
-// getComponent returns the component to be used for the operation. If an input
-// component is specified, then it is returned if it exists, if not,
-// the current component is fetched and returned. If no component set, throws error
-func getComponent(client *occlient.Client, inputComponent string, applicationName string) string {
-	if len(inputComponent) == 0 {
-		c, err := component.GetCurrent(applicationName, client.Namespace)
-		checkError(err, "Could not get current component")
-		if c == "" {
-			fmt.Println("There is no component set")
-			os.Exit(1)
-		}
-		return c
-	}
-	exists, err := component.Exists(client, inputComponent, applicationName)
-	checkError(err, "")
-	if !exists {
-		fmt.Printf("Component %v does not exist\n", inputComponent)
-		os.Exit(1)
-	}
-	return inputComponent
 }
 
 // printComponentInfo prints Component Information like path, URL & storage
@@ -152,7 +96,7 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 	fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH")
 
 	storageListMounted, err := storage.ListMounted(client, componentName, applicationName)
-	checkError(err, "could not get mounted storage list")
+	util.CheckError(err, "could not get mounted storage list")
 
 	// iterating over all mounted storage and put in the mount storage table
 	if len(storageListMounted) > 0 {
@@ -172,7 +116,7 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 // printMountedStorageInAllComponent prints all the mounted storage in all the components of the application and project
 func printMountedStorageInAllComponent(client *occlient.Client, applicationName string) {
 	componentList, err := component.List(client, applicationName)
-	checkError(err, "could not get component list")
+	util.CheckError(err, "could not get component list")
 
 	// iterating over all the components in the given aplication and project
 	for _, component := range componentList {
@@ -190,7 +134,7 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 	fmt.Fprintln(tabWriterUnmounted, "NAME", "\t", "SIZE")
 
 	storageListUnmounted, err := storage.ListUnmounted(client, applicationName)
-	checkError(err, "could not get unmounted storage list")
+	util.CheckError(err, "could not get unmounted storage list")
 
 	// iterating over all unmounted storage and put in the unmount storage table
 	if len(storageListUnmounted) > 0 {
@@ -205,45 +149,14 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 	fmt.Println("")
 }
 
-// GetAppName returns application name from the provided flag or if flag is not provided, it will return current application name
-func getAppName(client *occlient.Client) string {
-	// applicationFlag is `--application` flag
-	if applicationFlag != "" {
-		_, err := application.Exists(client, applicationFlag)
-		checkError(err, "")
-		return applicationFlag
-	}
-	applicationName, err := application.GetCurrent(client.Namespace)
-	checkError(err, "unable to get current application")
-
-	return applicationName
-}
-
-// getAndSetNamespace checks whether project flag is provided,
-// if provided, it validates the name and sets it as namespace for further operations
-// if not provided, it fetches current namespace and sets it as namespace for further operations
-// getAndSetNamespace also return the project name
-func getAndSetNamespace(client *occlient.Client) string {
-	// projectFlag is `--project` flag
-	if projectFlag != "" {
-		_, err := project.Exists(client, projectFlag)
-		checkError(err, "")
-		client.Namespace = projectFlag
-		return projectFlag
-	}
-	client.Namespace = project.GetCurrent(client)
-	return project.GetCurrent(client)
-
-}
-
 func addProjectFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&projectFlag, "project", "", "Project, defaults to active project")
+	cmd.Flags().StringVar(&util.ProjectFlag, "project", "", "Project, defaults to active project")
 }
 
 func addComponentFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&componentFlag, "component", "", "Component, defaults to active component.")
+	cmd.Flags().StringVar(&util.ComponentFlag, "component", "", "Component, defaults to active component.")
 }
 
 func addApplicationFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&applicationFlag, "app", "", "Application, defaults to active application")
+	cmd.Flags().StringVar(&util.ApplicationFlag, "app", "", "Application, defaults to active application")
 }

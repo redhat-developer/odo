@@ -7,6 +7,9 @@ odo
 dist
 bin
 
+# Un-ignore odo directories
+!odo/
+
 # Ignore coverage report
 coverage.txt
 

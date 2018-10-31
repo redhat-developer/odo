@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"io"
 	"os"
 
@@ -24,7 +25,7 @@ This will append your PS1 environment variable with Odo component and applicatio
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		err := TerminalGenerate(os.Stdout, cmd, args)
-		checkError(err, "")
+		util.CheckError(err, "")
 
 		return nil
 	},
