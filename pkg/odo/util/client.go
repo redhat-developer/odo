@@ -11,6 +11,9 @@ import (
 	"os"
 )
 
+// RootCommandName is the name of the root command
+const RootCommandName = "odo"
+
 // Global variables
 var (
 	GlobalSkipConnectionCheck bool

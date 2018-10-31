@@ -49,6 +49,10 @@ argument completion handler or using
 a flag completion handler. Registering the completion handler will make it available for `main.createCompletion` which will 
 then automatically create the completion information from it.
 
+*NOTE*: completion handlers *MUST* be registered after the command (and its parents) is inserted in the command hierarchy 
+(i.e. we can walk from the command back to the root command) for the registration to happen properly. Failure to do so will 
+result in the app exiting during the registration process (as a failsafe to avoid collisions during the registration process).
+
 ## Enabling / disabling completion
 
 While the completion code is written in go, we still need some integration at the shell level so that the executing shell knows
