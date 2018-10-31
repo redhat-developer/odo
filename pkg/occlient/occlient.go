@@ -1157,7 +1157,7 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 	case err := <-watchErrorChannel:
 		return nil, err
 	case <-time.After(waitForPodTimeOut):
-		return nil, errors.Errorf("waited %s but couldn't find pod matching '%s' sel", waitForPodTimeOut, selector)
+		return nil, errors.Errorf("waited %s but couldn't find running pod matching selector: '%s'", waitForPodTimeOut, selector)
 	}
 }
 
