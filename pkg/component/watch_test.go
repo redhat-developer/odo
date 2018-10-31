@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/user"
 	"path/filepath"
 	"testing"
 
@@ -79,14 +78,7 @@ func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []test
 	// So, to be able to refer to the file/folder at any later point in time the created paths returned by ioutil#TempFile or ioutil#TempFolder will need to be saved.
 	retVal := make(map[string]testingutil.FileProperties)
 	dirTreeMappings := make(map[string]string)
-	// We are creating the temporary component source in current users home directory.
-	// So, get current user
-	currentUser, err := user.Current()
-	if err != nil {
-		return "", retVal, errors.Wrapf(err, "failed to get current user home directory")
-	}
-	// Get current user's home directory for component base path
-	basePath := currentUser.HomeDir
+	basePath := ""
 	// Create temporary directory for mock component source code
 	srcPath, err := testingutil.TempMkdir(basePath, componentName)
 	if err != nil {
@@ -315,6 +307,7 @@ func TestWatchAndPush(t *testing.T) {
 								}
 							}
 						}
+						t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
 						return
 					}
 				}
