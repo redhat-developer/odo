@@ -196,9 +196,6 @@ func init() {
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 
-	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
-	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
-
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
 	serviceCmd.SetUsageTemplate(cmdUsageTemplate)
@@ -217,4 +214,8 @@ func init() {
 	addApplicationFlag(serviceListCmd)
 
 	rootCmd.AddCommand(serviceCmd)
+
+	// completions need to be registered after the command is inserted in the command hierarchy
+	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
+	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 }
