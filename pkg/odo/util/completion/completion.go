@@ -1,17 +1,20 @@
 package completion
 
 import (
-	"fmt"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 type completionHandler struct {
 	client    clientLoader
 	predictor ContextualizedPredictor
+}
+
+type handlerKey struct {
+	cmd  *cobra.Command
+	flag string
 }
 
 type clientLoader func() *occlient.Client
@@ -25,33 +28,23 @@ func (ch completionHandler) Predict(args complete.Args) []string {
 }
 
 // completionHandlers records available completion handlers for commands and flags
-var completionHandlers = make(map[string]completionHandler)
+var completionHandlers = make(map[handlerKey]completionHandler)
 
 // getCommandCompletionHandlerKey retrieves the completion handler identifier associated with the specified command. The associated
 // handler should provide completions for valid values for the specified command's arguments.
-func getCommandCompletionHandlerKey(command *cobra.Command) (name string) {
-	current := command
-
-	// check if the command was properly registered after being inserted in the hierarchy
-	if current.Root().Name() != util.RootCommandName {
-		// if we're walking back this command hierarchy back to its root but the root doesn't match our defined root this means
-		// the command hierarchy hasn't been set yet
-		fmt.Printf("'%p' has not been inserted in the command hiearchy before registering a completion handler", command)
-		os.Exit(-1)
+func getCommandCompletionHandlerKey(command *cobra.Command) handlerKey {
+	return handlerKey{
+		cmd: command,
 	}
-
-	name = current.Name()
-	for current.HasParent() {
-		name = current.Parent().Name() + "_" + name
-		current = current.Parent()
-	}
-	return
 }
 
 // getCommandFlagCompletionHandlerKey retrieves the completion handler identifier associated with the specified command and flag name. The
 // associated handler should provide completion for valid values for the specified command's flag.
-func getCommandFlagCompletionHandlerKey(command *cobra.Command, flag string) string {
-	return getCommandCompletionHandlerKey(command) + "_" + flag
+func getCommandFlagCompletionHandlerKey(command *cobra.Command, flag string) handlerKey {
+	return handlerKey{
+		cmd:  command,
+		flag: flag,
+	}
 }
 
 func newHandler(predictor ContextualizedPredictor) completionHandler {
