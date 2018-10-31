@@ -112,39 +112,37 @@ $ cd nodejs-ex
 Now that you've created an application, add a component of type _nodejs_ to the application, from the current directory where our code lies:
 
 ```console
-$ odo create nodejs --local=.
-Please wait, creating nodejs component ...
-Component 'nodejs' was created.
+$ odo create nodejs
+Component 'nodejs-ex-nodejs-xfru' was created and port 8080/TCP was opened
 To push source code to the component run 'odo push'
 
-Component 'nodejs' is now set as active component.
+Component 'nodejs-ex-nodejs-xfru' is now set as active component.
 ```
 
-Note:
-
-By default, builder images will be used from the default OpenShift namespace.
-You can explicitly supply a namespace by using: `odo create opesnshift/nodejs:8`
-For more details please refer https://github.com/redhat-developer/odo/blob/master/docs/cli-reference.md#create
+*Note:* You can explicitly supply a namespace by using: `odo create openshift/nodejs:8`. Otherwise, the `latest` image is used.
 
 Now that a component is running we'll go ahead and push our initial source code!
 
 ```sh
-$ odo push
-Pushing changes to component: nodejs
-sending incremental file list
-...
----> Installing application source ...
----> Installing all dependencies
-...
----> Building in production mode
+odo push
+Pushing changes to component: nodejs-ex-nodejs-xfru
+Please wait, building component....
++ set -eo pipefail
++ '[' -f /opt/app-root/src/.s2i/bin/assemble ']'
++ '[' -f /usr/local/s2i/assemble ']'
++ /usr/libexec/s2i/assemble
+---> Installing application source
+---> Building your Node application from source
+---> Installing dependencies
+---> Using 'npm install -s --only=production'
 ---> Pruning the development dependencies
-/opt/app-root/src/.npm is not a mountpoint
----> Cleaning the npm cache /opt/app-root/src/.npm
-/tmp is not a mountpoint
----> Cleaning the /tmp/npm-*
-run: ERROR (not running)
+---> Cleaning up npm cache
+---> Fix permissions on app-root
++ /var/lib/supervisord/bin/supervisord ctl stop run
+run: stopped
++ /var/lib/supervisord/bin/supervisord ctl start run
 run: started
-changes successfully pushed to component: nodejs
+changes successfully pushed to component: nodejs-ex-nodejs-xfru
 ```
 
 Great news! Your component has been deployed to OpenShift! Now we'll connect to the component.
@@ -155,10 +153,10 @@ To access the component, we'll need to create an OpenShift route:
 
 ```console
 $ odo url create
-Adding URL to component: nodejs
-URL created for component: nodejs
+Adding URL to component: nodejs-ex-nodejs-xfru
+URL created for component: nodejs-ex-nodejs-xfru
 
-nodejs - nodejs-myproject.192.168.42.147.nip.io
+nodejs-ex-nodejs-xfru - http://nodejs-ex-nodejs-xfru-foo-myproject.192.168.42.208.nip.io
 ```
 
 Now simply access the URL `nodejs-myproject.192.168.42.147.nip.io` in the browser and you will be able to view your deployed application.
