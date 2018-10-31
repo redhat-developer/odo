@@ -1123,9 +1123,6 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 	podChannel := make(chan *corev1.Pod)
 	watchErrorChannel := make(chan error)
 
-	defer close(podChannel)
-	defer close(watchErrorChannel)
-
 	go func() {
 	loop:
 		for {
@@ -1150,6 +1147,8 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 				break loop
 			}
 		}
+		close(podChannel)
+		close(watchErrorChannel)
 	}()
 
 	select {
