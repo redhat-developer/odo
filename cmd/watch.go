@@ -70,7 +70,7 @@ var watchCmd = &cobra.Command{
 		}
 		watchPath := util.ReadFilePath(u, runtime.GOOS)
 
-		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout, ignores, delay, make(chan string))
+		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout, ignores, delay, make(chan string), component.PushLocal)
 		odoutil.CheckError(err, "Error while trying to watch %s", watchPath)
 	},
 }

@@ -112,7 +112,17 @@ var UserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch ba
 // WatchAndPush watches path, if something changes in  that path it calls PushLocal
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
-func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int, extChan chan string) error {
+// Parameters:
+//	client: occlient instance
+//	componentName: Name of component that is to be watched
+//	applicationName: Name of application, the component is part of
+//	path: The path to the source of component(local or binary)
+//	out: io Writer instance
+//	ignores: List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
+//	delayInterval: Interval of time before pushing changes to remote(component) pod
+//	extChan: This is a channel added to terminate the watch command gracefully without passing SIGINT
+//	pushChangesToPod: Custom function that can be used to push detected changes to remote pod
+func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int, extChan chan string, pushChangesToPod func(*occlient.Client, string, string, string, io.Writer, []string) error) error {
 	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, ignores)
 
 	// these variables must be accessed while holding the changeLock
@@ -250,11 +260,11 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					err = PushLocal(client, componentName, applicationName, path, out, changedFiles)
+					err = pushChangesToPod(client, componentName, applicationName, path, out, changedFiles)
 				} else {
 					pathDir := filepath.Dir(path)
 					glog.V(4).Infof("Copying file %s to pod", path)
-					err = PushLocal(client, componentName, applicationName, pathDir, out, []string{path})
+					err = pushChangesToPod(client, componentName, applicationName, pathDir, out, []string{path})
 				}
 				if err != nil {
 					// Intentionally not exiting on error here.

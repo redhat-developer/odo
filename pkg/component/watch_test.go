@@ -120,8 +120,38 @@ func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []test
 	return srcPath, retVal, nil
 }
 
+// ExpectedChangedFiles is required so that the mockPushLocal below can validate obrtained change set against the test expected changes
+var ExpectedChangedFiles []string
+
+// CompDirStructure is required to hold the directory structure of mock component created by the test which can be accessed by mockPushLocal
+var CompDirStructure map[string]testingutil.FileProperties
+
+// ExtChan is used to return from otherwise non-terminating(without SIGINT) end of ever running watch function
+var ExtChan = make(chan string)
+
+// Mock PushLocal to collect changed files and compare against expected changed files
+func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
+	for _, gotChangedFile := range files {
+		found := false
+		// Verify every file in expected file changes to be actually observed to be changed
+		// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
+		for _, expChangedFile := range ExpectedChangedFiles {
+			wantedFileDetail := CompDirStructure[expChangedFile]
+			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == gotChangedFile {
+				found = true
+				ExtChan <- "Stop"
+				return nil
+			}
+		}
+		if !found {
+			ExtChan <- "Stop"
+			return fmt.Errorf("received %+v which is not same as expected list %+v", files, ExpectedChangedFiles)
+		}
+	}
+	return nil
+}
+
 func TestWatchAndPush(t *testing.T) {
-	extChan := make(chan string)
 	tests := []struct {
 		name              string
 		componentName     string
@@ -239,8 +269,9 @@ func TestWatchAndPush(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.name)
 		t.Run(tt.name, func(t *testing.T) {
+			ExpectedChangedFiles = tt.want
 			// Create mock component source
-			basePath, compDirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
+			basePath, CompDirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
 			if err != nil {
 				t.Errorf("failed to setup test environment. Error %v", err)
 			}
@@ -250,35 +281,11 @@ func TestWatchAndPush(t *testing.T) {
 			// Clear all the created temporary files
 			defer os.RemoveAll(basePath)
 
-			// Mock PushLocal to collect changed files and compare against expected changed files
-			PushLocal = func(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
-				for _, gotChangedFile := range files {
-					found := false
-					// Verify every file in expected file changes to be actually observed to be changed
-					// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
-					for _, expChangedFile := range tt.want {
-						wantedFileDetail := compDirStructure[expChangedFile]
-						if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == gotChangedFile {
-							found = true
-							extChan <- "Stop"
-							return nil
-						}
-					}
-					if !found {
-						extChan <- "Stop"
-						return fmt.Errorf("received %+v which is not same as expected list %+v", files, tt.want)
-					}
-				}
-				return nil
-			}
-			// After all mocks, call WatchAndPush which will observe changes and try to sync them
-			// Mock PushLocal function and use it to verify that only the intended files are pushed
-
 			go func() {
 				// Simulating file modifications for watch to observe
 				for {
 					select {
-					case startMsg := <-extChan:
+					case startMsg := <-ExtChan:
 						if startMsg == "Start" {
 							for _, fileModification := range tt.fileModifications {
 
@@ -287,19 +294,19 @@ func TestWatchAndPush(t *testing.T) {
 									intendedFileRelPath = filepath.Join(fileModification.FileParent, fileModification.FilePath)
 								}
 
-								fileModification.FileParent = compDirStructure[fileModification.FileParent].FilePath
-								if _, ok := compDirStructure[intendedFileRelPath]; ok {
-									fileModification.FilePath = compDirStructure[intendedFileRelPath].FilePath
+								fileModification.FileParent = CompDirStructure[fileModification.FileParent].FilePath
+								if _, ok := CompDirStructure[intendedFileRelPath]; ok {
+									fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
 								}
 
 								newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
 								if err != nil {
-									t.Errorf("compDirStructure: %+v\nFileModification %+v\nError %v\n", compDirStructure, fileModification, err)
+									t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
 								}
 
 								// If file operation is create, store even such modifications in dir structure for future references
-								if _, ok := compDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
-									compDirStructure[intendedFileRelPath] = testingutil.FileProperties{
+								if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
+									CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
 										FilePath:         filepath.Base(newFilePath),
 										FileParent:       filepath.Dir(newFilePath),
 										FileType:         testingutil.Directory,
@@ -314,7 +321,7 @@ func TestWatchAndPush(t *testing.T) {
 			}()
 
 			// Start WatchAndPush, the unit tested function
-			err = WatchAndPush(fkclient, tt.componentName, tt.applicationName, basePath, new(bytes.Buffer), tt.ignores, tt.delayInterval, extChan)
+			err = WatchAndPush(fkclient, tt.componentName, tt.applicationName, basePath, new(bytes.Buffer), tt.ignores, tt.delayInterval, ExtChan, mockPushLocal)
 			if err != nil && err != UserRequestedWatchExit {
 				t.Errorf("error in WatchAndPush %+v", err)
 			}
