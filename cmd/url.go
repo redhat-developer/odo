@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
+
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"text/tabwriter"
 
@@ -14,6 +16,7 @@ import (
 
 var (
 	urlForceDeleteFlag bool
+	urlOpenFlag        bool
 	urlPort            int
 )
 
@@ -50,11 +53,11 @@ The created URL can be used to access the specified component from outside the O
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		client := odoutil.GetOcClient()
 
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-		componentName := util.GetComponent(client, util.ComponentFlag, applicationName)
+		odoutil.GetAndSetNamespace(client)
+		applicationName := odoutil.GetAppName(client)
+		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
 
 		var urlName string
 		switch len(args) {
@@ -76,9 +79,16 @@ The created URL can be used to access the specified component from outside the O
 
 		fmt.Printf("Adding URL to component: %v\n", componentName)
 		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
+
+		urlCreated := url.GetUrlString(*urlRoute)
 		fmt.Printf("URL created for component: %v\n\n"+
-			"%v - %v\n", componentName, urlRoute.Name, url.GetUrlString(*urlRoute))
+			"%v - %v\n", componentName, urlRoute.Name, urlCreated)
+
+		if urlOpenFlag {
+			err := util.OpenBrowser(urlCreated)
+			odoutil.CheckError(err, "Unable to open URL within default browser")
+		}
 	},
 }
 
@@ -93,16 +103,16 @@ var urlDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// Initialization
-		client := util.GetOcClient()
+		client := odoutil.GetOcClient()
 
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-		componentName := util.GetComponent(client, util.ComponentFlag, applicationName)
+		odoutil.GetAndSetNamespace(client)
+		applicationName := odoutil.GetAppName(client)
+		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
 
 		urlName := args[0]
 
 		exists, err := url.Exists(client, urlName, componentName, applicationName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 
 		if !exists {
 			fmt.Printf("The URL %s does not exist within the component %s\n", urlName, componentName)
@@ -120,7 +130,7 @@ var urlDeleteCmd = &cobra.Command{
 		if strings.ToLower(confirmDeletion) == "y" {
 
 			err = url.Delete(client, urlName, applicationName)
-			util.CheckError(err, "")
+			odoutil.CheckError(err, "")
 			fmt.Printf("Deleted URL: %v\n", urlName)
 		} else {
 			fmt.Printf("Aborting deletion of url: %v\n", urlName)
@@ -137,14 +147,14 @@ var urlListCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		client := odoutil.GetOcClient()
 
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-		componentName := util.GetComponent(client, util.ComponentFlag, applicationName)
+		odoutil.GetAndSetNamespace(client)
+		applicationName := odoutil.GetAppName(client)
+		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
 
 		urls, err := url.List(client, componentName, applicationName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 
 		if len(urls) == 0 {
 			fmt.Printf("No URLs found for component %v in application %v\n", componentName, applicationName)
@@ -166,6 +176,7 @@ var urlListCmd = &cobra.Command{
 
 func init() {
 	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
+	urlCreateCmd.Flags().BoolVar(&urlOpenFlag, "open", false, "open the created link with your default browser")
 
 	urlDeleteCmd.Flags().BoolVarP(&urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 
