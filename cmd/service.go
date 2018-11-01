@@ -215,7 +215,6 @@ func init() {
 
 	rootCmd.AddCommand(serviceCmd)
 
-	// completions need to be registered after the command is inserted in the command hierarchy
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 }
