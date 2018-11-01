@@ -73,12 +73,14 @@ func TestIsRegExpMatch(t *testing.T) {
 //	absolute base path of source code
 //	directory structure containing mappings from desired relative paths to their respective absolute path containing FileProperties.
 func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []testingutil.FileProperties) (string, map[string]testingutil.FileProperties, error) {
+
 	// retVal is mappings from desired relative paths to their respective absolute path containing FileProperties.
 	// This is required because ioutil#TempFile and ioutil#TempFolder creates paths with random numeric suffixes.
 	// So, to be able to refer to the file/folder at any later point in time the created paths returned by ioutil#TempFile or ioutil#TempFolder will need to be saved.
 	retVal := make(map[string]testingutil.FileProperties)
 	dirTreeMappings := make(map[string]string)
 	basePath := ""
+
 	// Create temporary directory for mock component source code
 	srcPath, err := testingutil.TempMkdir(basePath, componentName)
 	if err != nil {
@@ -88,8 +90,10 @@ func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []test
 
 	// For each of the passed(desired) files/folders under component source
 	for _, fileProperties := range requiredFilePaths {
+
 		// get relative path using file parent and file name passed
 		relativePath := filepath.Join(fileProperties.FileParent, fileProperties.FilePath)
+
 		// get its absolute path using the mappings preserved from previous creates
 		if realParentPath, ok := dirTreeMappings[fileProperties.FileParent]; ok {
 			// real path for the intended file operation is obtained from previously maintained directory tree mappings by joining parent path and file name
@@ -98,16 +102,19 @@ func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []test
 			fileProperties.FilePath = filepath.Base(realPath)
 			fileProperties.FileParent, _ = filepath.Rel(srcPath, filepath.Dir(realPath))
 		}
+
 		// Perform mock operation as requested by the parameter
 		newPath, err := testingutil.SimulateFileModifications(srcPath, fileProperties)
 		dirTreeMappings[relativePath] = newPath
 		if err != nil {
 			return "", retVal, errors.Wrapf(err, "unable to setup test env")
 		}
+
 		fileProperties.FilePath = filepath.Base(newPath)
 		fileProperties.FileParent = filepath.Dir(newPath)
 		retVal[relativePath] = fileProperties
 	}
+
 	// Return base source path and directory tree mappings
 	return srcPath, retVal, nil
 }
