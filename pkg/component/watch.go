@@ -107,10 +107,23 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	return nil
 }
 
+var UserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch based on user request")
+
 // WatchAndPush watches path, if something changes in  that path it calls PushLocal
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
-func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int) error {
+// Parameters:
+//	client: occlient instance
+//	componentName: Name of component that is to be watched
+//	applicationName: Name of application, the component is part of
+//	path: The path to the source of component(local or binary)
+//	out: io Writer instance
+//	ignores: List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
+//	delayInterval: Interval of time before pushing changes to remote(component) pod
+//	extChan: This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
+//	pushChangesToPod: Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
+func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int, extChan chan string, pushChangesToPod func(*occlient.Client, string, string, string, io.Writer, []string) error) error {
+	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, ignores)
 
 	// these variables must be accessed while holding the changeLock
@@ -129,10 +142,17 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 		return fmt.Errorf("error setting up filesystem watcher: %v", err)
 	}
 	defer watcher.Close()
+	defer close(extChan)
 
 	go func() {
 		for {
 			select {
+			case extMsg := <-extChan:
+				if extMsg == "Stop" {
+					changeLock.Lock()
+					watchError = UserRequestedWatchExit
+					changeLock.Unlock()
+				}
 			case event := <-watcher.Events:
 				isIgnoreEvent := false
 				changeLock.Lock()
@@ -209,6 +229,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", path, err)
 	}
+	extChan <- "Start"
 
 	delay := time.Duration(delayInterval) * time.Second
 	ticker := time.NewTicker(delay)
@@ -240,11 +261,11 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					err = PushLocal(client, componentName, applicationName, path, out, changedFiles)
+					err = pushChangesToPod(client, componentName, applicationName, path, out, changedFiles)
 				} else {
 					pathDir := filepath.Dir(path)
 					glog.V(4).Infof("Copying file %s to pod", path)
-					err = PushLocal(client, componentName, applicationName, pathDir, out, []string{path})
+					err = pushChangesToPod(client, componentName, applicationName, pathDir, out, []string{path})
 				}
 				if err != nil {
 					// Intentionally not exiting on error here.
