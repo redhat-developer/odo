@@ -59,9 +59,9 @@ func waitForCmdOut(cmd string, timeout int, check func(output string) bool) bool
 // waitForEqualCmd calls the waitForCmdOut function to wait and check if the output is equal to the given string within 1 min
 // cmd is the command to run
 // expOut is the expected output
-func waitForEqualCmd(cmd string, expOut string) bool {
+func waitForEqualCmd(cmd string, expOut string, timeout int) bool {
 
-	return waitForCmdOut(cmd, 1, func(output string) bool {
+	return waitForCmdOut(cmd, timeout, func(output string) bool {
 		return output == expOut
 	})
 }
