@@ -120,9 +120,10 @@ var UserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch ba
 //	out: io Writer instance
 //	ignores: List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 //	delayInterval: Interval of time before pushing changes to remote(component) pod
-//	extChan: This is a channel added to terminate the watch command gracefully without passing SIGINT
-//	pushChangesToPod: Custom function that can be used to push detected changes to remote pod
+//	extChan: This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
+//	pushChangesToPod: Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int, extChan chan string, pushChangesToPod func(*occlient.Client, string, string, string, io.Writer, []string) error) error {
+	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, ignores)
 
 	// these variables must be accessed while holding the changeLock
