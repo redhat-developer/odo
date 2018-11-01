@@ -98,8 +98,7 @@ $ oc login -u developer -p developer
 $ odo app create node-example-app
 
 # Download the Node.js sample code
-$ git clone https://github.com/openshift/nodejs-ex
-$ cd nodejs-ex
+$ git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
 
 # From the directory where the sample code is located, add a component of type nodejs to your application 
 $ odo create nodejs
@@ -109,8 +108,6 @@ $ odo push
 
 # Last, we'll create a way to access the application
 $ odo url create
-
-nodejs - nodejs-myproject.192.168.42.147.nip.io
 
 # Test it / visit the URL
 $ curl nodejs-myproject.192.168.42.147.nip.io
