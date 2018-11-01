@@ -4,13 +4,22 @@ We will be developing and deploying a Node.JS application to an OpenShift cluste
 
 We'll be going over the following steps:
 
-1. Running OpenShift
-2. Creating an application
-3. Creating a component
-4. Accessing the component
-5. Pushing new changes to the component
-6. Adding storage to the component
+**Your first application**
 
+1. [Running OpenShift](#1-running-openshift)
+2. [Create an application](#2-create-an-application)
+3. [Create a component](#3-create-a-component)
+4. [Accessing the component](#4-accessing-the-component)
+5. [Pushing new changes to the component](#5-pushing-new-changes-to-the-component)
+6. [Adding storage to the component](#6-adding-storage-to-the-component)
+
+**Extra documentation:**
+
+- [OpenShift Notes](#openshift-notes)
+- [Adding a Custom Builder](#adding-a-custom-builder)
+
+
+## Your first application
 
 ### 1. Running OpenShift
 
@@ -187,7 +196,7 @@ Refresh your application in the browser, and you'll be able to see the changes.
 
 After each change, you can continue updating your component by using: `odo push nodejs`.
 
-### 6. Adding storage to a component
+### 6. Adding storage to the component
 
 Now that you've got your component running, how do you add persistent any data between restarts?
 
@@ -200,7 +209,7 @@ Added storage nodestorage to nodejs
 
 That's it! Storage has been added your component with an allocated size of 1 Gb.
 
-## Extra OpenShift notes
+## OpenShift notes
 
 These are some extra installation / getting started instructions for your local OpenShift cluster.
 
@@ -219,3 +228,24 @@ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enabl
 ```
 
 After you've enabled / started `minishift`, you'll be able to list the services via `odo catalog list services` and service catalog related operations via `odo service <verb> <servicename>`.
+
+## Adding a Custom Builder
+
+OpenShift includes the ability to add a [custom image](https://docs.openshift.com/container-platform/3.7/creating_images/custom.html) to bridge the gap in the creation of custom images.
+
+A custom builder image usually includes the base image of [openshift/origin-custom-docker-builder](https://hub.docker.com/r/openshift/origin-custom-docker-builder/).
+
+Below is an example of how to successfully import and use the [redhat-openjdk-18](registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift) image:
+
+```sh
+# Import the image into OpenShift
+oc import openjdk18 --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift --confirm
+
+# Tag the image so it is accessible by Odo
+oc annotate istag/openjdk18:latest tags=builder
+```
+After tagging the image, you may now deploy it with Odo:
+
+```sh
+odo create openjdk18 --git https://github.com/openshift-evangelists/Wild-West-Backend
+```
