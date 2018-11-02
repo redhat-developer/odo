@@ -43,7 +43,6 @@ type ApplicationInfo struct {
 }
 
 type Config struct {
-
 	// odo specific configuration settings
 	OdoSettings OdoSettings `json:"settings"`
 	// remember active applications and components per project
@@ -382,8 +381,8 @@ func (c *ConfigInfo) DeleteApplication(application string, project string) error
 // DeleteProject deletes applications belonging to the given project from the config file
 func (c *ConfigInfo) DeleteProject(projectName string) error {
 	for i := len(c.ActiveApplications) - 1; i >= 0; i-- {
-		// remove current item from array
 		if c.ActiveApplications[i].Project == projectName {
+			// remove current item from array
 			c.ActiveApplications = append(c.ActiveApplications[:i], c.ActiveApplications[i+1:]...)
 		}
 	}
