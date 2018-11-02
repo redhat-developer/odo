@@ -1,5 +1,5 @@
-hash: fe373f5781909c5aed9fbde174ebf97f19d01b5abc56d3b7ab571b33bd79d73e
-updated: 2018-10-25T17:19:13.517749+02:00
+hash: 59b5f15f48fe8bfaebb959ddd24d4ad17d62127edee38f683520b20c03b10d2a
+updated: 2018-11-02T16:55:28.929006384+05:30
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -120,7 +120,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/openshift/api
-  version: ab94c17d53098bd73dcfbbc26c6ce078959b361f
+  version: 2699ad42427b7e7b2cad1daefc93b632c9c0bb6c
   subpackages:
   - apps/v1
   - build/v1
@@ -160,6 +160,10 @@ imports:
   - route/clientset/versioned/typed/route/v1/fake
   - user/clientset/versioned/scheme
   - user/clientset/versioned/typed/user/v1
+- name: github.com/openshift/origin
+  version: 0cbc58b117403b9d9169dbafdfac59ef104bb997
+  subpackages:
+  - pkg/oc/cli/login
 - name: github.com/openshift/source-to-image
   version: 3c34ff83e47ae6947b157f053fd119bc378635ba
   subpackages:
@@ -233,6 +237,7 @@ imports:
   version: 670d4cfef0544295bc27a114dbac37980d83185a
 - name: k8s.io/api
   version: 2d6f90ab1293a1fb871cf149423ebb72aa7423aa
+  repo: https://github.com/openshift/kubernetes-api.git
   subpackages:
   - admissionregistration/v1alpha1
   - admissionregistration/v1beta1
@@ -264,7 +269,8 @@ imports:
   - storage/v1alpha1
   - storage/v1beta1
 - name: k8s.io/apimachinery
-  version: 103fd098999dc9c0c88536f5c9ad2e5da39373ae
+  version: 0b908666f6c964370af24212f499d77109c65937
+  repo: https://github.com/openshift/kubernetes-apimachinery.git
   subpackages:
   - pkg/api/errors
   - pkg/api/meta
@@ -294,6 +300,7 @@ imports:
   - pkg/util/intstr
   - pkg/util/json
   - pkg/util/mergepatch
+  - pkg/util/naming
   - pkg/util/net
   - pkg/util/remotecommand
   - pkg/util/runtime
@@ -309,7 +316,8 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
-  version: 59698c7d9724b0f95f9dc9e7f7dfdcc3dfeceb82
+  version: 427190a5c8fb757089de86d5081f2e058408d217
+  repo: https://github.com/openshift/kubernetes-client-go.git
   subpackages:
   - discovery
   - discovery/fake
