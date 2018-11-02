@@ -22,7 +22,6 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"sort"
 
 	"github.com/golang/glog"
 
@@ -156,17 +155,6 @@ func NewDefaultPathOptions() *PathOptions {
 // that means that this code will only write into a single file.  If you want to relativizePaths, you must provide a fully qualified path in any
 // modified element.
 func ModifyConfig(configAccess ConfigAccess, newConfig clientcmdapi.Config, relativizePaths bool) error {
-	possibleSources := configAccess.GetLoadingPrecedence()
-	// sort the possible kubeconfig files so we always "lock" in the same order
-	// to avoid deadlock (note: this can fail w/ symlinks, but... come on).
-	sort.Strings(possibleSources)
-	for _, filename := range possibleSources {
-		if err := lockFile(filename); err != nil {
-			return err
-		}
-		defer unlockFile(filename)
-	}
-
 	startingConfig, err := configAccess.GetStartingConfig()
 	if err != nil {
 		return err
@@ -220,6 +208,9 @@ func ModifyConfig(configAccess ConfigAccess, newConfig clientcmdapi.Config, rela
 		}
 	}
 
+	// seenConfigs stores a map of config source filenames to computed config objects.
+	seenConfigs := map[string]*clientcmdapi.Config{}
+
 	for key, context := range newConfig.Contexts {
 		startingContext, exists := startingConfig.Contexts[key]
 		if !reflect.DeepEqual(context, startingContext) || !exists {
@@ -228,15 +219,28 @@ func ModifyConfig(configAccess ConfigAccess, newConfig clientcmdapi.Config, rela
 				destinationFile = configAccess.GetDefaultFilename()
 			}
 
-			configToWrite, err := getConfigFromFile(destinationFile)
-			if err != nil {
-				return err
+			// we only obtain a fresh config object from its source file
+			// if we have not seen it already - this prevents us from
+			// reading and writing to the same number of files repeatedly
+			// when multiple / all contexts share the same destination file.
+			configToWrite, seen := seenConfigs[destinationFile]
+			if !seen {
+				var err error
+				configToWrite, err = getConfigFromFile(destinationFile)
+				if err != nil {
+					return err
+				}
+				seenConfigs[destinationFile] = configToWrite
 			}
-			configToWrite.Contexts[key] = context
 
-			if err := WriteToFile(*configToWrite, destinationFile); err != nil {
-				return err
-			}
+			configToWrite.Contexts[key] = context
+		}
+	}
+
+	// actually persist config object changes
+	for destinationFile, configToWrite := range seenConfigs {
+		if err := WriteToFile(*configToWrite, destinationFile); err != nil {
+			return err
 		}
 	}
 

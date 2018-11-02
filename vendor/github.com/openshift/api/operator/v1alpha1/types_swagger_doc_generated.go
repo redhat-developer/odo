@@ -64,6 +64,19 @@ func (LoggingConfig) SwaggerDoc() map[string]string {
 	return map_LoggingConfig
 }
 
+var map_NodeStatus = map[string]string{
+	"":                               "NodeStatus provides information about the current state of a particular node managed by this operator.",
+	"nodeName":                       "nodeName is the name of the node",
+	"currentDeploymentGeneration":    "currentDeploymentGeneration is the generation of the most recently successful deployment",
+	"targetDeploymentGeneration":     "targetDeploymentGeneration is the generation of the deployment we're trying to apply",
+	"lastFailedDeploymentGeneration": "lastFailedDeploymentGeneration is the generation of the deployment we tried and failed to deploy.",
+	"lastFailedDeploymentErrors":     "lastFailedDeploymentGenerationErrors is a list of the errors during the failed deployment referenced in lastFailedDeploymentGeneration",
+}
+
+func (NodeStatus) SwaggerDoc() map[string]string {
+	return map_NodeStatus
+}
+
 var map_OperatorCondition = map[string]string{
 	"": "OperatorCondition is just the standard condition fields.",
 }
@@ -97,6 +110,16 @@ var map_OperatorStatus = map[string]string{
 
 func (OperatorStatus) SwaggerDoc() map[string]string {
 	return map_OperatorStatus
+}
+
+var map_StaticPodOperatorStatus = map[string]string{
+	"": "StaticPodOperatorStatus is status for controllers that manage static pods.  There are different needs because individual node status must be tracked.",
+	"latestAvailableDeploymentGeneration": "latestAvailableDeploymentGeneration is the deploymentID of the most recent deployment",
+	"nodeStatuses":                        "nodeStatuses track the deployment values and errors across individual nodes",
+}
+
+func (StaticPodOperatorStatus) SwaggerDoc() map[string]string {
+	return map_StaticPodOperatorStatus
 }
 
 var map_VersionAvailability = map[string]string{

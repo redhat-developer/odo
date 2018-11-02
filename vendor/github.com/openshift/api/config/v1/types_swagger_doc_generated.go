@@ -39,6 +39,48 @@ func (AuditConfig) SwaggerDoc() map[string]string {
 	return map_AuditConfig
 }
 
+var map_Build = map[string]string{
+	"":     "Build holds cluster-wide information on how to handle builds. The canonical name is `cluster`",
+	"spec": "Spec holds user-settable values for the build controller configuration",
+}
+
+func (Build) SwaggerDoc() map[string]string {
+	return map_Build
+}
+
+var map_BuildDefaults = map[string]string{
+	"gitHTTPProxy":  "GitHTTPProxy is the location of the HTTPProxy for Git source",
+	"gitHTTPSProxy": "GitHTTPSProxy is the location of the HTTPSProxy for Git source",
+	"gitNoProxy":    "GitNoProxy is the list of domains for which the proxy should not be used",
+	"env":           "Env is a set of default environment variables that will be applied to the build if the specified variables do not exist on the build",
+	"imageLabels":   "ImageLabels is a list of docker labels that are applied to the resulting image. User can override a default label by providing a label with the same name in their Build/BuildConfig.",
+	"resources":     "Resources defines resource requirements to execute the build.",
+}
+
+func (BuildDefaults) SwaggerDoc() map[string]string {
+	return map_BuildDefaults
+}
+
+var map_BuildOverrides = map[string]string{
+	"imageLabels":  "ImageLabels is a list of docker labels that are applied to the resulting image. If user provided a label in their Build/BuildConfig with the same name as one in this list, the user's label will be overwritten.",
+	"nodeSelector": "NodeSelector is a selector which must be true for the build pod to fit on a node",
+	"tolerations":  "Tolerations is a list of Tolerations that will override any existing tolerations set on a build pod.",
+}
+
+func (BuildOverrides) SwaggerDoc() map[string]string {
+	return map_BuildOverrides
+}
+
+var map_BuildSpec = map[string]string{
+	"additionalTrustedCA": "AdditionalTrustedCA is a reference to a ConfigMap containing additional CAs that should be trusted for image pushes and pulls during builds.",
+	"buildDefaults":       "BuildDefaults controls the default information for Builds",
+	"buildOverrides":      "BuildOverrides controls override settings for builds",
+}
+
+func (BuildSpec) SwaggerDoc() map[string]string {
+	return map_BuildSpec
+}
+
 var map_CertInfo = map[string]string{
 	"":         "CertInfo relates a certificate with a private key",
 	"certFile": "CertFile is a file containing a PEM-encoded certificate",
@@ -120,6 +162,15 @@ func (Image) SwaggerDoc() map[string]string {
 	return map_Image
 }
 
+var map_ImageLabel = map[string]string{
+	"name":  "Name defines the name of the label. It must have non-zero length.",
+	"value": "Value defines the literal value of the label.",
+}
+
+func (ImageLabel) SwaggerDoc() map[string]string {
+	return map_ImageLabel
+}
+
 var map_ImageList = map[string]string{
 	"metadata": "Standard object's metadata.",
 }
@@ -129,7 +180,7 @@ func (ImageList) SwaggerDoc() map[string]string {
 }
 
 var map_ImageSpec = map[string]string{
-	"allowedRegistriesForImport": "AllowedRegistriesForImport limits the docker registries that normal users may import images from. Set this list to the registries that you trust to contain valid Docker images and that you want applications to be able to import from. Users with permission to create Images or ImageStreamMappings via the API are not affected by this policy - typically only administrators or system integrations will have those permissions.",
+	"allowedRegistriesForImport": "AllowedRegistriesForImport limits the container image registries that normal users may import images from. Set this list to the registries that you trust to contain valid Docker images and that you want applications to be able to import from. Users with permission to create Images or ImageStreamMappings via the API are not affected by this policy - typically only administrators or system integrations will have those permissions.",
 	"externalRegistryHostname":   "ExternalRegistryHostname sets the hostname for the default external image registry. The external hostname should be set only when the image registry is exposed externally. The value is used in 'publicDockerImageRepository' field in ImageStreams. The value must be in \"hostname[:port]\" format.",
 	"additionalTrustedCA":        "AdditionalTrustedCA is a reference to a ConfigMap containing additional CAs that should be trusted during imagestream import.",
 }

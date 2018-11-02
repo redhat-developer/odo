@@ -31,6 +31,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(GroupVersion,
 		&Image{},
 		&ImageList{},
+		&Build{},
+		&BuildList{},
 	)
 	return nil
 }
