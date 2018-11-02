@@ -380,6 +380,7 @@ func (c *ConfigInfo) DeleteApplication(application string, project string) error
 
 // DeleteProject deletes applications belonging to the given project from the config file
 func (c *ConfigInfo) DeleteProject(projectName string) error {
+	// looping in reverse and removing to avoid panic from index out of bounds
 	for i := len(c.ActiveApplications) - 1; i >= 0; i-- {
 		if c.ActiveApplications[i].Project == projectName {
 			// remove current item from array
