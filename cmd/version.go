@@ -45,12 +45,18 @@ var versionCmd = &cobra.Command{
 		// Lets fetch the info about the server
 		serverInfo, err := util.GetOcClient().GetServerVersion()
 		util.CheckError(err, "")
+
+		// make sure we only include Openshift info if we actually have it
+		openshiftStr := ""
+		if len(serverInfo.OpenShiftVersion) > 0 {
+			openshiftStr = fmt.Sprintf("OpenShift: %v\n", serverInfo.OpenShiftVersion)
+		}
 		fmt.Printf("\n"+
 			"Server: %v\n"+
-			"OpenShift: %v\n"+
+			"%v"+
 			"Kubernetes: %v\n",
 			serverInfo.Address,
-			serverInfo.OpenShiftVersion,
+			openshiftStr,
 			serverInfo.KubernetesVersion)
 	},
 }
