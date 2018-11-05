@@ -33,16 +33,14 @@ var watchCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := os.Stdout
-		client := odoutil.GetOcClient()
 
-		projectName := odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
+		context := odoutil.NewContextOptions()
 
 		var componentName string
 		if len(args) == 0 {
 			var err error
 			glog.V(4).Info("No component name passed, assuming current component")
-			componentName, err = component.GetCurrent(applicationName, projectName)
+			componentName, err = component.GetCurrent(context.Application, context.Project)
 			odoutil.CheckError(err, "")
 			if componentName == "" {
 				fmt.Println("No component is set as active.")
@@ -53,7 +51,7 @@ var watchCmd = &cobra.Command{
 			componentName = args[0]
 		}
 
-		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
+		sourceType, sourcePath, err := component.GetComponentSource(context.Client, componentName, context.Application)
 		odoutil.CheckError(err, "Unable to get source for %s component.", componentName)
 
 		if sourceType != "binary" && sourceType != "local" {
@@ -70,7 +68,7 @@ var watchCmd = &cobra.Command{
 		}
 		watchPath := util.ReadFilePath(u, runtime.GOOS)
 
-		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout, ignores, delay, make(chan string), component.PushLocal)
+		err = component.WatchAndPush(context.Client, componentName, context.Application, watchPath, stdout, ignores, delay, make(chan string), component.PushLocal)
 		odoutil.CheckError(err, "Error while trying to watch %s", watchPath)
 	},
 }

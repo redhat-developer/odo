@@ -27,10 +27,8 @@ var componentDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		glog.V(4).Infof("component delete called")
 		glog.V(4).Infof("args: %#v", strings.Join(args, " "))
-		client := util.GetOcClient()
 
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := util.NewContextOptions()
 
 		// Get the current component if no arguments have been passed
 		var componentName string
@@ -38,13 +36,13 @@ var componentDeleteCmd = &cobra.Command{
 		// If no arguments have been passed, get the current component
 		// else, use the first argument and check to see if it exists
 		if len(args) == 0 {
-			componentName = util.GetComponent(client, "", applicationName)
+			componentName = context.Application
 		} else {
 
 			componentName = args[0]
 
 			// Checks to see if the component actually exists
-			exists, err := component.Exists(client, componentName, applicationName)
+			exists, err := component.Exists(context.Client, componentName, context.Application)
 			util.CheckError(err, "")
 			if !exists {
 				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
@@ -56,16 +54,16 @@ var componentDeleteCmd = &cobra.Command{
 		if componentForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", componentName, applicationName)
+			fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", componentName, context.Application)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
-			err := component.Delete(client, componentName, applicationName)
+			err := component.Delete(context.Client, componentName, context.Application)
 			util.CheckError(err, "")
-			fmt.Printf("Component %s from application %s has been deleted\n", componentName, applicationName)
+			fmt.Printf("Component %s from application %s has been deleted\n", componentName, context.Application)
 
-			currentComponent, err := component.GetCurrent(applicationName, projectName)
+			currentComponent, err := component.GetCurrent(context.Application, context.Project)
 			util.CheckError(err, "Unable to get current component")
 
 			if currentComponent == "" {

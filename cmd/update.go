@@ -33,10 +33,7 @@ var updateCmd = &cobra.Command{
   odo update wildfly --binary ./downloads/sample.war
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := util.NewContextOptions()
 
 		stdout := color.Output
 
@@ -57,22 +54,20 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var componentName string
+		componentName := context.Component
 
 		if len(args) == 0 {
-			componentName, err := component.GetCurrent(applicationName, projectName)
-			util.CheckError(err, "unable to get current component")
 			if len(componentName) == 0 {
-				appList, err := application.ListInProject(client)
+				appList, err := application.ListInProject(context.Client)
 				util.CheckError(err, "")
 				if len(appList) == 0 {
-					fmt.Println("Cannot update as no application exists in the current projectName")
+					fmt.Println("Cannot update as no application exists in the current project")
 					os.Exit(1)
 				}
 			}
 		} else {
 			componentName = args[0]
-			exists, err := component.Exists(client, componentName, applicationName)
+			exists, err := component.Exists(context.Client, componentName, context.Application)
 			util.CheckError(err, "")
 			if !exists {
 				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)
@@ -80,13 +75,13 @@ var updateCmd = &cobra.Command{
 			}
 		}
 
-		if len(applicationName) == 0 {
+		if len(context.Application) == 0 {
 			fmt.Println("Cannot update as no application is set as active")
 			os.Exit(1)
 		}
 
 		if len(componentGit) != 0 {
-			err := component.Update(client, componentName, applicationName, "git", componentGit, stdout)
+			err := component.Update(context.Client, componentName, context.Application, "git", componentGit, stdout)
 			util.CheckError(err, "")
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else if len(componentLocal) != 0 {
@@ -99,13 +94,13 @@ var updateCmd = &cobra.Command{
 				fmt.Println("Please provide a path to the directory")
 				os.Exit(1)
 			}
-			err = component.Update(client, componentName, applicationName, "local", dir, stdout)
+			err = component.Update(context.Client, componentName, context.Application, "local", dir, stdout)
 			util.CheckError(err, "")
 			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
 		} else if len(componentBinary) != 0 {
 			path, err := filepath.Abs(componentBinary)
 			util.CheckError(err, "")
-			err = component.Update(client, componentName, applicationName, "binary", path, stdout)
+			err = component.Update(context.Client, componentName, context.Application, "binary", path, stdout)
 			util.CheckError(err, "")
 			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
 		}

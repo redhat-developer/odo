@@ -33,21 +33,18 @@ var pushCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := color.Output
-		client := odoutil.GetOcClient()
 
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
+		context := odoutil.NewContextOptions()
 
-		var inputName string
+		var componentName string
 		if len(args) == 0 {
-			inputName = ""
+			componentName = context.Component
 		} else {
-			inputName = args[0]
+			componentName = odoutil.GetComponent(context.Client, args[0], context.Application)
 		}
-		componentName := odoutil.GetComponent(client, inputName, applicationName)
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
-		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
+		sourceType, sourcePath, err := component.GetComponentSource(context.Client, componentName, context.Application)
 		odoutil.CheckError(err, "unable to get component source")
 		switch sourceType {
 		case "local", "binary":
@@ -77,11 +74,11 @@ var pushCmd = &cobra.Command{
 
 			if sourceType == "local" {
 				glog.V(4).Infof("Copying directory %s to pod", localLocation)
-				err = component.PushLocal(client, componentName, applicationName, localLocation, os.Stdout, []string{})
+				err = component.PushLocal(context.Client, componentName, context.Application, localLocation, os.Stdout, []string{})
 			} else {
 				dir := filepath.Dir(localLocation)
 				glog.V(4).Infof("Copying file %s to pod", localLocation)
-				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation})
+				err = component.PushLocal(context.Client, componentName, context.Application, dir, os.Stdout, []string{localLocation})
 			}
 			odoutil.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
 
@@ -92,7 +89,7 @@ var pushCmd = &cobra.Command{
 				fmt.Printf("Unable to push local directory:%s to component %s that uses Git repository:%s.\n", componentLocal, componentName, sourcePath)
 				os.Exit(1)
 			}
-			err := component.Build(client, componentName, applicationName, true, true, stdout)
+			err := component.Build(context.Client, componentName, context.Application, true, true, stdout)
 			odoutil.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 

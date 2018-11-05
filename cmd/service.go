@@ -9,7 +9,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/application"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
@@ -47,21 +46,14 @@ A full list of service types that can be deployed are available using: 'odo cata
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		util.GetAndSetNamespace(client)
-		var applicationName string
-		var err error
-		if util.ApplicationFlag != "" && util.ProjectFlag != "" {
-			applicationName = util.GetAppName(client)
-		} else {
 
-			applicationName, err = application.GetCurrentOrGetCreateSetDefault(client)
-			util.CheckError(err, "")
-		}
+		context := util.NewContextOptions()
+
+		applicationName := util.GetOrCreateAppName(context)
 
 		// make sure the service type exists
 		serviceType := args[0]
-		matchingService, err := svc.GetSvcByType(client, serviceType)
+		matchingService, err := svc.GetSvcByType(context.Client, serviceType)
 		util.CheckError(err, "unable to create service because Service Catalog is not enabled in your cluster")
 		if matchingService == nil {
 			fmt.Printf("Service %v doesn't exist\nRun 'odo service catalog' to see a list of supported services.\n", serviceType)
@@ -101,14 +93,14 @@ A full list of service types that can be deployed are available using: 'odo cata
 		//validate service name
 		err = validateName(serviceName)
 		util.CheckError(err, "")
-		exists, err := svc.SvcExists(client, serviceName, applicationName)
+		exists, err := svc.SvcExists(context.Client, serviceName, applicationName)
 
 		util.CheckError(err, "")
 		if exists {
 			fmt.Printf("%s service already exists in the current application.\n", serviceName)
 			os.Exit(1)
 		}
-		err = svc.CreateService(client, serviceName, serviceType, plan, parameters, applicationName)
+		err = svc.CreateService(context.Client, serviceName, serviceType, plan, parameters, applicationName)
 		util.CheckError(err, "")
 		fmt.Printf("Service '%s' was created.\n", serviceName)
 	},
@@ -126,15 +118,12 @@ var serviceDeleteCmd = &cobra.Command{
 
 		glog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
 
-		client := util.GetOcClient()
-
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := util.NewContextOptions()
 
 		serviceName := args[0]
 
 		// Checks to see if the service actually exists
-		exists, err := svc.SvcExists(client, serviceName, applicationName)
+		exists, err := svc.SvcExists(context.Client, serviceName, context.Application)
 		util.CheckError(err, "unable to delete service because Service Catalog is not enabled in your cluster")
 		if !exists {
 			fmt.Printf("Service with the name %s does not exist in the current application\n", serviceName)
@@ -145,14 +134,14 @@ var serviceDeleteCmd = &cobra.Command{
 		if serviceForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", serviceName, applicationName)
+			fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", serviceName, context.Application)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
-			err := svc.DeleteService(client, serviceName, applicationName)
+			err := svc.DeleteService(context.Client, serviceName, context.Application)
 			util.CheckError(err, "")
-			fmt.Printf("Service %s from application %s has been deleted\n", serviceName, applicationName)
+			fmt.Printf("Service %s from application %s has been deleted\n", serviceName, context.Application)
 
 		} else {
 			fmt.Printf("Aborting deletion of service: %v\n", serviceName)
@@ -169,12 +158,9 @@ var serviceListCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		context := util.NewContextOptions()
 
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-
-		services, err := svc.List(client, applicationName)
+		services, err := svc.List(context.Client, context.Application)
 		util.CheckError(err, "Service Catalog is not enabled in your cluster")
 
 		if len(services) == 0 {

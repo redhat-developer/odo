@@ -19,6 +19,25 @@ var (
 	ComponentFlag             string
 )
 
+type ContextOptions struct {
+	Client      *occlient.Client
+	Project     string
+	Application string
+	Component   string
+}
+
+func NewContextOptions() ContextOptions {
+	client := GetOcClient()
+	project := GetAndSetNamespace(client)
+	applicationName := GetAppName(client)
+	return ContextOptions{
+		Client:      client,
+		Project:     project,
+		Application: applicationName,
+		Component:   GetComponent(client, ComponentFlag, applicationName),
+	}
+}
+
 // GetOcClient creates a client to connect to OpenShift cluster
 func GetOcClient() *occlient.Client {
 	client, err := occlient.New(GlobalSkipConnectionCheck)
@@ -93,4 +112,16 @@ func GetComponent(client *occlient.Client, inputComponent string, applicationNam
 		os.Exit(1)
 	}
 	return inputComponent
+}
+
+// GetOrCreateAppName retrieves the current application name from the context or creates a new default application
+func GetOrCreateAppName(context ContextOptions) (applicationName string) {
+	if len(ApplicationFlag) > 0 && len(ProjectFlag) > 0 {
+		applicationName = context.Application
+	} else {
+		var err error
+		applicationName, err = application.GetCurrentOrGetCreateSetDefault(context.Client)
+		CheckError(err, "")
+	}
+	return
 }

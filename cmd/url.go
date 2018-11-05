@@ -53,16 +53,12 @@ The created URL can be used to access the specified component from outside the O
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := odoutil.NewContextOptions()
 
 		var urlName string
 		switch len(args) {
 		case 0:
-			urlName = componentName
+			urlName = context.Component
 		case 1:
 			urlName = args[0]
 		default:
@@ -70,20 +66,20 @@ The created URL can be used to access the specified component from outside the O
 			os.Exit(1)
 		}
 
-		exists, err := url.Exists(client, urlName, "", applicationName)
+		exists, err := url.Exists(context.Client, urlName, "", context.Application)
 
 		if exists {
-			fmt.Printf("The url %s already exists in the application: %s\n", urlName, applicationName)
+			fmt.Printf("The url %s already exists in the application: %s\n", urlName, context.Application)
 			os.Exit(1)
 		}
 
-		fmt.Printf("Adding URL to component: %v\n", componentName)
-		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
+		fmt.Printf("Adding URL to component: %v\n", context.Component)
+		urlRoute, err := url.Create(context.Client, urlName, urlPort, context.Component, context.Application)
 		odoutil.CheckError(err, "")
 
 		urlCreated := url.GetUrlString(*urlRoute)
 		fmt.Printf("URL created for component: %v\n\n"+
-			"%v - %v\n", componentName, urlRoute.Name, urlCreated)
+			"%v - %v\n", context.Component, urlRoute.Name, urlCreated)
 
 		if urlOpenFlag {
 			err := util.OpenBrowser(urlCreated)
@@ -103,19 +99,15 @@ var urlDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// Initialization
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := odoutil.NewContextOptions()
 
 		urlName := args[0]
 
-		exists, err := url.Exists(client, urlName, componentName, applicationName)
+		exists, err := url.Exists(context.Client, urlName, context.Component, context.Application)
 		odoutil.CheckError(err, "")
 
 		if !exists {
-			fmt.Printf("The URL %s does not exist within the component %s\n", urlName, componentName)
+			fmt.Printf("The URL %s does not exist within the component %s\n", urlName, context.Component)
 			os.Exit(1)
 		}
 
@@ -129,7 +121,7 @@ var urlDeleteCmd = &cobra.Command{
 
 		if strings.ToLower(confirmDeletion) == "y" {
 
-			err = url.Delete(client, urlName, applicationName)
+			err = url.Delete(context.Client, urlName, context.Application)
 			odoutil.CheckError(err, "")
 			fmt.Printf("Deleted URL: %v\n", urlName)
 		} else {
@@ -147,19 +139,15 @@ var urlListCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
+		context := odoutil.NewContextOptions()
 
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
-
-		urls, err := url.List(client, componentName, applicationName)
+		urls, err := url.List(context.Client, context.Component, context.Application)
 		odoutil.CheckError(err, "")
 
 		if len(urls) == 0 {
-			fmt.Printf("No URLs found for component %v in application %v\n", componentName, applicationName)
+			fmt.Printf("No URLs found for component %v in application %v\n", context.Component, context.Application)
 		} else {
-			fmt.Printf("Found the following URLs for component %v in application %v:\n", componentName, applicationName)
+			fmt.Printf("Found the following URLs for component %v in application %v:\n", context.Component, context.Application)
 
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 

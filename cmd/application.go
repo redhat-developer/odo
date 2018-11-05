@@ -91,19 +91,16 @@ var applicationGetCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		projectName := util.GetAndSetNamespace(client)
-		app, err := application.GetCurrent(projectName)
-		util.CheckError(err, "")
+		context := util.NewContextOptions()
 		if applicationShortFlag {
-			fmt.Print(app)
+			fmt.Print(context.Application)
 			return
 		}
-		if app == "" {
+		if len(context.Application) == 0 {
 			fmt.Printf("There's no active application.\nYou can create one by running 'odo application create <name>'.\n")
 			return
 		}
-		fmt.Printf("The current application is: %v in project: %v\n", app, projectName)
+		fmt.Printf("The current application is: %v in project: %v\n", context.Application, context.Project)
 	},
 }
 
@@ -116,15 +113,11 @@ var applicationDeleteCmd = &cobra.Command{
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		projectName := util.GetAndSetNamespace(client)
-		var appName string
+		context := util.NewContextOptions()
+
+		appName := context.Application
 		// If name of the app to be deleted is not passed, consider the current app for deletion
-		if len(args) == 0 {
-			var err error
-			appName, err = application.GetCurrent(projectName)
-			util.CheckError(err, "")
-		} else {
+		if len(args) == 1 {
 			// If app name passed, consider it for deletion
 			appName = args[0]
 		}
@@ -132,26 +125,26 @@ var applicationDeleteCmd = &cobra.Command{
 		var confirmDeletion string
 
 		// Print App Information which will be deleted
-		err := printDeleteAppInfo(client, appName)
+		err := printDeleteAppInfo(context.Client, appName)
 		util.CheckError(err, "")
-		exists, err := application.Exists(client, appName)
+		exists, err := application.Exists(context.Client, appName)
 		util.CheckError(err, "")
 		if !exists {
-			fmt.Printf("Application %v in project %v does not exist\n", appName, projectName)
+			fmt.Printf("Application %v in project %v does not exist\n", appName, context.Project)
 			os.Exit(1)
 		}
 
 		if applicationForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete the application: %v from project: %v? [y/N] ", appName, projectName)
+			fmt.Printf("Are you sure you want to delete the application: %v from project: %v? [y/N] ", appName, context.Project)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
-			err := application.Delete(client, appName)
+			err := application.Delete(context.Client, appName)
 			util.CheckError(err, "")
-			fmt.Printf("Deleted application: %s from project: %v\n", appName, projectName)
+			fmt.Printf("Deleted application: %s from project: %v\n", appName, context.Project)
 		} else {
 			fmt.Printf("Aborting deletion of application: %v\n", appName)
 		}
@@ -170,13 +163,12 @@ var applicationListCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		context := util.NewContextOptions()
 
-		projectName := util.GetAndSetNamespace(client)
-		apps, err := application.ListInProject(client)
+		apps, err := application.ListInProject(context.Client)
 		util.CheckError(err, "unable to get list of applications")
 		if len(apps) > 0 {
-			fmt.Printf("The project '%v' has the following applications:\n", projectName)
+			fmt.Printf("The project '%v' has the following applications:\n", context.Project)
 			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(tabWriter, "ACTIVE", "\t", "NAME")
 			for _, app := range apps {
@@ -188,7 +180,7 @@ var applicationListCmd = &cobra.Command{
 			}
 			tabWriter.Flush()
 		} else {
-			fmt.Printf("There are no applications deployed in the project '%v'.\n", projectName)
+			fmt.Printf("There are no applications deployed in the project '%v'.\n", context.Project)
 		}
 	},
 }
@@ -209,21 +201,20 @@ var applicationSetCmd = &cobra.Command{
 		}
 		return nil
 	}, Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		appName := args[0]
+		context := util.NewContextOptions()
 
-		projectName := util.GetAndSetNamespace(client)
 		// error if application does not exist
-		exists, err := application.Exists(client, appName)
+		appName := args[0]
+		exists, err := application.Exists(context.Client, appName)
 		util.CheckError(err, "unable to check if application exists")
 		if !exists {
 			fmt.Printf("Application %v does not exist\n", appName)
 			os.Exit(1)
 		}
 
-		err = application.SetCurrent(client, appName)
+		err = application.SetCurrent(context.Client, appName)
 		util.CheckError(err, "")
-		fmt.Printf("Switched to application: %v in project: %v\n", args[0], projectName)
+		fmt.Printf("Switched to application: %v in project: %v\n", args[0], context.Project)
 	},
 }
 
@@ -236,30 +227,22 @@ var applicationDescribeCmd = &cobra.Command{
   odo app describe webapp
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		var appName string
-		projectName := util.GetAndSetNamespace(client)
-		if len(args) == 0 {
-			var err error
-			appName, err = application.GetCurrent(projectName)
-			util.CheckError(err, "")
-			if appName == "" {
-				fmt.Printf("There's no active application in project: %v", projectName)
-				os.Exit(1)
-			}
-		} else {
+		context := util.NewContextOptions()
+
+		appName := context.Application
+		if len(args) == 1 {
 			appName = args[0]
 			//Check whether application exist or not
-			exists, err := application.Exists(client, appName)
+			exists, err := application.Exists(context.Client, appName)
 			util.CheckError(err, "")
 			if !exists {
-				fmt.Printf("Application with the name %s does not exist in %s \n", appName, projectName)
+				fmt.Printf("Application with the name %s does not exist in %s \n", appName, context.Project)
 				os.Exit(1)
 			}
 		}
 
 		// List of Component
-		componentList, err := component.List(client, appName)
+		componentList, err := component.List(context.Client, appName)
 		util.CheckError(err, "")
 		if len(componentList) == 0 {
 			fmt.Printf("Application %s has no components deployed.\n", appName)
@@ -268,7 +251,7 @@ var applicationDescribeCmd = &cobra.Command{
 		fmt.Printf("Application %s has:\n", appName)
 
 		for _, currentComponent := range componentList {
-			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+			componentType, path, componentURL, appStore, err := component.GetComponentDesc(context.Client, currentComponent.Name, appName)
 			util.CheckError(err, "")
 			printComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
 		}

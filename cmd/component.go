@@ -38,21 +38,12 @@ var componentGetCmd = &cobra.Command{
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		glog.V(4).Infof("component get called")
-		client := util.GetOcClient()
+		context := util.NewContextOptions()
 
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-
-		component, err := component.GetCurrent(applicationName, projectName)
-		util.CheckError(err, "unable to get current component")
 		if componentShortFlag {
-			fmt.Print(component)
+			fmt.Print(context.Component)
 		} else {
-			if component == "" {
-				fmt.Printf("No component is set as current\n")
-				return
-			}
-			fmt.Printf("The current component is: %v\n", component)
+			fmt.Printf("The current component is: %v\n", context.Component)
 		}
 	},
 }
@@ -66,19 +57,16 @@ var componentSetCmd = &cobra.Command{
   `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		context := util.NewContextOptions()
 
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-
-		exists, err := component.Exists(client, args[0], applicationName)
+		exists, err := component.Exists(context.Client, args[0], context.Application)
 		util.CheckError(err, "")
 		if !exists {
 			fmt.Printf("Component %s does not exist in the current application\n", args[0])
 			os.Exit(1)
 		}
 
-		err = component.SetCurrent(args[0], applicationName, projectName)
+		err = component.SetCurrent(args[0], context.Application, context.Project)
 		util.CheckError(err, "")
 		fmt.Printf("Switched to component: %v\n", args[0])
 	},

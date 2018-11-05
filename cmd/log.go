@@ -25,23 +25,16 @@ var logCmd = &cobra.Command{
 		// Retrieve stdout / io.Writer
 		stdout := os.Stdout
 
-		// Retrieve the client
-		client := util.GetOcClient()
+		context := util.NewContextOptions()
 
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-
-		var argComponent string
-
+		currentComponent := context.Component
 		if len(args) == 1 {
-			argComponent = args[0]
+			// Retrieve and set the currentComponent
+			currentComponent = util.GetComponent(context.Client, args[0], context.Application)
 		}
 
-		// Retrieve and set the currentComponent
-		currentComponent := util.GetComponent(client, argComponent, applicationName)
-
 		// Retrieve the log
-		err := component.GetLogs(client, currentComponent, applicationName, logFollow, stdout)
+		err := component.GetLogs(context.Client, currentComponent, context.Application, logFollow, stdout)
 		util.CheckError(err, "Unable to retrieve logs, does your component exist?")
 	},
 }

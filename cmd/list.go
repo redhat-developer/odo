@@ -19,14 +19,8 @@ var componentListCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-
-		currentComponent, err := component.GetCurrent(applicationName, projectName)
-		util.CheckError(err, "")
-		components, err := component.List(client, applicationName)
+		context := util.NewContextOptions()
+		components, err := component.List(context.Client, context.Application)
 		util.CheckError(err, "")
 
 		if len(components) == 0 {
@@ -38,7 +32,7 @@ var componentListCmd = &cobra.Command{
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
 		for _, comp := range components {
-			if comp.Name == currentComponent {
+			if comp.Name == context.Component {
 				activeMark = "*"
 			}
 			fmt.Fprintln(w, activeMark, "\t", comp.Name, "\t", comp.Type)

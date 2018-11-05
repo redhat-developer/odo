@@ -38,25 +38,21 @@ var storageCreateCmd = &cobra.Command{
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := odoutil.NewContextOptions()
 
 		var storageName string
 		if len(args) != 0 {
 			storageName = args[0]
 		} else {
-			storageName = componentName + "-" + util.GenerateRandomString(4)
+			storageName = context.Component + "-" + util.GenerateRandomString(4)
 		}
 		// validate storage path
-		err := validateStoragePath(client, storagePath, componentName, applicationName)
+		err := validateStoragePath(context.Client, storagePath, context.Component, context.Application)
 		odoutil.CheckError(err, "")
 
-		_, err = storage.Create(client, storageName, storageSize, storagePath, componentName, applicationName)
+		_, err = storage.Create(context.Client, storageName, storageSize, storagePath, context.Component, context.Application)
 		odoutil.CheckError(err, "")
-		fmt.Printf("Added storage %v to %v\n", storageName, componentName)
+		fmt.Printf("Added storage %v to %v\n", storageName, context.Component)
 	},
 }
 
@@ -81,37 +77,33 @@ var storageUnmountCmd = &cobra.Command{
 	Aliases: []string{"umount"},
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := odoutil.NewContextOptions()
 
 		var storageName string
 		var err error
 		// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
 		if string(args[0][0]) == "/" {
 			path := args[0]
-			storageName, err = storage.GetStorageNameFromMountPath(client, path, componentName, applicationName)
+			storageName, err = storage.GetStorageNameFromMountPath(context.Client, path, context.Component, context.Application)
 			odoutil.CheckError(err, "Unable to get storage name from mount path")
 			if storageName == "" {
-				fmt.Printf("No storage is mounted to %s in the component %s\n", path, componentName)
+				fmt.Printf("No storage is mounted to %s in the component %s\n", path, context.Component)
 				os.Exit(1)
 			}
 		} else {
 			storageName = args[0]
-			exists, err := storage.IsMounted(client, storageName, componentName, applicationName)
+			exists, err := storage.IsMounted(context.Client, storageName, context.Component, context.Application)
 			odoutil.CheckError(err, "Unable to check if storage is mounted or not")
 			if !exists {
-				fmt.Printf("Storage %v does not exist in component %v\n", storageName, componentName)
+				fmt.Printf("Storage %v does not exist in component %v\n", storageName, context.Component)
 				os.Exit(1)
 			}
 		}
 
-		err = storage.Unmount(client, storageName, componentName, applicationName, true)
-		odoutil.CheckError(err, "Unable to unmount storage %v from component %v", storageName, componentName)
+		err = storage.Unmount(context.Client, storageName, context.Component, context.Application, true)
+		odoutil.CheckError(err, "Unable to unmount storage %v from component %v", storageName, context.Component)
 
-		fmt.Printf("Unmounted storage %v from %v\n", storageName, componentName)
+		fmt.Printf("Unmounted storage %v from %v\n", storageName, context.Component)
 	},
 }
 
@@ -126,22 +118,19 @@ var storageDeleteCmd = &cobra.Command{
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
+		context := odoutil.NewContextOptions()
 
 		storageName := args[0]
 
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-
-		exists, err := storage.Exists(client, storageName, applicationName)
+		exists, err := storage.Exists(context.Client, storageName, context.Application)
 		odoutil.CheckError(err, "")
 		if !exists {
 
-			fmt.Printf("The storage %v does not exists in the application %v\n", storageName, applicationName)
+			fmt.Printf("The storage %v does not exists in the application %v\n", storageName, context.Application)
 			os.Exit(1)
 		}
 
-		componentName, err := storage.GetComponentNameFromStorageName(client, storageName)
+		componentName, err := storage.GetComponentNameFromStorageName(context.Client, storageName)
 		if err != nil {
 			odoutil.CheckError(err, "Unable to get component associated with %s storage.", storageName)
 		}
@@ -150,8 +139,8 @@ var storageDeleteCmd = &cobra.Command{
 		if storageForceDeleteflag {
 			confirmDeletion = "y"
 		} else {
-			if componentName != "" {
-				mPath := storage.GetMountPath(client, storageName, componentName, applicationName)
+			if len(componentName) > 0 {
+				mPath := storage.GetMountPath(context.Client, storageName, componentName, context.Application)
 				fmt.Printf("Are you sure you want to delete the storage %v mounted to %v in %v component? [y/N] ", storageName, mPath, componentName)
 			} else {
 				fmt.Printf("Are you sure you want to delete the storage %v that is not currently mounted to any component? [y/N] ", storageName)
@@ -159,9 +148,9 @@ var storageDeleteCmd = &cobra.Command{
 			fmt.Scanln(&confirmDeletion)
 		}
 		if strings.ToLower(confirmDeletion) == "y" {
-			componentName, err = storage.Delete(client, storageName, applicationName)
+			componentName, err = storage.Delete(context.Client, storageName, context.Application)
 			odoutil.CheckError(err, "failed to delete storage")
-			if componentName != "" {
+			if len(componentName) > 0 {
 				fmt.Printf("Deleted storage %v from %v\n", storageName, componentName)
 			} else {
 				fmt.Printf("Deleted storage %v\n", storageName)
@@ -182,23 +171,19 @@ var storageListCmd = &cobra.Command{
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
+		context := odoutil.NewContextOptions()
 
 		if storageAllListflag {
 			if odoutil.ComponentFlag != "" {
 				fmt.Println("Invalid arguments. Component name is not needed")
 				os.Exit(1)
 			}
-			printMountedStorageInAllComponent(client, applicationName)
+			printMountedStorageInAllComponent(context.Client, context.Application)
 		} else {
 			// storageComponent is the input component name
-			componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
-			printMountedStorageInComponent(client, componentName, applicationName)
+			printMountedStorageInComponent(context.Client, context.Component, context.Application)
 		}
-		printUnmountedStorage(client, applicationName)
+		printUnmountedStorage(context.Client, context.Application)
 	},
 }
 
@@ -212,29 +197,24 @@ var storageMountCmd = &cobra.Command{
   odo storage mount database --component mongodb --path /data`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
+		context := odoutil.NewContextOptions()
 
 		storageName := args[0]
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
-
-		exists, err := storage.Exists(client, storageName, applicationName)
+		exists, err := storage.Exists(context.Client, storageName, context.Application)
 		odoutil.CheckError(err, "unable to check if the storage exists in the current application")
 		if !exists {
-			fmt.Printf("The storage %v does not exists in the current application '%v'", storageName, applicationName)
+			fmt.Printf("The storage %v does not exists in the current application '%v'", storageName, context.Application)
 			os.Exit(1)
 		}
-		isMounted, err := storage.IsMounted(client, storageName, componentName, applicationName)
+		isMounted, err := storage.IsMounted(context.Client, storageName, context.Component, context.Application)
 		odoutil.CheckError(err, "unable to check if the component is already mounted or not")
 		if isMounted {
-			fmt.Printf("The storage %v is already mounted on the current component '%v'\n", storageName, componentName)
+			fmt.Printf("The storage %v is already mounted on the current component '%v'\n", storageName, context.Component)
 			os.Exit(1)
 		}
-		err = storage.Mount(client, storagePath, storageName, componentName, applicationName)
+		err = storage.Mount(context.Client, storagePath, storageName, context.Component, context.Application)
 		odoutil.CheckError(err, "")
-		fmt.Printf("The storage %v is successfully mounted to the current component '%v'\n", storageName, componentName)
+		fmt.Printf("The storage %v is successfully mounted to the current component '%v'\n", storageName, context.Component)
 	},
 }
 

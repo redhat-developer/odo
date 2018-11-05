@@ -18,27 +18,24 @@ var describeCmd = &cobra.Command{
 	`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := util.NewContextOptions()
 
 		var componentName string
 		if len(args) == 0 {
-			componentName = util.GetComponent(client, "", applicationName)
+			componentName = context.Component
 		} else {
 
 			componentName = args[0]
 
 			// Checks to see if the component actually exists
-			exists, err := component.Exists(client, componentName, applicationName)
+			exists, err := component.Exists(context.Client, componentName, context.Application)
 			util.CheckError(err, "")
 			if !exists {
 				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
 				os.Exit(1)
 			}
 		}
-		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, componentName, applicationName)
+		componentType, path, componentURL, appStore, err := component.GetComponentDesc(context.Client, componentName, context.Application)
 		util.CheckError(err, "")
 		printComponentInfo(componentName, componentType, path, componentURL, appStore)
 	},
