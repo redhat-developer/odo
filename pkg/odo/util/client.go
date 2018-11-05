@@ -19,6 +19,7 @@ var (
 	ComponentFlag             string
 )
 
+// ContextOptions gathers common contextual information for commands such as current project, application or component
 type ContextOptions struct {
 	Client      *occlient.Client
 	Project     string
@@ -26,6 +27,7 @@ type ContextOptions struct {
 	Component   string
 }
 
+// NewContextOptions creates a new ContextOptions instance based on the current state of the cluster and provided flags
 func NewContextOptions() ContextOptions {
 	client := GetOcClient()
 	project := GetAndSetNamespace(client)
