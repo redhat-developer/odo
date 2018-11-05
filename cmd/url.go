@@ -67,7 +67,7 @@ The created URL can be used to access the specified component from outside the O
 		}
 
 		exists, err := url.Exists(context.Client, urlName, "", context.Application)
-
+		odoutil.CheckError(err, "")
 		if exists {
 			fmt.Printf("The url %s already exists in the application: %s\n", urlName, context.Application)
 			os.Exit(1)
