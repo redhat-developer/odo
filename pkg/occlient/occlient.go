@@ -74,6 +74,25 @@ const (
 
 	// ComponentPortAnnotationName annotation is used on the secrets that are created for each exposed port of the component
 	ComponentPortAnnotationName = "component-port"
+
+	// EnvS2IScriptsURL is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate location of s2i scripts in this case assemble script
+	EnvS2IScriptsURL = "ODO_S2I_SCRIPTS_URL"
+
+	// EnvS2IScriptsProtocol is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate the way to access location of s2i scripts indicated by ${${EnvS2IScriptsURL}} above
+	EnvS2IScriptsProtocol = "ODO_S2I_SCRIPTS_PROTOCOL"
+
+	// EnvS2ISrcOrBinPath is an env var exposed by s2i to indicate where the builder image expects the component source or binary to reside
+	EnvS2ISrcOrBinPath = "ODO_S2I_SRC_BIN_PATH"
+
+	// S2IScriptsURLLabel S2I script location Label name
+	// Ref: https://docs.openshift.com/enterprise/3.2/creating_images/s2i.html#build-process
+	S2IScriptsURLLabel = "io.openshift.s2i.scripts-url"
+
+	// S2ISrcOrBinLabel is the label that is provides, path where S2I expects component source or binary
+	S2ISrcOrBinLabel = "io.openshift.s2i.destination"
+
+	// EnvS2IDeploymentDir is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate s2i deployment directory
+	EnvS2IDeploymentDir = "ODO_S2I_DEPLOYMENT_DIR"
 )
 
 // errorMsg is the message for user when invalid configuration error occurs
@@ -509,11 +528,8 @@ func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
 	return secret, nil
 }
 
-// GetExposedPorts returns image namespace and list of ContainerPorts that are exposed by given image
-func (c *Client) GetExposedPorts(imageStream *imagev1.ImageStream, imageTag string) ([]corev1.ContainerPort, error) {
-	var containerPorts []corev1.ContainerPort
-
-	glog.V(4).Infof("Checking for exact match of builderImage with ImageStream")
+// GetImageStreamImage returns image and error if any, corresponding to the passed imagestream and image tag
+func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag string) (*imagev1.ImageStreamImage, error) {
 	imageNS := imageStream.ObjectMeta.Namespace
 	imageName := imageStream.ObjectMeta.Name
 
@@ -534,12 +550,7 @@ func (c *Client) GetExposedPorts(imageStream *imagev1.ImageStream, imageTag stri
 				if err != nil {
 					return nil, errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
 				}
-
-				// get ports that are exported by image
-				containerPorts, err = getExposedPortsFromISI(imageStreamImage)
-				if err != nil {
-					return nil, errors.Wrapf(err, "unable to get exported ports from %s:%s image", imageName, imageTag)
-				}
+				return imageStreamImage, nil
 			} else {
 				return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
 			}
@@ -548,6 +559,21 @@ func (c *Client) GetExposedPorts(imageStream *imagev1.ImageStream, imageTag stri
 
 	if !tagFound {
 		return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
+	}
+
+	// return error since its an unhandled case if code reaches here
+	return nil, fmt.Errorf("unable to fetch image with tag %s corresponding to imagestream %+v", imageTag, imageStream)
+}
+
+// GetExposedPorts returns list of ContainerPorts that are exposed by given image
+func (c *Client) GetExposedPorts(imageStreamImage *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
+	var containerPorts []corev1.ContainerPort
+
+	glog.V(4).Infof("Checking for exact match of builderImage with ImageStream")
+	// get ports that are exported by image
+	containerPorts, err := getExposedPortsFromISI(imageStreamImage)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get exported ports from image %+v", imageStreamImage)
 	}
 
 	return containerPorts, nil
@@ -580,9 +606,14 @@ func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectM
 	imageNS = imageStream.ObjectMeta.Namespace
 	glog.V(4).Infof("Using imageNS: %s", imageNS)
 
+	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create s2i app for %s", commonObjectMeta.Name)
+	}
+
 	var containerPorts []corev1.ContainerPort
 	if len(inputPorts) == 0 {
-		containerPorts, err = c.GetExposedPorts(imageStream, imageTag)
+		containerPorts, err = c.GetExposedPorts(imageStreamImage)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
 		}
@@ -681,6 +712,71 @@ func secretKeyName(componentName, baseKeyName string) string {
 	return fmt.Sprintf("COMPONENT_%v_%v", strings.Replace(strings.ToUpper(componentName), "-", "_", -1), strings.ToUpper(baseKeyName))
 }
 
+// GetS2IScriptsPathFromBuilderImg returns script path protocol, S2I scripts path and errors(if any) from the passed builder image
+func GetS2IScriptsPathFromBuilderImg(builderImage *imagev1.ImageStreamImage) (string, string, error) {
+
+	type ContainerConfig struct {
+		Labels map[string]string `json:"Labels"`
+	}
+	type DockerImageMetaDataRaw struct {
+		ContainerConfig ContainerConfig `json:"ContainerConfig"`
+	}
+
+	var dimdr DockerImageMetaDataRaw
+	dimdrByteArr := (*builderImage).Image.DockerImageMetadata.Raw
+
+	err := json.Unmarshal(dimdrByteArr, &dimdr)
+	if err != nil {
+		return "", "", errors.Wrap(err, "unable to bootstrap supervisord")
+	}
+
+	if dimdr.ContainerConfig.Labels == nil {
+		glog.V(4).Infof("No Labels found in %+v in builder image %+v", dimdr, builderImage)
+		return "", "", nil
+	}
+
+	s2iScriptsURL := dimdr.ContainerConfig.Labels[S2IScriptsURLLabel]
+	s2iScriptsProtocol := ""
+	s2iScriptsPath := ""
+	switch {
+	case strings.HasPrefix(s2iScriptsURL, "image://"):
+		s2iScriptsProtocol = "image://"
+		s2iScriptsPath = strings.TrimPrefix(s2iScriptsURL, "image://")
+	case strings.HasPrefix(s2iScriptsURL, "file://"):
+		s2iScriptsProtocol = "file://"
+		s2iScriptsPath = strings.TrimPrefix(s2iScriptsURL, "file://")
+	case strings.HasPrefix(s2iScriptsURL, "http(s)://"):
+		s2iScriptsProtocol = "http(s)://"
+		s2iScriptsPath = s2iScriptsURL
+	default:
+		return "", "", fmt.Errorf("Unknown scripts url %s", s2iScriptsURL)
+	}
+	return s2iScriptsProtocol, s2iScriptsPath, nil
+}
+
+// uniqueAppendOrOverwriteEnvVars appends/overwrites the passed existing list of env vars with the elements from the to-be appended passed list of envs
+func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...corev1.EnvVar) []corev1.EnvVar {
+	mapExistingEnvs := make(map[string]corev1.EnvVar)
+	var retVal []corev1.EnvVar
+
+	// Convert slice of existing env vars to map to check for existence
+	for _, envVar := range existingEnvs {
+		mapExistingEnvs[envVar.Name] = envVar
+	}
+
+	// For each new envVar to be appended, Add(if envVar with same name doesn't already exist)/overwrite(if envVar with same name already exists) the map
+	for _, newEnvVar := range envVars {
+		mapExistingEnvs[newEnvVar.Name] = newEnvVar
+	}
+
+	// Convert map to slice
+	for _, envVar := range mapExistingEnvs {
+		retVal = append(retVal, envVar)
+	}
+
+	return retVal
+}
+
 // BootstrapSupervisoredS2I uses S2I (Source To Image) to inject Supervisor into the application container.
 // Odo uses https://github.com/ochinchina/supervisord which is pre-built in a ready-to-deploy InitContainer.
 // The supervisord binary is copied over to the application container using a temporary volume and overrides
@@ -706,9 +802,13 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 	*/
 	imageNS = imageStream.ObjectMeta.Namespace
 
+	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
+	if err != nil {
+		return errors.Wrap(err, "unable to bootstrap supervisord")
+	}
 	var containerPorts []corev1.ContainerPort
 	if len(inputPorts) == 0 {
-		containerPorts, err = c.GetExposedPorts(imageStream, imageTag)
+		containerPorts, err = c.GetExposedPorts(imageStreamImage)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
 		}
@@ -742,6 +842,25 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 		Namespace: imageNS,
 		Ports:     containerPorts,
 	}
+
+	// Extract s2i scripts path and path type from imagestream image
+	s2iScriptsProtocol, s2iScriptsURL, err := GetS2IScriptsPathFromBuilderImg(imageStreamImage)
+	if err != nil {
+		return errors.Wrap(err, "unable to bootstrap supervisord")
+	}
+
+	// Append s2i related parameters extracted above to env
+	inputEnvs = uniqueAppendOrOverwriteEnvVars(
+		inputEnvs,
+		corev1.EnvVar{
+			Name:  EnvS2IScriptsURL,
+			Value: s2iScriptsURL,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IScriptsProtocol,
+			Value: s2iScriptsProtocol,
+		},
+	)
 
 	// Generate the DeploymentConfig that will be used.
 	dc := generateSupervisordDeploymentConfig(commonObjectMeta, builderImage, commonImageMeta, inputEnvs)
@@ -1003,6 +1122,11 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	}
 	imageNS = imageStream.ObjectMeta.Namespace
 
+	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
+	if err != nil {
+		return errors.Wrap(err, "unable to bootstrap supervisord")
+	}
+
 	// Retrieve the current DC in order to obtain what the current inputPorts are..
 	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name)
 	if err != nil {
@@ -1023,11 +1147,30 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 		Ports:     foundCurrentDCContainer.Ports,
 	}
 
+	s2iScriptsProtocol, s2iScriptsURL, err := GetS2IScriptsPathFromBuilderImg(imageStreamImage)
+	if err != nil {
+		return errors.Wrap(err, "unable to bootstrap supervisord")
+	}
+
+	// Append s2i related parameters extracted above to env
+	inputEnvs := uniqueAppendOrOverwriteEnvVars(
+		foundCurrentDCContainer.Env,
+		corev1.EnvVar{
+			Name:  EnvS2IScriptsURL,
+			Value: s2iScriptsURL,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IScriptsProtocol,
+			Value: s2iScriptsProtocol,
+		},
+	)
+
 	// Generate the SupervisorD Config
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, foundCurrentDCContainer.Env)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, inputEnvs)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
+	//addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
