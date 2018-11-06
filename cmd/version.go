@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -19,6 +20,8 @@ var (
 	// HEAD is default indicating that this was not set during build
 	GITCOMMIT = "HEAD"
 )
+
+var clientFlag bool
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
@@ -40,24 +43,25 @@ var versionCmd = &cobra.Command{
 
 		fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
 
-		// turning off the flag which checks for login status
-		util.GlobalSkipConnectionCheck = true
-		// Lets fetch the info about the server
-		serverInfo, err := util.GetOcClient().GetServerVersion()
-		util.CheckError(err, "")
-
-		// make sure we only include Openshift info if we actually have it
-		openshiftStr := ""
-		if len(serverInfo.OpenShiftVersion) > 0 {
-			openshiftStr = fmt.Sprintf("OpenShift: %v\n", serverInfo.OpenShiftVersion)
+		if !clientFlag {
+			// turning off the flag which checks for login status
+			util.GlobalSkipConnectionCheck = true
+			// Lets fetch the info about the server
+			serverInfo, err := util.GetOcClient().GetServerVersion()
+			util.CheckError(err, "")
+			// make sure we only include Openshift info if we actually have it
+			openshiftStr := ""
+			if len(serverInfo.OpenShiftVersion) > 0 {
+				openshiftStr = fmt.Sprintf("OpenShift: %v\n", serverInfo.OpenShiftVersion)
+			}
+			fmt.Printf("\n"+
+				"Server: %v\n"+
+				"%v"+
+				"Kubernetes: %v\n",
+				serverInfo.Address,
+				openshiftStr,
+				serverInfo.KubernetesVersion)
 		}
-		fmt.Printf("\n"+
-			"Server: %v\n"+
-			"%v"+
-			"Kubernetes: %v\n",
-			serverInfo.Address,
-			openshiftStr,
-			serverInfo.KubernetesVersion)
 	},
 }
 
@@ -65,6 +69,7 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	versionCmd.Annotations = map[string]string{"command": "utility"}
 	versionCmd.SetUsageTemplate(cmdUsageTemplate)
+	versionCmd.Flags().BoolVar(&clientFlag, "client", false, "Client version only (no server required).")
 
 	rootCmd.AddCommand(versionCmd)
 }
