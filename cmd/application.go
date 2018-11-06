@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"text/tabwriter"
 
@@ -302,4 +304,9 @@ func init() {
 	applicationCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	rootCmd.AddCommand(applicationCmd)
+
+	completion.RegisterCommandHandler(applicationDescribeCmd, completion.AppCompletionHandler)
+	completion.RegisterCommandHandler(applicationDeleteCmd, completion.AppCompletionHandler)
+	completion.RegisterCommandHandler(applicationSetCmd, completion.AppCompletionHandler)
+
 }
