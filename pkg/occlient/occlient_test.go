@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -3488,12 +3489,12 @@ func TestPatchCurrentDC(t *testing.T) {
 			args: args{
 				name:     "foo",
 				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
-				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo"}, "bar",
+				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
-			actions: 2,
+			actions: 3,
 		},
 		{
 			name: "Case 2: Test patching with the wrong name",
@@ -3511,6 +3512,15 @@ func TestPatchCurrentDC(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake "watch"
+			fkWatch := watch.NewFake()
+			go func() {
+				fkWatch.Modify(&tt.args.dcPatch)
+			}()
+			fakeClientSet.AppsClientset.PrependWatchReactor("deploymentconfigs", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
 
 			// Fake getting DC
 			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -3537,7 +3547,7 @@ func TestPatchCurrentDC(t *testing.T) {
 			if err == nil && !tt.wantErr {
 				// Check to see how many actions are being ran
 				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
-					t.Errorf("expected %v action(s) in PatchCurrentDC got: %v", tt.actions, fakeClientSet.Kubernetes.Actions())
+					t.Errorf("expected %v action(s) in PatchCurrentDC got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
 				}
 			} else if err == nil && tt.wantErr {
 				t.Error("test failed, expected: false, got true")
@@ -3569,7 +3579,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
-			actions: 3,
+			actions: 4,
 		},
 		{
 			name: "Case 2: Fail if the variable passed in is blank",
@@ -3579,7 +3589,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: true,
-			actions: 3,
+			actions: 4,
 		},
 		{
 			name: "Case 3: Fail if image retrieved doesn't match the one we want to patch",
@@ -3599,12 +3609,21 @@ func TestUpdateDCToGit(t *testing.T) {
 				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
-			actions: 3,
+			actions: 4,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake "watch"
+			fkWatch := watch.NewFake()
+			go func() {
+				fkWatch.Modify(&tt.args.dc)
+			}()
+			fakeClientSet.AppsClientset.PrependWatchReactor("deploymentconfigs", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
 
 			// Fake getting DC
 			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -3675,7 +3694,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
 			},
 			wantErr: false,
-			actions: 3,
+			actions: 4,
 		},
 		{
 			name: "Case 2: Fail if unable to find container",
@@ -3693,6 +3712,15 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake "watch"
+			fkWatch := watch.NewFake()
+			go func() {
+				fkWatch.Modify(&tt.args.dc)
+			}()
+			fakeClientSet.AppsClientset.PrependWatchReactor("deploymentconfigs", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
 
 			// Fake getting DC
 			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -4250,6 +4278,75 @@ func Test_findContainer(t *testing.T) {
 				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
 			}
 
+		})
+	}
+}
+
+func TestWaitAndGetDC(t *testing.T) {
+	type args struct {
+		name       string
+		annotation string
+		value      string
+		dc         appsv1.DeploymentConfig
+		timeout    time.Duration
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		actions int
+	}{
+		{
+			name: "Case 1 - Check that the function actually works",
+			args: args{
+				name:       "foo",
+				annotation: "app.kubernetes.io/component-source-type",
+				value:      "git",
+				dc:         *fakeDeploymentConfig("foo", "bar", []corev1.EnvVar{}),
+				timeout:    3 * time.Second,
+			},
+			wantErr: false,
+			actions: 1,
+		},
+		{
+			name: "Case 2 - Purposefully timeout / error",
+			args: args{
+				name:       "foo",
+				annotation: "app.kubernetes.io/component-source-type",
+				value:      "foobar",
+				dc:         *fakeDeploymentConfig("foo", "bar", []corev1.EnvVar{}),
+				timeout:    3 * time.Second,
+			},
+			wantErr: true,
+			actions: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+			fkWatch := watch.NewFake()
+			go func() {
+				fkWatch.Modify(&tt.args.dc)
+			}()
+			fakeClientSet.AppsClientset.PrependWatchReactor("deploymentconfigs", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+			// Run function WaitAndGetDC
+			_, err := fakeClient.WaitAndGetDC(tt.args.name, tt.args.annotation, tt.args.value, tt.args.timeout)
+			// Error checking WaitAndGetDC
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.WaitAndGetDC() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+			if err == nil && !tt.wantErr {
+				// Check to see how many actions are being ran
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in WaitAndGetDC got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
 		})
 	}
 }
