@@ -191,26 +191,21 @@ func NewCmdURL() *cobra.Command {
 	urlCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(urlListCmd)
-	addProjectFlag(urlCreateCmd)
-	addProjectFlag(urlDeleteCmd)
+	completion.AddProjectFlag(urlListCmd)
+	completion.AddProjectFlag(urlCreateCmd)
+	completion.AddProjectFlag(urlDeleteCmd)
 
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(urlListCmd)
-	genericclioptions.AddApplicationFlag(urlDeleteCmd)
-	genericclioptions.AddApplicationFlag(urlCreateCmd)
+	completion.AddApplicationFlag(urlListCmd)
+	completion.AddApplicationFlag(urlDeleteCmd)
+	completion.AddApplicationFlag(urlCreateCmd)
 
 	//Adding `--component` flag
-	genericclioptions.AddComponentFlag(urlDeleteCmd)
-	genericclioptions.AddComponentFlag(urlListCmd)
-	genericclioptions.AddComponentFlag(urlCreateCmd)
+	completion.AddComponentFlag(urlDeleteCmd)
+	completion.AddComponentFlag(urlListCmd)
+	completion.AddComponentFlag(urlCreateCmd)
 
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 
 	return urlCmd
-}
-
-func addProjectFlag(cmd *cobra.Command) {
-	genericclioptions.AddProjectFlag(cmd)
-	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }

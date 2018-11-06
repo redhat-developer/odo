@@ -78,7 +78,5 @@ func NewCmdServiceList(name, fullName string) *cobra.Command {
 			util.CheckError(o.Run(), "")
 		},
 	}
-	addProjectFlag(serviceListCmd)
-	genericclioptions.AddApplicationFlag(serviceListCmd)
 	return serviceListCmd
 }

@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -52,9 +53,9 @@ func NewCmdLog() *cobra.Command {
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(logCmd)
+	completion.AddProjectFlag(logCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(logCmd)
+	completion.AddApplicationFlag(logCmd)
 
 	return logCmd
 }

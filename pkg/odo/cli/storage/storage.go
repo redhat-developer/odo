@@ -263,25 +263,25 @@ func NewCmdStorage() *cobra.Command {
 	storageCmd.AddCommand(storageMountCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(storageCreateCmd)
-	addProjectFlag(storageDeleteCmd)
-	addProjectFlag(storageListCmd)
-	addProjectFlag(storageMountCmd)
-	addProjectFlag(storageUnmountCmd)
+	completion.AddProjectFlag(storageCreateCmd)
+	completion.AddProjectFlag(storageDeleteCmd)
+	completion.AddProjectFlag(storageListCmd)
+	completion.AddProjectFlag(storageMountCmd)
+	completion.AddProjectFlag(storageUnmountCmd)
 
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(storageCreateCmd)
-	genericclioptions.AddApplicationFlag(storageDeleteCmd)
-	genericclioptions.AddApplicationFlag(storageListCmd)
-	genericclioptions.AddApplicationFlag(storageMountCmd)
-	genericclioptions.AddApplicationFlag(storageUnmountCmd)
+	completion.AddApplicationFlag(storageCreateCmd)
+	completion.AddApplicationFlag(storageDeleteCmd)
+	completion.AddApplicationFlag(storageListCmd)
+	completion.AddApplicationFlag(storageMountCmd)
+	completion.AddApplicationFlag(storageUnmountCmd)
 
 	//Adding `--component` flag
-	genericclioptions.AddComponentFlag(storageCreateCmd)
-	genericclioptions.AddComponentFlag(storageDeleteCmd)
-	genericclioptions.AddComponentFlag(storageListCmd)
-	genericclioptions.AddComponentFlag(storageMountCmd)
-	genericclioptions.AddComponentFlag(storageUnmountCmd)
+	completion.AddComponentFlag(storageCreateCmd)
+	completion.AddComponentFlag(storageDeleteCmd)
+	completion.AddComponentFlag(storageListCmd)
+	completion.AddComponentFlag(storageMountCmd)
+	completion.AddComponentFlag(storageUnmountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}
@@ -292,11 +292,6 @@ func NewCmdStorage() *cobra.Command {
 	completion.RegisterCommandHandler(storageUnmountCmd, completion.StorageUnMountCompletionHandler)
 
 	return storageCmd
-}
-
-func addProjectFlag(cmd *cobra.Command) {
-	genericclioptions.AddProjectFlag(cmd)
-	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }
 
 // validateStoragePath will validate storagePath, if there is any existing storage with similar path, it will give an error

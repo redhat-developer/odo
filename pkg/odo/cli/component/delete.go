@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -78,9 +79,9 @@ func NewCmdDelete() *cobra.Command {
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(componentDeleteCmd)
+	completion.AddProjectFlag(componentDeleteCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(componentDeleteCmd)
+	completion.AddApplicationFlag(componentDeleteCmd)
 
 	return componentDeleteCmd
 }

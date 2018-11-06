@@ -90,20 +90,15 @@ func NewCmdComponent() *cobra.Command {
 	componentCmd.AddCommand(componentSetCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(componentGetCmd)
-	addProjectFlag(componentSetCmd)
+	completion.AddProjectFlag(componentGetCmd)
+	completion.AddProjectFlag(componentSetCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(componentGetCmd)
-	genericclioptions.AddApplicationFlag(componentSetCmd)
+	completion.AddApplicationFlag(componentGetCmd)
+	completion.AddApplicationFlag(componentSetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}
 	componentCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return componentCmd
-}
-
-func addProjectFlag(cmd *cobra.Command) {
-	genericclioptions.AddProjectFlag(cmd)
-	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }

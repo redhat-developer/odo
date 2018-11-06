@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
@@ -34,10 +33,19 @@ func NewCmdService(name, fullName string) *cobra.Command {
 	serviceCmd.Annotations = map[string]string{"command": "other"}
 	serviceCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	serviceCmd.AddCommand(serviceCreateCmd, serviceDeleteCmd, serviceListCmd)
-	return serviceCmd
-}
 
-func addProjectFlag(cmd *cobra.Command) {
-	genericclioptions.AddProjectFlag(cmd)
-	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
+	//Adding `--project` flag
+	completion.AddProjectFlag(serviceCreateCmd)
+	completion.AddProjectFlag(serviceDeleteCmd)
+	completion.AddProjectFlag(serviceListCmd)
+
+	//Adding `--application` flag
+	completion.AddApplicationFlag(serviceCreateCmd)
+	completion.AddApplicationFlag(serviceDeleteCmd)
+	completion.AddApplicationFlag(serviceListCmd)
+
+	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
+	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
+
+	return serviceCmd
 }

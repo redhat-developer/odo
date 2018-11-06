@@ -145,11 +145,11 @@ func NewCmdLink() *cobra.Command {
 	linkCmd.Annotations = map[string]string{"command": "component"}
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	//Adding `--project` flag
-	addProjectFlag(linkCmd)
+	completion.AddProjectFlag(linkCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(linkCmd)
+	completion.AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
-	genericclioptions.AddComponentFlag(linkCmd)
+	completion.AddComponentFlag(linkCmd)
 
 	completion.RegisterCommandHandler(linkCmd, completion.LinkCompletionHandler)
 

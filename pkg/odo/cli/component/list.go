@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 	"text/tabwriter"
 
@@ -54,9 +55,9 @@ func NewCmdList() *cobra.Command {
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 
 	//Adding `--project` flag
-	addProjectFlag(componentListCmd)
+	completion.AddProjectFlag(componentListCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(componentListCmd)
+	completion.AddApplicationFlag(componentListCmd)
 
 	return componentListCmd
 }

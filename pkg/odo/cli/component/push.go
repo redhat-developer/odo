@@ -2,6 +2,8 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+
 	"net/url"
 	"os"
 	"runtime"
@@ -111,9 +113,9 @@ func NewCmdPush() *cobra.Command {
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(pushCmd)
+	completion.AddProjectFlag(pushCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(pushCmd)
+	completion.AddApplicationFlag(pushCmd)
 
 	return pushCmd
 }
