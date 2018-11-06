@@ -569,7 +569,6 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 func (c *Client) GetExposedPorts(imageStreamImage *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
 	var containerPorts []corev1.ContainerPort
 
-	glog.V(4).Infof("Checking for exact match of builderImage with ImageStream")
 	// get ports that are exported by image
 	containerPorts, err := getExposedPortsFromISI(imageStreamImage)
 	if err != nil {
@@ -715,6 +714,7 @@ func secretKeyName(componentName, baseKeyName string) string {
 // GetS2IScriptsPathFromBuilderImg returns script path protocol, S2I scripts path and errors(if any) from the passed builder image
 func GetS2IScriptsPathFromBuilderImg(builderImage *imagev1.ImageStreamImage) (string, string, error) {
 
+	// Define structs for internal un-marshalling of imagestreamimage to extract label from it
 	type ContainerConfig struct {
 		Labels map[string]string `json:"Labels"`
 	}
@@ -723,21 +723,33 @@ func GetS2IScriptsPathFromBuilderImg(builderImage *imagev1.ImageStreamImage) (st
 	}
 
 	var dimdr DockerImageMetaDataRaw
+
+	// The label $S2IScriptsURLLabel needs to be extracted from builderImage#Image#DockerImageMetadata#Raw which is byte array
 	dimdrByteArr := (*builderImage).Image.DockerImageMetadata.Raw
 
+	// Unmarshal the byte array into the struct for ease of access of required fields
 	err := json.Unmarshal(dimdrByteArr, &dimdr)
 	if err != nil {
 		return "", "", errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 
+	// If by any chance, labels attribute is nil(although ideally not the case for builder images), return
 	if dimdr.ContainerConfig.Labels == nil {
 		glog.V(4).Infof("No Labels found in %+v in builder image %+v", dimdr, builderImage)
 		return "", "", nil
 	}
 
+	// Extract the label containing S2I scripts URL
 	s2iScriptsURL := dimdr.ContainerConfig.Labels[S2IScriptsURLLabel]
+
+	// The URL is a combination of protocol and the path to script details of which can be found @
+	// https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#s2i-scripts
+	// Extract them out into protocol and path separately to minimise the task in
+	// https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart when custom handling
+	// for each of the protocols is added
 	s2iScriptsProtocol := ""
 	s2iScriptsPath := ""
+
 	switch {
 	case strings.HasPrefix(s2iScriptsURL, "image://"):
 		s2iScriptsProtocol = "image://"
@@ -764,7 +776,7 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 		mapExistingEnvs[envVar.Name] = envVar
 	}
 
-	// For each new envVar to be appended, Add(if envVar with same name doesn't already exist)/overwrite(if envVar with same name already exists) the map
+	// For each new envVar to be appended, Add(if envVar with same name doesn't already exist) / overwrite(if envVar with same name already exists) the map
 	for _, newEnvVar := range envVars {
 		mapExistingEnvs[newEnvVar.Name] = newEnvVar
 	}
@@ -1170,7 +1182,6 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
-	//addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
