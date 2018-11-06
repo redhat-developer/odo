@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
+
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	svc "github.com/redhat-developer/odo/pkg/service"
@@ -76,6 +77,8 @@ func init() {
 	addProjectFlag(linkCmd)
 	//Adding `--application` flag
 	addApplicationFlag(linkCmd)
+	// Adding `--component` flag
+	addComponentFlag(linkCmd)
 
 	rootCmd.AddCommand(linkCmd)
 }
