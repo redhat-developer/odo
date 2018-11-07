@@ -26,9 +26,6 @@ install:
 - set PATH=%PATH%;C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin;%GOPATH%\bin
 - make goget-tools
 
-test_script:
-- make test
-
 build_script:
 - make cross
 
