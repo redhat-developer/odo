@@ -82,10 +82,6 @@ type Context struct {
 
 // Component retrieves the optionally specified component or the current one if it is set
 func (o *Context) Component(optionalComponent ...string) string {
-	if len(o.cmp) > 0 {
-		return o.cmp
-	}
-
 	switch len(optionalComponent) {
 	case 0:
 		if len(o.cmp) == 0 {
