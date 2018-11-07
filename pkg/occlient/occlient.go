@@ -2334,13 +2334,15 @@ func (c *Client) GetServerVersion() (*serverInfo, error) {
 	// This will fetch the information about OpenShift Version
 	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get OpenShift Version")
+		// when using Minishift (or plain 'oc cluster up' for that matter) with OKD 3.11, the version endpoint is missing...
+		glog.V(4).Infof("Unable to get OpenShift Version - endpoint '/version/openshift' doesn't exist")
+	} else {
+		var openShiftVersion version.Info
+		if err := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); err != nil {
+			return nil, errors.Wrapf(err, "unable to unmarshal OpenShift version %v", string(rawOpenShiftVersion))
+		}
+		info.OpenShiftVersion = openShiftVersion.GitVersion
 	}
-	var openShiftVersion version.Info
-	if err := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); err != nil {
-		return nil, errors.Wrapf(err, "unable to unmarshal OpenShift version %v", string(rawOpenShiftVersion))
-	}
-	info.OpenShiftVersion = openShiftVersion.GitVersion
 
 	// This will fetch the information about Kubernetes Version
 	rawKubernetesVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version").Do().Raw()
