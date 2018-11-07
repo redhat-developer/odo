@@ -19,7 +19,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -171,7 +170,7 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 		Annotations: annotations,
 	}
 
-	err = client.NewAppS2I(commonObjectMeta, componentImageType, url, inputPorts, envVars)
+	err = client.NewAppS2I(name, commonObjectMeta, componentImageType, url, inputPorts, envVars)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
@@ -232,7 +231,7 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 	}
 
 	// Bootstrap the deployment with SupervisorD
-	err = client.BootstrapSupervisoredS2I(commonObjectMeta, componentImageType, inputPorts, envVars)
+	err = client.BootstrapSupervisoredS2I(name, commonObjectMeta, componentImageType, inputPorts, envVars)
 	if err != nil {
 		return err
 	}
@@ -647,79 +646,6 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 		}
 	}
 	return false, nil
-}
-
-// LinkInfo contains the information about the link being created between
-// components
-type LinkInfo struct {
-	SourceComponent string
-	TargetComponent string
-	Envs            []string
-}
-
-// Link injects connection information of the target component into the source
-// component as environment variables
-func Link(client *occlient.Client, sourceComponent, targetComponent, applicationName string) (*LinkInfo, error) {
-	// Get Service associated with the target component
-	serviceLabels := componentlabels.GetLabels(targetComponent, applicationName, false)
-	serviceSelector := util.ConvertLabelsToSelector(serviceLabels)
-	targetService, err := client.GetOneServiceFromSelector(serviceSelector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get service associated with the component %v", targetComponent)
-	}
-
-	// Generate environment variables to inject
-	linkHostKey := fmt.Sprintf("COMPONENT_%v_HOST", strings.ToUpper(targetComponent))
-	linkHostValue := targetService.Name
-
-	linkPortKey := fmt.Sprintf("COMPONENT_%v_PORT", strings.ToUpper(targetComponent))
-	linkPort, err := getPortFromService(targetService)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get port from Service %v", targetService.Name)
-	}
-	linkPortValue := fmt.Sprint(linkPort)
-
-	// Inject environment variable to source component
-	dcLabels := componentlabels.GetLabels(sourceComponent, applicationName, false)
-	dcSelector := util.ConvertLabelsToSelector(dcLabels)
-	sourceDC, err := client.GetOneDeploymentConfigFromSelector(dcSelector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Deployment Config for component %v", sourceComponent)
-	}
-
-	if err := client.AddEnvironmentVariablesToDeploymentConfig(
-		[]corev1.EnvVar{
-			{
-				Name:  linkHostKey,
-				Value: linkHostValue,
-			},
-			{
-				Name:  linkPortKey,
-				Value: linkPortValue,
-			},
-		}, sourceDC); err != nil {
-		return nil, errors.Wrapf(err, "unable to add environment variables to Deployment Config %v", sourceDC.Name)
-	}
-
-	return &LinkInfo{
-		SourceComponent: sourceComponent,
-		TargetComponent: targetComponent,
-		Envs: []string{
-			fmt.Sprintf("%v=%v", linkHostKey, linkHostValue),
-			fmt.Sprintf("%v=%v", linkPortKey, linkPortValue),
-		},
-	}, nil
-}
-
-// getPortFromService returns the first port listed in the service
-func getPortFromService(service *corev1.Service) (int32, error) {
-	numServicePorts := len(service.Spec.Ports)
-	if numServicePorts != 1 {
-		return 0, fmt.Errorf("expected exactly one port in the service %v, but got %v", service.Name, numServicePorts)
-	}
-
-	return service.Spec.Ports[0].Port, nil
-
 }
 
 // GetComponentDesc provides description such as source, url & storage about given component
