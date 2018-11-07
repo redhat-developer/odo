@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"os"
 	"strings"
 
 	"github.com/golang/glog"
@@ -27,29 +27,19 @@ var componentDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		glog.V(4).Infof("component delete called")
 		glog.V(4).Infof("args: %#v", strings.Join(args, " "))
-		client := util.GetOcClient()
 
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-
-		// Get the current component if no arguments have been passed
-		var componentName string
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
+		applicationName := context.Application
 
 		// If no arguments have been passed, get the current component
 		// else, use the first argument and check to see if it exists
+		var componentName string
 		if len(args) == 0 {
-			componentName = util.GetComponent(client, "", applicationName)
+			componentName = context.Component()
 		} else {
-
-			componentName = args[0]
-
-			// Checks to see if the component actually exists
-			exists, err := component.Exists(client, componentName, applicationName)
-			util.CheckError(err, "")
-			if !exists {
-				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
-				os.Exit(1)
-			}
+			componentName = context.Component(args[0])
 		}
 
 		var confirmDeletion string

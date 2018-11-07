@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
@@ -38,11 +39,10 @@ var storageCreateCmd = &cobra.Command{
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
+		componentName := context.Component()
 
 		var storageName string
 		if len(args) != 0 {
@@ -81,11 +81,10 @@ var storageUnmountCmd = &cobra.Command{
 	Aliases: []string{"umount"},
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
+		componentName := context.Component()
 
 		var storageName string
 		var err error
@@ -126,12 +125,11 @@ var storageDeleteCmd = &cobra.Command{
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		storageName := args[0]
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
 
 		exists, err := storage.Exists(client, storageName, applicationName)
 		odoutil.CheckError(err, "")
@@ -182,10 +180,9 @@ var storageListCmd = &cobra.Command{
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		if storageAllListflag {
 			if odoutil.ComponentFlag != "" {
@@ -195,7 +192,7 @@ var storageListCmd = &cobra.Command{
 			printMountedStorageInAllComponent(client, applicationName)
 		} else {
 			// storageComponent is the input component name
-			componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+			componentName := context.Component()
 			printMountedStorageInComponent(client, componentName, applicationName)
 		}
 		printUnmountedStorage(client, applicationName)
@@ -212,13 +209,12 @@ var storageMountCmd = &cobra.Command{
   odo storage mount database --component mongodb --path /data`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
+		componentName := context.Component()
 
 		storageName := args[0]
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
 
 		exists, err := storage.Exists(client, storageName, applicationName)
 		odoutil.CheckError(err, "unable to check if the storage exists in the current application")

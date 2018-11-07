@@ -5,7 +5,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
 	"os"
@@ -84,26 +83,4 @@ func GetAndSetNamespace(client *occlient.Client) string {
 	}
 	client.Namespace = project.GetCurrent(client)
 	return client.Namespace
-}
-
-// GetComponent returns the component to be used for the operation. If an input
-// component is specified, then it is returned if it exists, if not,
-// the current component is fetched and returned. If no component set, throws error
-func GetComponent(client *occlient.Client, inputComponent string, applicationName string) string {
-	if len(inputComponent) == 0 {
-		c, err := component.GetCurrent(applicationName, client.Namespace)
-		CheckError(err, "Could not get current component")
-		if c == "" {
-			fmt.Println("There is no component set")
-			os.Exit(1)
-		}
-		return c
-	}
-	exists, err := component.Exists(client, inputComponent, applicationName)
-	CheckError(err, "")
-	if !exists {
-		fmt.Printf("Component %v does not exist\n", inputComponent)
-		os.Exit(1)
-	}
-	return inputComponent
 }

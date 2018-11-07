@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 
@@ -25,23 +26,18 @@ var logCmd = &cobra.Command{
 		// Retrieve stdout / io.Writer
 		stdout := os.Stdout
 
-		// Retrieve the client
-		client := util.GetOcClient()
-
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		var argComponent string
-
 		if len(args) == 1 {
 			argComponent = args[0]
 		}
-
-		// Retrieve and set the currentComponent
-		currentComponent := util.GetComponent(client, argComponent, applicationName)
+		componentName := context.Component(argComponent)
 
 		// Retrieve the log
-		err := component.GetLogs(client, currentComponent, applicationName, logFollow, stdout)
+		err := component.GetLogs(client, componentName, applicationName, logFollow, stdout)
 		util.CheckError(err, "Unable to retrieve logs, does your component exist?")
 	},
 }
