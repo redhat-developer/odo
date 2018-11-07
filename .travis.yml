@@ -22,27 +22,30 @@ jobs:
         - make test
 
     - <<: *base-test
+      name: "Test coverage"
       script:
         - make bin
         - make validate
         - make test-coverage
       after_success:
-        # submit coverage.txt to codecov.io 
+        # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
 
     # Run main e2e tests
     - <<: *base-test
       stage: test
+      name: "Main e2e tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
-        - oc login -u developer 
+        - oc login -u developer
         - make test-main-e2e
 
     # Run component e2e tests
     - <<: *base-test
       stage: test
+      name: "Component e2e tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -53,6 +56,7 @@ jobs:
     # Run service-catalog e2e tests
     - <<: *base-test
       stage: test
+      name: "Service-Catalog e2e tests"
       script:
         - ./scripts/oc-cluster.sh service-catalog
         - make bin
