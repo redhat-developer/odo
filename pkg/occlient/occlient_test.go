@@ -1937,7 +1937,8 @@ func TestNewAppS2I(t *testing.T) {
 				return true, fakeImageStreamImages(tt.args.commonObjectMeta.Name), nil
 			})
 
-			err := fkclient.NewAppS2I(tt.args.commonObjectMeta,
+			err := fkclient.NewAppS2I(tt.args.commonObjectMeta.Name,
+				tt.args.commonObjectMeta,
 				tt.args.builderImage,
 				tt.args.gitURL,
 				tt.args.inputPorts,
@@ -1957,8 +1958,8 @@ func TestNewAppS2I(t *testing.T) {
 					t.Errorf("expected 1 AppsClientset.Actions() in NewAppS2I, got: %v", fkclientset.AppsClientset.Actions())
 				}
 
-				if len(fkclientset.Kubernetes.Actions()) != 1 {
-					t.Errorf("expected 1 Kubernetes.Actions() in NewAppS2I, got: %v", fkclientset.Kubernetes.Actions())
+				if len(fkclientset.Kubernetes.Actions()) != 2 {
+					t.Errorf("expected 2 Kubernetes.Actions() in NewAppS2I, got: %v", fkclientset.Kubernetes.Actions())
 				}
 
 				var createdIS *imagev1.ImageStream
@@ -2188,24 +2189,20 @@ func TestCreateServiceBinding(t *testing.T) {
 		name        string
 		bindingNS   string
 		bindingName string
-		params      map[string]string
 		wantErr     bool
 	}{
 		{
 			name:        "Case: Valid request for creating a secret",
 			bindingNS:   "",
 			bindingName: "foo",
-			params: map[string]string{
-				"name": "value",
-			},
-			wantErr: false,
+			wantErr:     false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
-			err := fakeClient.CreateServiceBinding(tt.bindingName, tt.bindingNS, tt.params)
+			err := fakeClient.CreateServiceBinding(tt.bindingName, tt.bindingNS)
 
 			if err == nil && !tt.wantErr {
 				if len(fakeClientSet.ServiceCatalogClientSet.Actions()) != 1 {
@@ -2214,10 +2211,6 @@ func TestCreateServiceBinding(t *testing.T) {
 				createdBinding := fakeClientSet.ServiceCatalogClientSet.Actions()[0].(ktesting.CreateAction).GetObject().(*scv1beta1.ServiceBinding)
 				if createdBinding.Name != tt.bindingName {
 					t.Errorf("the name of servicebinding was not correct, expected: %s, got: %s", tt.bindingName, createdBinding.Name)
-				}
-				serviceInstanceParameters, _ := serviceInstanceParameters(tt.params)
-				if !reflect.DeepEqual(createdBinding.Spec.Parameters, serviceInstanceParameters) {
-					t.Error("the parameters of servicebinding were not correct")
 				}
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
@@ -2867,7 +2860,7 @@ func TestCreateService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 
-			err := fkclient.CreateService(tt.commonObjectMeta, tt.containerPorts)
+			_, err := fkclient.CreateService(tt.commonObjectMeta, tt.containerPorts)
 
 			if err == nil && !tt.wantErr {
 				if len(fkclientset.Kubernetes.Actions()) != 1 {
