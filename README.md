@@ -4,38 +4,35 @@
 
 ![Powered by OpenShift](/docs/img/powered_by_openshift.png)
 
-- [What is Odo?](#what-is-odo)
-- [Why did we create Odo?](#why-did-we-create-odo)
-- [Who is Odo for?](#who-is-odo-for)
-- [Setup and installation](#setup-and-installation)
-- [Deploying an application using Odo](#deploying-a-nodejs-application-using-odo)
-- [Additional documentation](#additional-documentation)
+- [What is Odo?](#odo)
+- [Features](#features)
+- [Setup and Installation](#setup-and-installation)
+- [Deploying an Application using Odo](#deploying-a-nodejs-application-using-odo)
+- [Additional Documentation](#additional-documentation)
 - [Community, Discussion, Contribution and Support](#community-discussion-contribution-and-support)
 - [Glossary](#glossary)
 - [CLI Structure](#cli-structure)
 
 
-## What is Odo?
+## Odo
 
 OpenShift Do (Odo) is a CLI tool for developers who are writing, building, and deploying applications on OpenShift. With Odo, developers get an opinionated CLI tool that supports fast, iterative development which abstracts away Kubernetes and OpenShift concepts, thus allowing them to focus on what's most important to them: code.
+
+Odo was created to improve the developer experience with OpenShift. Existing tools such as `oc` are more operations-focused and requires a deep-understanding of Kubernetes and OpenShift concepts. Odo is designed to be simple and concise so you may focus on coding rather than how to deploy your application. Since Odo can build and deploy your code to your cluster immediately after you save you changes, you benefit from instant feedback and can thus validate your changes in real-time. Odo's syntax and design is centered around concepts already familiar to developers, such as: project, application and component.
 
 ### Demo
 
 ![demo](/docs/img/example.gif)
 
-## Why Did We Create Odo?
+## Features
 
-Odo was created to improve the developer experience with OpenShift. We understand that, as developers, you want tools that help you be productive. What do you don't want, is to have to change the way you work or have to become an expert in Kubernetes or OpenShift just to get your work done. 
+- Designed for fast, iterative development cycles
+- 100% client based. No server required within your OpenShift cluster for deployment
+- Supports multiple languages and frameworks such as Node.js, Java, Ruby, Perl, PHP and Python
+- Detect changes to your local code and deploy automatically with `odo watch`
+- List all available components and services from your OpenShift cluster
 
-Existing tools for interacting with OpenShift, such as the `oc` CLI tool, are more operations-focused and require an understanding of Kubernetes and OpenShift concepts such as pods, services, deployment configurations, and routes. The Odo CLI tool, on the other hand, was designed to use syntax and concepts that are familiar to developers, such as project, application, and component. Odo enables a fast, iterative development cycle allowing you to immediately start coding, while Odo builds, pushes, and deploys your application in the background. Since Odo can build and deploy your code to your cluster immediately after you save you changes, you benefit from instant feedback and can thus validate your changes in real-time. 
-
-## Who is Odo For?
-
-Odo is for developers! If you are a developer who is creating, building, or maintaining applications on OpenShift, Odo was designed for you. Odo supports multiple languages and frameworks, so whether you're using Node.js, Java, Ruby, Perl, PHP, or Python, the goal of Odo is to improve your development experience and to support fast, iterative development of applications for OpenShift. 
-
-Odo is *not* a replacement for the standard `oc` CLI tool, and it is not intended to be used by operations, security, or release management teams.
-
-## Setup and installation
+## Setup and Installation
 
 Ready to get started? Follow the instructions below to set up Odo in your environment or give it a try in our [interactive tutorial](https://learn.openshift.com/introduction/developing-with-odo/):
 
@@ -82,11 +79,11 @@ sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0
 2. Extract the file
 3. Add the location of extracted binary to your PATH environment variable by following [this Wiki page](https://github.com/redhat-developer/odo/wiki/Setting-PATH-variable-on-Windows).
 
-#### Other methods
+#### Other Methods
 
 For a list of other methods such as installing the latest mastery binary, or specific OS installations, visit the [installation page](/docs/installation.md).
 
-## Deploying a Node.js application using Odo
+## Deploying an Application using Odo
 
 Now that you have Odo installed, follow these steps to build, push, and deploy a Node.js application using Odo. Examples for other supported languages and runtimes can be found [here](https://github.com/redhat-developer/odo/blob/master/docs/examples.md).
 
