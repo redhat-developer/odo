@@ -80,11 +80,18 @@ type Context struct {
 	cmp         string
 }
 
-// Component retrieves the optionally specified component or the current one if it is set
+// Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with
+// an error
 func (o *Context) Component(optionalComponent ...string) string {
+	return o.ComponentAllowingEmpty(false, optionalComponent...)
+}
+
+// ComponentAllowingEmpty retrieves the optionally specified component or the current one if it is set, allowing empty
+// components (instead of exiting with an error) if so specified
+func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...string) string {
 	switch len(optionalComponent) {
 	case 0:
-		if len(o.cmp) == 0 {
+		if !allowEmpty && len(o.cmp) == 0 {
 			fmt.Println("No component is set")
 			os.Exit(-1)
 		}
