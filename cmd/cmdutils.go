@@ -150,13 +150,13 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 }
 
 func addProjectFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&util.ProjectFlag, "project", "", "Project, defaults to active project")
+	cmd.Flags().StringVar(&util.ProjectFlag, util.ProjectFlagName, "", "Project, defaults to active project")
 }
 
 func addComponentFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&util.ComponentFlag, "component", "", "Component, defaults to active component.")
+	cmd.Flags().StringVar(&util.ComponentFlag, util.ComponentFlagName, "", "Component, defaults to active component.")
 }
 
 func addApplicationFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&util.ApplicationFlag, "app", "", "Application, defaults to active application")
+	cmd.Flags().StringVar(&util.ApplicationFlag, util.ApplicationFlagName, "", "Application, defaults to active application")
 }
