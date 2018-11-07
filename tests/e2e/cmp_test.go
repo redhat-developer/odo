@@ -88,7 +88,7 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("find " + tmpDir)
 
 			// Run push
-			runCmd("odo push")
+			runCmd("odo push -v 4")
 
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("wildfly"))

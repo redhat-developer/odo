@@ -57,6 +57,7 @@ import (
 )
 
 const (
+	ocUpdateTimeout    = 120 * time.Second
 	OpenShiftNameSpace = "openshift"
 
 	// The length of the string to be generated for names of resources
@@ -69,7 +70,7 @@ const (
 	supervisordVolumeName = "odo-supervisord-shared-data"
 
 	// waitForPodTimeOut controls how long we should wait for a pod before giving up
-	waitForPodTimeOut = 60 * time.Second
+	waitForPodTimeOut = 120 * time.Second
 )
 
 // errorMsg is the message for user when invalid configuration error occurs
@@ -877,6 +878,13 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
 	}
 
+	// Watch / wait for deploymentconfig to update annotations
+	// importing "component" results in an import loop, so we do *not* use the constants here.
+	_, err = c.WaitAndGetDC(name, "app.kubernetes.io/component-source-type", dc.ObjectMeta.Annotations["app.kubernetes.io/component-source-type"], ocUpdateTimeout)
+	if err != nil {
+		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", name)
+	}
+
 	return nil
 }
 
@@ -1116,6 +1124,50 @@ func (c *Client) WaitForBuildToFinish(buildName string) error {
 		}
 	}
 	return nil
+}
+
+// WaitAndGetDC block and waits until the DeploymentConfig has updated it's annotation
+// It will *wait* until "value" is expected within the DeploymentConfig.
+func (c *Client) WaitAndGetDC(name string, field string, value string, timeout time.Duration) (*appsv1.DeploymentConfig, error) {
+	glog.V(4).Infof("Waiting for DeploymentConfig %s annotation '%s' to update to '%s'", name, field, value)
+
+	w, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
+	})
+	defer w.Stop()
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to watch dc")
+	}
+
+	timeoutChannel := time.After(timeout)
+	// Keep trying until we're timed out or got a result or got an error
+	for {
+		select {
+
+		// Timout after X amount of seconds
+		case <-timeoutChannel:
+			return nil, errors.New("Timed out waiting for annotation to update")
+
+		// Each loop we check the result
+		case val, ok := <-w.ResultChan():
+
+			if !ok {
+				break
+			}
+			if e, ok := val.Object.(*appsv1.DeploymentConfig); ok {
+
+				glog.V(4).Infof("Current annotation: %s=%s", field, e.Annotations[field])
+
+				// If the annotation has been updated, let's exit
+				if e.Annotations[field] == value {
+					glog.V(4).Infof("DeploymentConfig %s annotation %s has been updated to %s", name, field, e.Annotations[field])
+					return e, nil
+				}
+
+			}
+		}
+	}
 }
 
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
