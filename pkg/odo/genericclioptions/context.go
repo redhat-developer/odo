@@ -2,6 +2,7 @@ package genericclioptions
 
 import (
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
@@ -23,7 +24,7 @@ func NewContext(command *cobra.Command) *Context {
 	// project
 	var ns string
 	projectFlag, err := flags.GetString(util.ProjectFlagName)
-	util.CheckError(err, "")
+	ignoreButLog(err)
 	if len(projectFlag) > 0 {
 		_, err := project.Exists(client, projectFlag)
 		util.CheckError(err, "")
@@ -36,7 +37,7 @@ func NewContext(command *cobra.Command) *Context {
 	// application
 	var app string
 	appFlag, err := flags.GetString(util.ApplicationFlagName)
-	util.CheckError(err, "")
+	ignoreButLog(err)
 	if len(appFlag) > 0 {
 		_, err := application.Exists(client, appFlag)
 		util.CheckError(err, "")
@@ -56,7 +57,7 @@ func NewContext(command *cobra.Command) *Context {
 	// component
 	var cmp string
 	cmpFlag, err := flags.GetString(util.ComponentFlagName)
-	util.CheckError(err, "")
+	ignoreButLog(err)
 	if len(cmpFlag) == 0 {
 		cmp, err = component.GetCurrent(app, ns)
 		util.CheckError(err, "could not get current component")
@@ -113,4 +114,8 @@ func (o *Context) existsOrExit(cmp string) {
 		fmt.Printf("Component %v does not exist in application %s\n", cmp, o.Application)
 		os.Exit(-1)
 	}
+}
+
+func ignoreButLog(err error) {
+	glog.V(4).Infof("Ignoring error as it usually means flag wasn't set: %v", err)
 }
