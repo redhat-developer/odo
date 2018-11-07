@@ -91,7 +91,6 @@ func (o *Context) Component(optionalComponent ...string) string {
 			fmt.Println("No component is set")
 			os.Exit(-1)
 		}
-		break
 	case 1:
 		cmp := optionalComponent[0]
 		// only check the component if we passed a non-empty string, otherwise return the current component set in NewContext
@@ -99,7 +98,6 @@ func (o *Context) Component(optionalComponent ...string) string {
 			o.existsOrExit(cmp)
 			o.cmp = cmp // update context
 		}
-		break
 	default:
 		fmt.Printf("Component function only accepts one optional argument, was given: %v", optionalComponent)
 		os.Exit(-1)
