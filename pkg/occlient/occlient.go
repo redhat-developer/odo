@@ -2483,12 +2483,21 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
 func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string) error {
+	isSingleFileTransfer := isSingleFileTransfer(copyFiles)
+
 	dest := path.Join(targetPath, filepath.Base(localPath))
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
 	go func() {
 		defer writer.Close()
-		err := makeTar(localPath, dest, writer, copyFiles)
+
+		var err error
+		if isSingleFileTransfer {
+			onlyFile := copyFiles[0]
+			err = makeTar(onlyFile, targetPath+"/"+path.Base(onlyFile), writer, []string{})
+		} else {
+			err = makeTar(localPath, dest, writer, copyFiles)
+		}
 		if err != nil {
 			glog.Errorf("Error while creating tar: %#v", err)
 			os.Exit(-1)
@@ -2497,13 +2506,29 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 	}()
 
 	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
+	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
+	if !isSingleFileTransfer {
+		cmdArr = append(cmdArr, "--strip", "1")
+	}
 
 	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// isSingleFileTransfer returns true if copyFiles
+// contains a single, non-directory file
+func isSingleFileTransfer(copyFiles []string) bool {
+	if len(copyFiles) == 1 {
+		if stat, err := os.Lstat(copyFiles[0]); err == nil {
+			if !stat.IsDir() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // checkFileExist check if given file exists or not
