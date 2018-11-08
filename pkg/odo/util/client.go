@@ -74,6 +74,7 @@ func GetAppName(client *occlient.Client) string {
 // if provided, it validates the name and sets it as namespace for further operations
 // if not provided, it fetches current namespace and sets it as namespace for further operations
 // getAndSetNamespace also return the project name
+// Deprecated: should be replaced by accessing the project information from genericclioptions.Context
 func GetAndSetNamespace(client *occlient.Client) string {
 	// projectFlag is `--project` flag
 	if ProjectFlag != "" {

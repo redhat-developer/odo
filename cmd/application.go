@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"text/tabwriter"
@@ -56,9 +57,11 @@ If no app name is passed, a default app name will be auto-generated.
 	`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
+
 		var appName string
-		client := util.GetOcClient()
-		projectName := util.GetAndSetNamespace(client)
 		if len(args) == 1 {
 			// The only arg passed is the app name
 			appName = args[0]
@@ -79,6 +82,11 @@ If no app name is passed, a default app name will be auto-generated.
 		err = application.Create(client, appName)
 		util.CheckError(err, "")
 		err = application.SetCurrent(client, appName)
+
+		// todo: updating the app name should be done via SetCurrent and passing the Context
+		// not strictly needed here but Context should stay in sync
+		context.Application = appName
+
 		util.CheckError(err, "")
 		fmt.Printf("Switched to application: %v in project: %v\n", appName, projectName)
 	},
@@ -93,10 +101,9 @@ var applicationGetCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		projectName := util.GetAndSetNamespace(client)
-		app, err := application.GetCurrent(projectName)
-		util.CheckError(err, "")
+		context := genericclioptions.NewContext(cmd)
+		projectName := context.Project
+		app := context.Application
 		if applicationShortFlag {
 			fmt.Print(app)
 			return
@@ -118,15 +125,11 @@ var applicationDeleteCmd = &cobra.Command{
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		projectName := util.GetAndSetNamespace(client)
-		var appName string
-		// If name of the app to be deleted is not passed, consider the current app for deletion
-		if len(args) == 0 {
-			var err error
-			appName, err = application.GetCurrent(projectName)
-			util.CheckError(err, "")
-		} else {
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
+		appName := context.Application
+		if len(args) == 1 {
 			// If app name passed, consider it for deletion
 			appName = args[0]
 		}
@@ -172,9 +175,10 @@ var applicationListCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
 
-		projectName := util.GetAndSetNamespace(client)
 		apps, err := application.ListInProject(client)
 		util.CheckError(err, "unable to get list of applications")
 		if len(apps) > 0 {
@@ -211,11 +215,12 @@ var applicationSetCmd = &cobra.Command{
 		}
 		return nil
 	}, Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		appName := args[0]
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
 
-		projectName := util.GetAndSetNamespace(client)
 		// error if application does not exist
+		appName := args[0]
 		exists, err := application.Exists(client, appName)
 		util.CheckError(err, "unable to check if application exists")
 		if !exists {
@@ -226,6 +231,10 @@ var applicationSetCmd = &cobra.Command{
 		err = application.SetCurrent(client, appName)
 		util.CheckError(err, "")
 		fmt.Printf("Switched to application: %v in project: %v\n", args[0], projectName)
+
+		// todo: updating the app name should be done via SetCurrent and passing the Context
+		// not strictly needed here but Context should stay in sync
+		context.Application = appName
 	},
 }
 
@@ -238,13 +247,12 @@ var applicationDescribeCmd = &cobra.Command{
   odo app describe webapp
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		var appName string
-		projectName := util.GetAndSetNamespace(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
+
+		appName := context.Application
 		if len(args) == 0 {
-			var err error
-			appName, err = application.GetCurrent(projectName)
-			util.CheckError(err, "")
 			if appName == "" {
 				fmt.Printf("There's no active application in project: %v\n", projectName)
 				os.Exit(1)
