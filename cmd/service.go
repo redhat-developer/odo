@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
@@ -123,13 +124,11 @@ var serviceDeleteCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-
 		glog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
 
-		client := util.GetOcClient()
-
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		serviceName := args[0]
 
@@ -169,10 +168,9 @@ var serviceListCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		services, err := svc.List(client, applicationName)
 		util.CheckError(err, "Service Catalog is not enabled in your cluster")

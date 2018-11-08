@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"text/tabwriter"
@@ -19,16 +20,12 @@ var componentListCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-
-		currentComponent, err := component.GetCurrent(applicationName, projectName)
-		util.CheckError(err, "")
 		components, err := component.List(client, applicationName)
 		util.CheckError(err, "")
-
 		if len(components) == 0 {
 			fmt.Println("There are no components deployed.")
 			return
@@ -37,6 +34,7 @@ var componentListCmd = &cobra.Command{
 		activeMark := " "
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
+		currentComponent := context.ComponentAllowingEmpty(true)
 		for _, comp := range components {
 			if comp.Name == currentComponent {
 				activeMark = "*"
