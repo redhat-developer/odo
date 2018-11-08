@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/project"
 	"os"
 )
 
@@ -53,36 +51,4 @@ func CheckError(err error, context string, a ...interface{}) {
 
 		os.Exit(1)
 	}
-}
-
-// GetAppName returns application name from the provided flag or if flag is not provided, it will return current application name
-// Deprecated: should be replaced by accessing the application information from genericclioptions.Context
-func GetAppName(client *occlient.Client) string {
-	// applicationFlag is `--application` flag
-	if ApplicationFlag != "" {
-		_, err := application.Exists(client, ApplicationFlag)
-		CheckError(err, "")
-		return ApplicationFlag
-	}
-	applicationName, err := application.GetCurrent(client.Namespace)
-	CheckError(err, "unable to get current application")
-
-	return applicationName
-}
-
-// GetAndSetNamespace checks whether project flag is provided,
-// if provided, it validates the name and sets it as namespace for further operations
-// if not provided, it fetches current namespace and sets it as namespace for further operations
-// getAndSetNamespace also return the project name
-// Deprecated: should be replaced by accessing the project information from genericclioptions.Context
-func GetAndSetNamespace(client *occlient.Client) string {
-	// projectFlag is `--project` flag
-	if ProjectFlag != "" {
-		_, err := project.Exists(client, ProjectFlag)
-		CheckError(err, "")
-		client.Namespace = ProjectFlag
-		return ProjectFlag
-	}
-	client.Namespace = project.GetCurrent(client)
-	return client.Namespace
 }

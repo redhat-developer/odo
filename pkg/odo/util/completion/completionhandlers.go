@@ -3,18 +3,16 @@ package completion
 import (
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/service"
+	"github.com/spf13/cobra"
 )
 
 // ServiceCompletionHandler provides service name completion for the current project and application
-var ServiceCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
+var ServiceCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	util.GetAndSetNamespace(client)
-	applicationName := util.GetAppName(client)
 
-	services, err := service.List(client, applicationName)
+	services, err := service.List(context.Client, context.Application)
 	if err != nil {
 		return completions
 	}
@@ -27,9 +25,9 @@ var ServiceCompletionHandler = func(args complete.Args, client *occlient.Client)
 }
 
 // ServiceClassCompletionHandler provides catalog service class name completion
-var ServiceClassCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
+var ServiceClassCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	services, err := client.GetClusterServiceClasses()
+	services, err := context.Client.GetClusterServiceClasses()
 	if err != nil {
 		return completions
 	}

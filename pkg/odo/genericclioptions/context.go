@@ -62,10 +62,14 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		util.CheckError(err, "unable to get current application")
 	}
 
-	context := &Context{
+	internalCxt := internalCxt{
 		Client:      client,
 		Project:     ns,
 		Application: app,
+	}
+
+	context := &Context{
+		internalCxt: internalCxt,
 	}
 
 	// component
@@ -88,6 +92,10 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 // Context holds contextual information useful to commands such as correctly configured client, target project and application
 // (based on specified flag values) and provides for a way to retrieve a given component given this context
 type Context struct {
+	internalCxt
+}
+
+type internalCxt struct {
 	Client      *occlient.Client
 	Project     string
 	Application string
