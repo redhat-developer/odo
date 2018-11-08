@@ -14,10 +14,10 @@ var _ = Describe("odoJavaE2e", func() {
 	var projName = fmt.Sprintf("odo-%s", t)
 
 	// contains a minimal javaee app
-	const javaeeGitRepo = "https://github.com/lordofthejars/book-insultapp"
+	const warGitRepo = "https://github.com/lordofthejars/book-insultapp"
 
 	// contains a minimal javalin app
-	const sbGitRepo = "https://github.com/geoand/javalin-helloworld"
+	const jarGitRepo = "https://github.com/geoand/javalin-helloworld"
 
 	// Create a separate project for Java
 	Context("create java project", func() {
@@ -33,7 +33,7 @@ var _ = Describe("odoJavaE2e", func() {
 		It("Should be able to deploy a git repo that contains a wildfly application", func() {
 
 			// Deploy the git repo / wildfly example
-			runCmd("odo create wildfly javaee-git-test --git " + javaeeGitRepo)
+			runCmd("odo create wildfly javaee-git-test --git " + warGitRepo)
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("javaee-git-test"))
 
@@ -74,7 +74,7 @@ var _ = Describe("odoJavaE2e", func() {
 			importOpenJDKImage()
 
 			// Deploy the git repo / wildfly example
-			runCmd("odo create openjdk18 uberjar-git-test --git " + sbGitRepo)
+			runCmd("odo create openjdk18 uberjar-git-test --git " + jarGitRepo)
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("uberjar-git-test"))
 
