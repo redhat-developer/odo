@@ -12,6 +12,7 @@ const files = "examples/java/"
 var _ = Describe("odoJavaE2e", func() {
 	const t = "java"
 	var projName = fmt.Sprintf("odo-%s", t)
+
 	// contains a minimal javaee app
 	const javaeeGitRepo = "https://github.com/lordofthejars/book-insultapp"
 
@@ -35,9 +36,9 @@ var _ = Describe("odoJavaE2e", func() {
 			runCmd("odo create wildfly javaee-git-test --git " + javaeeGitRepo)
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("javaee-git-test"))
-			
+
 			// Push changes
-			runCmd("odo push")			
+			runCmd("odo push")
 
 			// Create a URL
 			runCmd("odo url create")
@@ -76,9 +77,9 @@ var _ = Describe("odoJavaE2e", func() {
 			runCmd("odo create openjdk18 uberjar-git-test --git " + sbGitRepo)
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("uberjar-git-test"))
-			
+
 			// Push changes
-			runCmd("odo push")			
+			runCmd("odo push")
 
 			// Create a URL
 			runCmd("odo url create --port 8080")
