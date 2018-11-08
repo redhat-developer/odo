@@ -124,18 +124,6 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 	return o.cmp
 }
 
-// GetOrCreateAppName retrieves the current application name from the context or creates a new default application
-func (context *Context) GetOrCreateAppName() (applicationName string) {
-	if len(ApplicationFlag) > 0 && len(ProjectFlag) > 0 {
-		applicationName = context.Application
-	} else {
-		var err error
-		applicationName, err = application.GetCurrentOrGetCreateSetDefault(context.Client)
-		util.CheckError(err, "")
-	}
-	return
-}
-
 func (o *Context) existsOrExit(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
 	util.CheckError(err, "")
