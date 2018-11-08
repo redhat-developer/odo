@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
@@ -69,17 +70,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 		stdout := color.Output
 		glog.V(4).Infof("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
 
-		client := odoutil.GetOcClient()
-
-		projectName := odoutil.GetAndSetNamespace(client)
-		var applicationName string
-		var err error
-		if odoutil.ApplicationFlag != "" && odoutil.ProjectFlag != "" {
-			applicationName = odoutil.GetAppName(client)
-		} else {
-			applicationName, err = application.GetCurrentOrGetCreateSetDefault(client)
-			odoutil.CheckError(err, "")
-		}
+		context := genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		client := context.Client
+		projectName := context.Project
+		applicationName := context.Application
 
 		checkFlag := 0
 		componentPath := ""

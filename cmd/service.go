@@ -10,7 +10,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/application"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
@@ -48,17 +47,9 @@ A full list of service types that can be deployed are available using: 'odo cata
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		util.GetAndSetNamespace(client)
-		var applicationName string
-		var err error
-		if util.ApplicationFlag != "" && util.ProjectFlag != "" {
-			applicationName = util.GetAppName(client)
-		} else {
-
-			applicationName, err = application.GetCurrentOrGetCreateSetDefault(client)
-			util.CheckError(err, "")
-		}
+		context := genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		// make sure the service type exists
 		serviceType := args[0]

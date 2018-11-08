@@ -14,6 +14,16 @@ import (
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewContext(command *cobra.Command) *Context {
+	return newContext(command, false)
+}
+
+// NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
+// provided command, creating the application if none already exists
+func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
+	return newContext(command, true)
+}
+
+func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	flags := command.Flags()
 	skipConnectionCheck, err := flags.GetBool(util.SkipConnectionCheckFlagName)
 	util.CheckError(err, "")
@@ -38,14 +48,18 @@ func NewContext(command *cobra.Command) *Context {
 	var app string
 	appFlag, err := flags.GetString(util.ApplicationFlagName)
 	ignoreButLog(err)
+
 	if len(appFlag) > 0 {
 		_, err := application.Exists(client, appFlag)
 		util.CheckError(err, "")
 		app = appFlag
 	} else {
-		appName, err := application.GetCurrent(ns)
+		if !createAppIfNeeded {
+			app, err = application.GetCurrent(ns)
+		} else {
+			app, err = application.GetCurrentOrGetCreateSetDefault(client)
+		}
 		util.CheckError(err, "unable to get current application")
-		app = appName
 	}
 
 	context := &Context{
@@ -108,6 +122,18 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 	}
 
 	return o.cmp
+}
+
+// GetOrCreateAppName retrieves the current application name from the context or creates a new default application
+func (context *Context) GetOrCreateAppName() (applicationName string) {
+	if len(ApplicationFlag) > 0 && len(ProjectFlag) > 0 {
+		applicationName = context.Application
+	} else {
+		var err error
+		applicationName, err = application.GetCurrentOrGetCreateSetDefault(context.Client)
+		util.CheckError(err, "")
+	}
+	return
 }
 
 func (o *Context) existsOrExit(cmp string) {

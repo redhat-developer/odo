@@ -56,6 +56,7 @@ func CheckError(err error, context string, a ...interface{}) {
 }
 
 // GetAppName returns application name from the provided flag or if flag is not provided, it will return current application name
+// Deprecated: should be replaced by accessing the application information from genericclioptions.Context
 func GetAppName(client *occlient.Client) string {
 	// applicationFlag is `--application` flag
 	if ApplicationFlag != "" {
