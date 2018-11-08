@@ -28,11 +28,11 @@ The source component can then consume the entries of the secret as environment v
 
 For example:
 
-We have created a backend application called 'backend' with port 8080 exposed:
-odo create backend nodejs --port 8080
+We have created a frontend application called 'frontend':
+odo create nodejs frontend
 
-We've also created a frontend application called 'frontend':
-odo create frontend nodejs
+We've also created a backend application called 'backend' with port 8080 exposed:
+odo create nodejs backend --port 8080
 
 You can now link the two applications:
 odo link backend --component frontend
