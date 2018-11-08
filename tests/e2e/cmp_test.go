@@ -87,6 +87,9 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("odo create wildfly wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 			runCmd("find " + tmpDir)
 
+			// TODO: remove this once https://github.com/redhat-developer/odo/issues/943 is implemented
+			time.Sleep(90 * time.Second)
+
 			// Run push
 			runCmd("odo push -v 4")
 
