@@ -976,6 +976,162 @@ func TestGetTimeout(t *testing.T) {
 	}
 }
 
+func TestDeleteProject(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(configEnvName, tempConfigFile.Name())
+	trueValue := true
+	falseValue := false
+	fakePrefix := "name"
+
+	tests := []struct {
+		name           string
+		existingConfig Config
+		project        string
+		wantErr        bool
+		result         Config
+	}{
+		{
+			name: "test case 1: no applications to the project",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{},
+				OdoSettings: OdoSettings{
+					NamePrefix:         &fakePrefix,
+					UpdateNotification: &trueValue,
+				},
+			},
+			project: "project-1",
+			wantErr: false,
+			result: Config{
+				ActiveApplications: []ApplicationInfo{},
+				OdoSettings: OdoSettings{
+					NamePrefix:         &fakePrefix,
+					UpdateNotification: &trueValue,
+				},
+			},
+		},
+		{
+			name: "test case 2: one application to the project",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					{
+						Name:    "blah",
+						Project: "project-1",
+					},
+				},
+				OdoSettings: OdoSettings{
+					NamePrefix:         &fakePrefix,
+					UpdateNotification: &trueValue,
+				},
+			},
+			project: "project-1",
+			wantErr: false,
+			result: Config{
+				ActiveApplications: []ApplicationInfo{},
+				OdoSettings: OdoSettings{
+					NamePrefix:         &fakePrefix,
+					UpdateNotification: &trueValue,
+				},
+			},
+		},
+		{
+			name: "test case 3: two applications to the project",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					{
+						Name:    "blah",
+						Project: "project-1",
+					},
+					{
+						Name:    "blah-1",
+						Project: "project-1",
+					},
+				},
+				OdoSettings: OdoSettings{
+					NamePrefix:         &fakePrefix,
+					UpdateNotification: &trueValue,
+				},
+			},
+			project: "project-1",
+			wantErr: false,
+			result: Config{
+				ActiveApplications: []ApplicationInfo{},
+				OdoSettings: OdoSettings{
+					NamePrefix:         &fakePrefix,
+					UpdateNotification: &trueValue,
+				},
+			},
+		},
+		{
+			name: "test case 4: two applications to the project and one in another project",
+			existingConfig: Config{
+				ActiveApplications: []ApplicationInfo{
+					{
+						Name:    "blah",
+						Project: "project-1",
+					},
+					{
+						Name:    "blah-1",
+						Project: "project-1",
+					},
+					{
+						Name:    "blah",
+						Project: "project-3",
+					},
+				},
+				OdoSettings: OdoSettings{
+					NamePrefix:         &fakePrefix,
+					UpdateNotification: &falseValue,
+				},
+			},
+			project: "project-1",
+			wantErr: false,
+			result: Config{
+				ActiveApplications: []ApplicationInfo{
+					{
+						Name:    "blah",
+						Project: "project-3",
+					},
+				},
+				OdoSettings: OdoSettings{
+					NamePrefix:         &fakePrefix,
+					UpdateNotification: &falseValue,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := New()
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.Config = tt.existingConfig
+			err = cfg.DeleteProject(tt.project)
+
+			if err == nil && !tt.wantErr {
+				if !reflect.DeepEqual(cfg.ActiveApplications, tt.result.ActiveApplications) {
+					t.Errorf("test failed, config file active applications values are different, wanted: %v, got: %v", tt.result.ActiveApplications, cfg.ActiveApplications)
+				}
+				if !reflect.DeepEqual(*cfg.OdoSettings.UpdateNotification, *tt.result.OdoSettings.UpdateNotification) {
+					t.Errorf("test failed, config file updateNotification values are different, wanted: %v, got: %v", *tt.result.OdoSettings.UpdateNotification, *cfg.OdoSettings.UpdateNotification)
+				}
+				if !reflect.DeepEqual(*cfg.OdoSettings.NamePrefix, *tt.result.OdoSettings.NamePrefix) {
+					t.Errorf("test failed, config file NamePrefix values are different, wanted: %v, got: %v", *tt.result.OdoSettings.NamePrefix, *cfg.OdoSettings.NamePrefix)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+		})
+	}
+}
+
 func TestSetConfiguration(t *testing.T) {
 
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
