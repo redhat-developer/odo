@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 	"path/filepath"
 	"strings"
@@ -240,6 +241,9 @@ func init() {
 	addProjectFlag(componentCreateCmd)
 	//Adding `--application` flag
 	addApplicationFlag(componentCreateCmd)
+
+	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
+	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
 
 	rootCmd.AddCommand(componentCreateCmd)
 }

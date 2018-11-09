@@ -39,3 +39,9 @@ var ServiceClassCompletionHandler = func(args complete.Args, client *occlient.Cl
 
 	return completions
 }
+
+// FileCompletionHandler provides suggestions for files and directories
+var FileCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
+	completions = append(completions, complete.PredictFiles("*").Predict(args)...)
+	return completions
+}
