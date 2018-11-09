@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
@@ -151,6 +152,7 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 
 func addProjectFlag(cmd *cobra.Command) {
 	cmd.Flags().String(util.ProjectFlagName, "", "Project, defaults to active project")
+	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }
 
 func addComponentFlag(cmd *cobra.Command) {
