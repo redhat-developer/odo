@@ -93,7 +93,20 @@ const (
 
 	// EnvS2IDeploymentDir is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate s2i deployment directory
 	EnvS2IDeploymentDir = "ODO_S2I_DEPLOYMENT_DIR"
+
+	// DefaultS2ISrcOrBinPath is the default path where S2I expects source/binary artifacts in absence of $S2ISrcOrBinLabel in builder image
+	// Ref: https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#required-image-contents
+	DefaultS2ISrcOrBinPath = "/tmp"
 )
+
+// S2IPaths is a struct that will hold path to S2I scripts and the protocol indicating access to them, component source/binary paths, artifacts deployments directory
+// These are passed as env vars to component pod
+type S2IPaths struct {
+	ScriptsPathProtocol string
+	ScriptsPath         string
+	SrcOrBinPath        string
+	DeploymentDir       string
+}
 
 // S2IDeploymentsDir is a set of possible S2I labels that provides S2I deployments directory
 // This label is not uniform across different builder images. This slice is expected to grow as odo adds support to more component types and/or the respective builder images use different labels
@@ -730,7 +743,7 @@ func getS2ILabelValue(labels map[string]string, expectedLabelsSet []string) stri
 }
 
 // GetS2IPathsFromBuilderImg returns script path protocol, S2I scripts path, S2I source or binary expected path, S2I deployment dir and errors(if any) from the passed builder image
-func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (string, string, string, string, error) {
+func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths, error) {
 
 	// Define structs for internal un-marshalling of imagestreamimage to extract label from it
 	type ContainerConfig struct {
@@ -748,13 +761,13 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (string, 
 	// Unmarshal the byte array into the struct for ease of access of required fields
 	err := json.Unmarshal(dimdrByteArr, &dimdr)
 	if err != nil {
-		return "", "", "", "", errors.Wrap(err, "unable to bootstrap supervisord")
+		return S2IPaths{}, errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 
 	// If by any chance, labels attribute is nil(although ideally not the case for builder images), return
 	if dimdr.ContainerConfig.Labels == nil {
 		glog.V(4).Infof("No Labels found in %+v in builder image %+v", dimdr, builderImage)
-		return "", "", "", "", nil
+		return S2IPaths{}, nil
 	}
 
 	// Extract the label containing S2I scripts URL
@@ -763,7 +776,8 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (string, 
 
 	if s2iSrcOrBinPath == "" {
 		// In cases like nodejs builder image, where there is no concept of binary and sources are directly run, use destination as source
-		s2iSrcOrBinPath = getS2ILabelValue(dimdr.ContainerConfig.Labels, S2IDeploymentsDir)
+		// s2iSrcOrBinPath = getS2ILabelValue(dimdr.ContainerConfig.Labels, S2IDeploymentsDir)
+		s2iSrcOrBinPath = DefaultS2ISrcOrBinPath
 	}
 
 	s2iDestinationDir := getS2ILabelValue(dimdr.ContainerConfig.Labels, S2IDeploymentsDir)
@@ -786,9 +800,14 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (string, 
 		s2iScriptsProtocol = "http(s)://"
 		s2iScriptsPath = s2iScriptsURL
 	default:
-		return "", "", "", "", fmt.Errorf("Unknown scripts url %s", s2iScriptsURL)
+		return S2IPaths{}, fmt.Errorf("Unknown scripts url %s", s2iScriptsURL)
 	}
-	return s2iScriptsProtocol, s2iScriptsPath, s2iSrcOrBinPath, s2iDestinationDir, nil
+	return S2IPaths{
+		ScriptsPathProtocol: s2iScriptsProtocol,
+		ScriptsPath:         s2iScriptsPath,
+		SrcOrBinPath:        s2iSrcOrBinPath,
+		DeploymentDir:       s2iDestinationDir,
+	}, nil
 }
 
 // uniqueAppendOrOverwriteEnvVars appends/overwrites the passed existing list of env vars with the elements from the to-be appended passed list of envs
@@ -881,7 +900,8 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 	}
 
 	// Extract s2i scripts path and path type from imagestream image
-	s2iScriptsProtocol, s2iScriptsURL, s2iSrcOrBinPath, s2iDestinationDir, err := GetS2IPathsFromBuilderImg(imageStreamImage)
+	//s2iScriptsProtocol, s2iScriptsURL, s2iSrcOrBinPath, s2iDestinationDir
+	s2iPaths, err := GetS2IPathsFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -891,19 +911,19 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 		inputEnvs,
 		corev1.EnvVar{
 			Name:  EnvS2IScriptsURL,
-			Value: s2iScriptsURL,
+			Value: s2iPaths.ScriptsPath,
 		},
 		corev1.EnvVar{
 			Name:  EnvS2IScriptsProtocol,
-			Value: s2iScriptsProtocol,
+			Value: s2iPaths.ScriptsPathProtocol,
 		},
 		corev1.EnvVar{
 			Name:  EnvS2ISrcOrBinPath,
-			Value: s2iSrcOrBinPath,
+			Value: s2iPaths.SrcOrBinPath,
 		},
 		corev1.EnvVar{
 			Name:  EnvS2IDeploymentDir,
-			Value: s2iDestinationDir,
+			Value: s2iPaths.DeploymentDir,
 		},
 	)
 
@@ -1192,7 +1212,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 		Ports:     foundCurrentDCContainer.Ports,
 	}
 
-	s2iScriptsProtocol, s2iScriptsURL, s2iSrcOrBinPath, s2iDestinationDir, err := GetS2IPathsFromBuilderImg(imageStreamImage)
+	s2iPaths, err := GetS2IPathsFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1202,19 +1222,19 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 		foundCurrentDCContainer.Env,
 		corev1.EnvVar{
 			Name:  EnvS2IScriptsURL,
-			Value: s2iScriptsURL,
+			Value: s2iPaths.ScriptsPath,
 		},
 		corev1.EnvVar{
 			Name:  EnvS2IScriptsProtocol,
-			Value: s2iScriptsProtocol,
+			Value: s2iPaths.ScriptsPathProtocol,
 		},
 		corev1.EnvVar{
 			Name:  EnvS2ISrcOrBinPath,
-			Value: s2iSrcOrBinPath,
+			Value: s2iPaths.SrcOrBinPath,
 		},
 		corev1.EnvVar{
 			Name:  EnvS2IDeploymentDir,
-			Value: s2iDestinationDir,
+			Value: s2iPaths.DeploymentDir,
 		},
 	)
 
