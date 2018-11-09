@@ -4,10 +4,9 @@ import (
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"strings"
 )
 
-const files = "examples/java/"
+const javaFiles = "examples/binary/java/"
 
 var _ = Describe("odoJavaE2e", func() {
 	const t = "java"
@@ -52,7 +51,7 @@ var _ = Describe("odoJavaE2e", func() {
 		})
 
 		It("Should be able to deploy a .war file using wildfly", func() {
-			runCmd("odo create wildfly javaee-war-test --binary " + files + "/wildfly/ROOT.war")
+			runCmd("odo create wildfly javaee-war-test --binary " + javaFiles + "/wildfly/ROOT.war")
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("javaee-war-test"))
 
@@ -95,7 +94,7 @@ var _ = Describe("odoJavaE2e", func() {
 		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			importOpenJDKImage()
 
-			runCmd("odo create openjdk18 sb-jar-test --binary " + files + "/openjdk/sb.jar")
+			runCmd("odo create openjdk18 sb-jar-test --binary " + javaFiles + "/openjdk/sb.jar")
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("sb-jar-test"))
 
@@ -123,10 +122,6 @@ var _ = Describe("odoJavaE2e", func() {
 		})
 	})
 })
-
-func determineRouteURL() string {
-	return strings.TrimSpace(runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'"))
-}
 
 func importOpenJDKImage() {
 	// we need to import the openjdk image which is used for jars because it's not available by default

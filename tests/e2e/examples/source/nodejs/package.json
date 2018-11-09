@@ -1,0 +1,19 @@
+{
+  "name": "node-echo",
+  "version": "0.0.1",
+  "description": "node-echo",
+  "main": "server.js",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "nodemon": "*"
+  },
+  "engine": {
+    "node": "*",
+    "npm": "*"
+  },
+  "scripts": {
+    "dev": "nodemon --ignore node_modules/ server.js",
+    "start": "node server.js"
+  }
+}
