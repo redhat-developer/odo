@@ -19,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -317,14 +318,22 @@ func GetCurrent(applicationName string, projectName string) (string, error) {
 	return currentComponent, nil
 }
 
+// getEnvFromPodEnvs loops through the passed slice of pod#EnvVars and gets the value corresponding to the key passed, returns empty stirng if not available
+func getEnvFromPodEnvs(envName string, podEnvs []corev1.EnvVar) string {
+	for _, podEnv := range podEnvs {
+		if podEnv.Name == envName {
+			return podEnv.Value
+		}
+	}
+	return ""
+}
+
 // PushLocal push local code to the cluster and trigger build there.
 // files is list of changed files captured during `odo watch` as well as binary file path
 // During copying binary components, path represent base directory path to binary and files contains path of binary
 // During copying local source components, path represent base directory path whereas files is empty
 // During `odo watch`, path represent base directory path whereas files contains list of changed Files
 func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
-	const targetPath = "/opt/app-root/src"
-
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -340,6 +349,13 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
+
+	// Get S2I Source/Binary Path from Pod Env variables created at the time of component create
+	s2iSrcPath := getEnvFromPodEnvs(occlient.EnvS2ISrcOrBinPath, pod.Spec.Containers[0].Env)
+	if s2iSrcPath == "" {
+		s2iSrcPath = occlient.DefaultS2ISrcOrBinPath
+	}
+	targetPath := fmt.Sprintf("%s/src", s2iSrcPath)
 
 	// Copy the files to the pod
 	glog.V(4).Infof("Copying to pod %s", pod.Name)
