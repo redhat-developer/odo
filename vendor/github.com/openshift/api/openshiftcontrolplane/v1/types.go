@@ -63,10 +63,10 @@ type RoutingConfig struct {
 
 type ImagePolicyConfig struct {
 	// maxImagesBulkImportedPerRepository controls the number of images that are imported when a user
-	// does a bulk import of a Docker repository. This number is set low to prevent users from
+	// does a bulk import of a container repository. This number is set low to prevent users from
 	// importing large numbers of images accidentally. Set -1 for no limit.
 	MaxImagesBulkImportedPerRepository int `json:"maxImagesBulkImportedPerRepository"`
-	// allowedRegistriesForImport limits the docker registries that normal users may import
+	// allowedRegistriesForImport limits the container image registries that normal users may import
 	// images from. Set this list to the registries that you trust to contain valid Docker
 	// images and that you want applications to be able to import from. Users with
 	// permission to create Images or ImageStreamMappings via the API are not affected by
@@ -177,6 +177,10 @@ type BuildControllerConfig struct {
 
 	BuildDefaults  *BuildDefaultsConfig  `json:"buildDefaults"`
 	BuildOverrides *BuildOverridesConfig `json:"buildOverrides"`
+
+	// additionalTrustedCA is a path to a pem bundle file containing additional CAs that
+	// should be trusted for image pushes and pulls during builds.
+	AdditionalTrustedCA string `json:"additionalTrustedCA"`
 }
 
 type ResourceQuotaControllerConfig struct {
@@ -199,7 +203,7 @@ type NetworkControllerConfig struct {
 	// clusterNetworks contains a list of cluster networks that defines the global overlay networks L3 space.
 	ClusterNetworks    []ClusterNetworkEntry `json:"clusterNetworks"`
 	ServiceNetworkCIDR string                `json:"serviceNetworkCIDR"`
-	VXLANPort          uint32                `json:"vxLANPort"`
+	VXLANPort          uint32                `json:"vxlanPort"`
 }
 
 type ServiceAccountControllerConfig struct {
@@ -211,6 +215,11 @@ type ServiceAccountControllerConfig struct {
 type DockerPullSecretControllerConfig struct {
 	// registryURLs is a list of urls that the docker pull secrets should be valid for.
 	RegistryURLs []string `json:"registryURLs"`
+
+	// internalRegistryHostname is the hostname for the default internal image
+	// registry. The value must be in "hostname[:port]" format.  Docker pull secrets
+	// will be generated for this registry.
+	InternalRegistryHostname string `json:"internalRegistryHostname"`
 }
 
 type ImageImportControllerConfig struct {
@@ -247,7 +256,7 @@ type BuildDefaultsConfig struct {
 	// source strategy.
 	SourceStrategyDefaults *SourceStrategyDefaultsConfig `json:"sourceStrategyDefaults,omitempty"`
 
-	// imageLabels is a list of docker labels that are applied to the resulting image.
+	// imageLabels is a list of labels that are applied to the resulting image.
 	// User can override a default label by providing a label with the same name in their
 	// Build/BuildConfig.
 	ImageLabels []buildv1.ImageLabel `json:"imageLabels,omitempty"`
@@ -280,7 +289,7 @@ type BuildOverridesConfig struct {
 	// forcePull indicates whether the build strategy should always be set to ForcePull=true
 	ForcePull bool `json:"forcePull"`
 
-	// imageLabels is a list of docker labels that are applied to the resulting image.
+	// imageLabels is a list of labels that are applied to the resulting image.
 	// If user provided a label in their Build/BuildConfig with the same name as one in this
 	// list, the user's label will be overwritten.
 	ImageLabels []buildv1.ImageLabel `json:"imageLabels,omitempty"`
@@ -325,7 +334,7 @@ type SecurityAllocator struct {
 	// UIDAllocatorRange defines the total set of Unix user IDs (UIDs) that will be allocated to projects automatically, and the size of the
 	// block each namespace gets. For example, 1000-1999/10 will allocate ten UIDs per namespace, and will be able to allocate up to 100 blocks
 	// before running out of space. The default is to allocate from 1 billion to 2 billion in 10k blocks (which is the expected size of the
-	// ranges Docker images will use once user namespaces are started).
+	// ranges container images will use once user namespaces are started).
 	UIDAllocatorRange string `json:"uidAllocatorRange"`
 	// MCSAllocatorRange defines the range of MCS categories that will be assigned to namespaces. The format is
 	// "<prefix>/<numberOfLabels>[,<maxCategory>]". The default is "s0/2" and will allocate from c0 -> c1023, which means a total of 535k labels

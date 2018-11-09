@@ -40,4 +40,7 @@ import:
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - package: github.com/posener/complete
   version: v1.1.2
-
+- package: github.com/kubernetes-sigs/kind
+  version: 844bb11becd63535141ff20f7f61746d472c19ca
+  subpackages:
+  - pkg/log/fidget

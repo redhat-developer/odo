@@ -1,8 +1,10 @@
-hash: fe373f5781909c5aed9fbde174ebf97f19d01b5abc56d3b7ab571b33bd79d73e
-updated: 2018-10-25T17:19:13.517749+02:00
+hash: dac4b7da103121e5a36d3c5eee44b570fb6e7f9aef885c36d2f2d643b404b11e
+updated: 2018-11-09T15:57:19.648941765-05:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
+- name: github.com/briandowns/spinner
+  version: 195c31b675a7d5ac6859ea5371d6f3bc775f003d
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -71,6 +73,10 @@ imports:
   - pkg/client/clientset_generated/clientset/typed/settings/v1alpha1
   - pkg/client/clientset_generated/clientset/typed/settings/v1alpha1/fake
   - pkg/filter
+- name: github.com/kubernetes-sigs/kind
+  version: 844bb11becd63535141ff20f7f61746d472c19ca
+  subpackages:
+  - pkg/log/fidget
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
@@ -120,7 +126,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/openshift/api
-  version: ab94c17d53098bd73dcfbbc26c6ce078959b361f
+  version: c3b47bfe89cdc8f9eeba184e9ab130518893e471
   subpackages:
   - apps/v1
   - build/v1

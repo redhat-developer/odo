@@ -150,3 +150,31 @@ type DelegatedAuthorization struct {
 	// disabled indicates that authorization should be disabled.  By default it will use delegated authorization.
 	Disabled bool `json:"disabled,omitempty"`
 }
+
+// StaticPodOperatorStatus is status for controllers that manage static pods.  There are different needs because individual
+// node status must be tracked.
+type StaticPodOperatorStatus struct {
+	OperatorStatus `json:",inline"`
+
+	// latestAvailableDeploymentGeneration is the deploymentID of the most recent deployment
+	LatestAvailableDeploymentGeneration int32 `json:"latestAvailableDeploymentGeneration"`
+
+	// nodeStatuses track the deployment values and errors across individual nodes
+	NodeStatuses []NodeStatus `json:"nodeStatuses"`
+}
+
+// NodeStatus provides information about the current state of a particular node managed by this operator.
+type NodeStatus struct {
+	// nodeName is the name of the node
+	NodeName string `json:"nodeName"`
+
+	// currentDeploymentGeneration is the generation of the most recently successful deployment
+	CurrentDeploymentGeneration int32 `json:"currentDeploymentGeneration"`
+	// targetDeploymentGeneration is the generation of the deployment we're trying to apply
+	TargetDeploymentGeneration int32 `json:"targetDeploymentGeneration"`
+	// lastFailedDeploymentGeneration is the generation of the deployment we tried and failed to deploy.
+	LastFailedDeploymentGeneration int32 `json:"lastFailedDeploymentGeneration"`
+
+	// lastFailedDeploymentGenerationErrors is a list of the errors during the failed deployment referenced in lastFailedDeploymentGeneration
+	LastFailedDeploymentErrors []string `json:"lastFailedDeploymentErrors"`
+}
