@@ -185,7 +185,7 @@ var storageListCmd = &cobra.Command{
 		applicationName := context.Application
 
 		if storageAllListflag {
-			if odoutil.ComponentFlag != "" {
+			if cmd.Flag(odoutil.ComponentFlagName) != nil {
 				fmt.Println("Invalid arguments. Component name is not needed")
 				os.Exit(1)
 			}

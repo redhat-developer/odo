@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"os"
 )
 
@@ -20,21 +19,6 @@ const (
 	// ComponentFlagName is the name of the flag allowing a user to specify which component to operate on
 	ComponentFlagName = "component"
 )
-
-// Global variables
-var (
-	GlobalSkipConnectionCheck bool
-	ProjectFlag               string
-	ApplicationFlag           string
-	ComponentFlag             string
-)
-
-// GetOcClient creates a client to connect to OpenShift cluster
-func GetOcClient() *occlient.Client {
-	client, err := occlient.New(GlobalSkipConnectionCheck)
-	CheckError(err, "")
-	return client
-}
 
 // CheckError prints the cause of the given error and exits the code with an
 // exit code of 1.
