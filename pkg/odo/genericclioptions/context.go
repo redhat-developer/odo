@@ -9,7 +9,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"os"
 )
 
@@ -26,43 +25,38 @@ func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
 
 // Client returns an oc client configured for this command's options
 func Client(command *cobra.Command) *occlient.Client {
-	client, _ := client(command)
-	return client
+	return client(command)
 }
 
 // ClientWithConnectionCheck returns an oc client configured for this command's options but forcing the connection check status
 // to the value of the provided bool, skipping it if true, checking the connection otherwise
 func ClientWithConnectionCheck(command *cobra.Command, skipConnectionCheck bool) *occlient.Client {
-	client, _ := client(command, skipConnectionCheck)
-	return client
+	return client(command, skipConnectionCheck)
 }
 
 //
-func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) (client *occlient.Client, flags *pflag.FlagSet) {
-	flags = command.Flags()
-
+func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient.Client {
 	var skipConnectionCheck bool
 	if len(shouldSkipConnectionCheck) > 0 {
 		skipConnectionCheck = shouldSkipConnectionCheck[0]
 	} else {
 		var err error
-		skipConnectionCheck, err = flags.GetBool(util.SkipConnectionCheckFlagName)
+		skipConnectionCheck, err = command.Flags().GetBool(util.SkipConnectionCheckFlagName)
 		util.CheckError(err, "")
 	}
 
 	client, err := occlient.New(skipConnectionCheck)
 	util.CheckError(err, "")
 
-	return
+	return client
 }
 
 func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
-	client, flags := client(command)
+	client := client(command)
 
 	// project
 	var ns string
-	projectFlag, err := flags.GetString(util.ProjectFlagName)
-	ignoreButLog(err)
+	projectFlag := FlagValueIfSet(command, util.ProjectFlagName)
 	if len(projectFlag) > 0 {
 		_, err := project.Exists(client, projectFlag)
 		util.CheckError(err, "")
@@ -74,14 +68,13 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 
 	// application
 	var app string
-	appFlag, err := flags.GetString(util.ApplicationFlagName)
-	ignoreButLog(err)
-
+	appFlag := FlagValueIfSet(command, util.ApplicationFlagName)
 	if len(appFlag) > 0 {
 		_, err := application.Exists(client, appFlag)
 		util.CheckError(err, "")
 		app = appFlag
 	} else {
+		var err error
 		if !createAppIfNeeded {
 			app, err = application.GetCurrent(ns)
 		} else {
@@ -102,9 +95,9 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 
 	// component
 	var cmp string
-	cmpFlag, err := flags.GetString(util.ComponentFlagName)
-	ignoreButLog(err)
+	cmpFlag := FlagValueIfSet(command, util.ComponentFlagName)
 	if len(cmpFlag) == 0 {
+		var err error
 		cmp, err = component.GetCurrent(app, ns)
 		util.CheckError(err, "could not get current component")
 	} else {
@@ -115,6 +108,12 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	context.cmp = cmp
 
 	return context
+}
+
+func FlagValueIfSet(cmd *cobra.Command, flagName string) string {
+	flag, err := cmd.Flags().GetString(flagName)
+	ignoreButLog(err)
+	return flag
 }
 
 // Context holds contextual information useful to commands such as correctly configured client, target project and application
