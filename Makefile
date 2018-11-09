@@ -97,6 +97,15 @@ else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v
 endif
 
+# Run java e2e tests
+.PHONY: test-java-e2e
+test-java-e2e:
+ifdef TIMEOUT
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.v -timeout $(TIMEOUT)
+else
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.v
+endif
+
 # Run service catalog e2e tests
 .PHONY: test-service-e2e
 test-service-e2e:

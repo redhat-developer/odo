@@ -53,6 +53,17 @@ jobs:
         - oc login -u developer
         - make test-cmp-e2e
 
+    # Run component e2e tests
+    - <<: *base-test
+      stage: test
+      name: "Java e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - make test-java-e2e
+
     # Run service-catalog e2e tests
     - <<: *base-test
       stage: test
