@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
@@ -342,23 +341,28 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 
 	// Copy the files to the pod
-	glog.V(4).Infof("Copying to pod %s", pod.Name)
+	s := util.LogSpinner(pod.Name + ": Copying files to Pod")
 	err = client.CopyFile(path, pod.Name, targetPath, files)
 	if err != nil {
 		return errors.Wrap(err, "unable push files to pod")
 	}
-	fmt.Fprintf(out, "Please wait, building component....\n")
+	s.Stop()
+	util.LogSuccessf("%s: Files copied to Pod", pod.Name)
+
+	// Building component message / spinner for pushing local
+	s = util.LogSpinner(componentName + ": Pushing changes")
+	defer s.Stop()
 
 	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
 	pipeReader, pipeWriter := io.Pipe()
+	var cmdOutput string
 	go func() {
-		yellowFprintln := color.New(color.FgYellow).FprintlnFunc()
 		scanner := bufio.NewScanner(pipeReader)
 		for scanner.Scan() {
 			line := scanner.Text()
-			// color.Output is temporarily used as there is a error when passing in color.Output from cmd/create.go and casting to io.writer in windows
-			// TODO: Fix this in the future, more upstream in the code at cmd/create.go rather than within this function.
-			yellowFprintln(color.Output, line)
+
+			// Put the output to cmdOutput for later debugging
+			cmdOutput += fmt.Sprintln(line)
 		}
 	}()
 
@@ -366,9 +370,17 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		// We will use the assemble-and-restart script located within the supervisord container we've created
 		[]string{"/var/lib/supervisord/bin/assemble-and-restart"},
 		pipeWriter, pipeWriter, nil, false)
+
+	s.Stop()
+
 	if err != nil {
+		// If we fail, log the output
+		util.LogErrorf("Unable to build files\n%v", cmdOutput)
 		return errors.Wrap(err, "unable to execute assemble script")
 	}
+
+	// Log the debug output
+	glog.V(4).Info(cmdOutput)
 
 	return nil
 }

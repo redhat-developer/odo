@@ -1240,6 +1240,10 @@ func (c *Client) WaitAndGetDC(name string, field string, value string, timeout t
 func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 	glog.V(4).Infof("Waiting for %s pod", selector)
 
+	// Create a spinner for Pod Status
+	s := util.LogSpinner("Waiting for Pod status to be running")
+	defer s.Stop()
+
 	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
 	})
@@ -1260,10 +1264,10 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 				break loop
 			}
 			if e, ok := val.Object.(*corev1.Pod); ok {
-				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				util.LogSpinnerMsgf(s, "%s: Pod is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case corev1.PodRunning:
-					glog.V(4).Infof("Pod %s is running.", e.Name)
+					util.LogSuccessf("%s: Pod is %s", e.Name, e.Status.Phase)
 					podChannel <- e
 					break loop
 				case corev1.PodFailed, corev1.PodUnknown:

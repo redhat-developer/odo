@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"path/filepath"
 	"strings"
+
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
@@ -205,23 +206,23 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		ports, err := component.GetComponentPorts(client, componentName, applicationName)
 		odoutil.CheckError(err, "")
-		fmt.Printf("Component '%s' was created", componentName)
 
 		if len(ports) > 1 {
-			fmt.Printf(" and ports %s were opened\n", strings.Join(ports, ","))
+			util.LogProgressf("Component '%s' was created and ports %s were opened", componentName, strings.Join(ports, ","))
 		} else if len(ports) == 1 {
-			fmt.Printf(" and port %s was opened\n", ports[0])
+			util.LogProgressf("Component '%s' was created and port %s was opened", componentName, ports[0])
 		}
 
-		if len(componentGit) == 0 {
-			fmt.Printf("To push source code to the component run 'odo push'\n")
-		}
 		// after component is successfully created, set is as active
 		err = application.SetCurrent(client, applicationName)
 		odoutil.CheckError(err, "")
 		err = component.SetCurrent(componentName, applicationName, projectName)
 		odoutil.CheckError(err, "")
-		fmt.Printf("\nComponent '%s' is now set as active component.\n", componentName)
+		util.LogProgressf("Component '%s' set as an active component", componentName)
+
+		if len(componentGit) == 0 {
+			util.LogSuccessf("To push source code to the component run 'odo push'")
+		}
 	},
 }
 

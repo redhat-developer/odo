@@ -4,17 +4,23 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
+	"github.com/kubernetes-sigs/kind/pkg/log/fidget"
 	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 
 	"github.com/golang/glog"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
+
+const suffixSpacing = "   "
 
 // ConvertLabelsToSelector converts the given labels to selector
 func ConvertLabelsToSelector(labels map[string]string) string {
@@ -248,4 +254,50 @@ func OpenBrowser(url string) error {
 	}
 
 	return nil
+}
+
+// LogNamef will output the name of the component / application / project in a *bolded* / underlined manner
+func LogNamef(format string, a ...interface{}) {
+	underline := color.New(color.Bold).SprintFunc()
+	fmt.Printf("%s\n", underline(fmt.Sprintf(format, a...)))
+}
+
+// LogProgressf will output in an appropriate "progress" manner
+func LogProgressf(format string, a ...interface{}) {
+	green := color.New(color.FgBlue).SprintFunc()
+	fmt.Printf("%s %s\n", green("-->"), fmt.Sprintf(format, a...))
+}
+
+// LogSuccessf will output in an appropriate "progress" manner
+func LogSuccessf(format string, a ...interface{}) {
+	green := color.New(color.FgGreen).SprintFunc()
+	fmt.Printf("%s  %s\n", green("OK"), fmt.Sprintf(format, a...))
+}
+
+// LogSuccessf will output in an appropriate "progress" manner
+func LogErrorf(format string, a ...interface{}) {
+	red := color.New(color.FgRed).SprintFunc()
+	fmt.Printf("%s %s\n", red("ERR"), fmt.Sprintf(format, a...))
+}
+
+// LogSpinner created a spinner, sets the prefix then returns it.
+func LogSpinner(suffix string) *fidget.Spinner {
+	// suffix := "   " + componentName + ": Pushing changes: "
+	s := fidget.NewSpinner(os.Stdout)
+
+	// Add spacing to match the formatting of the other outputs
+	s.SetSuffix(suffixSpacing + suffix)
+
+	// If we're in debug mode / non-default stop the spinning now!
+	if !strings.Contains(pflag.Lookup("v").Value.String(), "0") {
+		s.Stop()
+	} else {
+		s.Start()
+	}
+	return s
+}
+
+// LogSpinnerMsgf update the suffix of a predetermined spinner
+func LogSpinnerMsgf(spin *fidget.Spinner, format string, a ...interface{}) {
+	spin.SetSuffix(suffixSpacing + fmt.Sprintf(format, a...))
 }

@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"net/url"
 	"os"
 	"runtime"
+
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -45,10 +46,16 @@ var pushCmd = &cobra.Command{
 			inputName = args[0]
 		}
 		componentName := odoutil.GetComponent(client, inputName, applicationName)
-		fmt.Printf("Pushing changes to component: %v\n", componentName)
+
+		util.LogNamef("Component: %s", componentName)
+
+		util.LogProgressf("%v: Pushing changes to component", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
 		odoutil.CheckError(err, "unable to get component source")
+
+		util.LogProgressf("%s: Building component", componentName)
+
 		switch sourceType {
 		case "local", "binary":
 			// use value of '--dir' as source if it was used
@@ -96,7 +103,7 @@ var pushCmd = &cobra.Command{
 			odoutil.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
-		fmt.Printf("changes successfully pushed to component: %v\n", componentName)
+		util.LogSuccessf("%v: Changes successfully pushed", componentName)
 	},
 }
 
