@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
-
-	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -44,10 +44,8 @@ var versionCmd = &cobra.Command{
 		fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
 
 		if !clientFlag {
-			// turning off the flag which checks for login status
-			util.GlobalSkipConnectionCheck = true
 			// Lets fetch the info about the server
-			serverInfo, err := util.GetOcClient().GetServerVersion()
+		serverInfo, err := genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
 			util.CheckError(err, "")
 			// make sure we only include Openshift info if we actually have it
 			openshiftStr := ""

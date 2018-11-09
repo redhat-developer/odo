@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"os"
 )
 
@@ -23,13 +24,40 @@ func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
 	return newContext(command, true)
 }
 
-func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
-	flags := command.Flags()
-	skipConnectionCheck, err := flags.GetBool(util.SkipConnectionCheckFlagName)
-	util.CheckError(err, "")
+// Client returns an oc client configured for this command's options
+func Client(command *cobra.Command) *occlient.Client {
+	client, _ := client(command)
+	return client
+}
+
+// ClientWithConnectionCheck returns an oc client configured for this command's options but forcing the connection check status
+// to the value of the provided bool, skipping it if true, checking the connection otherwise
+func ClientWithConnectionCheck(command *cobra.Command, skipConnectionCheck bool) *occlient.Client {
+	client, _ := client(command, skipConnectionCheck)
+	return client
+}
+
+//
+func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) (client *occlient.Client, flags *pflag.FlagSet) {
+	flags = command.Flags()
+
+	var skipConnectionCheck bool
+	if len(shouldSkipConnectionCheck) > 0 {
+		skipConnectionCheck = shouldSkipConnectionCheck[0]
+	} else {
+		var err error
+		skipConnectionCheck, err = flags.GetBool(util.SkipConnectionCheckFlagName)
+		util.CheckError(err, "")
+	}
 
 	client, err := occlient.New(skipConnectionCheck)
 	util.CheckError(err, "")
+
+	return
+}
+
+func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
+	client, flags := client(command)
 
 	// project
 	var ns string

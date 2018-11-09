@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
@@ -46,7 +47,7 @@ var catalogListComponentCmd = &cobra.Command{
   odo catalog search component nodejs
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		client := genericclioptions.Client(cmd)
 		catalogList, err := catalog.List(client)
 		util.CheckError(err, "unable to list components")
 		switch len(catalogList) {
@@ -90,7 +91,7 @@ var catalogListServiceCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		client := genericclioptions.Client(cmd)
 		catalogList, err := svc.ListCatalog(client)
 		util.CheckError(err, "unable to list services because Service Catalog is not enabled in your cluster")
 		switch len(catalogList) {
@@ -137,7 +138,7 @@ components.
   odo catalog search component python
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		client := genericclioptions.Client(cmd)
 		searchTerm := args[0]
 		components, err := catalog.Search(client, searchTerm)
 		util.CheckError(err, "unable to search for components")
@@ -167,7 +168,7 @@ services from service catalog.
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		client := genericclioptions.Client(cmd)
 		searchTerm := args[0]
 		components, err := svc.Search(client, searchTerm)
 		util.CheckError(err, "unable to search for services")
@@ -209,7 +210,7 @@ This describes the service and the associated plans.
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		client := genericclioptions.Client(cmd)
 		serviceName := args[0]
 		service, plans, err := svc.GetServiceClassAndPlans(client, serviceName)
 		util.CheckError(err, "")

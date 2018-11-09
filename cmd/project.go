@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
@@ -46,8 +47,9 @@ var projectSetCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
-		client := util.GetOcClient()
-		current := project.GetCurrent(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		current := context.Project
 
 		exists, err := project.Exists(client, projectName)
 		util.CheckError(err, "")
@@ -79,8 +81,8 @@ var projectGetCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		project := project.GetCurrent(client)
+		context := genericclioptions.NewContext(cmd)
+		project := context.Project
 
 		if projectShortFlag {
 			fmt.Print(project)
@@ -100,7 +102,7 @@ var projectCreateCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
-		client := util.GetOcClient()
+		client := genericclioptions.Client(cmd)
 		err := project.Create(client, projectName)
 		util.CheckError(err, "")
 		err = project.SetCurrent(client, projectName)
@@ -119,7 +121,7 @@ var projectDeleteCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
-		client := util.GetOcClient()
+		client := genericclioptions.Client(cmd)
 
 		// Validate existence of the project to be deleted
 		isValidProject, err := project.Exists(client, projectName)
@@ -175,7 +177,7 @@ var projectListCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		client := genericclioptions.Client(cmd)
 		projects, err := project.List(client)
 		util.CheckError(err, "")
 		if len(projects) == 0 {
