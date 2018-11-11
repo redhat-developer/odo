@@ -2406,7 +2406,7 @@ func TestListSecrets(t *testing.T) {
 		}
 
 		if err == nil && !tt.wantErr {
-			if (len(fakeClientSet.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
+			if len(fakeClientSet.Kubernetes.Actions()) != 1 {
 				t.Errorf("expected 1 action in ListSecrets got: %v", fakeClientSet.Kubernetes.Actions())
 			}
 		} else if err == nil && tt.wantErr {

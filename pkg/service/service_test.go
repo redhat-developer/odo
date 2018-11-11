@@ -349,7 +349,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 	}
 }
 
-func TestListWithSmartStatus(t *testing.T) {
+func TestListWithDetailedStatus(t *testing.T) {
 
 	type args struct {
 		Project  string
@@ -363,7 +363,6 @@ func TestListWithSmartStatus(t *testing.T) {
 		secretList  corev1.SecretList
 		dcList      appsv1.DeploymentConfigList
 		output      []ServiceInfo
-		wantErr     bool
 	}{
 		{
 			name: "Case 1: services with various statuses, some bound and some linked",

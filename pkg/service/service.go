@@ -162,6 +162,9 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) ([]
 	}
 	applicationSelector := util.ConvertLabelsToSelector(labels)
 	deploymentConfigs, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+	if err != nil {
+		return nil, err
+	}
 
 	// go through each service and see if there is a secret that has been created
 	// if so, update the status of the service
