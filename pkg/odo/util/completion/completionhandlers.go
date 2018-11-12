@@ -21,7 +21,7 @@ var ServiceCompletionHandler = func(cmd *cobra.Command, args complete.Args, cont
 		completions = append(completions, class.Name)
 	}
 
-	return completions
+	return
 }
 
 // ServiceClassCompletionHandler provides catalog service class name completion
@@ -36,15 +36,14 @@ var ServiceClassCompletionHandler = func(cmd *cobra.Command, args complete.Args,
 		completions = append(completions, class.Spec.ExternalName)
 	}
 
-	return completions
+	return
 }
 
 // AppCompletionHandler provides completion for the app commands
-var AppCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
+var AppCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	util.GetAndSetNamespace(client)
 
-	applications, err := application.List(client)
+	applications, err := application.List(context.Client)
 	if err != nil {
 		return completions
 	}
@@ -52,11 +51,11 @@ var AppCompletionHandler = func(args complete.Args, client *occlient.Client) (co
 	for _, app := range applications {
 		completions = append(completions, app.Name)
 	}
-	return completions
+	return
 }
 
 // FileCompletionHandler provides suggestions for files and directories
 var FileCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
 	completions = append(completions, complete.PredictFiles("*").Predict(args)...)
-	return completions
+	return
 }
