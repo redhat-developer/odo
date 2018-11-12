@@ -45,7 +45,7 @@ var versionCmd = &cobra.Command{
 
 		if !clientFlag {
 			// Lets fetch the info about the server
-		serverInfo, err := genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
+			serverInfo, err := genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
 			util.CheckError(err, "")
 			// make sure we only include Openshift info if we actually have it
 			openshiftStr := ""
