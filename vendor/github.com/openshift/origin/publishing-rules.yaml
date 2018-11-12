@@ -1,0 +1,20 @@
+# This file is not authoritative.
+#    $ oc project
+#    Using project "origin-publisher-bot" on server "https://api.ci.openshift.org:443".
+#    $ oc get cm/openshift-origin-bot-rules -o yaml -n origin-publisher-bot
+skip-godeps: true
+rules:
+- destination: kubernetes
+  branches:
+  - name: origin-3.11-kubernetes-1.11.1
+    source:
+      branch: master
+      dir: vendor/k8s.io/kubernetes
+  - name: origin-3.10-kubernetes-1.10.2
+    source:
+      branch: release-3.10
+      dir: vendor/k8s.io/kubernetes
+  - name: release-1.9.1
+    source:
+      branch: release-3.9
+      dir: vendor/k8s.io/kubernetes
