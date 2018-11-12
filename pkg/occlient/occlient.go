@@ -307,15 +307,18 @@ func (c *Client) RunLogout(stdout io.Writer) error {
 		glog.V(1).Infof("%v : unable to get userinfo", err)
 	}
 
+	// read the current config form ~/.kube/config
 	conf, err := c.KubeConfig.ClientConfig()
 	if err != nil {
 		glog.V(1).Infof("%v : unable to get client config", err)
 	}
+	// initialising oauthv1client
 	client, err := oauthv1client.NewForConfig(conf)
 	if err != nil {
 		glog.V(1).Infof("%v : unable to create a new OauthV1Client", err)
 	}
 
+	// deleting token form the server
 	if err := client.OAuthAccessTokens().Delete(conf.BearerToken, &metav1.DeleteOptions{}); err != nil {
 		glog.V(1).Infof("%v", err)
 	}
@@ -324,6 +327,8 @@ func (c *Client) RunLogout(stdout io.Writer) error {
 	if err != nil {
 		glog.V(1).Infof("%v : unable to switch to  project", err)
 	}
+
+	// deleting token for the current server from local config
 	for key, value := range rawConfig.AuthInfos {
 		if key == rawConfig.Contexts[rawConfig.CurrentContext].AuthInfo {
 			value.Token = ""
