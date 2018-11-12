@@ -301,7 +301,7 @@ func (c *Client) isLoggedIn() bool {
 }
 
 // RunLogout logs out the current user from cluster
-func (c *Client) RunLogout() error {
+func (c *Client) RunLogout(stdout io.Writer) error {
 	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
 	if err != nil {
 		glog.V(1).Infof("%v : unable to get userinfo", err)
@@ -334,8 +334,8 @@ func (c *Client) RunLogout() error {
 		glog.V(1).Infof("%v : unable to write config to config file", err)
 	}
 
-	fmt.Printf("Logged \"%v\" out on \"%v\"\n", output.Name, conf.Host)
-	return nil
+	_, err = io.WriteString(stdout, fmt.Sprintf("Logged \"%v\" out on \"%v\"\n", output.Name, conf.Host))
+	return err
 }
 
 // isServerUp returns true if server is up and running

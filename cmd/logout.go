@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var logoutCmd = &cobra.Command{
@@ -13,9 +15,9 @@ var logoutCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getOcClient()
-		err := client.RunLogout()
-		checkError(err, "")
+		client := util.GetOcClient()
+		err := client.RunLogout(os.Stdout)
+		util.CheckError(err, "")
 	},
 }
 
