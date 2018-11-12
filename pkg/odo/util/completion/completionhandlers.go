@@ -56,7 +56,7 @@ var AppCompletionHandler = func(args complete.Args, client *occlient.Client) (co
 }
 
 // FileCompletionHandler provides suggestions for files and directories
-var FileCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
+var FileCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
 	completions = append(completions, complete.PredictFiles("*").Predict(args)...)
 	return completions
 }
