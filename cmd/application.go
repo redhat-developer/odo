@@ -244,7 +244,7 @@ var applicationDescribeCmd = &cobra.Command{
 			appName, err = application.GetCurrent(projectName)
 			util.CheckError(err, "")
 			if appName == "" {
-				fmt.Printf("There's no active application in project: %v", projectName)
+				fmt.Printf("There's no active application in project: %v\n", projectName)
 				os.Exit(1)
 			}
 		} else {
