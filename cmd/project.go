@@ -201,6 +201,7 @@ func init() {
 	projectGetCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "If true, display only the project name")
 	projectSetCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "If true, display only the project name")
 	projectDeleteCmd.Flags().BoolVarP(&projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
+	projectDeleteCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "Delete project without prompting")
 
 	projectCmd.Flags().AddFlagSet(projectGetCmd.Flags())
 	projectCmd.AddCommand(projectGetCmd)

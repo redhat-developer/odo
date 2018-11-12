@@ -68,45 +68,12 @@ var ProjectNameCompletionHandler = func(cmd *cobra.Command, args complete.Args, 
 	if err != nil {
 		return completions
 	}
-
-	var commands []string
-
-	// get only the user typed commands/flags and remove the cobra defined commands
-	found := false
-	for _, arg := range args.Completed {
-		if arg == cmd.Name() {
-			found = true
-			continue
-		}
-		if found {
-			commands = append(commands, arg)
-		}
-	}
-
-	// extract the flags and commands
-	strippedCommands, strippedFlags := getCommandsAndFlags(commands, cmd)
-
-	// make a map of commands for faster searching
-	strippedCommandsMap := make(map[string]bool)
-	for _, strippedCommand := range strippedCommands {
-		strippedCommandsMap[strippedCommand] = true
-	}
-
-	isIncompleteFlagSuggestion := args.LastCompleted == "--project"
-
+	// extract the flags and commands from the user typed commands
+	strippedCommands, _ := getCommandsAndFlags(getUserTypedCommands(args, cmd), cmd)
 	for _, project := range projects {
-		// if the user is typing the project flag
-		if isIncompleteFlagSuggestion {
-			completions = append(completions, project.Name)
-			continue
-		}
-		// if the flag suggestion is done
-		if val, ok := strippedFlags["project"]; ok && val != "" {
-			return completions
-		}
 		// we found the project name in the list which means
 		// that the project name has been already selected by the user so no need to suggest more
-		if val, ok := strippedCommandsMap[project.Name]; ok && val {
+		if val, ok := strippedCommands[project.Name]; ok && val {
 			return nil
 		}
 		completions = append(completions, project.Name)
