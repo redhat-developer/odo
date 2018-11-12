@@ -2,6 +2,7 @@ package completion
 
 import (
 	"github.com/posener/complete"
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/service"
@@ -37,6 +38,22 @@ var ServiceClassCompletionHandler = func(args complete.Args, client *occlient.Cl
 		completions = append(completions, class.Spec.ExternalName)
 	}
 
+	return completions
+}
+
+// AppCompletionHandler provides completion for the app commands
+var AppCompletionHandler = func(args complete.Args, client *occlient.Client) (completions []string) {
+	completions = make([]string, 0)
+	util.GetAndSetNamespace(client)
+
+	applications, err := application.List(client)
+	if err != nil {
+		return completions
+	}
+
+	for _, app := range applications {
+		completions = append(completions, app.Name)
+	}
 	return completions
 }
 
