@@ -15,17 +15,16 @@ import:
 - package: github.com/fatih/color
   version: v1.6.0
 - package: github.com/openshift/client-go
-  version: 431ec9a26e5021f35fa41ee9a89842db9bfdb370
+  version: release-3.11
 - package: k8s.io/client-go
-  version: kubernetes-1.11.1
+  repo:    https://github.com/openshift/kubernetes-client-go.git
+  version: origin-3.11-kubernetes-1.11.1
 - package: k8s.io/apimachinery
-  version: kubernetes-1.11.1
+  repo:    https://github.com/openshift/kubernetes-apimachinery.git
+  version: origin-3.11-kubernetes-1.11.1
 - package: k8s.io/api
-  version: kubernetes-1.11.1
-- package: github.com/openshift/source-to-image
-  subpackages:
-  - pkg/tar
-  - pkg/util/fs
+  repo:    https://github.com/openshift/kubernetes-api.git
+  version: origin-3.11-kubernetes-1.11.1
 - package: github.com/onsi/gomega
   version: v1.3.0
 - package: github.com/onsi/ginkgo
@@ -40,4 +39,8 @@ import:
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - package: github.com/posener/complete
   version: v1.1.2
+- package: github.com/openshift/origin
+  version: v3.11.0
+  subpackages:
+  - pkg/oc/cli/login
 
