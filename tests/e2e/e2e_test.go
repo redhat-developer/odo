@@ -634,7 +634,7 @@ var _ = Describe("updateE2e", func() {
 
 	Context("updating the component", func() {
 		It("should be able to create binary component", func() {
-			runCmd("curl -o " + tmpDir + "/sample-binary-testing-1.war " +
+			runCmd("curl -L -o " + tmpDir + "/sample-binary-testing-1.war " +
 				"https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/e5bc575ac8b14ba2b23d66b5cb4873657e1a1489/sample.war")
 			runCmd("odo create wildfly --binary " + tmpDir + "/sample-binary-testing-1.war  --env key=value,key1=value1")
 			cmpList := runCmd("odo list")
@@ -645,7 +645,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from binary to binary", func() {
-			runCmd("curl -o " + tmpDir + "/sample-binary-testing-2.war " +
+			runCmd("curl -L -o " + tmpDir + "/sample-binary-testing-2.war " +
 				"'https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/85354d9ee8583a9c1e64a331425eede235b07a9e/sample%2520(1).war'")
 
 			waitForDCOfComponentToRollout("wildfly")
