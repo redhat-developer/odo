@@ -101,7 +101,7 @@ endif
 .PHONY: test-java-e2e
 test-java-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.v -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct
 endif
@@ -110,7 +110,7 @@ endif
 .PHONY: test-source-e2e
 test-source-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.v -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct
 endif
@@ -128,7 +128,7 @@ endif
 .PHONY: test-e2e
 test-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e -timeout -ginkgo.succinct $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e -ginkgo.succinct -timeout $(TIMEOUT)
 else
 	go test -v github.com/redhat-developer/odo/tests/e2e -ginkgo.succinct
 endif
