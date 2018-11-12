@@ -81,7 +81,7 @@ func waitForDeleteCmd(cmd string, object string) bool {
 // expOut is the expected output
 func waitForServiceStatusCmd(cmd string, status string) bool {
 
-	return waitForCmdOut(cmd, 5, func(output string) bool {
+	return waitForCmdOut(cmd, 10, func(output string) bool {
 		return output == status
 	})
 }

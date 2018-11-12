@@ -9,12 +9,13 @@ import (
 	. "github.com/onsi/gomega"
 
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/config"
 	"io/ioutil"
 	"log"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/redhat-developer/odo/pkg/config"
 )
 
 // TODO: A neater way to provide odo path. Currently we assume \
@@ -922,5 +923,22 @@ var _ = Describe("updateE2e", func() {
 			SourceTest(appTestName, "binary", "file://"+tmpDir+"/sample-binary-testing-1.war")
 			EnvVarTest("wildfly-"+appTestName, "binary", "keyvaluekey1value1")
 		})
+	})
+
+	Context("odo login", func() {
+		It("should login with username and password", func() {
+			runCmd("oc logout")
+			runCmd("odo login --username developer --password developer")
+			userName := runCmd("oc whoami")
+			Expect(userName).To(ContainSubstring("developer"))
+		})
+		It("should login with token", func() {
+			userToken := runCmd("oc whoami -t")
+			runCmd("oc logout")
+			runCmd("odo login -t" + userToken)
+			token := runCmd("oc whoami -t")
+			Expect(token).To(ContainSubstring(userToken))
+		})
+
 	})
 })
