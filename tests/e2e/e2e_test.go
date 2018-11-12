@@ -647,6 +647,8 @@ var _ = Describe("updateE2e", func() {
 		It("should update component from binary to binary", func() {
 			runCmd("curl -o " + tmpDir + "/sample-binary-testing-2.war " +
 				"'https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/85354d9ee8583a9c1e64a331425eede235b07a9e/sample%2520(1).war'")
+
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-2.war")
 
 			// checking bc for updates
@@ -679,6 +681,7 @@ var _ = Describe("updateE2e", func() {
 			runCmd("git clone " + wildflyUri1 + " " +
 				tmpDir + "/katacoda-odo-backend-1")
 
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
 
 			// checking bc for updates
@@ -711,6 +714,7 @@ var _ = Describe("updateE2e", func() {
 			runCmd("git clone " + wildflyUri2 + " " +
 				tmpDir + "/katacoda-odo-backend-2")
 
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-2")
 
 			// checking bc for updates
@@ -740,6 +744,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from local to git", func() {
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --git " + wildflyUri1)
 
 			// checking bc for updates
@@ -769,6 +774,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from git to git", func() {
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --git " + wildflyUri2)
 
 			// checking bc for updates
@@ -798,6 +804,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from git to binary", func() {
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 
 			// checking bc for updates
@@ -827,6 +834,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from binary to git", func() {
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --git " + wildflyUri1)
 
 			// checking bc for updates
@@ -856,6 +864,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from git to local", func() {
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
 
 			// checking bc for updates
@@ -885,6 +894,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from local to binary", func() {
+			waitForDCOfComponentToRollout("wildfly")
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 
 			// checking bc for updates
