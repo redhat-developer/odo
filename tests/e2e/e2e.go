@@ -76,10 +76,10 @@ func waitForDeleteCmd(cmd string, object string) bool {
 	})
 }
 
-// waitForEqualCmd calls the waitForCmdOut function to wait and check if the output is equal to the given string within 5 mins
+// waitForServiceStatusCmd calls the waitForCmdOut function to wait and check if the output is equal to the given string within 5 mins
 // cmd is the command to run
 // expOut is the expected output
-func waitForServiceCreateCmd(cmd string, status string) bool {
+func waitForServiceStatusCmd(cmd string, status string) bool {
 
 	return waitForCmdOut(cmd, 5, func(output string) bool {
 		return output == status
