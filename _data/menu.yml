@@ -3,6 +3,7 @@ items:
   "Installation": "/installation/"
 
 advanced:
+  "CLI Reference": "/cli-reference/"
   "Development": "/development/"
 
 documentation_footer_1:
