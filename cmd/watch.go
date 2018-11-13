@@ -39,7 +39,7 @@ var watchCmd = &cobra.Command{
 		projectName := context.Project
 		applicationName := context.Application
 
-		// todo: check if we can use context.Component() here
+		// TODO: check if we can use context.Component() here
 		var componentName string
 		if len(args) == 0 {
 			var err error

@@ -83,7 +83,7 @@ If no app name is passed, a default app name will be auto-generated.
 		util.CheckError(err, "")
 		err = application.SetCurrent(client, appName)
 
-		// todo: updating the app name should be done via SetCurrent and passing the Context
+		// TODO: updating the app name should be done via SetCurrent and passing the Context
 		// not strictly needed here but Context should stay in sync
 		context.Application = appName
 
@@ -232,7 +232,7 @@ var applicationSetCmd = &cobra.Command{
 		util.CheckError(err, "")
 		fmt.Printf("Switched to application: %v in project: %v\n", args[0], projectName)
 
-		// todo: updating the app name should be done via SetCurrent and passing the Context
+		// TODO: updating the app name should be done via SetCurrent and passing the Context
 		// not strictly needed here but Context should stay in sync
 		context.Application = appName
 	},

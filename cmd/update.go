@@ -58,7 +58,7 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// todo: check if we can use context.Component() here
+		// TODO: check if we can use context.Component() here
 		var componentName string
 		if len(args) == 0 {
 			componentName, err := component.GetCurrent(applicationName, projectName)
