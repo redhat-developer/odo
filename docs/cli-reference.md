@@ -20,27 +20,28 @@ Find more information at https://github.com/redhat-developer/odo
 
 #### List of Commands
 
-|          NAME           |                                 DESCRIPTION                                  |
-|-------------------------|------------------------------------------------------------------------------|
-| [app](#app)             | Perform application operations                                               |
-| [catalog](#catalog)     | Catalog related operations                                                   |
-| [component](#component) | Components of application.                                                   |
-| [create](#create)       | Create a new component                                                       |
-| [delete](#delete)       | Delete an existing component                                                 |
-| [describe](#describe)   | Describe the given component                                                 |
-| [link](#link)           | Link component to a service                                                  |
-| [list](#list)           | List all components in the current application                               |
-| [log](#log)             | Retrieve the log for the given component.                                    |
-| [logout](#logout)       | Log out of the active session                                                |
-| [project](#project)     | Perform project operations                                                   |
-| [push](#push)           | Push source code to a component                                              |
-| [service](#service)     | Perform service catalog operations                                           |
-| [storage](#storage)     | Perform storage operations                                                   |
-| [update](#update)       | Update the source code path of a component                                   |
-| [url](#url)             | Expose component to the outside world                                        |
-| [utils](#utils)         | Utilities for completion, terminal commands and modifying Odo configurations |
-| [version](#version)     | Print the client version information                                         |
-| [watch](#watch)         | Watch for changes, update component on change                                |
+|          NAME           |                           DESCRIPTION                            |
+|-------------------------|------------------------------------------------------------------|
+| [app](#app)             | Perform application operations                                   |
+| [catalog](#catalog)     | Catalog related operations                                       |
+| [component](#component) | Components of application.                                       |
+| [create](#create)       | Create a new component                                           |
+| [delete](#delete)       | Delete an existing component                                     |
+| [describe](#describe)   | Describe the given component                                     |
+| [link](#link)           | Link component to a service or component                         |
+| [list](#list)           | List all components in the current application                   |
+| [log](#log)             | Retrieve the log for the given component.                        |
+| [login](#login)         | Login to cluster                                                 |
+| [logout](#logout)       | Log out of the current OpenShift session                         |
+| [project](#project)     | Perform project operations                                       |
+| [push](#push)           | Push source code to a component                                  |
+| [service](#service)     | Perform service catalog operations                               |
+| [storage](#storage)     | Perform storage operations                                       |
+| [update](#update)       | Update the source code path of a component                       |
+| [url](#url)             | Expose component to the outside world                            |
+| [utils](#utils)         | Utilities for terminal commands and modifying Odo configurations |
+| [version](#version)     | Print the client version information                             |
+| [watch](#watch)         | Watch for changes, update component on change                    |
 
 
 #### CLI Structure
@@ -48,12 +49,12 @@ Find more information at https://github.com/redhat-developer/odo
 ```sh
 odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : Odo (Openshift Do)
     app --short : Perform application operations
-        create : Create an application
-        delete --force : Delete the given application
-        describe : Describe the given application
-        get --short : Get the active application
+        create --project : Create an application
+        delete --force --project : Delete the given application
+        describe --project : Describe the given application
+        get --project --short : Get the active application
         list --project : List all applications in the current project
-        set : Set application as active
+        set --project : Set application as active
     catalog : Catalog related operations
         describe : Describe catalog item
             service : Describe a service
@@ -63,45 +64,46 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         search : Search available component & service types.
             component : Search component type in catalog
             service : Search service type in catalog
-    component --short : Components of application.
-        get --short : Get currently active component
-        set : Set active component.
-    create --binary --env --git --local --port : Create a new component
-    delete --force : Delete an existing component
-    describe : Describe the given component
-    link --component : Link component to a service
-    list : List all components in the current application
-    log --follow : Retrieve the log for the given component.
-    logout : Log out of the active session
+    component --project --short : Components of application.
+        get --app --project --short : Get currently active component
+        set --app --project : Set active component.
+    create --app --binary --env --git --local --port --project : Create a new component
+    delete --app --force --project : Delete an existing component
+    describe --app --project : Describe the given component
+    link --app --component --port --project --wait : Link component to a service or component
+    list --app --project : List all components in the current application
+    log --app --follow --project : Retrieve the log for the given component.
+    login --certificate-authority --insecure-skip-tls-verify --password --token --username : Login to cluster
+    logout : Log out of the current OpenShift session
     project --short : Perform project operations
         create : Create a new project
         delete --force : Delete a project
         get --short : Get the active project
         list : List all the projects
         set --short : Set the current active project
-    push --local : Push source code to a component
+    push --app --local --project : Push source code to a component
     service : Perform service catalog operations
-        create --parameters --plan : Create a new service
-        delete --force : Delete an existing service
-        list : List all services in the current application
+        create --app --parameters --plan --project : Create a new service
+        delete --app --force --project : Delete an existing service
+        list --app --project : List all services in the current application
     storage : Perform storage operations
-        create --component --path --size : Create storage and mount to a component
-        delete --force : Delete storage from component
-        list --all --component : List storage attached to a component
-        mount --component --path : mount storage to a component
-        unmount --component : Unmount storage from the given path or identified by its name, from the current component
-    update --binary --git --local : Update the source code path of a component
+        create --app --component --path --project --size : Create storage and mount to a component
+        delete --app --component --force --project : Delete storage from component
+        list --all --app --component --project : List storage attached to a component
+        mount --app --component --path --project : mount storage to a component
+        unmount --app --component --project : Unmount storage from the given path or identified by its name, from the current component
+    update --app --binary --git --local --project : Update the source code path of a component
     url : Expose component to the outside world
-        create --application --component --port : Create a URL for a component
-        delete --component --force : Delete a URL
-        list --application --component : List URLs
+        create --app --component --open --port --project : Create a URL for a component
+        delete --app --component --force --project : Delete a URL
+        list --app --component --project : List URLs
     utils : Utilities for terminal commands and modifying Odo configurations
         config : Modifies configuration settings
             set : Set a value in odo config file
             view : View current configuration values
         terminal : Add Odo terminal support to your development environment
-    version : Print the client version information
-    watch --delay --ignore : Watch for changes, update component on change
+    version --client : Print the client version information
+    watch --app --delay --ignore --project : Watch for changes, update component on change
 
 ```
 
@@ -262,7 +264,7 @@ Describe the given component.
 
 ## link
 
-`link <service> --component [component]`
+`link <service> --component [component] OR link <component> --component [component]`
 
 > Example using link
 
@@ -272,17 +274,48 @@ Describe the given component.
 
   # Link component 'nodejs' to the 'my-postgresql' service
   odo link my-postgresql --component nodejs
+
+  # Link current component to the 'backend' component (backend must have a single exposed port)
+  odo link backend
+
+  # Link component 'nodejs' to the 'backend' component
+  odo link backend --component nodejs
+
+  # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed) 
+  odo link backend --port 8080
 	
 ```
 
 
-Link component to a service
+Link component to a service or component
 
-If source component is not provided, the link is created to the current active
-component.
+If the source component is not provided, the current active component is assumed.
 
-During the linking process, the secret that is created during the service creation (odo service create),
-is injected into the component.
+In both use cases, link adds the appropriate secret to the environment of the source component. 
+The source component can then consume the entries of the secret as environment variables.
+
+For example:
+
+We have created a frontend application called 'frontend':
+odo create nodejs frontend
+
+We've also created a backend application called 'backend' with port 8080 exposed:
+odo create nodejs backend --port 8080
+
+You can now link the two applications:
+odo link backend --component frontend
+
+Now the frontend has 2 ENV variables it can use:
+COMPONENT_BACKEND_HOST=backend-app
+COMPONENT_BACKEND_PORT=8080
+
+If you wish to use a database, we can use the Service Catalog and link it to our backend:
+odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret
+odo link dh-postgresql-apb
+
+Now backend has 2 ENV variables it can use:
+DB_USER=luke
+DB_PASSWORD=secret
 
 
 ## list
@@ -315,6 +348,31 @@ List all components in the current application.
 
 Retrieve the log for the given component.
 
+## login
+
+`login`
+
+> Example using login
+
+```sh
+
+  # Log in interactively
+  odo login
+
+  # Log in to the given server with the given certificate authority file
+  odo login localhost:8443 --certificate-authority=/path/to/cert.crt
+
+  # Log in to the given server with the given credentials (basic auth)
+  odo login localhost:8443 --username=myuser --password=mypass
+
+  # Log in to the given server with the given credentials (token)
+  odo login localhost:8443 --token=xxxxxxxxxxxxxxxxxxxxxxx
+	
+```
+
+
+Login to cluster
+
 ## logout
 
 `logout`
@@ -328,7 +386,7 @@ Retrieve the log for the given component.
 ```
 
 
-Log out of the active session
+Log out of the current OpenShift session
 
 ## project
 
@@ -508,11 +566,12 @@ The URLs that are generated using this command, can be used to access the deploy
   # Zsh terminal PS1 support
   source <(odo utils terminal zsh)
 
-  # Set a configuration value
+
+   # Set a configuration value
    odo utils config set UpdateNotification false
-   odo utils config set NamePrefix ""
    odo utils config set NamePrefix "app"
-  
+   odo utils config set timeout 20
+	
   # For viewing the current configuration
    odo utils config view
   
