@@ -279,7 +279,7 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
     ```sh
     RELEASE=X.X.X
     wget https://github.com/redhat-developer/odo/archive/v$RELEASE.tar.gz
-    sha256 v$RELEASE.tar.gz
+    sha256sum v$RELEASE.tar.gz
     ```
 
     Then open a PR to update: [odo.rb](https://github.com/kadel/homebrew-odo/blob/master/Formula/odo.rb) in [kadel/homebrew-odo](https://github.com/kadel/homebrew-odo)
