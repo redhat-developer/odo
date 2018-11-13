@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"os"
@@ -15,7 +16,8 @@ var logoutCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
 		err := client.RunLogout(os.Stdout)
 		util.CheckError(err, "")
 	},
