@@ -15,4 +15,11 @@ exceptions:
   # wwhrd currently does not detect ISC which is compatible with Odo so, add it under exceptions to avoid errors due to it being not recognised
   - github.com/davecgh/go-spew/spew/...
   # wwhrd currently does not detect ISC which is compatible with Odo so, add it under exceptions to avoid errors due to it being not recognised
+  # we use this file in cli documentation
   - github.com/olekukonko/tablewriter
+  # gocertifi contains CA bundle and SSL certs which is required for OpenShift
+  # This is OpenShift dependency, ODO do not use this directly
+  - github.com/certifi/gocertifi
+  # go-digest contains common digest package used across the container ecosystem
+  # This is OpenShift dependency, ODO do not use this directly
+  - github.com/opencontainers/go-digest

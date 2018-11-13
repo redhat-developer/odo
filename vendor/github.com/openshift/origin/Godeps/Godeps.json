@@ -1,0 +1,17 @@
+{
+	"ImportPath": "github.com/openshift/origin",
+	"Deps": [
+		{
+			"REBASE TODO": "git describe --long --tags --abbrev=7",
+			"ImportPath": "github.com/coreos/etcd/etcdserver",
+			"Comment": "v3.2.16-0-g121edf0",
+			"Rev": "121edf0467052d55876a817b89875fb39a99bf78"
+		},
+		{
+			"REBASE TODO": "git describe --long --tags --abbrev=7",
+			"ImportPath": "k8s.io/kubernetes/pkg/api",
+			"Comment": "v1.11.0-62-gd4cacc0",
+			"Rev": "d4cacc043ac762235e16cb7361d527cb4189393c"
+		}
+	]
+}
