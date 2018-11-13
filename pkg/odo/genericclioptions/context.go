@@ -118,7 +118,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		util.CheckError(err, "could not get current component")
 	} else {
 		// if flag is set, check that the specified component exists
-		context.existsOrExit(cmpFlag)
+		context.checkComponentExistsOrFail(cmpFlag)
 		cmp = cmpFlag
 	}
 
@@ -174,7 +174,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		cmp := optionalComponent[0]
 		// only check the component if we passed a non-empty string, otherwise return the current component set in NewContext
 		if len(cmp) > 0 {
-			o.existsOrExit(cmp)
+			o.checkComponentExistsOrFail(cmp)
 			o.cmp = cmp // update context
 		}
 	default:
@@ -187,7 +187,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 }
 
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
-func (o *Context) existsOrExit(cmp string) {
+func (o *Context) checkComponentExistsOrFail(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
 	util.CheckError(err, "")
 	if !exists {
