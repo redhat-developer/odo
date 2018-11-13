@@ -14,6 +14,7 @@ import (
 
 var (
 	port string
+	wait bool
 )
 
 var linkCmd = &cobra.Command{
@@ -93,15 +94,34 @@ DB_PASSWORD=secret
 
 			serviceName := suppliedName
 
-			// we also need to check whether there is a secret with the same name as the service
-			// the secret should have been created along with the secret
-			_, err = client.GetSecret(serviceName, projectName)
+			// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
+			// which we can link to
+			_, err = client.GetServiceBinding(serviceName, projectName)
 			if err != nil {
-				fmt.Printf(`Secret %s should have been created along with the service
-If you previously created the service with 'odo service create', then you may have to wait a few seconds until OpenShift provisions it.
-If not, then please delete the service and recreate it using 'odo service create %s`, serviceName, serviceName)
+				fmt.Printf(`The service was not created via Odo. 
+Please delete the service and recreate it using 'odo service create %s'`, serviceName)
 				os.Exit(1)
 			}
+
+			if wait {
+				// we wait until the secret has been created on the OpenShift
+				// this is done because the secret is only created after the Pod that runs the
+				// service is in running state.
+				// This can take a long time to occur if the image of the service has yet to be downloaded
+				fmt.Printf("Waiting for secret of service %s to come up\n", serviceName)
+				_, err = client.WaitAndGetSecret(serviceName, projectName)
+				util.CheckError(err, "")
+			} else {
+				// we also need to check whether there is a secret with the same name as the service
+				// the secret should have been created along with the secret
+				_, err = client.GetSecret(serviceName, projectName)
+				if err != nil {
+					fmt.Printf(`The service %s created by 'odo service create' is being provisioned.
+You may have to wait a few seconds until OpenShift fully provisions it.`, serviceName)
+					os.Exit(1)
+				}
+			}
+
 			err = client.LinkSecret(serviceName, sourceComponentName, applicationName, projectName)
 			util.CheckError(err, "")
 			fmt.Printf("Service %s has been successfully linked to the component %s.\n", serviceName, sourceComponentName)
@@ -124,6 +144,7 @@ Please create one of the two before attempting to use odo link`, suppliedName)
 
 func init() {
 	linkCmd.PersistentFlags().StringVar(&port, "port", "", "Port of the backend to which to link")
+	linkCmd.PersistentFlags().BoolVarP(&wait, "wait", "w", false, "If enabled, the link command will wait for the service to be provisioned")
 
 	// Add a defined annotation in order to appear in the help menu
 	linkCmd.Annotations = map[string]string{"command": "component"}

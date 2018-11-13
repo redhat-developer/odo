@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	appsv1 "github.com/openshift/api/apps/v1"
 	"strings"
 
 	"sort"
@@ -13,6 +14,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 )
+
+const provisionedAndBoundStatus = "ProvisionedAndBound"
+const provisionedAndLinkedStatus = "ProvisionedAndLinked"
 
 // ServiceInfo holds all important information about one service
 type ServiceInfo struct {
@@ -130,6 +134,75 @@ func List(client *occlient.Client, applicationName string) ([]ServiceInfo, error
 	}
 
 	return services, nil
+}
+
+// ListWithDetailedStatus lists all the deployed services and additionally provides a "smart" status for each one of them
+// The smart status takes into account how Services are used in odo.
+// So when a secret has been created as a result of the created ServiceBinding, we set the appropriate status
+// Same for when the secret has been "linked" into the deploymentconfig
+func ListWithDetailedStatus(client *occlient.Client, applicationName string) ([]ServiceInfo, error) {
+
+	services, err := List(client, applicationName)
+	if err != nil {
+		return nil, err
+	}
+
+	// retrieve secrets in order to set status
+	secrets, err := client.ListSecrets("")
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to list secrets as part of the bindings check")
+	}
+
+	// use the standard selector to retrieve DeploymentConfigs
+	// these are used in order to update the status of a service
+	// because if a DeploymentConfig contains a secret with the service name
+	// then it has been successfully linked
+	labels := map[string]string{
+		applabels.ApplicationLabel: applicationName,
+	}
+	applicationSelector := util.ConvertLabelsToSelector(labels)
+	deploymentConfigs, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// go through each service and see if there is a secret that has been created
+	// if so, update the status of the service
+	for i, service := range services {
+		for _, secret := range secrets {
+			if secret.Name == service.Name {
+				// this is the default status when the secret exists
+				services[i].Status = provisionedAndBoundStatus
+
+				// if we find that the dc contains a link to the secret
+				// we update the status to be even more specific
+				updateStatusIfMatchingDeploymentExists(deploymentConfigs, secret.Name, services, i)
+
+				break
+			}
+		}
+	}
+
+	return services, nil
+}
+
+func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secretName string,
+	services []ServiceInfo, index int) {
+
+	for _, dc := range dcs {
+		foundMatchingSecret := false
+		for _, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
+			if env.SecretRef.Name == secretName {
+				services[index].Status = provisionedAndLinkedStatus
+			}
+			foundMatchingSecret = true
+			break
+		}
+
+		if foundMatchingSecret {
+			break
+		}
+	}
 }
 
 // GetSvcByType returns the matching (by type) service or nil of there are no matches

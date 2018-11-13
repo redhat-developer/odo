@@ -7,7 +7,7 @@ import (
 
 var _ = Describe("odoServiceE2e", func() {
 
-	Context("odo component creation", func() {
+	Context("odo service creation", func() {
 		It("should be able to create a service", func() {
 			runCmd("odo service create mysql-persistent")
 			cmd := "oc get serviceinstance mysql-persistent -o go-template='{{ (index .status.conditions 0).reason}}'"

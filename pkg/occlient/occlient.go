@@ -1504,6 +1504,30 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 	}
 }
 
+// WaitAndGetSecret blocks and waits until the secret is available
+func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret, error) {
+	glog.V(4).Infof("Waiting for secret %s to become available", name)
+
+	w, err := c.kubeClient.CoreV1().Secrets(namespace).Watch(metav1.ListOptions{
+		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to watch secret")
+	}
+	defer w.Stop()
+	for {
+		val, ok := <-w.ResultChan()
+		if !ok {
+			break
+		}
+		if e, ok := val.Object.(*corev1.Secret); ok {
+			glog.V(4).Infof("Secret %s now exists", e.Name)
+			return e, nil
+		}
+	}
+	return nil, errors.Errorf("unknown error while waiting for secret '%s'", name)
+}
+
 // FollowBuildLog stream build log to stdout
 func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 	buildLogOptions := buildv1.BuildLogOptions{
@@ -1906,6 +1930,11 @@ func (c *Client) CreateServiceBinding(componentName string, namespace string) er
 	return nil
 }
 
+// GetServiceBinding returns the ServiceBinding named serviceName in the namespace namespace
+func (c *Client) GetServiceBinding(serviceName string, namespace string) (*scv1beta1.ServiceBinding, error) {
+	return c.serviceCatalogClient.ServiceBindings(namespace).Get(serviceName, metav1.GetOptions{})
+}
+
 // serviceInstanceParameters converts a map of variable assignments to a byte encoded json document,
 // which is what the ServiceCatalog API consumes.
 func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension, error) {
@@ -2104,9 +2133,14 @@ func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
 
 // ListSecrets lists all the secrets based on the given label selector
 func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
-	secretList, err := c.kubeClient.CoreV1().Secrets(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
+	listOptions := metav1.ListOptions{}
+	if len(labelSelector) > 0 {
+		listOptions = metav1.ListOptions{
+			LabelSelector: labelSelector,
+		}
+	}
+
+	secretList, err := c.kubeClient.CoreV1().Secrets(c.Namespace).List(listOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get secret list")
 	}

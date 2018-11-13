@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/pkg/errors"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
@@ -341,6 +345,245 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 			t.Error("test failed, expected: false, got true")
 		} else if err != nil && !tt.wantErr {
 			t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+		}
+	}
+}
+
+func TestListWithDetailedStatus(t *testing.T) {
+
+	type args struct {
+		Project  string
+		Selector string
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		serviceList scv1beta1.ServiceInstanceList
+		secretList  corev1.SecretList
+		dcList      appsv1.DeploymentConfigList
+		output      []ServiceInfo
+	}{
+		{
+			name: "Case 1: services with various statuses, some bound and some linked",
+			args: args{
+				Project:  "myproject",
+				Selector: "app.kubernetes.io/component-name=mysql-persistent,app.kubernetes.io/name=app",
+			},
+			serviceList: scv1beta1.ServiceInstanceList{
+				Items: []scv1beta1.ServiceInstance{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mysql-persistent",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "mysql-persistent",
+								componentlabels.ComponentTypeLabel: "mysql-persistent",
+							},
+							Namespace: "myproject",
+						},
+						Spec: scv1beta1.ServiceInstanceSpec{
+							PlanReference: scv1beta1.PlanReference{
+								ClusterServiceClassExternalName: "mysql-persistent",
+								ClusterServicePlanExternalName:  "default",
+							},
+						},
+						Status: scv1beta1.ServiceInstanceStatus{
+							Conditions: []scv1beta1.ServiceInstanceCondition{
+								{
+									Reason: "ProvisionedSuccessfully",
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "postgresql-ephemeral",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "postgresql-ephemeral",
+								componentlabels.ComponentTypeLabel: "postgresql-ephemeral",
+							},
+							Namespace: "myproject",
+						},
+						Spec: scv1beta1.ServiceInstanceSpec{
+							PlanReference: scv1beta1.PlanReference{
+								ClusterServiceClassExternalName: "postgresql-ephemeral",
+								ClusterServicePlanExternalName:  "default",
+							},
+						},
+						Status: scv1beta1.ServiceInstanceStatus{
+							Conditions: []scv1beta1.ServiceInstanceCondition{
+								{
+									Reason: "ProvisionedSuccessfully",
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mongodb",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "mongodb",
+								componentlabels.ComponentTypeLabel: "mongodb",
+							},
+							Namespace: "myproject",
+						},
+						Spec: scv1beta1.ServiceInstanceSpec{
+							PlanReference: scv1beta1.PlanReference{
+								ClusterServiceClassExternalName: "mongodb",
+								ClusterServicePlanExternalName:  "default",
+							},
+						},
+						Status: scv1beta1.ServiceInstanceStatus{
+							Conditions: []scv1beta1.ServiceInstanceCondition{
+								{
+									Reason: "ProvisionedSuccessfully",
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "jenkins-persistent",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "jenkins-persistent",
+								componentlabels.ComponentTypeLabel: "jenkins-persistent",
+							},
+							Namespace: "myproject",
+						},
+						Spec: scv1beta1.ServiceInstanceSpec{
+							PlanReference: scv1beta1.PlanReference{
+								ClusterServiceClassExternalName: "jenkins-persistent",
+								ClusterServicePlanExternalName:  "default",
+							},
+						},
+						Status: scv1beta1.ServiceInstanceStatus{
+							Conditions: []scv1beta1.ServiceInstanceCondition{
+								{
+									Reason: "Provisioning",
+								},
+							},
+						},
+					},
+				},
+			},
+			secretList: corev1.SecretList{
+				Items: []corev1.Secret{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "dummySecret",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "postgresql-ephemeral",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mysql-persistent",
+						},
+					},
+				},
+			},
+			dcList: appsv1.DeploymentConfigList{
+				Items: []appsv1.DeploymentConfig{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								applabels.ApplicationLabel: "app",
+							},
+						},
+						Spec: appsv1.DeploymentConfigSpec{
+							Template: &corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name: "dummyContainer",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								applabels.ApplicationLabel: "app",
+							},
+						},
+						Spec: appsv1.DeploymentConfigSpec{
+							Template: &corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											EnvFrom: []corev1.EnvFromSource{
+												{
+													SecretRef: &corev1.SecretEnvSource{
+														LocalObjectReference: corev1.LocalObjectReference{
+															Name: "mysql-persistent",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			output: []ServiceInfo{
+				{
+					Name:   "mysql-persistent",
+					Status: "ProvisionedAndLinked",
+					Type:   "mysql-persistent",
+				},
+				{
+					Name:   "postgresql-ephemeral",
+					Status: "ProvisionedAndBound",
+					Type:   "postgresql-ephemeral",
+				},
+				{
+					Name:   "mongodb",
+					Status: "ProvisionedSuccessfully",
+					Type:   "mongodb",
+				},
+				{
+					Name:   "jenkins-persistent",
+					Status: "Provisioning",
+					Type:   "jenkins-persistent",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		client, fakeClientSet := occlient.FakeNew()
+
+		//fake the services
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
+			return true, &tt.serviceList, nil
+		})
+
+		//fake the secrets
+		fakeClientSet.Kubernetes.PrependReactor("list", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
+			return true, &tt.secretList, nil
+		})
+
+		//fake the dcs
+		fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+			return true, &tt.dcList, nil
+		})
+
+		svcInstanceList, _ := ListWithDetailedStatus(client, "app")
+
+		if !reflect.DeepEqual(tt.output, svcInstanceList) {
+			t.Errorf("expected output: %#v,got: %#v", tt.serviceList, svcInstanceList)
 		}
 	}
 }
