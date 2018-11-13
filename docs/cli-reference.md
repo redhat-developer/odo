@@ -20,26 +20,27 @@ Find more information at https://github.com/redhat-developer/odo
 
 #### List of Commands
 
-|          NAME           |                           DESCRIPTION                            |
-|-------------------------|------------------------------------------------------------------|
-| [app](#app)             | Perform application operations                                   |
-| [catalog](#catalog)     | Catalog related operations                                       |
-| [component](#component) | Components of application.                                       |
-| [create](#create)       | Create a new component                                           |
-| [delete](#delete)       | Delete an existing component                                     |
-| [describe](#describe)   | Describe the given component                                     |
-| [link](#link)           | Link component to a service                                      |
-| [list](#list)           | List all components in the current application                   |
-| [log](#log)             | Retrieve the log for the given component.                        |
-| [project](#project)     | Perform project operations                                       |
-| [push](#push)           | Push source code to a component                                  |
-| [service](#service)     | Perform service catalog operations                               |
-| [storage](#storage)     | Perform storage operations                                       |
-| [update](#update)       | Update the source code path of a component                       |
-| [url](#url)             | Expose component to the outside world                            |
-| [utils](#utils)         | Utilities for terminal commands and modifying Odo configurations |
-| [version](#version)     | Print the client version information                             |
-| [watch](#watch)         | Watch for changes, update component on change                    |
+|          NAME           |                                 DESCRIPTION                                  |
+|-------------------------|------------------------------------------------------------------------------|
+| [app](#app)             | Perform application operations                                               |
+| [catalog](#catalog)     | Catalog related operations                                                   |
+| [component](#component) | Components of application.                                                   |
+| [create](#create)       | Create a new component                                                       |
+| [delete](#delete)       | Delete an existing component                                                 |
+| [describe](#describe)   | Describe the given component                                                 |
+| [link](#link)           | Link component to a service                                                  |
+| [list](#list)           | List all components in the current application                               |
+| [log](#log)             | Retrieve the log for the given component.                                    |
+| [logout](#logout)       | Log out of the active session                                                |
+| [project](#project)     | Perform project operations                                                   |
+| [push](#push)           | Push source code to a component                                              |
+| [service](#service)     | Perform service catalog operations                                           |
+| [storage](#storage)     | Perform storage operations                                                   |
+| [update](#update)       | Update the source code path of a component                                   |
+| [url](#url)             | Expose component to the outside world                                        |
+| [utils](#utils)         | Utilities for completion, terminal commands and modifying Odo configurations |
+| [version](#version)     | Print the client version information                                         |
+| [watch](#watch)         | Watch for changes, update component on change                                |
 
 
 #### CLI Structure
@@ -71,6 +72,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
     link --component : Link component to a service
     list : List all components in the current application
     log --follow : Retrieve the log for the given component.
+    logout : Log out of the active session
     project --short : Perform project operations
         create : Create a new project
         delete --force : Delete a project
@@ -312,6 +314,21 @@ List all components in the current application.
 
 
 Retrieve the log for the given component.
+
+## logout
+
+`logout`
+
+> Example using logout
+
+```sh
+  # Logout
+  odo logout
+	
+```
+
+
+Log out of the active session
 
 ## project
 
