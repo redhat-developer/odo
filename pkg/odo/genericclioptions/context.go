@@ -49,7 +49,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	default:
 		// safeguard: fail if more than one optional bool is passed because it would be a programming error
 		fmt.Printf("client function only accepts one optional argument, was given: %v", shouldSkipConnectionCheck)
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	client, err := occlient.New(skipConnectionCheck)
@@ -168,7 +168,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we exit with error
 		if !allowEmpty && len(o.cmp) == 0 {
 			fmt.Println("No component is set")
-			os.Exit(-1)
+			os.Exit(1)
 		}
 	case 1:
 		cmp := optionalComponent[0]
@@ -180,7 +180,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 	default:
 		// safeguard: fail if more than one optional string is passed because it would be a programming error
 		fmt.Printf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	return o.cmp
@@ -192,7 +192,7 @@ func (o *Context) checkComponentExistsOrFail(cmp string) {
 	util.CheckError(err, "")
 	if !exists {
 		fmt.Printf("Component %v does not exist in application %s\n", cmp, o.Application)
-		os.Exit(-1)
+		os.Exit(1)
 	}
 }
 
