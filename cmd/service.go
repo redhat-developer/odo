@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/application"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
@@ -47,17 +47,9 @@ A full list of service types that can be deployed are available using: 'odo cata
 	`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		util.GetAndSetNamespace(client)
-		var applicationName string
-		var err error
-		if util.ApplicationFlag != "" && util.ProjectFlag != "" {
-			applicationName = util.GetAppName(client)
-		} else {
-
-			applicationName, err = application.GetCurrentOrGetCreateSetDefault(client)
-			util.CheckError(err, "")
-		}
+		context := genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		// make sure the service type exists
 		serviceType := args[0]
@@ -125,13 +117,11 @@ var serviceDeleteCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-
 		glog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
 
-		client := util.GetOcClient()
-
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		serviceName := args[0]
 
@@ -171,10 +161,9 @@ var serviceListCmd = &cobra.Command{
 	`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
 		services, err := svc.ListWithDetailedStatus(client, applicationName)
 		util.CheckError(err, "Service Catalog is not enabled in your cluster")

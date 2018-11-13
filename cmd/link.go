@@ -3,11 +3,12 @@ package cmd
 import (
 	"fmt"
 	"github.com/golang/glog"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/secret"
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
@@ -67,17 +68,11 @@ DB_PASSWORD=secret
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-		sourceComponentName := util.GetComponent(client, util.ComponentFlag, applicationName)
-
-		exists, err := component.Exists(client, sourceComponentName, applicationName)
-		util.CheckError(err, "")
-		if !exists {
-			fmt.Printf("Component %v does not exist\n", sourceComponentName)
-			os.Exit(1)
-		}
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
+		applicationName := context.Application
+		sourceComponentName := context.Component()
 
 		suppliedName := args[0]
 

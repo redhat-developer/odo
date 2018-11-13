@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"path/filepath"
@@ -33,10 +34,10 @@ var updateCmd = &cobra.Command{
   odo update wildfly --binary ./downloads/sample.war
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
-
-		projectName := util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
+		applicationName := context.Application
 
 		stdout := color.Output
 
@@ -57,8 +58,8 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// TODO: check if we can use context.Component() here
 		var componentName string
-
 		if len(args) == 0 {
 			componentName, err := component.GetCurrent(applicationName, projectName)
 			util.CheckError(err, "unable to get current component")

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"os"
 	"strings"
 
@@ -53,11 +54,10 @@ The created URL can be used to access the specified component from outside the O
 	`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
+		componentName := context.Component()
 
 		var urlName string
 		switch len(args) {
@@ -101,13 +101,10 @@ var urlDeleteCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-
-		// Initialization
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
+		componentName := context.Component()
 
 		urlName := args[0]
 
@@ -147,11 +144,10 @@ var urlListCmd = &cobra.Command{
 	`,
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := odoutil.GetOcClient()
-
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-		componentName := odoutil.GetComponent(client, odoutil.ComponentFlag, applicationName)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
+		componentName := context.Component()
 
 		urls, err := url.List(client, componentName, applicationName)
 		odoutil.CheckError(err, "")

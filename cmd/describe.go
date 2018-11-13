@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	"os"
-
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 
@@ -18,25 +16,17 @@ var describeCmd = &cobra.Command{
 	`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := util.GetOcClient()
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
-		util.GetAndSetNamespace(client)
-		applicationName := util.GetAppName(client)
-
+		// If no arguments have been passed, get the current component
+		// else, use the first argument and check to see if it exists
 		var componentName string
 		if len(args) == 0 {
-			componentName = util.GetComponent(client, "", applicationName)
+			componentName = context.Component()
 		} else {
-
-			componentName = args[0]
-
-			// Checks to see if the component actually exists
-			exists, err := component.Exists(client, componentName, applicationName)
-			util.CheckError(err, "")
-			if !exists {
-				fmt.Printf("Component with the name %s does not exist in the current application\n", componentName)
-				os.Exit(1)
-			}
+			componentName = context.Component(args[0])
 		}
 		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, componentName, applicationName)
 		util.CheckError(err, "")

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"net/url"
 	"os"
@@ -33,18 +34,17 @@ var pushCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := color.Output
-		client := odoutil.GetOcClient()
 
-		odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		applicationName := context.Application
 
-		var inputName string
-		if len(args) == 0 {
-			inputName = ""
-		} else {
-			inputName = args[0]
+		var argComponent string
+		if len(args) == 1 {
+			argComponent = args[0]
 		}
-		componentName := odoutil.GetComponent(client, inputName, applicationName)
+		componentName := context.Component(argComponent)
+
 		fmt.Printf("Pushing changes to component: %v\n", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)

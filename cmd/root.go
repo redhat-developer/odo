@@ -124,7 +124,7 @@ func init() {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
-	rootCmd.PersistentFlags().BoolVar(&util.GlobalSkipConnectionCheck, "skip-connection-check", false, "Skip cluster check")
+	rootCmd.PersistentFlags().Bool(util.SkipConnectionCheckFlagName, false, "Skip cluster check")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.CommandLine.Set("logtostderr", "true")
 

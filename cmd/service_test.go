@@ -5,6 +5,7 @@ import (
 	"github.com/posener/complete"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -62,10 +63,11 @@ func TestCompletions(t *testing.T) {
 			},
 		}, nil
 	})
+	context := genericclioptions.NewFakeContext("", "", "", client)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := complete.Args{Last: tt.last}
-			got := tt.handler(a, client)
+			got := tt.handler(nil, a, context)
 			if !equal(got, tt.want) {
 				t.Errorf("Failed %s: got: %q, want: %q", t.Name(), got, tt.want)
 			}

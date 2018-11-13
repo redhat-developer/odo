@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"net/url"
 	"os"
 	"runtime"
@@ -33,11 +34,12 @@ var watchCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		stdout := os.Stdout
-		client := odoutil.GetOcClient()
+		context := genericclioptions.NewContext(cmd)
+		client := context.Client
+		projectName := context.Project
+		applicationName := context.Application
 
-		projectName := odoutil.GetAndSetNamespace(client)
-		applicationName := odoutil.GetAppName(client)
-
+		// TODO: check if we can use context.Component() here
 		var componentName string
 		if len(args) == 0 {
 			var err error
