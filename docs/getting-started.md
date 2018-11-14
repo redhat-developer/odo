@@ -237,7 +237,7 @@ Below is an example of how to successfully import and use the [redhat-openjdk-18
 
 ```sh
 # Import the image into OpenShift
-oc import openjdk18 --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift --confirm
+oc import-image openjdk18 --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift --confirm
 
 # Tag the image so it is accessible by Odo
 oc annotate istag/openjdk18:latest tags=builder
