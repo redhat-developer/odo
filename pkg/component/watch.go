@@ -109,22 +109,37 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 var UserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch based on user request")
 
+// WatchParameters is designed to hold the controllables and attributes that the watch function works on
+type WatchParameters struct {
+	// Name of component that is to be watched
+	ComponentName string
+	// Name of application, the component is part of
+	ApplicationName string
+	// The path to the source of component(local or binary)
+	Path string
+	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
+	FileIgnores []string
+	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
+	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string) error
+	// This is a channel added to signal readiness of the watch command to the external channel listeners
+	StartChan chan string
+	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
+	ExtChan chan string
+	// Interval of time before pushing changes to remote(component) pod
+	PushDiffDelay int
+}
+
 // WatchAndPush watches path, if something changes in  that path it calls PushLocal
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
 // Parameters:
 //	client: occlient instance
-//	componentName: Name of component that is to be watched
-//	applicationName: Name of application, the component is part of
-//	path: The path to the source of component(local or binary)
 //	out: io Writer instance
-//	ignores: List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
-//	delayInterval: Interval of time before pushing changes to remote(component) pod
-//	extChan: This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
-//	pushChangesToPod: Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-func WatchAndPush(client *occlient.Client, componentName string, applicationName, path string, out io.Writer, ignores []string, delayInterval int, extChan chan string, pushChangesToPod func(*occlient.Client, string, string, string, io.Writer, []string) error) error {
+// 	parameters: WatchParameters
+func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParameters) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
-	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, ignores)
+	// delayInterval int
+	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
 	// these variables must be accessed while holding the changeLock
 	// mutex as they are shared between goroutines to communicate
@@ -142,12 +157,12 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 		return fmt.Errorf("error setting up filesystem watcher: %v", err)
 	}
 	defer watcher.Close()
-	defer close(extChan)
+	defer close(parameters.ExtChan)
 
 	go func() {
 		for {
 			select {
-			case extMsg := <-extChan:
+			case extMsg := <-parameters.ExtChan:
 				if extMsg == "Stop" {
 					changeLock.Lock()
 					watchError = UserRequestedWatchExit
@@ -197,8 +212,8 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 				// ignores paths because, when a directory that is ignored, is deleted,
 				// because its parent is watched, the fsnotify automatically raises an event
 				// for it.
-				matched, err := isRegExpMatch(event.Name, ignores)
-				glog.V(4).Infof("Matching %s with %s\n.matched %v, err: %v", event.Name, ignores, matched, err)
+				matched, err := isRegExpMatch(event.Name, parameters.FileIgnores)
+				glog.V(4).Infof("Matching %s with %s\n.matched %v, err: %v", event.Name, parameters.FileIgnores, matched, err)
 				if err != nil {
 					watchError = errors.Wrap(err, "unable to watch changes")
 				}
@@ -213,7 +228,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 						glog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
 					}
 				} else {
-					if e := addRecursiveWatch(watcher, event.Name, ignores); e != nil && watchError == nil {
+					if e := addRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
 						watchError = e
 					}
 				}
@@ -225,13 +240,13 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 			}
 		}
 	}()
-	err = addRecursiveWatch(watcher, path, ignores)
+	err = addRecursiveWatch(watcher, parameters.Path, parameters.FileIgnores)
 	if err != nil {
-		return fmt.Errorf("error watching source path %s: %v", path, err)
+		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
-	extChan <- "Start"
+	parameters.StartChan <- "Start"
 
-	delay := time.Duration(delayInterval) * time.Second
+	delay := time.Duration(parameters.PushDiffDelay) * time.Second
 	ticker := time.NewTicker(delay)
 	showWaitingMessage := true
 	defer ticker.Stop()
@@ -241,7 +256,7 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 			return watchError
 		}
 		if showWaitingMessage {
-			fmt.Fprintf(out, "Waiting for something to change in %s\n", path)
+			fmt.Fprintf(out, "Waiting for something to change in %s\n", parameters.Path)
 			showWaitingMessage = false
 		}
 		// if a change happened more than 'delay' seconds ago, sync it now.
@@ -255,17 +270,17 @@ func WatchAndPush(client *occlient.Client, componentName string, applicationName
 			}
 			if len(changedFiles) > 0 {
 				fmt.Fprintf(out, "Pushing files...\n")
-				fileInfo, err := os.Stat(path)
+				fileInfo, err := os.Stat(parameters.Path)
 				if err != nil {
-					return errors.Wrapf(err, "%s: file doesn't exist", path)
+					return errors.Wrapf(err, "%s: file doesn't exist", parameters.Path)
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					err = pushChangesToPod(client, componentName, applicationName, path, out, changedFiles)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles)
 				} else {
-					pathDir := filepath.Dir(path)
-					glog.V(4).Infof("Copying file %s to pod", path)
-					err = pushChangesToPod(client, componentName, applicationName, pathDir, out, []string{path})
+					pathDir := filepath.Dir(parameters.Path)
+					glog.V(4).Infof("Copying file %s to pod", parameters.Path)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path})
 				}
 				if err != nil {
 					// Intentionally not exiting on error here.

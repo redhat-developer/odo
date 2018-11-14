@@ -127,6 +127,7 @@ var CompDirStructure map[string]testingutil.FileProperties
 
 // ExtChan is used to return from otherwise non-terminating(without SIGINT) end of ever running watch function
 var ExtChan = make(chan string)
+var StartChan = make(chan string)
 
 // Mock PushLocal to collect changed files and compare against expected changed files
 func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
@@ -279,12 +280,14 @@ func TestWatchAndPush(t *testing.T) {
 
 			// Clear all the created temporary files
 			defer os.RemoveAll(basePath)
+			t.Logf("Done with basePath creation and client init will trigger WatchAndPush and file modifications next...\n%+v\n", CompDirStructure)
 
 			go func() {
+				t.Logf("Starting file simulations \n%+v\n", tt.fileModifications)
 				// Simulating file modifications for watch to observe
 				for {
 					select {
-					case startMsg := <-ExtChan:
+					case startMsg := <-StartChan:
 						if startMsg == "Start" {
 							for _, fileModification := range tt.fileModifications {
 
@@ -321,7 +324,21 @@ func TestWatchAndPush(t *testing.T) {
 			}()
 
 			// Start WatchAndPush, the unit tested function
-			err = WatchAndPush(fkclient, tt.componentName, tt.applicationName, basePath, new(bytes.Buffer), tt.ignores, tt.delayInterval, ExtChan, mockPushLocal)
+			t.Logf("Starting WatchAndPush now\n")
+			err = WatchAndPush(
+				fkclient,
+				new(bytes.Buffer),
+				WatchParameters{
+					ComponentName:   tt.componentName,
+					ApplicationName: tt.applicationName,
+					Path:            basePath,
+					FileIgnores:     tt.ignores,
+					PushDiffDelay:   tt.delayInterval,
+					StartChan:       StartChan,
+					ExtChan:         ExtChan,
+					WatchHandler:    mockPushLocal,
+				},
+			)
 			if err != nil && err != UserRequestedWatchExit {
 				t.Errorf("error in WatchAndPush %+v", err)
 			}
