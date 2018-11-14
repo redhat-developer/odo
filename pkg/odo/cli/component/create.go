@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -99,6 +98,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		if len(componentBinary) != 0 {
 			componentPath = componentBinary
+			path, err := util.GetAbsPath(componentPath)
+			odoutil.CheckError(err, "Failed to resolve %s to absolute path", componentPath)
+			componentPath = path
 			componentPathType = occlient.BINARY
 			checkFlag++
 		}
@@ -109,6 +111,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 		}
 		if len(componentLocal) != 0 {
 			componentPath = componentLocal
+			path, err := util.GetAbsPath(componentPath)
+			odoutil.CheckError(err, "Failed to resolve %s to absolute path", componentPath)
+			componentPath = path
 			componentPathType = occlient.LOCAL
 			checkFlag++
 		}
@@ -205,9 +210,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		} else if len(componentLocal) != 0 {
 
 			// Use the absolute path for the component
-			dir, err := filepath.Abs(componentLocal)
-			odoutil.CheckError(err, "")
-			fileInfo, err := os.Stat(dir)
+			fileInfo, err := os.Stat(componentPath)
 			odoutil.CheckError(err, "")
 			if !fileInfo.IsDir() {
 				fmt.Println("Please provide a path to the directory")
@@ -219,7 +222,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 				client,
 				occlient.CreateArgs{
 					Name:            componentName,
-					SourcePath:      dir,
+					SourcePath:      componentPath,
 					SourceType:      occlient.LOCAL,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
@@ -233,16 +236,12 @@ A full list of component types that can be deployed is available using: 'odo cat
 		} else if len(componentBinary) != 0 {
 			// Deploy the component with a binary
 
-			// Retrieve the path of the binary
-			path, err := filepath.Abs(componentBinary)
-			odoutil.CheckError(err, "")
-
 			// Create
 			err = component.CreateFromPath(
 				client,
 				occlient.CreateArgs{
 					Name:            componentName,
-					SourcePath:      path,
+					SourcePath:      componentPath,
 					SourceType:      occlient.BINARY,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
@@ -255,7 +254,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		} else {
 			// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
-			dir, err := filepath.Abs("./")
+			dir, err := util.GetAbsPath("./")
 			odoutil.CheckError(err, "")
 
 			// Create

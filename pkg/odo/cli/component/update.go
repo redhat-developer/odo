@@ -2,11 +2,12 @@ package component
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"os"
-	"path/filepath"
+	pkgUtil "github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -75,7 +76,7 @@ var updateCmd = &cobra.Command{
 			fmt.Printf("The component %s was updated successfully\n", componentName)
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
-			dir, err := filepath.Abs(componentLocal)
+			dir, err := pkgUtil.GetAbsPath(componentLocal)
 			util.CheckError(err, "")
 			fileInfo, err := os.Stat(dir)
 			util.CheckError(err, "")
@@ -87,7 +88,7 @@ var updateCmd = &cobra.Command{
 			util.CheckError(err, "")
 			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
 		} else if len(componentBinary) != 0 {
-			path, err := filepath.Abs(componentBinary)
+			path, err := pkgUtil.GetAbsPath(componentBinary)
 			util.CheckError(err, "")
 			err = component.Update(client, componentName, applicationName, "binary", path, stdout)
 			util.CheckError(err, "")

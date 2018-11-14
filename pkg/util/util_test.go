@@ -3,6 +3,8 @@ package util
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"os/user"
 	"reflect"
 	"regexp"
 	"testing"
@@ -447,6 +449,54 @@ func TestSliceDifference(t *testing.T) {
 			result := SliceDifference(tt.slice1, tt.slice2)
 			if !reflect.DeepEqual(tt.expectedResult, result) {
 				t.Errorf("Expected %v, got %v", tt.expectedResult, result)
+			}
+		})
+	}
+}
+
+func TestGetAbsPath(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		absPath string
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Valid abs path resolution of `~`",
+			path:    "~",
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Valid abs path resolution of `.`",
+			path:    ".",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.name)
+		t.Run(tt.name, func(t *testing.T) {
+			switch tt.path {
+			case "~":
+				usr, err := user.Current()
+				if err != nil {
+					t.Errorf("Failed to get absolute path corresponding to `~`. Error %v", err)
+					return
+				}
+				tt.absPath = usr.HomeDir
+			case ".":
+				absPath, err := os.Getwd()
+				if err != nil {
+					t.Errorf("Failed to get absolute path corresponding to `.`. Error %v", err)
+					return
+				}
+				tt.absPath = absPath
+			}
+			result, err := GetAbsPath(tt.path)
+			if result != tt.absPath {
+				t.Errorf("Expected %v, got %v", tt.absPath, result)
+			}
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("Expected error: %v got error %v", tt.wantErr, err)
 			}
 		})
 	}
