@@ -102,7 +102,7 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("curl -L -o " + tmpDir + "/sample-binary-testing-2.war " +
 				"'https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/85354d9ee8583a9c1e64a331425eede235b07a9e/sample%2520(1).war'")
 
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-2.war")
 
 			// checking for init containers
@@ -130,7 +130,7 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("git clone " + wildflyUri1 + " " +
 				tmpDir + "/katacoda-odo-backend-1")
 
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
 
 			// checking for init containers
@@ -181,7 +181,7 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("git clone " + wildflyUri2 + " " +
 				tmpDir + "/katacoda-odo-backend-2")
 
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-2")
 
 			// checking for init containers
@@ -206,7 +206,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should update component from local to git", func() {
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --git " + wildflyUri1)
 
 			// checking bc for updates
@@ -235,7 +235,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should update component from git to git", func() {
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --git " + wildflyUri2)
 
 			// checking bc for updates
@@ -264,7 +264,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should update component from git to binary", func() {
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 
 			// checking for init containers
@@ -289,7 +289,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should update component from binary to git", func() {
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --git " + wildflyUri1)
 
 			// checking bc for updates
@@ -318,7 +318,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should update component from git to local", func() {
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
 
 			// checking for init containers
@@ -343,7 +343,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should update component from local to binary", func() {
-			waitForDCOfComponentToRollout("wildfly")
+			waitForDCOfComponentToRolloutCompletely("wildfly")
 			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 
 			// checking for init containers
@@ -379,13 +379,20 @@ var _ = Describe("odoCmpE2e", func() {
 })
 
 // ensures that the DeploymentConfig of the specified component
-// has completely rolled out
+// has completely rolled out and that none of the old pods are running
 // this is very useful to avoid race conditions that can occur when
 // updating the component
-func waitForDCOfComponentToRollout(componentName string) {
-	dcName := runCmd(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o name", componentName))
+func waitForDCOfComponentToRolloutCompletely(componentName string) {
+	fullDCName := runCmd(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o name | tr -d '\n'", componentName))
 	// oc rollout status ensures that the existing DC is fully rolled out before it terminates
 	// we need this because a rolling DC could cause odo update to fail due to its use
 	// of the read/update-in-memory/write-changes pattern
-	runCmd("oc rollout status " + dcName)
+	runCmd("oc rollout status " + fullDCName)
+
+	simpleDCName := strings.Replace(fullDCName, "deploymentconfig.apps.openshift.io/", "", -1)
+	// ensure that no more changes will occur to the name DC by waiting until there is only one pod running (the old one has terminated)
+	waitForEqualCmd(fmt.Sprintf("oc get pod -o name -l deploymentconfig=%s | wc -l | tr -d '\n'", simpleDCName), "1", 2)
+
+	// done in order to make sure that Openshift has updated the DC with the latest events
+	time.Sleep(5 * time.Second)
 }
