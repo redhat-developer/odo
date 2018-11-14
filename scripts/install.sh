@@ -114,7 +114,7 @@ Aborting now!
         echo "# Enabling kadel/odo... "
         brew tap kadel/odo
 
-        echo "Installing odo..."
+        echo "Installing odo ${ODO_VERSION}"
         case "$ODO_VERSION" in
         master)
             brew install kadel/odo/odo -- HEAD
