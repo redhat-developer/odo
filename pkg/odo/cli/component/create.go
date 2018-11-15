@@ -17,6 +17,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -25,6 +26,9 @@ var (
 	componentLocal   string
 	componentPorts   []string
 	componentEnvVars []string
+	memoryMax        string
+	memoryMin        string
+	memory           string
 )
 
 var componentCreateCmd = &cobra.Command{
@@ -147,11 +151,22 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
+		// If min-memory, max-memory and memory are passed, memory will be ignored as the other 2 have greater precedence.
+		// Emit a message indicating the same
+		if memoryMin != "" && memoryMax != "" {
+			if memory != "" {
+				fmt.Printf("%s will be ignored as minimum memory %s and maximum memory %s passed carry greater precedence\n", memory, memoryMin, memoryMax)
+			}
+		}
+
+		memoryQuantity := util.FetchResourceQunatity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
+		resourceQuantity := []util.ResourceRequirementInfo{memoryQuantity}
+
 		// Deploy the component with Git
 		if len(componentGit) != 0 {
 
 			// Use Git
-			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts, componentEnvVars)
+			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts, componentEnvVars, resourceQuantity)
 			odoutil.CheckError(err, "")
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 
@@ -172,7 +187,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			}
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars)
+			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars, resourceQuantity)
 			odoutil.CheckError(err, "")
 
 		} else if len(componentBinary) != 0 {
@@ -183,7 +198,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.CheckError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts, componentEnvVars)
+			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts, componentEnvVars, resourceQuantity)
 			odoutil.CheckError(err, "")
 
 		} else {
@@ -192,7 +207,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.CheckError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars)
+			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars, resourceQuantity)
 			odoutil.CheckError(err, "")
 		}
 
@@ -222,6 +237,9 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
+	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component container. Ex: 100 Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component container. Ex: 100 Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component container. Ex: 100 Mi")
 	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 

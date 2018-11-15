@@ -650,7 +650,7 @@ func getAppRootVolumeName(dcName string) string {
 // gitURL is the url of the git repo
 // inputPorts is the array containing the string port values
 // envVars is the array containing the string env var values
-func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputPorts []string, envVars []string) error {
+func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
 
 	glog.V(4).Infof("Using BuilderImage: %s", builderImage)
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
@@ -717,7 +717,7 @@ func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectM
 	}
 
 	// Generate and create the DeploymentConfig
-	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars)
+	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars, getResourceRequirementsFromRawData(resources))
 	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
@@ -885,7 +885,7 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 // Supervisor keeps the pod running (as PID 1), so you it is possible to trigger assembly script inside running pod,
 // and than restart application using Supervisor without need to restart the container/Pod.
 //
-func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta metav1.ObjectMeta, builderImage string, inputPorts []string, envVars []string) error {
+func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta metav1.ObjectMeta, builderImage string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
 
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
 
@@ -972,7 +972,7 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 	)
 
 	// Generate the DeploymentConfig that will be used.
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, builderImage, commonImageMeta, inputEnvs)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, builderImage, commonImageMeta, inputEnvs, getResourceRequirementsFromRawData(resources))
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -1221,7 +1221,8 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 	}
 
 	// Generate the new DeploymentConfig
-	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports, foundCurrentDCContainer.Env)
+	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
+	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports, foundCurrentDCContainer.Env, &resourceLimits)
 
 	// Patch the current DC
 	err = c.PatchCurrentDC(commonObjectMeta.Name, dc, removeTracesOfSupervisordFromDC)
@@ -1306,7 +1307,8 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	)
 
 	// Generate the SupervisorD Config
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, inputEnvs)
+	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, inputEnvs, &resourceLimits)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)

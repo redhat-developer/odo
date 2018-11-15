@@ -140,7 +140,7 @@ func validateSourceType(sourceType string) bool {
 // CreateFromGit inputPorts is the array containing the string port values
 // inputPorts is the array containing the string port values
 // envVars is the array containing the environment variables
-func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string, envVars []string) error {
+func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
 
 	labels := componentlabels.GetLabels(name, applicationName, true)
 
@@ -171,7 +171,7 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 		Annotations: annotations,
 	}
 
-	err = client.NewAppS2I(name, commonObjectMeta, componentImageType, url, inputPorts, envVars)
+	err = client.NewAppS2I(name, commonObjectMeta, componentImageType, url, inputPorts, envVars, resources)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
@@ -200,7 +200,7 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 // envVars is the array containing the environment variables
-func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string, envVars []string) error {
+func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
 	labels := componentlabels.GetLabels(name, applicationName, true)
 
 	// Parse componentImageType before adding to labels
@@ -232,7 +232,7 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 	}
 
 	// Bootstrap the deployment with SupervisorD
-	err = client.BootstrapSupervisoredS2I(name, commonObjectMeta, componentImageType, inputPorts, envVars)
+	err = client.BootstrapSupervisoredS2I(name, commonObjectMeta, componentImageType, inputPorts, envVars, resources)
 	if err != nil {
 		return err
 	}

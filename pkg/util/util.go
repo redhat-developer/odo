@@ -12,9 +12,18 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/golang/glog"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
+
+// ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
+type ResourceRequirementInfo struct {
+	ResourceType corev1.ResourceName
+	MinQty       resource.Quantity
+	MaxQty       resource.Quantity
+}
 
 // ConvertLabelsToSelector converts the given labels to selector
 func ConvertLabelsToSelector(labels map[string]string) string {
@@ -248,4 +257,27 @@ func OpenBrowser(url string) error {
 	}
 
 	return nil
+}
+
+// FetchResourceQunatity takes passed min, max and requested resource quantities and returns min and max resource requests
+func FetchResourceQunatity(resourceType corev1.ResourceName, min string, max string, request string) ResourceRequirementInfo {
+	// If minimum and maximum both are passed they carry highest priority
+	// Otherwise, use the request as min and max
+	var minResource resource.Quantity
+	var maxResource resource.Quantity
+	if min != "" {
+		minResource = resource.MustParse(min)
+	}
+	if max != "" {
+		maxResource = resource.MustParse(max)
+	}
+	if request != "" && (min == "" || max == "") {
+		minResource = resource.MustParse(request)
+		maxResource = resource.MustParse(request)
+	}
+	return ResourceRequirementInfo{
+		ResourceType: corev1.ResourceMemory,
+		MinQty:       minResource,
+		MaxQty:       maxResource,
+	}
 }

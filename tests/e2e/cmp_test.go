@@ -55,7 +55,17 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should be able to create a component with git source", func() {
-			runCmd("odo create nodejs cmp-git --git https://github.com/openshift/nodejs-ex")
+			runCmd("odo create nodejs cmp-git --git https://github.com/openshift/nodejs-ex --min-memory 100Mi --max-memory 300Mi")
+			getMemoryLimit := runCmd("oc get dc cmp-git-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
+			)
+			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
+			getMemoryRequest := runCmd("oc get dc cmp-git-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
+			)
+			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
 		})
 
 		It("should list the component", func() {
@@ -84,13 +94,25 @@ var _ = Describe("odoCmpE2e", func() {
 		It("should be able to create binary component", func() {
 			runCmd("curl -L -o " + tmpDir + "/sample-binary-testing-1.war " +
 				"https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/e5bc575ac8b14ba2b23d66b5cb4873657e1a1489/sample.war")
-			runCmd("odo create wildfly wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
+			runCmd("odo create wildfly wildfly --binary " + tmpDir + "/sample-binary-testing-1.war --memory 500Mi")
 
 			// TODO: remove this once https://github.com/redhat-developer/odo/issues/943 is implemented
 			time.Sleep(90 * time.Second)
 
 			// Run push
 			runCmd("odo push -v 4")
+
+			// Verify memory limits to be same as configured
+			getMemoryLimit := runCmd("oc get dc wildfly-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
+			)
+			Expect(getMemoryLimit).To(ContainSubstring("500Mi"))
+			getMemoryRequest := runCmd("oc get dc wildfly-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
+			)
+			Expect(getMemoryRequest).To(ContainSubstring("500Mi"))
 
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("wildfly"))
@@ -151,11 +173,23 @@ var _ = Describe("odoCmpE2e", func() {
 				"{{.name}}{{end}}{{end}}'")
 			Expect(getDc).To(ContainSubstring("wildfly" + appRootVolumeName))
 
+			// Verify memory limits to be same as configured
+			getMemoryLimit := runCmd("oc get dc wildfly-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
+			)
+			Expect(getMemoryLimit).To(ContainSubstring("500Mi"))
+			getMemoryRequest := runCmd("oc get dc wildfly-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
+			)
+			Expect(getMemoryRequest).To(ContainSubstring("500Mi"))
+
 			SourceTest(appTestName, "local", "file://"+tmpDir+"/katacoda-odo-backend-1")
 		})
 
 		It("should watch the local sources for any changes", func() {
-			runCmd("odo create wildfly wildfly-watch --local " + tmpDir + "/katacoda-odo-backend-1")
+			runCmd("odo create wildfly wildfly-watch --local " + tmpDir + "/katacoda-odo-backend-1 --min-memory 200Mi --max-memory 300Mi")
 			runCmd("odo push -v 4")
 			startSimulationCh := make(chan bool)
 			go func() {
@@ -182,6 +216,18 @@ var _ = Describe("odoCmpE2e", func() {
 			})
 			Expect(success).To(Equal(true))
 			Expect(err).To(BeNil())
+
+			// Verify memory limits to be same as configured
+			getMemoryLimit := runCmd("oc get dc wildfly-watch-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
+			)
+			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
+			getMemoryRequest := runCmd("oc get dc wildfly-watch-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
+			)
+			Expect(getMemoryRequest).To(ContainSubstring("200Mi"))
 		})
 
 		It("should update component from local to local", func() {
