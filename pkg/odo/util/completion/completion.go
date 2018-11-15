@@ -7,25 +7,52 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+// completionHandler wraps a ContextualizedPredictor providing needed information for its invocation during the Predict function
 type completionHandler struct {
 	cmd       *cobra.Command
 	ctxLoader contextLoader
 	predictor ContextualizedPredictor
 }
 
+// handlerKey provides a key value to record and identify completion handlers
 type handlerKey struct {
 	cmd  *cobra.Command
 	flag string
+}
+
+// parsedArgs provides easier to deal with information about what the command line looks like during a completion call
+type parsedArgs struct {
+	// original records the original arguments provided by posener/complete
+	original complete.Args
+	// typed returns what the user typed minus the command triggering the completion
+	typed []string
+	// commands lists parsed commands from the typed portion of the command line
+	commands map[string]bool
+	// flagValues provides a map associating parsed flag name and its value as string
+	flagValues map[string]string
 }
 
 type contextLoader func(command *cobra.Command) *genericclioptions.Context
 
 // ContextualizedPredictor predicts completion based on specified arguments, potentially using the context provided by the
 // specified client to resolve the entities to be completed
-type ContextualizedPredictor func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) []string
+type ContextualizedPredictor func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) []string
 
+// Predict is called by the posener/complete code when the shell asks for completion of a given argument
 func (ch completionHandler) Predict(args complete.Args) []string {
-	return ch.predictor(ch.cmd, args, ch.ctxLoader(ch.cmd))
+	typed := getUserTypedCommands(args, ch.cmd)
+	commands, flagValues := getCommandsAndFlags(typed, ch.cmd)
+
+	complete.Log("Parsed flag values: %v", flagValues)
+
+	parsed := parsedArgs{
+		original:   args,
+		typed:      typed,
+		commands:   commands,
+		flagValues: flagValues,
+	}
+	_ = ch.cmd.ParseFlags(typed)
+	return ch.predictor(ch.cmd, parsed, ch.ctxLoader(ch.cmd))
 }
 
 // completionHandlers records available completion handlers for commands and flags
@@ -48,6 +75,7 @@ func getCommandFlagCompletionHandlerKey(command *cobra.Command, flag string) han
 	}
 }
 
+// newHandler wraps a ContextualizedPredictor into a completionHandler
 func newHandler(cmd *cobra.Command, predictor ContextualizedPredictor) completionHandler {
 	return completionHandler{
 		cmd:       cmd,
