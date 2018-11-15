@@ -62,18 +62,17 @@ var FileCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 }
 
 // ProjectNameCompletionHandler provides project name completion
-var ProjectNameCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
+var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 	projects, err := project.List(context.Client)
 	if err != nil {
 		return completions
 	}
-	// extract the flags and commands from the user typed commands
-	strippedCommands, _ := getCommandsAndFlags(getUserTypedCommands(args, cmd), cmd)
+
 	for _, project := range projects {
 		// we found the project name in the list which means
 		// that the project name has been already selected by the user so no need to suggest more
-		if val, ok := strippedCommands[project.Name]; ok && val {
+		if val, ok := args.commands[project.Name]; ok && val {
 			return nil
 		}
 		completions = append(completions, project.Name)
