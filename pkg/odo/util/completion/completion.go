@@ -124,9 +124,7 @@ func getCommandsAndFlags(args []string, c *cobra.Command) (map[string]bool, map[
 
 	cmds := flags.Args()
 	flags.Visit(func(i *flag.Flag) {
-		if i.Value.Type() != "bool" {
-			setFlags[i.Name] = i.Value.String()
-		}
+		setFlags[i.Name] = i.Value.String()
 	})
 
 	// send a map of commands for faster searching
