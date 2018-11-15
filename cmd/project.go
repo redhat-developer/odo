@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 	"strings"
 
@@ -200,6 +201,7 @@ func init() {
 	projectGetCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "If true, display only the project name")
 	projectSetCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "If true, display only the project name")
 	projectDeleteCmd.Flags().BoolVarP(&projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
+	projectDeleteCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "Delete project without prompting")
 
 	projectCmd.Flags().AddFlagSet(projectGetCmd.Flags())
 	projectCmd.AddCommand(projectGetCmd)
@@ -211,6 +213,9 @@ func init() {
 	// Add a defined annotation in order to appear in the help menu
 	projectCmd.Annotations = map[string]string{"command": "other"}
 	projectCmd.SetUsageTemplate(cmdUsageTemplate)
+
+	completion.RegisterCommandHandler(projectSetCmd, completion.ProjectNameCompletionHandler)
+	completion.RegisterCommandHandler(projectDeleteCmd, completion.ProjectNameCompletionHandler)
 
 	rootCmd.AddCommand(projectCmd)
 }

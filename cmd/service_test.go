@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
@@ -20,17 +21,20 @@ func TestCompletions(t *testing.T) {
 	tests := []struct {
 		name    string
 		handler completion.ContextualizedPredictor
+		cmd     *cobra.Command
 		last    string
 		want    []string
 	}{
 		{
 			name:    "Completing service create without input returns all available service class external names",
 			handler: completion.ServiceClassCompletionHandler,
+			cmd:     serviceCreateCmd,
 			want:    []string{"foo", "bar", "boo"},
 		},
 		{
 			name:    "Completing service delete without input returns all available service instances",
 			handler: completion.ServiceCompletionHandler,
+			cmd:     serviceDeleteCmd,
 			want:    []string{"foo"},
 		},
 	}
@@ -67,7 +71,9 @@ func TestCompletions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := complete.Args{Last: tt.last}
-			got := tt.handler(nil, a, context)
+
+			got := tt.handler(tt.cmd, a, context)
+
 			if !equal(got, tt.want) {
 				t.Errorf("Failed %s: got: %q, want: %q", t.Name(), got, tt.want)
 			}
