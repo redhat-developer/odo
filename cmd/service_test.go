@@ -72,7 +72,7 @@ func TestCompletions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := complete.Args{Last: tt.last}
 
-			got := tt.handler(tt.cmd, a, context)
+			got := tt.handler(tt.cmd, completion.NewParsedArgs(a, tt.cmd), context)
 
 			if !equal(got, tt.want) {
 				t.Errorf("Failed %s: got: %q, want: %q", t.Name(), got, tt.want)

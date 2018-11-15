@@ -40,8 +40,13 @@ type ContextualizedPredictor func(cmd *cobra.Command, args parsedArgs, context *
 
 // Predict is called by the posener/complete code when the shell asks for completion of a given argument
 func (ch completionHandler) Predict(args complete.Args) []string {
-	typed := getUserTypedCommands(args, ch.cmd)
-	commands, flagValues := getCommandsAndFlags(typed, ch.cmd)
+	return ch.predictor(ch.cmd, NewParsedArgs(args, ch.cmd), ch.ctxLoader(ch.cmd))
+}
+
+// NewParsedArgs creates a parsed representation of the provided arguments for the specified command. Mostly exposed for tests.
+func NewParsedArgs(args complete.Args, cmd *cobra.Command) parsedArgs {
+	typed := getUserTypedCommands(args, cmd)
+	commands, flagValues := getCommandsAndFlags(typed, cmd)
 
 	complete.Log("Parsed flag values: %v", flagValues)
 
@@ -51,8 +56,9 @@ func (ch completionHandler) Predict(args complete.Args) []string {
 		commands:   commands,
 		flagValues: flagValues,
 	}
-	_ = ch.cmd.ParseFlags(typed)
-	return ch.predictor(ch.cmd, parsed, ch.ctxLoader(ch.cmd))
+	_ = cmd.ParseFlags(typed)
+
+	return parsed
 }
 
 // completionHandlers records available completion handlers for commands and flags
