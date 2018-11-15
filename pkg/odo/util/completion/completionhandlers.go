@@ -10,7 +10,7 @@ import (
 )
 
 // ServiceCompletionHandler provides service name completion for the current project and application
-var ServiceCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
+var ServiceCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
 	services, err := service.List(context.Client, context.Application)
@@ -26,7 +26,7 @@ var ServiceCompletionHandler = func(cmd *cobra.Command, args complete.Args, cont
 }
 
 // ServiceClassCompletionHandler provides catalog service class name completion
-var ServiceClassCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
+var ServiceClassCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 	services, err := context.Client.GetClusterServiceClasses()
 	if err != nil {
@@ -41,7 +41,7 @@ var ServiceClassCompletionHandler = func(cmd *cobra.Command, args complete.Args,
 }
 
 // AppCompletionHandler provides completion for the app commands
-var AppCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
+var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
 	applications, err := application.List(context.Client)
@@ -56,24 +56,23 @@ var AppCompletionHandler = func(cmd *cobra.Command, args complete.Args, context 
 }
 
 // FileCompletionHandler provides suggestions for files and directories
-var FileCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
-	completions = append(completions, complete.PredictFiles("*").Predict(args)...)
+var FileCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
+	completions = append(completions, complete.PredictFiles("*").Predict(args.original)...)
 	return
 }
 
 // ProjectNameCompletionHandler provides project name completion
-var ProjectNameCompletionHandler = func(cmd *cobra.Command, args complete.Args, context *genericclioptions.Context) (completions []string) {
+var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 	projects, err := project.List(context.Client)
 	if err != nil {
 		return completions
 	}
-	// extract the flags and commands from the user typed commands
-	strippedCommands, _ := getCommandsAndFlags(getUserTypedCommands(args, cmd), cmd)
+
 	for _, project := range projects {
 		// we found the project name in the list which means
 		// that the project name has been already selected by the user so no need to suggest more
-		if val, ok := strippedCommands[project.Name]; ok && val {
+		if val, ok := args.commands[project.Name]; ok && val {
 			return nil
 		}
 		completions = append(completions, project.Name)
