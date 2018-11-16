@@ -311,7 +311,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}
-	applicationCmd.SetUsageTemplate(cmdUsageTemplate)
+	applicationCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	rootCmd.AddCommand(applicationCmd)
 

@@ -143,7 +143,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	linkCmd.Annotations = map[string]string{"command": "component"}
-	linkCmd.SetUsageTemplate(cmdUsageTemplate)
+	linkCmd.SetUsageTemplate(CmdUsageTemplate)
 	//Adding `--project` flag
 	AddProjectFlag(linkCmd)
 	//Adding `--application` flag

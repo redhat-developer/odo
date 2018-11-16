@@ -75,7 +75,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
-	componentDeleteCmd.SetUsageTemplate(cmdUsageTemplate)
+	componentDeleteCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	//Adding `--project` flag
 	AddProjectFlag(componentDeleteCmd)

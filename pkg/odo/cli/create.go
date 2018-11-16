@@ -226,7 +226,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCreateCmd.Annotations = map[string]string{"command": "component"}
-	componentCreateCmd.SetUsageTemplate(cmdUsageTemplate)
+	componentCreateCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	//Adding `--project` flag
 	AddProjectFlag(componentCreateCmd)

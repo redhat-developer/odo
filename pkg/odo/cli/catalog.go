@@ -297,7 +297,7 @@ func init() {
 	catalogDescribeCmd.AddCommand(catalogDescribeServiceCmd)
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
-	catalogCmd.SetUsageTemplate(cmdUsageTemplate)
+	catalogCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	rootCmd.AddCommand(catalogCmd)
 }

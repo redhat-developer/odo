@@ -105,7 +105,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	pushCmd.Annotations = map[string]string{"command": "component"}
-	pushCmd.SetUsageTemplate(cmdUsageTemplate)
+	pushCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	//Adding `--project` flag
 	AddProjectFlag(pushCmd)

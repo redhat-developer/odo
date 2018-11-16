@@ -212,7 +212,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	projectCmd.Annotations = map[string]string{"command": "other"}
-	projectCmd.SetUsageTemplate(cmdUsageTemplate)
+	projectCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	completion.RegisterCommandHandler(projectSetCmd, completion.ProjectNameCompletionHandler)
 	completion.RegisterCommandHandler(projectDeleteCmd, completion.ProjectNameCompletionHandler)

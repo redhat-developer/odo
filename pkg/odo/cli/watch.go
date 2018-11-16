@@ -84,7 +84,7 @@ func init() {
 	watchCmd.Flags().IntVar(&delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	// Add a defined annotation in order to appear in the help menu
 	watchCmd.Annotations = map[string]string{"command": "component"}
-	watchCmd.SetUsageTemplate(cmdUsageTemplate)
+	watchCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	//Adding `--application` flag
 	AddApplicationFlag(watchCmd)

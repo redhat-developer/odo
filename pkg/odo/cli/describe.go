@@ -39,7 +39,7 @@ var describeCmd = &cobra.Command{
 func init() {
 	// Add a defined annotation in order to appear in the help menu
 	describeCmd.Annotations = map[string]string{"command": "component"}
-	describeCmd.SetUsageTemplate(cmdUsageTemplate)
+	describeCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	//Adding `--project` flag
 	AddProjectFlag(describeCmd)

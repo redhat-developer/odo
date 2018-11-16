@@ -103,7 +103,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	updateCmd.Annotations = map[string]string{"command": "component"}
-	updateCmd.SetUsageTemplate(cmdUsageTemplate)
+	updateCmd.SetUsageTemplate(CmdUsageTemplate)
 
 	//Adding `--application` flag
 	AddApplicationFlag(updateCmd)
