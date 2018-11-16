@@ -200,7 +200,7 @@ func init() {
 	AddComponentFlag(urlListCmd)
 	AddComponentFlag(urlCreateCmd)
 
-	rootCmd.AddCommand(urlCmd)
+	RootCmd().AddCommand(urlCmd)
 
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 }

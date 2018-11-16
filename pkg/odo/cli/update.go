@@ -114,5 +114,5 @@ func init() {
 	completion.RegisterCommandFlagHandler(updateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(updateCmd, "binary", completion.FileCompletionHandler)
 
-	rootCmd.AddCommand(updateCmd)
+	RootCmd().AddCommand(updateCmd)
 }

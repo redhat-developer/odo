@@ -94,5 +94,5 @@ func init() {
 	componentCmd.Annotations = map[string]string{"command": "component"}
 	componentCmd.SetUsageTemplate(CmdUsageTemplate)
 
-	rootCmd.AddCommand(componentCmd)
+	RootCmd().AddCommand(componentCmd)
 }

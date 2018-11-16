@@ -46,7 +46,7 @@ func init() {
 	//Adding `--application` flag
 	AddApplicationFlag(describeCmd)
 
-	rootCmd.AddCommand(describeCmd)
+	RootCmd().AddCommand(describeCmd)
 }
 
 // printComponentInfo prints Component Information like path, URL & storage

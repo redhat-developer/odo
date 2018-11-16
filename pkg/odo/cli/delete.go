@@ -82,5 +82,5 @@ func init() {
 	//Adding `--application` flag
 	AddApplicationFlag(componentDeleteCmd)
 
-	rootCmd.AddCommand(componentDeleteCmd)
+	RootCmd().AddCommand(componentDeleteCmd)
 }

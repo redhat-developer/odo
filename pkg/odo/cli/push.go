@@ -112,5 +112,5 @@ func init() {
 	//Adding `--application` flag
 	AddApplicationFlag(pushCmd)
 
-	rootCmd.AddCommand(pushCmd)
+	RootCmd().AddCommand(pushCmd)
 }

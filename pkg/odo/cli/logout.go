@@ -28,5 +28,5 @@ func init() {
 	logoutCmd.Annotations = map[string]string{"command": "utility"}
 	logoutCmd.SetUsageTemplate(CmdUsageTemplate)
 
-	rootCmd.AddCommand(logoutCmd)
+	RootCmd().AddCommand(logoutCmd)
 }

@@ -217,5 +217,5 @@ func init() {
 	completion.RegisterCommandHandler(projectSetCmd, completion.ProjectNameCompletionHandler)
 	completion.RegisterCommandHandler(projectDeleteCmd, completion.ProjectNameCompletionHandler)
 
-	rootCmd.AddCommand(projectCmd)
+	RootCmd().AddCommand(projectCmd)
 }

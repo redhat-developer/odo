@@ -151,5 +151,5 @@ func init() {
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
 
-	rootCmd.AddCommand(linkCmd)
+	RootCmd().AddCommand(linkCmd)
 }

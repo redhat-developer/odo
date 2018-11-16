@@ -204,7 +204,7 @@ func init() {
 	AddApplicationFlag(serviceDeleteCmd)
 	AddApplicationFlag(serviceListCmd)
 
-	rootCmd.AddCommand(serviceCmd)
+	RootCmd().AddCommand(serviceCmd)
 
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)

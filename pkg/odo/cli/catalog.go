@@ -299,5 +299,5 @@ func init() {
 	catalogCmd.Annotations = map[string]string{"command": "other"}
 	catalogCmd.SetUsageTemplate(CmdUsageTemplate)
 
-	rootCmd.AddCommand(catalogCmd)
+	RootCmd().AddCommand(catalogCmd)
 }

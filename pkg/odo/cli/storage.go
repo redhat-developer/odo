@@ -283,7 +283,7 @@ func init() {
 	storageCmd.Annotations = map[string]string{"command": "other"}
 	storageCmd.SetUsageTemplate(CmdUsageTemplate)
 
-	rootCmd.AddCommand(storageCmd)
+	RootCmd().AddCommand(storageCmd)
 
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
 	completion.RegisterCommandHandler(storageMountCmd, completion.StorageMountCompletionHandler)

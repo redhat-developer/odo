@@ -69,5 +69,5 @@ func init() {
 	versionCmd.SetUsageTemplate(CmdUsageTemplate)
 	versionCmd.Flags().BoolVar(&clientFlag, "client", false, "Client version only (no server required).")
 
-	rootCmd.AddCommand(versionCmd)
+	RootCmd().AddCommand(versionCmd)
 }

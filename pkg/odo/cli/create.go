@@ -236,5 +236,5 @@ func init() {
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
 
-	rootCmd.AddCommand(componentCreateCmd)
+	RootCmd().AddCommand(componentCreateCmd)
 }

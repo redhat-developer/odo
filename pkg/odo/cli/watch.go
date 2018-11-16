@@ -92,5 +92,5 @@ func init() {
 	//Adding `--project` flag
 	AddProjectFlag(watchCmd)
 
-	rootCmd.AddCommand(watchCmd)
+	RootCmd().AddCommand(watchCmd)
 }

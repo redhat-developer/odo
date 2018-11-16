@@ -313,7 +313,7 @@ func init() {
 	applicationCmd.Annotations = map[string]string{"command": "other"}
 	applicationCmd.SetUsageTemplate(CmdUsageTemplate)
 
-	rootCmd.AddCommand(applicationCmd)
+	RootCmd().AddCommand(applicationCmd)
 
 	completion.RegisterCommandHandler(applicationDescribeCmd, completion.AppCompletionHandler)
 	completion.RegisterCommandHandler(applicationDeleteCmd, completion.AppCompletionHandler)

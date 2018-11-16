@@ -27,5 +27,5 @@ func init() {
 	configurationCmd.SetUsageTemplate(CmdUsageTemplate)
 	utilsCmd.AddCommand(configurationCmd)
 	utilsCmd.AddCommand(terminalCmd)
-	rootCmd.AddCommand(utilsCmd)
+	RootCmd().AddCommand(utilsCmd)
 }

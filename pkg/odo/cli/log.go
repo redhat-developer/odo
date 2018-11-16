@@ -54,5 +54,5 @@ func init() {
 	//Adding `--application` flag
 	AddApplicationFlag(logCmd)
 
-	rootCmd.AddCommand(logCmd)
+	RootCmd().AddCommand(logCmd)
 }
