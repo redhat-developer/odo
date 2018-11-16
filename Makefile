@@ -8,7 +8,7 @@ default: bin
 
 .PHONY: bin
 bin:
-	go build ${BUILD_FLAGS} -o odo cmd/odo/main.go
+	go build ${BUILD_FLAGS} -o odo cmd/odo/odo.go
 
 .PHONY: install
 install:
