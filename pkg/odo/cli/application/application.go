@@ -1,9 +1,10 @@
-package cli
+package application
 
 import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -282,7 +283,7 @@ var applicationDescribeCmd = &cobra.Command{
 		for _, currentComponent := range componentList {
 			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
 			util.CheckError(err, "")
-			PrintComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
+			cli.PrintComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
 		}
 	},
 }
@@ -302,18 +303,18 @@ func init() {
 	applicationCmd.AddCommand(applicationDescribeCmd)
 
 	//Adding `--project` flag
-	AddProjectFlag(applicationListCmd)
-	AddProjectFlag(applicationCreateCmd)
-	AddProjectFlag(applicationDeleteCmd)
-	AddProjectFlag(applicationDescribeCmd)
-	AddProjectFlag(applicationSetCmd)
-	AddProjectFlag(applicationGetCmd)
+	cli.AddProjectFlag(applicationListCmd)
+	cli.AddProjectFlag(applicationCreateCmd)
+	cli.AddProjectFlag(applicationDeleteCmd)
+	cli.AddProjectFlag(applicationDescribeCmd)
+	cli.AddProjectFlag(applicationSetCmd)
+	cli.AddProjectFlag(applicationGetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}
-	applicationCmd.SetUsageTemplate(CmdUsageTemplate)
+	applicationCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
-	RootCmd().AddCommand(applicationCmd)
+	cli.RootCmd().AddCommand(applicationCmd)
 
 	completion.RegisterCommandHandler(applicationDescribeCmd, completion.AppCompletionHandler)
 	completion.RegisterCommandHandler(applicationDeleteCmd, completion.AppCompletionHandler)
