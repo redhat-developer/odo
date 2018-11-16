@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -43,3 +45,19 @@ Additional help topics:{{range .Commands}}{{if .IsHelpCommand}}
 
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
+
+// PrintComponentInfo prints Component Information like path, URL & storage
+func PrintComponentInfo(currentComponentName string, componentType string, path string, componentURL string, appStore []storage.StorageInfo) {
+	// Source
+	if path != "" {
+		fmt.Println("Component", currentComponentName, "of type", componentType, "with source in", path)
+	}
+	// URL
+	if componentURL != "" {
+		fmt.Println("Externally exposed via", componentURL)
+	}
+	// Storage
+	for _, store := range appStore {
+		fmt.Println("Storage", store.Name, "of size", store.Size)
+	}
+}

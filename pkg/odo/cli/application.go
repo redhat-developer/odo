@@ -282,7 +282,7 @@ var applicationDescribeCmd = &cobra.Command{
 		for _, currentComponent := range componentList {
 			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
 			util.CheckError(err, "")
-			printComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
+			PrintComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
 		}
 	},
 }
