@@ -11,10 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	componentShortFlag       bool
-	componentForceDeleteFlag bool
-)
+var componentForceDeleteFlag bool
 
 var componentDeleteCmd = &cobra.Command{
 	Use:   "delete <component_name>",

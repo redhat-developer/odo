@@ -1,7 +1,8 @@
-package cli
+package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -9,6 +10,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
+
+var componentShortFlag bool
 
 // componentCmd represents the component command
 var componentCmd = &cobra.Command{
@@ -84,15 +87,15 @@ func init() {
 	componentCmd.AddCommand(componentSetCmd)
 
 	//Adding `--project` flag
-	AddProjectFlag(componentGetCmd)
-	AddProjectFlag(componentSetCmd)
+	cli.AddProjectFlag(componentGetCmd)
+	cli.AddProjectFlag(componentSetCmd)
 	//Adding `--application` flag
-	AddApplicationFlag(componentGetCmd)
-	AddApplicationFlag(componentSetCmd)
+	cli.AddApplicationFlag(componentGetCmd)
+	cli.AddApplicationFlag(componentSetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}
-	componentCmd.SetUsageTemplate(CmdUsageTemplate)
+	componentCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
-	RootCmd().AddCommand(componentCmd)
+	cli.RootCmd().AddCommand(componentCmd)
 }
