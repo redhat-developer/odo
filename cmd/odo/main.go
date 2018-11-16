@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/cmd"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// create the complete command
-	root := cmd.RootCmd()
+	root := cli.RootCmd()
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
 
@@ -37,11 +37,11 @@ func main() {
 	}
 
 	// Call commands
-	cmd.Execute()
+	cli.Execute()
 }
 
 func usage() {
-	_ = cmd.RootCmd().Usage()
+	_ = cli.RootCmd().Usage()
 }
 
 func createCompletion(root *cobra.Command) complete.Command {

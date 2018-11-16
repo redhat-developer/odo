@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"

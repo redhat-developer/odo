@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/cmd"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"os"
@@ -145,9 +145,9 @@ func main() {
 		Run: func(command *cobra.Command, args []string) {
 			switch args[0] {
 			case "reference":
-				fmt.Print(referencePrinter(cmd.RootCmd(), 0))
+				fmt.Print(referencePrinter(cli.RootCmd(), 0))
 			case "structure":
-				fmt.Print(commandPrinter(cmd.RootCmd(), 0))
+				fmt.Print(commandPrinter(cli.RootCmd(), 0))
 			default:
 				fmt.Print(command.Usage())
 			}
