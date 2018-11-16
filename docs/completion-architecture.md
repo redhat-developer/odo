@@ -40,12 +40,14 @@ provide automatic completion, the command will register a completion handler as 
 ### Create a `completion.ContextualizedPredictor` implementation
 
 `completion.ContextualizedPredictor` is defined as 
-`type ContextualizedPredictor func(args complete.Args, client *occlient.Client) []string` which is a function which should 
-return an array of possible completion strings based on the given arguments, though it should be noted that usually it's not
-needed to use the arguments since filtering is done by `posener/complete` itself (i.e. it will automatically remove all 
-completions that are not prefixed by what you've typed already). Of course, using the specified arguments could help optimize
-things. This function should be put in `pkg/odo/util/completion/completionhandlers.go` so that it could be reused across 
-commands.
+`type ContextualizedPredictor func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) []string` which is a
+function which should return an array of possible completion strings based on the given arguments. 
+
+This function should be put in `pkg/odo/util/completion/completionhandlers.go` so that it could be reused across commands.
+
+While filtering is done by `posener/complete` itself, automatically removing all completions not prefixed by what you've typed 
+already, it might be useful to use the values provided by `parsedArgs` to help optimize things to avoid repeating possible 
+completions for example.
 
 ### Register the completion handler
 
