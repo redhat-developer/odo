@@ -103,6 +103,8 @@ jobs:
     #     ./scripts/install.sh
 
     - stage: deploy
+      # run this stage only on master branch and on tags
+      if: branch = master || tag IS present
       go_import_path:  github.com/redhat-developer/odo
       go: "1.11"
       env: BUILD_DOCS=yes
