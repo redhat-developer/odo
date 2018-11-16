@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -317,4 +319,30 @@ func init() {
 	completion.RegisterCommandHandler(applicationDeleteCmd, completion.AppCompletionHandler)
 	completion.RegisterCommandHandler(applicationSetCmd, completion.AppCompletionHandler)
 
+}
+
+// printDeleteAppInfo will print things which will be deleted
+func printDeleteAppInfo(client *occlient.Client, appName string) error {
+	componentList, err := component.List(client, appName)
+	if err != nil {
+		return errors.Wrap(err, "failed to get Component list")
+	}
+
+	for _, currentComponent := range componentList {
+		_, _, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+		if err != nil {
+			return errors.Wrap(err, "unable to get component description")
+		}
+		fmt.Println("Component", currentComponent.Name, "will be deleted.")
+
+		if len(componentURL) != 0 {
+			fmt.Println("  Externally exposed URL will be removed")
+		}
+
+		for _, store := range appStore {
+			fmt.Println("  Storage", store.Name, "of size", store.Size, "will be removed")
+		}
+
+	}
+	return nil
 }
