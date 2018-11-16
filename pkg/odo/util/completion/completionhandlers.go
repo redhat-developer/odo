@@ -76,7 +76,7 @@ var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 	for _, project := range projects {
 		// we found the project name in the list which means
 		// that the project name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[project.Name]; ok && val {
+		if args.commands[project.Name] {
 			return nil
 		}
 		completions = append(completions, project.Name)
