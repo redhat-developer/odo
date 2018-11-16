@@ -16,16 +16,9 @@ Thanks for understanding, and for contributing to the project!
 
 -->
 
-## What should odo do differently? Which functionality do you think we should change?
-
-<!--
-Please describe the feature you'd like us to add here.
--->
+## Which functionality do you think we should update/improve?
 
 
-## What are you trying to do?
+## Why is this needed? 
 
-<!--
-This section should contain a brief description what you're trying to do, which
-would be possible after implementing the new feature.
--->
+
