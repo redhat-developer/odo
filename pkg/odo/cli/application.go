@@ -76,7 +76,7 @@ If no app name is passed, a default app name will be auto-generated.
 			util.CheckError(err, "")
 		}
 		// validate application name
-		err := validateName(appName)
+		err := util.ValidateName(appName)
 		util.CheckError(err, "")
 		fmt.Printf("Creating application: %v in project: %v\n", appName, projectName)
 		err = application.Create(client, appName)
@@ -300,12 +300,12 @@ func init() {
 	applicationCmd.AddCommand(applicationDescribeCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(applicationListCmd)
-	addProjectFlag(applicationCreateCmd)
-	addProjectFlag(applicationDeleteCmd)
-	addProjectFlag(applicationDescribeCmd)
-	addProjectFlag(applicationSetCmd)
-	addProjectFlag(applicationGetCmd)
+	AddProjectFlag(applicationListCmd)
+	AddProjectFlag(applicationCreateCmd)
+	AddProjectFlag(applicationDeleteCmd)
+	AddProjectFlag(applicationDescribeCmd)
+	AddProjectFlag(applicationSetCmd)
+	AddProjectFlag(applicationGetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}

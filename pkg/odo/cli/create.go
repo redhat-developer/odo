@@ -137,7 +137,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		}
 
 		// Validate component name
-		err = validateName(componentName)
+		err = odoutil.ValidateName(componentName)
 		odoutil.CheckError(err, "")
 		exists, err = component.Exists(client, componentName, applicationName)
 		odoutil.CheckError(err, "")

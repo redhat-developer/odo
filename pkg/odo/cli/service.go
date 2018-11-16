@@ -91,7 +91,7 @@ A full list of service types that can be deployed are available using: 'odo cata
 			serviceName = args[1]
 		}
 		//validate service name
-		err = validateName(serviceName)
+		err = util.ValidateName(serviceName)
 		util.CheckError(err, "")
 		exists, err := svc.SvcExists(client, serviceName, applicationName)
 
