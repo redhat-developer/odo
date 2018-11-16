@@ -1,7 +1,8 @@
-package cli
+package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -52,9 +53,9 @@ func init() {
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 
 	//Adding `--project` flag
-	AddProjectFlag(componentListCmd)
+	cli.AddProjectFlag(componentListCmd)
 	//Adding `--application` flag
-	AddApplicationFlag(componentListCmd)
+	cli.AddApplicationFlag(componentListCmd)
 
-	RootCmd().AddCommand(componentListCmd)
+	cli.RootCmd().AddCommand(componentListCmd)
 }

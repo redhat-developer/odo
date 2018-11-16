@@ -1,7 +1,8 @@
-package cli
+package service
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -189,22 +190,22 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
-	serviceCmd.SetUsageTemplate(CmdUsageTemplate)
+	serviceCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 	serviceCmd.AddCommand(serviceCreateCmd)
 	serviceCmd.AddCommand(serviceDeleteCmd)
 	serviceCmd.AddCommand(serviceListCmd)
 
 	//Adding `--project` flag
-	AddProjectFlag(serviceCreateCmd)
-	AddProjectFlag(serviceDeleteCmd)
-	AddProjectFlag(serviceListCmd)
+	cli.AddProjectFlag(serviceCreateCmd)
+	cli.AddProjectFlag(serviceDeleteCmd)
+	cli.AddProjectFlag(serviceListCmd)
 
 	//Adding `--application` flag
-	AddApplicationFlag(serviceCreateCmd)
-	AddApplicationFlag(serviceDeleteCmd)
-	AddApplicationFlag(serviceListCmd)
+	cli.AddApplicationFlag(serviceCreateCmd)
+	cli.AddApplicationFlag(serviceDeleteCmd)
+	cli.AddApplicationFlag(serviceListCmd)
 
-	RootCmd().AddCommand(serviceCmd)
+	cli.RootCmd().AddCommand(serviceCmd)
 
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)

@@ -1,7 +1,8 @@
-package cli
+package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -226,15 +227,15 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCreateCmd.Annotations = map[string]string{"command": "component"}
-	componentCreateCmd.SetUsageTemplate(CmdUsageTemplate)
+	componentCreateCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	AddProjectFlag(componentCreateCmd)
+	cli.AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag
-	AddApplicationFlag(componentCreateCmd)
+	cli.AddApplicationFlag(componentCreateCmd)
 
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
 
-	RootCmd().AddCommand(componentCreateCmd)
+	cli.RootCmd().AddCommand(componentCreateCmd)
 }

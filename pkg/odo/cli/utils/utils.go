@@ -1,7 +1,8 @@
-package cli
+package utils
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 
 	"github.com/spf13/cobra"
 )
@@ -19,13 +20,13 @@ var utilsCmd = &cobra.Command{
 
 func init() {
 	utilsCmd.Annotations = map[string]string{"command": "utility"}
-	utilsCmd.SetUsageTemplate(CmdUsageTemplate)
+	utilsCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	configurationCmd.AddCommand(configurationViewCmd)
 	configurationCmd.AddCommand(configurationSetCmd)
 
-	configurationCmd.SetUsageTemplate(CmdUsageTemplate)
+	configurationCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 	utilsCmd.AddCommand(configurationCmd)
 	utilsCmd.AddCommand(terminalCmd)
-	RootCmd().AddCommand(utilsCmd)
+	cli.RootCmd().AddCommand(utilsCmd)
 }

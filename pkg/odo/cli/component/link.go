@@ -1,9 +1,10 @@
-package cli
+package component
 
 import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/secret"
@@ -143,13 +144,13 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	linkCmd.Annotations = map[string]string{"command": "component"}
-	linkCmd.SetUsageTemplate(CmdUsageTemplate)
+	linkCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 	//Adding `--project` flag
-	AddProjectFlag(linkCmd)
+	cli.AddProjectFlag(linkCmd)
 	//Adding `--application` flag
-	AddApplicationFlag(linkCmd)
+	cli.AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
-	AddComponentFlag(linkCmd)
+	cli.AddComponentFlag(linkCmd)
 
-	RootCmd().AddCommand(linkCmd)
+	cli.RootCmd().AddCommand(linkCmd)
 }

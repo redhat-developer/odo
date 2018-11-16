@@ -1,7 +1,8 @@
-package cli
+package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"net/url"
 	"os"
@@ -84,13 +85,13 @@ func init() {
 	watchCmd.Flags().IntVar(&delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	// Add a defined annotation in order to appear in the help menu
 	watchCmd.Annotations = map[string]string{"command": "component"}
-	watchCmd.SetUsageTemplate(CmdUsageTemplate)
+	watchCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--application` flag
-	AddApplicationFlag(watchCmd)
+	cli.AddApplicationFlag(watchCmd)
 
 	//Adding `--project` flag
-	AddProjectFlag(watchCmd)
+	cli.AddProjectFlag(watchCmd)
 
-	RootCmd().AddCommand(watchCmd)
+	cli.RootCmd().AddCommand(watchCmd)
 }

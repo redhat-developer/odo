@@ -1,7 +1,8 @@
-package cli
+package url
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
@@ -183,24 +184,24 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	urlCmd.Annotations = map[string]string{"command": "other"}
-	urlCmd.SetUsageTemplate(CmdUsageTemplate)
+	urlCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	AddProjectFlag(urlListCmd)
-	AddProjectFlag(urlCreateCmd)
-	AddProjectFlag(urlDeleteCmd)
+	cli.AddProjectFlag(urlListCmd)
+	cli.AddProjectFlag(urlCreateCmd)
+	cli.AddProjectFlag(urlDeleteCmd)
 
 	//Adding `--application` flag
-	AddApplicationFlag(urlListCmd)
-	AddApplicationFlag(urlDeleteCmd)
-	AddApplicationFlag(urlCreateCmd)
+	cli.AddApplicationFlag(urlListCmd)
+	cli.AddApplicationFlag(urlDeleteCmd)
+	cli.AddApplicationFlag(urlCreateCmd)
 
 	//Adding `--component` flag
-	AddComponentFlag(urlDeleteCmd)
-	AddComponentFlag(urlListCmd)
-	AddComponentFlag(urlCreateCmd)
+	cli.AddComponentFlag(urlDeleteCmd)
+	cli.AddComponentFlag(urlListCmd)
+	cli.AddComponentFlag(urlCreateCmd)
 
-	RootCmd().AddCommand(urlCmd)
+	cli.RootCmd().AddCommand(urlCmd)
 
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 }

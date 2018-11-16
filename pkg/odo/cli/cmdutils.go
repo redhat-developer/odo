@@ -61,3 +61,6 @@ func PrintComponentInfo(currentComponentName string, componentType string, path 
 		fmt.Println("Storage", store.Name, "of size", store.Size)
 	}
 }
+
+// VERSION  is version number that will be displayed when running ./odo version
+const VERSION = "v0.0.15"

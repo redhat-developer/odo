@@ -1,8 +1,9 @@
-package cli
+package catalog
 
 import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -297,7 +298,7 @@ func init() {
 	catalogDescribeCmd.AddCommand(catalogDescribeServiceCmd)
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
-	catalogCmd.SetUsageTemplate(CmdUsageTemplate)
+	catalogCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
-	RootCmd().AddCommand(catalogCmd)
+	cli.RootCmd().AddCommand(catalogCmd)
 }

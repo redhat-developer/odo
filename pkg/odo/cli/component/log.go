@@ -1,6 +1,7 @@
-package cli
+package component
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -47,12 +48,12 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	logCmd.Annotations = map[string]string{"command": "component"}
-	logCmd.SetUsageTemplate(CmdUsageTemplate)
+	logCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	AddProjectFlag(logCmd)
+	cli.AddProjectFlag(logCmd)
 	//Adding `--application` flag
-	AddApplicationFlag(logCmd)
+	cli.AddApplicationFlag(logCmd)
 
-	RootCmd().AddCommand(logCmd)
+	cli.RootCmd().AddCommand(logCmd)
 }

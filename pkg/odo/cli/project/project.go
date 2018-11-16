@@ -1,7 +1,8 @@
-package cli
+package project
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -212,10 +213,10 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	projectCmd.Annotations = map[string]string{"command": "other"}
-	projectCmd.SetUsageTemplate(CmdUsageTemplate)
+	projectCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	completion.RegisterCommandHandler(projectSetCmd, completion.ProjectNameCompletionHandler)
 	completion.RegisterCommandHandler(projectDeleteCmd, completion.ProjectNameCompletionHandler)
 
-	RootCmd().AddCommand(projectCmd)
+	cli.RootCmd().AddCommand(projectCmd)
 }

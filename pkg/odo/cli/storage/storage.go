@@ -1,10 +1,11 @@
-package cli
+package storage
 
 import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -259,31 +260,31 @@ func init() {
 	storageCmd.AddCommand(storageMountCmd)
 
 	//Adding `--project` flag
-	AddProjectFlag(storageCreateCmd)
-	AddProjectFlag(storageDeleteCmd)
-	AddProjectFlag(storageListCmd)
-	AddProjectFlag(storageMountCmd)
-	AddProjectFlag(storageUnmountCmd)
+	cli.AddProjectFlag(storageCreateCmd)
+	cli.AddProjectFlag(storageDeleteCmd)
+	cli.AddProjectFlag(storageListCmd)
+	cli.AddProjectFlag(storageMountCmd)
+	cli.AddProjectFlag(storageUnmountCmd)
 
 	//Adding `--application` flag
-	AddApplicationFlag(storageCreateCmd)
-	AddApplicationFlag(storageDeleteCmd)
-	AddApplicationFlag(storageListCmd)
-	AddApplicationFlag(storageMountCmd)
-	AddApplicationFlag(storageUnmountCmd)
+	cli.AddApplicationFlag(storageCreateCmd)
+	cli.AddApplicationFlag(storageDeleteCmd)
+	cli.AddApplicationFlag(storageListCmd)
+	cli.AddApplicationFlag(storageMountCmd)
+	cli.AddApplicationFlag(storageUnmountCmd)
 
 	//Adding `--component` flag
-	AddComponentFlag(storageCreateCmd)
-	AddComponentFlag(storageDeleteCmd)
-	AddComponentFlag(storageListCmd)
-	AddComponentFlag(storageMountCmd)
-	AddComponentFlag(storageUnmountCmd)
+	cli.AddComponentFlag(storageCreateCmd)
+	cli.AddComponentFlag(storageDeleteCmd)
+	cli.AddComponentFlag(storageListCmd)
+	cli.AddComponentFlag(storageMountCmd)
+	cli.AddComponentFlag(storageUnmountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}
-	storageCmd.SetUsageTemplate(CmdUsageTemplate)
+	storageCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
-	RootCmd().AddCommand(storageCmd)
+	cli.RootCmd().AddCommand(storageCmd)
 
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
 	completion.RegisterCommandHandler(storageMountCmd, completion.StorageMountCompletionHandler)

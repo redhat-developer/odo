@@ -1,7 +1,8 @@
-package cli
+package component
 
 import (
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -30,19 +31,19 @@ var describeCmd = &cobra.Command{
 		}
 		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, componentName, applicationName)
 		util.CheckError(err, "")
-		PrintComponentInfo(componentName, componentType, path, componentURL, appStore)
+		cli.PrintComponentInfo(componentName, componentType, path, componentURL, appStore)
 	},
 }
 
 func init() {
 	// Add a defined annotation in order to appear in the help menu
 	describeCmd.Annotations = map[string]string{"command": "component"}
-	describeCmd.SetUsageTemplate(CmdUsageTemplate)
+	describeCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	AddProjectFlag(describeCmd)
+	cli.AddProjectFlag(describeCmd)
 	//Adding `--application` flag
-	AddApplicationFlag(describeCmd)
+	cli.AddApplicationFlag(describeCmd)
 
-	RootCmd().AddCommand(describeCmd)
+	cli.RootCmd().AddCommand(describeCmd)
 }

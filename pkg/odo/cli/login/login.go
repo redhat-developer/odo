@@ -1,7 +1,8 @@
-package cli
+package login
 
 import (
 	"github.com/redhat-developer/odo/pkg/auth"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
@@ -48,11 +49,11 @@ var loginCmd = &cobra.Command{
 func init() {
 	// Add a defined annotation in order to appear in the help menu
 	loginCmd.Annotations = map[string]string{"command": "utility"}
-	loginCmd.SetUsageTemplate(CmdUsageTemplate)
+	loginCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 	loginCmd.Flags().StringVarP(&userName, "username", "u", userName, "username, will prompt if not provided")
 	loginCmd.Flags().StringVarP(&password, "password", "p", password, "password, will prompt if not provided")
 	loginCmd.Flags().StringVarP(&token, "token", "t", token, "token, will prompt if not provided")
 	loginCmd.Flags().BoolVar(&skipTLS, "insecure-skip-tls-verify", false, "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure")
 	loginCmd.Flags().StringVar(&caAuth, "certificate-authority", userName, "Path to a cert file for the certificate authority")
-	RootCmd().AddCommand(loginCmd)
+	cli.RootCmd().AddCommand(loginCmd)
 }

@@ -1,7 +1,8 @@
-package cli
+package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"strings"
@@ -72,12 +73,12 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
-	componentDeleteCmd.SetUsageTemplate(CmdUsageTemplate)
+	componentDeleteCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	AddProjectFlag(componentDeleteCmd)
+	cli.AddProjectFlag(componentDeleteCmd)
 	//Adding `--application` flag
-	AddApplicationFlag(componentDeleteCmd)
+	cli.AddApplicationFlag(componentDeleteCmd)
 
-	RootCmd().AddCommand(componentDeleteCmd)
+	cli.RootCmd().AddCommand(componentDeleteCmd)
 }

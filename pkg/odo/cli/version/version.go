@@ -1,7 +1,8 @@
-package cli
+package version
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -41,7 +42,7 @@ var versionCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
+		fmt.Println("odo " + cli.VERSION + " (" + GITCOMMIT + ")")
 
 		if !clientFlag {
 			// Lets fetch the info about the server
@@ -66,8 +67,8 @@ var versionCmd = &cobra.Command{
 func init() {
 	// Add a defined annotation in order to appear in the help menu
 	versionCmd.Annotations = map[string]string{"command": "utility"}
-	versionCmd.SetUsageTemplate(CmdUsageTemplate)
+	versionCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 	versionCmd.Flags().BoolVar(&clientFlag, "client", false, "Client version only (no server required).")
 
-	RootCmd().AddCommand(versionCmd)
+	cli.RootCmd().AddCommand(versionCmd)
 }
