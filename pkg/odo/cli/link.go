@@ -145,11 +145,11 @@ func init() {
 	linkCmd.Annotations = map[string]string{"command": "component"}
 	linkCmd.SetUsageTemplate(cmdUsageTemplate)
 	//Adding `--project` flag
-	addProjectFlag(linkCmd)
+	AddProjectFlag(linkCmd)
 	//Adding `--application` flag
-	addApplicationFlag(linkCmd)
+	AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
-	addComponentFlag(linkCmd)
+	AddComponentFlag(linkCmd)
 
 	rootCmd.AddCommand(linkCmd)
 }

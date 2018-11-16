@@ -87,10 +87,10 @@ func init() {
 	watchCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	//Adding `--application` flag
-	addApplicationFlag(watchCmd)
+	AddApplicationFlag(watchCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(watchCmd)
+	AddProjectFlag(watchCmd)
 
 	rootCmd.AddCommand(watchCmd)
 }

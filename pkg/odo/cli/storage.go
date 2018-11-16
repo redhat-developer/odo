@@ -256,25 +256,25 @@ func init() {
 	storageCmd.AddCommand(storageMountCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(storageCreateCmd)
-	addProjectFlag(storageDeleteCmd)
-	addProjectFlag(storageListCmd)
-	addProjectFlag(storageMountCmd)
-	addProjectFlag(storageUnmountCmd)
+	AddProjectFlag(storageCreateCmd)
+	AddProjectFlag(storageDeleteCmd)
+	AddProjectFlag(storageListCmd)
+	AddProjectFlag(storageMountCmd)
+	AddProjectFlag(storageUnmountCmd)
 
 	//Adding `--application` flag
-	addApplicationFlag(storageCreateCmd)
-	addApplicationFlag(storageDeleteCmd)
-	addApplicationFlag(storageListCmd)
-	addApplicationFlag(storageMountCmd)
-	addApplicationFlag(storageUnmountCmd)
+	AddApplicationFlag(storageCreateCmd)
+	AddApplicationFlag(storageDeleteCmd)
+	AddApplicationFlag(storageListCmd)
+	AddApplicationFlag(storageMountCmd)
+	AddApplicationFlag(storageUnmountCmd)
 
 	//Adding `--component` flag
-	addComponentFlag(storageCreateCmd)
-	addComponentFlag(storageDeleteCmd)
-	addComponentFlag(storageListCmd)
-	addComponentFlag(storageMountCmd)
-	addComponentFlag(storageUnmountCmd)
+	AddComponentFlag(storageCreateCmd)
+	AddComponentFlag(storageDeleteCmd)
+	AddComponentFlag(storageListCmd)
+	AddComponentFlag(storageMountCmd)
+	AddComponentFlag(storageUnmountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}

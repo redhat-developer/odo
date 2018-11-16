@@ -229,9 +229,9 @@ func init() {
 	componentCreateCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(componentCreateCmd)
+	AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag
-	addApplicationFlag(componentCreateCmd)
+	AddApplicationFlag(componentCreateCmd)
 
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)

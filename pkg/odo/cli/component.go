@@ -84,11 +84,11 @@ func init() {
 	componentCmd.AddCommand(componentSetCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(componentGetCmd)
-	addProjectFlag(componentSetCmd)
+	AddProjectFlag(componentGetCmd)
+	AddProjectFlag(componentSetCmd)
 	//Adding `--application` flag
-	addApplicationFlag(componentGetCmd)
-	addApplicationFlag(componentSetCmd)
+	AddApplicationFlag(componentGetCmd)
+	AddApplicationFlag(componentSetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}

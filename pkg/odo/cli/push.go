@@ -108,9 +108,9 @@ func init() {
 	pushCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(pushCmd)
+	AddProjectFlag(pushCmd)
 	//Adding `--application` flag
-	addApplicationFlag(pushCmd)
+	AddApplicationFlag(pushCmd)
 
 	rootCmd.AddCommand(pushCmd)
 }

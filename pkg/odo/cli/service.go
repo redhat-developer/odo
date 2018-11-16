@@ -195,14 +195,14 @@ func init() {
 	serviceCmd.AddCommand(serviceListCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(serviceCreateCmd)
-	addProjectFlag(serviceDeleteCmd)
-	addProjectFlag(serviceListCmd)
+	AddProjectFlag(serviceCreateCmd)
+	AddProjectFlag(serviceDeleteCmd)
+	AddProjectFlag(serviceListCmd)
 
 	//Adding `--application` flag
-	addApplicationFlag(serviceCreateCmd)
-	addApplicationFlag(serviceDeleteCmd)
-	addApplicationFlag(serviceListCmd)
+	AddApplicationFlag(serviceCreateCmd)
+	AddApplicationFlag(serviceDeleteCmd)
+	AddApplicationFlag(serviceListCmd)
 
 	rootCmd.AddCommand(serviceCmd)
 

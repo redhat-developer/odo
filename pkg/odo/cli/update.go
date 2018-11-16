@@ -106,10 +106,10 @@ func init() {
 	updateCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	//Adding `--application` flag
-	addApplicationFlag(updateCmd)
+	AddApplicationFlag(updateCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(updateCmd)
+	AddProjectFlag(updateCmd)
 
 	completion.RegisterCommandFlagHandler(updateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(updateCmd, "binary", completion.FileCompletionHandler)

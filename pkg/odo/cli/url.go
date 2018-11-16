@@ -186,19 +186,19 @@ func init() {
 	urlCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(urlListCmd)
-	addProjectFlag(urlCreateCmd)
-	addProjectFlag(urlDeleteCmd)
+	AddProjectFlag(urlListCmd)
+	AddProjectFlag(urlCreateCmd)
+	AddProjectFlag(urlDeleteCmd)
 
 	//Adding `--application` flag
-	addApplicationFlag(urlListCmd)
-	addApplicationFlag(urlDeleteCmd)
-	addApplicationFlag(urlCreateCmd)
+	AddApplicationFlag(urlListCmd)
+	AddApplicationFlag(urlDeleteCmd)
+	AddApplicationFlag(urlCreateCmd)
 
 	//Adding `--component` flag
-	addComponentFlag(urlDeleteCmd)
-	addComponentFlag(urlListCmd)
-	addComponentFlag(urlCreateCmd)
+	AddComponentFlag(urlDeleteCmd)
+	AddComponentFlag(urlListCmd)
+	AddComponentFlag(urlCreateCmd)
 
 	rootCmd.AddCommand(urlCmd)
 

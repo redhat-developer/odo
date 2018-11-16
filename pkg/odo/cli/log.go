@@ -50,9 +50,9 @@ func init() {
 	logCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(logCmd)
+	AddProjectFlag(logCmd)
 	//Adding `--application` flag
-	addApplicationFlag(logCmd)
+	AddApplicationFlag(logCmd)
 
 	rootCmd.AddCommand(logCmd)
 }

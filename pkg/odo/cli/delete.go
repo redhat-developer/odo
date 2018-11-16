@@ -78,9 +78,9 @@ func init() {
 	componentDeleteCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(componentDeleteCmd)
+	AddProjectFlag(componentDeleteCmd)
 	//Adding `--application` flag
-	addApplicationFlag(componentDeleteCmd)
+	AddApplicationFlag(componentDeleteCmd)
 
 	rootCmd.AddCommand(componentDeleteCmd)
 }

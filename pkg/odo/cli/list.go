@@ -52,9 +52,9 @@ func init() {
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 
 	//Adding `--project` flag
-	addProjectFlag(componentListCmd)
+	AddProjectFlag(componentListCmd)
 	//Adding `--application` flag
-	addApplicationFlag(componentListCmd)
+	AddApplicationFlag(componentListCmd)
 
 	rootCmd.AddCommand(componentListCmd)
 }
