@@ -62,11 +62,11 @@ cross:
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
-	go run scripts/cli-structure/generate-cli-structure.go
+	go run cmd/cli-reference/cli-documentation.go structure
 
 .PHONY: generate-cli-reference
 generate-cli-reference:
-	go run scripts/cli-reference/generate-cli-reference.go > docs/cli-reference.md
+	go run cmd/cli-reference/cli-documentation.go reference > docs/cli-reference.md
 
 # create gzipped binaries in ./dist/release/
 # for uploading to GitHub release page
