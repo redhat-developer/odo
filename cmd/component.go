@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -77,7 +78,7 @@ func init() {
 	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
 
 	// add flags from 'get' to component command
-	componentCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
+	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
 	componentCmd.AddCommand(componentGetCmd)
 	componentCmd.AddCommand(componentSetCmd)
