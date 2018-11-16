@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 	"strings"
 
@@ -200,4 +201,6 @@ func init() {
 	addComponentFlag(urlCreateCmd)
 
 	rootCmd.AddCommand(urlCmd)
+
+	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 }
