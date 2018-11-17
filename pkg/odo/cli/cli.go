@@ -45,7 +45,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   util.RootCommandName,
+	Use:   rootCommandName,
 	Short: "Odo (Openshift Do)",
 	Long: `Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code.
 
@@ -129,3 +129,6 @@ func getLatestReleaseInfo(info chan<- string) {
 			"'odo utils config set UpdateNotification false'\n"
 	}
 }
+
+// rootCommandName is the name of the root command
+const rootCommandName = "odo"

@@ -8,8 +8,6 @@ import (
 )
 
 const (
-	// RootCommandName is the name of the root command
-	RootCommandName = "odo"
 	// SkipConnectionCheckFlagName is the name of the global flag used to skip connection check in the client
 	SkipConnectionCheckFlagName = "skip-connection-check"
 	// ProjectFlagName is the name of the flag allowing a user to specify which project to operate on
