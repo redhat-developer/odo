@@ -146,21 +146,15 @@ var projectDeleteCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Deleting project %s...\n(this operation may take some time)\n", projectName)
-		err = project.Delete(client, projectName)
+		currentProject, err := project.Delete(client, projectName)
 		if err != nil {
 			util.CheckError(err, "")
 		}
+
 		fmt.Printf("Deleted project : %v\n", projectName)
 
-		// Get Current Project
-		currProject := project.GetCurrent(client)
-
-		// Check if List returns empty, if so, the currProject is showing old currentProject
-		// In openshift, when the project is deleted, it does not reset the current project in kube config file which is used by odo for current project
-		projects, err := project.List(client)
-		util.CheckError(err, "")
-		if len(projects) != 0 {
-			fmt.Printf("%s has been set as the active project\n", currProject)
+		if currentProject != "" {
+			fmt.Printf("%s has been set as the active project\n", currentProject)
 		} else {
 			// oc errors out as "error: you do not have rights to view project "$deleted_project"."
 			fmt.Printf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command\n")

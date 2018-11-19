@@ -53,13 +53,14 @@ func Create(client *occlient.Client, projectName string) error {
 	return nil
 }
 
-// Delete deletes the project with name projectName and sets the project with name currentProject as current project and returns errors if any
-func Delete(client *occlient.Client, projectName string) error {
+// Delete deletes the project with name projectName and sets the project with name currentProject as current project
+// and returns the current project or ("" if no current project is set) and errors if any
+func Delete(client *occlient.Client, projectName string) (string, error) {
 	currentProject := GetCurrent(client)
 
 	projects, err := List(client)
 	if err != nil {
-		return errors.Wrapf(err, "unable to fetch list of projects")
+		return "", errors.Wrapf(err, "unable to fetch list of projects")
 	}
 
 	//Iterate the project list and see the expected change post deletion
@@ -74,25 +75,25 @@ func Delete(client *occlient.Client, projectName string) error {
 		// Set the project to be deleted as current inorder to be able to delete it
 		err = SetCurrent(client, projectName)
 		if err != nil {
-			return errors.Wrapf(err, "Unable to delete project %s", projectName)
+			return "", errors.Wrapf(err, "Unable to delete project %s", projectName)
 		}
 	}
 
 	// Delete the requested project
 	err = client.DeleteProject(projectName)
 	if err != nil {
-		return errors.Wrap(err, "unable to delete project")
+		return "", errors.Wrap(err, "unable to delete project")
 	}
 
 	// delete from config
 	cfg, err := config.New()
 	if err != nil {
-		return errors.Wrapf(err, "unable to delete project from config file")
+		return "", errors.Wrapf(err, "unable to delete project from config file")
 	}
 
 	err = cfg.DeleteProject(projectName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to delete project from config file")
+		return "", errors.Wrapf(err, "unable to delete project from config file")
 	}
 
 	// If there will be any projects post the current deletion,
@@ -109,13 +110,13 @@ func Delete(client *occlient.Client, projectName string) error {
 		glog.V(4).Infof("Setting the current project to %s\n", currentProject)
 		err = SetCurrent(client, currentProject)
 		if err != nil {
-			return errors.Wrapf(err, "unable to set %s as the current project\n", currentProject)
+			return "", errors.Wrapf(err, "unable to set %s as the current project\n", currentProject)
 		}
 	} else {
 		// Nothing to do if there's no project left -- Default oc client way
 		glog.V(4).Info("No projects available to mark as current\n")
 	}
-	return nil
+	return currentProject, nil
 }
 
 func List(client *occlient.Client) ([]ProjectInfo, error) {
