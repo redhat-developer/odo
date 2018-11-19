@@ -77,7 +77,7 @@ prepare-release: cross
 
 .PHONY: test
 test:
-	go test -v -race $(PKGS)
+	go test -race $(PKGS)
 
 # Run main e2e tests
 .PHONY: test-main-e2e

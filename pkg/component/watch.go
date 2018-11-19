@@ -16,6 +16,26 @@ import (
 	"github.com/pkg/errors"
 )
 
+// WatchParameters is designed to hold the controllables and attributes that the watch function works on
+type WatchParameters struct {
+	// Name of component that is to be watched
+	ComponentName string
+	// Name of application, the component is part of
+	ApplicationName string
+	// The path to the source of component(local or binary)
+	Path string
+	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
+	FileIgnores []string
+	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
+	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string) error
+	// This is a channel added to signal readiness of the watch command to the external channel listeners
+	StartChan chan bool
+	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
+	ExtChan chan bool
+	// Interval of time before pushing changes to remote(component) pod
+	PushDiffDelay int
+}
+
 // isRegExpMatch compiles strToMatch against each of the passed regExps
 // Parameters: a string strToMatch and a list of regexp patterns to match strToMatch with
 // Returns: true if there is any match else false
@@ -109,26 +129,6 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 var UserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch based on user request")
 
-// WatchParameters is designed to hold the controllables and attributes that the watch function works on
-type WatchParameters struct {
-	// Name of component that is to be watched
-	ComponentName string
-	// Name of application, the component is part of
-	ApplicationName string
-	// The path to the source of component(local or binary)
-	Path string
-	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
-	FileIgnores []string
-	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string) error
-	// This is a channel added to signal readiness of the watch command to the external channel listeners
-	StartChan chan string
-	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
-	ExtChan chan string
-	// Interval of time before pushing changes to remote(component) pod
-	PushDiffDelay int
-}
-
 // WatchAndPush watches path, if something changes in  that path it calls PushLocal
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
@@ -163,7 +163,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 		for {
 			select {
 			case extMsg := <-parameters.ExtChan:
-				if extMsg == "Stop" {
+				if extMsg {
 					changeLock.Lock()
 					watchError = UserRequestedWatchExit
 					changeLock.Unlock()
@@ -244,7 +244,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
-	parameters.StartChan <- "Start"
+	parameters.StartChan <- true
 
 	delay := time.Duration(parameters.PushDiffDelay) * time.Second
 	ticker := time.NewTicker(delay)

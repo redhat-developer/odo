@@ -6,14 +6,11 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/util"
-
 	"github.com/golang/glog"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -82,8 +79,8 @@ var watchCmd = &cobra.Command{
 				Path:            watchPath,
 				FileIgnores:     ignores,
 				PushDiffDelay:   delay,
-				StartChan:       make(chan string),
-				ExtChan:         make(chan string),
+				StartChan:       make(chan bool),
+				ExtChan:         make(chan bool),
 				WatchHandler:    component.PushLocal,
 			},
 		)

@@ -126,8 +126,8 @@ var ExpectedChangedFiles []string
 var CompDirStructure map[string]testingutil.FileProperties
 
 // ExtChan is used to return from otherwise non-terminating(without SIGINT) end of ever running watch function
-var ExtChan = make(chan string)
-var StartChan = make(chan string)
+var ExtChan = make(chan bool)
+var StartChan = make(chan bool)
 
 // Mock PushLocal to collect changed files and compare against expected changed files
 func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
@@ -139,12 +139,12 @@ func mockPushLocal(client *occlient.Client, componentName string, applicationNam
 			wantedFileDetail := CompDirStructure[expChangedFile]
 			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == gotChangedFile {
 				found = true
-				ExtChan <- "Stop"
+				ExtChan <- true
 				return nil
 			}
 		}
 		if !found {
-			ExtChan <- "Stop"
+			ExtChan <- true
 			return fmt.Errorf("received %+v which is not same as expected list %+v", files, ExpectedChangedFiles)
 		}
 	}
@@ -288,7 +288,7 @@ func TestWatchAndPush(t *testing.T) {
 				for {
 					select {
 					case startMsg := <-StartChan:
-						if startMsg == "Start" {
+						if startMsg {
 							for _, fileModification := range tt.fileModifications {
 
 								intendedFileRelPath := fileModification.FilePath
