@@ -120,7 +120,7 @@ var S2IDeploymentsDir = []string{
 const errorMsg = `
 Please login to your server: 
 
-oc login https://mycluster.mydomain.com
+odo login https://mycluster.mydomain.com
 `
 
 type Client struct {
