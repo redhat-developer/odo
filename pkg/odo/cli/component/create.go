@@ -96,7 +96,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		}
 		if len(componentLocal) != 0 {
 			componentPath = componentLocal
-			componentPathType = component.SOURCE
+			componentPathType = component.LOCAL
 			checkFlag++
 		}
 
@@ -158,6 +158,14 @@ A full list of component types that can be deployed is available using: 'odo cat
 				fmt.Printf("%s will be ignored as minimum memory %s and maximum memory %s passed carry greater precedence\n", memory, memoryMin, memoryMax)
 			}
 		}
+		if (memoryMin == "") != (memoryMax == "") {
+			if memory != "" {
+				fmt.Printf("Using memory %s for min and max limits.\nIf you want memory min and memory max specifically, please ensure to pass both of them\n", memory)
+			} else {
+				fmt.Println("memoryMin should accompany memoryMax or pass memory to use same value for both min and max or try not passing any of them")
+				os.Exit(1)
+			}
+		}
 
 		memoryQuantity := util.FetchResourceQunatity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
 		resourceQuantity := []util.ResourceRequirementInfo{}
@@ -169,7 +177,19 @@ A full list of component types that can be deployed is available using: 'odo cat
 		if len(componentGit) != 0 {
 
 			// Use Git
-			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts, componentEnvVars, resourceQuantity)
+			err := component.CreateFromGit(
+				client,
+				component.CreateArgs{
+					Name:            componentName,
+					SourcePath:      componentGit,
+					SourceType:      component.GIT,
+					ImageName:       componentImageName,
+					EnvVars:         componentEnvVars,
+					Ports:           componentPorts,
+					Resources:       resourceQuantity,
+					ApplicationName: applicationName,
+				},
+			)
 			odoutil.CheckError(err, "")
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 
@@ -190,7 +210,19 @@ A full list of component types that can be deployed is available using: 'odo cat
 			}
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars, resourceQuantity)
+			err = component.CreateFromPath(
+				client,
+				component.CreateArgs{
+					Name:            componentName,
+					SourcePath:      dir,
+					SourceType:      component.LOCAL,
+					ImageName:       componentImageName,
+					EnvVars:         componentEnvVars,
+					Ports:           componentPorts,
+					Resources:       resourceQuantity,
+					ApplicationName: applicationName,
+				},
+			)
 			odoutil.CheckError(err, "")
 
 		} else if len(componentBinary) != 0 {
@@ -201,7 +233,19 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.CheckError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts, componentEnvVars, resourceQuantity)
+			err = component.CreateFromPath(
+				client,
+				component.CreateArgs{
+					Name:            componentName,
+					SourcePath:      path,
+					SourceType:      component.BINARY,
+					ImageName:       componentImageName,
+					EnvVars:         componentEnvVars,
+					Ports:           componentPorts,
+					Resources:       resourceQuantity,
+					ApplicationName: applicationName,
+				},
+			)
 			odoutil.CheckError(err, "")
 
 		} else {
@@ -210,7 +254,19 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.CheckError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars, resourceQuantity)
+			err = component.CreateFromPath(
+				client,
+				component.CreateArgs{
+					Name:            componentName,
+					SourcePath:      dir,
+					SourceType:      component.LOCAL,
+					ImageName:       componentImageName,
+					EnvVars:         componentEnvVars,
+					Ports:           componentPorts,
+					Resources:       resourceQuantity,
+					ApplicationName: applicationName,
+				},
+			)
 			odoutil.CheckError(err, "")
 		}
 

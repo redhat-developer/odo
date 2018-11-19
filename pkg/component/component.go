@@ -37,8 +37,8 @@ type CreateType string
 const (
 	// GIT as source of component
 	GIT CreateType = "git"
-	// SOURCE Local source path as source of component
-	SOURCE CreateType = "source"
+	// LOCAL Local source path as source of component
+	LOCAL CreateType = "local"
 	// BINARY Local Binary as source of component
 	BINARY CreateType = "binary"
 	// NONE indicates there's no information about the type of source of the component
@@ -51,17 +51,29 @@ type ComponentInfo struct {
 	Type string
 }
 
+// CreateArgs is a container of attributes of component create action
+type CreateArgs struct {
+	Name            string
+	SourcePath      string
+	SourceType      CreateType
+	ImageName       string
+	EnvVars         []string
+	Ports           []string
+	Resources       []util.ResourceRequirementInfo
+	ApplicationName string
+}
+
 // GetComponentDir returns source repo name
 // Parameters:
 //		path: git url or source path or binary path
-//		paramType: One of CreateType as in GIT/SOURCE/BINARY
+//		paramType: One of CreateType as in GIT/LOCAL/BINARY
 // Returns: directory name
 func GetComponentDir(path string, paramType CreateType) (string, error) {
 	retVal := ""
 	switch paramType {
 	case GIT:
 		retVal = strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".git")
-	case SOURCE:
+	case LOCAL:
 		retVal = filepath.Base(path)
 	case BINARY:
 		filename := filepath.Base(path)
@@ -140,12 +152,13 @@ func validateSourceType(sourceType string) bool {
 // CreateFromGit inputPorts is the array containing the string port values
 // inputPorts is the array containing the string port values
 // envVars is the array containing the environment variables
-func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
+// func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
+func CreateFromGit(client *occlient.Client, params CreateArgs) error {
 
-	labels := componentlabels.GetLabels(name, applicationName, true)
+	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Parse componentImageType before adding to labels
-	_, imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
+	_, imageName, imageTag, _, err := occlient.ParseImageName(params.ImageName)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse image name")
 	}
@@ -155,11 +168,11 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 	labels[componentlabels.ComponentTypeVersion] = imageTag
 
 	// save source path as annotation
-	annotations := map[string]string{componentSourceURLAnnotation: url}
+	annotations := map[string]string{componentSourceURLAnnotation: params.SourcePath}
 	annotations[componentSourceTypeAnnotation] = "git"
 
 	// Namespace the component
-	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(params.Name, params.ApplicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
@@ -171,7 +184,7 @@ func CreateFromGit(client *occlient.Client, name string, componentImageType stri
 		Annotations: annotations,
 	}
 
-	err = client.NewAppS2I(name, commonObjectMeta, componentImageType, url, inputPorts, envVars, resources)
+	err = client.NewAppS2I(params.Name, commonObjectMeta, params.ImageName, params.SourcePath, params.Ports, params.EnvVars, params.Resources)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
@@ -200,11 +213,12 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 // envVars is the array containing the environment variables
-func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
-	labels := componentlabels.GetLabels(name, applicationName, true)
+//func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
+func CreateFromPath(client *occlient.Client, params CreateArgs) error {
+	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Parse componentImageType before adding to labels
-	_, imageName, imageTag, _, err := occlient.ParseImageName(componentImageType)
+	_, imageName, imageTag, _, err := occlient.ParseImageName(params.ImageName)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse image name")
 	}
@@ -214,12 +228,12 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 	labels[componentlabels.ComponentTypeVersion] = imageTag
 
 	// save source path as annotation
-	sourceURL := util.GenFileUrl(path, runtime.GOOS)
+	sourceURL := util.GenFileUrl(params.SourcePath, runtime.GOOS)
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL}
-	annotations[componentSourceTypeAnnotation] = sourceType
+	annotations[componentSourceTypeAnnotation] = string(params.SourceType)
 
 	// Namespace the component
-	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(params.Name, params.ApplicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
@@ -232,7 +246,7 @@ func CreateFromPath(client *occlient.Client, name string, componentImageType str
 	}
 
 	// Bootstrap the deployment with SupervisorD
-	err = client.BootstrapSupervisoredS2I(name, commonObjectMeta, componentImageType, inputPorts, envVars, resources)
+	err = client.BootstrapSupervisoredS2I(params.Name, commonObjectMeta, params.ImageName, params.Ports, params.EnvVars, params.Resources)
 	if err != nil {
 		return err
 	}

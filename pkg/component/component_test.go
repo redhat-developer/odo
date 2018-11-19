@@ -116,7 +116,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix configured",
 			componentType:      "nodejs",
-			componentPathType:  SOURCE,
+			componentPathType:  LOCAL,
 			componentPath:      "./testing",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -195,7 +195,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: Source Path",
 			args: args{
-				paramType: SOURCE,
+				paramType: LOCAL,
 				path:      "./testing",
 			},
 			wantErr: false,
