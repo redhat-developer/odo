@@ -260,7 +260,10 @@ func OpenBrowser(url string) error {
 }
 
 // FetchResourceQunatity takes passed min, max and requested resource quantities and returns min and max resource requests
-func FetchResourceQunatity(resourceType corev1.ResourceName, min string, max string, request string) ResourceRequirementInfo {
+func FetchResourceQunatity(resourceType corev1.ResourceName, min string, max string, request string) *ResourceRequirementInfo {
+	if min == "" && max == "" && request == "" {
+		return nil
+	}
 	// If minimum and maximum both are passed they carry highest priority
 	// Otherwise, use the request as min and max
 	var minResource resource.Quantity
@@ -275,7 +278,7 @@ func FetchResourceQunatity(resourceType corev1.ResourceName, min string, max str
 		minResource = resource.MustParse(request)
 		maxResource = resource.MustParse(request)
 	}
-	return ResourceRequirementInfo{
+	return &ResourceRequirementInfo{
 		ResourceType: corev1.ResourceMemory,
 		MinQty:       minResource,
 		MaxQty:       maxResource,

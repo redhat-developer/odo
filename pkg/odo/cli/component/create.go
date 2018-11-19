@@ -160,7 +160,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 		}
 
 		memoryQuantity := util.FetchResourceQunatity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
-		resourceQuantity := []util.ResourceRequirementInfo{memoryQuantity}
+		resourceQuantity := []util.ResourceRequirementInfo{}
+		if memoryQuantity != nil {
+			resourceQuantity = append(resourceQuantity, *memoryQuantity)
+		}
 
 		// Deploy the component with Git
 		if len(componentGit) != 0 {
@@ -237,9 +240,9 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
-	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component container. Ex: 100 Mi")
-	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component container. Ex: 100 Mi")
-	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component container. Ex: 100 Mi")
+	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component container. Ex: 100Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component container. Ex: 100Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component container. Ex: 100Mi")
 	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
