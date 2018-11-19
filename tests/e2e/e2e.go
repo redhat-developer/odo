@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"bytes"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -100,48 +101,48 @@ func waitForServiceStatusCmd(cmd string, status string) bool {
 	})
 }
 
-func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check func(output string) bool) (bool, error) {
+func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check func(output string) bool, startSimulationCh chan bool, startIndicatorFunc func(output string) bool) (bool, error) {
 	var cmd *exec.Cmd
+	var buf bytes.Buffer
 
 	cmdStrParts := strings.Split(cmdStr, " ")
 	cmdName := cmdStrParts[0]
+	fmt.Println("Running command: ", cmdStrParts)
 	if len(cmdStrParts) > 1 {
 		cmdStrParts = cmdStrParts[1:]
 		cmd = exec.Command(cmdName, cmdStrParts...)
 	} else {
 		cmd = exec.Command(cmdName)
 	}
+	cmd.Stdout = &buf
 
 	pingTimeout := time.After(timeout)
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return false, err
-	}
 
-	buff := make([]byte, 1048576)
-	tick := time.Tick(1 * time.Second)
+	tick := time.Tick(1 * time.Millisecond)
 
 	if err := cmd.Start(); err != nil {
 		return false, err
 	}
 
+	go func() {
+		cmd.Wait()
+	}()
+
+	startedFileModification := false
 	for {
 		select {
 		case <-pingTimeout:
 			Fail("Timeout out after " + string(timeout) + " minutes")
 		case <-tick:
-			n, err := stdout.Read(buff)
-			if err != nil {
-				return false, err
+			if !startedFileModification && startIndicatorFunc(buf.String()) {
+				startedFileModification = true
+				startSimulationCh <- true
 			}
-			if n > 0 {
-				s := string(buff[:n])
-				if check(s) {
-					if err := cmd.Process.Kill(); err != nil {
-						return true, err
-					}
-					return true, nil
+			if check(buf.String()) {
+				if err := cmd.Process.Kill(); err != nil {
+					return true, err
 				}
+				return true, nil
 			}
 		}
 	}
