@@ -283,7 +283,7 @@ var applicationDescribeCmd = &cobra.Command{
 		for _, currentComponent := range componentList {
 			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
 			util.CheckError(err, "")
-			cli.PrintComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
+			util.PrintComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
 		}
 	},
 }
@@ -312,7 +312,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}
-	applicationCmd.SetUsageTemplate(cli.CmdUsageTemplate)
+	applicationCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	cli.RootCmd().AddCommand(applicationCmd)
 

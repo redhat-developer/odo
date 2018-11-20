@@ -48,7 +48,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	logCmd.Annotations = map[string]string{"command": "component"}
-	logCmd.SetUsageTemplate(cli.CmdUsageTemplate)
+	logCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	//Adding `--project` flag
 	addProjectFlag(logCmd)

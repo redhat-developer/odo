@@ -190,7 +190,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	serviceCmd.Annotations = map[string]string{"command": "other"}
-	serviceCmd.SetUsageTemplate(cli.CmdUsageTemplate)
+	serviceCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	serviceCmd.AddCommand(serviceCreateCmd)
 	serviceCmd.AddCommand(serviceDeleteCmd)
 	serviceCmd.AddCommand(serviceListCmd)

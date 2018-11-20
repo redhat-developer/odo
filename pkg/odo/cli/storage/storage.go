@@ -282,7 +282,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}
-	storageCmd.SetUsageTemplate(cli.CmdUsageTemplate)
+	storageCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	cli.RootCmd().AddCommand(storageCmd)
 

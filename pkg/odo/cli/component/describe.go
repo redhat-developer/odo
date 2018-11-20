@@ -31,14 +31,14 @@ var describeCmd = &cobra.Command{
 		}
 		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, componentName, applicationName)
 		util.CheckError(err, "")
-		cli.PrintComponentInfo(componentName, componentType, path, componentURL, appStore)
+		util.PrintComponentInfo(componentName, componentType, path, componentURL, appStore)
 	},
 }
 
 func init() {
 	// Add a defined annotation in order to appear in the help menu
 	describeCmd.Annotations = map[string]string{"command": "component"}
-	describeCmd.SetUsageTemplate(cli.CmdUsageTemplate)
+	describeCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	//Adding `--project` flag
 	addProjectFlag(describeCmd)

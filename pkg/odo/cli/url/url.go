@@ -184,7 +184,7 @@ func init() {
 
 	// Add a defined annotation in order to appear in the help menu
 	urlCmd.Annotations = map[string]string{"command": "other"}
-	urlCmd.SetUsageTemplate(cli.CmdUsageTemplate)
+	urlCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
 	addProjectFlag(urlListCmd)
