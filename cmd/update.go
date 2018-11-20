@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/fatih/color"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +35,6 @@ var updateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		context := genericclioptions.NewContext(cmd)
 		client := context.Client
-		projectName := context.Project
 		applicationName := context.Application
 
 		stdout := color.Output
@@ -58,27 +56,11 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// TODO: check if we can use context.Component() here
 		var componentName string
 		if len(args) == 0 {
-			componentName, err := component.GetCurrent(applicationName, projectName)
-			util.CheckError(err, "unable to get current component")
-			if len(componentName) == 0 {
-				appList, err := application.ListInProject(client)
-				util.CheckError(err, "")
-				if len(appList) == 0 {
-					fmt.Println("Cannot update as no application exists in the current projectName")
-					os.Exit(1)
-				}
-			}
+			componentName = context.Component()
 		} else {
-			componentName = args[0]
-			exists, err := component.Exists(client, componentName, applicationName)
-			util.CheckError(err, "")
-			if !exists {
-				fmt.Printf("Component with name %s does not exist in the current application\n", componentName)
-				os.Exit(1)
-			}
+			componentName = context.Component(args[0])
 		}
 
 		if len(applicationName) == 0 {
