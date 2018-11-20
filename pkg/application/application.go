@@ -9,6 +9,7 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/models"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -37,7 +38,7 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 
 	// If there's no prefix in config file or it is equal to $DIR, use safe default which is the name of current directory
 	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == "" {
-		prefix, err := component.GetComponentDir("", component.NONE)
+		prefix, err := component.GetComponentDir("", models.NONE)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to generate random app name")
 		}

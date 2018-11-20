@@ -15,6 +15,7 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/models"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
@@ -31,36 +32,10 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 
-// CreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
-type CreateType string
-
-const (
-	// GIT as source of component
-	GIT CreateType = "git"
-	// LOCAL Local source path as source of component
-	LOCAL CreateType = "local"
-	// BINARY Local Binary as source of component
-	BINARY CreateType = "binary"
-	// NONE indicates there's no information about the type of source of the component
-	NONE CreateType = ""
-)
-
 // ComponentInfo holds all important information about one component
 type ComponentInfo struct {
 	Name string
 	Type string
-}
-
-// CreateArgs is a container of attributes of component create action
-type CreateArgs struct {
-	Name            string
-	SourcePath      string
-	SourceType      CreateType
-	ImageName       string
-	EnvVars         []string
-	Ports           []string
-	Resources       []util.ResourceRequirementInfo
-	ApplicationName string
 }
 
 // GetComponentDir returns source repo name
@@ -68,14 +43,14 @@ type CreateArgs struct {
 //		path: git url or source path or binary path
 //		paramType: One of CreateType as in GIT/LOCAL/BINARY
 // Returns: directory name
-func GetComponentDir(path string, paramType CreateType) (string, error) {
+func GetComponentDir(path string, paramType models.CreateType) (string, error) {
 	retVal := ""
 	switch paramType {
-	case GIT:
+	case models.GIT:
 		retVal = strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".git")
-	case LOCAL:
+	case models.LOCAL:
 		retVal = filepath.Base(path)
-	case BINARY:
+	case models.BINARY:
 		filename := filepath.Base(path)
 		var extension = filepath.Ext(filename)
 		retVal = filename[0 : len(filename)-len(extension)]
@@ -93,7 +68,7 @@ func GetComponentDir(path string, paramType CreateType) (string, error) {
 // GetDefaultComponentName generates a unique component name
 // Parameters: desired default component name(w/o prefix) and slice of existing component names
 // Returns: Unique component name and error if any
-func GetDefaultComponentName(componentPath string, componentPathType CreateType, componentType string, existingComponentList []ComponentInfo) (string, error) {
+func GetDefaultComponentName(componentPath string, componentPathType models.CreateType, componentType string, existingComponentList []ComponentInfo) (string, error) {
 	var prefix string
 
 	// Get component names from component list
@@ -152,8 +127,7 @@ func validateSourceType(sourceType string) bool {
 // CreateFromGit inputPorts is the array containing the string port values
 // inputPorts is the array containing the string port values
 // envVars is the array containing the environment variables
-// func CreateFromGit(client *occlient.Client, name string, componentImageType string, url string, applicationName string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
-func CreateFromGit(client *occlient.Client, params CreateArgs) error {
+func CreateFromGit(client *occlient.Client, params models.CreateArgs) error {
 
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
@@ -184,7 +158,7 @@ func CreateFromGit(client *occlient.Client, params CreateArgs) error {
 		Annotations: annotations,
 	}
 
-	err = client.NewAppS2I(params.Name, commonObjectMeta, params.ImageName, params.SourcePath, params.Ports, params.EnvVars, params.Resources)
+	err = client.NewAppS2I(params, commonObjectMeta)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
@@ -213,8 +187,7 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 // envVars is the array containing the environment variables
-//func CreateFromPath(client *occlient.Client, name string, componentImageType string, path string, applicationName string, sourceType string, inputPorts []string, envVars []string, resources []util.ResourceRequirementInfo) error {
-func CreateFromPath(client *occlient.Client, params CreateArgs) error {
+func CreateFromPath(client *occlient.Client, params models.CreateArgs) error {
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Parse componentImageType before adding to labels
@@ -246,7 +219,7 @@ func CreateFromPath(client *occlient.Client, params CreateArgs) error {
 	}
 
 	// Bootstrap the deployment with SupervisorD
-	err = client.BootstrapSupervisoredS2I(params.Name, commonObjectMeta, params.ImageName, params.Ports, params.EnvVars, params.Resources)
+	err = client.BootstrapSupervisoredS2I(params, commonObjectMeta)
 	if err != nil {
 		return err
 	}

@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 
+	"github.com/redhat-developer/odo/pkg/models"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -1645,13 +1646,17 @@ func TestNewAppS2I(t *testing.T) {
 				return true, fakeImageStreamImages(tt.args.commonObjectMeta.Name), nil
 			})
 
-			err := fkclient.NewAppS2I(tt.args.commonObjectMeta.Name,
+			err := fkclient.NewAppS2I(
+				models.CreateArgs{
+					Name:       tt.args.commonObjectMeta.Name,
+					SourcePath: tt.args.gitURL,
+					SourceType: models.GIT,
+					ImageName:  tt.args.builderImage,
+					EnvVars:    tt.args.envVars,
+					Ports:      tt.args.inputPorts,
+					Resources:  []util.ResourceRequirementInfo{},
+				},
 				tt.args.commonObjectMeta,
-				tt.args.builderImage,
-				tt.args.gitURL,
-				tt.args.inputPorts,
-				tt.args.envVars,
-				[]util.ResourceRequirementInfo{},
 			)
 
 			if (err != nil) != tt.wantErr {

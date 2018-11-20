@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/models"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -82,21 +83,21 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		checkFlag := 0
 		componentPath := ""
-		var componentPathType component.CreateType
+		var componentPathType models.CreateType
 
 		if len(componentBinary) != 0 {
 			componentPath = componentBinary
-			componentPathType = component.BINARY
+			componentPathType = models.BINARY
 			checkFlag++
 		}
 		if len(componentGit) != 0 {
 			componentPath = componentGit
-			componentPathType = component.GIT
+			componentPathType = models.GIT
 			checkFlag++
 		}
 		if len(componentLocal) != 0 {
 			componentPath = componentLocal
-			componentPathType = component.LOCAL
+			componentPathType = models.LOCAL
 			checkFlag++
 		}
 
@@ -153,18 +154,15 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// If min-memory, max-memory and memory are passed, memory will be ignored as the other 2 have greater precedence.
 		// Emit a message indicating the same
-		if memoryMin != "" && memoryMax != "" {
-			if memory != "" {
-				fmt.Printf("%s will be ignored as minimum memory %s and maximum memory %s passed carry greater precedence\n", memory, memoryMin, memoryMax)
-			}
+		if memoryMin != "" && memoryMax != "" && memory != "" {
+			fmt.Println("Flag `memory` will be ignored as `min-memory` and `max-memory` have been passed ")
 		}
-		if (memoryMin == "") != (memoryMax == "") {
-			if memory != "" {
-				fmt.Printf("Using memory %s for min and max limits.\nIf you want memory min and memory max specifically, please ensure to pass both of them\n", memory)
-			} else {
-				fmt.Println("memoryMin should accompany memoryMax or pass memory to use same value for both min and max or try not passing any of them")
-				os.Exit(1)
-			}
+		if (memoryMin == "") != (memoryMax == "") && memory != "" {
+			fmt.Printf("Using memory %s for min and max limits.\n", memory)
+		}
+		if (memoryMin == "") != (memoryMax == "") && memory == "" {
+			fmt.Println("memoryMin should accompany memoryMax or pass memory to use same value for both min and max or try not passing any of them")
+			os.Exit(1)
 		}
 
 		memoryQuantity := util.FetchResourceQunatity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
@@ -179,10 +177,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 			// Use Git
 			err := component.CreateFromGit(
 				client,
-				component.CreateArgs{
+				models.CreateArgs{
 					Name:            componentName,
 					SourcePath:      componentGit,
-					SourceType:      component.GIT,
+					SourceType:      models.GIT,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,
@@ -212,10 +210,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 			// Create
 			err = component.CreateFromPath(
 				client,
-				component.CreateArgs{
+				models.CreateArgs{
 					Name:            componentName,
 					SourcePath:      dir,
-					SourceType:      component.LOCAL,
+					SourceType:      models.LOCAL,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,
@@ -235,10 +233,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 			// Create
 			err = component.CreateFromPath(
 				client,
-				component.CreateArgs{
+				models.CreateArgs{
 					Name:            componentName,
 					SourcePath:      path,
-					SourceType:      component.BINARY,
+					SourceType:      models.BINARY,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,
@@ -256,10 +254,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 			// Create
 			err = component.CreateFromPath(
 				client,
-				component.CreateArgs{
+				models.CreateArgs{
 					Name:            componentName,
 					SourcePath:      dir,
-					SourceType:      component.LOCAL,
+					SourceType:      models.LOCAL,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,
@@ -296,9 +294,9 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
-	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component container. Ex: 100Mi")
-	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component container. Ex: 100Mi")
-	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component container. Ex: 100Mi")
+	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component container. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component container. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component container. ex. 100Mi")
 	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
