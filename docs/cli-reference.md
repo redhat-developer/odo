@@ -71,7 +71,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         search : Search available component & service types.
             component : Search component type in catalog
             service : Search service type in catalog
-    component --project --short : Components of application.
+    component --short : Components of application.
         get --app --project --short : Get currently active component
         set --app --project : Set active component.
     create --app --binary --env --git --local --port --project : Create a new component
@@ -84,7 +84,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
     logout : Log out of the current OpenShift session
     project --short : Perform project operations
         create : Create a new project
-        delete --force : Delete a project
+        delete --force --short : Delete a project
         get --short : Get the active project
         list : List all the projects
         set --short : Set the current active project
