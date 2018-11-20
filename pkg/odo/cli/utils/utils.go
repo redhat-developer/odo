@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
@@ -19,7 +18,7 @@ var utilsCmd = &cobra.Command{
 		configurationViewCmd.Example),
 }
 
-func init() {
+func NewCmdUtils() *cobra.Command {
 	utilsCmd.Annotations = map[string]string{"command": "utility"}
 	utilsCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
@@ -29,5 +28,5 @@ func init() {
 	configurationCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	utilsCmd.AddCommand(configurationCmd)
 	utilsCmd.AddCommand(terminalCmd)
-	cli.RootCmd().AddCommand(utilsCmd)
+	return utilsCmd
 }

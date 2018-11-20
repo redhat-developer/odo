@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"strings"
@@ -68,7 +67,7 @@ var componentDeleteCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdDelete() *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
 
 	// Add a defined annotation in order to appear in the help menu
@@ -80,5 +79,5 @@ func init() {
 	//Adding `--application` flag
 	genericclioptions.AddApplicationFlag(componentDeleteCmd)
 
-	cli.RootCmd().AddCommand(componentDeleteCmd)
+	return componentDeleteCmd
 }

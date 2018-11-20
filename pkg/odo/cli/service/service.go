@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -183,7 +182,7 @@ var serviceListCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdService() *cobra.Command {
 	serviceDeleteCmd.Flags().BoolVarP(&serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
 	serviceCreateCmd.Flags().StringVar(&plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
@@ -205,10 +204,10 @@ func init() {
 	genericclioptions.AddApplicationFlag(serviceDeleteCmd)
 	genericclioptions.AddApplicationFlag(serviceListCmd)
 
-	cli.RootCmd().AddCommand(serviceCmd)
-
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
+
+	return serviceCmd
 }
 
 func addProjectFlag(cmd *cobra.Command) {

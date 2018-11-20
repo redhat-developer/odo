@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -48,7 +47,7 @@ var componentListCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdList() *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 
@@ -57,5 +56,5 @@ func init() {
 	//Adding `--application` flag
 	genericclioptions.AddApplicationFlag(componentListCmd)
 
-	cli.RootCmd().AddCommand(componentListCmd)
+	return componentListCmd
 }

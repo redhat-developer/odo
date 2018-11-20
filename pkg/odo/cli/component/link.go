@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/secret"
@@ -138,7 +137,7 @@ Please create one of the two before attempting to use odo link`, suppliedName)
 	},
 }
 
-func init() {
+func NewCmdLink() *cobra.Command {
 	linkCmd.PersistentFlags().StringVar(&port, "port", "", "Port of the backend to which to link")
 	linkCmd.PersistentFlags().BoolVarP(&wait, "wait", "w", false, "If enabled, the link command will wait for the service to be provisioned")
 
@@ -152,5 +151,5 @@ func init() {
 	//Adding `--component` flag
 	genericclioptions.AddComponentFlag(linkCmd)
 
-	cli.RootCmd().AddCommand(linkCmd)
+	return linkCmd
 }

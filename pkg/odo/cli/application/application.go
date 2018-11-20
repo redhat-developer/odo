@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -288,7 +287,7 @@ var applicationDescribeCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdApplication() *cobra.Command {
 	applicationDeleteCmd.Flags().BoolVarP(&applicationForceDeleteFlag, "force", "f", false, "Delete application without prompting")
 
 	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
@@ -314,12 +313,11 @@ func init() {
 	applicationCmd.Annotations = map[string]string{"command": "other"}
 	applicationCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
-	cli.RootCmd().AddCommand(applicationCmd)
-
 	completion.RegisterCommandHandler(applicationDescribeCmd, completion.AppCompletionHandler)
 	completion.RegisterCommandHandler(applicationDeleteCmd, completion.AppCompletionHandler)
 	completion.RegisterCommandHandler(applicationSetCmd, completion.AppCompletionHandler)
 
+	return applicationCmd
 }
 
 func addProjectFlag(cmd *cobra.Command) {

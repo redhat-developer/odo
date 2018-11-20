@@ -5,6 +5,16 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/odo/cli/application"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
+	"github.com/redhat-developer/odo/pkg/odo/cli/component"
+	"github.com/redhat-developer/odo/pkg/odo/cli/login"
+	"github.com/redhat-developer/odo/pkg/odo/cli/logout"
+	"github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cli/service"
+	"github.com/redhat-developer/odo/pkg/odo/cli/storage"
+	"github.com/redhat-developer/odo/pkg/odo/cli/url"
+	"github.com/redhat-developer/odo/pkg/odo/cli/utils"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
@@ -112,6 +122,25 @@ func init() {
 	flag.CommandLine.Parse([]string{})
 
 	rootCmd.AddCommand(
+		application.NewCmdApplication(),
+		catalog.NewCmdCatalog(),
+		component.NewCmdComponent(),
+		component.NewCmdCreate(),
+		component.NewCmdDelete(),
+		component.NewCmdDescribe(),
+		component.NewCmdLink(),
+		component.NewCmdList(),
+		component.NewCmdLog(),
+		component.NewCmdPush(),
+		component.NewCmdUpdate(),
+		component.NewCmdWatch(),
+		login.NewCmdLogin(),
+		logout.NewCmdLogout(),
+		project.NewCmdProject(),
+		service.NewCmdService(),
+		storage.NewCmdStorage(),
+		url.NewCmdUrl(),
+		utils.NewCmdUtils(),
 		version.NewCmdVersion(),
 	)
 }

@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"net/url"
 	"os"
@@ -78,7 +77,7 @@ var watchCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdWatch() *cobra.Command {
 	// ignore git as it can change even if no source file changed
 	// for example some plugins providing git info in PS1 doing that
 	watchCmd.Flags().StringSliceVar(&ignores, "ignore", []string{".*\\.git.*"}, "Files or folders to be ignored via regular expressions.")
@@ -93,5 +92,5 @@ func init() {
 	//Adding `--project` flag
 	addProjectFlag(watchCmd)
 
-	cli.RootCmd().AddCommand(watchCmd)
+	return watchCmd
 }

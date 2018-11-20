@@ -5,7 +5,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -240,7 +239,7 @@ var storageMountCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdStorage() *cobra.Command {
 	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageCreateCmd.MarkFlagRequired("path")
@@ -284,11 +283,11 @@ func init() {
 	storageCmd.Annotations = map[string]string{"command": "other"}
 	storageCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	cli.RootCmd().AddCommand(storageCmd)
-
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
 	completion.RegisterCommandHandler(storageMountCmd, completion.StorageMountCompletionHandler)
 	completion.RegisterCommandHandler(storageUnmountCmd, completion.StorageUnMountCompletionHandler)
+
+	return storageCmd
 }
 
 func addProjectFlag(cmd *cobra.Command) {

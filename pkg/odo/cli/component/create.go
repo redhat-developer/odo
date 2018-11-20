@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -218,7 +217,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 	},
 }
 
-func init() {
+func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
@@ -237,5 +236,5 @@ func init() {
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
 
-	cli.RootCmd().AddCommand(componentCreateCmd)
+	return componentCreateCmd
 }

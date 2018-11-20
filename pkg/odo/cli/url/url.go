@@ -2,7 +2,6 @@ package url
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
@@ -172,7 +171,7 @@ var urlListCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdUrl() *cobra.Command {
 	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().BoolVar(&urlOpenFlag, "open", false, "open the created link with your default browser")
 
@@ -201,9 +200,9 @@ func init() {
 	genericclioptions.AddComponentFlag(urlListCmd)
 	genericclioptions.AddComponentFlag(urlCreateCmd)
 
-	cli.RootCmd().AddCommand(urlCmd)
-
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
+
+	return urlCmd
 }
 
 func addProjectFlag(cmd *cobra.Command) {

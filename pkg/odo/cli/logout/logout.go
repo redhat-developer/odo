@@ -1,7 +1,6 @@
 package logout
 
 import (
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -24,10 +23,10 @@ var logoutCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdLogout() *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	logoutCmd.Annotations = map[string]string{"command": "utility"}
 	logoutCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
-	cli.RootCmd().AddCommand(logoutCmd)
+	return logoutCmd
 }

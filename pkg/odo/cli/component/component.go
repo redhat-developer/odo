@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/golang/glog"
@@ -77,7 +76,7 @@ var componentSetCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdComponent() *cobra.Command {
 
 	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
 
@@ -98,7 +97,7 @@ func init() {
 	componentCmd.Annotations = map[string]string{"command": "component"}
 	componentCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
-	cli.RootCmd().AddCommand(componentCmd)
+	return componentCmd
 }
 
 func addProjectFlag(cmd *cobra.Command) {

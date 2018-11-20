@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"net/url"
@@ -101,7 +100,7 @@ var pushCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdPush() *cobra.Command {
 	pushCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use given local directory as a source for component. (It must be a local component)")
 
 	// Add a defined annotation in order to appear in the help menu
@@ -113,5 +112,5 @@ func init() {
 	//Adding `--application` flag
 	genericclioptions.AddApplicationFlag(pushCmd)
 
-	cli.RootCmd().AddCommand(pushCmd)
+	return pushCmd
 }

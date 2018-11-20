@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -97,7 +96,7 @@ var updateCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdUpdate() *cobra.Command {
 	updateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "binary artifact")
 	updateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source for component.")
@@ -115,5 +114,5 @@ func init() {
 	completion.RegisterCommandFlagHandler(updateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(updateCmd, "binary", completion.FileCompletionHandler)
 
-	cli.RootCmd().AddCommand(updateCmd)
+	return updateCmd
 }

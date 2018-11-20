@@ -1,7 +1,6 @@
 package component
 
 import (
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -43,7 +42,7 @@ var logCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdLog() *cobra.Command {
 	logCmd.Flags().BoolVarP(&logFollow, "follow", "f", false, "Follow logs")
 
 	// Add a defined annotation in order to appear in the help menu
@@ -55,5 +54,5 @@ func init() {
 	//Adding `--application` flag
 	genericclioptions.AddApplicationFlag(logCmd)
 
-	cli.RootCmd().AddCommand(logCmd)
+	return logCmd
 }

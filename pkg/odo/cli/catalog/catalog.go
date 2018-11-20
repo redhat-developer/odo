@@ -3,7 +3,6 @@ package catalog
 import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -287,7 +286,7 @@ This describes the service and the associated plans.
 	},
 }
 
-func init() {
+func NewCmdCatalog() *cobra.Command {
 	catalogCmd.AddCommand(catalogSearchCmd)
 	catalogCmd.AddCommand(catalogListCmd)
 	catalogCmd.AddCommand(catalogDescribeCmd)
@@ -300,5 +299,5 @@ func init() {
 	catalogCmd.Annotations = map[string]string{"command": "other"}
 	catalogCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
-	cli.RootCmd().AddCommand(catalogCmd)
+	return catalogCmd
 }
