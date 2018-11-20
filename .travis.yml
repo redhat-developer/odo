@@ -51,7 +51,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-cmp-e2e
+        - travis_wait make test-cmp-e2e
 
     # Run java e2e tests
     - <<: *base-test
