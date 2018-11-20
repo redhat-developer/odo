@@ -3,7 +3,6 @@ package version
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/notify"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
@@ -65,13 +64,13 @@ var versionCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func NewCmdVersion() *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	versionCmd.Annotations = map[string]string{"command": "utility"}
 	versionCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	versionCmd.Flags().BoolVar(&clientFlag, "client", false, "Client version only (no server required).")
 
-	cli.RootCmd().AddCommand(versionCmd)
+	return versionCmd
 }
 func GetLatestReleaseInfo(info chan<- string) {
 	newTag, err := notify.CheckLatestReleaseTag(VERSION)

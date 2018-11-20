@@ -110,6 +110,10 @@ func init() {
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
 	flag.CommandLine.Parse([]string{})
+
+	rootCmd.AddCommand(
+		version.NewCmdVersion(),
+	)
 }
 
 // rootCommandName is the name of the root command
