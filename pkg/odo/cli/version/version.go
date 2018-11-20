@@ -2,6 +2,7 @@ package version
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/notify"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
@@ -42,7 +43,7 @@ var versionCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Println("odo " + cli.VERSION + " (" + GITCOMMIT + ")")
+		fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
 
 		if !clientFlag {
 			// Lets fetch the info about the server
@@ -71,4 +72,22 @@ func init() {
 	versionCmd.Flags().BoolVar(&clientFlag, "client", false, "Client version only (no server required).")
 
 	cli.RootCmd().AddCommand(versionCmd)
+}
+func GetLatestReleaseInfo(info chan<- string) {
+	newTag, err := notify.CheckLatestReleaseTag(VERSION)
+	if err != nil {
+		// The error is intentionally not being handled because we don't want
+		// to stop the execution of the program because of this failure
+		glog.V(4).Infof("Error checking if newer odo release is available: %v", err)
+	}
+	if len(newTag) > 0 {
+		info <- "---\n" +
+			"A newer version of odo (version: " + fmt.Sprint(newTag) + ") is available.\n" +
+			"Update using your package manager, or run\n" +
+			"curl " + notify.InstallScriptURL + " | sh\n" +
+			"to update manually, or visit https://github.com/redhat-developer/odo/releases\n" +
+			"---\n" +
+			"If you wish to disable the update notifications, you can disable it by running\n" +
+			"'odo utils config set UpdateNotification false'\n"
+	}
 }
