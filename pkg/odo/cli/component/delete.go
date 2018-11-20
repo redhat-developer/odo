@@ -76,9 +76,9 @@ func init() {
 	componentDeleteCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(componentDeleteCmd)
+	addProjectFlag(componentDeleteCmd)
 	//Adding `--application` flag
-	cli.AddApplicationFlag(componentDeleteCmd)
+	genericclioptions.AddApplicationFlag(componentDeleteCmd)
 
 	cli.RootCmd().AddCommand(componentDeleteCmd)
 }

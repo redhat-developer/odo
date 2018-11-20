@@ -41,9 +41,9 @@ func init() {
 	describeCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(describeCmd)
+	addProjectFlag(describeCmd)
 	//Adding `--application` flag
-	cli.AddApplicationFlag(describeCmd)
+	genericclioptions.AddApplicationFlag(describeCmd)
 
 	cli.RootCmd().AddCommand(describeCmd)
 }

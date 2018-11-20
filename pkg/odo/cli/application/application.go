@@ -303,12 +303,12 @@ func init() {
 	applicationCmd.AddCommand(applicationDescribeCmd)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(applicationListCmd)
-	cli.AddProjectFlag(applicationCreateCmd)
-	cli.AddProjectFlag(applicationDeleteCmd)
-	cli.AddProjectFlag(applicationDescribeCmd)
-	cli.AddProjectFlag(applicationSetCmd)
-	cli.AddProjectFlag(applicationGetCmd)
+	addProjectFlag(applicationListCmd)
+	addProjectFlag(applicationCreateCmd)
+	addProjectFlag(applicationDeleteCmd)
+	addProjectFlag(applicationDescribeCmd)
+	addProjectFlag(applicationSetCmd)
+	addProjectFlag(applicationGetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}
@@ -320,6 +320,11 @@ func init() {
 	completion.RegisterCommandHandler(applicationDeleteCmd, completion.AppCompletionHandler)
 	completion.RegisterCommandHandler(applicationSetCmd, completion.AppCompletionHandler)
 
+}
+
+func addProjectFlag(cmd *cobra.Command) {
+	genericclioptions.AddProjectFlag(cmd)
+	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }
 
 // printDeleteAppInfo will print things which will be deleted

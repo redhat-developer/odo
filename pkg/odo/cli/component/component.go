@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -87,15 +88,20 @@ func init() {
 	componentCmd.AddCommand(componentSetCmd)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(componentGetCmd)
-	cli.AddProjectFlag(componentSetCmd)
+	addProjectFlag(componentGetCmd)
+	addProjectFlag(componentSetCmd)
 	//Adding `--application` flag
-	cli.AddApplicationFlag(componentGetCmd)
-	cli.AddApplicationFlag(componentSetCmd)
+	genericclioptions.AddApplicationFlag(componentGetCmd)
+	genericclioptions.AddApplicationFlag(componentSetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}
 	componentCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	cli.RootCmd().AddCommand(componentCmd)
+}
+
+func addProjectFlag(cmd *cobra.Command) {
+	genericclioptions.AddProjectFlag(cmd)
+	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }

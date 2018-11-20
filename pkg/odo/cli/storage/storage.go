@@ -191,7 +191,7 @@ var storageListCmd = &cobra.Command{
 		applicationName := context.Application
 
 		if storageAllListflag {
-			if len(genericclioptions.FlagValueIfSet(cmd, odoutil.ComponentFlagName)) > 0 {
+			if len(genericclioptions.FlagValueIfSet(cmd, genericclioptions.ComponentFlagName)) > 0 {
 				fmt.Println("Invalid arguments. Component name is not needed")
 				os.Exit(1)
 			}
@@ -260,25 +260,25 @@ func init() {
 	storageCmd.AddCommand(storageMountCmd)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(storageCreateCmd)
-	cli.AddProjectFlag(storageDeleteCmd)
-	cli.AddProjectFlag(storageListCmd)
-	cli.AddProjectFlag(storageMountCmd)
-	cli.AddProjectFlag(storageUnmountCmd)
+	addProjectFlag(storageCreateCmd)
+	addProjectFlag(storageDeleteCmd)
+	addProjectFlag(storageListCmd)
+	addProjectFlag(storageMountCmd)
+	addProjectFlag(storageUnmountCmd)
 
 	//Adding `--application` flag
-	cli.AddApplicationFlag(storageCreateCmd)
-	cli.AddApplicationFlag(storageDeleteCmd)
-	cli.AddApplicationFlag(storageListCmd)
-	cli.AddApplicationFlag(storageMountCmd)
-	cli.AddApplicationFlag(storageUnmountCmd)
+	genericclioptions.AddApplicationFlag(storageCreateCmd)
+	genericclioptions.AddApplicationFlag(storageDeleteCmd)
+	genericclioptions.AddApplicationFlag(storageListCmd)
+	genericclioptions.AddApplicationFlag(storageMountCmd)
+	genericclioptions.AddApplicationFlag(storageUnmountCmd)
 
 	//Adding `--component` flag
-	cli.AddComponentFlag(storageCreateCmd)
-	cli.AddComponentFlag(storageDeleteCmd)
-	cli.AddComponentFlag(storageListCmd)
-	cli.AddComponentFlag(storageMountCmd)
-	cli.AddComponentFlag(storageUnmountCmd)
+	genericclioptions.AddComponentFlag(storageCreateCmd)
+	genericclioptions.AddComponentFlag(storageDeleteCmd)
+	genericclioptions.AddComponentFlag(storageListCmd)
+	genericclioptions.AddComponentFlag(storageMountCmd)
+	genericclioptions.AddComponentFlag(storageUnmountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}
@@ -289,6 +289,11 @@ func init() {
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
 	completion.RegisterCommandHandler(storageMountCmd, completion.StorageMountCompletionHandler)
 	completion.RegisterCommandHandler(storageUnmountCmd, completion.StorageUnMountCompletionHandler)
+}
+
+func addProjectFlag(cmd *cobra.Command) {
+	genericclioptions.AddProjectFlag(cmd)
+	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }
 
 // validateStoragePath will validate storagePath, if there is any existing storage with similar path, it will give an error

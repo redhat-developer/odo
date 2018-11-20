@@ -196,17 +196,22 @@ func init() {
 	serviceCmd.AddCommand(serviceListCmd)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(serviceCreateCmd)
-	cli.AddProjectFlag(serviceDeleteCmd)
-	cli.AddProjectFlag(serviceListCmd)
+	addProjectFlag(serviceCreateCmd)
+	addProjectFlag(serviceDeleteCmd)
+	addProjectFlag(serviceListCmd)
 
 	//Adding `--application` flag
-	cli.AddApplicationFlag(serviceCreateCmd)
-	cli.AddApplicationFlag(serviceDeleteCmd)
-	cli.AddApplicationFlag(serviceListCmd)
+	genericclioptions.AddApplicationFlag(serviceCreateCmd)
+	genericclioptions.AddApplicationFlag(serviceDeleteCmd)
+	genericclioptions.AddApplicationFlag(serviceListCmd)
 
 	cli.RootCmd().AddCommand(serviceCmd)
 
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
+}
+
+func addProjectFlag(cmd *cobra.Command) {
+	genericclioptions.AddProjectFlag(cmd)
+	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }

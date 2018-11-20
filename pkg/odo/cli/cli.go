@@ -6,6 +6,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/notify"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -99,7 +100,7 @@ func init() {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
-	rootCmd.PersistentFlags().Bool(util.SkipConnectionCheckFlagName, false, "Skip cluster check")
+	rootCmd.PersistentFlags().Bool(genericclioptions.SkipConnectionCheckFlagName, false, "Skip cluster check")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.CommandLine.Set("logtostderr", "true")
 

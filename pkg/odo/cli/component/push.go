@@ -109,9 +109,9 @@ func init() {
 	pushCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(pushCmd)
+	addProjectFlag(pushCmd)
 	//Adding `--application` flag
-	cli.AddApplicationFlag(pushCmd)
+	genericclioptions.AddApplicationFlag(pushCmd)
 
 	cli.RootCmd().AddCommand(pushCmd)
 }

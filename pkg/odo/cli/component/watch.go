@@ -88,10 +88,10 @@ func init() {
 	watchCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--application` flag
-	cli.AddApplicationFlag(watchCmd)
+	genericclioptions.AddApplicationFlag(watchCmd)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(watchCmd)
+	addProjectFlag(watchCmd)
 
 	cli.RootCmd().AddCommand(watchCmd)
 }

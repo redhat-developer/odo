@@ -187,21 +187,26 @@ func init() {
 	urlCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(urlListCmd)
-	cli.AddProjectFlag(urlCreateCmd)
-	cli.AddProjectFlag(urlDeleteCmd)
+	addProjectFlag(urlListCmd)
+	addProjectFlag(urlCreateCmd)
+	addProjectFlag(urlDeleteCmd)
 
 	//Adding `--application` flag
-	cli.AddApplicationFlag(urlListCmd)
-	cli.AddApplicationFlag(urlDeleteCmd)
-	cli.AddApplicationFlag(urlCreateCmd)
+	genericclioptions.AddApplicationFlag(urlListCmd)
+	genericclioptions.AddApplicationFlag(urlDeleteCmd)
+	genericclioptions.AddApplicationFlag(urlCreateCmd)
 
 	//Adding `--component` flag
-	cli.AddComponentFlag(urlDeleteCmd)
-	cli.AddComponentFlag(urlListCmd)
-	cli.AddComponentFlag(urlCreateCmd)
+	genericclioptions.AddComponentFlag(urlDeleteCmd)
+	genericclioptions.AddComponentFlag(urlListCmd)
+	genericclioptions.AddComponentFlag(urlCreateCmd)
 
 	cli.RootCmd().AddCommand(urlCmd)
 
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
+}
+
+func addProjectFlag(cmd *cobra.Command) {
+	genericclioptions.AddProjectFlag(cmd)
+	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }

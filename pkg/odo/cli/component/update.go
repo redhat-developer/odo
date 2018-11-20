@@ -107,10 +107,10 @@ func init() {
 	updateCmd.SetUsageTemplate(cli.CmdUsageTemplate)
 
 	//Adding `--application` flag
-	cli.AddApplicationFlag(updateCmd)
+	genericclioptions.AddApplicationFlag(updateCmd)
 
 	//Adding `--project` flag
-	cli.AddProjectFlag(updateCmd)
+	genericclioptions.AddProjectFlag(updateCmd)
 
 	completion.RegisterCommandFlagHandler(updateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(updateCmd, "binary", completion.FileCompletionHandler)
