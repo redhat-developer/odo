@@ -33,6 +33,7 @@ func runFailCmd(cmdS string) string {
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 
 	// wait for the command execution to complete
+	<-session.Exited
 	Expect(session.ExitCode()).To(Equal(1))
 	Expect(err).NotTo(HaveOccurred())
 
