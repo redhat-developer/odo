@@ -159,10 +159,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 		// If min-memory, max-memory and memory are passed, memory will be ignored as the other 2 have greater precedence.
 		// Emit a message indicating the same
 		if memoryMin != "" && memoryMax != "" && memory != "" {
-			fmt.Println("Flag `memory` will be ignored as `min-memory` and `max-memory` have been passed ")
+			fmt.Println("`--memory` will be ignored as `--min-memory` and `--max-memory` has been passed ")
 		}
 		if (memoryMin == "") != (memoryMax == "") && memory != "" {
-			fmt.Printf("Using memory %s for min and max limits.\n", memory)
+			fmt.Printf("Using `--memory` %s for min and max limits.\n", memory)
 		}
 		if (memoryMin == "") != (memoryMax == "") && memory == "" {
 			fmt.Println("`--min-memory` should accompany `--max-memory` or pass `--memory` to use same value for both min and max or try not passing any of them")
