@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -279,4 +281,8 @@ func init() {
 	storageCmd.SetUsageTemplate(cmdUsageTemplate)
 
 	rootCmd.AddCommand(storageCmd)
+
+	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
+	completion.RegisterCommandHandler(storageMountCmd, completion.StorageMountCompletionHandler)
+	completion.RegisterCommandHandler(storageUnmountCmd, completion.StorageUnMountCompletionHandler)
 }
