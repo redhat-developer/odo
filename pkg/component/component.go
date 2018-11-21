@@ -577,12 +577,6 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 			return errors.Wrapf(err, "unable to update DeploymentConfig image for %s component", componentName)
 		}
 
-		// Cleanup after the supervisor
-		err = client.CleanupAfterSupervisor(namespacedOpenShiftObject, annotations)
-		if err != nil {
-			return errors.Wrapf(err, "unable to update DeploymentConfig  for %s component", componentName)
-		}
-
 		// Finally, we build!
 		err = Build(client, componentName, applicationName, true, true, stdout)
 		if err != nil {

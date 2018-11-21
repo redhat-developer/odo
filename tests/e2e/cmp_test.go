@@ -212,67 +212,62 @@ var _ = Describe("odoCmpE2e", func() {
 			SourceTest(appTestName, "local", "file://"+tmpDir+"/katacoda-odo-backend-2")
 		})
 
-		// The tests are commented temporarily and rearranged in order to momentarily fix the issue as in
-		// https://github.com/redhat-developer/odo/issues/1008 after fixing which, the assignee of the issue would revert
-		// the state of these sections of code similar to what it used be as in https://gist.github.com/anmolbabu/8e6e177c951c5e947670d7b9c7876c19
-		/*
-			It("should update component from local to git", func() {
-				waitForDCOfComponentToRolloutCompletely("wildfly")
-				runCmd("odo update wildfly --git " + wildflyUri1)
+		It("should update component from local to git", func() {
+			waitForDCOfComponentToRolloutCompletely("wildfly")
+			runCmd("odo update wildfly --git " + wildflyUri1)
 
-				// checking bc for updates
-				getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-				Expect(getBc).To(Equal(wildflyUri1))
+			// checking bc for updates
+			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
+			Expect(getBc).To(Equal(wildflyUri1))
 
-				// checking for init containers
-				getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.initContainers}}" +
-					"{{.name}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring(initContainerName))
+			// checking for init containers
+			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.initContainers}}" +
+				"{{.name}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring(initContainerName))
 
-				// checking for volumes
-				getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.volumes}}" +
-					"{{.name}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
+			// checking for volumes
+			getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.volumes}}" +
+				"{{.name}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-				// checking for volumes mounts
-				getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.containers}}{{range .volumeMounts}}{{.name}}" +
-					"{{.name}}{{end}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
+			// checking for volumes mounts
+			getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.containers}}{{range .volumeMounts}}{{.name}}" +
+				"{{.name}}{{end}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-				SourceTest(appTestName, "git", wildflyUri1)
-			})
-			It("should update component from git to git", func() {
-				waitForDCOfComponentToRolloutCompletely("wildfly")
-				runCmd("odo update wildfly --git " + wildflyUri2)
+			SourceTest(appTestName, "git", wildflyUri1)
+		})
+		It("should update component from git to git", func() {
+			waitForDCOfComponentToRolloutCompletely("wildfly")
+			runCmd("odo update wildfly --git " + wildflyUri2)
 
-				// checking bc for updates
-				getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-				Expect(getBc).To(Equal(wildflyUri2))
+			// checking bc for updates
+			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
+			Expect(getBc).To(Equal(wildflyUri2))
 
-				// checking for init containers
-				getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.initContainers}}" +
-					"{{.name}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring(initContainerName))
+			// checking for init containers
+			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.initContainers}}" +
+				"{{.name}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring(initContainerName))
 
-				// checking for volumes
-				getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.volumes}}" +
-					"{{.name}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
+			// checking for volumes
+			getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.volumes}}" +
+				"{{.name}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-				// checking for volumes mounts
-				getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.containers}}{{range .volumeMounts}}{{.name}}" +
-					"{{.name}}{{end}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
+			// checking for volumes mounts
+			getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.containers}}{{range .volumeMounts}}{{.name}}" +
+				"{{.name}}{{end}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-				SourceTest(appTestName, "git", wildflyUri2)
-			})
-		*/
+			SourceTest(appTestName, "git", wildflyUri2)
+		})
 
 		// This is expected to be removed at the time of fixing https://github.com/redhat-developer/odo/issues/1008
 		It("should create a wildfly git component", func() {
@@ -359,36 +354,36 @@ var _ = Describe("odoCmpE2e", func() {
 
 			SourceTest(appTestName, "binary", "file://"+tmpDir+"/sample-binary-testing-1.war")
 		})
-		/*
-			It("should update component from binary to git", func() {
-				waitForDCOfComponentToRolloutCompletely("wildfly")
-				runCmd("odo update wildfly --git " + wildflyUri1)
 
-				// checking bc for updates
-				getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-				Expect(getBc).To(Equal(wildflyUri1))
+		It("should update component from binary to git", func() {
+			waitForDCOfComponentToRolloutCompletely("wildfly")
+			runCmd("odo update wildfly --git " + wildflyUri1)
 
-				// checking for init containers
-				getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.initContainers}}" +
-					"{{.name}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring(initContainerName))
+			// checking bc for updates
+			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
+			Expect(getBc).To(Equal(wildflyUri1))
 
-				// checking for volumes
-				getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.volumes}}" +
-					"{{.name}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
+			// checking for init containers
+			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.initContainers}}" +
+				"{{.name}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring(initContainerName))
 
-				// checking for volumes mounts
-				getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
-					"{{range .spec.template.spec.containers}}{{range .volumeMounts}}{{.name}}" +
-					"{{.name}}{{end}}{{end}}'")
-				Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
+			// checking for volumes
+			getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.volumes}}" +
+				"{{.name}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-				SourceTest(appTestName, "git", wildflyUri1)
-			})
-		*/
+			// checking for volumes mounts
+			getDc = runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
+				"{{range .spec.template.spec.containers}}{{range .volumeMounts}}{{.name}}" +
+				"{{.name}}{{end}}{{end}}'")
+			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
+
+			SourceTest(appTestName, "git", wildflyUri1)
+		})
+
 	})
 
 	Context("cleaning up", func() {

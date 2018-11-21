@@ -1105,12 +1105,18 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annota
 	return nil
 }
 
+// Define a function that is meant to update a DC in place
+type dcStructUpdater func(dc *appsv1.DeploymentConfig) error
+
 // PatchCurrentDC "patches" the current DeploymentConfig with a new one
 // however... we make sure that configurations such as:
 // - volumes
 // - environment variables
 // are correctly copied over / consistent without an issue.
-func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
+// if prePatchDCHandler is specified (meaning not nil), then it's applied
+// as the last action before the actual call to the Kubernetes API thus giving us the chance
+// to perform arbitrary updates to a DC before it's finalized for patching
+func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater) error {
 
 	// Retrieve the current DC
 	currentDC, err := c.GetDeploymentConfigFromName(name)
@@ -1125,33 +1131,12 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 		return errors.Wrapf(err, "Unable to find current DeploymentConfig container %s", name)
 	}
 
-	// Append the existing VolumeMounts to the new DC. We use "range" and find the correct container rather than
-	// using .spec.Containers[0] *in case* the template ever changes and a new container has been added.
-	for index, container := range dc.Spec.Template.Spec.Containers {
-		// Find the container
-		if container.Name == name {
-			// Loop through all the volumes
-			for _, volume := range foundCurrentDCContainer.VolumeMounts {
-				// If it's the supervisord volume, ignore it.
-				if volume.Name == supervisordVolumeName {
-					continue
-				} else {
-					dc.Spec.Template.Spec.Containers[index].VolumeMounts = append(dc.Spec.Template.Spec.Containers[index].VolumeMounts, volume)
-				}
+	copyVolumesAndVolumeMounts(dc, currentDC, foundCurrentDCContainer)
 
-				// Break out since we've succeeded in updating the container we were looking for
-				break
-			}
-		}
-	}
-
-	// Now the same with Volumes, again, ignoring the supervisord volume.
-	for _, volume := range currentDC.Spec.Template.Spec.Volumes {
-		if volume.Name == supervisordVolumeName {
-			continue
-		} else {
-			dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, volume)
-			break
+	if prePatchDCHandler != nil {
+		err := prePatchDCHandler(&dc)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to correctly update dc %s using the specified prePatch handler", name)
 		}
 	}
 
@@ -1160,7 +1145,7 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 
 	// Replace the old annotations with the new ones too
 	// the reason we do this is because Kubernetes handles metadata such as resourceVersion
-	// that should not be overriden.
+	// that should not be overridden.
 	currentDC.ObjectMeta.Annotations = dc.ObjectMeta.Annotations
 	currentDC.ObjectMeta.Labels = dc.ObjectMeta.Labels
 
@@ -1180,6 +1165,38 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig) error {
 	}
 
 	return nil
+}
+
+// copies volumes and volume mounts from currentDC to dc, excluding the supervisord related ones
+func copyVolumesAndVolumeMounts(dc appsv1.DeploymentConfig, currentDC *appsv1.DeploymentConfig, matchingContainer corev1.Container) {
+	// Append the existing VolumeMounts to the new DC. We use "range" and find the correct container rather than
+	// using .spec.Containers[0] *in case* the template ever changes and a new container has been added.
+	for index, container := range dc.Spec.Template.Spec.Containers {
+		// Find the container
+		if container.Name == matchingContainer.Name {
+			// Loop through all the volumes
+			for _, volume := range matchingContainer.VolumeMounts {
+				// If it's the supervisord volume, ignore it.
+				if volume.Name == supervisordVolumeName {
+					continue
+				} else {
+					dc.Spec.Template.Spec.Containers[index].VolumeMounts = append(dc.Spec.Template.Spec.Containers[index].VolumeMounts, volume)
+				}
+
+				// Break out since we've succeeded in updating the container we were looking for
+				break
+			}
+		}
+	}
+	// Now the same with Volumes, again, ignoring the supervisord volume.
+	for _, volume := range currentDC.Spec.Template.Spec.Volumes {
+		if volume.Name == supervisordVolumeName {
+			continue
+		} else {
+			dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, volume)
+			break
+		}
+	}
 }
 
 // UpdateDCToGit replaces / updates the current DeplomentConfig with the appropriate
@@ -1207,9 +1224,15 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports, foundCurrentDCContainer.Env)
 
 	// Patch the current DC
-	err = c.PatchCurrentDC(commonObjectMeta.Name, dc)
+	err = c.PatchCurrentDC(commonObjectMeta.Name, dc, removeTracesOfSupervisordFromDC)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", commonObjectMeta.Name)
+	}
+
+	// Cleanup after the supervisor
+	err = c.DeletePVC(getAppRootVolumeName(commonObjectMeta.Name))
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete S2I data PVC from %s", commonObjectMeta.Name)
 	}
 
 	return nil
@@ -1292,7 +1315,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
 
 	// Patch the current DC with the new one
-	err = c.PatchCurrentDC(commonObjectMeta.Name, dc)
+	err = c.PatchCurrentDC(commonObjectMeta.Name, dc, nil)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", commonObjectMeta.Name)
 	}
@@ -1353,25 +1376,18 @@ func (c *Client) SetupForSupervisor(dcName string, annotations map[string]string
 	return nil
 }
 
-// CleanupAfterSupervisor removes the supervisor from the deployment config
-// dcName is the name of the deployment config to be updated
-// projectName is the name of the project
-// annotations are the updated annotations for the new deployment config
-func (c *Client) CleanupAfterSupervisor(dcName string, annotations map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get DeploymentConfig %s ", dcName)
-	}
-
-	dc.Annotations = annotations
+// removeTracesOfSupervisordFromDC takes a DeploymentConfig and removes any traces of the supervisord from it
+// so it removes things like supervisord volumes, volumes mounts and init containers
+func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
+	dcName := dc.Name
 
 	found := removeVolumeFromDC(getAppRootVolumeName(dcName), dc)
 	if !found {
-		return errors.Wrapf(err, "unable to find volume in the dc")
+		return errors.New("unable to find volume in dc with name: " + dcName)
 	}
 	found = removeVolumeMountFromDC(getAppRootVolumeName(dcName), dc)
 	if !found {
-		return errors.Wrapf(err, "unable to find volume in the dc")
+		return errors.New("unable to find volume mount in dc with name: " + dcName)
 	}
 
 	// remove the one bootstrapped init container
@@ -1381,15 +1397,6 @@ func (c *Client) CleanupAfterSupervisor(dcName string, annotations map[string]st
 		}
 	}
 
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-	if err != nil {
-		return errors.Wrapf(err, "unable to update deployment config %s", dcName)
-	}
-
-	err = c.DeletePVC(getAppRootVolumeName(dcName))
-	if err != nil {
-		return errors.Wrapf(err, "unable to delete S2I data PVC from %s", dcName)
-	}
 	return nil
 }
 
