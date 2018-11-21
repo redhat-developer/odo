@@ -208,8 +208,6 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.CheckError(err, "")
 
 		} else if len(componentLocal) != 0 {
-
-			// Use the absolute path for the component
 			fileInfo, err := os.Stat(componentPath)
 			odoutil.CheckError(err, "")
 			if !fileInfo.IsDir() {
