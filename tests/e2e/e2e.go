@@ -116,9 +116,14 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 	}
 	cmd.Stdout = &buf
 
-	pingTimeout := time.After(timeout)
+	ticker := time.NewTicker(time.Millisecond)
+	defer ticker.Stop()
 
-	tick := time.Tick(1 * time.Millisecond)
+	timeoutCh := make(chan bool)
+	go func() {
+		time.Sleep(timeout)
+		timeoutCh <- true
+	}()
 
 	if err := cmd.Start(); err != nil {
 		return false, err
@@ -127,9 +132,9 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 	startedFileModification := false
 	for {
 		select {
-		case <-pingTimeout:
+		case <-timeoutCh:
 			Fail("Timeout out after " + string(timeout) + " minutes")
-		case <-tick:
+		case <-ticker.C:
 			if !startedFileModification && startIndicatorFunc(buf.String()) {
 				startedFileModification = true
 				startSimulationCh <- true

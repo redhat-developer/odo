@@ -159,21 +159,19 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("odo push -v 4")
 			startSimulationCh := make(chan bool)
 			go func() {
-				select {
-				case startMsg := <-startSimulationCh:
-					if startMsg {
-						fmt.Println("Received signal, starting file modification simulation")
-						fileModification := testingutil.FileProperties{
-							FileParent:       "src/main/java/eu/mjelen/katacoda/odo/",
-							FilePath:         "BackendServlet.java",
-							FileType:         testingutil.RegularFile,
-							ModificationType: testingutil.APPEND,
-						}
-						_, err := testingutil.SimulateFileModifications(filepath.Join(tmpDir, "katacoda-odo-backend-1"), fileModification)
-						fmt.Printf("Triggered file modification %+v\n\n", fileModification)
-						if err != nil {
-							fmt.Printf("Failed performing file operation with error %v", err)
-						}
+				startMsg := <-startSimulationCh
+				if startMsg {
+					fmt.Println("Received signal, starting file modification simulation")
+					fileModification := testingutil.FileProperties{
+						FileParent:       "src/main/java/eu/mjelen/katacoda/odo/",
+						FilePath:         "BackendServlet.java",
+						FileType:         testingutil.RegularFile,
+						ModificationType: testingutil.APPEND,
+					}
+					_, err := testingutil.SimulateFileModifications(filepath.Join(tmpDir, "katacoda-odo-backend-1"), fileModification)
+					fmt.Printf("Triggered file modification %+v\n\n", fileModification)
+					if err != nil {
+						fmt.Printf("Failed performing file operation with error %v", err)
 					}
 				}
 			}()
