@@ -244,7 +244,11 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
-	parameters.StartChan <- true
+
+	// Only signal start of watch if invoker is interested
+	if parameters.StartChan != nil {
+		parameters.StartChan <- true
+	}
 
 	delay := time.Duration(parameters.PushDiffDelay) * time.Second
 	ticker := time.NewTicker(delay)

@@ -79,7 +79,7 @@ var watchCmd = &cobra.Command{
 				Path:            watchPath,
 				FileIgnores:     ignores,
 				PushDiffDelay:   delay,
-				StartChan:       make(chan bool),
+				StartChan:       nil,
 				ExtChan:         make(chan bool),
 				WatchHandler:    component.PushLocal,
 			},
