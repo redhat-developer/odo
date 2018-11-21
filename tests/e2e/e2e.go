@@ -125,7 +125,10 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 	}
 
 	go func() {
-		cmd.Wait()
+		err := cmd.Wait()
+		if err != nil {
+			Fail("error waiting for command to finish. err: " + err.Error())
+		}
 	}()
 
 	startedFileModification := false
