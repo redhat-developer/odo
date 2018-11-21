@@ -49,6 +49,10 @@ A full list of component types that can be deployed is available using: 'odo cat
   # A specific image version may also be specified
   odo create nodejs:latest
 
+  # Passing memory limits
+  odo create nodejs:latest --memory 150Mi
+  odo create nodejs:latest --min-memory 150Mi --max-memory 300 Mi
+
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
 
@@ -161,11 +165,11 @@ A full list of component types that can be deployed is available using: 'odo cat
 			fmt.Printf("Using memory %s for min and max limits.\n", memory)
 		}
 		if (memoryMin == "") != (memoryMax == "") && memory == "" {
-			fmt.Println("memoryMin should accompany memoryMax or pass memory to use same value for both min and max or try not passing any of them")
+			fmt.Println("`--min-memory` should accompany `--max-memory` or pass `--memory` to use same value for both min and max or try not passing any of them")
 			os.Exit(1)
 		}
 
-		memoryQuantity := util.FetchResourceQunatity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
+		memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
 		resourceQuantity := []util.ResourceRequirementInfo{}
 		if memoryQuantity != nil {
 			resourceQuantity = append(resourceQuantity, *memoryQuantity)
@@ -294,9 +298,9 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
-	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component container. ex. 100Mi")
-	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component container. ex. 100Mi")
-	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component container. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component. ex. 100Mi")
 	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 

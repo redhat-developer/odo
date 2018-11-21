@@ -82,8 +82,8 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, re
 
 func fakeResourceConsumption() []util.ResourceRequirementInfo {
 	return []util.ResourceRequirementInfo{
-		*util.FetchResourceQunatity(corev1.ResourceMemory, "100Mi", "350Mi", ""),
-		*util.FetchResourceQunatity(corev1.ResourceCPU, "100m", "350m", ""),
+		*util.FetchResourceQuantity(corev1.ResourceMemory, "100Mi", "350Mi", ""),
+		*util.FetchResourceQuantity(corev1.ResourceCPU, "100m", "350m", ""),
 	}
 }
 

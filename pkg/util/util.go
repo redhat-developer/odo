@@ -259,8 +259,8 @@ func OpenBrowser(url string) error {
 	return nil
 }
 
-// FetchResourceQunatity takes passed min, max and requested resource quantities and returns min and max resource requests
-func FetchResourceQunatity(resourceType corev1.ResourceName, min string, max string, request string) *ResourceRequirementInfo {
+// FetchResourceQuantity takes passed min, max and requested resource quantities and returns min and max resource requests
+func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max string, request string) *ResourceRequirementInfo {
 	if min == "" && max == "" && request == "" {
 		return nil
 	}
