@@ -2,12 +2,13 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
@@ -233,6 +234,7 @@ func NewCmdCreate() *cobra.Command {
 	//Adding `--application` flag
 	genericclioptions.AddApplicationFlag(componentCreateCmd)
 
+	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
 
