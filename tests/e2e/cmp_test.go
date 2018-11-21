@@ -54,6 +54,11 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("odo app create " + appTestName)
 		})
 
+		FIt("should show an error when ref flag is provided with sources except git", func() {
+			output := runFailCmd("odo create nodejs cmp-git --local test --ref test")
+			Expect(output).To(ContainSubstring("The --ref flag is only valid for --git flag"))
+		})
+
 		It("should be able to create a component with git source", func() {
 			runCmd("odo create nodejs cmp-git --git https://github.com/openshift/nodejs-ex --min-memory 100Mi --max-memory 300Mi --min-cpu 0.1 --max-cpu 2")
 			getMemoryLimit := runCmd("oc get dc cmp-git-" +
