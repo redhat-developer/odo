@@ -2,17 +2,15 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"net/url"
 	"os"
 	"runtime"
 
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/util"
-
 	"github.com/golang/glog"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -72,7 +70,20 @@ var watchCmd = &cobra.Command{
 		}
 		watchPath := util.ReadFilePath(u, runtime.GOOS)
 
-		err = component.WatchAndPush(client, componentName, applicationName, watchPath, stdout, ignores, delay, make(chan string), component.PushLocal)
+		err = component.WatchAndPush(
+			client,
+			stdout,
+			component.WatchParameters{
+				ComponentName:   componentName,
+				ApplicationName: applicationName,
+				Path:            watchPath,
+				FileIgnores:     ignores,
+				PushDiffDelay:   delay,
+				StartChan:       nil,
+				ExtChan:         make(chan bool),
+				WatchHandler:    component.PushLocal,
+			},
+		)
 		odoutil.CheckError(err, "Error while trying to watch %s", watchPath)
 	},
 }
