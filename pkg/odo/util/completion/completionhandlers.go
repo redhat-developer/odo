@@ -3,6 +3,7 @@ package completion
 import (
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/service"
@@ -156,5 +157,25 @@ var StorageUnMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, 
 		}
 		completions = append(completions, storage.Name)
 	}
+	return completions
+}
+
+// CreateCompletionHandler provides componet type completion in odo create command
+var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
+	completions = make([]string, 0)
+	catalogList, err := catalog.List(context.Client)
+	if err != nil {
+		return completions
+	}
+
+	for _, builder := range catalogList {
+		// we found the builder name in the list which means
+		// that the builder name has been already selected by the user so no need to suggest more
+		if args.commands[builder.Name] {
+			return nil
+		}
+		completions = append(completions, builder.Name)
+	}
+
 	return completions
 }
