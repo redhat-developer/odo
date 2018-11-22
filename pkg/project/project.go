@@ -53,8 +53,8 @@ func Create(client *occlient.Client, projectName string) error {
 	return nil
 }
 
-// Delete deletes the project with name projectName and sets the project with name currentProject as current project
-// and returns the current project or ("" if no current project is set) and errors if any
+// Delete deletes the project with name projectName and sets any other remaining project as the current project
+// and returns the current project or "" if no current project is set and errors if any
 func Delete(client *occlient.Client, projectName string) (string, error) {
 	currentProject := GetCurrent(client)
 
