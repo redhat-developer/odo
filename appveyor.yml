@@ -32,12 +32,18 @@ test_script:
 build_script:
 - make cross
 
+after_test:
+    - ps : 7z a -tgzip odo-linux-amd64.gz dist\bin\linux-amd64\odo
+    - ps : 7z a -tgzip odo-linux-arm.gz dist\bin\linux-arm\odo
+    - ps : 7z a -tgzip odo-darwin-amd64.gz dist\bin\darwin-amd64\odo
+    - ps : 7z a -tgzip odo-windows-amd64.gz dist\bin\windows-amd64\odo.exe
+
 artifacts:
-  - path: dist\bin\linux-amd64\odo
+  - path: odo-linux-amd64.gz
     name: Linux-amd64 binary
-  - path: dist\bin\linux-arm\odo
+  - path: odo-linux-arm.gz
     name: Linux-arm binary
-  - path: dist\bin\darwin-amd64\odo
+  - path: odo-darwin-amd64.gz
     name: OS-X binary
-  - path: dist\bin\windows-amd64\odo.exe
+  - path: odo-windows-amd64.gz
     name: Windows-amd64 binary
