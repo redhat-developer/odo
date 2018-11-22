@@ -148,9 +148,9 @@ func main() {
 			} else {
 				switch args[0] {
 				case "reference":
-					fmt.Print(referencePrinter(cli.RootCmd(), 0))
+					fmt.Print(referencePrinter(cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName), 0))
 				case "structure":
-					fmt.Print(commandPrinter(cli.RootCmd(), 0))
+					fmt.Print(commandPrinter(cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName), 0))
 				default:
 					fmt.Print(command.Usage())
 				}
