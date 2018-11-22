@@ -189,7 +189,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should watch the local sources for any changes", func() {
-			runCmd("odo create wildfly wildfly-watch --local " + tmpDir + "/katacoda-odo-backend-1 --min-memory 200Mi --max-memory 300Mi")
+			runCmd("odo create wildfly wildfly-watch --local " + tmpDir + "/katacoda-odo-backend-1 --min-memory 400Mi --max-memory 700Mi")
 			runCmd("odo push -v 4")
 			startSimulationCh := make(chan bool)
 			go func() {
@@ -222,12 +222,12 @@ var _ = Describe("odoCmpE2e", func() {
 				appTestName +
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
 			)
-			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
+			Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
 			getMemoryRequest := runCmd("oc get dc wildfly-watch-" +
 				appTestName +
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
 			)
-			Expect(getMemoryRequest).To(ContainSubstring("200Mi"))
+			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
 		})
 
 		It("should update component from local to local", func() {

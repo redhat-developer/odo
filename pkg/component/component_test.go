@@ -7,7 +7,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/models"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -98,7 +97,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		testName           string
 		componentType      string
 		componentPath      string
-		componentPathType  models.CreateType
+		componentPathType  occlient.CreateType
 		existingComponents []ComponentInfo
 		wantErr            bool
 		wantRE             string
@@ -107,7 +106,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix not configured",
 			componentType:      "nodejs",
-			componentPathType:  models.GIT,
+			componentPathType:  occlient.GIT,
 			componentPath:      "https://github.com/openshift/nodejs.git",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -117,7 +116,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix configured",
 			componentType:      "nodejs",
-			componentPathType:  models.LOCAL,
+			componentPathType:  occlient.LOCAL,
 			componentPath:      "./testing",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -127,7 +126,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix configured",
 			componentType:      "wildfly",
-			componentPathType:  models.BINARY,
+			componentPathType:  occlient.BINARY,
 			componentPath:      "./testing.war",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -176,7 +175,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 func TestGetComponentDir(t *testing.T) {
 	type args struct {
 		path      string
-		paramType models.CreateType
+		paramType occlient.CreateType
 	}
 	tests := []struct {
 		testName string
@@ -187,7 +186,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: Git URL",
 			args: args{
-				paramType: models.GIT,
+				paramType: occlient.GIT,
 				path:      "https://github.com/openshift/nodejs-ex.git",
 			},
 			want:    "nodejs-ex",
@@ -196,7 +195,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: Source Path",
 			args: args{
-				paramType: models.LOCAL,
+				paramType: occlient.LOCAL,
 				path:      "./testing",
 			},
 			wantErr: false,
@@ -205,7 +204,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: Binary path",
 			args: args{
-				paramType: models.BINARY,
+				paramType: occlient.BINARY,
 				path:      "./testing.war",
 			},
 			wantErr: false,
@@ -214,7 +213,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: No clue of any component",
 			args: args{
-				paramType: models.NONE,
+				paramType: occlient.NONE,
 				path:      "",
 			},
 			wantErr: false,

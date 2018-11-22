@@ -15,7 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/models"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -87,21 +87,21 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		checkFlag := 0
 		componentPath := ""
-		var componentPathType models.CreateType
+		var componentPathType occlient.CreateType
 
 		if len(componentBinary) != 0 {
 			componentPath = componentBinary
-			componentPathType = models.BINARY
+			componentPathType = occlient.BINARY
 			checkFlag++
 		}
 		if len(componentGit) != 0 {
 			componentPath = componentGit
-			componentPathType = models.GIT
+			componentPathType = occlient.GIT
 			checkFlag++
 		}
 		if len(componentLocal) != 0 {
 			componentPath = componentLocal
-			componentPathType = models.LOCAL
+			componentPathType = occlient.LOCAL
 			checkFlag++
 		}
 
@@ -181,10 +181,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 			// Use Git
 			err := component.CreateFromGit(
 				client,
-				models.CreateArgs{
+				occlient.CreateArgs{
 					Name:            componentName,
 					SourcePath:      componentGit,
-					SourceType:      models.GIT,
+					SourceType:      occlient.GIT,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,
@@ -214,10 +214,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 			// Create
 			err = component.CreateFromPath(
 				client,
-				models.CreateArgs{
+				occlient.CreateArgs{
 					Name:            componentName,
 					SourcePath:      dir,
-					SourceType:      models.LOCAL,
+					SourceType:      occlient.LOCAL,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,
@@ -237,10 +237,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 			// Create
 			err = component.CreateFromPath(
 				client,
-				models.CreateArgs{
+				occlient.CreateArgs{
 					Name:            componentName,
 					SourcePath:      path,
-					SourceType:      models.BINARY,
+					SourceType:      occlient.BINARY,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,
@@ -258,10 +258,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 			// Create
 			err = component.CreateFromPath(
 				client,
-				models.CreateArgs{
+				occlient.CreateArgs{
 					Name:            componentName,
 					SourcePath:      dir,
-					SourceType:      models.LOCAL,
+					SourceType:      occlient.LOCAL,
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,

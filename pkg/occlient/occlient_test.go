@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 
-	"github.com/redhat-developer/odo/pkg/models"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -1647,10 +1646,10 @@ func TestNewAppS2I(t *testing.T) {
 			})
 
 			err := fkclient.NewAppS2I(
-				models.CreateArgs{
+				CreateArgs{
 					Name:       tt.args.commonObjectMeta.Name,
 					SourcePath: tt.args.gitURL,
-					SourceType: models.GIT,
+					SourceType: GIT,
 					ImageName:  tt.args.builderImage,
 					EnvVars:    tt.args.envVars,
 					Ports:      tt.args.inputPorts,

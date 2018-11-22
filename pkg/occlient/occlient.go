@@ -16,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/models"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -57,6 +56,32 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/util/retry"
 )
+
+// CreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
+type CreateType string
+
+const (
+	// GIT as source of component
+	GIT CreateType = "git"
+	// LOCAL Local source path as source of component
+	LOCAL CreateType = "local"
+	// BINARY Local Binary as source of component
+	BINARY CreateType = "binary"
+	// NONE indicates there's no information about the type of source of the component
+	NONE CreateType = ""
+)
+
+// CreateArgs is a container of attributes of component create action
+type CreateArgs struct {
+	Name            string
+	SourcePath      string
+	SourceType      CreateType
+	ImageName       string
+	EnvVars         []string
+	Ports           []string
+	Resources       []util.ResourceRequirementInfo
+	ApplicationName string
+}
 
 const (
 	ocUpdateTimeout    = 120 * time.Second
@@ -651,7 +676,7 @@ func getAppRootVolumeName(dcName string) string {
 // gitURL is the url of the git repo
 // inputPorts is the array containing the string port values
 // envVars is the array containing the string env var values
-func (c *Client) NewAppS2I(params models.CreateArgs, commonObjectMeta metav1.ObjectMeta) error {
+func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta) error {
 	glog.V(4).Infof("Using BuilderImage: %s", params.ImageName)
 	imageNS, imageName, imageTag, _, err := ParseImageName(params.ImageName)
 	if err != nil {
@@ -885,7 +910,7 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 // Supervisor keeps the pod running (as PID 1), so you it is possible to trigger assembly script inside running pod,
 // and than restart application using Supervisor without need to restart the container/Pod.
 //
-func (c *Client) BootstrapSupervisoredS2I(params models.CreateArgs, commonObjectMeta metav1.ObjectMeta) error {
+func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta) error {
 	imageNS, imageName, imageTag, _, err := ParseImageName(params.ImageName)
 
 	if err != nil {
