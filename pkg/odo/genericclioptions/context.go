@@ -42,7 +42,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	switch len(shouldSkipConnectionCheck) {
 	case 0:
 		var err error
-		skipConnectionCheck, err = command.Flags().GetBool(util.SkipConnectionCheckFlagName)
+		skipConnectionCheck, err = command.Flags().GetBool(SkipConnectionCheckFlagName)
 		util.CheckError(err, "")
 	case 1:
 		skipConnectionCheck = shouldSkipConnectionCheck[0]
@@ -64,7 +64,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 
 	// resolve project
 	var ns string
-	projectFlag := FlagValueIfSet(command, util.ProjectFlagName)
+	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
 		_, err := project.Exists(client, projectFlag)
@@ -78,7 +78,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 
 	// resolve application
 	var app string
-	appFlag := FlagValueIfSet(command, util.ApplicationFlagName)
+	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
 		// if we specified an application via flag, check that it exists and use it
 		_, err := application.Exists(client, appFlag)
@@ -110,7 +110,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 
 	// resolve component
 	var cmp string
-	cmpFlag := FlagValueIfSet(command, util.ComponentFlagName)
+	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {
 		// retrieve the current component if it exists if we didn't set the component flag
 		var err error

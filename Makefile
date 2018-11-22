@@ -8,7 +8,7 @@ default: bin
 
 .PHONY: bin
 bin:
-	go build ${BUILD_FLAGS} -o odo main.go
+	go build ${BUILD_FLAGS} -o odo cmd/odo/odo.go
 
 .PHONY: install
 install:
@@ -58,15 +58,15 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS)
+	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS) ./cmd/odo/
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
-	go run scripts/cli-structure/generate-cli-structure.go
+	go run cmd/cli-doc/cli-doc.go structure
 
 .PHONY: generate-cli-reference
 generate-cli-reference:
-	go run scripts/cli-reference/generate-cli-reference.go > docs/cli-reference.md
+	go run cmd/cli-doc/cli-doc.go reference > docs/cli-reference.md
 
 # create gzipped binaries in ./dist/release/
 # for uploading to GitHub release page
