@@ -377,13 +377,8 @@ func (c *Client) RunLogout(stdout io.Writer) error {
 }
 
 // isServerUp returns true if server is up and running
+// server parameter has to be a valid url
 func isServerUp(server string) bool {
-	u, err := url.Parse(server)
-	if err != nil {
-		glog.V(4).Info(errors.Wrap(err, "unable to parse url"))
-		return false
-	}
-
 	// initialising the default timeout, this will be used
 	// when the value is not readable from config
 	ocRequestTimeout := config.DefaultTimeout * time.Second
@@ -395,9 +390,12 @@ func isServerUp(server string) bool {
 	} else {
 		ocRequestTimeout = time.Duration(cfg.GetTimeout()) * time.Second
 	}
-	glog.V(4).Infof("Trying to connect to server %v", u.Host)
-
-	_, connectionError := net.DialTimeout("tcp", u.Host, time.Duration(ocRequestTimeout))
+	address, err := util.GetHostWithPort(server)
+	if err != nil {
+		glog.V(4).Infof("Unable to parse url %s (%s)", server, err)
+	}
+	glog.V(4).Infof("Trying to connect to server %s", address)
+	_, connectionError := net.DialTimeout("tcp", address, time.Duration(ocRequestTimeout))
 	if connectionError != nil {
 		glog.V(4).Info(errors.Wrap(connectionError, "unable to connect to server"))
 		return false
