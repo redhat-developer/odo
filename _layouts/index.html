@@ -52,16 +52,20 @@
         <p>Odo utilizes <a href="https://github.com/openshift/source-to-image">Source-to-Image</a> to create reproducible Docker images from source code. Odo handles the complex task of building, pushing and deploying your source code. </p>
         <p><strong>Want to get started? Follow the instructions below or our <a href="https://www.katacoda.com/mjelen/courses/introduction/developing-with-odo">Katacoda tutorial</a>:</strong></p>
             <pre><code class="bash"># Download the latest release!
+# Or from GitHub https://github.com/redhat-developer/odo/releases
 $ curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | bash
 
-# Start your development environment
+# Start your local development environment
 $ minishift start
 
 # Download the Node.JS example directory
 $ git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
 
 # Now let's deploy your application!
-$ odo create nodejs --local=.
+$ odo create nodejs
+
+# Push your source code to the application
+$ odo push
 
 # Last, we'll create a way to access the application
 $ odo url create
@@ -70,11 +74,12 @@ nodejs - nodejs-myproject.192.168.42.147.nip.io
 # Test it / visit the URL
 $ curl nodejs-myproject.192.168.42.147.nip.io</code></pre>
       </section>
-      <!--
       <section>
-        <h2>Get started immediately with our interactive tutorial</h2>
+        <h2>Demo</h2>
+        <a href="https://asciinema.org/a/lbXIOm4lU8DFkgFjQl7gZLBn1" target="_blank">
+          <img style="width:100%" src="https://asciinema.org/a/lbXIOm4lU8DFkgFjQl7gZLBn1.svg" />
+        </a>
       </section>
-      -->
     </main>
     <footer>
       <a class="button" href="{{ site.baseurl }}{{ site.docs_index }}">Get Started</a>
