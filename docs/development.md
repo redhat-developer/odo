@@ -205,6 +205,9 @@ make test-cmp-e2e
 make test-service-e2e
 ```
 
+Running a subset of tests is possible with ginkgo by using focused specs mechanism
+https://onsi.github.io/ginkgo/#focused-specs
+
 ## Dependency Management
 
 odo uses `glide` to manage dependencies.
