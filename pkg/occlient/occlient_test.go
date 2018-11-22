@@ -1330,316 +1330,6 @@ func TestSetupForSupervisor(t *testing.T) {
 	}
 }
 
-func TestCleanupAfterSupervisor(t *testing.T) {
-	tests := []struct {
-		name        string
-		dcName      string
-		annotations map[string]string
-		existingDc  appsv1.DeploymentConfig
-		pvcName     string
-		wantErr     bool
-	}{
-		{
-			name:   "proper parameters and one volume,volumeMount and initContainer",
-			dcName: "wildfly",
-			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			existingDc: appsv1.DeploymentConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "wildfly",
-					Annotations: map[string]string{"app.kubernetes.io/url": "https://github.com/sclorg/nodejs-ex",
-						"app.kubernetes.io/component-source-type": "git",
-					},
-				},
-				Spec: appsv1.DeploymentConfigSpec{
-					Template: &corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Image: "wildfly:latest",
-									Name:  "wildfly",
-									VolumeMounts: []corev1.VolumeMount{
-										{
-											Name: getAppRootVolumeName("wildfly"),
-										},
-									},
-								},
-							},
-							InitContainers: []corev1.Container{
-								{
-									Name:  "copy-files-to-volume",
-									Image: "wildfly:latest",
-									Command: []string{
-										"copy-files-to-volume",
-										"/opt/app-root",
-										"/mnt/app-root"},
-									VolumeMounts: []corev1.VolumeMount{
-										{
-											Name:      getAppRootVolumeName("wildfly"),
-											MountPath: "/mnt",
-										},
-									},
-								},
-							},
-							Volumes: []corev1.Volume{
-								{
-									Name: getAppRootVolumeName("wildfly"),
-									VolumeSource: corev1.VolumeSource{
-										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-											ClaimName: getAppRootVolumeName("wildfly"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			pvcName: fmt.Sprintf("%s-s2idata", "wildfly"),
-			wantErr: false,
-		},
-		{
-			name:   "proper parameters and two volume,volumeMount and initContainer",
-			dcName: "wildfly",
-			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			existingDc: appsv1.DeploymentConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "wildfly",
-					Annotations: map[string]string{"app.kubernetes.io/url": "https://github.com/sclorg/nodejs-ex",
-						"app.kubernetes.io/component-source-type": "git",
-					},
-				},
-				Spec: appsv1.DeploymentConfigSpec{
-					Template: &corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Image: "wildfly:latest",
-									Name:  "wildfly",
-									VolumeMounts: []corev1.VolumeMount{
-										{
-											Name: getAppRootVolumeName("wildfly"),
-										},
-										{
-											Name: "backend",
-										},
-									},
-								},
-							},
-							InitContainers: []corev1.Container{
-								{
-									Name:  "copy-files-to-volume",
-									Image: "wildfly:latest",
-									Command: []string{
-										"copy-files-to-volume",
-										"/opt/app-root",
-										"/mnt/app-root"},
-									VolumeMounts: []corev1.VolumeMount{
-										{
-											Name:      getAppRootVolumeName("wildfly"),
-											MountPath: "/mnt",
-										},
-									},
-								},
-								{
-									Name:  "xyz",
-									Image: "xyz:latest",
-								},
-							},
-							Volumes: []corev1.Volume{
-								{
-									Name: getAppRootVolumeName("wildfly"),
-									VolumeSource: corev1.VolumeSource{
-										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-											ClaimName: getAppRootVolumeName("wildfly"),
-										},
-									},
-								},
-								{
-									Name: "backend",
-									VolumeSource: corev1.VolumeSource{
-										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-											ClaimName: "backend",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			pvcName: fmt.Sprintf("%s-s2idata", "wildfly"),
-			wantErr: false,
-		},
-		{
-			name:   "proper parameters and one volume,volumeMount and initContainer and non existing dc",
-			dcName: "wildfly",
-			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			existingDc: appsv1.DeploymentConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nodejs",
-					Annotations: map[string]string{"app.kubernetes.io/url": "https://github.com/sclorg/nodejs-ex",
-						"app.kubernetes.io/component-source-type": "git",
-					},
-				},
-				Spec: appsv1.DeploymentConfigSpec{
-					Template: &corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Image: "wildfly:latest",
-									Name:  "wildfly",
-									VolumeMounts: []corev1.VolumeMount{
-										{
-											Name: getAppRootVolumeName("wildfly"),
-										},
-									},
-								},
-							},
-							InitContainers: []corev1.Container{
-								{
-									Name:  "copy-files-to-volume",
-									Image: "wildfly:latest",
-									Command: []string{
-										"copy-files-to-volume",
-										"/opt/app-root",
-										"/mnt/app-root"},
-									VolumeMounts: []corev1.VolumeMount{
-										{
-											Name:      getAppRootVolumeName("wildfly"),
-											MountPath: "/mnt",
-										},
-									},
-								},
-							},
-							Volumes: []corev1.Volume{
-								{
-									Name: getAppRootVolumeName("wildfly"),
-									VolumeSource: corev1.VolumeSource{
-										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-											ClaimName: getAppRootVolumeName("wildfly"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			pvcName: fmt.Sprintf("%s-s2idata", "wildfly"),
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			lenVolumes := len(tt.existingDc.Spec.Template.Spec.Volumes)
-			lenVolumeMounts := len(tt.existingDc.Spec.Template.Spec.Containers[0].VolumeMounts)
-			lenInitContainer := len(tt.existingDc.Spec.Template.Spec.InitContainers)
-
-			fkclient, fkclientset := FakeNew()
-			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				dcName := action.(ktesting.GetAction).GetName()
-				if tt.dcName != dcName {
-					return true, nil, fmt.Errorf("got different dc")
-				}
-				return true, &tt.existingDc, nil
-			})
-
-			fkclientset.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
-				if dc.Name != tt.dcName {
-					return true, nil, fmt.Errorf("got different dc")
-				}
-				return true, dc, nil
-			})
-
-			fkclientset.Kubernetes.PrependReactor("delete", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				pvcName := action.(ktesting.DeleteAction).GetName()
-				if pvcName != getAppRootVolumeName(tt.dcName) {
-					return true, nil, fmt.Errorf("the pvc name is not matching the required pvc name")
-				}
-				return true, nil, nil
-			})
-
-			err := fkclient.CleanupAfterSupervisor(tt.dcName, tt.annotations)
-			if err == nil && !tt.wantErr {
-				// Check for validating actions performed
-				if (len(fkclientset.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
-					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppsClientset.Actions())
-				}
-
-				// Check for validating actions performed
-				if (len(fkclientset.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
-					t.Errorf("expected 1 action in CreatePVC got: %v", fkclientset.Kubernetes.Actions())
-				}
-
-				updatedDc := fkclientset.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
-				if updatedDc.Name != tt.dcName {
-					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.dcName, updatedDc.Name)
-				}
-
-				if !reflect.DeepEqual(updatedDc.Annotations, tt.annotations) {
-					t.Errorf("deployment Config annotations not matching with expected values, expected: %s, got %s", tt.annotations, updatedDc.Annotations)
-				}
-
-				if lenVolumes == len(updatedDc.Spec.Template.Spec.Volumes) {
-					t.Errorf("could not remove any volumes, expected: %s, got %s", "0 volume", "1 volume")
-				}
-
-				if lenVolumeMounts == len(updatedDc.Spec.Template.Spec.Containers[0].VolumeMounts) {
-					t.Errorf("could not remove any volumeMounts, expected: %s, got %s", "0 volume", "1 volume")
-				}
-
-				if lenInitContainer == len(updatedDc.Spec.Template.Spec.InitContainers) {
-					t.Errorf("could not remove any volumeMounts, expected: %s, got %s", "0 volume", "1 volume")
-				}
-
-				if lenVolumes-1 != len(updatedDc.Spec.Template.Spec.Volumes) {
-					t.Errorf("wrong number of Volumes deleted, expected: %s, removed %d", "1 volume", lenVolumes-len(updatedDc.Spec.Template.Spec.Volumes))
-				}
-
-				if lenInitContainer-1 != len(updatedDc.Spec.Template.Spec.InitContainers) {
-					t.Errorf("wrong number of InitContainer deleted, expected: %s, removed %d", "1 initContainer", lenInitContainer-len(updatedDc.Spec.Template.Spec.InitContainers))
-				}
-
-				if lenVolumeMounts-1 != len(updatedDc.Spec.Template.Spec.Containers[0].VolumeMounts) {
-					t.Errorf("wrong number of VolumeMounts deleted, expected: %s, removed %d", "1 volumeMount", lenInitContainer-len(updatedDc.Spec.Template.Spec.Containers[0].VolumeMounts))
-				}
-
-				for _, initContainer := range updatedDc.Spec.Template.Spec.InitContainers {
-					if initContainer.Name == "copy-files-to-volume" {
-						t.Errorf("could not remove 'copy-volume-to-volume' InitContainer and instead some other InitContainer was removed")
-					}
-				}
-
-				for _, volume := range updatedDc.Spec.Template.Spec.Volumes {
-					if volume.Name == getAppRootVolumeName(tt.dcName) {
-						t.Errorf("could not remove %s volume", getAppRootVolumeName(tt.dcName))
-					}
-				}
-
-				for _, volumeMount := range updatedDc.Spec.Template.Spec.Containers[0].VolumeMounts {
-					if volumeMount.Name == getAppRootVolumeName(tt.dcName) {
-						t.Errorf("could not remove %s volumeMount", getAppRootVolumeName(tt.dcName))
-					}
-				}
-			} else if err == nil && tt.wantErr {
-				t.Error("error was expected, but no error was returned")
-			} else if err != nil && !tt.wantErr {
-				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
-			}
-		})
-	}
-}
-
 func TestGetBuildConfigFromName(t *testing.T) {
 	tests := []struct {
 		name                string
@@ -3647,9 +3337,10 @@ func TestGetServiceInstanceList(t *testing.T) {
 
 func TestPatchCurrentDC(t *testing.T) {
 	type args struct {
-		name     string
-		dcBefore appsv1.DeploymentConfig
-		dcPatch  appsv1.DeploymentConfig
+		name              string
+		dcBefore          appsv1.DeploymentConfig
+		dcPatch           appsv1.DeploymentConfig
+		prePatchDCHandler dcStructUpdater
 	}
 	tests := []struct {
 		name    string
@@ -3658,7 +3349,7 @@ func TestPatchCurrentDC(t *testing.T) {
 		actions int
 	}{
 		{
-			name: "Case 1: Test patching",
+			name: "Case 1: Test patching with nil prePatchDCHandler",
 			args: args{
 				name:     "foo",
 				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
@@ -3670,7 +3361,20 @@ func TestPatchCurrentDC(t *testing.T) {
 			actions: 3,
 		},
 		{
-			name: "Case 2: Test patching with the wrong name",
+			name: "Case 2: Test patching with non-nil prePatchDCHandler",
+			args: args{
+				name:     "foo",
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
+					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				prePatchDCHandler: removeTracesOfSupervisordFromDC,
+			},
+			wantErr: false,
+			actions: 3,
+		},
+		{
+			name: "Case 3: Test patching with the wrong name",
 			args: args{
 				name:     "foo",
 				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
@@ -3710,7 +3414,7 @@ func TestPatchCurrentDC(t *testing.T) {
 			})
 
 			// Run function PatchCurrentDC
-			err := fakeClient.PatchCurrentDC(tt.args.name, tt.args.dcPatch)
+			err := fakeClient.PatchCurrentDC(tt.args.name, tt.args.dcPatch, tt.args.prePatchDCHandler)
 
 			// Error checking PatchCurrentDC
 			if !tt.wantErr == (err != nil) {
@@ -3817,6 +3521,11 @@ func TestUpdateDCToGit(t *testing.T) {
 					return true, nil, fmt.Errorf("got %s image, suppose to get %s", dc.Spec.Template.Spec.Containers[0].Image, tt.args.newImage)
 				}
 
+				return true, nil, nil
+			})
+
+			// Fake the pvc delete
+			fakeClientSet.Kubernetes.PrependReactor("delete", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, nil, nil
 			})
 
