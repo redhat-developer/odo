@@ -3386,10 +3386,11 @@ func TestPatchCurrentDC(t *testing.T) {
 			name: "Case 2: Test patching with non-nil prePatchDCHandler",
 			args: args{
 				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
-					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					getResourceRequirementsFromRawData(fakeResourceConsumption())),
 				prePatchDCHandler: removeTracesOfSupervisordFromDC,
 			},
 			wantErr: false,
