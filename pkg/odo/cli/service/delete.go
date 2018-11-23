@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	"os"
 	"strings"
 )
@@ -16,16 +17,20 @@ var serviceForceDeleteFlag bool
 
 const deleteRecommendedCommandName = "delete"
 
+var (
+	deleteExample = ktemplates.Examples(`
+    # Delete the service named 'mysql-persistent'
+    %[1]s mysql-persistent`)
+)
+
 // NewCmdServiceDelete implements the odo service delete command.
-func NewCmdServiceDelete(name string) *cobra.Command {
+func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 	serviceDeleteCmd := &cobra.Command{
-		Use:   name + " <service_name>",
-		Short: "Delete an existing service",
-		Long:  "Delete an existing service",
-		Example: `  # Delete the service named 'mysql-persistent'
-  odo service delete mysql-persistent
-	`,
-		Args: cobra.ExactArgs(1),
+		Use:     name + " <service_name>",
+		Short:   "Delete an existing service",
+		Long:    "Delete an existing service",
+		Example: fmt.Sprintf(deleteExample, fullName),
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			glog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
 			context := genericclioptions.NewContext(cmd)

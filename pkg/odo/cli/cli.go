@@ -104,7 +104,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		login.NewCmdLogin(),
 		logout.NewCmdLogout(),
 		project.NewCmdProject(),
-		service.NewCmdService(service.RecommendedCommandName),
+		service.NewCmdService(service.RecommendedCommandName, fullName+" "+service.RecommendedCommandName),
 		storage.NewCmdStorage(),
 		url.NewCmdURL(),
 		utils.NewCmdUtils(),

@@ -8,10 +8,17 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	"strings"
 )
 
 const createRecommendedCommandName = "create"
+
+var (
+	createExample = ktemplates.Examples(`
+    # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
+    %[1]s dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret`)
+)
 
 type ServiceCreateOptions struct {
 	parameters  []string
@@ -86,7 +93,7 @@ func (o *ServiceCreateOptions) Run() (err error) {
 }
 
 // NewCmdServiceCreate implements the odo service create command.
-func NewCmdServiceCreate(name string) *cobra.Command {
+func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	o := NewServiceCreateOptions()
 	serviceCreateCmd := &cobra.Command{
 		Use:   name + " <service_type> --plan <plan_name> [service_name]",
@@ -96,10 +103,8 @@ If service name is not provided, service type value will be used. The plan to be
 using this convention <service_type>/<plan>. The parameters to configure the service are passed as a list of key=value pairs.
 The list of the parameters and their type is defined according to the plan selected.
 A full list of service types that can be deployed are available using: 'odo catalog list services'`,
-		Example: `  # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
-  odo service create dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
-	`,
-		Args: cobra.RangeArgs(1, 2),
+		Example: fmt.Sprintf(createExample, fullName),
+		Args:    cobra.RangeArgs(1, 2),
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckError(o.Complete(name, cmd, args), "")
 			util.CheckError(o.Validate(), "")

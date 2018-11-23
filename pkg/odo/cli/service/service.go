@@ -11,10 +11,10 @@ import (
 const RecommendedCommandName = "service"
 
 // NewCmdService implements the odo service command.
-func NewCmdService(name string) *cobra.Command {
-	serviceCreateCmd := NewCmdServiceCreate(createRecommendedCommandName)
-	serviceListCmd := NewCmdServiceList(listRecommendedCommandName)
-	serviceDeleteCmd := NewCmdServiceDelete(deleteRecommendedCommandName)
+func NewCmdService(name, fullName string) *cobra.Command {
+	serviceCreateCmd := NewCmdServiceCreate(createRecommendedCommandName, fullName+" "+createRecommendedCommandName)
+	serviceListCmd := NewCmdServiceList(listRecommendedCommandName, fullName+" "+listRecommendedCommandName)
+	serviceDeleteCmd := NewCmdServiceDelete(deleteRecommendedCommandName, fullName+" "+deleteRecommendedCommandName)
 	serviceCmd := &cobra.Command{
 		Use:   name,
 		Short: "Perform service catalog operations",

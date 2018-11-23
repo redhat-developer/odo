@@ -6,22 +6,27 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	"os"
 	"text/tabwriter"
 )
 
 const listRecommendedCommandName = "list"
 
+var (
+	listExample = ktemplates.Examples(`
+    # List all services in the application
+    %[1]s`)
+)
+
 // NewCmdServiceList implements the odo service list command.
-func NewCmdServiceList(name string) *cobra.Command {
+func NewCmdServiceList(name, fullName string) *cobra.Command {
 	serviceListCmd := &cobra.Command{
-		Use:   name,
-		Short: "List all services in the current application",
-		Long:  "List all services in the current application",
-		Example: `  # List all services in the application
-  odo service list
-	`,
-		Args: cobra.NoArgs,
+		Use:     name,
+		Short:   "List all services in the current application",
+		Long:    "List all services in the current application",
+		Example: fmt.Sprintf(listExample, fullName),
+		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			context := genericclioptions.NewContext(cmd)
 			client := context.Client
