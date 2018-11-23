@@ -12,7 +12,7 @@ bin:
 
 .PHONY: install
 install:
-	go install ${BUILD_FLAGS}
+	go install ${BUILD_FLAGS} ./cmd/odo/
 
 # run all validation tests
 .PHONY: validate

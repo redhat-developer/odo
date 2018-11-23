@@ -55,7 +55,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should be able to create a component with git source", func() {
-			runCmd("odo create nodejs cmp-git --git https://github.com/openshift/nodejs-ex --min-memory 100Mi --max-memory 300Mi")
+			runCmd("odo create nodejs cmp-git --git https://github.com/openshift/nodejs-ex --min-memory 100Mi --max-memory 300Mi --min-cpu 0.1 --max-cpu 2")
 			getMemoryLimit := runCmd("oc get dc cmp-git-" +
 				appTestName +
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
@@ -66,6 +66,17 @@ var _ = Describe("odoCmpE2e", func() {
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
 			)
 			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
+
+			getCpuLimit := runCmd("oc get dc cmp-git-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.cpu}}{{end}}'",
+			)
+			Expect(getCpuLimit).To(ContainSubstring("2"))
+			getCpuRequest := runCmd("oc get dc cmp-git-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'",
+			)
+			Expect(getCpuRequest).To(ContainSubstring("100m"))
 		})
 
 		It("should list the component", func() {
