@@ -79,7 +79,17 @@ func TestDelete(t *testing.T) {
 			})
 
 			// The function we are testing
-			err = Delete(client, tt.projectName)
+			newSetProject, err := Delete(client, tt.projectName)
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.ProjClientset.Actions()) != 3 {
+					t.Errorf("expected 1 ProjClientSet.Actions() in Project Delete, got: %v", len(fakeClientSet.ProjClientset.Actions()))
+				}
+
+				if newSetProject == tt.projectName {
+					t.Errorf("the deleted project was returned as active, expected : the project name not to be equal to %v", tt.projectName)
+				}
+			}
 
 			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
