@@ -30,6 +30,9 @@ var (
 	memoryMax        string
 	memoryMin        string
 	memory           string
+	cpuMax           string
+	cpuMin           string
+	cpu              string
 )
 
 var componentCreateCmd = &cobra.Command{
@@ -52,6 +55,11 @@ A full list of component types that can be deployed is available using: 'odo cat
   # Passing memory limits
   odo create nodejs:latest --memory 150Mi
   odo create nodejs:latest --min-memory 150Mi --max-memory 300 Mi
+
+  # Passing cpu limits
+  odo create nodejs:latest --cpu 2
+  odo create nodejs:latest --min-cpu 0.25 --max-cpu 2
+  odo create nodejs:latest --min-cpu 200m --max-cpu 2
 
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
@@ -156,23 +164,18 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
-		// If min-memory, max-memory and memory are passed, memory will be ignored as the other 2 have greater precedence.
-		// Emit a message indicating the same
-		if memoryMin != "" && memoryMax != "" && memory != "" {
-			fmt.Println("`--memory` will be ignored as `--min-memory` and `--max-memory` has been passed ")
-		}
-		if (memoryMin == "") != (memoryMax == "") && memory != "" {
-			fmt.Printf("Using `--memory` %s for min and max limits.\n", memory)
-		}
-		if (memoryMin == "") != (memoryMax == "") && memory == "" {
-			fmt.Println("`--min-memory` should accompany `--max-memory` or pass `--memory` to use same value for both min and max or try not passing any of them")
-			os.Exit(1)
-		}
+		ensureAndLogProperResourceUsage(memory, memoryMin, memoryMax, "memory")
 
-		memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
+		ensureAndLogProperResourceUsage(cpu, cpuMin, cpuMax, "cpu")
+
 		resourceQuantity := []util.ResourceRequirementInfo{}
+		memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
 		if memoryQuantity != nil {
 			resourceQuantity = append(resourceQuantity, *memoryQuantity)
+		}
+		cpuQuantity := util.FetchResourceQuantity(corev1.ResourceCPU, cpuMin, cpuMax, cpu)
+		if cpuQuantity != nil {
+			resourceQuantity = append(resourceQuantity, *cpuQuantity)
 		}
 
 		// Deploy the component with Git
@@ -294,6 +297,21 @@ A full list of component types that can be deployed is available using: 'odo cat
 	},
 }
 
+// The general cpu/memory is used as a fallback when it's set and both min-cpu/memory max-cpu/memory are not set
+// when the only thing specified is the min or max value, we exit the application
+func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourceName string) {
+	if resourceMin != "" && resourceMax != "" && resource != "" {
+		fmt.Printf("`--%s` will be ignored as `--min-%s` and `--max-%s` has been passed\n", resourceName, resourceName, resourceName)
+	}
+	if (resourceMin == "") != (resourceMax == "") && resource != "" {
+		fmt.Printf("Using `--%s` %s for min and max limits.\n", resourceName, resource)
+	}
+	if (resourceMin == "") != (resourceMax == "") && resource == "" {
+		fmt.Printf("`--min-%s` should accompany `--max-%s` or pass `--%s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName)
+		os.Exit(1)
+	}
+}
+
 func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
@@ -301,6 +319,9 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi")
 	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
 	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&cpu, "cpu", "", "Amount of cpu to be allocated to the component. ex. 100m or 0.1")
+	componentCreateCmd.Flags().StringVar(&cpuMin, "min-cpu", "", "Limit minimum amount of cpu to be allocated to the component. ex. 100m")
+	componentCreateCmd.Flags().StringVar(&cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
 	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 

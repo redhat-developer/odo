@@ -279,7 +279,7 @@ func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max str
 		maxResource = resource.MustParse(request)
 	}
 	return &ResourceRequirementInfo{
-		ResourceType: corev1.ResourceMemory,
+		ResourceType: resourceType,
 		MinQty:       minResource,
 		MaxQty:       maxResource,
 	}
