@@ -97,7 +97,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		testName           string
 		componentType      string
 		componentPath      string
-		componentPathType  CreateType
+		componentPathType  occlient.CreateType
 		existingComponents []ComponentInfo
 		wantErr            bool
 		wantRE             string
@@ -106,7 +106,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix not configured",
 			componentType:      "nodejs",
-			componentPathType:  GIT,
+			componentPathType:  occlient.GIT,
 			componentPath:      "https://github.com/openshift/nodejs.git",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -116,7 +116,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix configured",
 			componentType:      "nodejs",
-			componentPathType:  SOURCE,
+			componentPathType:  occlient.LOCAL,
 			componentPath:      "./testing",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -126,7 +126,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		{
 			testName:           "Case: App prefix configured",
 			componentType:      "wildfly",
-			componentPathType:  BINARY,
+			componentPathType:  occlient.BINARY,
 			componentPath:      "./testing.war",
 			existingComponents: []ComponentInfo{},
 			wantErr:            false,
@@ -175,7 +175,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 func TestGetComponentDir(t *testing.T) {
 	type args struct {
 		path      string
-		paramType CreateType
+		paramType occlient.CreateType
 	}
 	tests := []struct {
 		testName string
@@ -186,7 +186,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: Git URL",
 			args: args{
-				paramType: GIT,
+				paramType: occlient.GIT,
 				path:      "https://github.com/openshift/nodejs-ex.git",
 			},
 			want:    "nodejs-ex",
@@ -195,7 +195,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: Source Path",
 			args: args{
-				paramType: SOURCE,
+				paramType: occlient.LOCAL,
 				path:      "./testing",
 			},
 			wantErr: false,
@@ -204,7 +204,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: Binary path",
 			args: args{
-				paramType: BINARY,
+				paramType: occlient.BINARY,
 				path:      "./testing.war",
 			},
 			wantErr: false,
@@ -213,7 +213,7 @@ func TestGetComponentDir(t *testing.T) {
 		{
 			testName: "Case: No clue of any component",
 			args: args{
-				paramType: NONE,
+				paramType: occlient.NONE,
 				path:      "",
 			},
 			wantErr: false,

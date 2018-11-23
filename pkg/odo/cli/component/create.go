@@ -15,8 +15,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -25,6 +27,9 @@ var (
 	componentLocal   string
 	componentPorts   []string
 	componentEnvVars []string
+	memoryMax        string
+	memoryMin        string
+	memory           string
 )
 
 var componentCreateCmd = &cobra.Command{
@@ -43,6 +48,10 @@ A full list of component types that can be deployed is available using: 'odo cat
 
   # A specific image version may also be specified
   odo create nodejs:latest
+
+  # Passing memory limits
+  odo create nodejs:latest --memory 150Mi
+  odo create nodejs:latest --min-memory 150Mi --max-memory 300 Mi
 
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
@@ -78,21 +87,21 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		checkFlag := 0
 		componentPath := ""
-		var componentPathType component.CreateType
+		var componentPathType occlient.CreateType
 
 		if len(componentBinary) != 0 {
 			componentPath = componentBinary
-			componentPathType = component.BINARY
+			componentPathType = occlient.BINARY
 			checkFlag++
 		}
 		if len(componentGit) != 0 {
 			componentPath = componentGit
-			componentPathType = component.GIT
+			componentPathType = occlient.GIT
 			checkFlag++
 		}
 		if len(componentLocal) != 0 {
 			componentPath = componentLocal
-			componentPathType = component.SOURCE
+			componentPathType = occlient.LOCAL
 			checkFlag++
 		}
 
@@ -147,11 +156,42 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
+		// If min-memory, max-memory and memory are passed, memory will be ignored as the other 2 have greater precedence.
+		// Emit a message indicating the same
+		if memoryMin != "" && memoryMax != "" && memory != "" {
+			fmt.Println("`--memory` will be ignored as `--min-memory` and `--max-memory` has been passed ")
+		}
+		if (memoryMin == "") != (memoryMax == "") && memory != "" {
+			fmt.Printf("Using `--memory` %s for min and max limits.\n", memory)
+		}
+		if (memoryMin == "") != (memoryMax == "") && memory == "" {
+			fmt.Println("`--min-memory` should accompany `--max-memory` or pass `--memory` to use same value for both min and max or try not passing any of them")
+			os.Exit(1)
+		}
+
+		memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
+		resourceQuantity := []util.ResourceRequirementInfo{}
+		if memoryQuantity != nil {
+			resourceQuantity = append(resourceQuantity, *memoryQuantity)
+		}
+
 		// Deploy the component with Git
 		if len(componentGit) != 0 {
 
 			// Use Git
-			err := component.CreateFromGit(client, componentName, componentImageName, componentGit, applicationName, componentPorts, componentEnvVars)
+			err := component.CreateFromGit(
+				client,
+				occlient.CreateArgs{
+					Name:            componentName,
+					SourcePath:      componentGit,
+					SourceType:      occlient.GIT,
+					ImageName:       componentImageName,
+					EnvVars:         componentEnvVars,
+					Ports:           componentPorts,
+					Resources:       resourceQuantity,
+					ApplicationName: applicationName,
+				},
+			)
 			odoutil.CheckError(err, "")
 			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 
@@ -172,7 +212,19 @@ A full list of component types that can be deployed is available using: 'odo cat
 			}
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars)
+			err = component.CreateFromPath(
+				client,
+				occlient.CreateArgs{
+					Name:            componentName,
+					SourcePath:      dir,
+					SourceType:      occlient.LOCAL,
+					ImageName:       componentImageName,
+					EnvVars:         componentEnvVars,
+					Ports:           componentPorts,
+					Resources:       resourceQuantity,
+					ApplicationName: applicationName,
+				},
+			)
 			odoutil.CheckError(err, "")
 
 		} else if len(componentBinary) != 0 {
@@ -183,7 +235,19 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.CheckError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, path, applicationName, "binary", componentPorts, componentEnvVars)
+			err = component.CreateFromPath(
+				client,
+				occlient.CreateArgs{
+					Name:            componentName,
+					SourcePath:      path,
+					SourceType:      occlient.BINARY,
+					ImageName:       componentImageName,
+					EnvVars:         componentEnvVars,
+					Ports:           componentPorts,
+					Resources:       resourceQuantity,
+					ApplicationName: applicationName,
+				},
+			)
 			odoutil.CheckError(err, "")
 
 		} else {
@@ -192,7 +256,19 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.CheckError(err, "")
 
 			// Create
-			err = component.CreateFromPath(client, componentName, componentImageName, dir, applicationName, "local", componentPorts, componentEnvVars)
+			err = component.CreateFromPath(
+				client,
+				occlient.CreateArgs{
+					Name:            componentName,
+					SourcePath:      dir,
+					SourceType:      occlient.LOCAL,
+					ImageName:       componentImageName,
+					EnvVars:         componentEnvVars,
+					Ports:           componentPorts,
+					Resources:       resourceQuantity,
+					ApplicationName: applicationName,
+				},
+			)
 			odoutil.CheckError(err, "")
 		}
 
@@ -222,6 +298,9 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
+	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component. ex. 100Mi")
 	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 

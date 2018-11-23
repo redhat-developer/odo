@@ -21,6 +21,7 @@ import (
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +35,7 @@ import (
 
 // fakeDeploymentConfig creates a fake DC.
 // we "dog food" our own functions by using our templates / functions to generate this fake deployment config
-func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar) *appsv1.DeploymentConfig {
+func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, resources []util.ResourceRequirementInfo) *appsv1.DeploymentConfig {
 
 	// save component type as label
 	labels := componentlabels.GetLabels(name, name, true)
@@ -61,7 +62,13 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar) *a
 	}
 
 	// Generate the DeploymentConfig that will be used.
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, image, commonImageMeta, envVars)
+	dc := generateSupervisordDeploymentConfig(
+		commonObjectMeta,
+		image,
+		commonImageMeta,
+		envVars,
+		getResourceRequirementsFromRawData(resources),
+	)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -70,6 +77,13 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar) *a
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
 
 	return &dc
+}
+
+func fakeResourceConsumption() []util.ResourceRequirementInfo {
+	return []util.ResourceRequirementInfo{
+		*util.FetchResourceQuantity(corev1.ResourceMemory, "100Mi", "350Mi", ""),
+		*util.FetchResourceQuantity(corev1.ResourceCPU, "100m", "350m", ""),
+	}
 }
 
 // fakeImageStream gets imagestream for the reactor
@@ -1631,12 +1645,18 @@ func TestNewAppS2I(t *testing.T) {
 				return true, fakeImageStreamImages(tt.args.commonObjectMeta.Name), nil
 			})
 
-			err := fkclient.NewAppS2I(tt.args.commonObjectMeta.Name,
+			err := fkclient.NewAppS2I(
+				CreateArgs{
+					Name:       tt.args.commonObjectMeta.Name,
+					SourcePath: tt.args.gitURL,
+					SourceType: GIT,
+					ImageName:  tt.args.builderImage,
+					EnvVars:    tt.args.envVars,
+					Ports:      tt.args.inputPorts,
+					Resources:  []util.ResourceRequirementInfo{},
+				},
 				tt.args.commonObjectMeta,
-				tt.args.builderImage,
-				tt.args.gitURL,
-				tt.args.inputPorts,
-				tt.args.envVars)
+			)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewAppS2I() error = %#v, wantErr %#v", err, tt.wantErr)
@@ -2007,7 +2027,7 @@ func TestLinkSecret(t *testing.T) {
 				if len(tt.applicationName) == 0 {
 					return true, nil, fmt.Errorf("could not find dc")
 				}
-				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}), nil
+				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}), nil
 			})
 
 			// Fake updating DC
@@ -2015,7 +2035,7 @@ func TestLinkSecret(t *testing.T) {
 				if len(tt.namespace) == 0 {
 					return true, nil, fmt.Errorf("could not update dc")
 				}
-				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}), nil
+				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}), nil
 			})
 
 			err := fakeClient.LinkSecret(tt.secretName, tt.componentName, tt.applicationName, tt.namespace)
@@ -3352,10 +3372,12 @@ func TestPatchCurrentDC(t *testing.T) {
 			name: "Case 1: Test patching with nil prePatchDCHandler",
 			args: args{
 				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
-					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					getResourceRequirementsFromRawData(fakeResourceConsumption()),
+				),
 			},
 			wantErr: false,
 			actions: 3,
@@ -3364,10 +3386,11 @@ func TestPatchCurrentDC(t *testing.T) {
 			name: "Case 2: Test patching with non-nil prePatchDCHandler",
 			args: args{
 				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
-					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					getResourceRequirementsFromRawData(fakeResourceConsumption())),
 				prePatchDCHandler: removeTracesOfSupervisordFromDC,
 			},
 			wantErr: false,
@@ -3377,10 +3400,11 @@ func TestPatchCurrentDC(t *testing.T) {
 			name: "Case 3: Test patching with the wrong name",
 			args: args{
 				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar",
 					[]corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}},
-					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					nil),
 			},
 			wantErr: true,
 			actions: 2,
@@ -3453,7 +3477,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "bar",
-				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
 			},
 			wantErr: false,
 			actions: 4,
@@ -3463,7 +3487,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "",
-				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
 			},
 			wantErr: true,
 			actions: 4,
@@ -3473,7 +3497,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "",
-				dc:       *fakeDeploymentConfig("foo2", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:       *fakeDeploymentConfig("foo2", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, []util.ResourceRequirementInfo{}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3483,7 +3507,7 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "bar:latest",
-				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, []util.ResourceRequirementInfo{}),
 			},
 			wantErr: false,
 			actions: 4,
@@ -3767,7 +3791,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "nodejs",
 				expectedImage:  "nodejs",
 				imageNamespace: "openshift",
-				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
 			},
 			wantErr: false,
 			actions: 4,
@@ -3779,7 +3803,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "foo",
 				expectedImage:  "foobar",
 				imageNamespace: "testing",
-				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}),
+				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, []util.ResourceRequirementInfo{}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3873,7 +3897,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 1 - Check that it is an emptyDir",
 			args: args{
 				VolumeName: supervisordVolumeName,
-				dc:         *fakeDeploymentConfig("foo", "bar", nil),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, []util.ResourceRequirementInfo{}),
 			},
 			wantEmptyDir: true,
 		},
@@ -3881,7 +3905,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 2 - Check a non-existent volume",
 			args: args{
 				VolumeName: "foobar",
-				dc:         *fakeDeploymentConfig("foo", "bar", nil),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, []util.ResourceRequirementInfo{}),
 			},
 			wantEmptyDir: false,
 		},
@@ -3889,7 +3913,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 3 - Check a volume that exists but is not emptyDir",
 			args: args{
 				VolumeName: "foo-s2idata",
-				dc:         *fakeDeploymentConfig("foo", "bar", nil),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, []util.ResourceRequirementInfo{}),
 			},
 			wantEmptyDir: false,
 		},
@@ -4159,7 +4183,7 @@ func Test_updateEnvVar(t *testing.T) {
 		{
 			name: "test case 1: tests with single container in dc and no existing env vars",
 			args: args{
-				dc: fakeDeploymentConfig("foo", "foo", nil),
+				dc: fakeDeploymentConfig("foo", "foo", nil, []util.ResourceRequirementInfo{}),
 				inputEnvVars: []corev1.EnvVar{
 					{
 						Name:  "key",
@@ -4176,7 +4200,7 @@ func Test_updateEnvVar(t *testing.T) {
 		{
 			name: "test case 2: tests with single container in dc and existing env vars",
 			args: args{
-				dc: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key-1", Value: "key-1"}}),
+				dc: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key-1", Value: "key-1"}}, []util.ResourceRequirementInfo{}),
 				inputEnvVars: []corev1.EnvVar{
 					{
 						Name:  "key-2",
@@ -4382,7 +4406,7 @@ func TestWaitAndGetDC(t *testing.T) {
 				name:       "foo",
 				annotation: "app.kubernetes.io/component-source-type",
 				value:      "git",
-				dc:         *fakeDeploymentConfig("foo", "bar", []corev1.EnvVar{}),
+				dc:         *fakeDeploymentConfig("foo", "bar", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}),
 				timeout:    3 * time.Second,
 			},
 			wantErr: false,
@@ -4394,7 +4418,7 @@ func TestWaitAndGetDC(t *testing.T) {
 				name:       "foo",
 				annotation: "app.kubernetes.io/component-source-type",
 				value:      "foobar",
-				dc:         *fakeDeploymentConfig("foo", "bar", []corev1.EnvVar{}),
+				dc:         *fakeDeploymentConfig("foo", "bar", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}),
 				timeout:    3 * time.Second,
 			},
 			wantErr: true,

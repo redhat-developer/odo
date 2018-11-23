@@ -57,6 +57,32 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
+// CreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
+type CreateType string
+
+const (
+	// GIT as source of component
+	GIT CreateType = "git"
+	// LOCAL Local source path as source of component
+	LOCAL CreateType = "local"
+	// BINARY Local Binary as source of component
+	BINARY CreateType = "binary"
+	// NONE indicates there's no information about the type of source of the component
+	NONE CreateType = ""
+)
+
+// CreateArgs is a container of attributes of component create action
+type CreateArgs struct {
+	Name            string
+	SourcePath      string
+	SourceType      CreateType
+	ImageName       string
+	EnvVars         []string
+	Ports           []string
+	Resources       []util.ResourceRequirementInfo
+	ApplicationName string
+}
+
 const (
 	ocUpdateTimeout    = 120 * time.Second
 	OpenShiftNameSpace = "openshift"
@@ -650,10 +676,9 @@ func getAppRootVolumeName(dcName string) string {
 // gitURL is the url of the git repo
 // inputPorts is the array containing the string port values
 // envVars is the array containing the string env var values
-func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, inputPorts []string, envVars []string) error {
-
-	glog.V(4).Infof("Using BuilderImage: %s", builderImage)
-	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
+func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta) error {
+	glog.V(4).Infof("Using BuilderImage: %s", params.ImageName)
+	imageNS, imageName, imageTag, _, err := ParseImageName(params.ImageName)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse image name")
 	}
@@ -675,7 +700,7 @@ func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectM
 	}
 
 	var containerPorts []corev1.ContainerPort
-	if len(inputPorts) == 0 {
+	if len(params.Ports) == 0 {
 		containerPorts, err = c.GetExposedPorts(imageStreamImage)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
@@ -685,13 +710,13 @@ func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectM
 			return errors.Wrapf(err, "unable to create s2i app for %s", commonObjectMeta.Name)
 		}
 		imageNS = imageStream.ObjectMeta.Namespace
-		containerPorts, err = getContainerPortsFromStrings(inputPorts)
+		containerPorts, err = getContainerPortsFromStrings(params.Ports)
 		if err != nil {
-			return errors.Wrapf(err, "unable to get container ports from %v", inputPorts)
+			return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
 		}
 	}
 
-	inputEnvVars, err := getInputEnvVarsFromStrings(envVars)
+	inputEnvVars, err := getInputEnvVarsFromStrings(params.EnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "error adding environment variables to the container")
 	}
@@ -706,18 +731,18 @@ func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectM
 	}
 
 	// if gitURL is not set, error out
-	if gitURL == "" {
+	if params.SourcePath == "" {
 		return errors.New("unable to create buildSource with empty gitURL")
 	}
 
 	// Deploy BuildConfig to build the container with Git
-	buildConfig, err := c.CreateBuildConfig(commonObjectMeta, builderImage, gitURL, inputEnvVars)
+	buildConfig, err := c.CreateBuildConfig(commonObjectMeta, params.ImageName, params.SourcePath, inputEnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "unable to deploy BuildConfig for %s", commonObjectMeta.Name)
 	}
 
 	// Generate and create the DeploymentConfig
-	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars)
+	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars, getResourceRequirementsFromRawData(params.Resources))
 	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
@@ -730,7 +755,7 @@ func (c *Client) NewAppS2I(componentName string, commonObjectMeta metav1.ObjectM
 	}
 
 	// Create secret(s)
-	err = c.createSecrets(componentName, commonObjectMeta, svc)
+	err = c.createSecrets(params.Name, commonObjectMeta, svc)
 
 	return err
 }
@@ -885,9 +910,8 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 // Supervisor keeps the pod running (as PID 1), so you it is possible to trigger assembly script inside running pod,
 // and than restart application using Supervisor without need to restart the container/Pod.
 //
-func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta metav1.ObjectMeta, builderImage string, inputPorts []string, envVars []string) error {
-
-	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
+func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta) error {
+	imageNS, imageName, imageTag, _, err := ParseImageName(params.ImageName)
 
 	if err != nil {
 		return errors.Wrap(err, "unable to create new s2i git build ")
@@ -907,7 +931,7 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 	var containerPorts []corev1.ContainerPort
-	if len(inputPorts) == 0 {
+	if len(params.Ports) == 0 {
 		containerPorts, err = c.GetExposedPorts(imageStreamImage)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
@@ -916,13 +940,13 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 		if err != nil {
 			return errors.Wrapf(err, "unable to bootstrap s2i supervisored for %s", commonObjectMeta.Name)
 		}
-		containerPorts, err = getContainerPortsFromStrings(inputPorts)
+		containerPorts, err = getContainerPortsFromStrings(params.Ports)
 		if err != nil {
-			return errors.Wrapf(err, "unable to get container ports from %v", inputPorts)
+			return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
 		}
 	}
 
-	inputEnvs, err := getInputEnvVarsFromStrings(envVars)
+	inputEnvs, err := getInputEnvVarsFromStrings(params.EnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "error adding environment variables to the container")
 	}
@@ -972,7 +996,7 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 	)
 
 	// Generate the DeploymentConfig that will be used.
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, builderImage, commonImageMeta, inputEnvs)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, params.ImageName, commonImageMeta, inputEnvs, getResourceRequirementsFromRawData(params.Resources))
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -997,7 +1021,7 @@ func (c *Client) BootstrapSupervisoredS2I(componentName string, commonObjectMeta
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
-	err = c.createSecrets(componentName, commonObjectMeta, svc)
+	err = c.createSecrets(params.Name, commonObjectMeta, svc)
 	if err != nil {
 		return err
 	}
@@ -1221,7 +1245,8 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 	}
 
 	// Generate the new DeploymentConfig
-	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports, foundCurrentDCContainer.Env)
+	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
+	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports, foundCurrentDCContainer.Env, &resourceLimits)
 
 	// Patch the current DC
 	err = c.PatchCurrentDC(commonObjectMeta.Name, dc, removeTracesOfSupervisordFromDC)
@@ -1306,7 +1331,8 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	)
 
 	// Generate the SupervisorD Config
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, inputEnvs)
+	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
+	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, inputEnvs, &resourceLimits)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)

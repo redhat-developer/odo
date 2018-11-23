@@ -37,7 +37,7 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 
 	// If there's no prefix in config file or it is equal to $DIR, use safe default which is the name of current directory
 	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == "" {
-		prefix, err := component.GetComponentDir("", component.NONE)
+		prefix, err := component.GetComponentDir("", occlient.NONE)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to generate random app name")
 		}

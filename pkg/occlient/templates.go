@@ -5,6 +5,7 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
+	"github.com/redhat-developer/odo/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -17,10 +18,10 @@ type CommonImageMeta struct {
 	Ports     []corev1.ContainerPort
 }
 
-func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, commonImageMeta CommonImageMeta, envVar []corev1.EnvVar) appsv1.DeploymentConfig {
+func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, commonImageMeta CommonImageMeta, envVar []corev1.EnvVar, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {
 
 	// Generates and deploys a DeploymentConfig with an InitContainer to copy over the SupervisorD binary.
-	return appsv1.DeploymentConfig{
+	dc := appsv1.DeploymentConfig{
 		ObjectMeta: commonObjectMeta,
 		Spec: appsv1.DeploymentConfigSpec{
 			Replicas: 1,
@@ -100,10 +101,45 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 			},
 		},
 	}
+	containerIndex := -1
+	if resourceRequirements != nil {
+		for index, container := range dc.Spec.Template.Spec.Containers {
+			if container.Name == commonObjectMeta.Name {
+				containerIndex = index
+				break
+			}
+		}
+		if containerIndex != -1 {
+			dc.Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+		}
+	}
+	return dc
 }
 
-func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image string, containerPorts []corev1.ContainerPort, envVars []corev1.EnvVar) appsv1.DeploymentConfig {
-	return appsv1.DeploymentConfig{
+func fetchContainerResourceLimits(container corev1.Container) corev1.ResourceRequirements {
+	return container.Resources
+}
+
+func getResourceRequirementsFromRawData(resources []util.ResourceRequirementInfo) *corev1.ResourceRequirements {
+	if len(resources) == 0 {
+		return nil
+	}
+	var resourceRequirements corev1.ResourceRequirements
+	for _, resource := range resources {
+		if resourceRequirements.Limits == nil {
+			resourceRequirements.Limits = make(corev1.ResourceList)
+		}
+		if resourceRequirements.Requests == nil {
+			resourceRequirements.Requests = make(corev1.ResourceList)
+		}
+		resourceRequirements.Limits[resource.ResourceType] = resource.MaxQty
+		resourceRequirements.Requests[resource.ResourceType] = resource.MinQty
+	}
+	return &resourceRequirements
+}
+
+func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image string, containerPorts []corev1.ContainerPort, envVars []corev1.EnvVar, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {
+	dc := appsv1.DeploymentConfig{
 		ObjectMeta: commonObjectMeta,
 		Spec: appsv1.DeploymentConfigSpec{
 			Replicas: 1,
@@ -147,6 +183,19 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 			},
 		},
 	}
+	containerIndex := -1
+	if resourceRequirements != nil {
+		for index, container := range dc.Spec.Template.Spec.Containers {
+			if container.Name == commonObjectMeta.Name {
+				containerIndex = index
+				break
+			}
+		}
+		if containerIndex != -1 {
+			dc.Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+		}
+	}
+	return dc
 }
 
 // generateBuildConfig creates a BuildConfig for Git URL's being passed into Odo
