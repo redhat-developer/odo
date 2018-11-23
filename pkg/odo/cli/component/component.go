@@ -16,7 +16,7 @@ var componentShortFlag bool
 // componentCmd represents the component command
 var componentCmd = &cobra.Command{
 	Use:   "component",
-	Short: "Components of application.",
+	Short: "Components of application",
 	Example: fmt.Sprintf("%s\n%s",
 		componentGetCmd.Example,
 		componentSetCmd.Example),
@@ -93,8 +93,6 @@ func NewCmdComponent() *cobra.Command {
 	genericclioptions.AddApplicationFlag(componentGetCmd)
 	genericclioptions.AddApplicationFlag(componentSetCmd)
 
-	// Add a defined annotation in order to appear in the help menu
-	componentCmd.Annotations = map[string]string{"command": "component"}
 	componentCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return componentCmd

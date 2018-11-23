@@ -24,8 +24,6 @@ var logoutCmd = &cobra.Command{
 }
 
 func NewCmdLogout() *cobra.Command {
-	// Add a defined annotation in order to appear in the help menu
-	logoutCmd.Annotations = map[string]string{"command": "utility"}
 	logoutCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return logoutCmd

@@ -141,8 +141,6 @@ func NewCmdLink() *cobra.Command {
 	linkCmd.PersistentFlags().StringVar(&port, "port", "", "Port of the backend to which to link")
 	linkCmd.PersistentFlags().BoolVarP(&wait, "wait", "w", false, "If enabled, the link command will wait for the service to be provisioned")
 
-	// Add a defined annotation in order to appear in the help menu
-	linkCmd.Annotations = map[string]string{"command": "component"}
 	linkCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	//Adding `--project` flag
 	addProjectFlag(linkCmd)

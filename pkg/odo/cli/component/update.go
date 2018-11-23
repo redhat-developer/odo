@@ -102,8 +102,6 @@ func NewCmdUpdate() *cobra.Command {
 	updateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source for component.")
 
-	// Add a defined annotation in order to appear in the help menu
-	updateCmd.Annotations = map[string]string{"command": "component"}
 	updateCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	//Adding `--application` flag

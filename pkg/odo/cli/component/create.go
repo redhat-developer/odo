@@ -322,8 +322,6 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
-	// Add a defined annotation in order to appear in the help menu
-	componentCreateCmd.Annotations = map[string]string{"command": "component"}
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag

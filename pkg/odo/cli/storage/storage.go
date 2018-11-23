@@ -279,8 +279,6 @@ func NewCmdStorage() *cobra.Command {
 	genericclioptions.AddComponentFlag(storageMountCmd)
 	genericclioptions.AddComponentFlag(storageUnmountCmd)
 
-	// Add a defined annotation in order to appear in the help menu
-	storageCmd.Annotations = map[string]string{"command": "other"}
 	storageCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)

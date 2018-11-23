@@ -45,8 +45,6 @@ var logCmd = &cobra.Command{
 func NewCmdLog() *cobra.Command {
 	logCmd.Flags().BoolVarP(&logFollow, "follow", "f", false, "Follow logs")
 
-	// Add a defined annotation in order to appear in the help menu
-	logCmd.Annotations = map[string]string{"command": "component"}
 	logCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	//Adding `--project` flag

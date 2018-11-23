@@ -46,8 +46,6 @@ var loginCmd = &cobra.Command{
 }
 
 func NewCmdLogin() *cobra.Command {
-	// Add a defined annotation in order to appear in the help menu
-	loginCmd.Annotations = map[string]string{"command": "utility"}
 	loginCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	loginCmd.Flags().StringVarP(&userName, "username", "u", userName, "username, will prompt if not provided")
 	loginCmd.Flags().StringVarP(&password, "password", "p", password, "password, will prompt if not provided")

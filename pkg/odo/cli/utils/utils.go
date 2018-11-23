@@ -19,7 +19,6 @@ var utilsCmd = &cobra.Command{
 }
 
 func NewCmdUtils() *cobra.Command {
-	utilsCmd.Annotations = map[string]string{"command": "utility"}
 	utilsCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	configurationCmd.AddCommand(configurationViewCmd)
