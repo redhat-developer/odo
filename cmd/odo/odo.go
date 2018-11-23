@@ -51,7 +51,7 @@ func main() {
 	if err != nil {
 		util.CheckError(err, "")
 	}
-	if cfg.GetUpdateNotification() == true {
+	if cfg.GetUpdateNotification() {
 		updateInfo := make(chan string)
 		go version.GetLatestReleaseInfo(updateInfo)
 
