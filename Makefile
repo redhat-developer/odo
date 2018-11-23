@@ -1,4 +1,5 @@
 PROJECT := github.com/redhat-developer/odo
+MAIN_PKG := ./cmd/odo/
 GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor)
 BUILD_FLAGS := -ldflags="-w -X $(PROJECT)/cmd.GITCOMMIT=$(GITCOMMIT)"
@@ -8,11 +9,11 @@ default: bin
 
 .PHONY: bin
 bin:
-	go build ${BUILD_FLAGS} -o odo cmd/odo/odo.go
+	go build ${BUILD_FLAGS} -o odo $(MAIN_PKG)
 
 .PHONY: install
 install:
-	go install ${BUILD_FLAGS}
+	go install ${BUILD_FLAGS} $(MAIN_PKG)
 
 # run all validation tests
 .PHONY: validate
@@ -58,7 +59,7 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS) ./cmd/odo/
+	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS) $(MAIN_PKG)
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
