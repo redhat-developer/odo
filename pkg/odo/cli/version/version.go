@@ -64,6 +64,7 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+// NewCmdVersion implements the version odo command
 func NewCmdVersion() *cobra.Command {
 	versionCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	versionCmd.Flags().BoolVar(&clientFlag, "client", false, "Client version only (no server required).")

@@ -45,6 +45,7 @@ var loginCmd = &cobra.Command{
 	},
 }
 
+// NewCmdLogin implements the login odo command
 func NewCmdLogin() *cobra.Command {
 	loginCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	loginCmd.Flags().StringVarP(&userName, "username", "u", userName, "username, will prompt if not provided")

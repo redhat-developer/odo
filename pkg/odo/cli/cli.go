@@ -20,6 +20,7 @@ import (
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
+// OdoRecommendedName is the recommended odo command name
 const OdoRecommendedName = "odo"
 
 var (
@@ -64,6 +65,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 `
 )
 
+// NewCmdOdo creates a new root command for odo
 func NewCmdOdo(name, fullName string) *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{

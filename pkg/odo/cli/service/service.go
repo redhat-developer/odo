@@ -8,9 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// RecommendedCommandName is the recommended service command name
 const RecommendedCommandName = "service"
 
-// NewCmdService implements the odo service command.
+// NewCmdService implements the odo service command
 func NewCmdService(name, fullName string) *cobra.Command {
 	serviceCreateCmd := NewCmdServiceCreate(createRecommendedCommandName, fullName+" "+createRecommendedCommandName)
 	serviceListCmd := NewCmdServiceList(listRecommendedCommandName, fullName+" "+listRecommendedCommandName)

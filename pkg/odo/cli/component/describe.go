@@ -34,6 +34,7 @@ var describeCmd = &cobra.Command{
 	},
 }
 
+// NewCmdDescribe implements the describe odo command
 func NewCmdDescribe() *cobra.Command {
 	describeCmd.SetUsageTemplate(util.CmdUsageTemplate)
 

@@ -97,6 +97,7 @@ var updateCmd = &cobra.Command{
 	},
 }
 
+// NewCmdUpdate implements the Update odo command
 func NewCmdUpdate() *cobra.Command {
 	updateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "binary artifact")
 	updateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "git source")

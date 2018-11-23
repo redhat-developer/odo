@@ -42,6 +42,7 @@ var logCmd = &cobra.Command{
 	},
 }
 
+// NewCmdLog implements the log odo command
 func NewCmdLog() *cobra.Command {
 	logCmd.Flags().BoolVarP(&logFollow, "follow", "f", false, "Follow logs")
 

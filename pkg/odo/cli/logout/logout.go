@@ -23,6 +23,7 @@ var logoutCmd = &cobra.Command{
 	},
 }
 
+// NewCmdLogout implements the logout odo command
 func NewCmdLogout() *cobra.Command {
 	logoutCmd.SetUsageTemplate(util.CmdUsageTemplate)
 

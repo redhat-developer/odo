@@ -47,6 +47,7 @@ var componentListCmd = &cobra.Command{
 	},
 }
 
+// NewCmdList implements the list odo command
 func NewCmdList() *cobra.Command {
 	//Adding `--project` flag
 	addProjectFlag(componentListCmd)

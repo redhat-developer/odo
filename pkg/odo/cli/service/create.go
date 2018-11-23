@@ -20,6 +20,7 @@ var (
     %[1]s dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret`)
 )
 
+// ServiceCreateOptions encapsulates the options for the odo service create command
 type ServiceCreateOptions struct {
 	parameters  []string
 	plan        string
@@ -28,9 +29,12 @@ type ServiceCreateOptions struct {
 	*genericclioptions.Context
 }
 
+// NewServiceCreateOptions creates a new ServiceCreateOptions instance
 func NewServiceCreateOptions() *ServiceCreateOptions {
 	return &ServiceCreateOptions{}
 }
+
+// Complete completes the ServiceCreateOptions after they've been created
 func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.serviceType = args[0]
 	// if only one arg is given, then it is considered as service name and service type both
@@ -42,6 +46,8 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	return err
 }
+
+// Validate validates the ServiceCreateOptions based on completed values
 func (o *ServiceCreateOptions) Validate() (err error) {
 	// make sure the service type exists
 	matchingService, err := svc.GetSvcByType(o.Client, o.serviceType)
@@ -86,6 +92,8 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 	}
 	return err
 }
+
+// Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
 	err = svc.CreateService(o.Client, o.serviceName, o.serviceType, o.plan, o.parameters, o.Application)
 	fmt.Printf("Service '%s' was created.\n", o.serviceName)

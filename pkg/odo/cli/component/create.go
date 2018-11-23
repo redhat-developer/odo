@@ -309,6 +309,7 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 	}
 }
 
+// NewCmdCreate implements the create odo command
 func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")

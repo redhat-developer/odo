@@ -287,6 +287,7 @@ var applicationDescribeCmd = &cobra.Command{
 	},
 }
 
+// NewCmdApplication implements the odo application command
 func NewCmdApplication() *cobra.Command {
 	applicationDeleteCmd.Flags().BoolVarP(&applicationForceDeleteFlag, "force", "f", false, "Delete application without prompting")
 
