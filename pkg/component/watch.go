@@ -73,9 +73,17 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 		}
 		if !matched {
 			glog.V(4).Infof("adding watch on path %s", path)
+
+			// checking if the file exits before adding the watcher to it
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				// path to file does not exist
+				glog.V(4).Infof("path %s doesn't exists, skipping it", path)
+				return nil
+			}
+
 			err = watcher.Add(path)
 			if err != nil {
-				return fmt.Errorf("error adding watcher for path %s: %v", path, err)
+				glog.V(4).Infof("error adding watcher for path %s: %v", path, err)
 			}
 			return nil
 		}
@@ -114,6 +122,14 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 			glog.V(4).Infof("ignoring watch for %s", v)
 			continue
 		}
+
+		// checking if the file exits before adding the watcher to it
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			// path to file does not exist
+			glog.V(4).Infof("path %s doesn't exists currently, skipping it", path)
+			continue
+		}
+
 		glog.V(4).Infof("adding watch on path %s", v)
 		err = watcher.Add(v)
 		if err != nil {
@@ -121,7 +137,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 			// $ sudo sysctl fs.inotify.max_user_watches=65536
 			// BSD / OSX: "too many open files" issues are ussualy resolved via
 			// $ sysctl variables "kern.maxfiles" and "kern.maxfilesperproc",
-			return fmt.Errorf("error adding watcher for path %s: %v", v, err)
+			glog.V(4).Infof("error adding watcher for path %s: %v", v, err)
 		}
 	}
 	return nil
