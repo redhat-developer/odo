@@ -6,10 +6,14 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
 // RecommendedCommandName is the recommended service command name
 const RecommendedCommandName = "service"
+
+var serviceLongDesc = ktemplates.LongDesc(`
+Perform service catalog operations, Limited to template service broker only.`)
 
 // NewCmdService implements the odo service command
 func NewCmdService(name, fullName string) *cobra.Command {
@@ -19,7 +23,7 @@ func NewCmdService(name, fullName string) *cobra.Command {
 	serviceCmd := &cobra.Command{
 		Use:   name,
 		Short: "Perform service catalog operations",
-		Long:  ` Perform service catalog operations, Limited to template service broker only.`,
+		Long:  serviceLongDesc,
 		Example: fmt.Sprintf("%s\n%s\n%s",
 			serviceCreateCmd.Example,
 			serviceDeleteCmd.Example,

@@ -18,6 +18,9 @@ var (
 	deleteExample = ktemplates.Examples(`
     # Delete the service named 'mysql-persistent'
     %[1]s mysql-persistent`)
+
+	deleteLongDesc = ktemplates.LongDesc(`
+List all services in the current application`)
 )
 
 type ServiceDeleteOptions struct {
@@ -78,7 +81,7 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 	serviceDeleteCmd := &cobra.Command{
 		Use:     name + " <service_name>",
 		Short:   "Delete an existing service",
-		Long:    "Delete an existing service",
+		Long:    deleteLongDesc,
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {

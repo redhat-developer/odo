@@ -17,6 +17,9 @@ var (
 	listExample = ktemplates.Examples(`
     # List all services in the application
     %[1]s`)
+	listLongDesc = ktemplates.LongDesc(`
+List all services in the current application
+`)
 )
 
 // ServiceListOptions encapsulates the options for the odo service list command
@@ -66,7 +69,7 @@ func NewCmdServiceList(name, fullName string) *cobra.Command {
 	serviceListCmd := &cobra.Command{
 		Use:     name,
 		Short:   "List all services in the current application",
-		Long:    "List all services in the current application",
+		Long:    listLongDesc,
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
