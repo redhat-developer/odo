@@ -2,10 +2,12 @@ package util
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/storage"
-	"os"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/url"
 )
 
 // CheckError prints the cause of the given error and exits the code with an
@@ -51,17 +53,34 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 `
 
 // PrintComponentInfo prints Component Information like path, URL & storage
-func PrintComponentInfo(currentComponentName string, componentType string, path string, componentURL string, appStore []storage.StorageInfo) {
+func PrintComponentInfo(currentComponentName string, componentDesc component.Description) {
+	fmt.Printf("Component Name: %v\nType: %v\n", currentComponentName, componentDesc.ComponentImageType)
 	// Source
-	if path != "" {
-		fmt.Println("Component", currentComponentName, "of type", componentType, "with source in", path)
+	if componentDesc.Path != "" {
+		fmt.Printf("Source: %v\n", componentDesc.Path)
 	}
-	// URL
-	if componentURL != "" {
-		fmt.Println("Externally exposed via", componentURL)
+
+	// Env
+	if componentDesc.Env != nil {
+		fmt.Println("\nEnvironment variables:")
+		for _, env := range componentDesc.Env {
+			fmt.Printf(" - %v=%v\n", env.Name, env.Value)
+		}
 	}
 	// Storage
-	for _, store := range appStore {
-		fmt.Println("Storage", store.Name, "of size", store.Size)
+	if componentDesc.Storage != nil {
+		fmt.Println("\nStorage:")
+		for _, store := range componentDesc.Storage {
+			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Size, store.Path)
+		}
+	}
+	// URL
+	if componentDesc.URLs != nil {
+		fmt.Println("\nURLs")
+		for _, componentUrl := range componentDesc.URLs {
+
+			fmt.Printf(" - %v exposed via %v\n", url.GetUrlString(componentUrl), componentUrl.Port)
+		}
+
 	}
 }

@@ -86,12 +86,12 @@ var _ = Describe("odoCmpE2e", func() {
 
 		It("should be in component description", func() {
 			cmpDesc := runCmd("odo describe cmp-git")
-			Expect(cmpDesc).To(ContainSubstring("source in https://github.com/openshift/nodejs-ex"))
+			Expect(cmpDesc).To(ContainSubstring("Source: https://github.com/openshift/nodejs-ex"))
 		})
 
 		It("should be in application description", func() {
 			appDesc := runCmd("odo describe")
-			Expect(appDesc).To(ContainSubstring("source in https://github.com/openshift/nodejs-ex"))
+			Expect(appDesc).To(ContainSubstring("Source: https://github.com/openshift/nodejs-ex"))
 		})
 
 		It("should list the components in the catalog", func() {

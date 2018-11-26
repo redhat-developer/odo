@@ -98,7 +98,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		componentType      string
 		componentPath      string
 		componentPathType  occlient.CreateType
-		existingComponents []ComponentInfo
+		existingComponents []Info
 		wantErr            bool
 		wantRE             string
 		needPrefix         bool
@@ -108,7 +108,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "nodejs",
 			componentPathType:  occlient.GIT,
 			componentPath:      "https://github.com/openshift/nodejs.git",
-			existingComponents: []ComponentInfo{},
+			existingComponents: []Info{},
 			wantErr:            false,
 			wantRE:             "nodejs-*",
 			needPrefix:         false,
@@ -118,7 +118,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "nodejs",
 			componentPathType:  occlient.LOCAL,
 			componentPath:      "./testing",
-			existingComponents: []ComponentInfo{},
+			existingComponents: []Info{},
 			wantErr:            false,
 			wantRE:             "testing-nodejs-*",
 			needPrefix:         true,
@@ -128,7 +128,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "wildfly",
 			componentPathType:  occlient.BINARY,
 			componentPath:      "./testing.war",
-			existingComponents: []ComponentInfo{},
+			existingComponents: []Info{},
 			wantErr:            false,
 			wantRE:             "testing-wildfly-*",
 			needPrefix:         true,
