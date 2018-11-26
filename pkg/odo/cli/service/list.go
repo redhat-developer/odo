@@ -19,8 +19,50 @@ var (
     %[1]s`)
 )
 
+// ServiceListOptions encapsulates the options for the odo service list command
+type ServiceListOptions struct {
+	*genericclioptions.Context
+}
+
+// NewServiceListOptions creates a new ServiceListOptions instance
+func NewServiceListOptions() *ServiceListOptions {
+	return &ServiceListOptions{}
+}
+
+// Complete completes ServiceListOptions after they've been created
+func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context = genericclioptions.NewContext(cmd)
+	return
+}
+
+// Validate validates the ServiceListOptions based on completed values
+func (o *ServiceListOptions) Validate() (err error) {
+	return
+}
+
+// Run contains the logic for the odo service list command
+func (o *ServiceListOptions) Run() (err error) {
+	services, err := svc.List(o.Client, o.Application)
+	if err != nil {
+		return fmt.Errorf("service catalog is not enabled in your cluster:\n%v", err)
+	}
+
+	if len(services) == 0 {
+		fmt.Println("There are no services deployed for this application")
+		return
+	}
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "STATUS")
+	for _, comp := range services {
+		fmt.Fprintln(w, comp.Name, "\t", comp.Type, "\t", comp.Status)
+	}
+	w.Flush()
+	return
+}
+
 // NewCmdServiceList implements the odo service list command.
 func NewCmdServiceList(name, fullName string) *cobra.Command {
+	o := NewServiceListOptions()
 	serviceListCmd := &cobra.Command{
 		Use:     name,
 		Short:   "List all services in the current application",
@@ -28,21 +70,9 @@ func NewCmdServiceList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			context := genericclioptions.NewContext(cmd)
-			client := context.Client
-			applicationName := context.Application
-			services, err := svc.List(client, applicationName)
-			util.CheckError(err, "Service Catalog is not enabled in your cluster")
-			if len(services) == 0 {
-				fmt.Println("There are no services deployed for this application")
-				return
-			}
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "STATUS")
-			for _, comp := range services {
-				fmt.Fprintln(w, comp.Name, "\t", comp.Type, "\t", comp.Status)
-			}
-			w.Flush()
+			util.CheckError(o.Complete(name, cmd, args), "")
+			util.CheckError(o.Validate(), "")
+			util.CheckError(o.Run(), "")
 		},
 	}
 	addProjectFlag(serviceListCmd)

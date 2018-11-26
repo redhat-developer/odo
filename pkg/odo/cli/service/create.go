@@ -34,7 +34,7 @@ func NewServiceCreateOptions() *ServiceCreateOptions {
 	return &ServiceCreateOptions{}
 }
 
-// Complete completes the ServiceCreateOptions after they've been created
+// Complete completes ServiceCreateOptions after they've been created
 func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.serviceType = args[0]
 	// if only one arg is given, then it is considered as service name and service type both
