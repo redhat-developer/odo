@@ -42,7 +42,7 @@ func (o *ServiceListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service list command
 func (o *ServiceListOptions) Run() (err error) {
-	services, err := svc.List(o.Client, o.Application)
+	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
 	if err != nil {
 		return fmt.Errorf("service catalog is not enabled in your cluster:\n%v", err)
 	}

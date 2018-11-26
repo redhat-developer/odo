@@ -96,7 +96,9 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
 	err = svc.CreateService(o.Client, o.serviceName, o.serviceType, o.plan, o.parameters, o.Application)
-	fmt.Printf("Service '%s' was created.\n", o.serviceName)
+	fmt.Printf(`Service '%s' was created.
+Progress of the provisioning will not be reported and might take a long time.
+You can see the current status by executing 'odo service list'`, o.serviceName)
 	return
 }
 
