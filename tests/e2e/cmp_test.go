@@ -54,7 +54,7 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("odo app create " + appTestName)
 		})
 
-		FIt("should show an error when ref flag is provided with sources except git", func() {
+		It("should show an error when ref flag is provided with sources except git", func() {
 			output := runFailCmd("odo create nodejs cmp-git --local test --ref test")
 			Expect(output).To(ContainSubstring("The --ref flag is only valid for --git flag"))
 		})
