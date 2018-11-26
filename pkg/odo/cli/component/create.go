@@ -205,9 +205,11 @@ A full list of component types that can be deployed is available using: 'odo cat
 			err := component.CreateFromGit(
 				client,
 				occlient.CreateArgs{
-					Name:            componentName,
-					SourcePath:      componentGit,
-					SourceType:      occlient.GIT,
+					Name:       componentName,
+					SourcePath: componentGit,
+					SourceRef:  componentGitRef,
+					SourceType: occlient.GIT,
+
 					ImageName:       componentImageName,
 					EnvVars:         componentEnvVars,
 					Ports:           componentPorts,

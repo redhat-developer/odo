@@ -61,6 +61,14 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// if --git is not specified but --ref is still given then error has to be thrown
+		if len(componentGit) == 0 {
+			if len(componentGitRef) != 0 {
+				fmt.Println("The --ref flag is only valid for --git flag")
+				os.Exit(1)
+			}
+		}
+
 		var componentName string
 		if len(args) == 0 {
 			componentName = context.Component()
@@ -74,9 +82,15 @@ var updateCmd = &cobra.Command{
 		}
 
 		if len(componentGit) != 0 {
+<<<<<<< HEAD
 			err := component.Update(client, componentName, applicationName, "git", componentGit, stdout)
 			odoutil.CheckError(err, "")
 			log.Successf("The component %s was updated successfully", componentName)
+=======
+			err := component.Update(client, componentName, applicationName, "git", componentGit, componentGitRef, stdout)
+			util.CheckError(err, "")
+			fmt.Printf("The component %s was updated successfully\n", componentName)
+>>>>>>> added ref in create and update build configs
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := pkgUtil.GetAbsPath(componentLocal)
@@ -87,6 +101,7 @@ var updateCmd = &cobra.Command{
 				log.Error("Please provide a path to the directory")
 				os.Exit(1)
 			}
+<<<<<<< HEAD
 			err = component.Update(client, componentName, applicationName, "local", dir, stdout)
 			odoutil.CheckError(err, "")
 			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", componentName)
@@ -96,6 +111,17 @@ var updateCmd = &cobra.Command{
 			err = component.Update(client, componentName, applicationName, "binary", path, stdout)
 			odoutil.CheckError(err, "")
 			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", componentName)
+=======
+			err = component.Update(client, componentName, applicationName, "local", dir, "", stdout)
+			util.CheckError(err, "")
+			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
+		} else if len(componentBinary) != 0 {
+			path, err := pkgUtil.GetAbsPath(componentBinary)
+			util.CheckError(err, "")
+			err = component.Update(client, componentName, applicationName, "binary", path, "", stdout)
+			util.CheckError(err, "")
+			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
+>>>>>>> added ref in create and update build configs
 		}
 	},
 }
@@ -105,7 +131,7 @@ func NewCmdUpdate() *cobra.Command {
 	updateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "binary artifact")
 	updateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source for component.")
-
+	updateCmd.Flags().StringVarP(&componentGitRef, "ref", "r", "", "Use a specific ref i.e. commit, branch or tag of the git repository")
 	// Add a defined annotation in order to appear in the help menu
 	updateCmd.Annotations = map[string]string{"command": "component"}
 	updateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

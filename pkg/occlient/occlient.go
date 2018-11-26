@@ -76,6 +76,7 @@ const (
 type CreateArgs struct {
 	Name            string
 	SourcePath      string
+	SourceRef       string
 	SourceType      CreateType
 	ImageName       string
 	EnvVars         []string
@@ -739,7 +740,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	}
 
 	// Deploy BuildConfig to build the container with Git
-	buildConfig, err := c.CreateBuildConfig(commonObjectMeta, params.ImageName, params.SourcePath, inputEnvVars)
+	buildConfig, err := c.CreateBuildConfig(commonObjectMeta, params.ImageName, params.SourcePath, params.SourceRef, inputEnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "unable to deploy BuildConfig for %s", commonObjectMeta.Name)
 	}
@@ -2923,7 +2924,7 @@ func getContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
 // envVars is the array containing the environment variables
-func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
+func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, gitRef string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
 
 	// Retrieve the namespace, image name and the appropriate tag
 	imageNS, imageName, imageTag, _, err := ParseImageName(builderImage)
@@ -2939,7 +2940,7 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	glog.V(4).Infof("Using namespace: %s for the CreateBuildConfig function", imageNS)
 
 	// Use BuildConfig to build the container with Git
-	bc := generateBuildConfig(commonObjectMeta, gitURL, imageName+":"+imageTag, imageNS)
+	bc := generateBuildConfig(commonObjectMeta, gitURL, gitRef, imageName+":"+imageTag, imageNS)
 
 	if len(envVars) > 0 {
 		bc.Spec.Strategy.SourceStrategy.Env = envVars

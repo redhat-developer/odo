@@ -199,11 +199,12 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 }
 
 // generateBuildConfig creates a BuildConfig for Git URL's being passed into Odo
-func generateBuildConfig(commonObjectMeta metav1.ObjectMeta, gitURL string, imageName string, imageNamespace string) buildv1.BuildConfig {
+func generateBuildConfig(commonObjectMeta metav1.ObjectMeta, gitURL, gitRef, imageName, imageNamespace string) buildv1.BuildConfig {
 
 	buildSource := buildv1.BuildSource{
 		Git: &buildv1.GitBuildSource{
 			URI: gitURL,
+			Ref: gitRef,
 		},
 		Type: buildv1.BuildSourceGit,
 	}
