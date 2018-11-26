@@ -36,6 +36,7 @@ var (
 	cpuMax           string
 	cpuMin           string
 	cpu              string
+	componentWait    bool
 )
 
 var componentCreateCmd = &cobra.Command{
@@ -220,8 +221,8 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.LogErrorAndExit(err, "")
 
 			// Git is the only one using BuildConfig since we need to retrieve the git
-			err = component.Build(client, componentName, applicationName, true, stdout)
-			odoutil.LogErrorAndExit(err, "")
+			err = component.Build(client, componentName, applicationName, componentWait, stdout)
+			odoutil.CheckError(err, "")
 
 		} else if len(componentLocal) != 0 {
 			fileInfo, err := os.Stat(componentPath)
@@ -243,6 +244,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 					Ports:           componentPorts,
 					Resources:       resourceQuantity,
 					ApplicationName: applicationName,
+					Watch:           componentWait,
 				},
 			)
 			odoutil.LogErrorAndExit(err, "")
@@ -262,6 +264,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 					Ports:           componentPorts,
 					Resources:       resourceQuantity,
 					ApplicationName: applicationName,
+					Watch:           componentWait,
 				},
 			)
 			odoutil.LogErrorAndExit(err, "")
@@ -283,6 +286,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 					Ports:           componentPorts,
 					Resources:       resourceQuantity,
 					ApplicationName: applicationName,
+					Watch:           componentWait,
 				},
 			)
 			odoutil.LogErrorAndExit(err, "")
@@ -306,6 +310,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		if len(componentGit) == 0 {
 			log.Info("To push source code to the component run 'odo push'")
+		}
+		if !componentWait {
+			fmt.Printf("This may take few moments to be ready")
 		}
 	},
 }
@@ -339,6 +346,7 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVar(&cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
 	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
+	componentCreateCmd.Flags().BoolVarP(&componentWait, "wait", "w", false, "If present, wait until the component is ready")
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCreateCmd.Annotations = map[string]string{"command": "component"}
