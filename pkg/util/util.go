@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"net/url"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -163,6 +165,30 @@ func TruncateString(str string, maxLen int) string {
 		return str[:maxLen]
 	}
 	return str
+}
+
+// GetAbsPath returns absolute path from passed file path resolving even ~ to user home dir and any other such symbols that are only
+// shell expanded can also be handled here
+func GetAbsPath(path string) (string, error) {
+	// Only shell resolves `~` to home so handle it specially
+	if strings.HasPrefix(path, "~") {
+		usr, err := user.Current()
+		if err != nil {
+			return path, errors.Wrapf(err, "unable to resolve %s to absolute path", path)
+		}
+		dir := usr.HomeDir
+		if len(path) > 1 {
+			path = filepath.Join(dir, path[1:])
+		} else {
+			path = dir
+		}
+	}
+
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return path, errors.Wrapf(err, "unable to resolve %s to absolute path", path)
+	}
+	return path, nil
 }
 
 // GetRandomName returns a randomly generated name which can be used for naming odo and/or openshift entities
