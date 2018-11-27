@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
+	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
@@ -309,4 +310,13 @@ func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max str
 		MinQty:       minResource,
 		MaxQty:       maxResource,
 	}
+}
+
+// CheckPathExists checks if a path exists or not
+func CheckPathExists(path string) bool {
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		// path to file does not exist
+		return true
+	}
+	return false
 }

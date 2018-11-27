@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"os/user"
@@ -499,5 +500,33 @@ func TestGetAbsPath(t *testing.T) {
 				t.Errorf("Expected error: %v got error %v", tt.wantErr, err)
 			}
 		})
+	}
+}
+
+func TestCheckPathExists(t *testing.T) {
+	dir, err := ioutil.TempFile("", "")
+	defer os.RemoveAll(dir.Name())
+	if err != nil {
+		return
+	}
+	tests := []struct {
+		fileName string
+		wantBool bool
+	}{
+		{
+			fileName: dir.Name(),
+			wantBool: true,
+		},
+		{
+			fileName: dir.Name() + "-blah",
+			wantBool: false,
+		},
+	}
+
+	for _, tt := range tests {
+		exists := CheckPathExists(tt.fileName)
+		if tt.wantBool != exists {
+			t.Errorf("the expected value of TestCheckPathExists function is different : %v, got: %v", tt.wantBool, exists)
+		}
 	}
 }

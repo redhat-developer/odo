@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/util"
 	"io"
 	"os"
 	"path/filepath"
@@ -75,10 +76,8 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 			glog.V(4).Infof("adding watch on path %s", path)
 
 			// checking if the file exits before adding the watcher to it
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				// path to file does not exist
-				glog.V(4).Infof("path %s doesn't exists, skipping it", path)
-				return nil
+			if !util.CheckPathExists(path) {
+				glog.V(4).Infof("path %s doesn't exist, skipping it", path)
 			}
 
 			err = watcher.Add(path)
@@ -124,9 +123,8 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 		}
 
 		// checking if the file exits before adding the watcher to it
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			// path to file does not exist
-			glog.V(4).Infof("path %s doesn't exists currently, skipping it", path)
+		if !util.CheckPathExists(path) {
+			glog.V(4).Infof("path %s doesn't exist, skipping it", path)
 			continue
 		}
 
