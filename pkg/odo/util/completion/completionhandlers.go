@@ -96,7 +96,7 @@ var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *ge
 	for _, url := range urls {
 		// we found the url in the list which means
 		// that the url name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[url.Name]; ok && val {
+		if args.commands[url.Name] {
 			return nil
 		}
 		completions = append(completions, url.Name)
@@ -115,7 +115,7 @@ var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 	for _, storage := range storages {
 		// we found the storage name in the list which means
 		// that the storage name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[storage.Name]; ok && val {
+		if args.commands[storage.Name] {
 			return nil
 		}
 		completions = append(completions, storage.Name)
@@ -134,7 +134,7 @@ var StorageMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, co
 	for _, storage := range storages {
 		// we found the storage name in the list which means
 		// that the storage name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[storage.Name]; ok && val {
+		if args.commands[storage.Name] {
 			return nil
 		}
 		completions = append(completions, storage.Name)
@@ -153,7 +153,7 @@ var StorageUnMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, 
 	for _, storage := range storages {
 		// we found the storage name in the list which means
 		// that the storage name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[storage.Name]; ok && val {
+		if args.commands[storage.Name] {
 			return nil
 		}
 		completions = append(completions, storage.Name)
