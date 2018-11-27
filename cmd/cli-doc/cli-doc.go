@@ -143,13 +143,17 @@ func main() {
 		ValidArgs: []string{"help", "reference", "structure"},
 
 		Run: func(command *cobra.Command, args []string) {
-			switch args[0] {
-			case "reference":
-				fmt.Print(referencePrinter(cli.RootCmd(), 0))
-			case "structure":
-				fmt.Print(commandPrinter(cli.RootCmd(), 0))
-			default:
+			if len(args) == 0 {
 				fmt.Print(command.Usage())
+			} else {
+				switch args[0] {
+				case "reference":
+					fmt.Print(referencePrinter(cli.RootCmd(), 0))
+				case "structure":
+					fmt.Print(commandPrinter(cli.RootCmd(), 0))
+				default:
+					fmt.Print(command.Usage())
+				}
 			}
 		},
 	}
