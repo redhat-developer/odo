@@ -160,16 +160,22 @@ func getUserTypedCommands(args complete.Args, command *cobra.Command) []string {
 	return commands
 }
 
+// AddProjectFlag adds a `project` flag to the given cobra command
+// Also adds a completion handler to the flag
 func AddProjectFlag(cmd *cobra.Command) {
 	cmd.Flags().String(genericclioptions.ProjectFlagName, "", "Project, defaults to active project")
 	RegisterCommandFlagHandler(cmd, "project", ProjectNameCompletionHandler)
 }
 
+// AddComponentFlag adds a `component` flag to the given cobra command
+// Also adds a completion handler to the flag
 func AddComponentFlag(cmd *cobra.Command) {
 	cmd.Flags().String(genericclioptions.ComponentFlagName, "", "Component, defaults to active component.")
 	RegisterCommandFlagHandler(cmd, "component", ComponentNameCompletionHandler)
 }
 
+// AddApplicationFlag adds a `app` flag to the given cobra command
+// Also adds a completion handler to the flag
 func AddApplicationFlag(cmd *cobra.Command) {
 	cmd.Flags().String(genericclioptions.ApplicationFlagName, "", "Application, defaults to active application")
 	RegisterCommandFlagHandler(cmd, "app", AppCompletionHandler)
