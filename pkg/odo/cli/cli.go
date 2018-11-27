@@ -88,7 +88,6 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
-	flag.CommandLine.Parse([]string{})
 
 	rootCmd.AddCommand(
 		application.NewCmdApplication(),

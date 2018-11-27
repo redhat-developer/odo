@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// parse the flags - both the program's flags and the completion flags
-	flag.Parse()
+	flag.CommandLine.Parse([]string{})
 
 	// run the completion, in case that the completion was invoked
 	// and ran as a completion script or handled a flag that passed
