@@ -77,7 +77,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 			// checking if the file exits before adding the watcher to it
 			if !util.CheckPathExists(path) {
-				glog.V(4).Infof("path %s doesn't exist, skipping it", path)
+				return nil
 			}
 
 			err = watcher.Add(path)
@@ -124,7 +124,6 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 		// checking if the file exits before adding the watcher to it
 		if !util.CheckPathExists(path) {
-			glog.V(4).Infof("path %s doesn't exist, skipping it", path)
 			continue
 		}
 

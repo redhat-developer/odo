@@ -316,6 +316,7 @@ func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max str
 func CheckPathExists(path string) bool {
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		// path to file does not exist
+		glog.V(4).Infof("path %s doesn't exist, skipping it", path)
 		return true
 	}
 	return false
