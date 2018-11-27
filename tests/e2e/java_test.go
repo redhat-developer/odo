@@ -32,7 +32,7 @@ var _ = Describe("odoJavaE2e", func() {
 		It("Should be able to deploy a git repo that contains a wildfly application", func() {
 
 			// Deploy the git repo / wildfly example
-			runCmd("odo create wildfly javaee-git-test --git " + warGitRepo)
+			runCmd("odo create wildfly javaee-git-test --git " + warGitRepo + " -w")
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("javaee-git-test"))
 
@@ -51,7 +51,7 @@ var _ = Describe("odoJavaE2e", func() {
 		})
 
 		It("Should be able to deploy a .war file using wildfly", func() {
-			runCmd("odo create wildfly javaee-war-test --binary " + javaFiles + "/wildfly/ROOT.war")
+			runCmd("odo create wildfly javaee-war-test --binary " + javaFiles + "/wildfly/ROOT.war -w")
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("javaee-war-test"))
 
@@ -73,7 +73,7 @@ var _ = Describe("odoJavaE2e", func() {
 			importOpenJDKImage()
 
 			// Deploy the git repo / wildfly example
-			runCmd("odo create openjdk18 uberjar-git-test --git " + jarGitRepo)
+			runCmd("odo create openjdk18 uberjar-git-test --git " + jarGitRepo + " -w")
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("uberjar-git-test"))
 
@@ -94,7 +94,7 @@ var _ = Describe("odoJavaE2e", func() {
 		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			importOpenJDKImage()
 
-			runCmd("odo create openjdk18 sb-jar-test --binary " + javaFiles + "/openjdk/sb.jar")
+			runCmd("odo create openjdk18 sb-jar-test --binary " + javaFiles + "/openjdk/sb.jar -w")
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("sb-jar-test"))
 
