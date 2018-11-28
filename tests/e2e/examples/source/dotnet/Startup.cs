@@ -29,7 +29,7 @@ namespace SampleApp
                     options.NoDelay = true;
                     options.UseConnectionLogging();
                 })
-                .UseURLs("http://0.0.0.0:8080")
+                .UseUrls("http://0.0.0.0:8080")
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
                 .Build();
