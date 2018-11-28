@@ -2,13 +2,14 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/util"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sync"
 	"time"
+
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/occlient"
 
@@ -140,7 +141,8 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	return nil
 }
 
-var UserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch based on user request")
+// ErrUserRequestedWatchExit is returned when the user stops the watch loop
+var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch based on user request")
 
 // WatchAndPush watches path, if something changes in  that path it calls PushLocal
 // ignores .git/* by default
@@ -178,7 +180,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 			case extMsg := <-parameters.ExtChan:
 				if extMsg {
 					changeLock.Lock()
-					watchError = UserRequestedWatchExit
+					watchError = ErrUserRequestedWatchExit
 					changeLock.Unlock()
 				}
 			case event := <-watcher.Events:

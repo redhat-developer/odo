@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"

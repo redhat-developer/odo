@@ -84,7 +84,7 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 		return nil, errors.Wrap(err, "unable to create route")
 	}
 	return &URL{
-		Name:     route.Labels[urlLabels.UrlLabel],
+		Name:     route.Labels[urlLabels.URLLabel],
 		URL:      route.Spec.Host,
 		Protocol: getProtocol(*route),
 		Port:     route.Spec.Port.TargetPort.IntValue(),
@@ -111,7 +111,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	var urls []URL
 	for _, r := range routes {
 		urls = append(urls, URL{
-			Name:     r.Labels[urlLabels.UrlLabel],
+			Name:     r.Labels[urlLabels.URLLabel],
 			URL:      r.Spec.Host,
 			Protocol: getProtocol(r),
 			Port:     r.Spec.Port.TargetPort.IntValue(),
@@ -124,12 +124,12 @@ func List(client *occlient.Client, componentName string, applicationName string)
 func getProtocol(route routev1.Route) string {
 	if route.Spec.TLS != nil {
 		return "https"
-	} else {
-		return "http"
 	}
+	return "http"
+
 }
 
-func GetUrlString(url URL) string {
+func GetURLString(url URL) string {
 	return url.Protocol + "://" + url.URL
 }
 

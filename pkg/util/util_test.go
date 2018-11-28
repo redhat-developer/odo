@@ -208,7 +208,7 @@ func TestFilePathConversion(t *testing.T) {
 					t.Errorf(fmt.Sprintf("Error when parsing url '%s'", tt.url))
 				}
 			} else if tt.direction == "path to url" {
-				url := GenFileUrl(tt.path, tt.os)
+				url := GenFileURL(tt.path, tt.os)
 				if url != tt.url {
 					t.Errorf(fmt.Sprintf("Expected a path to be '%s' converted to an url '%s", tt.path, tt.url))
 				}

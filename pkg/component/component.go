@@ -200,7 +200,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	labels[componentlabels.ComponentTypeVersion] = imageTag
 
 	// save source path as annotation
-	sourceURL := util.GenFileUrl(params.SourcePath, runtime.GOOS)
+	sourceURL := util.GenFileURL(params.SourcePath, runtime.GOOS)
 	annotations := map[string]string{componentSourceURLAnnotation: sourceURL}
 	annotations[componentSourceTypeAnnotation] = string(params.SourceType)
 
@@ -573,7 +573,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		// Steps to update component from git to local or binary
 
 		// Update the sourceURL since it is not a local/binary file.
-		sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
+		sourceURL := util.GenFileURL(newSource, runtime.GOOS)
 		annotations[componentSourceURLAnnotation] = sourceURL
 
 		// Need to delete the old BuildConfig
@@ -613,7 +613,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		} else if newSourceType == "local" || newSourceType == "binary" {
 
 			// Update the sourceURL
-			sourceURL := util.GenFileUrl(newSource, runtime.GOOS)
+			sourceURL := util.GenFileURL(newSource, runtime.GOOS)
 			annotations[componentSourceURLAnnotation] = sourceURL
 
 			err = client.UpdateDCAnnotations(namespacedOpenShiftObject, annotations)

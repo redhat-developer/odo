@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	// URL to fetch latest version number
+	// VersionFetchURL is the URL to fetch latest version number
 	VersionFetchURL = "https://raw.githubusercontent.com/redhat-developer/odo/master/build/VERSION"
-	// URL of the installation shell script
+	// InstallScriptURL is URL of the installation shell script
 	InstallScriptURL = "https://raw.githubusercontent.com/redhat-developer/odo/master/scripts/install.sh"
 )
 

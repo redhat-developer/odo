@@ -339,7 +339,7 @@ func TestWatchAndPush(t *testing.T) {
 					WatchHandler:    mockPushLocal,
 				},
 			)
-			if err != nil && err != UserRequestedWatchExit {
+			if err != nil && err != ErrUserRequestedWatchExit {
 				t.Errorf("error in WatchAndPush %+v", err)
 			}
 		})

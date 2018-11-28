@@ -10,7 +10,7 @@ import (
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
 )
 
-// FakeClientSet holds fake ClientSets
+// FakeClientset holds fake ClientSets
 // this is returned by FakeNew to access methods of fake client sets
 type FakeClientset struct {
 	Kubernetes              *fakeKubeClientset.Clientset

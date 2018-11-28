@@ -132,7 +132,7 @@ func ReadFilePath(u *url.URL, os string) string {
 }
 
 // Converts file path on windows to /C:/path/to/file to work in URL
-func GenFileUrl(location string, os string) string {
+func GenFileURL(location string, os string) string {
 	urlPath := location
 	if os == WIN {
 		urlPath = "/" + strings.Replace(location, "\\", "/", -1)
