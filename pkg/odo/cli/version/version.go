@@ -2,11 +2,12 @@ package version
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/redhat-developer/odo/pkg/notify"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"os"
-	"strings"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"

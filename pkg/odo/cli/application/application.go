@@ -2,12 +2,13 @@ package application
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"os"
-	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 

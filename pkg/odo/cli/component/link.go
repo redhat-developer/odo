@@ -2,12 +2,13 @@ package component
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/secret"
-	"os"
 
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"

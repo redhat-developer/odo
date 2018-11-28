@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/golang/glog"

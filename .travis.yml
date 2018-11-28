@@ -13,7 +13,7 @@ jobs:
     - &base-test
       stage: test
       go_import_path: github.com/redhat-developer/odo
-      go: "1.11"
+      go: "1.11.2"
       install:
         - make goget-tools
       script:

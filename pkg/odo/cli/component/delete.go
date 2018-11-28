@@ -2,9 +2,10 @@ package component
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"strings"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"

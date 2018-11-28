@@ -2,10 +2,11 @@ package util
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/storage"
-	"os"
 )
 
 // CheckError prints the cause of the given error and exits the code with an

@@ -174,55 +174,55 @@ func TestWatchAndPush(t *testing.T) {
 			delayInterval:   1,
 			wantErr:         false,
 			requiredFilePaths: []testingutil.FileProperties{
-				testingutil.FileProperties{
+				{
 					FilePath:         "src",
 					FileParent:       "",
 					FileType:         testingutil.Directory,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "tests",
 					FileParent:       "",
 					FileType:         testingutil.Directory,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         ".git",
 					FileParent:       "",
 					FileType:         testingutil.Directory,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "LICENSE",
 					FileParent:       "",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "__init__.py",
 					FileParent:       "",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "__init__.py",
 					FileParent:       "src",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "main.py",
 					FileParent:       "src",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "__init__.py",
 					FileParent:       "tests",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "test1.py",
 					FileParent:       "tests",
 					FileType:         testingutil.RegularFile,
@@ -230,31 +230,31 @@ func TestWatchAndPush(t *testing.T) {
 				},
 			},
 			fileModifications: []testingutil.FileProperties{
-				testingutil.FileProperties{
+				{
 					FilePath:         "__init__.py",
 					FileParent:       "",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.APPEND,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "read_licenses.py",
 					FileParent:       "src",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "read_licenses.py",
 					FileParent:       "src",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.APPEND,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "test_read_licenses.py",
 					FileParent:       "tests",
 					FileType:         testingutil.RegularFile,
 					ModificationType: testingutil.CREATE,
 				},
-				testingutil.FileProperties{
+				{
 					FilePath:         "tests",
 					FileParent:       "",
 					FileType:         testingutil.Directory,

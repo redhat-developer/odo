@@ -2,12 +2,13 @@ package catalog
 
 import (
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	svc "github.com/redhat-developer/odo/pkg/service"

@@ -2,13 +2,14 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/util"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sync"
 	"time"
+
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/occlient"
 

@@ -3,8 +3,9 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	appsv1 "github.com/openshift/api/apps/v1"
 	"strings"
+
+	appsv1 "github.com/openshift/api/apps/v1"
 
 	"sort"
 

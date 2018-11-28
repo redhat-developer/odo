@@ -2,9 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"io"
 	"os"
+
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
 )

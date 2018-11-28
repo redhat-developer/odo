@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"fmt"
+
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"

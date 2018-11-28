@@ -2,11 +2,12 @@ package project
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"os"
-	"strings"
 
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"

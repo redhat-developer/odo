@@ -1,9 +1,10 @@
 package component
 
 import (
+	"os"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"os"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/spf13/cobra"
