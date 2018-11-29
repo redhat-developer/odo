@@ -31,6 +31,7 @@ Find more information at https://github.com/redhat-developer/odo`)
   git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
   %[1]s create nodejs
   %[1]s push
+
   # Accessing your Node.js component
   %[1]s url create`)
 	rootUsageTemplate = `Usage:{{if .Runnable}}
