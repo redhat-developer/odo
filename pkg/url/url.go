@@ -129,6 +129,7 @@ func getProtocol(route routev1.Route) string {
 
 }
 
+// GetURLString returns a string representation of given url
 func GetURLString(url URL) string {
 	return url.Protocol + "://" + url.URL
 }

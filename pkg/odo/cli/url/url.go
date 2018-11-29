@@ -172,6 +172,7 @@ var urlListCmd = &cobra.Command{
 	},
 }
 
+// NewCmdURL returns the top-level url command
 func NewCmdURL() *cobra.Command {
 	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().BoolVar(&urlOpenFlag, "open", false, "open the created link with your default browser")
