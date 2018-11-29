@@ -2,9 +2,13 @@ package main
 
 import (
 	"flag"
-
+	"fmt"
+	"github.com/golang/glog"
 	"github.com/posener/complete"
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
+	"github.com/redhat-developer/odo/pkg/odo/cli/version"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -12,7 +16,7 @@ import (
 
 func main() {
 	// create the complete command
-	root := cli.RootCmd()
+	root := cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName)
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
 
@@ -24,7 +28,9 @@ func main() {
 	// add the completion flags to the root command, though they won't appear in completions
 	root.Flags().AddGoFlagSet(flag.CommandLine)
 	// override usage so that flag.Parse uses root command's usage instead of default one when invoked with -h
-	flag.Usage = usage
+	flag.Usage = func() {
+		_ = root.Help()
+	}
 
 	// parse the flags - both the program's flags and the completion flags
 	flag.Parse()
@@ -38,11 +44,26 @@ func main() {
 	}
 
 	// Call commands
-	cli.Execute()
-}
+	// checking the value of updatenotification in config
+	// before proceeding with fetching the latest version
+	cfg, err := config.New()
+	if err != nil {
+		util.CheckError(err, "")
+	}
+	if cfg.GetUpdateNotification() {
+		updateInfo := make(chan string)
+		go version.GetLatestReleaseInfo(updateInfo)
 
-func usage() {
-	_ = cli.RootCmd().Usage()
+		util.CheckError(root.Execute(), "")
+		select {
+		case message := <-updateInfo:
+			fmt.Println(message)
+		default:
+			glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
+		}
+	} else {
+		util.CheckError(root.Execute(), "")
+	}
 }
 
 func createCompletion(root *cobra.Command) complete.Command {

@@ -190,6 +190,7 @@ var projectListCmd = &cobra.Command{
 	},
 }
 
+// NewCmdProject implements the project odo command
 func NewCmdProject() *cobra.Command {
 
 	projectGetCmd.Flags().BoolVarP(&projectShortFlag, "short", "q", false, "If true, display only the project name")

@@ -286,6 +286,7 @@ This describes the service and the associated plans.
 	},
 }
 
+// NewCmdCatalog implements the odo catalog command
 func NewCmdCatalog() *cobra.Command {
 	catalogCmd.AddCommand(catalogSearchCmd)
 	catalogCmd.AddCommand(catalogListCmd)

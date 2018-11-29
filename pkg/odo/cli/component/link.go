@@ -137,6 +137,7 @@ Please create one of the two before attempting to use odo link`, suppliedName)
 	},
 }
 
+// NewCmdLink implements the link odo command
 func NewCmdLink() *cobra.Command {
 	linkCmd.PersistentFlags().StringVar(&port, "port", "", "Port of the backend to which to link")
 	linkCmd.PersistentFlags().BoolVarP(&wait, "wait", "w", false, "If enabled, the link command will wait for the service to be provisioned")

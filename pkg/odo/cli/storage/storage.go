@@ -239,6 +239,7 @@ var storageMountCmd = &cobra.Command{
 	},
 }
 
+// NewCmdStorage implements the odo storage command
 func NewCmdStorage() *cobra.Command {
 	storageCreateCmd.Flags().StringVar(&storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")

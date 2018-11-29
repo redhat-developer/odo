@@ -64,6 +64,7 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+// NewCmdVersion implements the version odo command
 func NewCmdVersion() *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	versionCmd.Annotations = map[string]string{"command": "utility"}

@@ -101,6 +101,7 @@ var pushCmd = &cobra.Command{
 	},
 }
 
+// NewCmdPush implements the push odo command
 func NewCmdPush() *cobra.Command {
 	pushCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use given local directory as a source for component. (It must be a local component)")
 

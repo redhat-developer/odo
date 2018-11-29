@@ -76,6 +76,7 @@ var componentSetCmd = &cobra.Command{
 	},
 }
 
+// NewCmdComponent implements the component odo command
 func NewCmdComponent() *cobra.Command {
 
 	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")

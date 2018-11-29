@@ -35,6 +35,7 @@ var describeCmd = &cobra.Command{
 	},
 }
 
+// NewCmdDescribe implements the describe odo command
 func NewCmdDescribe() *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	describeCmd.Annotations = map[string]string{"command": "component"}

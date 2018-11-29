@@ -45,6 +45,7 @@ var loginCmd = &cobra.Command{
 	},
 }
 
+// NewCmdLogin implements the login odo command
 func NewCmdLogin() *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	loginCmd.Annotations = map[string]string{"command": "utility"}

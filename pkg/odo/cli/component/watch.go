@@ -88,6 +88,7 @@ var watchCmd = &cobra.Command{
 	},
 }
 
+// NewCmdWatch implements the watch odo command
 func NewCmdWatch() *cobra.Command {
 	// ignore git as it can change even if no source file changed
 	// for example some plugins providing git info in PS1 doing that

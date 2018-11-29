@@ -67,6 +67,7 @@ var componentDeleteCmd = &cobra.Command{
 	},
 }
 
+// NewCmdDelete implements the delete odo command
 func NewCmdDelete() *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
 
