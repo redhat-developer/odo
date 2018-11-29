@@ -26,7 +26,6 @@ We'll be going over the following steps:
 A few requirements before we proceed!
 
  - A running OpenShift cluster (we recommend using [`minishift`](https://docs.openshift.org/latest/minishift/getting-started/installing.html))
- - `oc` binary ([installation guide here](https://docs.openshift.org/latest/minishift/getting-started/quickstart.html#starting-minishift))
  - `odo` binary ([installation guide here](/README.md#installation))
 
 The quickest way to deploy a development OpenShift cluster is by using [minishift](https://docs.openshift.org/latest/minishift/index.html). Alternatively, `odo` will automatically work with any OpenShift cluster you're currently logged into.
@@ -80,7 +79,7 @@ The server is accessible via web console at:
 Now log into the OpenShift cluster:
 
 ```sh
-$ oc login -u developer -p developer
+$ odo login -u developer -p developer
 Login successful.
 
 You have one project on this server: "myproject"
@@ -228,6 +227,8 @@ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enabl
 After you've enabled / started `minishift`, you'll be able to list the services via `odo catalog list services` and service catalog related operations via `odo service <verb> <servicename>`.
 
 ## Adding a Custom Builder
+
+**This section assumes that the `oc` binary has been [installed](https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli) and is present on the $PATH**
 
 OpenShift includes the ability to add a [custom image](https://docs.openshift.com/container-platform/3.7/creating_images/custom.html) to bridge the gap in the creation of custom images.
 

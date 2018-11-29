@@ -39,7 +39,6 @@ Ready to get started? Follow the instructions below to set up Odo in your enviro
 ### Requirements
 
   - `minishift` or an OpenShift environment 3.9.0+. The best way to deploy a development environment for OpenShift is using [Minishift](https://github.com/minishift/minishift).
-  - `oc`, the OpenShift command line tool. Instructions for installing `oc` can be found [here](https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli).
 
 ### Installing Odo
 
@@ -93,7 +92,7 @@ Now that you have Odo installed, follow these steps to build, push, and deploy a
 $ minishift start
 
 # Log into the OpenShift cluster
-$ oc login -u developer -p developer
+$ odo login -u developer -p developer
 
 # Create an application. An application in Odo is an umbrella under which you add other components
 $ odo app create node-example-app
