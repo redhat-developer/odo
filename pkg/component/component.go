@@ -246,8 +246,8 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	}
 
 	if params.Watch {
-		selector := fmt.Sprintf("deployment=%s-%s-1", labels["app.kubernetes.io/component-name"], labels["app"])
-		_, err = client.WaitAndGetPod(selector)
+		podSelector := fmt.Sprintf("deploymentconfig=%s-%s", labels["app.kubernetes.io/component-name"], labels["app"])
+		_, err = client.WaitAndGetPod(podSelector)
 		return err
 	}
 
