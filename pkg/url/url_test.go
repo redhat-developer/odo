@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"fmt"
+
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -454,7 +455,7 @@ func TestExists(t *testing.T) {
 							Labels: map[string]string{
 								applabels.ApplicationLabel:     "app",
 								componentlabels.ComponentLabel: "nodejs",
-								labels.UrlLabel:                "nodejs",
+								labels.URLLabel:                "nodejs",
 							},
 						},
 						Spec: routev1.RouteSpec{
@@ -473,7 +474,7 @@ func TestExists(t *testing.T) {
 							Labels: map[string]string{
 								applabels.ApplicationLabel:     "app",
 								componentlabels.ComponentLabel: "wildfly",
-								labels.UrlLabel:                "wildfly",
+								labels.URLLabel:                "wildfly",
 							},
 						},
 						Spec: routev1.RouteSpec{
@@ -505,7 +506,7 @@ func TestExists(t *testing.T) {
 							Labels: map[string]string{
 								applabels.ApplicationLabel:     "app",
 								componentlabels.ComponentLabel: "nodejs",
-								labels.UrlLabel:                "nodejs",
+								labels.URLLabel:                "nodejs",
 							},
 						},
 						Spec: routev1.RouteSpec{
@@ -524,7 +525,7 @@ func TestExists(t *testing.T) {
 							Labels: map[string]string{
 								applabels.ApplicationLabel:     "app",
 								componentlabels.ComponentLabel: "wildfly",
-								labels.UrlLabel:                "wildfly",
+								labels.URLLabel:                "wildfly",
 							},
 						},
 						Spec: routev1.RouteSpec{

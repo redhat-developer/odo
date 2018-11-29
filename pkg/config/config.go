@@ -79,6 +79,8 @@ func getOdoConfigFile() (string, error) {
 	return "", errors.New("unable to get config file")
 }
 
+// New gets the configInfo from config file and creates the config file in case it's
+// not present then it
 func New() (*ConfigInfo, error) {
 	configFile, err := getOdoConfigFile()
 	if err != nil {
@@ -223,7 +225,7 @@ func (c *ConfigInfo) SetActiveComponent(componentName string, applicationName st
 	return nil
 }
 
-// Sets the active component as blank of the given project in the configuration file
+// UnsetActiveComponent sets the active component as blank of the given project in the configuration file
 func (c *ConfigInfo) UnsetActiveComponent(project string) error {
 	if c.ActiveApplications == nil {
 		c.ActiveApplications = []ApplicationInfo{}
@@ -244,7 +246,7 @@ func (c *ConfigInfo) UnsetActiveComponent(project string) error {
 
 }
 
-// Sets the active application as blank of the given project in the configuration file
+// UnsetActiveApplication sets the active application as blank of the given project in the configuration file
 func (c *ConfigInfo) UnsetActiveApplication(project string) error {
 	if c.ActiveApplications == nil {
 		c.ActiveApplications = []ApplicationInfo{}

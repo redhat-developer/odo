@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/odo/cli/application"
@@ -139,7 +140,7 @@ func init() {
 		project.NewCmdProject(),
 		service.NewCmdService(),
 		storage.NewCmdStorage(),
-		url.NewCmdUrl(),
+		url.NewCmdURL(),
 		utils.NewCmdUtils(),
 		version.NewCmdVersion(),
 	)

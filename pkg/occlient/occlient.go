@@ -242,7 +242,7 @@ func New(connectionCheck bool) (*Client, error) {
 	return &client, nil
 }
 
-// parseImageName parse image reference
+// ParseImageName parse image reference
 // returns (imageNamespace, imageName, tag, digest, error)
 // if image is referenced by tag (name:tag)  than digest is ""
 // if image is referenced by digest (name@digest) than  tag is ""
@@ -540,7 +540,7 @@ func isTagInImageStream(is imagev1.ImageStream, imageTag string) bool {
 	return false
 }
 
-// GetImageNS returns the imagestream using image details like imageNS, imageName and imageTag
+// GetImageStream returns the imagestream using image details like imageNS, imageName and imageTag
 // imageNS can be empty in which case, this function searches currentNamespace on priority. If
 // imagestream of required tag not found in current namespace, then searches openshift namespace.
 // If not found, error out. If imageNS is not empty string, then, the requested imageNS only is searched
@@ -592,18 +592,17 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 		// Required tag not in openshift and current namespaces
 		return nil, fmt.Errorf("image stream %s with tag %s not found in openshift and %s namespaces", imageName, imageTag, currentProjectName)
 
-	} else {
+	}
 
-		// Fetch imagestream from requested namespace
-		imageStream, err = c.imageClient.ImageStreams(imageNS).Get(imageName, metav1.GetOptions{})
-		if err != nil {
-			return nil, errors.Wrapf(
-				err, "no match found for %s in namespace %s", imageName, imageNS,
-			)
-		}
-		if !isTagInImageStream(*imageStream, imageTag) {
-			return nil, fmt.Errorf("image stream %s with tag %s not found in %s namespaces", imageName, imageTag, currentProjectName)
-		}
+	// Fetch imagestream from requested namespace
+	imageStream, err = c.imageClient.ImageStreams(imageNS).Get(imageName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(
+			err, "no match found for %s in namespace %s", imageName, imageNS,
+		)
+	}
+	if !isTagInImageStream(*imageStream, imageTag) {
+		return nil, fmt.Errorf("image stream %s with tag %s not found in %s namespaces", imageName, imageTag, currentProjectName)
 	}
 
 	return imageStream, nil
@@ -641,9 +640,10 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 					return nil, errors.Wrapf(err, "unable to find ImageStreamImage with  %s digest", imageStreamImageName)
 				}
 				return imageStreamImage, nil
-			} else {
-				return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
 			}
+
+			return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
+
 		}
 	}
 
@@ -1636,7 +1636,7 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 	return nil
 }
 
-// Display DeploymentConfig log to stdout
+// DisplayDeploymentConfigLog logs the deployment config to stdout
 func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followLog bool, stdout io.Writer) error {
 
 	// Set standard log options
@@ -2737,9 +2737,9 @@ func (c *Client) AddEnvironmentVariablesToDeploymentConfig(envs []corev1.EnvVar,
 	return nil
 }
 
-// serverInfo contains the fields that contain the server's information like
+// ServerInfo contains the fields that contain the server's information like
 // address, OpenShift and Kubernetes versions
-type serverInfo struct {
+type ServerInfo struct {
 	Address           string
 	OpenShiftVersion  string
 	KubernetesVersion string
@@ -2747,8 +2747,8 @@ type serverInfo struct {
 
 // GetServerVersion will fetch the Server Host, OpenShift and Kubernetes Version
 // It will be shown on the execution of odo version command
-func (c *Client) GetServerVersion() (*serverInfo, error) {
-	var info serverInfo
+func (c *Client) GetServerVersion() (*ServerInfo, error) {
+	var info ServerInfo
 
 	// This will fetch the information about Server Address
 	config, err := c.KubeConfig.ClientConfig()
@@ -2979,9 +2979,9 @@ func getInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
 		_, ok := keys[splits[0]]
 		if ok {
 			return nil, errors.Errorf("multiple values found for VariableName: %s", splits[0])
-		} else {
-			keys[splits[0]] = 1
 		}
+
+		keys[splits[0]] = 1
 
 		inputEnvVars = append(inputEnvVars, corev1.EnvVar{
 			Name:  splits[0],

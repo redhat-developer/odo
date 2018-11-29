@@ -121,9 +121,10 @@ func SimulateFileModifications(basePath string, fileModification FileProperties)
 				return "", err
 			}
 			return filepath.Join(basePath, fileModification.FilePath), nil
-		} else {
-			return "", fmt.Errorf("Append not supported for file of type %v", fileModification.FileType)
 		}
+
+		return "", fmt.Errorf("Append not supported for file of type %v", fileModification.FileType)
+
 	default:
 		return "", fmt.Errorf("Unsupported file operation %s", fileModification.ModificationType)
 	}

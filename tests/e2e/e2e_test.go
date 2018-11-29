@@ -308,8 +308,8 @@ var _ = Describe("odoe2e", func() {
 		Context("using odo url", func() {
 			It("should create route without url name provided", func() {
 				runCmd("odo component set nodejs")
-				getUrlOut := runCmd("odo url create")
-				Expect(getUrlOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
+				getURLOut := runCmd("odo url create")
+				Expect(getURLOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
 				// check the port number of the created URL
 				port := runCmd("oc get route nodejs-" + appTestName + " -o go-template='{{index .spec.port.targetPort}}'")
@@ -321,8 +321,8 @@ var _ = Describe("odoe2e", func() {
 
 			It("should create route without port in case of single service port component", func() {
 				runCmd("odo component set nodejs")
-				getUrlOut := runCmd("odo url create nodejs")
-				Expect(getUrlOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
+				getURLOut := runCmd("odo url create nodejs")
+				Expect(getURLOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
 				// check the port number of the created URL
 				port := runCmd("oc get route nodejs-" + appTestName + " -o go-template='{{index .spec.port.targetPort}}'")
@@ -343,8 +343,8 @@ var _ = Describe("odoe2e", func() {
 
 			It("should create route with required port", func() {
 				runCmd("odo create httpd httpd-test --git https://github.com/openshift/httpd-ex.git")
-				getUrlOut := runCmd("odo url create example-url --port 8443")
-				Expect(getUrlOut).To(ContainSubstring("example-url-" + appTestName + "-" + projName))
+				getURLOut := runCmd("odo url create example-url --port 8443")
+				Expect(getURLOut).To(ContainSubstring("example-url-" + appTestName + "-" + projName))
 
 				// check the port number of the created URL
 				port := runCmd("oc get route example-url-" + appTestName + " -o go-template='{{index .spec.port.targetPort}}'")
@@ -597,8 +597,8 @@ var _ = Describe("updateE2e", func() {
 
 	const bootStrapSupervisorURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
 	const initContainerName = "copy-files-to-volume"
-	const wildflyUri1 = "https://github.com/marekjelen/katacoda-odo-backend"
-	const wildflyUri2 = "https://github.com/mik-dass/katacoda-odo-backend"
+	const wildflyURI1 = "https://github.com/marekjelen/katacoda-odo-backend"
+	const wildflyURI2 = "https://github.com/mik-dass/katacoda-odo-backend"
 	const appRootVolumeName = "-testing-s2idata"
 
 	tmpDir, err := ioutil.TempDir("", "odo")
@@ -675,7 +675,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from binary to local", func() {
-			runCmd("git clone " + wildflyUri1 + " " +
+			runCmd("git clone " + wildflyURI1 + " " +
 				tmpDir + "/katacoda-odo-backend-1")
 
 			waitForDCOfComponentToRolloutCompletely("wildfly")
@@ -708,7 +708,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("should update component from local to local", func() {
-			runCmd("git clone " + wildflyUri2 + " " +
+			runCmd("git clone " + wildflyURI2 + " " +
 				tmpDir + "/katacoda-odo-backend-2")
 
 			waitForDCOfComponentToRolloutCompletely("wildfly")
@@ -742,11 +742,11 @@ var _ = Describe("updateE2e", func() {
 
 		It("should update component from local to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyUri1)
+			runCmd("odo update wildfly --git " + wildflyURI1)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(wildflyUri1))
+			Expect(getBc).To(Equal(wildflyURI1))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -766,17 +766,17 @@ var _ = Describe("updateE2e", func() {
 				"{{.name}}{{end}}{{end}}'")
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-			SourceTest(appTestName, "git", wildflyUri1)
+			SourceTest(appTestName, "git", wildflyURI1)
 			EnvVarTest("wildfly-"+appTestName, "git", "keyvaluekey1value1")
 		})
 
 		It("should update component from git to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyUri2)
+			runCmd("odo update wildfly --git " + wildflyURI2)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(wildflyUri2))
+			Expect(getBc).To(Equal(wildflyURI2))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -796,7 +796,7 @@ var _ = Describe("updateE2e", func() {
 				"{{.name}}{{end}}{{end}}'")
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-			SourceTest(appTestName, "git", wildflyUri2)
+			SourceTest(appTestName, "git", wildflyURI2)
 			EnvVarTest("wildfly-"+appTestName, "git", "keyvaluekey1value1")
 		})
 
@@ -832,11 +832,11 @@ var _ = Describe("updateE2e", func() {
 
 		It("should update component from binary to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyUri1)
+			runCmd("odo update wildfly --git " + wildflyURI1)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(wildflyUri1))
+			Expect(getBc).To(Equal(wildflyURI1))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -856,7 +856,7 @@ var _ = Describe("updateE2e", func() {
 				"{{.name}}{{end}}{{end}}'")
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-			SourceTest(appTestName, "git", wildflyUri1)
+			SourceTest(appTestName, "git", wildflyURI1)
 			EnvVarTest("wildfly-"+appTestName, "git", "keyvaluekey1value1")
 		})
 

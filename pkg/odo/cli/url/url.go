@@ -2,10 +2,11 @@ package url
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -82,7 +83,7 @@ The created URL can be used to access the specified component from outside the O
 		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
 		odoutil.CheckError(err, "")
 
-		urlCreated := url.GetUrlString(*urlRoute)
+		urlCreated := url.GetURLString(*urlRoute)
 		fmt.Printf("URL created for component: %v\n\n"+
 			"%v - %v\n", componentName, urlRoute.Name, urlCreated)
 
@@ -164,14 +165,15 @@ var urlListCmd = &cobra.Command{
 			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
 			for _, u := range urls {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetUrlString(u), "\t", u.Port)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
 			}
 			tabWriterURL.Flush()
 		}
 	},
 }
 
-func NewCmdUrl() *cobra.Command {
+// NewCmdURL returns the top-level url command
+func NewCmdURL() *cobra.Command {
 	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().BoolVar(&urlOpenFlag, "open", false, "open the created link with your default browser")
 

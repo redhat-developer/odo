@@ -34,8 +34,8 @@ func SourceTest(appTestName string, sourceType string, source string) {
 var _ = Describe("odoCmpE2e", func() {
 	const bootStrapSupervisorURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
 	const initContainerName = "copy-files-to-volume"
-	const wildflyUri1 = "https://github.com/marekjelen/katacoda-odo-backend"
-	const wildflyUri2 = "https://github.com/mik-dass/katacoda-odo-backend"
+	const wildflyURI1 = "https://github.com/marekjelen/katacoda-odo-backend"
+	const wildflyURI2 = "https://github.com/mik-dass/katacoda-odo-backend"
 	const appRootVolumeName = "-testing-s2idata"
 
 	var t = strconv.FormatInt(time.Now().Unix(), 10)
@@ -67,16 +67,16 @@ var _ = Describe("odoCmpE2e", func() {
 			)
 			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
 
-			getCpuLimit := runCmd("oc get dc cmp-git-" +
+			getCPULimit := runCmd("oc get dc cmp-git-" +
 				appTestName +
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.cpu}}{{end}}'",
 			)
-			Expect(getCpuLimit).To(ContainSubstring("2"))
-			getCpuRequest := runCmd("oc get dc cmp-git-" +
+			Expect(getCPULimit).To(ContainSubstring("2"))
+			getCPURequest := runCmd("oc get dc cmp-git-" +
 				appTestName +
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'",
 			)
-			Expect(getCpuRequest).To(ContainSubstring("100m"))
+			Expect(getCPURequest).To(ContainSubstring("100m"))
 		})
 
 		It("should list the component", func() {
@@ -160,7 +160,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should update component from binary to local", func() {
-			runCmd("git clone " + wildflyUri1 + " " +
+			runCmd("git clone " + wildflyURI1 + " " +
 				tmpDir + "/katacoda-odo-backend-1")
 
 			waitForDCOfComponentToRolloutCompletely("wildfly")
@@ -242,7 +242,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should update component from local to local", func() {
-			runCmd("git clone " + wildflyUri2 + " " +
+			runCmd("git clone " + wildflyURI2 + " " +
 				tmpDir + "/katacoda-odo-backend-2")
 
 			waitForDCOfComponentToRolloutCompletely("wildfly")
@@ -271,11 +271,11 @@ var _ = Describe("odoCmpE2e", func() {
 
 		It("should update component from local to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyUri1)
+			runCmd("odo update wildfly --git " + wildflyURI1)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(wildflyUri1))
+			Expect(getBc).To(Equal(wildflyURI1))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -295,15 +295,15 @@ var _ = Describe("odoCmpE2e", func() {
 				"{{.name}}{{end}}{{end}}'")
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-			SourceTest(appTestName, "git", wildflyUri1)
+			SourceTest(appTestName, "git", wildflyURI1)
 		})
 		It("should update component from git to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyUri2)
+			runCmd("odo update wildfly --git " + wildflyURI2)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(wildflyUri2))
+			Expect(getBc).To(Equal(wildflyURI2))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -323,13 +323,13 @@ var _ = Describe("odoCmpE2e", func() {
 				"{{.name}}{{end}}{{end}}'")
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-			SourceTest(appTestName, "git", wildflyUri2)
+			SourceTest(appTestName, "git", wildflyURI2)
 		})
 
 		// This is expected to be removed at the time of fixing https://github.com/redhat-developer/odo/issues/1008
 		It("should create a wildfly git component", func() {
 			runCmd("odo delete wildfly -f")
-			runCmd("odo create wildfly wildfly --git " + wildflyUri1)
+			runCmd("odo create wildfly wildfly --git " + wildflyURI1)
 		})
 
 		It("should update component from git to local", func() {
@@ -384,7 +384,7 @@ var _ = Describe("odoCmpE2e", func() {
 
 		It("should create a wildfly git component", func() {
 			runCmd("odo delete wildfly -f")
-			runCmd("odo create wildfly wildfly --git " + wildflyUri1)
+			runCmd("odo create wildfly wildfly --git " + wildflyURI1)
 		})
 
 		It("should update component from git to binary", func() {
@@ -414,11 +414,11 @@ var _ = Describe("odoCmpE2e", func() {
 
 		It("should update component from binary to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyUri1)
+			runCmd("odo update wildfly --git " + wildflyURI1)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
-			Expect(getBc).To(Equal(wildflyUri1))
+			Expect(getBc).To(Equal(wildflyURI1))
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -438,7 +438,7 @@ var _ = Describe("odoCmpE2e", func() {
 				"{{.name}}{{end}}{{end}}'")
 			Expect(getDc).NotTo(ContainSubstring("wildfly" + appRootVolumeName))
 
-			SourceTest(appTestName, "git", wildflyUri1)
+			SourceTest(appTestName, "git", wildflyURI1)
 		})
 
 	})

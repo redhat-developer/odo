@@ -31,7 +31,7 @@ func TestGetLabels(t *testing.T) {
 			want: map[string]string{
 				applabels.ApplicationLabel:     "applicationame",
 				componentlabels.ComponentLabel: "componentname",
-				UrlLabel:                       "urlname",
+				URLLabel:                       "urlname",
 			},
 		}, {
 			name: "no storage name",
@@ -44,7 +44,7 @@ func TestGetLabels(t *testing.T) {
 			want: map[string]string{
 				applabels.ApplicationLabel:     "applicationame",
 				componentlabels.ComponentLabel: "componentname",
-				UrlLabel:                       "",
+				URLLabel:                       "",
 			},
 		}, {
 			name: "everything with additional",
@@ -58,7 +58,7 @@ func TestGetLabels(t *testing.T) {
 				applabels.ApplicationLabel:               "applicationame",
 				applabels.AdditionalApplicationLabels[0]: "applicationame",
 				componentlabels.ComponentLabel:           "componentname",
-				UrlLabel:                                 "urlname",
+				URLLabel:                                 "urlname",
 			},
 		},
 	}

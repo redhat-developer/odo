@@ -2,11 +2,12 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"net/url"
 	"os"
 	"runtime"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -57,7 +58,7 @@ var pushCmd = &cobra.Command{
 					fmt.Printf("Unable to push local directory:%s to component %s that uses binary %s.\n", componentLocal, componentName, sourcePath)
 					os.Exit(1)
 				}
-				sourcePath = util.GenFileUrl(componentLocal, runtime.GOOS)
+				sourcePath = util.GenFileURL(componentLocal, runtime.GOOS)
 			}
 
 			u, err := url.Parse(sourcePath)
