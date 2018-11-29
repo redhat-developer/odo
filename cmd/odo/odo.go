@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-
 	"github.com/golang/glog"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -30,12 +29,11 @@ func main() {
 	root.Flags().AddGoFlagSet(flag.CommandLine)
 	// override usage so that flag.Parse uses root command's usage instead of default one when invoked with -h
 	flag.Usage = func() {
-		_ = root.Usage
+		_ = root.Help()
 	}
 
 	// parse the flags - both the program's flags and the completion flags
-	err := flag.CommandLine.Parse([]string{})
-	util.CheckError(err, "")
+	flag.Parse()
 
 	// run the completion, in case that the completion was invoked
 	// and ran as a completion script or handled a flag that passed
