@@ -28,9 +28,10 @@ var describeCmd = &cobra.Command{
 		} else {
 			componentName = context.Component(args[0])
 		}
-		componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, componentName, applicationName)
+		componentDesc, err := component.GetComponentDesc(client, componentName, applicationName)
 		util.CheckError(err, "")
-		util.PrintComponentInfo(componentName, componentType, path, componentURL, appStore)
+
+		util.PrintComponentInfo(componentName, componentDesc)
 	},
 }
 

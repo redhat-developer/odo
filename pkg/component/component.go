@@ -31,10 +31,20 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 
-// ComponentInfo holds all important information about one component
-type ComponentInfo struct {
+// Info holds all important information about one component
+type Info struct {
 	Name string
 	Type string
+}
+
+// Description holds all information about component
+type Description struct {
+	ComponentName      string                `json:"componentName,omitempty"`
+	ComponentImageType string                `json:"type,omitempty"`
+	Path               string                `json:"source,omitempty"`
+	URLs               []urlpkg.URL          `json:"url,omitempty"`
+	Env                []corev1.EnvVar       `json:"environment,omitempty"`
+	Storage            []storage.StorageInfo `json:"storage,omitempty"`
 }
 
 // GetComponentDir returns source repo name
@@ -67,7 +77,7 @@ func GetComponentDir(path string, paramType occlient.CreateType) (string, error)
 // GetDefaultComponentName generates a unique component name
 // Parameters: desired default component name(w/o prefix) and slice of existing component names
 // Returns: Unique component name and error if any
-func GetDefaultComponentName(componentPath string, componentPathType occlient.CreateType, componentType string, existingComponentList []ComponentInfo) (string, error) {
+func GetDefaultComponentName(componentPath string, componentPathType occlient.CreateType, componentType string, existingComponentList []Info) (string, error) {
 	var prefix string
 
 	// Get component names from component list
@@ -432,7 +442,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
-func List(client *occlient.Client, applicationName string) ([]ComponentInfo, error) {
+func List(client *occlient.Client, applicationName string) ([]Info, error) {
 
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	componentNames, err := client.GetLabelValues(componentlabels.ComponentLabel, applicationSelector)
@@ -440,14 +450,14 @@ func List(client *occlient.Client, applicationName string) ([]ComponentInfo, err
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
 
-	var components []ComponentInfo
+	var components []Info
 
 	for _, name := range componentNames {
 		componentImageType, err := GetComponentType(client, name, applicationName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to list components")
 		}
-		components = append(components, ComponentInfo{Name: name, Type: componentImageType})
+		components = append(components, Info{Name: name, Type: componentImageType})
 	}
 
 	return components, nil
@@ -645,31 +655,55 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 }
 
 // GetComponentDesc provides description such as source, url & storage about given component
-func GetComponentDesc(client *occlient.Client, componentName string, applicationName string) (componentImageType string, path string, componentURL string, appStore []storage.StorageInfo, err error) {
+func GetComponentDesc(client *occlient.Client, componentName string, applicationName string) (componentDesc Description, err error) {
 	// Component Type
-	componentImageType, err = GetComponentType(client, componentName, applicationName)
+	componentImageType, err := GetComponentType(client, componentName, applicationName)
 	if err != nil {
-		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
+		return componentDesc, errors.Wrap(err, "unable to get source path")
 	}
 	// Source
-	_, path, err = GetComponentSource(client, componentName, applicationName)
+	_, path, err := GetComponentSource(client, componentName, applicationName)
 	if err != nil {
-		return "", "", "", nil, errors.Wrap(err, "unable to get source path")
+		return componentDesc, errors.Wrap(err, "unable to get source path")
 	}
 	// URL
 	urlList, err := urlpkg.List(client, componentName, applicationName)
-	if len(urlList) != 0 {
-		componentURL = urlList[0].URL
-	}
 	if err != nil {
-		return "", "", "", nil, errors.Wrap(err, "unable to get url list")
+		return componentDesc, errors.Wrap(err, "unable to get url list")
 	}
-	//Storage
-	appStore, err = storage.List(client, componentName, applicationName)
+	// Storage
+	appStore, err := storage.List(client, componentName, applicationName)
 	if err != nil {
-		return "", "", "", nil, errors.Wrap(err, "unable to get storage list")
+		return componentDesc, errors.Wrap(err, "unable to get storage list")
 	}
-	return componentImageType, path, componentURL, appStore, nil
+	// Environment Variables
+	DC, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return componentDesc, errors.Wrap(err, "unable to get DC list")
+	}
+	envVars, err := client.GetEnvVarsFromDC(DC)
+	if err != nil {
+		return componentDesc, errors.Wrap(err, "unable to get envVars list")
+	}
+	var filteredEnv []corev1.EnvVar
+	for _, env := range envVars {
+		if !strings.Contains(env.Name, "ODO") {
+			filteredEnv = append(filteredEnv, env)
+		}
+	}
+
+	if err != nil {
+		return componentDesc, errors.Wrap(err, "unable to get envVars list")
+	}
+	componentDesc = Description{
+		ComponentName:      componentName,
+		ComponentImageType: componentImageType,
+		Path:               path,
+		Env:                filteredEnv,
+		Storage:            appStore,
+		URLs:               urlList,
+	}
+	return componentDesc, nil
 }
 
 // GetLogs follow the DeploymentConfig logs if follow is set to true

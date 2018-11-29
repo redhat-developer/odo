@@ -2,12 +2,13 @@ package application
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"os"
-	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
@@ -22,6 +23,12 @@ var (
 	applicationShortFlag       bool
 	applicationForceDeleteFlag bool
 )
+
+// Description holds all information about application
+type Description struct {
+	Name       string `json:"applicationName,omitempty"`
+	Components []component.Description
+}
 
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
@@ -277,13 +284,14 @@ var applicationDescribeCmd = &cobra.Command{
 			fmt.Printf("Application %s has no components deployed.\n", appName)
 			os.Exit(1)
 		}
-		fmt.Printf("Application %s has:\n", appName)
-
+		fmt.Printf("Application Name: %s has %v components:\n--------------------------------------\n", appName, len(componentList))
 		for _, currentComponent := range componentList {
-			componentType, path, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+			componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
 			util.CheckError(err, "")
-			util.PrintComponentInfo(currentComponent.Name, componentType, path, componentURL, appStore)
+			util.PrintComponentInfo(currentComponent.Name, componentDesc)
+			fmt.Println("--------------------------------------")
 		}
+
 	},
 }
 
@@ -333,17 +341,17 @@ func printDeleteAppInfo(client *occlient.Client, appName string) error {
 	}
 
 	for _, currentComponent := range componentList {
-		_, _, componentURL, appStore, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+		componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}
 		fmt.Println("Component", currentComponent.Name, "will be deleted.")
 
-		if len(componentURL) != 0 {
-			fmt.Println("  Externally exposed URL will be removed")
+		if len(componentDesc.URLs) != 0 {
+			fmt.Println("  Externally exposed URLs will be removed")
 		}
 
-		for _, store := range appStore {
+		for _, store := range componentDesc.Storage {
 			fmt.Println("  Storage", store.Name, "of size", store.Size, "will be removed")
 		}
 
