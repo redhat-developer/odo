@@ -185,7 +185,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
-		fmt.Printf("Initializing %s component ...\n", componentName)
+		fmt.Printf("Initializing '%s' component ...\n", componentName)
 		ensureAndLogProperResourceUsage(memory, memoryMin, memoryMax, "memory")
 
 		ensureAndLogProperResourceUsage(cpu, cpuMin, cpuMax, "cpu")
@@ -312,8 +312,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 		if len(componentGit) == 0 {
 			log.Info("To push source code to the component run 'odo push'")
 		}
+
 		if !componentWait {
-			fmt.Printf("This may take few moments to be ready")
+			fmt.Printf("This may take few moments to be ready\n")
 		}
 	},
 }
