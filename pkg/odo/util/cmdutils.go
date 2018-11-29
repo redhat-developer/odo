@@ -79,7 +79,7 @@ func PrintComponentInfo(currentComponentName string, componentDesc component.Des
 		fmt.Println("\nURLs")
 		for _, componentUrl := range componentDesc.URLs {
 
-			fmt.Printf(" - %v exposed via %v\n", url.GetUrlString(componentUrl), componentUrl.Port)
+			fmt.Printf(" - %v exposed via %v\n", url.GetURLString(componentUrl), componentUrl.Port)
 		}
 
 	}
