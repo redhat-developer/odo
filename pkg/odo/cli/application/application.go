@@ -310,6 +310,8 @@ func NewCmdApplication() *cobra.Command {
 	addProjectFlag(applicationSetCmd)
 	addProjectFlag(applicationGetCmd)
 
+	// Add a defined annotation in order to appear in the help menu
+	applicationCmd.Annotations = map[string]string{"command": "other"}
 	applicationCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	completion.RegisterCommandHandler(applicationDescribeCmd, completion.AppCompletionHandler)

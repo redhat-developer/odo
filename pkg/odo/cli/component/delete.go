@@ -71,6 +71,8 @@ var componentDeleteCmd = &cobra.Command{
 func NewCmdDelete() *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
 
+	// Add a defined annotation in order to appear in the help menu
+	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
 	componentDeleteCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	//Adding `--project` flag

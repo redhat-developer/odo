@@ -49,6 +49,9 @@ var componentListCmd = &cobra.Command{
 
 // NewCmdList implements the list odo command
 func NewCmdList() *cobra.Command {
+	// Add a defined annotation in order to appear in the help menu
+	componentListCmd.Annotations = map[string]string{"command": "component"}
+
 	//Adding `--project` flag
 	addProjectFlag(componentListCmd)
 	//Adding `--application` flag
