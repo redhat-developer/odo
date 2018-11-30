@@ -122,6 +122,11 @@ You may have to wait a few seconds until OpenShift fully provisions it.`, servic
 			fmt.Printf("Service %s has been successfully linked to the component %s.\n", serviceName, sourceComponentName)
 		} else if cmpExists {
 			targetComponent := args[0]
+			// forbid linking the component to itself
+			if targetComponent == sourceComponentName {
+				fmt.Println("Source and target component must not be the same component.")
+				os.Exit(1)
+			}
 
 			secretName, err := secret.DetermineSecretName(client, targetComponent, applicationName, port)
 			util.CheckError(err, "")
