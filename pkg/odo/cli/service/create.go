@@ -119,6 +119,11 @@ func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 	return
 }
 
+var validateNameFn = func(i interface{}) error {
+	s := i.(string)
+	return util.ValidateName(s)
+}
+
 // Validate validates the ServiceCreateOptions based on completed values
 func (o *ServiceCreateOptions) Validate() (err error) {
 	// if we are in interactive mode, all values are already valid
