@@ -2175,6 +2175,11 @@ func (c *Client) GetMatchingPlans(class scv1beta1.ClusterServiceClass) (plans ma
 	return plans, err
 }
 
+func (c *Client) DoesPlanExist(planName string) (bool, error) {
+	plan, e := c.serviceCatalogClient.ClusterServicePlans().Get(planName, metav1.GetOptions{})
+	return plan != nil, e
+}
+
 // GetClusterServiceClassExternalNamesAndPlans returns the names of all the cluster service
 // classes in the cluster
 func (c *Client) GetClusterServiceClassExternalNamesAndPlans() ([]Service, error) {

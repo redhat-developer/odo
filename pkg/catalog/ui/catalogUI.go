@@ -53,7 +53,7 @@ func getServiceClassesCategories(categories map[string][]scv1beta1.ClusterServic
 	return keys
 }
 
-func getServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (keys []string) {
+func GetServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (keys []string) {
 	keys = make([]string, len(stringMap))
 
 	i := 0
@@ -133,7 +133,7 @@ func handleError(err error) {
 func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptText string) (plan string) {
 	prompt := &survey.Select{
 		Message: promptText,
-		Options: getServicePlanNames(plans),
+		Options: GetServicePlanNames(plans),
 	}
 	err := survey.AskOne(prompt, &plan, nil)
 	handleError(err)
