@@ -24,6 +24,7 @@ import (
 	dockerapiv10 "github.com/openshift/api/image/docker10"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
@@ -389,11 +390,13 @@ func isServerUp(server string) bool {
 		ocRequestTimeout = time.Duration(cfg.GetTimeout()) * time.Second
 	}
 	glog.V(4).Infof("Trying to connect to server %v", u.Host)
+
 	_, connectionError := net.DialTimeout("tcp", u.Host, time.Duration(ocRequestTimeout))
 	if connectionError != nil {
 		glog.V(4).Info(errors.Wrap(connectionError, "unable to connect to server"))
 		return false
 	}
+
 	glog.V(4).Infof("Server %v is up", server)
 	return true
 }
@@ -1531,6 +1534,8 @@ func (c *Client) WaitAndGetDC(name string, field string, value string, timeout t
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 	glog.V(4).Infof("Waiting for %s pod", selector)
+	s := log.Spinner("Waiting for pod to start")
+	defer s.End(false)
 
 	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
@@ -1555,6 +1560,7 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case corev1.PodRunning:
+					s.End(true)
 					glog.V(4).Infof("Pod %s is running.", e.Name)
 					podChannel <- e
 					break loop
@@ -1624,10 +1630,6 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 		return errors.Wrapf(err, "unable get build log %s", buildName)
 	}
 	defer rd.Close()
-
-	// Set the colour of the stdout output..
-	color.Set(color.FgYellow)
-	defer color.Unset()
 
 	if _, err = io.Copy(stdout, rd); err != nil {
 		return errors.Wrapf(err, "error streaming logs for %s", buildName)

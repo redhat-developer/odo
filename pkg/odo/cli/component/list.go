@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"text/tabwriter"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/spf13/cobra"
@@ -25,7 +26,7 @@ var componentListCmd = &cobra.Command{
 		applicationName := context.Application
 
 		components, err := component.List(client, applicationName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		if len(components) == 0 {
 			fmt.Println("There are no components deployed.")
 			return

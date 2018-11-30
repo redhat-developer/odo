@@ -2,12 +2,14 @@ package component
 
 import (
 	"fmt"
+
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 
@@ -48,10 +50,10 @@ var componentGetCmd = &cobra.Command{
 			fmt.Print(component)
 		} else {
 			if component == "" {
-				fmt.Printf("No component is set as current\n")
+				log.Info("No component is set as current")
 				return
 			}
-			fmt.Printf("The current component is: %v\n", component)
+			log.Infof("The current component is: %v", component)
 		}
 	},
 }
@@ -71,7 +73,7 @@ var componentSetCmd = &cobra.Command{
 		componentName := context.Component(args[0])
 
 		err := component.SetCurrent(componentName, applicationName, projectName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		fmt.Printf("Switched to component: %v\n", componentName)
 	},
 }
@@ -96,7 +98,7 @@ func NewCmdComponent() *cobra.Command {
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}
-	componentCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	componentCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return componentCmd
 }

@@ -1,14 +1,15 @@
 package component
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 	"runtime"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+
+	"github.com/redhat-developer/odo/pkg/component"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -45,8 +46,8 @@ var watchCmd = &cobra.Command{
 			componentName, err = component.GetCurrent(applicationName, projectName)
 			odoutil.CheckError(err, "")
 			if componentName == "" {
-				fmt.Println("No component is set as active.")
-				fmt.Println("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
+				log.Infof("No component is set as active.")
+				log.Infof("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
 				os.Exit(1)
 			}
 		} else {
@@ -57,7 +58,7 @@ var watchCmd = &cobra.Command{
 		odoutil.CheckError(err, "Unable to get source for %s component.", componentName)
 
 		if sourceType != "binary" && sourceType != "local" {
-			fmt.Printf("Watch is supported by binary and local components only and source type of component %s is %s\n", componentName, sourceType)
+			log.Errorf("Watch is supported by binary and local components only and source type of component %s is %s", componentName, sourceType)
 			os.Exit(1)
 		}
 
@@ -65,7 +66,7 @@ var watchCmd = &cobra.Command{
 		odoutil.CheckError(err, "Unable to parse source %s from component %s.", sourcePath, componentName)
 
 		if u.Scheme != "" && u.Scheme != "file" {
-			fmt.Printf("Component %s has invalid source path %s.", componentName, u.Scheme)
+			log.Errorf("Component %s has invalid source path %s.", componentName, u.Scheme)
 			os.Exit(1)
 		}
 		watchPath := util.ReadFilePath(u, runtime.GOOS)

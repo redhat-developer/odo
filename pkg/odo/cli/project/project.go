@@ -2,11 +2,13 @@ package project
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -53,21 +55,21 @@ var projectSetCmd = &cobra.Command{
 		current := context.Project
 
 		exists, err := project.Exists(client, projectName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		if !exists {
-			fmt.Printf("The project %s does not exist\n", projectName)
+			log.Errorf("The project %s does not exist", projectName)
 			os.Exit(1)
 		}
 
 		err = project.SetCurrent(client, projectName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		if projectShortFlag {
 			fmt.Print(projectName)
 		} else {
 			if current == projectName {
-				fmt.Printf("Already on project : %v\n", projectName)
+				log.Infof("Already on project : %v", projectName)
 			} else {
-				fmt.Printf("Switched to project : %v\n", projectName)
+				log.Infof("Switched to project : %v", projectName)
 			}
 		}
 	},
@@ -88,7 +90,7 @@ var projectGetCmd = &cobra.Command{
 		if projectShortFlag {
 			fmt.Print(project)
 		} else {
-			fmt.Printf("The current project is: %v\n", project)
+			log.Infof("The current project is: %v", project)
 		}
 	},
 }
@@ -105,10 +107,10 @@ var projectCreateCmd = &cobra.Command{
 		projectName := args[0]
 		client := genericclioptions.Client(cmd)
 		err := project.Create(client, projectName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		err = project.SetCurrent(client, projectName)
-		util.CheckError(err, "")
-		fmt.Printf("New project created and now using project : %v\n", projectName)
+		odoutil.CheckError(err, "")
+		log.Successf("New project created and now using project : %v", projectName)
 	},
 }
 
@@ -126,9 +128,9 @@ var projectDeleteCmd = &cobra.Command{
 
 		// Validate existence of the project to be deleted
 		isValidProject, err := project.Exists(client, projectName)
-		util.CheckError(err, "Failed to delete project %s", projectName)
+		odoutil.CheckError(err, "Failed to delete project %s", projectName)
 		if !isValidProject {
-			fmt.Printf("The project %s does not exist. Please check the list of projects using `odo project list`\n", projectName)
+			log.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", projectName)
 			os.Exit(1)
 		}
 
@@ -136,28 +138,27 @@ var projectDeleteCmd = &cobra.Command{
 		if projectForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete project %v? [y/N] ", projectName)
+			log.Askf("Are you sure you want to delete project %v? [y/N]: ", projectName)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) != "y" {
-			fmt.Printf("Aborting deletion of project: %v\n", projectName)
+			log.Errorf("Aborting deletion of project: %v", projectName)
 			os.Exit(1)
 		}
 
-		fmt.Printf("Deleting project %s...\n(this operation may take some time)\n", projectName)
 		currentProject, err := project.Delete(client, projectName)
 		if err != nil {
-			util.CheckError(err, "")
+			odoutil.CheckError(err, "")
 		}
 
 		fmt.Printf("Deleted project : %v\n", projectName)
 
 		if currentProject != "" {
-			fmt.Printf("%s has been set as the active project\n", currentProject)
+			log.Infof("%s has been set as the active project\n", currentProject)
 		} else {
 			// oc errors out as "error: you do not have rights to view project "$deleted_project"."
-			fmt.Printf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command\n")
+			log.Infof("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
 		}
 
 	},
@@ -174,10 +175,10 @@ var projectListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := genericclioptions.Client(cmd)
 		projects, err := project.List(client)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		if len(projects) == 0 {
-			fmt.Println("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
-			return
+			log.Errorf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
+			os.Exit(1)
 		}
 		fmt.Printf("ACTIVE   NAME\n")
 		for _, project := range projects {
@@ -207,7 +208,7 @@ func NewCmdProject() *cobra.Command {
 
 	// Add a defined annotation in order to appear in the help menu
 	projectCmd.Annotations = map[string]string{"command": "other"}
-	projectCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	projectCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	completion.RegisterCommandHandler(projectSetCmd, completion.ProjectNameCompletionHandler)
 	completion.RegisterCommandHandler(projectDeleteCmd, completion.ProjectNameCompletionHandler)

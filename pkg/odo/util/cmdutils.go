@@ -22,7 +22,6 @@ func CheckError(err error, context string, a ...interface{}) {
 		} else {
 			fmt.Printf(fmt.Sprintf("%s\n", context), a...)
 		}
-
 		os.Exit(1)
 	}
 }

@@ -1,11 +1,11 @@
 package utils
 
 import (
-	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"io"
 	"os"
 
+	"github.com/redhat-developer/odo/pkg/log"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +25,7 @@ This will append your PS1 environment variable with Odo component and applicatio
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		err := TerminalGenerate(os.Stdout, cmd, args)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 
 		return nil
 	},
@@ -35,10 +35,12 @@ This will append your PS1 environment variable with Odo component and applicatio
 func TerminalGenerate(out io.Writer, cmd *cobra.Command, args []string) error {
 	// Check the passed in arguments
 	if len(args) == 0 {
-		return fmt.Errorf("Shell not specified. ex. odo completion [bash|zsh]")
+		log.Error("Shell not specified. ex. odo completion [bash|zsh]")
+		os.Exit(1)
 	}
 	if len(args) > 1 {
-		return fmt.Errorf("Too many arguments. Expected only the shell type. ex. odo completion [bash|zsh]")
+		log.Error("Too many arguments. Expected only the shell type. ex. odo completion [bash|zsh]")
+		os.Exit(1)
 	}
 	shell := args[0]
 
@@ -82,7 +84,8 @@ PROMPT='$(__odo_ps1)'$PROMPT
 	} else if shell == "zsh" {
 		out.Write([]byte(zshPS1Output))
 	} else {
-		return fmt.Errorf("not a compatible shell, bash and zsh are only supported")
+		log.Errorf("not a compatible shell, bash and zsh are only supported")
+		os.Exit(1)
 	}
 
 	return nil

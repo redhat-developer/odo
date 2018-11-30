@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/log"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +30,8 @@ Timeout - Timeout (in seconds) for OpenShift server connection check`,
 	// 'odo utils config' is the same as 'odo utils config --help'
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) >= 1 && args[0] != "view" && args[0] != "set" {
-			return fmt.Errorf(`Unknown command, use "set" or "view"`)
+			log.Errorf(`Unknown command, use "set" or "view"`)
+			os.Exit(1)
 		}
 		return nil
 	}, Run: func(cmd *cobra.Command, args []string) {
@@ -86,7 +89,7 @@ var configurationViewCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.New()
 		if err != nil {
-			fmt.Println(err, ": unable to view configuration")
+			odoutil.CheckError(err, "unable to view configuration")
 		}
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")

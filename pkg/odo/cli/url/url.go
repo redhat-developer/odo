@@ -8,7 +8,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
+	"github.com/redhat-developer/odo/pkg/log"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"text/tabwriter"
@@ -68,23 +70,23 @@ The created URL can be used to access the specified component from outside the O
 		case 1:
 			urlName = args[0]
 		default:
-			fmt.Println("unable to get component")
+			log.Errorf("unable to get component")
 			os.Exit(1)
 		}
 
 		exists, err := url.Exists(client, urlName, "", applicationName)
 
 		if exists {
-			fmt.Printf("The url %s already exists in the application: %s\n", urlName, applicationName)
+			log.Errorf("The url %s already exists in the application: %s", urlName, applicationName)
 			os.Exit(1)
 		}
 
-		fmt.Printf("Adding URL to component: %v\n", componentName)
+		log.Infof("Adding URL to component: %v", componentName)
 		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
 		odoutil.CheckError(err, "")
 
 		urlCreated := url.GetURLString(*urlRoute)
-		fmt.Printf("URL created for component: %v\n\n"+
+		log.Successf("URL created for component: %v\n\n"+
 			"%v - %v\n", componentName, urlRoute.Name, urlCreated)
 
 		if urlOpenFlag {
@@ -114,7 +116,7 @@ var urlDeleteCmd = &cobra.Command{
 		odoutil.CheckError(err, "")
 
 		if !exists {
-			fmt.Printf("The URL %s does not exist within the component %s\n", urlName, componentName)
+			log.Errorf("The URL %s does not exist within the component %s", urlName, componentName)
 			os.Exit(1)
 		}
 
@@ -122,7 +124,7 @@ var urlDeleteCmd = &cobra.Command{
 		if urlForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete the url %v? [y/N] ", urlName)
+			log.Askf("Are you sure you want to delete the url %v? [y/N]: ", urlName)
 			fmt.Scanln(&confirmDeletion)
 		}
 
@@ -130,9 +132,10 @@ var urlDeleteCmd = &cobra.Command{
 
 			err = url.Delete(client, urlName, applicationName)
 			odoutil.CheckError(err, "")
-			fmt.Printf("Deleted URL: %v\n", urlName)
+			log.Infof("Deleted URL: %v", urlName)
 		} else {
-			fmt.Printf("Aborting deletion of url: %v\n", urlName)
+			log.Errorf("Aborting deletion of url: %v", urlName)
+			os.Exit(1)
 		}
 	},
 }
@@ -155,9 +158,9 @@ var urlListCmd = &cobra.Command{
 		odoutil.CheckError(err, "")
 
 		if len(urls) == 0 {
-			fmt.Printf("No URLs found for component %v in application %v\n", componentName, applicationName)
+			log.Errorf("No URLs found for component %v in application %v", componentName, applicationName)
 		} else {
-			fmt.Printf("Found the following URLs for component %v in application %v:\n", componentName, applicationName)
+			log.Infof("Found the following URLs for component %v in application %v:", componentName, applicationName)
 
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 

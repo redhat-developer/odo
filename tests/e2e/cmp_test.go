@@ -202,6 +202,7 @@ var _ = Describe("odoCmpE2e", func() {
 		It("should watch the local sources for any changes", func() {
 			runCmd("odo create wildfly wildfly-watch --local " + tmpDir + "/katacoda-odo-backend-1 --min-memory 400Mi --max-memory 700Mi")
 			runCmd("odo push -v 4")
+
 			startSimulationCh := make(chan bool)
 			go func() {
 				startMsg := <-startSimulationCh
