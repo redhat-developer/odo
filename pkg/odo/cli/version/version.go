@@ -2,11 +2,14 @@ package version
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/redhat-developer/odo/pkg/notify"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"os"
-	"strings"
+
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -47,7 +50,7 @@ var versionCmd = &cobra.Command{
 		if !clientFlag {
 			// Lets fetch the info about the server
 			serverInfo, err := genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
-			util.CheckError(err, "")
+			odoutil.CheckError(err, "")
 			// make sure we only include Openshift info if we actually have it
 			openshiftStr := ""
 			if len(serverInfo.OpenShiftVersion) > 0 {

@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
@@ -51,6 +52,9 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 
 // Exists returns true if the given component type is valid, false if not
 func Exists(client *occlient.Client, componentType string) (bool, error) {
+
+	s := log.Spinner("Checking component")
+	defer s.End(false)
 	catalogList, err := List(client)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to list catalog")
@@ -58,6 +62,7 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 
 	for _, supported := range catalogList {
 		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
+			s.End(true)
 			return true, nil
 		}
 	}
@@ -66,6 +71,10 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 
 // VersionExists checks if that version exists, returns true if the given version exists, false if not
 func VersionExists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
+
+	// Loading status
+	s := log.Spinner("Checking component version")
+	defer s.End(false)
 
 	// Retrieve the catalogList
 	catalogList, err := List(client)
@@ -79,6 +88,7 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 			// Now check to see if that version matches that components tag
 			for _, tag := range supported.Tags {
 				if componentVersion == tag {
+					s.End(true)
 					return true, nil
 				}
 			}
@@ -92,6 +102,7 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 // getDefaultBuilderImages returns the default builder images available in the
 // openshift and the current namespaces
 func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
+
 	var imageStreams []imagev1.ImageStream
 	currentNamespace := client.GetCurrentProjectName()
 
@@ -158,6 +169,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 		}
 
 	}
+
 	glog.V(4).Infof("Found builder images: %v", builderImages)
 	return builderImages, nil
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -46,7 +47,7 @@ var pushCmd = &cobra.Command{
 		}
 		componentName := context.Component(argComponent)
 
-		fmt.Printf("Pushing changes to component: %v\n", componentName)
+		log.Namef("Pushing changes to component: %v", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
 		odoutil.CheckError(err, "unable to get component source")
@@ -55,7 +56,7 @@ var pushCmd = &cobra.Command{
 			// use value of '--dir' as source if it was used
 			if len(componentLocal) != 0 {
 				if sourceType == "binary" {
-					fmt.Printf("Unable to push local directory:%s to component %s that uses binary %s.\n", componentLocal, componentName, sourcePath)
+					log.Errorf("Unable to push local directory:%s to component %s that uses binary %s.", componentLocal, componentName, sourcePath)
 					os.Exit(1)
 				}
 				sourcePath = util.GenFileURL(componentLocal, runtime.GOOS)
@@ -65,7 +66,7 @@ var pushCmd = &cobra.Command{
 			odoutil.CheckError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
 
 			if u.Scheme != "" && u.Scheme != "file" {
-				fmt.Printf("Component %s has invalid source path %s", componentName, u.Scheme)
+				log.Errorf("Component %s has invalid source path %s", componentName, u.Scheme)
 				os.Exit(1)
 			}
 
@@ -84,20 +85,20 @@ var pushCmd = &cobra.Command{
 				glog.V(4).Infof("Copying file %s to pod", localLocation)
 				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation})
 			}
-			odoutil.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			odoutil.CheckError(err, fmt.Sprintf("Failed to push component: %v", componentName))
 
 		case "git":
 			// currently we don't support changing build type
 			// it doesn't make sense to use --dir with git build
 			if len(componentLocal) != 0 {
-				fmt.Printf("Unable to push local directory:%s to component %s that uses Git repository:%s.\n", componentLocal, componentName, sourcePath)
+				log.Errorf("Unable to push local directory:%s to component %s that uses Git repository:%s.", componentLocal, componentName, sourcePath)
 				os.Exit(1)
 			}
-			err := component.Build(client, componentName, applicationName, true, true, stdout)
+			err := component.Build(client, componentName, applicationName, true, stdout)
 			odoutil.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
-		fmt.Printf("changes successfully pushed to component: %v\n", componentName)
+		log.Successf("Changes successfully pushed to component: %v", componentName)
 	},
 }
 

@@ -1,6 +1,9 @@
 package service
 
 import (
+	"sort"
+	"testing"
+
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/posener/complete"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -11,8 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
-	"sort"
-	"testing"
 )
 
 func TestCompletions(t *testing.T) {

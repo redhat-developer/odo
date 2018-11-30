@@ -1,10 +1,11 @@
 package logout
 
 import (
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/spf13/cobra"
 )
 
 var logoutCmd = &cobra.Command{
@@ -19,7 +20,7 @@ var logoutCmd = &cobra.Command{
 		context := genericclioptions.NewContext(cmd)
 		client := context.Client
 		err := client.RunLogout(os.Stdout)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 	},
 }
 
@@ -27,7 +28,7 @@ var logoutCmd = &cobra.Command{
 func NewCmdLogout() *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	logoutCmd.Annotations = map[string]string{"command": "utility"}
-	logoutCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	logoutCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return logoutCmd
 }

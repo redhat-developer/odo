@@ -4,6 +4,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
@@ -56,6 +57,10 @@ func Create(client *occlient.Client, projectName string) error {
 // Delete deletes the project with name projectName and sets any other remaining project as the current project
 // and returns the current project or "" if no current project is set and errors if any
 func Delete(client *occlient.Client, projectName string) (string, error) {
+	// Loading spinner
+	s := log.Spinnerf("Deleting project %s", projectName)
+	defer s.End(false)
+
 	currentProject := GetCurrent(client)
 
 	projects, err := List(client)
@@ -116,6 +121,8 @@ func Delete(client *occlient.Client, projectName string) (string, error) {
 		// Nothing to do if there's no project left -- Default oc client way
 		glog.V(4).Info("No projects available to mark as current\n")
 	}
+
+	s.End(true)
 	return currentProject, nil
 }
 

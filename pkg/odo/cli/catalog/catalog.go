@@ -2,12 +2,14 @@ package catalog
 
 import (
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	svc "github.com/redhat-developer/odo/pkg/service"
@@ -49,10 +51,11 @@ var catalogListComponentCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := genericclioptions.Client(cmd)
 		catalogList, err := catalog.List(client)
-		util.CheckError(err, "unable to list components")
+		odoutil.CheckError(err, "unable to list components")
 		switch len(catalogList) {
 		case 0:
-			fmt.Printf("No deployable components found\n")
+			log.Errorf("No deployable components found")
+			os.Exit(1)
 		default:
 			currentProject := client.GetCurrentProjectName()
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -93,10 +96,11 @@ var catalogListServiceCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := genericclioptions.Client(cmd)
 		catalogList, err := svc.ListCatalog(client)
-		util.CheckError(err, "unable to list services because Service Catalog is not enabled in your cluster")
+		odoutil.CheckError(err, "unable to list services because Service Catalog is not enabled in your cluster")
 		switch len(catalogList) {
 		case 0:
-			fmt.Printf("No deployable services found\n")
+			log.Errorf("No deployable services found")
+			os.Exit(1)
 		default:
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "NAME", "\t", "PLANS")
@@ -141,13 +145,14 @@ components.
 		client := genericclioptions.Client(cmd)
 		searchTerm := args[0]
 		components, err := catalog.Search(client, searchTerm)
-		util.CheckError(err, "unable to search for components")
+		odoutil.CheckError(err, "unable to search for components")
 
 		switch len(components) {
 		case 0:
-			fmt.Printf("No component matched the query: %v\n", searchTerm)
+			log.Errorf("No component matched the query: %v", searchTerm)
+			os.Exit(1)
 		default:
-			fmt.Println("The following components were found:")
+			log.Infof("The following components were found:")
 			for _, component := range components {
 				fmt.Printf("- %v\n", component)
 			}
@@ -171,11 +176,12 @@ services from service catalog.
 		client := genericclioptions.Client(cmd)
 		searchTerm := args[0]
 		components, err := svc.Search(client, searchTerm)
-		util.CheckError(err, "unable to search for services")
+		odoutil.CheckError(err, "unable to search for services")
 
 		switch len(components) {
 		case 0:
-			fmt.Printf("No service matched the query: %v\n", searchTerm)
+			log.Errorf("No service matched the query: %v", searchTerm)
+			os.Exit(1)
 		default:
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "NAME", "\t", "PLANS")
@@ -213,7 +219,7 @@ This describes the service and the associated plans.
 		client := genericclioptions.Client(cmd)
 		serviceName := args[0]
 		service, plans, err := svc.GetServiceClassAndPlans(client, serviceName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetBorder(false)
@@ -281,7 +287,8 @@ This describes the service and the associated plans.
 			}
 			table.Render()
 		} else {
-			fmt.Printf("No plans found for service %s\n", serviceName)
+			log.Errorf("No plans found for service %s", serviceName)
+			os.Exit(1)
 		}
 	},
 }
@@ -298,7 +305,7 @@ func NewCmdCatalog() *cobra.Command {
 	catalogDescribeCmd.AddCommand(catalogDescribeServiceCmd)
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
-	catalogCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	catalogCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return catalogCmd
 }

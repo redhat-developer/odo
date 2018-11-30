@@ -1,13 +1,16 @@
 package component
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	pkgUtil "github.com/redhat-developer/odo/pkg/util"
+
+	"github.com/redhat-developer/odo/pkg/log"
+
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -54,7 +57,7 @@ var updateCmd = &cobra.Command{
 		}
 
 		if checkFlag != 1 {
-			fmt.Println("The source can be either --binary or --local or --git")
+			log.Errorf("The source can be either --binary or --local or --git")
 			os.Exit(1)
 		}
 
@@ -66,33 +69,33 @@ var updateCmd = &cobra.Command{
 		}
 
 		if len(applicationName) == 0 {
-			fmt.Println("Cannot update as no application is set as active")
+			log.Error("Cannot update as no application is set as active")
 			os.Exit(1)
 		}
 
 		if len(componentGit) != 0 {
 			err := component.Update(client, componentName, applicationName, "git", componentGit, stdout)
-			util.CheckError(err, "")
-			fmt.Printf("The component %s was updated successfully\n", componentName)
+			odoutil.CheckError(err, "")
+			log.Successf("The component %s was updated successfully", componentName)
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := pkgUtil.GetAbsPath(componentLocal)
 			util.CheckError(err, "")
 			fileInfo, err := os.Stat(dir)
-			util.CheckError(err, "")
+			odoutil.CheckError(err, "")
 			if !fileInfo.IsDir() {
-				fmt.Println("Please provide a path to the directory")
+				log.Error("Please provide a path to the directory")
 				os.Exit(1)
 			}
 			err = component.Update(client, componentName, applicationName, "local", dir, stdout)
-			util.CheckError(err, "")
-			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
+			odoutil.CheckError(err, "")
+			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", componentName)
 		} else if len(componentBinary) != 0 {
 			path, err := pkgUtil.GetAbsPath(componentBinary)
 			util.CheckError(err, "")
 			err = component.Update(client, componentName, applicationName, "binary", path, stdout)
-			util.CheckError(err, "")
-			fmt.Printf("The component %s was updated successfully, please use 'odo push' to push your local changes\n", componentName)
+			odoutil.CheckError(err, "")
+			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", componentName)
 		}
 	},
 }
@@ -105,7 +108,7 @@ func NewCmdUpdate() *cobra.Command {
 
 	// Add a defined annotation in order to appear in the help menu
 	updateCmd.Annotations = map[string]string{"command": "component"}
-	updateCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	updateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--application` flag
 	genericclioptions.AddApplicationFlag(updateCmd)

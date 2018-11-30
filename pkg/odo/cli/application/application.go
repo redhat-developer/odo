@@ -6,9 +6,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
@@ -78,26 +80,26 @@ If no app name is passed, a default app name will be auto-generated.
 			// Desired app name is not passed so, generate a new app name
 			// Fetch existing list of apps
 			apps, err := application.List(client)
-			util.CheckError(err, "")
+			odoutil.CheckError(err, "")
 
 			// Generate a random name that's not already in use for the existing apps
 			appName, err = application.GetDefaultAppName(apps)
-			util.CheckError(err, "")
+			odoutil.CheckError(err, "")
 		}
 		// validate application name
-		err := util.ValidateName(appName)
-		util.CheckError(err, "")
-		fmt.Printf("Creating application: %v in project: %v\n", appName, projectName)
+		err := odoutil.ValidateName(appName)
+		odoutil.CheckError(err, "")
+		log.Progressf("Creating application: %v in project: %v", appName, projectName)
 		err = application.Create(client, appName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		err = application.SetCurrent(client, appName)
 
 		// TODO: updating the app name should be done via SetCurrent and passing the Context
 		// not strictly needed here but Context should stay in sync
 		context.Application = appName
 
-		util.CheckError(err, "")
-		fmt.Printf("Switched to application: %v in project: %v\n", appName, projectName)
+		odoutil.CheckError(err, "")
+		log.Infof("Switched to application: %v in project: %v", appName, projectName)
 	},
 }
 
@@ -118,10 +120,10 @@ var applicationGetCmd = &cobra.Command{
 			return
 		}
 		if app == "" {
-			fmt.Printf("There's no active application.\nYou can create one by running 'odo application create <name>'.\n")
+			log.Infof("There's no active application.\nYou can create one by running 'odo application create <name>'.")
 			return
 		}
-		fmt.Printf("The current application is: %v in project: %v\n", app, projectName)
+		log.Infof("The current application is: %v in project: %v", app, projectName)
 	},
 }
 
@@ -147,27 +149,27 @@ var applicationDeleteCmd = &cobra.Command{
 
 		// Print App Information which will be deleted
 		err := printDeleteAppInfo(client, appName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		exists, err := application.Exists(client, appName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		if !exists {
-			fmt.Printf("Application %v in project %v does not exist\n", appName, projectName)
+			log.Errorf("Application %v in project %v does not exist", appName, projectName)
 			os.Exit(1)
 		}
 
 		if applicationForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete the application: %v from project: %v? [y/N] ", appName, projectName)
+			log.Askf("Are you sure you want to delete the application: %v from project: %v? [y/N]: ", appName, projectName)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := application.Delete(client, appName)
-			util.CheckError(err, "")
-			fmt.Printf("Deleted application: %s from project: %v\n", appName, projectName)
+			odoutil.CheckError(err, "")
+			log.Infof("Deleted application: %s from project: %v", appName, projectName)
 		} else {
-			fmt.Printf("Aborting deletion of application: %v\n", appName)
+			log.Infof("Aborting deletion of application: %v", appName)
 		}
 	},
 }
@@ -189,9 +191,9 @@ var applicationListCmd = &cobra.Command{
 		projectName := context.Project
 
 		apps, err := application.ListInProject(client)
-		util.CheckError(err, "unable to get list of applications")
+		odoutil.CheckError(err, "unable to get list of applications")
 		if len(apps) > 0 {
-			fmt.Printf("The project '%v' has the following applications:\n", projectName)
+			log.Infof("The project '%v' has the following applications:", projectName)
 			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(tabWriter, "ACTIVE", "\t", "NAME")
 			for _, app := range apps {
@@ -203,7 +205,7 @@ var applicationListCmd = &cobra.Command{
 			}
 			tabWriter.Flush()
 		} else {
-			fmt.Printf("There are no applications deployed in the project '%v'.\n", projectName)
+			log.Infof("There are no applications deployed in the project '%v'.", projectName)
 		}
 	},
 }
@@ -217,10 +219,12 @@ var applicationSetCmd = &cobra.Command{
 	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return fmt.Errorf("Please provide application name")
+			log.Error("Please provide application name")
+			os.Exit(1)
 		}
 		if len(args) > 1 {
-			return fmt.Errorf("Only one argument (application name) is allowed")
+			log.Error("Only one argument (application name) is allowed")
+			os.Exit(1)
 		}
 		return nil
 	}, Run: func(cmd *cobra.Command, args []string) {
@@ -231,15 +235,15 @@ var applicationSetCmd = &cobra.Command{
 		// error if application does not exist
 		appName := args[0]
 		exists, err := application.Exists(client, appName)
-		util.CheckError(err, "unable to check if application exists")
+		odoutil.CheckError(err, "unable to check if application exists")
 		if !exists {
-			fmt.Printf("Application %v does not exist\n", appName)
+			log.Errorf("Application %v does not exist", appName)
 			os.Exit(1)
 		}
 
 		err = application.SetCurrent(client, appName)
-		util.CheckError(err, "")
-		fmt.Printf("Switched to application: %v in project: %v\n", args[0], projectName)
+		odoutil.CheckError(err, "")
+		log.Infof("Switched to application: %v in project: %v", args[0], projectName)
 
 		// TODO: updating the app name should be done via SetCurrent and passing the Context
 		// not strictly needed here but Context should stay in sync
@@ -263,32 +267,32 @@ var applicationDescribeCmd = &cobra.Command{
 		appName := context.Application
 		if len(args) == 0 {
 			if appName == "" {
-				fmt.Printf("There's no active application in project: %v\n", projectName)
+				log.Errorf("There's no active application in project: %v", projectName)
 				os.Exit(1)
 			}
 		} else {
 			appName = args[0]
 			//Check whether application exist or not
 			exists, err := application.Exists(client, appName)
-			util.CheckError(err, "")
+			odoutil.CheckError(err, "")
 			if !exists {
-				fmt.Printf("Application with the name %s does not exist in %s \n", appName, projectName)
+				log.Errorf("Application with the name %s does not exist in %s ", appName, projectName)
 				os.Exit(1)
 			}
 		}
 
 		// List of Component
 		componentList, err := component.List(client, appName)
-		util.CheckError(err, "")
+		odoutil.CheckError(err, "")
 		if len(componentList) == 0 {
-			fmt.Printf("Application %s has no components deployed.\n", appName)
+			log.Errorf("Application %s has no components deployed.", appName)
 			os.Exit(1)
 		}
 		fmt.Printf("Application Name: %s has %v components:\n--------------------------------------\n", appName, len(componentList))
 		for _, currentComponent := range componentList {
 			componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
-			util.CheckError(err, "")
-			util.PrintComponentInfo(currentComponent.Name, componentDesc)
+			odoutil.CheckError(err, "")
+			odoutil.PrintComponentInfo(currentComponent.Name, componentDesc)
 			fmt.Println("--------------------------------------")
 		}
 
@@ -320,7 +324,7 @@ func NewCmdApplication() *cobra.Command {
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}
-	applicationCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	applicationCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	completion.RegisterCommandHandler(applicationDescribeCmd, completion.AppCompletionHandler)
 	completion.RegisterCommandHandler(applicationDeleteCmd, completion.AppCompletionHandler)

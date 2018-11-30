@@ -2,9 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -43,26 +45,26 @@ var componentDeleteCmd = &cobra.Command{
 		if componentForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", componentName, applicationName)
+			log.Askf("Are you sure you want to delete %v from %v? [y/N]: ", componentName, applicationName)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := component.Delete(client, componentName, applicationName)
-			util.CheckError(err, "")
-			fmt.Printf("Component %s from application %s has been deleted\n", componentName, applicationName)
+			odoutil.CheckError(err, "")
+			log.Successf("Component %s from application %s has been deleted", componentName, applicationName)
 
 			currentComponent, err := component.GetCurrent(applicationName, projectName)
-			util.CheckError(err, "Unable to get current component")
+			odoutil.CheckError(err, "Unable to get current component")
 
 			if currentComponent == "" {
-				fmt.Println("No default component has been set")
+				log.Info("No default component has been set")
 			} else {
-				fmt.Printf("Default component set to: %s\n", currentComponent)
+				log.Infof("Default component set to: %s", currentComponent)
 			}
 
 		} else {
-			fmt.Printf("Aborting deletion of component: %v\n", componentName)
+			log.Infof("Aborting deletion of component: %v", componentName)
 		}
 	},
 }
@@ -73,7 +75,7 @@ func NewCmdDelete() *cobra.Command {
 
 	// Add a defined annotation in order to appear in the help menu
 	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
-	componentDeleteCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
 	addProjectFlag(componentDeleteCmd)

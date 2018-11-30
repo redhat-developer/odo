@@ -2,6 +2,7 @@ package component
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +16,7 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
@@ -140,6 +142,10 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
+	// Loading spinner
+	s := log.Spinnerf("Creating component %s", params.Name)
+	defer s.End(false)
+
 	// Parse componentImageType before adding to labels
 	_, imageName, imageTag, _, err := occlient.ParseImageName(params.ImageName)
 	if err != nil {
@@ -171,6 +177,8 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
+
+	s.End(true)
 	return nil
 }
 
@@ -198,6 +206,10 @@ func GetComponentPorts(client *occlient.Client, componentName string, applicatio
 // envVars is the array containing the environment variables
 func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
+
+	// Loading spinner
+	s := log.Spinnerf("Creating component %s", params.Name)
+	defer s.End(false)
 
 	// Parse componentImageType before adding to labels
 	_, imageName, imageTag, _, err := occlient.ParseImageName(params.ImageName)
@@ -233,11 +245,16 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 		return err
 	}
 
+	s.End(true)
 	return nil
 }
 
 // Delete whole component
 func Delete(client *occlient.Client, componentName string, applicationName string) error {
+
+	// Loading spinner
+	s := log.Spinnerf("Deleting component %s", componentName)
+	defer s.End(false)
 
 	cfg, err := config.New()
 	if err != nil {
@@ -284,6 +301,8 @@ func Delete(client *occlient.Client, componentName string, applicationName strin
 		}
 
 	}
+
+	s.End(true)
 	return nil
 }
 
@@ -354,15 +373,21 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	targetPath := fmt.Sprintf("%s/src", s2iSrcPath)
 
 	// Copy the files to the pod
-	glog.V(4).Infof("Copying to pod %s", pod.Name)
+
+	s := log.Spinner("Copying files to pod")
 	err = client.CopyFile(path, pod.Name, targetPath, files)
 	if err != nil {
+		s.End(false)
 		return errors.Wrap(err, "unable push files to pod")
 	}
-	fmt.Fprintf(out, "Please wait, building component....\n")
+	s.End(true)
+
+	s = log.Spinner("Building component")
+	defer s.End(false)
 
 	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
 	pipeReader, pipeWriter := io.Pipe()
+	var cmdOutput string
 	go func() {
 		yellowFprintln := color.New(color.FgYellow).FprintlnFunc()
 		scanner := bufio.NewScanner(pipeReader)
@@ -370,7 +395,12 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 			line := scanner.Text()
 			// color.Output is temporarily used as there is a error when passing in color.Output from cmd/create.go and casting to io.writer in windows
 			// TODO: Fix this in the future, more upstream in the code at cmd/create.go rather than within this function.
-			yellowFprintln(color.Output, line)
+			// If we are in debug mode, we should show the output
+			if log.IsDebug() {
+				yellowFprintln(color.Output, line)
+			}
+
+			cmdOutput += fmt.Sprintln(line)
 		}
 	}()
 
@@ -378,18 +408,26 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		// We will use the assemble-and-restart script located within the supervisord container we've created
 		[]string{"/var/lib/supervisord/bin/assemble-and-restart"},
 		pipeWriter, pipeWriter, nil, false)
+
 	if err != nil {
+		// If we fail, log the output
+		log.Errorf("Unable to build files\n%v", cmdOutput)
 		return errors.Wrap(err, "unable to execute assemble script")
 	}
+
+	s.End(true)
 
 	return nil
 }
 
 // Build component from BuildConfig.
-// If 'streamLogs' is true than it streams build logs on stdout, set 'wait' to true if you want to return error if build fails.
 // If 'wait' is true than it waits for build to successfully complete.
 // If 'wait' is false than this function won't return error even if build failed.
-func Build(client *occlient.Client, componentName string, applicationName string, streamLogs bool, wait bool, stdout io.Writer) error {
+func Build(client *occlient.Client, componentName string, applicationName string, wait bool, stdout io.Writer) error {
+
+	// Loading spinner
+	s := log.Spinnerf("Triggering build from git")
+	defer s.End(false)
 
 	// Namespace the component
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -401,17 +439,25 @@ func Build(client *occlient.Client, componentName string, applicationName string
 	if err != nil {
 		return errors.Wrapf(err, "unable to rebuild %s", componentName)
 	}
-	if streamLogs {
-		if err := client.FollowBuildLog(buildName, stdout); err != nil {
-			return errors.Wrapf(err, "unable to follow logs for %s", buildName)
-		}
+
+	// Retrieve the Build Log and write to buffer if debug is disabled, else we we output to stdout / debug.
+
+	var b bytes.Buffer
+	if !log.IsDebug() {
+		stdout = bufio.NewWriter(&b)
 	}
+
+	if err := client.FollowBuildLog(buildName, stdout); err != nil {
+		return errors.Wrapf(err, "unable to follow logs for %s", buildName)
+	}
+
 	if wait {
 		if err := client.WaitForBuildToFinish(buildName); err != nil {
-			return errors.Wrapf(err, "unable to wait for build %s", buildName)
+			return errors.Wrapf(err, "unable to build %s, error: %s", buildName, b.String())
 		}
 	}
 
+	s.End(true)
 	return nil
 }
 
@@ -574,7 +620,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		}
 
 		// Finally, we build!
-		err = Build(client, componentName, applicationName, true, true, stdout)
+		err = Build(client, componentName, applicationName, true, stdout)
 		if err != nil {
 			return errors.Wrapf(err, "unable to build the component %v", componentName)
 		}
@@ -618,7 +664,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 			}
 
 			// Build it
-			err = Build(client, componentName, applicationName, true, true, stdout)
+			err = Build(client, componentName, applicationName, true, stdout)
 
 		} else if newSourceType == "local" || newSourceType == "binary" {
 

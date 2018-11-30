@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -119,7 +120,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		}
 
 		if checkFlag > 1 {
-			fmt.Println("The source can be either --binary or --local or --git")
+			log.Error("The source can be either --binary or --local or --git")
 			os.Exit(1)
 		}
 
@@ -142,7 +143,8 @@ A full list of component types that can be deployed is available using: 'odo cat
 		exists, err := catalog.Exists(client, componentType)
 		odoutil.CheckError(err, "")
 		if !exists {
-			fmt.Printf("Invalid component type: %v\nRun 'odo catalog list components' to see a list of supported component types\n", componentType)
+			log.Errorf("Invalid component type: %v", componentType)
+			log.Info("Run 'odo catalog list components' for a list of supported component types")
 			os.Exit(1)
 		}
 
@@ -150,7 +152,8 @@ A full list of component types that can be deployed is available using: 'odo cat
 		versionExists, err := catalog.VersionExists(client, componentType, componentVersion)
 		odoutil.CheckError(err, "")
 		if !versionExists {
-			fmt.Printf("Invalid component version: %v\nRun 'odo catalog list components' to see a list of supported component type versions\n", componentVersion)
+			log.Errorf("Invalid component version: %v", componentVersion)
+			log.Info("Run 'odo catalog list components' to see a list of supported component type versions")
 			os.Exit(1)
 		}
 
@@ -165,7 +168,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		exists, err = component.Exists(client, componentName, applicationName)
 		odoutil.CheckError(err, "")
 		if exists {
-			fmt.Printf("component with the name %s already exists in the current application\n", componentName)
+			log.Errorf("component with the name %s already exists in the current application", componentName)
 			os.Exit(1)
 		}
 
@@ -201,17 +204,16 @@ A full list of component types that can be deployed is available using: 'odo cat
 				},
 			)
 			odoutil.CheckError(err, "")
-			fmt.Printf("Triggering build from %s.\n\n", componentGit)
 
 			// Git is the only one using BuildConfig since we need to retrieve the git
-			err = component.Build(client, componentName, applicationName, true, true, stdout)
+			err = component.Build(client, componentName, applicationName, true, stdout)
 			odoutil.CheckError(err, "")
 
 		} else if len(componentLocal) != 0 {
 			fileInfo, err := os.Stat(componentPath)
 			odoutil.CheckError(err, "")
 			if !fileInfo.IsDir() {
-				fmt.Println("Please provide a path to the directory")
+				log.Errorf("Please provide a path to the directory")
 				os.Exit(1)
 			}
 
@@ -274,23 +276,23 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		ports, err := component.GetComponentPorts(client, componentName, applicationName)
 		odoutil.CheckError(err, "")
-		fmt.Printf("Component '%s' was created", componentName)
 
 		if len(ports) > 1 {
-			fmt.Printf(" and ports %s were opened\n", strings.Join(ports, ","))
+			log.Successf("Component '%s' was created and ports %s were opened", componentName, strings.Join(ports, ","))
 		} else if len(ports) == 1 {
-			fmt.Printf(" and port %s was opened\n", ports[0])
+			log.Successf("Component '%s' was created and port %s was opened", componentName, ports[0])
 		}
 
-		if len(componentGit) == 0 {
-			fmt.Printf("To push source code to the component run 'odo push'\n")
-		}
 		// after component is successfully created, set is as active
 		err = application.SetCurrent(client, applicationName)
 		odoutil.CheckError(err, "")
 		err = component.SetCurrent(componentName, applicationName, projectName)
 		odoutil.CheckError(err, "")
-		fmt.Printf("\nComponent '%s' is now set as active component.\n", componentName)
+		log.Successf("Component '%s' is now set as active component", componentName)
+
+		if len(componentGit) == 0 {
+			log.Info("To push source code to the component run 'odo push'")
+		}
 	},
 }
 

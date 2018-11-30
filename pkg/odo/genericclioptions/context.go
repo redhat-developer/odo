@@ -2,6 +2,7 @@ package genericclioptions
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"

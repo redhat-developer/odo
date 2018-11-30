@@ -1,13 +1,14 @@
 package component
 
 import (
-	"fmt"
+	"os"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/secret"
-	"os"
 
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
@@ -77,10 +78,10 @@ DB_PASSWORD=secret
 		suppliedName := args[0]
 
 		svcSxists, err := svc.SvcExists(client, suppliedName, applicationName)
-		util.CheckError(err, "Unable to determine if service %s exists", suppliedName)
+		odoutil.CheckError(err, "Unable to determine if service %s exists", suppliedName)
 
 		cmpExists, err := component.Exists(client, suppliedName, applicationName)
-		util.CheckError(err, "Unable to determine if component %s exists", suppliedName)
+		odoutil.CheckError(err, "Unable to determine if component %s exists", suppliedName)
 
 		if svcSxists {
 			if cmpExists {
@@ -93,8 +94,7 @@ DB_PASSWORD=secret
 			// which we can link to
 			_, err = client.GetServiceBinding(serviceName, projectName)
 			if err != nil {
-				fmt.Printf(`The service was not created via Odo. 
-Please delete the service and recreate it using 'odo service create %s'`, serviceName)
+				log.Errorf(`The service was not created via Odo. Please delete the service and recreate it using 'odo service create %s'`, serviceName)
 				os.Exit(1)
 			}
 
@@ -103,35 +103,33 @@ Please delete the service and recreate it using 'odo service create %s'`, servic
 				// this is done because the secret is only created after the Pod that runs the
 				// service is in running state.
 				// This can take a long time to occur if the image of the service has yet to be downloaded
-				fmt.Printf("Waiting for secret of service %s to come up\n", serviceName)
+				log.Progressf("Waiting for secret of service %s to come up", serviceName)
 				_, err = client.WaitAndGetSecret(serviceName, projectName)
-				util.CheckError(err, "")
+				odoutil.CheckError(err, "")
 			} else {
 				// we also need to check whether there is a secret with the same name as the service
 				// the secret should have been created along with the secret
 				_, err = client.GetSecret(serviceName, projectName)
 				if err != nil {
-					fmt.Printf(`The service %s created by 'odo service create' is being provisioned.
-You may have to wait a few seconds until OpenShift fully provisions it.`, serviceName)
+					log.Errorf(`The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it.`, serviceName)
 					os.Exit(1)
 				}
 			}
 
 			err = client.LinkSecret(serviceName, sourceComponentName, applicationName, projectName)
-			util.CheckError(err, "")
-			fmt.Printf("Service %s has been successfully linked to the component %s.\n", serviceName, sourceComponentName)
+			odoutil.CheckError(err, "")
+			log.Successf("Service %s has been successfully linked to the component %s", serviceName, sourceComponentName)
 		} else if cmpExists {
 			targetComponent := args[0]
 
 			secretName, err := secret.DetermineSecretName(client, targetComponent, applicationName, port)
-			util.CheckError(err, "")
+			odoutil.CheckError(err, "")
 
 			err = client.LinkSecret(secretName, sourceComponentName, applicationName, projectName)
-			util.CheckError(err, "")
-			fmt.Printf("Component %s has been successfully linked to component %s.\n", targetComponent, sourceComponentName)
+			odoutil.CheckError(err, "")
+			log.Successf("Component %s has been successfully linked to component %s", targetComponent, sourceComponentName)
 		} else {
-			fmt.Printf(`Neither a service nor a component named %s could be located
-Please create one of the two before attempting to use odo link`, suppliedName)
+			log.Errorf(`Neither a service nor a component named %s could be located. Please create one of the two before attempting to use odo link`, suppliedName)
 			os.Exit(1)
 		}
 	},
@@ -144,7 +142,7 @@ func NewCmdLink() *cobra.Command {
 
 	// Add a defined annotation in order to appear in the help menu
 	linkCmd.Annotations = map[string]string{"command": "component"}
-	linkCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	//Adding `--project` flag
 	addProjectFlag(linkCmd)
 	//Adding `--application` flag
