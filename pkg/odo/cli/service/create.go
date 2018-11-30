@@ -87,8 +87,8 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 			svcPlan = plans[o.plan]
 		}
 
-		o.parametersMap = ui.EnterServicePropertiesInteractively(svcPlan)
-		o.serviceName = ui.EnterServiceNameInteractively(o.serviceType, "How should we name your service ", o.validateServiceName)
+		o.parametersMap = ui.EnterServicePropertiesInteractively(svcPlan, map[string]string{})
+		o.serviceName = ui.EnterServiceNameInteractively(o.serviceType, "How should we name your service ", validateNameFn)
 	} else {
 		o.serviceType = args[0]
 		// if only one arg is given, then it is considered as service name and service type both
@@ -119,20 +119,9 @@ func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 	return
 }
 
-func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
+var validateNameFn = func(i interface{}) error {
 	s := i.(string)
-	err = util.ValidateName(s)
-	if err != nil {
-		return err
-	}
-	exists, err := svc.SvcExists(o.Client, s, o.Application)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return fmt.Errorf("%s service already exists in the current application", o.serviceName)
-	}
-	return
+	return util.ValidateName(s)
 }
 
 // Validate validates the ServiceCreateOptions based on completed values
@@ -179,7 +168,18 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 		}
 	}
 	//validate service name
-	return o.validateServiceName(o.serviceName)
+	err = util.ValidateName(o.serviceName)
+	if err != nil {
+		return err
+	}
+	exists, err := svc.SvcExists(o.Client, o.serviceName, o.Application)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("%s service already exists in the current application", o.serviceName)
+	}
+	return err
 }
 
 // Run contains the logic for the odo service create command
