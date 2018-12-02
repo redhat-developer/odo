@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
-	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/service"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
@@ -22,21 +22,6 @@ const defaultIntegerValidatorKey = "odo_default_integer"
 type Validator func(interface{}) error
 
 var validators = make(map[string]Validator)
-
-type serviceInstanceCreateParameterSchema struct {
-	Required   []string
-	Properties map[string]property
-}
-
-type property struct {
-	Name        string
-	Title       string
-	Type        string
-	Description string
-	required    bool
-}
-
-type properties map[string]property
 
 // Retrieve the list of existing service class categories
 func getServiceClassesCategories(categories map[string][]scv1beta1.ClusterServiceClass) (keys []string) {
@@ -88,34 +73,6 @@ func getServiceClassNames(stringMap map[string]scv1beta1.ClusterServiceClass) (k
 	sort.Strings(keys)
 
 	return keys
-}
-
-func getProperties(plan scv1beta1.ClusterServicePlan) (props properties, err error) {
-	paramBytes := plan.Spec.CommonServicePlanSpec.ServiceInstanceCreateParameterSchema.Raw
-	schema := serviceInstanceCreateParameterSchema{}
-
-	err = json.Unmarshal(paramBytes, &schema)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable unmarshal response: %s", string(paramBytes[:]))
-	}
-
-	props = make(properties, len(schema.Properties))
-	for k, v := range schema.Properties {
-		v.Name = k
-		v.required = isRequired(schema.Required, k)
-		props[k] = v
-	}
-
-	return props, err
-}
-
-func isRequired(required []string, name string) bool {
-	for _, n := range required {
-		if n == name {
-			return true
-		}
-	}
-	return false
 }
 
 func handleError(err error) {
@@ -203,36 +160,23 @@ func getLongDescription(class scv1beta1.ClusterServiceClass) (longDescription st
 
 // EnterServicePropertiesInteractively lets the user enter the properties specified by the provided plan if not already
 // specified by the passed values
-func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, passedValues map[string]string) (values map[string]string) {
-	properties, _ := getProperties(svcPlan)
+func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan) (values map[string]string) {
+	planDetails, _ := service.NewServicePlans(svcPlan)
+
+	properties := make(map[string]service.ServicePlanParameter, len(planDetails.Parameters))
+	for _, v := range planDetails.Parameters {
+		properties[v.Name] = v
+	}
+
 	values = make(map[string]string, len(properties))
 
 	// first deal with required properties
 	for name, prop := range properties {
-		if prop.required {
-			// if the property is required but we don't have a value for it in the passed values, prompt for it
-			if _, ok := passedValues[prop.Name]; !ok {
-				addValueFor(prop, values)
-
-				// remove property from list of properties to consider
-				delete(properties, name)
-				delete(passedValues, name)
-			}
+		if prop.Required {
+			addValueFor(prop, values)
+			// remove property from list of properties to consider
+			delete(properties, name)
 		}
-	}
-
-	// then check if we still have passed values
-	for name, value := range passedValues {
-		// ignore property if not specified in the plan
-		if _, ok := properties[name]; !ok {
-			glog.V(4).Infof("Ignoring unknown property '%v'", name)
-		} else {
-			values[name] = value
-		}
-
-		// remove property from list of properties to consider
-		delete(properties, name)
-		delete(passedValues, name)
 	}
 
 	// finally check if we still have plan properties that have not been considered
@@ -269,9 +213,9 @@ func (cv chainedValidator) validate(input interface{}) error {
 	return nil
 }
 
-func getValidatorFor(prop property) Validator {
+func getValidatorFor(prop service.ServicePlanParameter) Validator {
 	cv := chainedValidator{}
-	if prop.required {
+	if prop.Required {
 		cv.validators = append(cv.validators, validators[defaultRequiredValidatorKey])
 	}
 
@@ -283,17 +227,22 @@ func getValidatorFor(prop property) Validator {
 	return cv.validate
 }
 
-func addValueFor(prop property, values map[string]string) {
+func addValueFor(prop service.ServicePlanParameter, values map[string]string) {
 	var result string
 	prompt := &survey.Input{
 		Message: fmt.Sprintf("Enter a value for %s property %s:", prop.Type, propDesc(prop)),
 	}
+
+	if prop.HasDefaultValue {
+		prompt.Default = prop.Default
+	}
+
 	err := survey.AskOne(prompt, &result, survey.Validator(getValidatorFor(prop)))
 	handleError(err)
 	values[prop.Name] = result
 }
 
-func propDesc(prop property) string {
+func propDesc(prop service.ServicePlanParameter) string {
 	msg := ""
 	if len(prop.Title) > 0 {
 		msg = prop.Title

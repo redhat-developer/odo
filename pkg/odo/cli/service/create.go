@@ -80,7 +80,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 			svcPlan = plans[o.plan]
 		}
 
-		o.parametersMap = ui.EnterServicePropertiesInteractively(svcPlan, map[string]string{})
+		o.parametersMap = ui.EnterServicePropertiesInteractively(svcPlan)
 		o.serviceName = ui.EnterServiceNameInteractively(o.serviceType, "How should we name your service ", validateNameFn)
 	} else {
 		o.serviceType = args[0]
