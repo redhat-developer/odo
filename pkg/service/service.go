@@ -6,8 +6,8 @@ import (
 	"github.com/golang/glog"
 	"strings"
 
+	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
-
 	"sort"
 
 	"github.com/pkg/errors"
@@ -39,8 +39,10 @@ type ServiceClass struct {
 
 type ServicePlanParameter struct {
 	Name            string
+	Title           string
+	Description     string
 	HasDefaultValue bool
-	DefaultValue    interface{}
+	Default         string
 	Type            string
 	Required        bool
 }
@@ -306,81 +308,69 @@ func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (Servi
 
 	var plans []ServicePlans
 	for _, result := range planResults {
-		plan := ServicePlans{
-			Name:        result.Spec.ExternalName,
-			Description: result.Spec.Description,
-		}
-
-		// get the display name from the external meta data
-		var externalMetaData map[string]interface{}
-		err = json.Unmarshal(result.Spec.ExternalMetadata.Raw, &externalMetaData)
+		plan, err := NewServicePlans(result)
 		if err != nil {
-			return ServiceClass{}, nil, errors.Wrap(err, "unable to unmarshal data the given service")
-		}
 
-		if val, ok := externalMetaData["displayName"]; ok {
-			plan.DisplayName = val.(string)
-		}
-
-		// get the create parameters
-		var createParameter map[string]interface{}
-		err = json.Unmarshal(result.Spec.ServiceInstanceCreateParameterSchema.Raw, &createParameter)
-		if err != nil {
-			return ServiceClass{}, nil, errors.Wrap(err, "unable to unmarshal data the given service")
-		}
-
-		// record the values specified in the "required" field
-		// these parameters are not trully required from a user perspective
-		// since some of the parameters might have default values
-		requiredParameterNames := []string{}
-		if val, ok := createParameter["required"]; ok {
-			required := fmt.Sprint(val)
-			required = strings.Replace(required, "[", "", -1)
-			required = strings.Replace(required, "]", "", -1)
-			requiredParameterNames = strings.Split(required, " ")
-		}
-
-		// set the optional properties by inspecting additionalProperties
-		// and if it's true, then
-		if val, ok := createParameter["properties"]; ok {
-			propertiesMap, ok := val.(map[string]interface{})
-			if ok {
-				allServicePlanParameters := make([]ServicePlanParameter, 0, len(propertiesMap))
-
-				for propertyName, propertyValues := range propertiesMap {
-					servicePlanParameter := ServicePlanParameter{
-						Name: propertyName,
-					}
-
-					// we set the Required flag is the name of parameter
-					// is one of the parameters indicated as required
-					for _, name := range requiredParameterNames {
-						if name == propertyName {
-							servicePlanParameter.Required = true
-						}
-					}
-
-					propertyValuesMap, ok := propertyValues.(map[string]interface{})
-					if ok {
-						propertyDefaultValue, hasDefaultValue := propertyValuesMap["default"]
-						if hasDefaultValue {
-							servicePlanParameter.HasDefaultValue = true
-							servicePlanParameter.DefaultValue = propertyDefaultValue
-						}
-						if propertyType, ok := propertyValuesMap["type"]; ok {
-							// the type of the "type" value is always a string, so we just convert it
-							servicePlanParameter.Type = fmt.Sprintf("%v", propertyType)
-						}
-					}
-					allServicePlanParameters = append(allServicePlanParameters, servicePlanParameter)
-				}
-
-				plan.Parameters = allServicePlanParameters
-			}
 		}
 
 		plans = append(plans, plan)
 	}
 
 	return service, plans, nil
+}
+
+type serviceInstanceCreateParameterSchema struct {
+	Required   []string
+	Properties map[string]ServicePlanParameter
+}
+
+func NewServicePlans(result scv1beta1.ClusterServicePlan) (plan ServicePlans, err error) {
+	plan = ServicePlans{
+		Name:        result.Spec.ExternalName,
+		Description: result.Spec.Description,
+	}
+
+	// get the display name from the external meta data
+	var externalMetaData map[string]interface{}
+	err = json.Unmarshal(result.Spec.ExternalMetadata.Raw, &externalMetaData)
+	if err != nil {
+		return plan, errors.Wrap(err, "unable to unmarshal data the given service")
+	}
+
+	if val, ok := externalMetaData["displayName"]; ok {
+		plan.DisplayName = val.(string)
+	}
+
+	// get the create parameters
+	schema := serviceInstanceCreateParameterSchema{}
+	paramBytes := result.Spec.ServiceInstanceCreateParameterSchema.Raw
+	err = json.Unmarshal(paramBytes, &schema)
+	if err != nil {
+		return plan, errors.Wrapf(err, "unable to unmarshal data the given service: %s", string(paramBytes[:]))
+	}
+
+	plan.Parameters = make([]ServicePlanParameter, 0, len(schema.Properties))
+	for k, v := range schema.Properties {
+		v.Name = k
+		// we set the Required flag is the name of parameter
+		// is one of the parameters indicated as required
+		// these parameters are not strictly required since they might have default values
+		v.Required = isRequired(schema.Required, k)
+		if len(v.Default) > 0 {
+			v.HasDefaultValue = true
+		}
+
+		plan.Parameters = append(plan.Parameters, v)
+	}
+
+	return
+}
+
+func isRequired(required []string, name string) bool {
+	for _, n := range required {
+		if n == name {
+			return true
+		}
+	}
+	return false
 }
