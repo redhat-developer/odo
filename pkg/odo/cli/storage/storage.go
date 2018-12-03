@@ -6,6 +6,10 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -263,25 +267,25 @@ func NewCmdStorage() *cobra.Command {
 	storageCmd.AddCommand(storageMountCmd)
 
 	//Adding `--project` flag
-	completion.AddProjectFlag(storageCreateCmd)
-	completion.AddProjectFlag(storageDeleteCmd)
-	completion.AddProjectFlag(storageListCmd)
-	completion.AddProjectFlag(storageMountCmd)
-	completion.AddProjectFlag(storageUnmountCmd)
+	projectCmd.AddProjectFlag(storageCreateCmd)
+	projectCmd.AddProjectFlag(storageDeleteCmd)
+	projectCmd.AddProjectFlag(storageListCmd)
+	projectCmd.AddProjectFlag(storageMountCmd)
+	projectCmd.AddProjectFlag(storageUnmountCmd)
 
 	//Adding `--application` flag
-	completion.AddApplicationFlag(storageCreateCmd)
-	completion.AddApplicationFlag(storageDeleteCmd)
-	completion.AddApplicationFlag(storageListCmd)
-	completion.AddApplicationFlag(storageMountCmd)
-	completion.AddApplicationFlag(storageUnmountCmd)
+	appCmd.AddApplicationFlag(storageCreateCmd)
+	appCmd.AddApplicationFlag(storageDeleteCmd)
+	appCmd.AddApplicationFlag(storageListCmd)
+	appCmd.AddApplicationFlag(storageMountCmd)
+	appCmd.AddApplicationFlag(storageUnmountCmd)
 
 	//Adding `--component` flag
-	completion.AddComponentFlag(storageCreateCmd)
-	completion.AddComponentFlag(storageDeleteCmd)
-	completion.AddComponentFlag(storageListCmd)
-	completion.AddComponentFlag(storageMountCmd)
-	completion.AddComponentFlag(storageUnmountCmd)
+	componentCmd.AddComponentFlag(storageCreateCmd)
+	componentCmd.AddComponentFlag(storageDeleteCmd)
+	componentCmd.AddComponentFlag(storageListCmd)
+	componentCmd.AddComponentFlag(storageMountCmd)
+	componentCmd.AddComponentFlag(storageUnmountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}

@@ -2,6 +2,10 @@ package service
 
 import (
 	"fmt"
+
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
@@ -35,14 +39,14 @@ func NewCmdService(name, fullName string) *cobra.Command {
 	serviceCmd.AddCommand(serviceCreateCmd, serviceDeleteCmd, serviceListCmd)
 
 	//Adding `--project` flag
-	completion.AddProjectFlag(serviceCreateCmd)
-	completion.AddProjectFlag(serviceDeleteCmd)
-	completion.AddProjectFlag(serviceListCmd)
+	projectCmd.AddProjectFlag(serviceCreateCmd)
+	projectCmd.AddProjectFlag(serviceDeleteCmd)
+	projectCmd.AddProjectFlag(serviceListCmd)
 
 	//Adding `--application` flag
-	completion.AddApplicationFlag(serviceCreateCmd)
-	completion.AddApplicationFlag(serviceDeleteCmd)
-	completion.AddApplicationFlag(serviceListCmd)
+	appCmd.AddApplicationFlag(serviceCreateCmd)
+	appCmd.AddApplicationFlag(serviceDeleteCmd)
+	appCmd.AddApplicationFlag(serviceListCmd)
 
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)

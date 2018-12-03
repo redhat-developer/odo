@@ -4,6 +4,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -145,11 +148,11 @@ func NewCmdLink() *cobra.Command {
 	linkCmd.Annotations = map[string]string{"command": "component"}
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	//Adding `--project` flag
-	completion.AddProjectFlag(linkCmd)
+	projectCmd.AddProjectFlag(linkCmd)
 	//Adding `--application` flag
-	completion.AddApplicationFlag(linkCmd)
+	appCmd.AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
-	completion.AddComponentFlag(linkCmd)
+	AddComponentFlag(linkCmd)
 
 	completion.RegisterCommandHandler(linkCmd, completion.LinkCompletionHandler)
 

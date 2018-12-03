@@ -5,6 +5,10 @@ import (
 	"os"
 	"strings"
 
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
@@ -191,19 +195,19 @@ func NewCmdURL() *cobra.Command {
 	urlCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	completion.AddProjectFlag(urlListCmd)
-	completion.AddProjectFlag(urlCreateCmd)
-	completion.AddProjectFlag(urlDeleteCmd)
+	projectCmd.AddProjectFlag(urlListCmd)
+	projectCmd.AddProjectFlag(urlCreateCmd)
+	projectCmd.AddProjectFlag(urlDeleteCmd)
 
 	//Adding `--application` flag
-	completion.AddApplicationFlag(urlListCmd)
-	completion.AddApplicationFlag(urlDeleteCmd)
-	completion.AddApplicationFlag(urlCreateCmd)
+	appCmd.AddApplicationFlag(urlListCmd)
+	appCmd.AddApplicationFlag(urlDeleteCmd)
+	appCmd.AddApplicationFlag(urlCreateCmd)
 
 	//Adding `--component` flag
-	completion.AddComponentFlag(urlDeleteCmd)
-	completion.AddComponentFlag(urlListCmd)
-	completion.AddComponentFlag(urlCreateCmd)
+	componentCmd.AddComponentFlag(urlDeleteCmd)
+	componentCmd.AddComponentFlag(urlListCmd)
+	componentCmd.AddComponentFlag(urlCreateCmd)
 
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 

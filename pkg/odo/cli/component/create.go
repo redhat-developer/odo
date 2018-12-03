@@ -2,6 +2,8 @@ package component
 
 import (
 	"fmt"
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"os"
 	"strings"
 
@@ -330,9 +332,9 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	completion.AddProjectFlag(componentCreateCmd)
+	projectCmd.AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag
-	completion.AddApplicationFlag(componentCreateCmd)
+	appCmd.AddApplicationFlag(componentCreateCmd)
 
 	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)

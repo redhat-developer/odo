@@ -5,7 +5,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/spf13/cobra"
 )
 
@@ -44,9 +46,9 @@ func NewCmdDescribe() *cobra.Command {
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	completion.AddProjectFlag(describeCmd)
+	projectCmd.AddProjectFlag(describeCmd)
 	//Adding `--application` flag
-	completion.AddApplicationFlag(describeCmd)
+	appCmd.AddApplicationFlag(describeCmd)
 
 	return describeCmd
 }

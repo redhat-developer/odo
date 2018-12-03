@@ -6,6 +6,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	pkgUtil "github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -111,10 +115,10 @@ func NewCmdUpdate() *cobra.Command {
 	updateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--application` flag
-	completion.AddApplicationFlag(updateCmd)
+	appCmd.AddApplicationFlag(updateCmd)
 
 	//Adding `--project` flag
-	completion.AddProjectFlag(updateCmd)
+	projectCmd.AddProjectFlag(updateCmd)
 
 	completion.RegisterCommandFlagHandler(updateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(updateCmd, "binary", completion.FileCompletionHandler)

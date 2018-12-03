@@ -1,10 +1,12 @@
 package component
 
 import (
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"net/url"
 	"os"
 	"runtime"
+
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -101,10 +103,10 @@ func NewCmdWatch() *cobra.Command {
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--application` flag
-	completion.AddApplicationFlag(watchCmd)
+	appCmd.AddApplicationFlag(watchCmd)
 
 	//Adding `--project` flag
-	completion.AddProjectFlag(watchCmd)
+	projectCmd.AddProjectFlag(watchCmd)
 
 	return watchCmd
 }
