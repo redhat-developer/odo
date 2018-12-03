@@ -104,8 +104,8 @@ Let's create an application:
 
 ```console
 $ odo app create nodeapp
-Creating application: nodeapp
-Switched to application: nodeapp
+ Creating application: nodeapp in project: myproject
+Switched to application: nodeapp in project: myproject
 ```
 
 ### 3. Create a component
@@ -128,10 +128,12 @@ Now that you've created an application, add a component of type _nodejs_ to the 
 
 ```console
 $ odo create nodejs
-Component 'nodejs-ex-nodejs-xfru' was created and port 8080/TCP was opened
+ ✓   Checking component
+ ✓   Checking component version
+ ✓   Creating component nodejs-ex-nodejs-nnjf
+ OK  Component 'nodejs-ex-nodejs-nnjf' was created and port 8080/TCP was opened
+ OK  Component 'nodejs-ex-nodejs-nnjf' is now set as active component
 To push source code to the component run 'odo push'
-
-Component 'nodejs-ex-nodejs-xfru' is now set as active component.
 ```
 
 *Note:* You can explicitly supply a namespace by using: `odo create openshift/nodejs:8`. Otherwise, the `latest` image is used.
@@ -139,25 +141,12 @@ Component 'nodejs-ex-nodejs-xfru' is now set as active component.
 Now that a component is running we'll go ahead and push our initial source code!
 
 ```sh
-odo push
-Pushing changes to component: nodejs-ex-nodejs-xfru
-Please wait, building component....
-+ set -eo pipefail
-+ '[' -f /opt/app-root/src/.s2i/bin/assemble ']'
-+ '[' -f /usr/local/s2i/assemble ']'
-+ /usr/libexec/s2i/assemble
----> Installing application source
----> Building your Node application from source
----> Installing dependencies
----> Using 'npm install -s --only=production'
----> Pruning the development dependencies
----> Cleaning up npm cache
----> Fix permissions on app-root
-+ /var/lib/supervisord/bin/supervisord ctl stop run
-run: stopped
-+ /var/lib/supervisord/bin/supervisord ctl start run
-run: started
-changes successfully pushed to component: nodejs-ex-nodejs-xfru
+$ odo push
+Pushing changes to component: nodejs-ex-nodejs-nnjf
+ ✓   Waiting for pod to start
+ ✓   Copying files to pod
+ ✓   Building component
+ OK  Changes successfully pushed to component: nodejs-ex-nodejs-nnjf
 ```
 
 Great news! Your component has been deployed to OpenShift! Now we'll connect to the component.
@@ -168,13 +157,13 @@ To access the component, we'll need to create an OpenShift route:
 
 ```console
 $ odo url create
-Adding URL to component: nodejs-ex-nodejs-xfru
-URL created for component: nodejs-ex-nodejs-xfru
+Adding URL to component: nodejs-ex-nodejs-nnjf
+ OK  URL created for component: nodejs-ex-nodejs-nnjf
 
-nodejs-ex-nodejs-xfru - http://nodejs-ex-nodejs-xfru-foo-myproject.192.168.42.208.nip.io
+nodejs-ex-nodejs-nnjf - http://nodejs-ex-nodejs-nnjf-nodeapp-myproject.192.168.42.90.nip.io
 ```
 
-Now simply access the URL `nodejs-myproject.192.168.42.147.nip.io` in the browser and you will be able to view your deployed application.
+Now simply access the URL `nodejs-ex-nodejs-nnjf-nodeapp-myproject.192.168.42.90.nip.io` in the browser and you will be able to view your deployed application.
 
 ### 5. Pushing new changes to the component
 
@@ -190,10 +179,11 @@ Now let's push the changes:
 
 ```console
 $ odo push
-Pushing changes to component: nodejs
-sending incremental file list
-...
-changes successfully pushed to component: nodejs
+Pushing changes to component: nodejs-ex-nodejs-nnjf
+ ✓   Waiting for pod to start
+ ✓   Copying files to pod
+ ✓   Building component
+ OK  Changes successfully pushed to component: nodejs-ex-nodejs-nnjf
 ```
 
 Refresh your application in the browser, and you'll be able to see the changes.
@@ -208,7 +198,7 @@ If you wish to add storage to your component, `odo` makes it very easy for you t
 
 ```console
 $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi 
-Added storage nodestorage to nodejs
+ OK  Added storage nodestorage to nodejs-ex-nodejs-nnjf
 ```
 
 That's it! Storage has been added your component with an allocated size of 1 Gb.
