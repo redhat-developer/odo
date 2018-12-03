@@ -2,14 +2,16 @@ package service
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/golang/glog"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"strings"
 )
 
 const createRecommendedCommandName = "create"
@@ -103,9 +105,9 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
 	err = svc.CreateService(o.Client, o.serviceName, o.serviceType, o.plan, o.parameters, o.Application)
-	fmt.Printf(`Service '%s' was created.
-Progress of the provisioning will not be reported and might take a long time.
-You can see the current status by executing 'odo service list'`, o.serviceName)
+	log.Successf(`Service '%s' was created`, o.serviceName)
+	log.Info(`Progress of the provisioning will not be reported and might take a long time.
+You can see the current status by executing 'odo service list'`)
 	return
 }
 
