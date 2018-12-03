@@ -46,33 +46,6 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 		return nil, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	componentPorts, err := GetComponentServicePortNumbers(client, componentName, applicationName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get exposed ports for component %s", componentName)
-	}
-
-	var portFound bool
-
-	if portNumber == -1 {
-		if len(componentPorts) > 1 {
-			return nil, errors.Errorf("'port' is required as the component %s exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
-		} else if len(componentPorts) == 1 {
-			portNumber = componentPorts[0]
-		} else {
-			return nil, errors.Errorf("no port is exposed by the component %s", componentName)
-		}
-	} else {
-		for _, port := range componentPorts {
-			if portNumber == port {
-				portFound = true
-			}
-		}
-
-		if !portFound {
-			return nil, errors.Errorf("port %d is not exposed by the component", portNumber)
-		}
-	}
-
 	urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create namespaced name")
@@ -173,4 +146,45 @@ func GetComponentServicePortNumbers(client *occlient.Client, componentName strin
 	}
 
 	return ports, nil
+}
+
+// GetURLName returns a url name from the component name and the given port number
+func GetURLName(componentName string, componentPort int) string {
+	if componentPort == -1 {
+		return componentName
+	}
+	return fmt.Sprintf("%v-%v", componentName, componentPort)
+}
+
+// GetValidPortNumber checks if the given port number is a valid component port or not
+// if port number is not provided and the component is a single port component, the component port is returned
+func GetValidPortNumber(client *occlient.Client, portNumber int, componentName string, applicationName string) (int, error) {
+	componentPorts, err := GetComponentServicePortNumbers(client, componentName, applicationName)
+	if err != nil {
+		return portNumber, errors.Wrapf(err, "unable to get exposed ports for component %s", componentName)
+	}
+
+	var portFound bool
+
+	if portNumber == -1 {
+		if len(componentPorts) > 1 {
+			return portNumber, errors.Errorf("'port' is required as the component %s exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
+		} else if len(componentPorts) == 1 {
+			return componentPorts[0], nil
+		} else {
+			return portNumber, errors.Errorf("no port is exposed by the component %s", componentName)
+		}
+	} else {
+		for _, port := range componentPorts {
+			if portNumber == port {
+				return portNumber, nil
+			}
+		}
+
+		if !portFound {
+			return portNumber, errors.Errorf("port %d is not exposed by the component", portNumber)
+		}
+	}
+
+	return portNumber, nil
 }
