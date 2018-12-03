@@ -7,14 +7,12 @@
   git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
   odo create nodejs
   odo push
-
+  
   # Accessing your Node.js component
   odo url create
 ``` 
 
-Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code.
-
-Find more information at https://github.com/redhat-developer/odo
+Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code. Find more information at https://github.com/redhat-developer/odo
 
 # Syntax
 
@@ -47,7 +45,7 @@ Find more information at https://github.com/redhat-developer/odo
 #### CLI Structure
 
 ```sh
-odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : Odo (Openshift Do)
+odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : Odo (OpenShift Do)
     app --short : Perform application operations
         create --project : Create an application
         delete --force --project : Delete the given application
@@ -67,7 +65,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
     component --short : Components of application.
         get --app --project --short : Get currently active component
         set --app --project : Set active component.
-    create --app --binary --env --git --local --port --project : Create a new component
+    create --app --binary --cpu --env --git --local --max-cpu --max-memory --memory --min-cpu --min-memory --port --project : Create a new component
     delete --app --force --project : Delete an existing component
     describe --app --project : Describe the given component
     link --app --component --port --project --wait : Link component to a service or component
@@ -198,6 +196,15 @@ Catalog related operations
 
   # A specific image version may also be specified
   odo create nodejs:latest
+
+  # Passing memory limits
+  odo create nodejs:latest --memory 150Mi
+  odo create nodejs:latest --min-memory 150Mi --max-memory 300 Mi
+
+  # Passing cpu limits
+  odo create nodejs:latest --cpu 2
+  odo create nodejs:latest --min-cpu 0.25 --max-cpu 2
+  odo create nodejs:latest --min-cpu 200m --max-cpu 2
 
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
@@ -445,17 +452,14 @@ Push source code to a component.
 ```sh
   # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
   odo service create dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
-	
   # Delete the service named 'mysql-persistent'
   odo service delete mysql-persistent
-	
   # List all services in the application
   odo service list
-	
 ```
 
 
- Perform service catalog operations, Limited to template service broker only.
+Perform service catalog operations, limited to template service broker and OpenShift Ansible Broker only.
 
 ## storage
 
