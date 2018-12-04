@@ -7,6 +7,7 @@ import (
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
@@ -14,6 +15,11 @@ import (
 
 func stdio(c *expect.Console) terminal.Stdio {
 	return terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()}
+}
+
+func init() {
+	// disable color output for all prompts to simplify testing
+	core.DisableColor = true
 }
 
 func TestEnterServicePropertiesInteractively(t *testing.T) {
