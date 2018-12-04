@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"github.com/Netflix/go-expect"
-	"github.com/hinshun/vt10x"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/stretchr/testify/require"
@@ -66,15 +65,8 @@ func TestEnterServicePropertiesInteractively(t *testing.T) {
 	for _, tt := range tests {
 		plan := tt.servicePlan
 
-		// Multiplex stdin/stdout to a virtual terminal to respond to ANSI escape
-		// sequences (i.e. cursor position report).
-		c, state, err := vt10x.NewVT10XConsole()
-		require.Nil(t, err)
-		defer c.Close()
-
-		donec := make(chan struct{})
-		go func() {
-			defer close(donec)
+		valuesPtr := new(map[string]string)
+		testingutil.RunTest(t, func(c *expect.Console) {
 			c.ExpectString("Enter a value for string property PLAN_DATABASE_PASSWORD:")
 			c.SendLine("foo")
 			c.ExpectString("Enter a value for string property PLAN_DATABASE_URI:")
@@ -84,17 +76,12 @@ func TestEnterServicePropertiesInteractively(t *testing.T) {
 			c.ExpectString("Provide values for non-required properties")
 			c.SendLine("")
 			c.ExpectEOF()
-		}()
+		}, func(stdio terminal.Stdio) error {
+			values := enterServicePropertiesInteractively(plan, stdio)
+			valuesPtr = &values
+			return nil
+		})
 
-		values := enterServicePropertiesInteractively(plan, stdio(c))
-
-		require.Equal(t, tt.expectedValues, values)
-
-		// Close the slave end of the pty, and read the remaining bytes from the master end.
-		c.Tty().Close()
-		<-donec
-
-		// Dump the terminal's screen.
-		t.Log(expect.StripTrailingEmptyLines(state.String()))
+		require.Equal(t, tt.expectedValues, *valuesPtr)
 	}
 }
