@@ -2529,7 +2529,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 		var err error
 		if isSingleFileTransfer {
 			onlyFile := copyFiles[0]
-			err = makeTar(onlyFile, targetPath+"/"+path.Base(onlyFile), writer, []string{})
+			err = makeTar(onlyFile, targetPath+"/"+filepath.Base(onlyFile), writer, []string{})
 		} else {
 			err = makeTar(localPath, dest, writer, copyFiles)
 		}
