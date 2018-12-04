@@ -322,7 +322,7 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVar(&cpu, "cpu", "", "Amount of cpu to be allocated to the component. ex. 100m or 0.1")
 	componentCreateCmd.Flags().StringVar(&cpuMin, "min-cpu", "", "Limit minimum amount of cpu to be allocated to the component. ex. 100m")
 	componentCreateCmd.Flags().StringVar(&cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
-	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp")
+	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	// Add a defined annotation in order to appear in the help menu
