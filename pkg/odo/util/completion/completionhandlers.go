@@ -4,6 +4,7 @@ import (
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/service"
@@ -175,6 +176,45 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 			return nil
 		}
 		completions = append(completions, builder.Name)
+	}
+
+	return completions
+}
+
+// LinkCompletionHandler provides completion for the odo link
+// The function returns both components and services
+var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
+	completions = make([]string, 0)
+
+	components, err := component.List(context.Client, context.Application)
+	if err != nil {
+		return completions
+	}
+
+	services, err := service.List(context.Client, context.Application)
+	if err != nil {
+		return completions
+	}
+
+	for _, component := range components {
+		// we found the name in the list which means
+		// that the name has been already selected by the user so no need to suggest more
+		if val, ok := args.commands[component.Name]; ok && val {
+			return nil
+		}
+		// we don't want to show the selected component as a target for linking, so we remove it from the suggestions
+		if component.Name != context.Component() {
+			completions = append(completions, component.Name)
+		}
+	}
+
+	for _, service := range services {
+		// we found the name in the list which means
+		// that the name has been already selected by the user so no need to suggest more
+		if val, ok := args.commands[service.Name]; ok && val {
+			return nil
+		}
+		completions = append(completions, service.Name)
 	}
 
 	return completions

@@ -7,8 +7,13 @@ import (
 	"sort"
 	"testing"
 
+	appsv1 "github.com/openshift/api/apps/v1"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -87,6 +92,115 @@ func TestGetComponentPorts(t *testing.T) {
 			// and only if output is more than 0 (something is actually returned)
 			if len(output) > 0 && !(reflect.DeepEqual(output, tt.output)) {
 				t.Errorf("expected tags: %s, got: %s", tt.output, output)
+			}
+		})
+	}
+}
+
+func TestList(t *testing.T) {
+	tests := []struct {
+		name    string
+		dcList  appsv1.DeploymentConfigList
+		wantErr bool
+		output  []Info
+	}{
+		{
+			name: "Case 1: Components are returned",
+			dcList: appsv1.DeploymentConfigList{
+				Items: []appsv1.DeploymentConfig{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "frontend",
+								componentlabels.ComponentTypeLabel: "nodejs",
+							},
+						},
+						Spec: appsv1.DeploymentConfigSpec{
+							Template: &corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name: "dummyContainer",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "backend",
+								componentlabels.ComponentTypeLabel: "java",
+							},
+						},
+						Spec: appsv1.DeploymentConfigSpec{
+							Template: &corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name: "dummyContainer",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "otherApp",
+								componentlabels.ComponentLabel:     "test",
+								componentlabels.ComponentTypeLabel: "python",
+							},
+						},
+						Spec: appsv1.DeploymentConfigSpec{
+							Template: &corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name: "dummyContainer",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			output: []Info{
+				{
+					Name: "frontend",
+					Type: "nodejs",
+				},
+				{
+					Name: "backend",
+					Type: "java",
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, fakeClientSet := occlient.FakeNew()
+
+			//fake the dcs
+			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.dcList, nil
+			})
+
+			results, err := List(client, "app")
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
+			}
+
+			if !reflect.DeepEqual(tt.output, results) {
+				t.Errorf("expected output: %#v,got: %#v", tt.output, results)
 			}
 		})
 	}
