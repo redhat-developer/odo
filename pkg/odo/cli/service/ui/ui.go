@@ -124,7 +124,8 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	classes := getServiceClassMap(classesByCategory[category])
 
 	// make a new displayClassInfo function available to survey templates to be able to add class information to the display
-	core.TemplateFuncs["displayClassInfo"] = func(index int, pageEntries []string) string {
+	displayClassInfo := "displayClassInfo"
+	core.TemplateFuncs[displayClassInfo] = func(index int, pageEntries []string) string {
 		if len(pageEntries) > index+1 {
 			selected := pageEntries[index]
 			class := classes[selected]
@@ -132,9 +133,12 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 		}
 		return "No matching entry"
 	}
+	defer delete(core.TemplateFuncs, displayClassInfo)
 
-	// record original template
+	// record original template and defer restoring it once done
 	original := survey.SelectQuestionTemplate
+	defer restoreOriginalTemplate(original)
+
 	// add more information about the currently selected class
 	survey.SelectQuestionTemplate = original + `
 {{- if not .ShowAnswer}}
@@ -151,11 +155,13 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	}
 
 	err = survey.AskOne(prompt, &serviceType, survey.Required)
-	// restore original template as soon as we're done with the selection
-	survey.SelectQuestionTemplate = original
 	handleError(err)
 
 	return classes[serviceType], serviceType
+}
+
+func restoreOriginalTemplate(original string) {
+	survey.SelectQuestionTemplate = original
 }
 
 // Convert the provided ClusterServiceClass to its UI representation
