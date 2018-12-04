@@ -161,6 +161,10 @@ func getLongDescription(class scv1beta1.ClusterServiceClass) (longDescription st
 // EnterServicePropertiesInteractively lets the user enter the properties specified by the provided plan if not already
 // specified by the passed values
 func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan) (values map[string]string) {
+	return enterServicePropertiesInteractively(svcPlan)
+}
+
+func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, stdio ...terminal.Stdio) (values map[string]string) {
 	planDetails, _ := service.NewServicePlans(svcPlan)
 
 	properties := make(map[string]service.ServicePlanParameter, len(planDetails.Parameters))
@@ -170,12 +174,14 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan) (
 
 	values = make(map[string]string, len(properties))
 
+	sort.Sort(planDetails.Parameters)
+
 	// first deal with required properties
-	for name, prop := range properties {
+	for _, prop := range planDetails.Parameters {
 		if prop.Required {
-			addValueFor(prop, values)
+			addValueFor(prop, values, stdio...)
 			// remove property from list of properties to consider
-			delete(properties, name)
+			delete(properties, prop.Name)
 		}
 	}
 
@@ -185,12 +191,17 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan) (
 		confirm := &survey.Confirm{
 			Message: "Provide values for non-required properties",
 		}
+
+		if len(stdio) == 1 {
+			confirm.WithStdio(stdio[0])
+		}
+
 		err := survey.AskOne(confirm, &fillOptionalProps, nil)
 		handleError(err)
 		if fillOptionalProps {
 
 			for _, prop := range properties {
-				addValueFor(prop, values)
+				addValueFor(prop, values, stdio...)
 			}
 		}
 	}
@@ -227,10 +238,14 @@ func getValidatorFor(prop service.ServicePlanParameter) Validator {
 	return cv.validate
 }
 
-func addValueFor(prop service.ServicePlanParameter, values map[string]string) {
+func addValueFor(prop service.ServicePlanParameter, values map[string]string, stdio ...terminal.Stdio) {
 	var result string
 	prompt := &survey.Input{
 		Message: fmt.Sprintf("Enter a value for %s property %s:", prop.Type, propDesc(prop)),
+	}
+
+	if len(stdio) == 1 {
+		prompt.WithStdio(stdio[0])
 	}
 
 	if prop.HasDefaultValue {
