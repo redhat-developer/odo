@@ -123,9 +123,12 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 
 	classes := getServiceClassMap(classesByCategory[category])
 	core.TemplateFuncs["foo"] = func(index int, pageEntries []string) string {
-		selected := pageEntries[index]
-		class := classes[selected]
-		return fmt.Sprintf("Name: %s\nDescription: %s\nLong: %s", class.GetExternalName(), class.GetDescription(), getLongDescription(class))
+		if len(pageEntries) > index+1 {
+			selected := pageEntries[index]
+			class := classes[selected]
+			return fmt.Sprintf("Name: %s\nDescription: %s\nLong: %s", class.GetExternalName(), class.GetDescription(), getLongDescription(class))
+		}
+		return "No matching entry"
 	}
 
 	survey.SelectQuestionTemplate = survey.SelectQuestionTemplate + `
