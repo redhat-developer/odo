@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 
 # this script updates version number in odo source code
 # run this script from root source with new version as an argument (./scripts/bump-version.sh v0.0.2 )
@@ -24,9 +25,9 @@ echo "* Bumping version in README.md"
 sed -i "s/v[0-9]*\.[0-9]*\.[0-9]*/${NEW_VERSION}/g" README.md
 check_version README.md
 
-echo "* Bumping version in cmd/version.go"
-sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\"/\1\"${NEW_VERSION}\"/g" cmd/version.go
-check_version cmd/version.go
+echo "* Bumping version in pkg/odo/cli/version/version.go"
+sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\"/\1\"${NEW_VERSION}\"/g" pkg/odo/cli/version/version.go
+check_version pkg/odo/cli/version/version.go
 
 echo "* Bumping version in scripts/install.sh"
 sed -i "s/\(LATEST_VERSION=\)\"v[0-9]*\.[0-9]*\.[0-9]*\"/\1\"${NEW_VERSION}\"/g" scripts/install.sh
