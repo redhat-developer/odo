@@ -15,7 +15,6 @@ import (
 	"strings"
 )
 
-const defaultRequiredValidatorKey = "odo_default_required"
 const defaultIntegerValidatorKey = "odo_default_integer"
 
 // Validator is a function that validates that the provided interface is conform to expectations or return an error
@@ -232,33 +231,22 @@ func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, s
 	return values
 }
 
-type chainedValidator struct {
-	validators []Validator
-}
+var nilValidator = func(ans interface{}) error { return nil }
 
-func (cv chainedValidator) validate(input interface{}) error {
-	for _, v := range cv.validators {
-		err := v(input)
-		if err != nil {
-			return err
-		}
-	}
+func getValidatorFor(prop service.ServicePlanParameter) (validator survey.Validator) {
+	// make sure we don't run into issues when composing validators
+	validator = nilValidator
 
-	return nil
-}
-
-func getValidatorFor(prop service.ServicePlanParameter) Validator {
-	cv := chainedValidator{}
 	if prop.Required {
-		cv.validators = append(cv.validators, validators[defaultRequiredValidatorKey])
+		validator = survey.Required
 	}
 
 	switch prop.Type {
 	case "integer":
-		cv.validators = append(cv.validators, validators[defaultIntegerValidatorKey])
+		validator = survey.ComposeValidators(validator, survey.Validator(validators[defaultIntegerValidatorKey]))
 	}
 
-	return cv.validate
+	return
 }
 
 func addValueFor(prop service.ServicePlanParameter, values map[string]string, stdio ...terminal.Stdio) {
@@ -275,7 +263,7 @@ func addValueFor(prop service.ServicePlanParameter, values map[string]string, st
 		prompt.Default = prop.Default
 	}
 
-	err := survey.AskOne(prompt, &result, survey.Validator(getValidatorFor(prop)))
+	err := survey.AskOne(prompt, &result, getValidatorFor(prop))
 	handleError(err)
 	values[prop.Name] = result
 }
@@ -296,8 +284,6 @@ func propDesc(prop service.ServicePlanParameter) string {
 }
 
 func init() {
-	validators[defaultRequiredValidatorKey] = survey.Required
-
 	validators[defaultIntegerValidatorKey] = func(ans interface{}) error {
 		s := ans.(string)
 		_, err := strconv.Atoi(s)
