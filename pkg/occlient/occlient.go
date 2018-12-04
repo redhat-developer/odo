@@ -88,7 +88,7 @@ type CreateArgs struct {
 	Ports           []string
 	Resources       []util.ResourceRequirementInfo
 	ApplicationName string
-	Watch           bool
+	Wait            bool
 }
 
 const (

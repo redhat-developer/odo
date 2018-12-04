@@ -245,7 +245,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 					Ports:           componentPorts,
 					Resources:       resourceQuantity,
 					ApplicationName: applicationName,
-					Watch:           componentWait,
+					Wait:            componentWait,
 				},
 			)
 			odoutil.LogErrorAndExit(err, "")
@@ -265,7 +265,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 					Ports:           componentPorts,
 					Resources:       resourceQuantity,
 					ApplicationName: applicationName,
-					Watch:           componentWait,
+					Wait:            componentWait,
 				},
 			)
 			odoutil.LogErrorAndExit(err, "")
@@ -287,7 +287,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 					Ports:           componentPorts,
 					Resources:       resourceQuantity,
 					ApplicationName: applicationName,
-					Watch:           componentWait,
+					Wait:            componentWait,
 				},
 			)
 			odoutil.LogErrorAndExit(err, "")
