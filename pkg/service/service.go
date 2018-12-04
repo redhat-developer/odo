@@ -47,11 +47,25 @@ type ServicePlanParameter struct {
 	Required        bool
 }
 
+type servicePlanParameters []ServicePlanParameter
+
+func (params servicePlanParameters) Len() int {
+	return len(params)
+}
+
+func (params servicePlanParameters) Less(i, j int) bool {
+	return params[i].Name < params[j].Name
+}
+
+func (params servicePlanParameters) Swap(i, j int) {
+	params[i], params[j] = params[j], params[i]
+}
+
 type ServicePlans struct {
 	Name        string
 	DisplayName string
 	Description string
-	Parameters  []ServicePlanParameter
+	Parameters  servicePlanParameters
 }
 
 // ListCatalog lists all the available service types
