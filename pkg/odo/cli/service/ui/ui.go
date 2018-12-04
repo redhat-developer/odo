@@ -147,14 +147,18 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 
 // Convert the provided ClusterServiceClass to its UI representation
 func getLongDescription(class scv1beta1.ClusterServiceClass) (longDescription string) {
-	var meta map[string]interface{}
-	err := json.Unmarshal(class.Spec.ExternalMetadata.Raw, &meta)
-	if err != nil {
-		glog.V(4).Infof("Unable unmarshal Extension metadata for ClusterServiceClass '%v'", class.Spec.ExternalName)
+	extension := class.Spec.ExternalMetadata
+	if extension != nil {
+		var meta map[string]interface{}
+		err := json.Unmarshal(extension.Raw, &meta)
+		if err != nil {
+			glog.V(4).Infof("Unable unmarshal Extension metadata for ClusterServiceClass '%v'", class.Spec.ExternalName)
+		}
+		if val, ok := meta["longDescription"]; ok {
+			longDescription = val.(string)
+		}
 	}
-	if val, ok := meta["longDescription"]; ok {
-		longDescription = val.(string)
-	}
+
 	return
 }
 
