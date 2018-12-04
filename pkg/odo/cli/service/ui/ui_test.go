@@ -12,10 +12,6 @@ import (
 	"testing"
 )
 
-func stdio(c *expect.Console) terminal.Stdio {
-	return terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()}
-}
-
 func init() {
 	// disable color output for all prompts to simplify testing
 	core.DisableColor = true
