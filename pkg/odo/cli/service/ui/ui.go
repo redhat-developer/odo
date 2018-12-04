@@ -131,8 +131,10 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 		return "No matching entry"
 	}
 
-	survey.SelectQuestionTemplate = survey.SelectQuestionTemplate + `
-===
+	// record original template
+	original := survey.SelectQuestionTemplate
+	// add more information about the currently selected class
+	survey.SelectQuestionTemplate = original + `
 {{- if not .ShowAnswer}}
 	{{(foo .SelectedIndex .PageEntries)}}
 {{- end}}`
@@ -143,6 +145,8 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	}
 
 	err = survey.AskOne(prompt, &serviceType, survey.Required)
+	// restore original template as soon as we're done with the selection
+	survey.SelectQuestionTemplate = original
 	handleError(err)
 
 	return classes[serviceType], serviceType
