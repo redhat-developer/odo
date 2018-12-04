@@ -1,7 +1,7 @@
 PROJECT := github.com/redhat-developer/odo
 GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor)
-BUILD_FLAGS := -ldflags="-w -X $(PROJECT)/odo/pkg/odo/cli/version.GITCOMMIT=$(GITCOMMIT)"
+BUILD_FLAGS := -ldflags="-w -X $(PROJECT)/pkg/odo/cli/version.GITCOMMIT=$(GITCOMMIT)"
 FILES := odo dist
 
 default: bin
