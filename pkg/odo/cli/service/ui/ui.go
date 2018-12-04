@@ -118,7 +118,7 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 		Message: "Which kind of service do you wish to create",
 		Options: getServiceClassesCategories(classesByCategory),
 	}
-	err := survey.AskOne(prompt, &category, nil)
+	err := survey.AskOne(prompt, &category, survey.Required)
 	handleError(err)
 
 	classes := getServiceClassMap(classesByCategory[category])
@@ -139,7 +139,7 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 		Options: getServiceClassNames(classes),
 	}
 
-	err = survey.AskOne(prompt, &serviceType, nil)
+	err = survey.AskOne(prompt, &serviceType, survey.Required)
 	handleError(err)
 
 	return classes[serviceType], serviceType
@@ -196,7 +196,7 @@ func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, s
 			confirm.WithStdio(stdio[0])
 		}
 
-		err := survey.AskOne(confirm, &fillOptionalProps, nil)
+		err := survey.AskOne(confirm, &fillOptionalProps, survey.Required)
 		handleError(err)
 		if fillOptionalProps {
 
