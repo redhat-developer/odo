@@ -122,7 +122,9 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	handleError(err)
 
 	classes := getServiceClassMap(classesByCategory[category])
-	core.TemplateFuncs["foo"] = func(index int, pageEntries []string) string {
+
+	// make a new displayClassInfo function available to survey templates to be able to add class information to the display
+	core.TemplateFuncs["displayClassInfo"] = func(index int, pageEntries []string) string {
 		if len(pageEntries) > index+1 {
 			selected := pageEntries[index]
 			class := classes[selected]
@@ -136,7 +138,11 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	// add more information about the currently selected class
 	survey.SelectQuestionTemplate = original + `
 {{- if not .ShowAnswer}}
-	{{(foo .SelectedIndex .PageEntries)}}
+{{$classInfo:=(displayClassInfo .SelectedIndex .PageEntries)}}
+  {{- if $classInfo}}
+===
+{{$classInfo}}
+  {{- end}}
 {{- end}}`
 
 	prompt = &survey.Select{
