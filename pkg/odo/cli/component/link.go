@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
 
 	"github.com/golang/glog"
@@ -149,6 +150,8 @@ func NewCmdLink() *cobra.Command {
 	genericclioptions.AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
 	genericclioptions.AddComponentFlag(linkCmd)
+
+	completion.RegisterCommandHandler(linkCmd, completion.LinkCompletionHandler)
 
 	return linkCmd
 }

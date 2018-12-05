@@ -491,19 +491,23 @@ func GetComponentType(client *occlient.Client, componentName string, application
 func List(client *occlient.Client, applicationName string) ([]Info, error) {
 
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
-	componentNames, err := client.GetLabelValues(componentlabels.ComponentLabel, applicationSelector)
+
+	// retrieve all the deployment configs that are associated with this application
+	dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
 
 	var components []Info
 
-	for _, name := range componentNames {
-		componentImageType, err := GetComponentType(client, name, applicationName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to list components")
-		}
-		components = append(components, Info{Name: name, Type: componentImageType})
+	// extract the labels we care about from each component
+	for _, elem := range dcList {
+		components = append(components,
+			Info{
+				Name: elem.Labels[componentlabels.ComponentLabel],
+				Type: elem.Labels[componentlabels.ComponentTypeLabel],
+			},
+		)
 	}
 
 	return components, nil
