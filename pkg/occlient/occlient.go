@@ -163,7 +163,7 @@ type Client struct {
 	Namespace            string
 }
 
-func New(connectionCheck bool) (*Client, error) {
+func New(skipConnectionCheck bool) (*Client, error) {
 	var client Client
 
 	// initialize client-go clients
@@ -231,8 +231,8 @@ func New(connectionCheck bool) (*Client, error) {
 	}
 	client.Namespace = namespace
 
-	// Skip this if connectionCheck is false
-	if !connectionCheck {
+	// if we're not skipping the connection check, check the connection :)
+	if !skipConnectionCheck {
 		if !isServerUp(config.Host) {
 			return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
 		}
