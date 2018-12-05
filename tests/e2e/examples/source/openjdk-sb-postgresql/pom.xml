@@ -11,8 +11,8 @@
         <awaitility.version>3.1.0</awaitility.version>
         <postgresql.version>9.4.1212</postgresql.version>
         <rest-assured.version>3.1.0</rest-assured.version>
-        <snowdrop-bom.version>1.5.16.SP1</snowdrop-bom.version>
-        <spring-boot.version>1.5.16.RELEASE</spring-boot.version>
+        <snowdrop-bom.version>1.5.17.SP1</snowdrop-bom.version>
+        <spring-boot.version>1.5.17.RELEASE</spring-boot.version>
         <fabric8-maven-plugin.version>3.5.41</fabric8-maven-plugin.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
