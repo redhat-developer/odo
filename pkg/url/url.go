@@ -167,9 +167,9 @@ func GetValidPortNumber(client *occlient.Client, portNumber int, componentName s
 	// port number will be -1 if the user doesn't specify any port
 	if portNumber == -1 {
 
-		switch len(componentPorts); {
+		switch {
 		case len(componentPorts) > 1:
-			return portNumber, errors.Errorf("'port' is required as the component %s exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
+			return portNumber, errors.Errorf("port for the component %s is required as it exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
 		case len(componentPorts) == 1:
 			return componentPorts[0], nil
 		default:
