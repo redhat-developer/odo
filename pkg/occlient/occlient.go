@@ -2764,6 +2764,12 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 		return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
 	}
 
+	// fail fast if user is not connected (same logic as `oc whoami`)
+	_, err = c.userClient.Users().Get("~", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
 	// This will fetch the information about OpenShift Version
 	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
 	if err != nil {
