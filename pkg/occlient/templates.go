@@ -47,11 +47,13 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 							Ports: commonImageMeta.Ports,
 							// Run the actual supervisord binary that has been mounted into the container
 							Command: []string{
-								"/var/lib/supervisord/bin/supervisord",
+								"/var/lib/supervisord/bin/dumb-init",
+								"--",
 							},
 							// Using the appropriate configuration file that contains the "run" script for the component.
 							// either from: /usr/libexec/s2i/assemble or /opt/app-root/src/.s2i/bin/assemble
 							Args: []string{
+								"/var/lib/supervisord/bin/supervisord",
 								"-c",
 								"/var/lib/supervisord/conf/supervisor.conf",
 							},
