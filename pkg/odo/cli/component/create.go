@@ -2,6 +2,8 @@ package component
 
 import (
 	"fmt"
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"os"
 	"strings"
 
@@ -330,13 +332,25 @@ func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(componentCreateCmd)
+	projectCmd.AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(componentCreateCmd)
+	appCmd.AddApplicationFlag(componentCreateCmd)
 
 	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
+
+	completion.RegisterCommandHandler(updateCmd, completion.ComponentNameCompletionHandler)
+	completion.RegisterCommandFlagHandler(updateCmd, "local", completion.FileCompletionHandler)
+	completion.RegisterCommandFlagHandler(updateCmd, "binary", completion.FileCompletionHandler)
+
+	completion.RegisterCommandHandler(componentSetCmd, completion.ComponentNameCompletionHandler)
+	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
+	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
+	completion.RegisterCommandHandler(watchCmd, completion.ComponentNameCompletionHandler)
+	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
+	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)
+	completion.RegisterCommandHandler(linkCmd, completion.ComponentNameCompletionHandler)
 
 	return componentCreateCmd
 }

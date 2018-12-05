@@ -2,6 +2,8 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/application"
+	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -90,11 +92,11 @@ func NewCmdComponent() *cobra.Command {
 	componentCmd.AddCommand(componentSetCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(componentGetCmd)
-	addProjectFlag(componentSetCmd)
+	project.AddProjectFlag(componentGetCmd)
+	project.AddProjectFlag(componentSetCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(componentGetCmd)
-	genericclioptions.AddApplicationFlag(componentSetCmd)
+	application.AddApplicationFlag(componentGetCmd)
+	application.AddApplicationFlag(componentSetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}
@@ -103,7 +105,9 @@ func NewCmdComponent() *cobra.Command {
 	return componentCmd
 }
 
-func addProjectFlag(cmd *cobra.Command) {
-	genericclioptions.AddProjectFlag(cmd)
-	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
+// AddComponentFlag adds a `component` flag to the given cobra command
+// Also adds a completion handler to the flag
+func AddComponentFlag(cmd *cobra.Command) {
+	cmd.Flags().String(genericclioptions.ComponentFlagName, "", "Component, defaults to active component.")
+	completion.RegisterCommandFlagHandler(cmd, "component", completion.ComponentNameCompletionHandler)
 }

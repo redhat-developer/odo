@@ -5,6 +5,9 @@ import (
 	"os"
 	"runtime"
 
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -100,10 +103,10 @@ func NewCmdWatch() *cobra.Command {
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(watchCmd)
+	appCmd.AddApplicationFlag(watchCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(watchCmd)
+	projectCmd.AddProjectFlag(watchCmd)
 
 	return watchCmd
 }

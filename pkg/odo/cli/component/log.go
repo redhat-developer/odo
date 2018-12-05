@@ -3,6 +3,9 @@ package component
 import (
 	"os"
 
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -52,9 +55,9 @@ func NewCmdLog() *cobra.Command {
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(logCmd)
+	projectCmd.AddProjectFlag(logCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(logCmd)
+	appCmd.AddApplicationFlag(logCmd)
 
 	return logCmd
 }

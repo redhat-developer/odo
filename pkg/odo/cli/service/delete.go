@@ -92,8 +92,6 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 		},
 	}
 	serviceDeleteCmd.Flags().BoolVarP(&o.serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
-	addProjectFlag(serviceDeleteCmd)
-	genericclioptions.AddApplicationFlag(serviceDeleteCmd)
 	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 	return serviceDeleteCmd
 }

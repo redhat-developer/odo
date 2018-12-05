@@ -6,6 +6,10 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -263,25 +267,25 @@ func NewCmdStorage() *cobra.Command {
 	storageCmd.AddCommand(storageMountCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(storageCreateCmd)
-	addProjectFlag(storageDeleteCmd)
-	addProjectFlag(storageListCmd)
-	addProjectFlag(storageMountCmd)
-	addProjectFlag(storageUnmountCmd)
+	projectCmd.AddProjectFlag(storageCreateCmd)
+	projectCmd.AddProjectFlag(storageDeleteCmd)
+	projectCmd.AddProjectFlag(storageListCmd)
+	projectCmd.AddProjectFlag(storageMountCmd)
+	projectCmd.AddProjectFlag(storageUnmountCmd)
 
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(storageCreateCmd)
-	genericclioptions.AddApplicationFlag(storageDeleteCmd)
-	genericclioptions.AddApplicationFlag(storageListCmd)
-	genericclioptions.AddApplicationFlag(storageMountCmd)
-	genericclioptions.AddApplicationFlag(storageUnmountCmd)
+	appCmd.AddApplicationFlag(storageCreateCmd)
+	appCmd.AddApplicationFlag(storageDeleteCmd)
+	appCmd.AddApplicationFlag(storageListCmd)
+	appCmd.AddApplicationFlag(storageMountCmd)
+	appCmd.AddApplicationFlag(storageUnmountCmd)
 
 	//Adding `--component` flag
-	genericclioptions.AddComponentFlag(storageCreateCmd)
-	genericclioptions.AddComponentFlag(storageDeleteCmd)
-	genericclioptions.AddComponentFlag(storageListCmd)
-	genericclioptions.AddComponentFlag(storageMountCmd)
-	genericclioptions.AddComponentFlag(storageUnmountCmd)
+	componentCmd.AddComponentFlag(storageCreateCmd)
+	componentCmd.AddComponentFlag(storageDeleteCmd)
+	componentCmd.AddComponentFlag(storageListCmd)
+	componentCmd.AddComponentFlag(storageMountCmd)
+	componentCmd.AddComponentFlag(storageUnmountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}
@@ -292,11 +296,6 @@ func NewCmdStorage() *cobra.Command {
 	completion.RegisterCommandHandler(storageUnmountCmd, completion.StorageUnMountCompletionHandler)
 
 	return storageCmd
-}
-
-func addProjectFlag(cmd *cobra.Command) {
-	genericclioptions.AddProjectFlag(cmd)
-	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }
 
 // validateStoragePath will validate storagePath, if there is any existing storage with similar path, it will give an error

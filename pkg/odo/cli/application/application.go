@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"os"
 	"strings"
 
@@ -315,12 +316,12 @@ func NewCmdApplication() *cobra.Command {
 	applicationCmd.AddCommand(applicationDescribeCmd)
 
 	//Adding `--project` flag
-	addProjectFlag(applicationListCmd)
-	addProjectFlag(applicationCreateCmd)
-	addProjectFlag(applicationDeleteCmd)
-	addProjectFlag(applicationDescribeCmd)
-	addProjectFlag(applicationSetCmd)
-	addProjectFlag(applicationGetCmd)
+	projectCmd.AddProjectFlag(applicationListCmd)
+	projectCmd.AddProjectFlag(applicationCreateCmd)
+	projectCmd.AddProjectFlag(applicationDeleteCmd)
+	projectCmd.AddProjectFlag(applicationDescribeCmd)
+	projectCmd.AddProjectFlag(applicationSetCmd)
+	projectCmd.AddProjectFlag(applicationGetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}
@@ -333,9 +334,11 @@ func NewCmdApplication() *cobra.Command {
 	return applicationCmd
 }
 
-func addProjectFlag(cmd *cobra.Command) {
-	genericclioptions.AddProjectFlag(cmd)
-	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
+// AddApplicationFlag adds a `app` flag to the given cobra command
+// Also adds a completion handler to the flag
+func AddApplicationFlag(cmd *cobra.Command) {
+	cmd.Flags().String(genericclioptions.ApplicationFlagName, "", "Application, defaults to active application")
+	completion.RegisterCommandFlagHandler(cmd, "app", completion.AppCompletionHandler)
 }
 
 // printDeleteAppInfo will print things which will be deleted

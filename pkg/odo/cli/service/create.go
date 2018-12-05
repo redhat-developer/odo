@@ -128,8 +128,6 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	}
 	serviceCreateCmd.Flags().StringVar(&o.plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
-	addProjectFlag(serviceCreateCmd)
-	genericclioptions.AddApplicationFlag(serviceCreateCmd)
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	return serviceCreateCmd
 }

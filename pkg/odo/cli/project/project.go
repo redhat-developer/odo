@@ -215,3 +215,10 @@ func NewCmdProject() *cobra.Command {
 
 	return projectCmd
 }
+
+// AddProjectFlag adds a `project` flag to the given cobra command
+// Also adds a completion handler to the flag
+func AddProjectFlag(cmd *cobra.Command) {
+	cmd.Flags().String(genericclioptions.ProjectFlagName, "", "Project, defaults to active project")
+	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
+}

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -78,9 +81,9 @@ func NewCmdDelete() *cobra.Command {
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
-	addProjectFlag(componentDeleteCmd)
+	projectCmd.AddProjectFlag(componentDeleteCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(componentDeleteCmd)
+	appCmd.AddApplicationFlag(componentDeleteCmd)
 
 	return componentDeleteCmd
 }

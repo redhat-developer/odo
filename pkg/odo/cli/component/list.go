@@ -5,6 +5,9 @@ import (
 	"os"
 	"text/tabwriter"
 
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -54,9 +57,9 @@ func NewCmdList() *cobra.Command {
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 
 	//Adding `--project` flag
-	addProjectFlag(componentListCmd)
+	projectCmd.AddProjectFlag(componentListCmd)
 	//Adding `--application` flag
-	genericclioptions.AddApplicationFlag(componentListCmd)
+	appCmd.AddApplicationFlag(componentListCmd)
 
 	return componentListCmd
 }
