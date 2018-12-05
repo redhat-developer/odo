@@ -19,30 +19,38 @@ type wantsStdio interface {
 	WithStdio(terminal.Stdio)
 }
 
+// Stdio converts an expect.Console into a survey terminal.Stdio
 func Stdio(c *expect.Console) terminal.Stdio {
-	return terminal.Stdio{c.Tty(), c.Tty(), c.Tty()}
+	return terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()}
 }
 
+// PromptTest encapsulates a survey prompt test
 type PromptTest struct {
-	name      string
-	prompt    survey.Prompt
-	procedure func(*expect.Console)
-	expected  interface{}
+	// Name of the test
+	Name string
+	// Prompt to test
+	Prompt survey.Prompt
+	// Procedure defines the list of interaction with the console simulating user actions
+	Procedure func(*expect.Console)
+	// Expected result
+	Expected interface{}
 }
 
+// RunPromptTest runs the specified PromptTest in the given testing context
 func RunPromptTest(t *testing.T, test PromptTest) {
 	var answer interface{}
-	RunTest(t, test.procedure, func(stdio terminal.Stdio) error {
+	RunTest(t, test.Procedure, func(stdio terminal.Stdio) error {
 		var err error
-		if p, ok := test.prompt.(wantsStdio); ok {
+		if p, ok := test.Prompt.(wantsStdio); ok {
 			p.WithStdio(stdio)
 		}
-		answer, err = test.prompt.Prompt()
+		answer, err = test.Prompt.Prompt()
 		return err
 	})
-	require.Equal(t, test.expected, answer)
+	require.Equal(t, test.Expected, answer)
 }
 
+// RunTest runs the given test using the specified procedure simulating the user interaction with the console
 func RunTest(t *testing.T, procedure func(*expect.Console), test func(terminal.Stdio) error) {
 	t.Parallel()
 

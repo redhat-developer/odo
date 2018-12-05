@@ -65,15 +65,15 @@ func TestEnterServicePropertiesInteractively(t *testing.T) {
 
 		valuesPtr := new(map[string]string)
 		testingutil.RunTest(t, func(c *expect.Console) {
-			c.ExpectString("Enter a value for string property PLAN_DATABASE_PASSWORD:")
-			c.SendLine("foo")
-			c.ExpectString("Enter a value for string property PLAN_DATABASE_URI:")
-			c.SendLine("")
-			c.ExpectString("Enter a value for string property PLAN_DATABASE_USERNAME:")
-			c.SendLine("")
-			c.ExpectString("Provide values for non-required properties")
-			c.SendLine("")
-			c.ExpectEOF()
+			_, _ = c.ExpectString("Enter a value for string property PLAN_DATABASE_PASSWORD:")
+			_, _ = c.SendLine("foo")
+			_, _ = c.ExpectString("Enter a value for string property PLAN_DATABASE_URI:")
+			_, _ = c.SendLine("")
+			_, _ = c.ExpectString("Enter a value for string property PLAN_DATABASE_USERNAME:")
+			_, _ = c.SendLine("")
+			_, _ = c.ExpectString("Provide values for non-required properties")
+			_, _ = c.SendLine("")
+			_, _ = c.ExpectEOF()
 		}, func(stdio terminal.Stdio) error {
 			values := enterServicePropertiesInteractively(plan, stdio)
 			valuesPtr = &values
