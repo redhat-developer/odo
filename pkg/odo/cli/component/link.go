@@ -1,8 +1,9 @@
 package component
 
 import (
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"os"
+
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"

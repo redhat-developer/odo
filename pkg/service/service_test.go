@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"reflect"
+	"sort"
+	"testing"
+
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/pkg/errors"
@@ -14,9 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
-	"reflect"
-	"sort"
-	"testing"
 )
 
 // M is an alias for map[string]interface{}

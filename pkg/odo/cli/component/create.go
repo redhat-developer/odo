@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"os"
 	"strings"
+
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"

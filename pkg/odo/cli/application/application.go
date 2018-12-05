@@ -2,9 +2,10 @@ package application
 
 import (
 	"fmt"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"os"
 	"strings"
+
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"

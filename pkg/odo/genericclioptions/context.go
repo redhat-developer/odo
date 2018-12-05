@@ -3,6 +3,8 @@ package genericclioptions
 import (
 	"fmt"
 
+	"os"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -10,7 +12,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command

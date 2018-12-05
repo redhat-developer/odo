@@ -3,9 +3,10 @@ package util
 import (
 	"fmt"
 
+	"strings"
+
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"strings"
 )
 
 // ValidateName will do validation of application & component names

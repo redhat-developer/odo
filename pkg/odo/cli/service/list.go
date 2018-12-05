@@ -2,13 +2,14 @@ package service
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"text/tabwriter"
 )
 
 const listRecommendedCommandName = "list"
