@@ -64,9 +64,7 @@ The created URL can be used to access the specified component from outside the O
 		componentName := context.Component()
 
 		componentPort, err := url.GetValidPortNumber(client, urlPort, componentName, applicationName)
-		if err != nil {
-			odoutil.CheckError(err, "")
-		}
+		odoutil.CheckError(err, "")
 
 		var urlName string
 		switch len(args) {

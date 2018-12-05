@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"strings"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
@@ -10,8 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
 	"github.com/redhat-developer/odo/pkg/util"
-
-	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -158,20 +157,22 @@ func GetURLName(componentName string, componentPort int) string {
 
 // GetValidPortNumber checks if the given port number is a valid component port or not
 // if port number is not provided and the component is a single port component, the component port is returned
+// port number is -1 if the user does not specify any port
 func GetValidPortNumber(client *occlient.Client, portNumber int, componentName string, applicationName string) (int, error) {
 	componentPorts, err := GetComponentServicePortNumbers(client, componentName, applicationName)
 	if err != nil {
 		return portNumber, errors.Wrapf(err, "unable to get exposed ports for component %s", componentName)
 	}
 
-	var portFound bool
-
+	// port number will be -1 if the user doesn't specify any port
 	if portNumber == -1 {
-		if len(componentPorts) > 1 {
+
+		switch len(componentPorts); {
+		case len(componentPorts) > 1:
 			return portNumber, errors.Errorf("'port' is required as the component %s exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
-		} else if len(componentPorts) == 1 {
+		case len(componentPorts) == 1:
 			return componentPorts[0], nil
-		} else {
+		default:
 			return portNumber, errors.Errorf("no port is exposed by the component %s", componentName)
 		}
 	} else {
@@ -179,10 +180,6 @@ func GetValidPortNumber(client *occlient.Client, portNumber int, componentName s
 			if portNumber == port {
 				return portNumber, nil
 			}
-		}
-
-		if !portFound {
-			return portNumber, errors.Errorf("port %d is not exposed by the component", portNumber)
 		}
 	}
 
