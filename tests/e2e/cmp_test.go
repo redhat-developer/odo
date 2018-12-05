@@ -3,6 +3,8 @@
 package e2e
 
 import (
+	"log"
+	"net/http"
 	"strings"
 
 	"path/filepath"
@@ -55,8 +57,30 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should show an error when ref flag is provided with sources except git", func() {
-			output := runFailCmd("odo create nodejs cmp-git --local test --ref test")
+			output := runFailCmd(fmt.Sprintf("odo create nodejs cmp-git-%s --local test --ref test", t))
 			Expect(output).To(ContainSubstring("The --ref flag is only valid for --git flag"))
+		})
+
+		It("should create the component from the branch ref when provided", func() {
+			runCmd(fmt.Sprintf("odo create ruby ref-test-%s --git https://github.com/girishramnani/ruby-ex.git --ref develop", t))
+			output := runCmd(fmt.Sprintf("odo url create ref-test-%s", t))
+
+			splitOutput := strings.Split(output, " ")
+			url := strings.TrimSpace(splitOutput[len(splitOutput)-1])
+
+			// the application takes time to come up
+			time.Sleep(10 * time.Second)
+			resp, err := http.Get(url + "/health")
+			if err != nil {
+				log.Panicln(err)
+			}
+			body, err := ioutil.ReadAll(resp.Body)
+
+			if err != nil {
+				log.Panicln(err)
+			}
+
+			Expect(string(body)).To(ContainSubstring("develop"))
 		})
 
 		It("should be able to create a component with git source", func() {
