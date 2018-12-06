@@ -2060,6 +2060,33 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 	return c.updateDCOfComponent(componentName, applicationName, dcUpdater)
 }
 
+// UnlinkSecret unlinks a secret to the DeploymentConfig of a component
+func (c *Client) UnlinkSecret(secretName, componentName, applicationName string) error {
+	// Remove the Secret from the container
+	var dcUpdater = func(dc *appsv1.DeploymentConfig) error {
+		indexForRemoval := -1
+		for i, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
+			if env.SecretRef.Name == secretName {
+				indexForRemoval = i
+				break
+			}
+		}
+
+		if indexForRemoval == -1 {
+			return fmt.Errorf("Unable to locate a secret named '%s' in dc '%s'", secretName, dc.Name)
+		}
+
+		// actually remove the secret from the dc
+		dc.Spec.Template.Spec.Containers[0].EnvFrom =
+			append(dc.Spec.Template.Spec.Containers[0].EnvFrom[:indexForRemoval],
+				dc.Spec.Template.Spec.Containers[0].EnvFrom[indexForRemoval+1:]...)
+
+		return nil
+	}
+
+	return c.updateDCOfComponent(componentName, applicationName, dcUpdater)
+}
+
 // this function will look up the appropriate DC, execute the specified update on the DC
 // and push the update to the API server - this will result in the triggering of a redeployment
 func (c *Client) updateDCOfComponent(componentName, applicationName string, dcUpdater dcStructUpdater) error {

@@ -2096,6 +2096,138 @@ func TestLinkSecret(t *testing.T) {
 	}
 }
 
+func TestUnlinkSecret(t *testing.T) {
+	tests := []struct {
+		name              string
+		secretName        string
+		componentName     string
+		applicationName   string
+		existingDC        appsv1.DeploymentConfig
+		expectedUpdatedDC appsv1.DeploymentConfig
+		wantErr           bool
+	}{
+		{
+			name:            "Case 1: Remove link from dc that has none",
+			secretName:      "secret",
+			componentName:   "component",
+			applicationName: "app",
+			existingDC:      *fakeDeploymentConfig("foo", "", nil, nil, nil),
+			wantErr:         true,
+		},
+		{
+			name:            "Case 2: Remove link from dc that has no matching link",
+			secretName:      "secret",
+			componentName:   "component",
+			applicationName: "app",
+			existingDC: *fakeDeploymentConfig("foo", "", nil,
+				[]corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "other"},
+						},
+					},
+				},
+				nil),
+			wantErr: true,
+		},
+		{
+			name:            "Case 3: Remove the only link",
+			secretName:      "secret",
+			componentName:   "component",
+			applicationName: "app",
+			existingDC: *fakeDeploymentConfig("foo", "", nil,
+				[]corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "secret"},
+						},
+					},
+				},
+				nil),
+			expectedUpdatedDC: *fakeDeploymentConfig("foo", "", nil, []corev1.EnvFromSource{}, nil),
+			wantErr:           false,
+		},
+		{
+			name:            "Case 4: Remove a link from a dc that contains many",
+			secretName:      "secret",
+			componentName:   "component",
+			applicationName: "app",
+			existingDC: *fakeDeploymentConfig("foo", "", nil,
+				[]corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "other1"},
+						},
+					},
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "secret"},
+						},
+					},
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "other2"},
+						},
+					},
+				},
+				nil),
+			expectedUpdatedDC: *fakeDeploymentConfig("foo", "", nil,
+				[]corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "other1"},
+						},
+					},
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "other2"},
+						},
+					},
+				},
+				nil),
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := FakeNew()
+
+			// Fake getting DC
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if len(tt.applicationName) == 0 {
+					return true, nil, fmt.Errorf("could not find dc")
+				}
+				return true, &tt.existingDC, nil
+			})
+
+			// Fake updating DC
+			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if len(tt.componentName) == 0 {
+					return true, nil, fmt.Errorf("could not update dc")
+				}
+				return true, &tt.expectedUpdatedDC, nil
+			})
+
+			err := fakeClient.UnlinkSecret(tt.secretName, tt.componentName, tt.applicationName)
+			if err == nil && tt.wantErr {
+				t.Error("error was expected, but no error was returned")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			} else if err == nil && !tt.wantErr {
+				if len(fakeClientSet.AppsClientset.Actions()) != 2 {
+					t.Errorf("expected 1 AppsClientset.Actions() in LinkSecret, got: %v", fakeClientSet.AppsClientset.Actions())
+				}
+
+				updatedDc := fakeClientSet.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				if !reflect.DeepEqual(updatedDc.Spec, tt.expectedUpdatedDC.Spec) {
+					t.Errorf("deployment Config Spec not matching with expected values, expected: %v, got %v", tt.expectedUpdatedDC.Spec, updatedDc.Spec)
+				}
+			}
+		})
+	}
+}
+
 func TestListSecrets(t *testing.T) {
 
 	tests := []struct {
