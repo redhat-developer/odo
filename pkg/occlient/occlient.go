@@ -2073,7 +2073,7 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		}
 
 		if indexForRemoval == -1 {
-			return fmt.Errorf("Unable to locate a secret named '%s' in dc '%s'", secretName, dc.Name)
+			return fmt.Errorf("DeploymentConfig does not contain a link to %s", secretName)
 		}
 
 		// actually remove the secret from the dc

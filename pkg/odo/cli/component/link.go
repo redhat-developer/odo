@@ -81,7 +81,7 @@ func NewLinkOptions() *LinkOptions {
 	return &LinkOptions{}
 }
 
-// Complete completes ServiceCreateOptions after they've been created
+// Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.suppliedName = args[0]
 	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
