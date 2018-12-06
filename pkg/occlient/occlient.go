@@ -1001,7 +1001,14 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	)
 
 	// Generate the DeploymentConfig that will be used.
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, params.ImageName, commonImageMeta, inputEnvs, getResourceRequirementsFromRawData(params.Resources))
+	dc := generateSupervisordDeploymentConfig(
+		commonObjectMeta,
+		params.ImageName,
+		commonImageMeta,
+		inputEnvs,
+		[]corev1.EnvFromSource{},
+		getResourceRequirementsFromRawData(params.Resources),
+	)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -1337,7 +1344,14 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 
 	// Generate the SupervisorD Config
 	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, inputEnvs, &resourceLimits)
+	dc := generateSupervisordDeploymentConfig(
+		commonObjectMeta,
+		componentImageType,
+		commonImageMeta,
+		inputEnvs,
+		[]corev1.EnvFromSource{},
+		&resourceLimits,
+	)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -2043,10 +2057,12 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 		return nil
 	}
 
-	return c.updateDCAndRedeployComponent(componentName, applicationName, dcUpdater)
+	return c.updateDCOfComponent(componentName, applicationName, dcUpdater)
 }
 
-func (c *Client) updateDCAndRedeployComponent(componentName, applicationName string, dcUpdater dcStructUpdater) error {
+// this function will look up the appropriate DC, execute the specified update on the DC
+// and push the update to the API server - this will result in the triggering of a redeployment
+func (c *Client) updateDCOfComponent(componentName, applicationName string, dcUpdater dcStructUpdater) error {
 	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return err
@@ -2060,8 +2076,10 @@ func (c *Client) updateDCAndRedeployComponent(componentName, applicationName str
 	if dcUpdater != nil {
 		err = dcUpdater(dc)
 		if err != nil {
-			return errors.Wrapf(err, "Unable to update the DeploymentConfig")
+			return errors.Wrap(err, "Unable to update the DeploymentConfig")
 		}
+	} else {
+		return errors.Wrapf(err, "dcUpdater was not properly set - this is definitely an implementation issue")
 	}
 
 	// update the DeploymentConfig with the secret

@@ -35,7 +35,8 @@ import (
 
 // fakeDeploymentConfig creates a fake DC.
 // we "dog food" our own functions by using our templates / functions to generate this fake deployment config
-func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, resources []util.ResourceRequirementInfo) *appsv1.DeploymentConfig {
+func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, envfrom []corev1.EnvFromSource,
+	resources []util.ResourceRequirementInfo) *appsv1.DeploymentConfig {
 
 	// save component type as label
 	labels := componentlabels.GetLabels(name, name, true)
@@ -67,6 +68,7 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, re
 		image,
 		commonImageMeta,
 		envVars,
+		envfrom,
 		getResourceRequirementsFromRawData(resources),
 	)
 
@@ -1983,57 +1985,96 @@ func TestGetServiceBinding(t *testing.T) {
 
 func TestLinkSecret(t *testing.T) {
 	tests := []struct {
-		name            string
-		namespace       string
-		secretName      string
-		componentName   string
-		applicationName string
-		wantErr         bool
+		name              string
+		secretName        string
+		componentName     string
+		applicationName   string
+		existingDC        appsv1.DeploymentConfig
+		expectedUpdatedDC appsv1.DeploymentConfig
+		wantErr           bool
 	}{
 		{
-			name:            "Case: Unable to locate DeploymentConfig",
+			name:            "Case 1: Unable to locate DeploymentConfig",
 			secretName:      "foo",
 			componentName:   "foo",
 			applicationName: "",
 			wantErr:         true,
 		},
 		{
-			name:            "Case: Unable to update DeploymentConfig",
+			name:            "Case 2: Unable to update DeploymentConfig",
 			secretName:      "foo",
-			componentName:   "foo",
+			componentName:   "",
 			applicationName: "foo",
+			existingDC:      *fakeDeploymentConfig("foo", "", nil, nil, nil),
 			wantErr:         true,
 		},
-		//TODO fix this somehow? It doesn't seem to work because of Instantiate doesn't play nice with fake
-		//{
-		//	name:        "Case: Valid creation of link",
-		//	namespace: "foo",
-		//	secretName: "foo",
-		//	applicationName: "foo",
-		//	wantErr: false,
-		//},
+		{
+			name:            "Case 3: Valid creation of link",
+			secretName:      "secret",
+			componentName:   "component",
+			applicationName: "app",
+			existingDC:      *fakeDeploymentConfig("foo", "", nil, nil, nil),
+			expectedUpdatedDC: *fakeDeploymentConfig("foo", "", nil,
+				[]corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "secret"},
+						},
+					},
+				},
+				nil),
+			wantErr: false,
+		},
+		{
+			name:            "Case 4: Creation of link on a component that already has a different link",
+			secretName:      "secret",
+			componentName:   "component",
+			applicationName: "app",
+			existingDC: *fakeDeploymentConfig("foo", "", nil,
+				[]corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "other"},
+						},
+					},
+				},
+				nil),
+			expectedUpdatedDC: *fakeDeploymentConfig("foo", "", nil,
+				[]corev1.EnvFromSource{
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "other"},
+						},
+					},
+					{
+						SecretRef: &corev1.SecretEnvSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "secret"},
+						},
+					},
+				},
+				nil),
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
-			dcName := fmt.Sprintf("%s-%s", tt.componentName, tt.applicationName)
-
 			// Fake getting DC
 			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if len(tt.applicationName) == 0 {
 					return true, nil, fmt.Errorf("could not find dc")
 				}
-				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}), nil
+				return true, &tt.existingDC, nil
 			})
 
 			// Fake updating DC
 			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if len(tt.namespace) == 0 {
+				if len(tt.componentName) == 0 {
 					return true, nil, fmt.Errorf("could not update dc")
 				}
-				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}), nil
+				return true, &tt.expectedUpdatedDC, nil
 			})
 
 			err := fakeClient.LinkSecret(tt.secretName, tt.componentName, tt.applicationName)
@@ -2043,9 +2084,13 @@ func TestLinkSecret(t *testing.T) {
 				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 			} else if err == nil && !tt.wantErr {
 				if len(fakeClientSet.AppsClientset.Actions()) != 2 {
-					t.Errorf("expected 2 AppsClientset.Actions() in LinkSecret, got: %v", fakeClientSet.AppsClientset.Actions())
+					t.Errorf("expected 1 AppsClientset.Actions() in LinkSecret, got: %v", fakeClientSet.AppsClientset.Actions())
 				}
-				//TODO enhance test if the Instantiate issue can be overcome
+
+				updatedDc := fakeClientSet.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
+				if !reflect.DeepEqual(updatedDc.Spec, tt.expectedUpdatedDC.Spec) {
+					t.Errorf("deployment Config Spec not matching with expected values, expected: %v, got %v", tt.expectedUpdatedDC.Spec, updatedDc.Spec)
+				}
 			}
 		})
 	}
@@ -3369,8 +3414,9 @@ func TestPatchCurrentDC(t *testing.T) {
 		{
 			name: "Case 1: Test patching with nil prePatchDCHandler",
 			args: args{
-				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
+				name: "foo",
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
+					{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, fakeResourceConsumption()),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
@@ -3383,8 +3429,9 @@ func TestPatchCurrentDC(t *testing.T) {
 		{
 			name: "Case 2: Test patching with non-nil prePatchDCHandler",
 			args: args{
-				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
+				name: "foo",
+				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
+					{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, fakeResourceConsumption()),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
@@ -3397,8 +3444,10 @@ func TestPatchCurrentDC(t *testing.T) {
 		{
 			name: "Case 3: Test patching with the wrong name",
 			args: args{
-				name:     "foo",
-				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
+				name: "foo",
+				dcBefore: *fakeDeploymentConfig("foo", "foo",
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					[]corev1.EnvFromSource{}, fakeResourceConsumption()),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
@@ -3475,7 +3524,9 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "bar",
-				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
+				dc: *fakeDeploymentConfig("foo", "foo",
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					[]corev1.EnvFromSource{}, fakeResourceConsumption()),
 			},
 			wantErr: false,
 			actions: 4,
@@ -3485,7 +3536,9 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "",
-				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
+				dc: *fakeDeploymentConfig("foo", "foo",
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					[]corev1.EnvFromSource{}, fakeResourceConsumption()),
 			},
 			wantErr: true,
 			actions: 4,
@@ -3495,7 +3548,9 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "",
-				dc:       *fakeDeploymentConfig("foo2", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, []util.ResourceRequirementInfo{}),
+				dc: *fakeDeploymentConfig("foo2", "foo",
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					[]corev1.EnvFromSource{}, []util.ResourceRequirementInfo{}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3505,7 +3560,9 @@ func TestUpdateDCToGit(t *testing.T) {
 			args: args{
 				name:     "foo",
 				newImage: "bar:latest",
-				dc:       *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, []util.ResourceRequirementInfo{}),
+				dc: *fakeDeploymentConfig("foo", "foo",
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					[]corev1.EnvFromSource{}, []util.ResourceRequirementInfo{}),
 			},
 			wantErr: false,
 			actions: 4,
@@ -3789,7 +3846,9 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "nodejs",
 				expectedImage:  "nodejs",
 				imageNamespace: "openshift",
-				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
+				dc: *fakeDeploymentConfig("foo", "foo",
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					[]corev1.EnvFromSource{}, fakeResourceConsumption()),
 			},
 			wantErr: false,
 			actions: 4,
@@ -3801,7 +3860,9 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "foo",
 				expectedImage:  "foobar",
 				imageNamespace: "testing",
-				dc:             *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, []util.ResourceRequirementInfo{}),
+				dc: *fakeDeploymentConfig("foo", "foo",
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					[]corev1.EnvFromSource{}, []util.ResourceRequirementInfo{}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -3895,7 +3956,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 1 - Check that it is an emptyDir",
 			args: args{
 				VolumeName: supervisordVolumeName,
-				dc:         *fakeDeploymentConfig("foo", "bar", nil, []util.ResourceRequirementInfo{}),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil, []util.ResourceRequirementInfo{}),
 			},
 			wantEmptyDir: true,
 		},
@@ -3903,7 +3964,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 2 - Check a non-existent volume",
 			args: args{
 				VolumeName: "foobar",
-				dc:         *fakeDeploymentConfig("foo", "bar", nil, []util.ResourceRequirementInfo{}),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil, []util.ResourceRequirementInfo{}),
 			},
 			wantEmptyDir: false,
 		},
@@ -3911,7 +3972,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 3 - Check a volume that exists but is not emptyDir",
 			args: args{
 				VolumeName: "foo-s2idata",
-				dc:         *fakeDeploymentConfig("foo", "bar", nil, []util.ResourceRequirementInfo{}),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil, []util.ResourceRequirementInfo{}),
 			},
 			wantEmptyDir: false,
 		},
@@ -4181,7 +4242,7 @@ func Test_updateEnvVar(t *testing.T) {
 		{
 			name: "test case 1: tests with single container in dc and no existing env vars",
 			args: args{
-				dc: fakeDeploymentConfig("foo", "foo", nil, []util.ResourceRequirementInfo{}),
+				dc: fakeDeploymentConfig("foo", "foo", nil, nil, []util.ResourceRequirementInfo{}),
 				inputEnvVars: []corev1.EnvVar{
 					{
 						Name:  "key",
@@ -4198,7 +4259,8 @@ func Test_updateEnvVar(t *testing.T) {
 		{
 			name: "test case 2: tests with single container in dc and existing env vars",
 			args: args{
-				dc: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key-1", Value: "key-1"}}, []util.ResourceRequirementInfo{}),
+				dc: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key-1", Value: "key-1"}},
+					[]corev1.EnvFromSource{}, []util.ResourceRequirementInfo{}),
 				inputEnvVars: []corev1.EnvVar{
 					{
 						Name:  "key-2",
@@ -4404,8 +4466,9 @@ func TestWaitAndGetDC(t *testing.T) {
 				name:       "foo",
 				annotation: "app.kubernetes.io/component-source-type",
 				value:      "git",
-				dc:         *fakeDeploymentConfig("foo", "bar", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}),
-				timeout:    3 * time.Second,
+				dc: *fakeDeploymentConfig("foo", "bar",
+					[]corev1.EnvVar{}, []corev1.EnvFromSource{}, []util.ResourceRequirementInfo{}),
+				timeout: 3 * time.Second,
 			},
 			wantErr: false,
 			actions: 1,
@@ -4416,8 +4479,9 @@ func TestWaitAndGetDC(t *testing.T) {
 				name:       "foo",
 				annotation: "app.kubernetes.io/component-source-type",
 				value:      "foobar",
-				dc:         *fakeDeploymentConfig("foo", "bar", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}),
-				timeout:    3 * time.Second,
+				dc: *fakeDeploymentConfig("foo", "bar",
+					[]corev1.EnvVar{}, []corev1.EnvFromSource{}, []util.ResourceRequirementInfo{}),
+				timeout: 3 * time.Second,
 			},
 			wantErr: true,
 			actions: 1,
