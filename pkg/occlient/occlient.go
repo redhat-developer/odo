@@ -163,6 +163,7 @@ type Client struct {
 	Namespace            string
 }
 
+// New creates a new client
 func New(skipConnectionCheck bool) (*Client, error) {
 	var client Client
 
