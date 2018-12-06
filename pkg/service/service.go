@@ -61,7 +61,7 @@ func (params servicePlanParameters) Swap(i, j int) {
 	params[i], params[j] = params[j], params[i]
 }
 
-type ServicePlans struct {
+type ServicePlan struct {
 	Name        string
 	DisplayName string
 	Description string
@@ -282,8 +282,8 @@ func SvcExists(client *occlient.Client, serviceName, applicationName string) (bo
 // GetServiceClassAndPlans returns the service class details with the associated plans
 // serviceName is the name of the service class
 // the first parameter returned is the ServiceClass object
-// the second parameter returned is the array of ServicePlans associated with the service class
-func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (ServiceClass, []ServicePlans, error) {
+// the second parameter returned is the array of ServicePlan associated with the service class
+func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (ServiceClass, []ServicePlan, error) {
 	result, err := client.GetClusterServiceClass(serviceName)
 	if err != nil {
 		return ServiceClass{}, nil, errors.Wrap(err, "unable to get the given service")
@@ -320,9 +320,9 @@ func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (Servi
 		return ServiceClass{}, nil, errors.Wrap(err, "unable to get plans for the given service")
 	}
 
-	var plans []ServicePlans
+	var plans []ServicePlan
 	for _, result := range planResults {
-		plan, err := NewServicePlans(result)
+		plan, err := NewServicePlan(result)
 		if err != nil {
 
 		}
@@ -338,9 +338,9 @@ type serviceInstanceCreateParameterSchema struct {
 	Properties map[string]ServicePlanParameter
 }
 
-// NewServicePlans creates a new ServicePlans based on the specified ClusterServicePlan
-func NewServicePlans(result scv1beta1.ClusterServicePlan) (plan ServicePlans, err error) {
-	plan = ServicePlans{
+// NewServicePlan creates a new ServicePlan based on the specified ClusterServicePlan
+func NewServicePlan(result scv1beta1.ClusterServicePlan) (plan ServicePlan, err error) {
+	plan = ServicePlan{
 		Name:        result.Spec.ExternalName,
 		Description: result.Spec.Description,
 	}

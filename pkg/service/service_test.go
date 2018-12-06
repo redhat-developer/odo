@@ -54,7 +54,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 		returnedServiceClass *scv1beta1.ClusterServiceClassList
 		returnedServicePlan  []scv1beta1.ClusterServicePlan
 		wantedServiceClass   ServiceClass
-		wantedServicePlans   []ServicePlans
+		wantedServicePlans   []ServicePlan
 		wantErr              bool
 	}{
 		{
@@ -117,7 +117,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 				ServiceBrokerName: "broker name",
 				VersionsAvailable: []string{"docker.io/centos/7", "docker.io/centos/8"},
 			},
-			wantedServicePlans: []ServicePlans{
+			wantedServicePlans: []ServicePlan{
 				{
 					Name:        "dev",
 					Description: "this is a example description 1",

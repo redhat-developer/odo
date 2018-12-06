@@ -188,7 +188,7 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan) (
 }
 
 func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, stdio ...terminal.Stdio) (values map[string]string) {
-	planDetails, _ := service.NewServicePlans(svcPlan)
+	planDetails, _ := service.NewServicePlan(svcPlan)
 
 	properties := make(map[string]service.ServicePlanParameter, len(planDetails.Parameters))
 	for _, v := range planDetails.Parameters {
