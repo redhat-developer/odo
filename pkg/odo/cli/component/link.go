@@ -24,19 +24,19 @@ const RecommendedLinkCommandName = "link"
 
 var (
 	linkExample = ktemplates.Examples(`# Link the current component to the 'my-postgresql' service
-%[1]s link my-postgresql
+%[1]s my-postgresql
 
 # Link component 'nodejs' to the 'my-postgresql' service
-%[1]s link my-postgresql --component nodejs
+%[1]s my-postgresql --component nodejs
 
 # Link current component to the 'backend' component (backend must have a single exposed port)
-%[1]s link backend
+%[1]s backend
 
 # Link component 'nodejs' to the 'backend' component
-%[1]s link backend --component nodejs
+%[1]s backend --component nodejs
 
 # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed) 
-%[1]s link backend --port 8080`)
+%[1]s backend --port 8080`)
 
 	linkLongDesc = `Link component to a service or component
 

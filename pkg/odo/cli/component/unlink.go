@@ -22,22 +22,23 @@ import (
 const RecommendedUnLinkCommandName = "unlink"
 
 var (
-	unlinkExample = ktemplates.Examples(`# Link the current component to the 'my-postgresql' service
-%[1]s unlink my-postgresql
+	unlinkExample = ktemplates.Examples(`# Unlink the 'my-postgresql' service from the current component 
+%[1]s my-postgresql
 
-# Link component 'nodejs' to the 'my-postgresql' service
-%[1]s unlink my-postgresql --component nodejs
+# Unlink the 'my-postgresql' service  from the 'nodejs' component
+%[1]s my-postgresql --component nodejs
 
-# Link current component to the 'backend' component (backend must have a single exposed port)
-%[1]s unlink backend
+# Unlink the 'backend' component from the current component (backend must have a single exposed port)
+%[1]s backend
 
-# Link component 'nodejs' to the 'backend' component
-%[1]s unlink backend --component nodejs
+# Unlink the 'backend' service  from the 'nodejs' component
+%[1]s backend --component nodejs
 
-# Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed) 
-%[1]s unlink backend --port 8080`)
+# Unlink the backend's 8080 port from the current component 
+%[1]s backend --port 8080`)
 
-	unlinkLongDesc = `Unlink component or service from a component`
+	unlinkLongDesc = `Unlink component or service from a component. 
+For this command to be successful, the service or component needs to have been linked prior to the invocation using 'odo link'`
 )
 
 // LinkOptions encapsulates the options for the odo link command
