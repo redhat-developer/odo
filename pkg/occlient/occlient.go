@@ -2175,6 +2175,7 @@ func (c *Client) GetMatchingPlans(class scv1beta1.ClusterServiceClass) (plans ma
 	return plans, err
 }
 
+// DoesPlanExist checks whether a plan with the specified name exists
 func (c *Client) DoesPlanExist(planName string) (bool, error) {
 	plan, e := c.serviceCatalogClient.ClusterServicePlans().Get(planName, metav1.GetOptions{})
 	return plan != nil, e

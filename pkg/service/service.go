@@ -338,6 +338,7 @@ type serviceInstanceCreateParameterSchema struct {
 	Properties map[string]ServicePlanParameter
 }
 
+// NewServicePlans creates a new ServicePlans based on the specified ClusterServicePlan
 func NewServicePlans(result scv1beta1.ClusterServicePlan) (plan ServicePlans, err error) {
 	plan = ServicePlans{
 		Name:        result.Spec.ExternalName,
