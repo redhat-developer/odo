@@ -438,6 +438,15 @@ func (c *Client) CreateNewProject(projectName string) error {
 	return nil
 }
 
+// GetProject gets the project with the given projectName
+func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
+	project, err := c.projectClient.Projects().Get(projectName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get the project")
+	}
+	return project, nil
+}
+
 // SetCurrentProject sets the given projectName to current project
 func (c *Client) SetCurrentProject(projectName string) error {
 	rawConfig, err := c.KubeConfig.RawConfig()

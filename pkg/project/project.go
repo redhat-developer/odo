@@ -162,3 +162,147 @@ func Exists(client *occlient.Client, projectName string) (bool, error) {
 	}
 	return false, errors.Errorf(" %v project does not exist", projectName)
 }
+
+type Project struct {
+	Name   string
+	Active bool
+	Client *occlient.Client
+}
+
+func (p *Project) Create() error {
+	err := p.Client.CreateNewProject(p.Name)
+	if err != nil {
+		return errors.Wrap(err, "unable to create new project")
+	}
+	return nil
+}
+
+func (p *Project) Exists() (bool, error) {
+	project, err := p.Client.GetProject(p.Name)
+	if err != nil {
+		return false, errors.Wrap(err, "unable to get the project")
+	}
+	if project == nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (p *Project) SetActive() error {
+	currentProject := GetCurrent(p.Client)
+
+	cfg, err := config.New()
+	if err != nil {
+		return errors.Wrap(err, "unable to access config file")
+	}
+	err = cfg.UnsetActiveApplication(currentProject)
+	if err != nil {
+		return errors.Wrap(err, "unable to unset active application of current project "+p.Name)
+	}
+	err = cfg.UnsetActiveComponent(currentProject)
+	if err != nil {
+		return errors.Wrap(err, "unable to unset active component of current project "+p.Name)
+	}
+
+	err = p.Client.SetCurrentProject(p.Name)
+	if err != nil {
+		return errors.Wrap(err, "unable to set current project to"+p.Name)
+	}
+	return nil
+}
+
+func (p *Project) Delete() (string, error) {
+	// Loading spinner
+	s := log.Spinnerf("Deleting project %s", p.Name)
+	defer s.End(false)
+
+	currentProject := GetCurrent(p.Client)
+
+	projects, err := List(p.Client)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to fetch list of projects")
+	}
+
+	//Iterate the project list and see the expected change post deletion
+	for ind, prj := range projects {
+		if prj.Name == p.Name {
+			projects = append(projects[:ind], projects[ind+1:]...)
+		}
+	}
+
+	// If current project is not same as the project to be deleted, set it as current
+	if currentProject != p.Name {
+		// Set the project to be deleted as current inorder to be able to delete it
+		err = SetCurrent(p.Client, p.Name)
+		if err != nil {
+			return "", errors.Wrapf(err, "Unable to delete project %s", p.Name)
+		}
+	}
+
+	// Delete the requested project
+	err = p.Client.DeleteProject(p.Name)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to delete project")
+	}
+
+	// delete from config
+	cfg, err := config.New()
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to delete project from config file")
+	}
+
+	err = cfg.DeleteProject(p.Name)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to delete project from config file")
+	}
+
+	// If there will be any projects post the current deletion,
+	// Choose the first project from remainder of the project list to set as current
+	if len(projects) > 0 {
+		currentProject = projects[0].Name
+	} else {
+		// Set the current project to empty string
+		currentProject = ""
+	}
+
+	// If current project is not empty string, set currentProject as current project
+	if currentProject != "" {
+		glog.V(4).Infof("Setting the current project to %s\n", currentProject)
+		err = SetCurrent(p.Client, currentProject)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to set %s as the current project\n", currentProject)
+		}
+	} else {
+		// Nothing to do if there's no project left -- Default oc client way
+		glog.V(4).Info("No projects available to mark as current\n")
+	}
+
+	s.End(true)
+	return currentProject, nil
+}
+
+type ProjectList struct {
+	Items  []Project
+	Client *occlient.Client
+}
+
+func (p *ProjectList) List() error {
+	currentProject := p.Client.GetCurrentProjectName()
+	allProjects, err := p.Client.GetProjectNames()
+	if err != nil {
+		return errors.Wrap(err, "cannot get all the projects")
+	}
+
+	for _, project := range allProjects {
+		isActive := false
+		if project == currentProject {
+			isActive = true
+		}
+		p.Items = append(p.Items, Project{
+			Name:   project,
+			Active: isActive,
+			Client: p.Client,
+		})
+	}
+	return nil
+}

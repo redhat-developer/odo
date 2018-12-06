@@ -54,22 +54,28 @@ var projectSetCmd = &cobra.Command{
 		client := context.Client
 		current := context.Project
 
-		exists, err := project.Exists(client, projectName)
+		project := &project.Project{
+			Name:   projectName,
+			Client: client,
+		}
+
+		exists, err := project.Exists()
 		odoutil.LogErrorAndExit(err, "")
+
 		if !exists {
 			log.Errorf("The project %s does not exist", projectName)
 			os.Exit(1)
 		}
 
-		err = project.SetCurrent(client, projectName)
+		err = project.SetActive()
 		odoutil.LogErrorAndExit(err, "")
 		if projectShortFlag {
 			fmt.Print(projectName)
 		} else {
 			if current == projectName {
-				log.Infof("Already on project : %v", projectName)
+				log.Infof("Already on project : %v", project.Name)
 			} else {
-				log.Infof("Switched to project : %v", projectName)
+				log.Infof("Switched to project : %v", project.Name)
 			}
 		}
 	},
@@ -106,10 +112,17 @@ var projectCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
 		client := genericclioptions.Client(cmd)
-		err := project.Create(client, projectName)
+
+		project := &project.Project{
+			Name:   projectName,
+			Client: client,
+		}
+
+		err := project.Create()
 		odoutil.LogErrorAndExit(err, "")
-		err = project.SetCurrent(client, projectName)
+		err = project.SetActive()
 		odoutil.LogErrorAndExit(err, "")
+
 		log.Successf("New project created and now using project : %v", projectName)
 	},
 }
@@ -126,9 +139,15 @@ var projectDeleteCmd = &cobra.Command{
 		projectName := args[0]
 		client := genericclioptions.Client(cmd)
 
+		project := &project.Project{
+			Name:   projectName,
+			Client: client,
+		}
+
 		// Validate existence of the project to be deleted
-		isValidProject, err := project.Exists(client, projectName)
+		isValidProject, err := project.Exists()
 		odoutil.LogErrorAndExit(err, "Failed to delete project %s", projectName)
+
 		if !isValidProject {
 			log.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", projectName)
 			os.Exit(1)
@@ -138,21 +157,21 @@ var projectDeleteCmd = &cobra.Command{
 		if projectForceDeleteFlag {
 			confirmDeletion = "y"
 		} else {
-			log.Askf("Are you sure you want to delete project %v? [y/N]: ", projectName)
+			log.Askf("Are you sure you want to delete project %v? [y/N]: ", project.Name)
 			fmt.Scanln(&confirmDeletion)
 		}
 
 		if strings.ToLower(confirmDeletion) != "y" {
-			log.Errorf("Aborting deletion of project: %v", projectName)
+			log.Errorf("Aborting deletion of project: %v", project.Name)
 			os.Exit(1)
 		}
 
-		currentProject, err := project.Delete(client, projectName)
+		currentProject, err := project.Delete()
 		if err != nil {
 			odoutil.LogErrorAndExit(err, "")
 		}
 
-		log.Infof("Deleted project : %v", projectName)
+		log.Infof("Deleted project : %v", project.Name)
 
 		if currentProject != "" {
 			log.Infof("%s has been set as the active project\n", currentProject)
@@ -174,14 +193,20 @@ var projectListCmd = &cobra.Command{
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := genericclioptions.Client(cmd)
-		projects, err := project.List(client)
+
+		projectList := &project.ProjectList{
+			Client: client,
+		}
+
+		err := projectList.List()
 		odoutil.LogErrorAndExit(err, "")
-		if len(projects) == 0 {
+
+		if len(projectList.Items) == 0 {
 			log.Errorf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
 			os.Exit(1)
 		}
 		fmt.Printf("ACTIVE   NAME\n")
-		for _, project := range projects {
+		for _, project := range projectList.Items {
 			activeMark := " "
 			if project.Active {
 				activeMark = "*"
