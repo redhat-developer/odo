@@ -37,6 +37,7 @@ func getServiceClassesCategories(categories map[string][]scv1beta1.ClusterServic
 	return keys
 }
 
+// GetServicePlanNames returns the service plan names included in the specified map
 func GetServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (keys []string) {
 	keys = make([]string, len(stringMap))
 
