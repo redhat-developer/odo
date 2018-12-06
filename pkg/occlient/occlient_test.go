@@ -1992,7 +1992,6 @@ func TestLinkSecret(t *testing.T) {
 	}{
 		{
 			name:            "Case: Unable to locate DeploymentConfig",
-			namespace:       "foo",
 			secretName:      "foo",
 			componentName:   "foo",
 			applicationName: "",
@@ -2000,7 +1999,6 @@ func TestLinkSecret(t *testing.T) {
 		},
 		{
 			name:            "Case: Unable to update DeploymentConfig",
-			namespace:       "",
 			secretName:      "foo",
 			componentName:   "foo",
 			applicationName: "foo",
@@ -2038,7 +2036,7 @@ func TestLinkSecret(t *testing.T) {
 				return true, fakeDeploymentConfig(dcName, "foo", []corev1.EnvVar{}, []util.ResourceRequirementInfo{}), nil
 			})
 
-			err := fakeClient.LinkSecret(tt.secretName, tt.componentName, tt.applicationName, tt.namespace)
+			err := fakeClient.LinkSecret(tt.secretName, tt.componentName, tt.applicationName)
 			if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {

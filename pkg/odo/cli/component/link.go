@@ -134,7 +134,7 @@ func (o *LinkOptions) Run() (err error) {
 			}
 		}
 
-		err = client.LinkSecret(serviceName, o.Component(), o.Application, o.Project)
+		err = client.LinkSecret(serviceName, o.Component(), o.Application)
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ func (o *LinkOptions) Run() (err error) {
 			return err
 		}
 
-		err = client.LinkSecret(secretName, o.Component(), o.Application, o.Project)
+		err = client.LinkSecret(secretName, o.Component(), o.Application)
 		if err != nil {
 			return err
 		}

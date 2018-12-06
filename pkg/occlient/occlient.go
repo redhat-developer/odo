@@ -2027,30 +2027,45 @@ func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension,
 }
 
 // LinkSecret links a secret to the DeploymentConfig of a component
-func (c *Client) LinkSecret(secretName, componentName, applicationName, namespace string) error {
+func (c *Client) LinkSecret(secretName, componentName, applicationName string) error {
+	// Add the Secret as EnvVar to the container
+	var dcUpdater = func(dc *appsv1.DeploymentConfig) error {
+		dc.Spec.Template.Spec.Containers[0].EnvFrom =
+			append(
+				dc.Spec.Template.Spec.Containers[0].EnvFrom,
+				corev1.EnvFromSource{
+					SecretRef: &corev1.SecretEnvSource{
+						LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+					},
+				},
+			)
+
+		return nil
+	}
+
+	return c.updateDCAndRedeployComponent(componentName, applicationName, dcUpdater)
+}
+
+func (c *Client) updateDCAndRedeployComponent(componentName, applicationName string, dcUpdater dcStructUpdater) error {
 	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return err
 	}
 
-	dc, err := c.appsClient.DeploymentConfigs(namespace).Get(dcName, metav1.GetOptions{})
+	dc, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(dcName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Unable to locate DeploymentConfig for component %s of application %s", componentName, applicationName)
 	}
 
-	// Add the Secret as EnvVar to the container
-	dc.Spec.Template.Spec.Containers[0].EnvFrom =
-		append(
-			dc.Spec.Template.Spec.Containers[0].EnvFrom,
-			corev1.EnvFromSource{
-				SecretRef: &corev1.SecretEnvSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				},
-			},
-		)
+	if dcUpdater != nil {
+		err = dcUpdater(dc)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to update the DeploymentConfig")
+		}
+	}
 
 	// update the DeploymentConfig with the secret
-	_, err = c.appsClient.DeploymentConfigs(namespace).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
 	}
@@ -2064,7 +2079,7 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName, namespac
 
 	// Redeploy the DeploymentConfig of the application
 	// This is needed for the newly added secret to be injected to the pod
-	_, err = c.appsClient.DeploymentConfigs(namespace).Instantiate(request.Name, request)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(request.Name, request)
 	if err != nil {
 		return errors.Wrapf(err, "Redeployment of the DeploymentConfig failed %s", request.Name)
 	}
