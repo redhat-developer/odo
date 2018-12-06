@@ -2070,20 +2070,6 @@ func (c *Client) updateDCAndRedeployComponent(componentName, applicationName str
 		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
 	}
 
-	// Create a request that we will pass to the Deployment Config in order to trigger a new deployment
-	request := &appsv1.DeploymentRequest{
-		Name:   dcName,
-		Latest: true,
-		Force:  true,
-	}
-
-	// Redeploy the DeploymentConfig of the application
-	// This is needed for the newly added secret to be injected to the pod
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(request.Name, request)
-	if err != nil {
-		return errors.Wrapf(err, "Redeployment of the DeploymentConfig failed %s", request.Name)
-	}
-
 	return nil
 }
 
