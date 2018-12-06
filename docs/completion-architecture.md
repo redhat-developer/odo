@@ -51,14 +51,4 @@ argument completion handler or using
 a flag completion handler. Registering the completion handler will make it available for `main.createCompletion` which will 
 then automatically create the completion information from it.
 
-## Enabling / disabling completion
-
-While the completion code is written in go, we still need some integration at the shell level so that the executing shell knows
-when to ask the go application for potential completions. This is accomplished by running `odo -complete` and pressing `y` when 
-asked to install the completion hook. You will then need to either restart your shell or source the appropriate `.rc` file for 
-your shell. This should work for `bash`, `fish` and `zsh`.
-
-To disable completion, run `odo -uncomplete`.
-
-
 

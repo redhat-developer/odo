@@ -196,6 +196,26 @@ $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi
 
 That's it! Storage has been added your component with an allocated size of 1 Gb.
 
+## Command completion
+
+**Command completion is currently only supported for `bash`, `zsh` and `fish` shells.**
+
+`odo` provides smart completion of command parameters based on user input. This allows for less typing and less opportunity for 
+errors since only valid options in the given context are offered to the user as possible completion. This feature is implemented
+in `odo` itself and, as such, requires only minimal user intervention. However, `odo` still needs some integration at the shell
+level so that the executing shell knows when to ask `odo` for potential completions. This is accomplished by running 
+`odo --complete` and pressing `y` when asked to install the completion hook. This command modifies your `.rc` 
+shell configuration file (e.g. `.bashrc` for `bash`) as follows (which, of course, can also be done manually):
+```sh
+complete -o nospace -C <full path to your odo binary> odo
+``` 
+As seen in the command above, the completion system will stop working if you either rename the `odo` executable or move it, in 
+which case you will need to either re-run the `odo --complete` command or update the `.rc` entry. 
+Conversely, if you ever want to disable completion, run `odo -uncomplete`.
+
+Regardless of how you enabled or disabled the `odo` completion system, you will then need to either restart your shell or
+source the appropriate `.rc` file for your shell to take the changes into account.
+
 ## OpenShift notes
 
 These are some extra installation / getting started instructions for your local OpenShift cluster.
