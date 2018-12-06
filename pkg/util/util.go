@@ -21,6 +21,10 @@ import (
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
+// 63 is the max length of a DeploymentConfig in Openshift and we also have to take into account
+// that each component also gets a volume that uses the component name suffixed with -s2idata
+const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1
+
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
 	ResourceType corev1.ResourceName
@@ -76,7 +80,14 @@ func NamespaceOpenShiftObject(componentName string, applicationName string) (str
 	}
 
 	// Return the hyphenated namespaced name
-	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
+
+	originalName := fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName)
+	truncatedName := TruncateString(originalName, maxAllowedNamespacedStringLength)
+	if originalName != truncatedName {
+		glog.V(4).Infof("The combination of application %s and component %s was too long so the final name was truncated to %s",
+			applicationName, componentName, truncatedName)
+	}
+	return truncatedName, nil
 }
 
 // ExtractComponentType returns only component type part from passed component type(default unqualified, fully qualified, versioned, etc...and their combinations) for use as component name
