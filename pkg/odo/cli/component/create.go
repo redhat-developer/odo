@@ -364,7 +364,6 @@ func NewCmdCreate() *cobra.Command {
 	completion.RegisterCommandHandler(watchCmd, completion.ComponentNameCompletionHandler)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
 	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)
-	completion.RegisterCommandHandler(linkCmd, completion.ComponentNameCompletionHandler)
 
 	return componentCreateCmd
 }
