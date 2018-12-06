@@ -547,7 +547,7 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 // newSourceType indicates the type of the new source i.e git/local/binary
 // newSource indicates path of the source directory or binary or the git URL
 // stdout is the io writer for streaming build logs on stdout
-func Update(client *occlient.Client, componentName string, applicationName string, newSourceType string, newSource string, stdout io.Writer) error {
+func Update(client *occlient.Client, componentName string, applicationName string, newSourceType string, newSource string, newSourceRef string, stdout io.Writer) error {
 
 	// STEP 1. Create the common Object Meta for updating.
 
@@ -611,7 +611,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 
 		// CreateBuildConfig here!
 		glog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
-		bc, err := client.CreateBuildConfig(commonObjectMeta, imageName, newSource, envVars)
+		bc, err := client.CreateBuildConfig(commonObjectMeta, imageName, newSource, newSourceRef, envVars)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
 		}

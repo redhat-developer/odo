@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -65,6 +66,12 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// if --git is not specified but --ref is still given then error has to be thrown
+		if len(componentGit) == 0 && len(componentGitRef) != 0 {
+			fmt.Println("The --ref flag is only valid for --git flag")
+			os.Exit(1)
+		}
+
 		var componentName string
 		if len(args) == 0 {
 			componentName = context.Component()
@@ -78,7 +85,7 @@ var updateCmd = &cobra.Command{
 		}
 
 		if len(componentGit) != 0 {
-			err := component.Update(client, componentName, applicationName, "git", componentGit, stdout)
+			err := component.Update(client, componentName, applicationName, "git", componentGit, componentGitRef, stdout)
 			odoutil.CheckError(err, "")
 			log.Successf("The component %s was updated successfully", componentName)
 		} else if len(componentLocal) != 0 {
@@ -91,13 +98,13 @@ var updateCmd = &cobra.Command{
 				log.Error("Please provide a path to the directory")
 				os.Exit(1)
 			}
-			err = component.Update(client, componentName, applicationName, "local", dir, stdout)
+			err = component.Update(client, componentName, applicationName, "local", dir, "", stdout)
 			odoutil.CheckError(err, "")
 			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", componentName)
 		} else if len(componentBinary) != 0 {
 			path, err := pkgUtil.GetAbsPath(componentBinary)
 			util.CheckError(err, "")
-			err = component.Update(client, componentName, applicationName, "binary", path, stdout)
+			err = component.Update(client, componentName, applicationName, "binary", path, "", stdout)
 			odoutil.CheckError(err, "")
 			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", componentName)
 		}
@@ -109,7 +116,7 @@ func NewCmdUpdate() *cobra.Command {
 	updateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "binary artifact")
 	updateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source for component.")
-
+	updateCmd.Flags().StringVarP(&componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
 	// Add a defined annotation in order to appear in the help menu
 	updateCmd.Annotations = map[string]string{"command": "component"}
 	updateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

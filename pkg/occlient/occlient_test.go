@@ -4461,6 +4461,7 @@ func TestCreateBuildConfig(t *testing.T) {
 		namespace        string
 		builderImage     string
 		gitURL           string
+		gitRef           string
 		envVars          []corev1.EnvVar
 	}
 	tests := []struct {
@@ -4475,6 +4476,7 @@ func TestCreateBuildConfig(t *testing.T) {
 				builderImage: "ruby:latest",
 				namespace:    "testing",
 				gitURL:       "https://github.com/openshift/ruby",
+				gitRef:       "master",
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
@@ -4574,6 +4576,7 @@ func TestCreateBuildConfig(t *testing.T) {
 				builderImage: "ruby:latest",
 				namespace:    "testing",
 				gitURL:       "https://github.com/openshift/ruby",
+				gitRef:       "develop",
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
@@ -4602,7 +4605,7 @@ func TestCreateBuildConfig(t *testing.T) {
 			})
 
 			// Run function CreateBuildConfig
-			bc, err := fakeClient.CreateBuildConfig(tt.args.commonObjectMeta, tt.args.builderImage, tt.args.gitURL, tt.args.envVars)
+			bc, err := fakeClient.CreateBuildConfig(tt.args.commonObjectMeta, tt.args.builderImage, tt.args.gitURL, tt.args.gitRef, tt.args.envVars)
 
 			if err == nil && !tt.wantErr {
 				// Check to see how many actions are being ran
