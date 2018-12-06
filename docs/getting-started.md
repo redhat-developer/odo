@@ -124,12 +124,12 @@ $ odo create nodejs
  ✓   Checking component
  ✓   Checking component version
  ✓   Creating component nodejs-ex-nodejs-nnjf
- OK  Component 'nodejs-ex-nodejs-nnjf' was created and port 8080/TCP was opened
- OK  Component 'nodejs-ex-nodejs-nnjf' is now set as active component
+ ✓   Component 'nodejs-ex-nodejs-nnjf' was created and port 8080/TCP was opened
+ ✓   Component 'nodejs-ex-nodejs-nnjf' is now set as active component
 To push source code to the component run 'odo push'
 ```
 
-*Note:* You can explicitly supply a namespace by using: `odo create openshift/nodejs:8`. Otherwise, the `latest` image is used.
+*Note:* You can explicitly supply an image version by using: `odo create openshift/nodejs:8`. Otherwise, the `latest` image is used.
 
 Now that a component is running we'll go ahead and push our initial source code!
 
@@ -139,7 +139,7 @@ Pushing changes to component: nodejs-ex-nodejs-nnjf
  ✓   Waiting for pod to start
  ✓   Copying files to pod
  ✓   Building component
- OK  Changes successfully pushed to component: nodejs-ex-nodejs-nnjf
+ ✓   Changes successfully pushed to component: nodejs-ex-nodejs-nnjf
 ```
 
 Great news! Your component has been deployed to OpenShift! Now we'll connect to the component.
@@ -151,7 +151,7 @@ To access the component, we'll need to create an OpenShift route:
 ```console
 $ odo url create
 Adding URL to component: nodejs-ex-nodejs-nnjf
- OK  URL created for component: nodejs-ex-nodejs-nnjf
+ ✓   URL created for component: nodejs-ex-nodejs-nnjf
 
 nodejs-ex-nodejs-nnjf - http://nodejs-ex-nodejs-nnjf-nodeapp-myproject.192.168.42.90.nip.io
 ```
@@ -176,7 +176,7 @@ Pushing changes to component: nodejs-ex-nodejs-nnjf
  ✓   Waiting for pod to start
  ✓   Copying files to pod
  ✓   Building component
- OK  Changes successfully pushed to component: nodejs-ex-nodejs-nnjf
+ ✓   Changes successfully pushed to component: nodejs-ex-nodejs-nnjf
 ```
 
 Refresh your application in the browser, and you'll be able to see the changes.
@@ -185,13 +185,13 @@ After each change, you can continue updating your component by using: `odo push 
 
 ### 6. Adding storage to the component
 
-Now that you've got your component running, how do you add persistent any data between restarts?
+Now that you've got your component running, how do you persist data between restarts?
 
 If you wish to add storage to your component, `odo` makes it very easy for you to do this:
 
 ```console
 $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi 
- OK  Added storage nodestorage to nodejs-ex-nodejs-nnjf
+ ✓   Added storage nodestorage to nodejs-ex-nodejs-nnjf
 ```
 
 That's it! Storage has been added your component with an allocated size of 1 Gb.
