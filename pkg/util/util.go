@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -248,17 +249,29 @@ func GetRandomName(prefix string, prefixMaxLen int, existList []string, retries 
 
 // GetDNS1123Name Converts passed string into DNS-1123 string
 func GetDNS1123Name(str string) string {
-	replacer := strings.NewReplacer(
-		" ", "-",
-		".", "-",
-		",", "-",
-		"(", "-",
-		")", "-",
-		"/", "-",
-		":", "-",
-		"--", "-",
-	)
-	return strings.TrimSpace(replacer.Replace(strings.ToLower(str)))
+	nonAllowedCharsRegex := regexp.MustCompile(`[^a-zA-Z0-9_-]+`)
+	withReplacedChars := strings.Replace(
+		nonAllowedCharsRegex.ReplaceAllString(str, "-"),
+		"--", "-", -1)
+	return removeNonAlphaSuffix(removeNonAlphaPrefix(withReplacedChars))
+}
+
+func removeNonAlphaPrefix(input string) string {
+	regex := regexp.MustCompile("^[^a-zA-Z0-9]+(.*)$")
+	return regex.ReplaceAllString(input, "$1")
+}
+
+func removeNonAlphaSuffix(input string) string {
+	suffixRegex := regexp.MustCompile("^(.*?)[^a-zA-Z0-9]+$") //regex that strips all trailing non alpha-numeric chars
+	matches := suffixRegex.FindStringSubmatch(input)
+	matchesLength := len(matches)
+	if matchesLength == 0 {
+		// in this case the string does not contain a non-alphanumeric suffix
+		return input
+	} else {
+		// in this case we return the smallest match which in the last element in the array
+		return matches[matchesLength-1]
+	}
 }
 
 // SliceDifference returns the values of s2 that do not exist in s1
