@@ -63,11 +63,9 @@ var updateCmd = &cobra.Command{
 		}
 
 		// if --git is not specified but --ref is still given then error has to be thrown
-		if len(componentGit) == 0 {
-			if len(componentGitRef) != 0 {
-				fmt.Println("The --ref flag is only valid for --git flag")
-				os.Exit(1)
-			}
+		if len(componentGit) == 0 && len(componentGitRef) != 0 {
+			fmt.Println("The --ref flag is only valid for --git flag")
+			os.Exit(1)
 		}
 
 		var componentName string
@@ -114,7 +112,7 @@ func NewCmdUpdate() *cobra.Command {
 	updateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "binary artifact")
 	updateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source for component.")
-	updateCmd.Flags().StringVarP(&componentGitRef, "ref", "r", "", "Use a specific ref i.e. commit, branch or tag of the git repository")
+	updateCmd.Flags().StringVarP(&componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
 	// Add a defined annotation in order to appear in the help menu
 	updateCmd.Annotations = map[string]string{"command": "component"}
 	updateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

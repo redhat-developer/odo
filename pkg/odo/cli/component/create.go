@@ -68,7 +68,7 @@ A full list of component types that can be deployed is available using: 'odo cat
   # Create new Node.js component with source from remote git repository
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
 
-  # Create new Node.js component with source from remote git repository and a ref (which can be a commit hash, branch or tag)
+  # Create new Node.js git component while specifying a ref
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref develop
 
   # Create a new Node.js component of version 6 from the 'openshift' namespace
@@ -129,11 +129,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 		}
 
 		// if --git is not specified but --ref is still given then error has to be thrown
-		if len(componentGit) == 0 {
-			if len(componentGitRef) != 0 {
-				fmt.Println("The --ref flag is only valid for --git flag")
-				os.Exit(1)
-			}
+		if len(componentGit) == 0 && len(componentGitRef) != 0 {
+			fmt.Println("The --ref flag is only valid for --git flag")
+			os.Exit(1)
 		}
 
 		componentImageName, componentType, _, componentVersion := util.ParseCreateCmdArgs(args)
@@ -329,7 +327,7 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 func NewCmdCreate() *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
 	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
-	componentCreateCmd.Flags().StringVarP(&componentGitRef, "ref", "r", "", "Use a specific ref i.e. commit, branch or tag of the git repository")
+	componentCreateCmd.Flags().StringVarP(&componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
 	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
 	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi")
 	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
