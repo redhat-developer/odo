@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedUnLinkCommandName is the recommended unlink command name
-const RecommendedUnLinkCommandName = "unlink"
+// RecommendedUnlinkCommandName is the recommended unlink command name
+const RecommendedUnlinkCommandName = "unlink"
 
 var (
 	unlinkExample = ktemplates.Examples(`# Unlink the 'my-postgresql' service from the current component 
@@ -41,7 +41,7 @@ var (
 For this command to be successful, the service or component needs to have been linked prior to the invocation using 'odo link'`
 )
 
-// LinkOptions encapsulates the options for the odo link command
+// UnlinkOptions encapsulates the options for the odo link command
 type UnlinkOptions struct {
 	port         string
 	suppliedName string
@@ -78,26 +78,22 @@ func (o *UnlinkOptions) Run() (err error) {
 			glog.V(4).Infof("Both a service and component with name %s - assuming a link to the service is required", o.suppliedName)
 		}
 
-		serviceName := o.suppliedName
-
 		// we check whether there is a secret with the same name as the service
 		// the secret should have been created along with the secret
-		_, err = client.GetSecret(serviceName, o.Project)
+		_, err = client.GetSecret(o.suppliedName, o.Project)
 		if err != nil {
-			return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. It doesn't make sense to call unlink unless the service has been provisioned", serviceName)
+			return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. It doesn't make sense to call unlink unless the service has been provisioned", o.suppliedName)
 		}
 
-		err = client.UnlinkSecret(serviceName, o.Component(), o.Application)
+		err = client.UnlinkSecret(o.suppliedName, o.Component(), o.Application)
 		if err != nil {
 			return err
 		}
 
-		log.Successf("Service %s has been successfully unlinked from the component %s", serviceName, o.Component())
+		log.Successf("Service %s has been successfully unlinked from the component %s", o.suppliedName, o.Component())
 		return nil
 	} else if cmpExists {
-		targetComponent := o.suppliedName
-
-		secretName, err := secret.DetermineSecretName(client, targetComponent, o.Application, o.port)
+		secretName, err := secret.DetermineSecretName(client, o.suppliedName, o.Application, o.port)
 		if err != nil {
 			return err
 		}
@@ -107,14 +103,14 @@ func (o *UnlinkOptions) Run() (err error) {
 			return err
 		}
 
-		log.Successf("Component %s has been successfully unlinked from component %s", targetComponent, o.Component())
+		log.Successf("Component %s has been successfully unlinked from component %s", o.suppliedName, o.Component())
 		return nil
 	} else {
 		return fmt.Errorf("Neither a service nor a component named %s could be located. Unlink should not be called unless the target service or component exists", o.suppliedName)
 	}
 }
 
-// NewCmdLink implements the link odo command
+// NewCmdUnlink implements the link odo command
 func NewCmdUnlink(name, fullName string) *cobra.Command {
 	o := NewUnlinkOptions()
 

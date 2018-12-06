@@ -106,13 +106,11 @@ func (o *LinkOptions) Run() (err error) {
 			glog.V(4).Infof("Both a service and component with name %s - assuming a link to the service is required", o.suppliedName)
 		}
 
-		serviceName := o.suppliedName
-
 		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
 		// which we can link to
-		_, err = client.GetServiceBinding(serviceName, o.Project)
+		_, err = client.GetServiceBinding(o.suppliedName, o.Project)
 		if err != nil {
-			return fmt.Errorf("The service was not created via Odo. Please delete the service and recreate it using 'odo service create %s'", serviceName)
+			return fmt.Errorf("The service was not created via Odo. Please delete the service and recreate it using 'odo service create %s'", o.suppliedName)
 		}
 
 		if o.wait {
@@ -120,31 +118,29 @@ func (o *LinkOptions) Run() (err error) {
 			// this is done because the secret is only created after the Pod that runs the
 			// service is in running state.
 			// This can take a long time to occur if the image of the service has yet to be downloaded
-			log.Progressf("Waiting for secret of service %s to come up", serviceName)
-			_, err = client.WaitAndGetSecret(serviceName, o.Project)
+			log.Progressf("Waiting for secret of service %s to come up", o.suppliedName)
+			_, err = client.WaitAndGetSecret(o.suppliedName, o.Project)
 			if err != nil {
 				return err
 			}
 		} else {
 			// we also need to check whether there is a secret with the same name as the service
 			// the secret should have been created along with the secret
-			_, err = client.GetSecret(serviceName, o.Project)
+			_, err = client.GetSecret(o.suppliedName, o.Project)
 			if err != nil {
-				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it.", serviceName)
+				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it.", o.suppliedName)
 			}
 		}
 
-		err = client.LinkSecret(serviceName, o.Component(), o.Application)
+		err = client.LinkSecret(o.suppliedName, o.Component(), o.Application)
 		if err != nil {
 			return err
 		}
 
-		log.Successf("Service %s has been successfully linked to the component %s", serviceName, o.Component())
+		log.Successf("Service %s has been successfully linked to the component %s", o.suppliedName, o.Component())
 		return nil
 	} else if cmpExists {
-		targetComponent := o.suppliedName
-
-		secretName, err := secret.DetermineSecretName(client, targetComponent, o.Application, o.port)
+		secretName, err := secret.DetermineSecretName(client, o.suppliedName, o.Application, o.port)
 		if err != nil {
 			return err
 		}
@@ -154,7 +150,7 @@ func (o *LinkOptions) Run() (err error) {
 			return err
 		}
 
-		log.Successf("Component %s has been successfully linked to component %s", targetComponent, o.Component())
+		log.Successf("Component %s has been successfully linked to component %s", o.suppliedName, o.Component())
 		return nil
 	} else {
 		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo link'", o.suppliedName)
