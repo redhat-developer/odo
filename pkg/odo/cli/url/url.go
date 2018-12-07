@@ -5,9 +5,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -27,6 +29,7 @@ var (
 	urlForceDeleteFlag bool
 	urlOpenFlag        bool
 	urlPort            int
+	outputFlag         string
 )
 
 var urlCmd = &cobra.Command{
@@ -43,21 +46,21 @@ The URLs that are generated using this command, can be used to access the deploy
 
 var urlCreateCmd = &cobra.Command{
 	Use:   "create [component name]",
-	Short: "Create a URL for a component",
-	Long: `Create a URL for a component.
+	Short: "Create a UrlSpec for a component",
+	Long: `Create a UrlSpec for a component.
 
-The created URL can be used to access the specified component from outside the OpenShift cluster.
+The created UrlSpec can be used to access the specified component from outside the OpenShift cluster.
 `,
-	Example: `  # Create a URL for the current component with a specific port
+	Example: `  # Create a UrlSpec for the current component with a specific port
   odo url create --port 8080
 
-  # Create a URL with a specific name and port
+  # Create a UrlSpec with a specific name and port
   odo url create example --port 8080
 
-  # Create a URL with a specific name by automatic detection of port (only for components which expose only one service port) 
+  # Create a UrlSpec with a specific name by automatic detection of port (only for components which expose only one service port)
   odo url create example
 
-  # Create a URL with a specific name and port for component frontend
+  # Create a UrlSpec with a specific name and port for component frontend
   odo url create example --port 8080 --component frontend
 	`,
 	Args: cobra.MaximumNArgs(1),
@@ -88,26 +91,27 @@ The created URL can be used to access the specified component from outside the O
 			os.Exit(1)
 		}
 
-		log.Infof("Adding URL to component: %v", componentName)
+		log.Infof("Adding UrlSpec to component: %v", componentName)
 		urlRoute, err := url.Create(client, urlName, componentPort, componentName, applicationName)
 		odoutil.LogErrorAndExit(err, "")
 
 		urlCreated := url.GetURLString(*urlRoute)
-		log.Successf("URL created for component: %v\n\n"+
+		log.Successf("UrlSpec created for component: %v\n\n"+
 			"%v - %v\n", componentName, urlRoute.Name, urlCreated)
 
 		if urlOpenFlag {
 			err := util.OpenBrowser(urlCreated)
 			odoutil.LogErrorAndExit(err, "Unable to open URL within default browser")
+
 		}
 	},
 }
 
 var urlDeleteCmd = &cobra.Command{
 	Use:   "delete <url-name>",
-	Short: "Delete a URL",
-	Long:  `Delete the given URL, hence making the service inaccessible.`,
-	Example: `  # Delete a URL to a component
+	Short: "Delete a UrlSpec",
+	Long:  `Delete the given UrlSpec, hence making the service inaccessible.`,
+	Example: `  # Delete a UrlSpec to a component
   odo url delete myurl
 	`,
 	Args: cobra.ExactArgs(1),
@@ -123,7 +127,7 @@ var urlDeleteCmd = &cobra.Command{
 		odoutil.LogErrorAndExit(err, "")
 
 		if !exists {
-			log.Errorf("The URL %s does not exist within the component %s", urlName, componentName)
+			log.Errorf("The UrlSpec %s does not exist within the component %s", urlName, componentName)
 			os.Exit(1)
 		}
 
@@ -167,17 +171,27 @@ var urlListCmd = &cobra.Command{
 		if len(urls) == 0 {
 			log.Errorf("No URLs found for component %v in application %v", componentName, applicationName)
 		} else {
-			log.Infof("Found the following URLs for component %v in application %v:", componentName, applicationName)
+			if outputFlag == "json" {
+				output := url.MachineUrlList{TypeMeta: metav1.TypeMeta{Kind: "List"}, Items: urls}
+				out, err := yaml.Marshal(output)
+				odoutil.LogErrorAndExit(err, "")
+				fmt.Println(string(out))
 
-			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			} else {
 
-			//create headers
-			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
+				log.Infof("Found the following URLs for component %v in application %v:", componentName, applicationName)
 
-			for _, u := range urls {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
+				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+				//create headers
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "UrlSpec", "\t", "PORT")
+
+				for _, u := range urls {
+
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
+				}
+				tabWriterURL.Flush()
 			}
-			tabWriterURL.Flush()
 		}
 	},
 }
@@ -186,6 +200,7 @@ var urlListCmd = &cobra.Command{
 func NewCmdURL() *cobra.Command {
 	urlCreateCmd.Flags().IntVarP(&urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().BoolVar(&urlOpenFlag, "open", false, "open the created link with your default browser")
+	urlListCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "gives output in the form of json")
 
 	urlDeleteCmd.Flags().BoolVarP(&urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 

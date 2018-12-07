@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -15,11 +16,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-type StorageInfo struct {
-	Name string
-	Size string
+type Storage struct {
+	Name string `json:"name,omitempty"`
+	Size string `json:"size,omitempty"`
 	// if path is empty, it indicates that the storage is not mounted in any component
-	Path string
+	Path string `json:"path,omitempty"`
+}
+
+type StorageList struct {
+	metav1.TypeMeta `json:",inline"`
+
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	Items []Storage `json:"items"`
 }
 
 // Create adds storage to given component of given application
@@ -129,7 +138,7 @@ func Delete(client *occlient.Client, name string, applicationName string) (strin
 
 // List lists all the mounted storage associated with the given component of the given
 // application and the unmounted storages in the given application
-func List(client *occlient.Client, componentName string, applicationName string) ([]StorageInfo, error) {
+func List(client *occlient.Client, componentName string, applicationName string) ([]Storage, error) {
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
@@ -165,7 +174,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
-	var storageList []StorageInfo
+	var storageList []Storage
 	for _, pvc := range pvcs {
 		pvcComponentName, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
@@ -179,7 +188,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 			storageName := getStorageFromPVC(&pvc)
 			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 			storagePath := mountedStorageMap[storageName]
-			storageList = append(storageList, StorageInfo{
+			storageList = append(storageList, Storage{
 				Name: storageName,
 				Size: storageSize.String(),
 				Path: storagePath,
@@ -190,12 +199,12 @@ func List(client *occlient.Client, componentName string, applicationName string)
 }
 
 // ListMounted lists all the mounted storage associated with the given component and application
-func ListMounted(client *occlient.Client, componentName string, applicationName string) ([]StorageInfo, error) {
+func ListMounted(client *occlient.Client, componentName string, applicationName string) ([]Storage, error) {
 	storageList, err := List(client, componentName, applicationName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get storage of component %v", componentName)
 	}
-	var storageListMounted []StorageInfo
+	var storageListMounted []Storage
 	for _, storage := range storageList {
 		if storage.Path != "" {
 			storageListMounted = append(storageListMounted, storage)
@@ -205,12 +214,12 @@ func ListMounted(client *occlient.Client, componentName string, applicationName 
 }
 
 // ListUnmounted lists all the unmounted storage associated with the given application
-func ListUnmounted(client *occlient.Client, applicationName string) ([]StorageInfo, error) {
+func ListUnmounted(client *occlient.Client, applicationName string) ([]Storage, error) {
 	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
-	var storageList []StorageInfo
+	var storageList []Storage
 	for _, pvc := range pvcs {
 		_, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
@@ -222,7 +231,7 @@ func ListUnmounted(client *occlient.Client, applicationName string) ([]StorageIn
 			}
 			storageName := getStorageFromPVC(&pvc)
 			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageList = append(storageList, StorageInfo{
+			storageList = append(storageList, Storage{
 				Name: storageName,
 				Size: storageSize.String(),
 				Path: "",

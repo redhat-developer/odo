@@ -24,6 +24,9 @@ import (
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
+// APIVersion for all types
+var APIVersion = "odo.openshift.io/v1alpha1"
+
 // 63 is the max length of a DeploymentConfig in Openshift and we also have to take into account
 // that each component also gets a volume that uses the component name suffixed with -s2idata
 const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1

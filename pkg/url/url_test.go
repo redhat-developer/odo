@@ -29,7 +29,7 @@ func TestCreate(t *testing.T) {
 		name          string
 		args          args
 		returnedRoute *routev1.Route
-		want          *URL
+		want          *UrlSpec
 		wantErr       bool
 	}{
 		{
@@ -59,7 +59,7 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			want: &URL{
+			want: &UrlSpec{
 				Name:     "nodejs",
 				Protocol: "http",
 				URL:      "host",
@@ -94,7 +94,7 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			want: &URL{
+			want: &UrlSpec{
 				Name:     "example-url",
 				Protocol: "http",
 				URL:      "host",
@@ -200,7 +200,7 @@ func TestExists(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name:            "correct values and URL found",
+			name:            "correct values and UrlSpec found",
 			urlName:         "nodejs",
 			componentName:   "nodejs",
 			applicationName: "app",
@@ -251,7 +251,7 @@ func TestExists(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:            "correct values and URL not found",
+			name:            "correct values and UrlSpec not found",
 			urlName:         "example",
 			componentName:   "nodejs",
 			applicationName: "app",

@@ -6,9 +6,12 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/ghodss/yaml"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -28,6 +31,7 @@ var (
 	storagePath            string
 	storageForceDeleteflag bool
 	storageAllListflag     bool
+	outputFlag             string
 )
 
 var storageCmd = &cobra.Command{
@@ -201,13 +205,13 @@ var storageListCmd = &cobra.Command{
 				log.Error("Invalid arguments. Component name is not needed")
 				os.Exit(1)
 			}
-			printMountedStorageInAllComponent(client, applicationName)
+			printMountedStorageInAllComponent(client, applicationName, outputFlag)
 		} else {
 			// storageComponent is the input component name
 			componentName := context.Component()
-			printMountedStorageInComponent(client, componentName, applicationName)
+			printMountedStorageInComponent(client, componentName, applicationName, outputFlag)
 		}
-		printUnmountedStorage(client, applicationName)
+		printUnmountedStorage(client, applicationName, outputFlag)
 	},
 }
 
@@ -252,6 +256,7 @@ func NewCmdStorage() *cobra.Command {
 	storageCreateCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
 	storageCreateCmd.MarkFlagRequired("path")
 	storageCreateCmd.MarkFlagRequired("size")
+	storageListCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "gives output in the form of json")
 
 	storageDeleteCmd.Flags().BoolVarP(&storageForceDeleteflag, "force", "f", false, "Delete storage without prompting")
 
@@ -313,7 +318,7 @@ func validateStoragePath(client *occlient.Client, storagePath, componentName, ap
 }
 
 // printMountedStorageInComponent prints all the mounted storage in a given component of the application
-func printMountedStorageInComponent(client *occlient.Client, componentName string, applicationName string) {
+func printMountedStorageInComponent(client *occlient.Client, componentName string, applicationName, outputFlag string) {
 
 	// defining the column structure of the table
 	tabWriterMounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -323,35 +328,42 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 
 	storageListMounted, err := storage.ListMounted(client, componentName, applicationName)
 	odoutil.LogErrorAndExit(err, "could not get mounted storage list")
+	if outputFlag == "json" {
+		output := storage.StorageList{TypeMeta: metav1.TypeMeta{Kind: "StorageList", APIVersion: util.APIVersion}, Items: storageListMounted}
+		out, _ := yaml.Marshal(output)
+		fmt.Println(string(out))
 
-	// iterating over all mounted storage and put in the mount storage table
-	if len(storageListMounted) > 0 {
-		for _, mStorage := range storageListMounted {
-			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Size, "\t", mStorage.Path)
-		}
-
-		// print all mounted storage of the given component
-		log.Infof("The component '%v' has the following storage attached:", componentName)
-		tabWriterMounted.Flush()
 	} else {
-		log.Infof("The component '%v' has no storage attached", componentName)
+
+		// iterating over all mounted storage and put in the mount storage table
+		if len(storageListMounted) > 0 {
+			for _, mStorage := range storageListMounted {
+				fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Size, "\t", mStorage.Path)
+			}
+
+			// print all mounted storage of the given component
+			log.Infof("The component '%v' has the following storage attached:", componentName)
+			tabWriterMounted.Flush()
+		} else {
+			log.Infof("The component '%v' has no storage attached", componentName)
+		}
+		fmt.Println("")
 	}
-	fmt.Println("")
 }
 
 // printMountedStorageInAllComponent prints all the mounted storage in all the components of the application and project
-func printMountedStorageInAllComponent(client *occlient.Client, applicationName string) {
+func printMountedStorageInAllComponent(client *occlient.Client, applicationName, outputFlag string) {
 	componentList, err := component.List(client, applicationName)
 	odoutil.LogErrorAndExit(err, "could not get component list")
 
 	// iterating over all the components in the given aplication and project
 	for _, component := range componentList {
-		printMountedStorageInComponent(client, component.Name, applicationName)
+		printMountedStorageInComponent(client, component.ComponentName, applicationName, outputFlag)
 	}
 }
 
 // printUnmountedStorage prints all the unmounted storage in the application
-func printUnmountedStorage(client *occlient.Client, applicationName string) {
+func printUnmountedStorage(client *occlient.Client, applicationName, outputFlag string) {
 
 	// defining the column structure of the unmounted storage table
 	tabWriterUnmounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)

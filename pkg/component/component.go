@@ -33,22 +33,6 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 
-// Info holds all important information about one component
-type Info struct {
-	Name string
-	Type string
-}
-
-// Description holds all information about component
-type Description struct {
-	ComponentName      string                `json:"componentName,omitempty"`
-	ComponentImageType string                `json:"type,omitempty"`
-	Path               string                `json:"source,omitempty"`
-	URLs               []urlpkg.URL          `json:"url,omitempty"`
-	Env                []corev1.EnvVar       `json:"environment,omitempty"`
-	Storage            []storage.StorageInfo `json:"storage,omitempty"`
-}
-
 // GetComponentDir returns source repo name
 // Parameters:
 //		path: git url or source path or binary path
@@ -79,13 +63,13 @@ func GetComponentDir(path string, paramType occlient.CreateType) (string, error)
 // GetDefaultComponentName generates a unique component name
 // Parameters: desired default component name(w/o prefix) and slice of existing component names
 // Returns: Unique component name and error if any
-func GetDefaultComponentName(componentPath string, componentPathType occlient.CreateType, componentType string, existingComponentList []Info) (string, error) {
+func GetDefaultComponentName(componentPath string, componentPathType occlient.CreateType, componentType string, existingComponentList []ComponentSpec) (string, error) {
 	var prefix string
 
 	// Get component names from component list
 	var existingComponentNames []string
 	for _, componentInfo := range existingComponentList {
-		existingComponentNames = append(existingComponentNames, componentInfo.Name)
+		existingComponentNames = append(existingComponentNames, componentInfo.ComponentName)
 	}
 
 	// Fetch config
@@ -286,7 +270,7 @@ func Delete(client *occlient.Client, componentName string, applicationName strin
 
 			// If there's more than one component, set it to the first one..
 			if len(components) > 0 {
-				err = cfg.SetActiveComponent(components[0].Name, applicationName, client.Namespace)
+				err = cfg.SetActiveComponent(components[0].ComponentName, applicationName, client.Namespace)
 
 				if err != nil {
 					return errors.Wrapf(err, "unable to set current component to '%s'", componentName)
@@ -488,7 +472,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
-func List(client *occlient.Client, applicationName string) ([]Info, error) {
+func List(client *occlient.Client, applicationName string) ([]ComponentSpec, error) {
 
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 
@@ -498,14 +482,14 @@ func List(client *occlient.Client, applicationName string) ([]Info, error) {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
 
-	var components []Info
+	var components []ComponentSpec
 
 	// extract the labels we care about from each component
 	for _, elem := range dcList {
 		components = append(components,
-			Info{
-				Name: elem.Labels[componentlabels.ComponentLabel],
-				Type: elem.Labels[componentlabels.ComponentTypeLabel],
+			ComponentSpec{
+				ComponentName:      elem.Labels[componentlabels.ComponentLabel],
+				ComponentImageType: elem.Labels[componentlabels.ComponentTypeLabel],
 			},
 		)
 	}
@@ -697,7 +681,7 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 		return false, errors.Wrap(err, "unable to get the component list")
 	}
 	for _, component := range componentList {
-		if component.Name == componentName {
+		if component.ComponentName == componentName {
 			return true, nil
 		}
 	}
@@ -705,7 +689,7 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 }
 
 // GetComponentDesc provides description such as source, url & storage about given component
-func GetComponentDesc(client *occlient.Client, componentName string, applicationName string) (componentDesc Description, err error) {
+func GetComponentDesc(client *occlient.Client, componentName string, applicationName string) (componentDesc ComponentSpec, err error) {
 	// Component Type
 	componentImageType, err := GetComponentType(client, componentName, applicationName)
 	if err != nil {
@@ -745,7 +729,7 @@ func GetComponentDesc(client *occlient.Client, componentName string, application
 	if err != nil {
 		return componentDesc, errors.Wrap(err, "unable to get envVars list")
 	}
-	componentDesc = Description{
+	componentDesc = ComponentSpec{
 		ComponentName:      componentName,
 		ComponentImageType: componentImageType,
 		Path:               path,

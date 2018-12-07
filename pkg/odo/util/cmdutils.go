@@ -53,7 +53,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 `
 
 // PrintComponentInfo prints Component Information like path, URL & storage
-func PrintComponentInfo(currentComponentName string, componentDesc component.Description) {
+func PrintComponentInfo(currentComponentName string, componentDesc component.ComponentSpec) {
 	fmt.Printf("Component Name: %v\nType: %v\n", currentComponentName, componentDesc.ComponentImageType)
 	// Source
 	if componentDesc.Path != "" {

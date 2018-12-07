@@ -5,7 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -13,8 +15,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"text/tabwriter"
 
@@ -26,13 +28,8 @@ import (
 var (
 	applicationShortFlag       bool
 	applicationForceDeleteFlag bool
+	outputFlag                 string
 )
-
-// Description holds all information about application
-type Description struct {
-	Name       string `json:"applicationName,omitempty"`
-	Components []component.Description
-}
 
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
@@ -176,6 +173,11 @@ var applicationDeleteCmd = &cobra.Command{
 	},
 }
 
+type Applist struct {
+	Name   string
+	Active bool
+}
+
 var applicationListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all applications in the current project",
@@ -195,17 +197,46 @@ var applicationListCmd = &cobra.Command{
 		apps, err := application.ListInProject(client)
 		odoutil.LogErrorAndExit(err, "unable to get list of applications")
 		if len(apps) > 0 {
-			log.Infof("The project '%v' has the following applications:", projectName)
-			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(tabWriter, "ACTIVE", "\t", "NAME")
-			for _, app := range apps {
-				activeMark := " "
-				if app.Active {
-					activeMark = "*"
+
+			if outputFlag == "json" {
+				//for _, app := range apps{
+				//
+				//}
+				//var componentDescList []string
+				//for _, currentComponent := range componentList {
+				//	componentDescList = append(componentDescList, currentComponent.ComponentName)
+				//}
+
+				//var appo []application.App
+				//for _, app := range apps {
+				//	//a, _ := AppMachineOutput(client, app.Name)
+				//	//appo = append(appo, a)
+				//}
+				list := application.AppList{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "List",
+						APIVersion: util.APIVersion,
+					},
+					ListMeta: metav1.ListMeta{},
+					Items:    apps,
 				}
-				fmt.Fprintln(tabWriter, activeMark, "\t", app.Name)
+				out, err := yaml.Marshal(list)
+				odoutil.LogErrorAndExit(err, "")
+				fmt.Println(string(out))
+			} else {
+
+				log.Infof("The project '%v' has the following applications:", projectName)
+				tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+				fmt.Fprintln(tabWriter, "ACTIVE", "\t", "NAME")
+				for _, app := range apps {
+					activeMark := " "
+					if app.Active {
+						activeMark = "*"
+					}
+					fmt.Fprintln(tabWriter, activeMark, "\t", app.Name)
+				}
+				tabWriter.Flush()
 			}
-			tabWriter.Flush()
 		} else {
 			log.Infof("There are no applications deployed in the project '%v'.", projectName)
 		}
@@ -290,21 +321,83 @@ var applicationDescribeCmd = &cobra.Command{
 			log.Errorf("Application %s has no components deployed.", appName)
 			os.Exit(1)
 		}
-		fmt.Printf("Application Name: %s has %v components:\n--------------------------------------\n", appName, len(componentList))
+
+		var componentDescList []component.ComponentSpec
 		for _, currentComponent := range componentList {
-			componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+			componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, appName)
 			odoutil.LogErrorAndExit(err, "")
-			odoutil.PrintComponentInfo(currentComponent.Name, componentDesc)
-			fmt.Println("--------------------------------------")
+			componentDescList = append(componentDescList, componentDesc)
+		}
+		//appDescribe, componentDescList := AppMachineOutput(client, appName)
+		if outputFlag == "json" {
+			var componentDescList []string
+			for _, currentComponent := range componentList {
+				componentDescList = append(componentDescList, currentComponent.ComponentName)
+			}
+			appDescribe := application.App{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Application",
+					APIVersion: util.APIVersion,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: appName,
+				},
+				Spec: application.AppSeco{Components: componentDescList},
+			}
+			out, err := yaml.Marshal(appDescribe)
+			odoutil.LogErrorAndExit(err, "")
+			fmt.Println(string(out))
+		} else {
+			fmt.Printf("Application Name: %s has %v components:\n", appName, len(componentDescList))
+			for _, componentDesc := range componentDescList {
+				fmt.Println("--------------------------------------")
+				odoutil.PrintComponentInfo(componentDesc.ComponentName, componentDesc)
+			}
 		}
 
 	},
 }
 
+//func AppMachineOutput(client *occlient.Client, appName string) (appDescribe application.App, componentDescList []component.ComponentSpec) {
+//	// List of Component
+//	componentList, err := component.List(client, appName)
+//	odoutil.CheckError(err, "")
+//	//if len(componentList) ==mini
+//
+//	//var componentDescList []component.ComponentSpec
+//	for _, currentComponent := range componentList {
+//		componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, appName)
+//		odoutil.CheckError(err, "")
+//		componentDescList = append(componentDescList, componentDesc)
+//	}
+//
+//	for _, currentComponent := range componentList {
+//		componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, appName)
+//		odoutil.CheckError(err, "")
+//		componentDescList = append(componentDescList, componentDesc)
+//	}
+//
+//	appDescribe = application.App{
+//		TypeMeta: metav1.TypeMeta{
+//			Kind:       "Application",
+//			APIVersion: util.APIVersion,
+//		},
+//		ObjectMeta: metav1.ObjectMeta{
+//			Name: appName,
+//		},
+//		Spec: application.AppSeco{Components: componentList},
+//	}
+//	//out, err := yaml.Marshal(appDescribe)
+//	//odoutil.CheckError(err, "")
+//	//fmt.Println(string(out))
+//	return appDescribe, componentDescList
+//}
+
 // NewCmdApplication implements the odo application command
 func NewCmdApplication() *cobra.Command {
 	applicationDeleteCmd.Flags().BoolVarP(&applicationForceDeleteFlag, "force", "f", false, "Delete application without prompting")
-
+	applicationDescribeCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "gives output in the form of json")
+	applicationListCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "gives output in the form of json")
 	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
 	// add flags from 'get' to application command
 	applicationCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
@@ -350,11 +443,11 @@ func printDeleteAppInfo(client *occlient.Client, appName string) error {
 	}
 
 	for _, currentComponent := range componentList {
-		componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+		componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, appName)
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}
-		log.Info("Component", currentComponent.Name, "will be deleted.")
+		log.Info("Component", currentComponent.ComponentName, "will be deleted.")
 
 		if len(componentDesc.URLs) != 0 {
 			fmt.Println("  Externally exposed URLs will be removed")

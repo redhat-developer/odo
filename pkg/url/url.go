@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
@@ -16,17 +18,37 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-type URL struct {
-	Name     string
-	URL      string
-	Protocol string
-	Port     int
+// machine readable struct
+type MachineURL struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              UrlSpec `json:"spec,omitempty"`
 }
 
-// Delete deletes a URL
+// PodList is a list of Pods.
+type MachineUrlList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds
+	// +optional
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// List of pods.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md
+	Items []UrlSpec `json:"items"`
+}
+
+type UrlSpec struct {
+	Name     string `json:"name,omitempty"`
+	URL      string `json:"url,omitempty"`
+	Protocol string `json:"-"`
+	Port     int    `json:"-"`
+}
+
+// Delete deletes a UrlSpec
 func Delete(client *occlient.Client, urlName string, applicationName string) error {
 
-	// Namespace the URL name
+	// Namespace the UrlSpec name
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(urlName, applicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create namespaced name")
@@ -35,9 +57,9 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 	return client.DeleteRoute(namespacedOpenShiftObject)
 }
 
-// Create creates a URL
+// Create creates a UrlSpec
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (*URL, error) {
+func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (*UrlSpec, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, false)
 
 	serviceName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -55,7 +77,7 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}
-	return &URL{
+	return &UrlSpec{
 		Name:     route.Labels[urlLabels.URLLabel],
 		URL:      route.Spec.Host,
 		Protocol: getProtocol(*route),
@@ -66,7 +88,7 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 // List lists the URLs in an application. The results can further be narrowed
 // down if a component name is provided, which will only list URLs for the
 // given component
-func List(client *occlient.Client, componentName string, applicationName string) ([]URL, error) {
+func List(client *occlient.Client, componentName string, applicationName string) ([]UrlSpec, error) {
 
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
 
@@ -80,9 +102,9 @@ func List(client *occlient.Client, componentName string, applicationName string)
 		return nil, errors.Wrap(err, "unable to list route names")
 	}
 
-	var urls []URL
+	var urls []UrlSpec
 	for _, r := range routes {
-		urls = append(urls, URL{
+		urls = append(urls, UrlSpec{
 			Name:     r.Labels[urlLabels.URLLabel],
 			URL:      r.Spec.Host,
 			Protocol: getProtocol(r),
@@ -102,7 +124,7 @@ func getProtocol(route routev1.Route) string {
 }
 
 // GetURLString returns a string representation of given url
-func GetURLString(url URL) string {
+func GetURLString(url UrlSpec) string {
 	return url.Protocol + "://" + url.URL
 }
 

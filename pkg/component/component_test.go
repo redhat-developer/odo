@@ -102,7 +102,7 @@ func TestList(t *testing.T) {
 		name    string
 		dcList  appsv1.DeploymentConfigList
 		wantErr bool
-		output  []Info
+		output  []ComponentSpec
 	}{
 		{
 			name: "Case 1: Components are returned",
@@ -170,14 +170,14 @@ func TestList(t *testing.T) {
 					},
 				},
 			},
-			output: []Info{
+			output: []ComponentSpec{
 				{
-					Name: "frontend",
-					Type: "nodejs",
+					ComponentName:      "frontend",
+					ComponentImageType: "nodejs",
 				},
 				{
-					Name: "backend",
-					Type: "java",
+					ComponentName:      "backend",
+					ComponentImageType: "java",
 				},
 			},
 			wantErr: false,
@@ -212,7 +212,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		componentType      string
 		componentPath      string
 		componentPathType  occlient.CreateType
-		existingComponents []Info
+		existingComponents []ComponentSpec
 		wantErr            bool
 		wantRE             string
 		needPrefix         bool
@@ -222,7 +222,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "nodejs",
 			componentPathType:  occlient.GIT,
 			componentPath:      "https://github.com/openshift/nodejs.git",
-			existingComponents: []Info{},
+			existingComponents: []ComponentSpec{},
 			wantErr:            false,
 			wantRE:             "nodejs-*",
 			needPrefix:         false,
@@ -232,7 +232,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "nodejs",
 			componentPathType:  occlient.LOCAL,
 			componentPath:      "./testing",
-			existingComponents: []Info{},
+			existingComponents: []ComponentSpec{},
 			wantErr:            false,
 			wantRE:             "testing-nodejs-*",
 			needPrefix:         true,
@@ -242,7 +242,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "wildfly",
 			componentPathType:  occlient.BINARY,
 			componentPath:      "./testing.war",
-			existingComponents: []Info{},
+			existingComponents: []ComponentSpec{},
 			wantErr:            false,
 			wantRE:             "testing-wildfly-*",
 			needPrefix:         true,
@@ -298,7 +298,7 @@ func TestGetComponentDir(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			testName: "Case: Git URL",
+			testName: "Case: Git UrlSpec",
 			args: args{
 				paramType: occlient.GIT,
 				path:      "https://github.com/openshift/nodejs-ex.git",
