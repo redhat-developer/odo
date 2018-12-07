@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-
+	"github.com/redhat-developer/odo/pkg/occlient"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 
@@ -68,13 +68,63 @@ DB_USER=luke
 DB_PASSWORD=secret`
 )
 
+type CommonLinkOptions interface {
+	getSecretName() string
+	setSecretName(secretName string)
+	getIsTargetAService() bool
+	setIsTargetAService(isTargetAService bool)
+	setContext(context *genericclioptions.Context)
+	getClient() *occlient.Client
+	getApplication() string
+	getProject() string
+	getPort() string
+}
+
 // LinkOptions encapsulates the options for the odo link command
 type LinkOptions struct {
-	port              string
-	wait              bool
-	secretName        string
-	isLinkToComponent bool
+	port             string
+	wait             bool
+	secretName       string
+	isTargetAService bool
 	*genericclioptions.Context
+}
+
+// "implement" the methods of CommonLinkOptions
+
+func (o *LinkOptions) getSecretName() string {
+	return o.secretName
+}
+
+func (o *LinkOptions) setSecretName(secretName string) {
+	o.secretName = secretName
+}
+
+func (o *LinkOptions) getIsTargetAService() bool {
+	return o.isTargetAService
+}
+
+func (o *LinkOptions) setIsTargetAService(isTargetAService bool) {
+	o.isTargetAService = isTargetAService
+}
+
+func (o *LinkOptions) setContext(context *genericclioptions.Context) {
+	o.Context = context
+}
+
+func (o *LinkOptions) getClient() *occlient.Client {
+	return o.Client
+}
+
+func (o *LinkOptions) getApplication() string {
+	return o.Application
+}
+
+func (o *LinkOptions) getProject() string {
+	return o.Project
+}
+
+func (o *LinkOptions) getPort() string {
+	return o.port
 }
 
 // NewLinkOptions creates a new LinkOptions instance
@@ -83,60 +133,65 @@ func NewLinkOptions() *LinkOptions {
 }
 
 // Complete completes LinkOptions after they've been created
-func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func Complete(o CommonLinkOptions, cmd *cobra.Command, args []string) (err error) {
 	suppliedName := args[0]
-	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	o.setContext(genericclioptions.NewContextCreatingAppIfNeeded(cmd))
 
-	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
+	svcExists, err := svc.SvcExists(o.getClient(), suppliedName, o.getApplication())
 	if err != nil {
 		return fmt.Errorf("Unable to determine if service exists:\n%v", err)
 	}
 
-	cmpExists, err := component.Exists(o.Client, suppliedName, o.Application)
+	cmpExists, err := component.Exists(o.getClient(), suppliedName, o.getApplication())
 	if err != nil {
 		return fmt.Errorf("Unable to determine if component exists:\n%v", err)
 	}
 
 	if !cmpExists && !svcExists {
-		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo link'", suppliedName)
+		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo link/unlink'", suppliedName)
 	}
 
-	o.isLinkToComponent = !svcExists
+	o.setIsTargetAService(svcExists)
+
 	if svcExists {
 		if cmpExists {
 			glog.V(4).Infof("Both a service and component with name %s - assuming a link to the service is required", suppliedName)
 		}
 
-		o.secretName = suppliedName
+		o.setSecretName(suppliedName)
 	} else {
-		o.secretName, err = secret.DetermineSecretName(o.Client, suppliedName, o.Application, o.port)
+		secretName, err := secret.DetermineSecretName(o.getClient(), suppliedName, o.getApplication(), o.getPort())
+		if err != nil {
+			return err
+		}
+		o.setSecretName(secretName)
 	}
 
-	return
+	return nil
 }
 
-func (o *LinkOptions) Validate() (err error) {
-	if !o.isLinkToComponent {
+func Validate(o CommonLinkOptions, wait bool) (err error) {
+	if o.getIsTargetAService() {
 		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
 		// which we can link to
-		_, err = o.Client.GetServiceBinding(o.secretName, o.Project)
+		_, err = o.getClient().GetServiceBinding(o.getSecretName(), o.getProject())
 		if err != nil {
-			return fmt.Errorf("The service was not created via Odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
+			return fmt.Errorf("The service was not created via Odo. Please delete the service and recreate it using 'odo service create %s'", o.getSecretName())
 		}
 
-		if o.wait {
+		if wait {
 			// we wait until the secret has been created on the OpenShift
 			// this is done because the secret is only created after the Pod that runs the
 			// service is in running state.
 			// This can take a long time to occur if the image of the service has yet to be downloaded
-			log.Progressf("Waiting for secret of service %s to come up", o.secretName)
-			_, err = o.Client.WaitAndGetSecret(o.secretName, o.Project)
+			log.Progressf("Waiting for secret of service %s to come up", o.getSecretName())
+			_, err = o.getClient().WaitAndGetSecret(o.getSecretName(), o.getProject())
 		} else {
 			// we also need to check whether there is a secret with the same name as the service
 			// the secret should have been created along with the secret
-			_, err = o.Client.GetSecret(o.secretName, o.Project)
+			_, err = o.getClient().GetSecret(o.getSecretName(), o.getProject())
 			if err != nil {
-				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it.", o.secretName)
+				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo link/unlink'.", o.getSecretName())
 			}
 		}
 	}
@@ -146,9 +201,9 @@ func (o *LinkOptions) Validate() (err error) {
 
 // Run contains the logic for the odo link command
 func (o *LinkOptions) Run() (err error) {
-	linkType := "Service"
-	if o.isLinkToComponent {
-		linkType = "Component"
+	linkType := "Component"
+	if o.isTargetAService {
+		linkType = "Service"
 	}
 
 	err = o.Client.LinkSecret(o.secretName, o.Component(), o.Application)
@@ -161,7 +216,7 @@ func (o *LinkOptions) Run() (err error) {
 }
 
 // NewCmdLink implements the link odo command
-func NewCmdLink(name, fullName string) *cobra.Command {
+func NewCmdLink(fullName string) *cobra.Command {
 	o := NewLinkOptions()
 
 	linkCmd := &cobra.Command{
@@ -171,8 +226,8 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(linkExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.CheckError(o.Complete(name, cmd, args), "")
-			util.CheckError(o.Validate(), "")
+			util.CheckError(Complete(o, cmd, args), "")
+			util.CheckError(Validate(o, o.wait), "")
 			util.CheckError(o.Run(), "")
 		},
 	}
