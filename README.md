@@ -7,7 +7,7 @@
 - [What is Odo?](#odo)
 - [Features](#features)
 - [Setup and Installation](#setup-and-installation)
-- [Deploying an Application using Odo](#deploying-a-nodejs-application-using-odo)
+- [Deploying an Application using Odo](#deploying-an-application-using-odo)
 - [Additional Documentation](#additional-documentation)
 - [Community, Discussion, Contribution and Support](#community-discussion-contribution-and-support)
 - [Glossary](#glossary)
