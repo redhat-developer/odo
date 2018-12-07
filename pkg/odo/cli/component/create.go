@@ -185,7 +185,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 			os.Exit(1)
 		}
 
-		fmt.Printf("Initializing '%s' component ...\n", componentName)
+		log.Successf("Initializing '%s' component ...", componentName)
 		ensureAndLogProperResourceUsage(memory, memoryMin, memoryMax, "memory")
 
 		ensureAndLogProperResourceUsage(cpu, cpuMin, cpuMax, "cpu")
