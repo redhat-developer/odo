@@ -309,14 +309,14 @@ var _ = Describe("odoe2e", func() {
 			It("should create route without url name provided", func() {
 				runCmd("odo component set nodejs")
 				getURLOut := runCmd("odo url create")
-				Expect(getURLOut).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
+				Expect(getURLOut).To(ContainSubstring("nodejs-8080-" + appTestName + "-" + projName))
 
 				// check the port number of the created URL
-				port := runCmd("oc get route nodejs-" + appTestName + " -o go-template='{{index .spec.port.targetPort}}'")
+				port := runCmd("oc get route nodejs-8080-" + appTestName + " -o go-template='{{index .spec.port.targetPort}}'")
 				Expect(port).To(Equal("8080"))
 
 				// delete the url
-				runCmd("odo url delete nodejs -f")
+				runCmd("odo url delete nodejs-8080 -f")
 			})
 
 			It("should create route without port in case of single service port component", func() {

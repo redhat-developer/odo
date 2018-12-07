@@ -67,10 +67,13 @@ The created URL can be used to access the specified component from outside the O
 		applicationName := context.Application
 		componentName := context.Component()
 
+		componentPort, err := url.GetValidPortNumber(client, urlPort, componentName, applicationName)
+		odoutil.CheckError(err, "")
+
 		var urlName string
 		switch len(args) {
 		case 0:
-			urlName = componentName
+			urlName = url.GetURLName(componentName, componentPort)
 		case 1:
 			urlName = args[0]
 		default:
@@ -86,7 +89,7 @@ The created URL can be used to access the specified component from outside the O
 		}
 
 		log.Infof("Adding URL to component: %v", componentName)
-		urlRoute, err := url.Create(client, urlName, urlPort, componentName, applicationName)
+		urlRoute, err := url.Create(client, urlName, componentPort, componentName, applicationName)
 		odoutil.CheckError(err, "")
 
 		urlCreated := url.GetURLString(*urlRoute)
