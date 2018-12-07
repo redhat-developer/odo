@@ -2522,7 +2522,19 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string) error {
 	isSingleFileTransfer := isSingleFileTransfer(copyFiles)
 
-	dest := path.Join(targetPath, filepath.Base(localPath))
+	var makeTarDestPath string
+	var containerDirectory string
+	var onlyFile string
+	if isSingleFileTransfer {
+		onlyFile = copyFiles[0]
+		relativePathOfOnlyFile := filepath.Dir(strings.Replace(onlyFile, localPath, "", -1))
+		makeTarDestPath = strings.Replace(targetPath+relativePathOfOnlyFile+"/"+filepath.Base(onlyFile), "//", "/", -1)
+		containerDirectory = filepath.Dir(makeTarDestPath)
+	} else {
+		makeTarDestPath = path.Join(targetPath, filepath.Base(localPath))
+		containerDirectory = targetPath
+	}
+
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
 	go func() {
@@ -2530,10 +2542,9 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 
 		var err error
 		if isSingleFileTransfer {
-			onlyFile := copyFiles[0]
-			err = makeTar(onlyFile, targetPath+"/"+filepath.Base(onlyFile), writer, []string{})
+			err = makeTar(onlyFile, makeTarDestPath, writer, []string{})
 		} else {
-			err = makeTar(localPath, dest, writer, copyFiles)
+			err = makeTar(localPath, makeTarDestPath, writer, copyFiles)
 		}
 		if err != nil {
 			glog.Errorf("Error while creating tar: %#v", err)
@@ -2543,7 +2554,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 	}()
 
 	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
+	cmdArr := []string{"tar", "xf", "-", "-C", containerDirectory}
 	if !isSingleFileTransfer {
 		cmdArr = append(cmdArr, "--strip", "1")
 	}
