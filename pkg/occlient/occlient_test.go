@@ -58,7 +58,7 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, re
 		Name:      name,
 		Tag:       "latest",
 		Namespace: "openshift",
-		Ports:     []corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}},
+		Ports:     []corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
 	}
 
 	// Generate the DeploymentConfig that will be used.
@@ -3402,7 +3402,7 @@ func TestPatchCurrentDC(t *testing.T) {
 				name:     "foo",
 				dcBefore: *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}}, fakeResourceConsumption()),
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar",
-					[]corev1.ContainerPort{corev1.ContainerPort{Name: "foo", HostPort: 80, ContainerPort: 80}},
+					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					nil),
 			},
@@ -3586,31 +3586,31 @@ func TestUniqueAppendOrOverwriteEnvVars(t *testing.T) {
 		{
 			name: "Case: Overlapping env vars appends",
 			existingEnvVars: []corev1.EnvVar{
-				corev1.EnvVar{
+				{
 					Name:  "key1",
 					Value: "value1",
 				},
-				corev1.EnvVar{
+				{
 					Name:  "key2",
 					Value: "value2",
 				},
 			},
 			envVars: []corev1.EnvVar{
-				corev1.EnvVar{
+				{
 					Name:  "key1",
 					Value: "value3",
 				},
-				corev1.EnvVar{
+				{
 					Name:  "key2",
 					Value: "value4",
 				},
 			},
 			want: []corev1.EnvVar{
-				corev1.EnvVar{
+				{
 					Name:  "key1",
 					Value: "value3",
 				},
-				corev1.EnvVar{
+				{
 					Name:  "key2",
 					Value: "value4",
 				},
@@ -3619,39 +3619,39 @@ func TestUniqueAppendOrOverwriteEnvVars(t *testing.T) {
 		{
 			name: "New env vars append",
 			existingEnvVars: []corev1.EnvVar{
-				corev1.EnvVar{
+				{
 					Name:  "key1",
 					Value: "value1",
 				},
-				corev1.EnvVar{
+				{
 					Name:  "key2",
 					Value: "value2",
 				},
 			},
 			envVars: []corev1.EnvVar{
-				corev1.EnvVar{
+				{
 					Name:  "key3",
 					Value: "value3",
 				},
-				corev1.EnvVar{
+				{
 					Name:  "key4",
 					Value: "value4",
 				},
 			},
 			want: []corev1.EnvVar{
-				corev1.EnvVar{
+				{
 					Name:  "key1",
 					Value: "value1",
 				},
-				corev1.EnvVar{
+				{
 					Name:  "key2",
 					Value: "value2",
 				},
-				corev1.EnvVar{
+				{
 					Name:  "key3",
 					Value: "value3",
 				},
-				corev1.EnvVar{
+				{
 					Name:  "key4",
 					Value: "value4",
 				},

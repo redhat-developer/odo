@@ -1,11 +1,12 @@
 package storage
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/redhat-developer/odo/pkg/storage/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
-	"testing"
 )
 
 func Test_getStorageFromPVC(t *testing.T) {

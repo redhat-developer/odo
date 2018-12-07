@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
