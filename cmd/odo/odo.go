@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"os"
 )
 
 func main() {
@@ -32,8 +33,14 @@ func main() {
 		_ = root.Help()
 	}
 
-	// parse the flags - both the program's flags and the completion flags
-	flag.Parse()
+	// parse the flags but hack around to avoid exiting with error code 2 on help
+	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
+	args := os.Args[1:]
+	if err := flag.CommandLine.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			os.Exit(0)
+		}
+	}
 
 	// run the completion, in case that the completion was invoked
 	// and ran as a completion script or handled a flag that passed
