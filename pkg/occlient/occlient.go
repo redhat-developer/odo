@@ -2520,7 +2520,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
 func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string) error {
-	isSingleFileTransfer := isSingleFileTransfer(copyFiles)
+	canTransferSingleFile := canTransferSingleFile(localPath, copyFiles)
 
 	dest := path.Join(targetPath, filepath.Base(localPath))
 	reader, writer := io.Pipe()
@@ -2529,7 +2529,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 		defer writer.Close()
 
 		var err error
-		if isSingleFileTransfer {
+		if canTransferSingleFile {
 			onlyFile := copyFiles[0]
 			err = makeTar(onlyFile, targetPath+"/"+filepath.Base(onlyFile), writer, []string{})
 		} else {
@@ -2544,7 +2544,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 
 	// cmdArr will run inside container
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
-	if !isSingleFileTransfer {
+	if !canTransferSingleFile {
 		cmdArr = append(cmdArr, "--strip", "1")
 	}
 
@@ -2555,12 +2555,14 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 	return nil
 }
 
-// isSingleFileTransfer returns true if copyFiles
+// canTransferSingleFile returns true if copyFiles
 // contains a single, non-directory file
-func isSingleFileTransfer(copyFiles []string) bool {
+// that is a top level file only
+func canTransferSingleFile(localPath string, copyFiles []string) bool {
 	if len(copyFiles) == 1 {
-		if stat, err := os.Lstat(copyFiles[0]); err == nil {
-			if !stat.IsDir() {
+		singleFile := copyFiles[0]
+		if stat, err := os.Lstat(singleFile); err == nil {
+			if !stat.IsDir() && filepath.Dir(singleFile) == localPath {
 				return true
 			}
 		}
