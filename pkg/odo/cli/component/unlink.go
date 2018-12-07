@@ -2,13 +2,10 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
@@ -40,85 +37,47 @@ For this command to be successful, the service or component needs to have been l
 
 // UnlinkOptions encapsulates the options for the odo link command
 type UnlinkOptions struct {
-	port             string
-	secretName       string
-	isTargetAService bool
-	*genericclioptions.Context
+	*commonLinkOptions
 }
 
-// "implement" the methods of CommonLinkOptions
-
-func (o *UnlinkOptions) getSecretName() string {
-	return o.secretName
-}
-
-func (o *UnlinkOptions) setSecretName(secretName string) {
-	o.secretName = secretName
-}
-
-func (o *UnlinkOptions) getIsTargetAService() bool {
-	return o.isTargetAService
-}
-
-func (o *UnlinkOptions) setIsTargetAService(isTargetAService bool) {
-	o.isTargetAService = isTargetAService
-}
-
-func (o *UnlinkOptions) setContext(context *genericclioptions.Context) {
-	o.Context = context
-}
-
-func (o *UnlinkOptions) getClient() *occlient.Client {
-	return o.Client
-}
-
-func (o *UnlinkOptions) getApplication() string {
-	return o.Application
-}
-
-func (o *UnlinkOptions) getProject() string {
-	return o.Project
-}
-
-func (o *UnlinkOptions) getPort() string {
-	return o.port
-}
-
-// NewUnlinkOptions creates a new LinkOptions instance
+// NewUnlinkOptions creates a new UnlinkOptions instance
 func NewUnlinkOptions() *UnlinkOptions {
-	return &UnlinkOptions{}
+	options := UnlinkOptions{}
+	options.commonLinkOptions = newCommonLinkOptions()
+	return &options
+}
+
+// Complete completes UnlinkOptions after they've been created
+func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	err = o.complete(name, cmd, args)
+	o.operation = o.Client.UnlinkSecret
+	return err
+}
+
+// Validate validates the UnlinkOptions based on completed values
+func (o *UnlinkOptions) Validate() (err error) {
+	return o.validate(false)
 }
 
 // Run contains the logic for the odo link command
-func (o *UnlinkOptions) Run(suppliedName string) (err error) {
-	linkType := "Component"
-	if o.isTargetAService {
-		linkType = "Service"
-	}
-
-	err = o.Client.UnlinkSecret(o.secretName, o.Component(), o.Application)
-	if err != nil {
-		return err
-	}
-
-	log.Successf("%s %s has been successfully unlinked from the component %s", linkType, suppliedName, o.Component())
-	return
+func (o *UnlinkOptions) Run() (err error) {
+	return o.run()
 }
 
 // NewCmdUnlink implements the link odo command
-func NewCmdUnlink(fullName string) *cobra.Command {
+func NewCmdUnlink(name, fullName string) *cobra.Command {
 	o := NewUnlinkOptions()
 
 	unlinkCmd := &cobra.Command{
-		Use:     "unlink <service> --component [component] OR unlink <component> --component [component]",
+		Use:     fmt.Sprintf("%s <service> --component [component] OR unlink <component> --component [component]", name),
 		Short:   "Unlink component to a service or component",
 		Long:    unlinkLongDesc,
 		Example: fmt.Sprintf(unlinkExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.CheckError(Complete(o, cmd, args), "")
-			util.CheckError(Validate(o, false), "")
-			util.CheckError(o.Run(args[0]), "")
+			util.CheckError(o.Complete(name, cmd, args), "")
+			util.CheckError(o.Validate(), "")
+			util.CheckError(o.Run(), "")
 		},
 	}
 
