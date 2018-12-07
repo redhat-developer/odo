@@ -70,9 +70,10 @@ DB_PASSWORD=secret`
 
 // LinkOptions encapsulates the options for the odo link command
 type LinkOptions struct {
-	port         string
-	wait         bool
-	suppliedName string
+	port              string
+	wait              bool
+	secretName        string
+	isLinkToComponent bool
 	*genericclioptions.Context
 }
 
@@ -83,34 +84,44 @@ func NewLinkOptions() *LinkOptions {
 
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.suppliedName = args[0]
+	suppliedName := args[0]
 	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-	return err
-}
 
-// Run contains the logic for the odo link command
-func (o *LinkOptions) Run() (err error) {
-	client := o.Client
-	svcExists, err := svc.SvcExists(client, o.suppliedName, o.Application)
+	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
 	if err != nil {
 		return fmt.Errorf("Unable to determine if service exists:\n%v", err)
 	}
 
-	cmpExists, err := component.Exists(client, o.suppliedName, o.Application)
+	cmpExists, err := component.Exists(o.Client, suppliedName, o.Application)
 	if err != nil {
 		return fmt.Errorf("Unable to determine if component exists:\n%v", err)
 	}
 
+	if !cmpExists && !svcExists {
+		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo link'", suppliedName)
+	}
+
+	o.isLinkToComponent = !svcExists
 	if svcExists {
 		if cmpExists {
-			glog.V(4).Infof("Both a service and component with name %s - assuming a link to the service is required", o.suppliedName)
+			glog.V(4).Infof("Both a service and component with name %s - assuming a link to the service is required", suppliedName)
 		}
 
+		o.secretName = suppliedName
+	} else {
+		o.secretName, err = secret.DetermineSecretName(o.Client, suppliedName, o.Application, o.port)
+	}
+
+	return
+}
+
+func (o *LinkOptions) Validate() (err error) {
+	if !o.isLinkToComponent {
 		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
 		// which we can link to
-		_, err = client.GetServiceBinding(o.suppliedName, o.Project)
+		_, err = o.Client.GetServiceBinding(o.secretName, o.Project)
 		if err != nil {
-			return fmt.Errorf("The service was not created via Odo. Please delete the service and recreate it using 'odo service create %s'", o.suppliedName)
+			return fmt.Errorf("The service was not created via Odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
 		}
 
 		if o.wait {
@@ -118,43 +129,35 @@ func (o *LinkOptions) Run() (err error) {
 			// this is done because the secret is only created after the Pod that runs the
 			// service is in running state.
 			// This can take a long time to occur if the image of the service has yet to be downloaded
-			log.Progressf("Waiting for secret of service %s to come up", o.suppliedName)
-			_, err = client.WaitAndGetSecret(o.suppliedName, o.Project)
-			if err != nil {
-				return err
-			}
+			log.Progressf("Waiting for secret of service %s to come up", o.secretName)
+			_, err = o.Client.WaitAndGetSecret(o.secretName, o.Project)
 		} else {
 			// we also need to check whether there is a secret with the same name as the service
 			// the secret should have been created along with the secret
-			_, err = client.GetSecret(o.suppliedName, o.Project)
+			_, err = o.Client.GetSecret(o.secretName, o.Project)
 			if err != nil {
-				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it.", o.suppliedName)
+				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it.", o.secretName)
 			}
 		}
-
-		err = client.LinkSecret(o.suppliedName, o.Component(), o.Application)
-		if err != nil {
-			return err
-		}
-
-		log.Successf("Service %s has been successfully linked to the component %s", o.suppliedName, o.Component())
-		return nil
-	} else if cmpExists {
-		secretName, err := secret.DetermineSecretName(client, o.suppliedName, o.Application, o.port)
-		if err != nil {
-			return err
-		}
-
-		err = client.LinkSecret(secretName, o.Component(), o.Application)
-		if err != nil {
-			return err
-		}
-
-		log.Successf("Component %s has been successfully linked to component %s", o.suppliedName, o.Component())
-		return nil
-	} else {
-		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo link'", o.suppliedName)
 	}
+
+	return
+}
+
+// Run contains the logic for the odo link command
+func (o *LinkOptions) Run() (err error) {
+	linkType := "Service"
+	if o.isLinkToComponent {
+		linkType = "Component"
+	}
+
+	err = o.Client.LinkSecret(o.secretName, o.Component(), o.Application)
+	if err != nil {
+		return err
+	}
+
+	log.Successf("%s %s has been successfully linked to the component %s", linkType, o.secretName, o.Component())
+	return
 }
 
 // NewCmdLink implements the link odo command
@@ -169,6 +172,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckError(o.Complete(name, cmd, args), "")
+			util.CheckError(o.Validate(), "")
 			util.CheckError(o.Run(), "")
 		},
 	}
