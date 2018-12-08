@@ -201,20 +201,29 @@ That's it! Storage has been added your component with an allocated size of 1 Gb.
 **Command completion is currently only supported for `bash`, `zsh` and `fish` shells.**
 
 `odo` provides smart completion of command parameters based on user input. For this to work, `odo` needs to integrate with the 
-executing shell. This is accomplished by running `odo --complete` and pressing `y` when asked to install the completion hook. 
-This modifies your shell configuration file (e.g. `.bashrc` for `bash`).
+executing shell. 
 
-You can also modify your shell configuration file manually by adding:
-```sh
+This can be installed automatically, running:
+```bash
+odo --complete
+```
+and pressing `y` when asked to install the completion hook.
+
+You can also install the completion hook manually by adding:
+```bash
 complete -o nospace -C <full path to your odo binary> odo
 ``` 
+to your shell configuration file (e.g. `.bashrc` for `bash`).
 
-To disable completion, run `odo --uncomplete`.
+To disable completion, run:
+```bash
+odo --uncomplete
+```
 
 After any modification to your shell configuration file, you will need to `source` it or restart your shell.
 
-**NOTE**: The completion system will stop working if you either rename the `odo` executable or move it and you will to re-enable
-the completion accordingly.
+**NOTE**: The completion system will stop working if you either rename the `odo` executable or move it. You will therefore need
+to re-enable it accordingly.
 
 ## OpenShift notes
 
