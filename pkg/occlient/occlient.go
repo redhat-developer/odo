@@ -2608,8 +2608,6 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
 func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string) error {
-	isSingleFileTransfer := isSingleFileTransfer(copyFiles)
-
 	dest := path.Join(targetPath, filepath.Base(localPath))
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
@@ -2617,12 +2615,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 		defer writer.Close()
 
 		var err error
-		if isSingleFileTransfer {
-			onlyFile := copyFiles[0]
-			err = makeTar(onlyFile, targetPath+"/"+filepath.Base(onlyFile), writer, []string{})
-		} else {
-			err = makeTar(localPath, dest, writer, copyFiles)
-		}
+		err = makeTar(localPath, dest, writer, copyFiles)
 		if err != nil {
 			glog.Errorf("Error while creating tar: %#v", err)
 			os.Exit(1)
@@ -2631,29 +2624,12 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 	}()
 
 	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
-	if !isSingleFileTransfer {
-		cmdArr = append(cmdArr, "--strip", "1")
-	}
-
+	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
 	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-// isSingleFileTransfer returns true if copyFiles
-// contains a single, non-directory file
-func isSingleFileTransfer(copyFiles []string) bool {
-	if len(copyFiles) == 1 {
-		if stat, err := os.Lstat(copyFiles[0]); err == nil {
-			if !stat.IsDir() {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // checkFileExist check if given file exists or not
@@ -2674,13 +2650,23 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string) error {
 	srcPath = path.Clean(srcPath)
 	destPath = path.Clean(destPath)
 
+	glog.V(4).Infof("makeTar arguements: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
 		//watchTar
 		for _, fileName := range files {
 			if checkFileExist(fileName) {
+				// Fetch path of source file relative to that of source base path so that it can be passed to recursiveTar
+				// which uses path relative to base path for taro header to correctly identify file location when untarred
+				srcFile, err := filepath.Rel(srcPath, fileName)
+				if err != nil {
+					return err
+				}
+				srcFile = filepath.Join(filepath.Base(srcPath), srcFile)
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				return recursiveTar(path.Dir(srcPath), path.Base(srcPath), path.Dir(destPath), path.Base(destPath), tarWriter)
-
+				err = recursiveTar(path.Dir(srcPath), srcFile, path.Dir(destPath), srcFile, tarWriter)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	} else {
@@ -2729,6 +2715,7 @@ func tar(tw *taro.Writer, fileName string, destFile string) error {
 
 // recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
 func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer) error {
+	glog.V(4).Infof("recursiveTar arguements: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
 	filepath := path.Join(srcBase, srcFile)
 	stat, err := os.Lstat(filepath)
 	if err != nil {
