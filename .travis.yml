@@ -86,6 +86,17 @@ jobs:
         - oc login -u developer
         - make test-service-e2e
 
+    # Run link e2e tests
+    - <<: *base-test
+      stage: test
+      name: "Link e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh service-catalog
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - make test-link-e2e
+
     # test installation script on linux
     # - stage: test
     #   services:
