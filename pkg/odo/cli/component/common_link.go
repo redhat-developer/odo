@@ -37,7 +37,9 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
 	if err != nil {
-		return fmt.Errorf("Unable to determine if service exists:\n%v", err)
+		// we consider this error to be non-terminal since it's entirely possible to use odo without the service catalog
+		glog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Proceesing to only use components", suppliedName)
+		svcExists = false
 	}
 
 	cmpExists, err := component.Exists(o.Client, suppliedName, o.Application)
