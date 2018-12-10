@@ -18,7 +18,8 @@ type CommonImageMeta struct {
 	Ports     []corev1.ContainerPort
 }
 
-func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, commonImageMeta CommonImageMeta, envVar []corev1.EnvVar, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {
+func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, commonImageMeta CommonImageMeta,
+	envVar []corev1.EnvVar, envFrom []corev1.EnvFromSource, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {
 
 	// Generates and deploys a DeploymentConfig with an InitContainer to copy over the SupervisorD binary.
 	dc := appsv1.DeploymentConfig{
@@ -61,7 +62,8 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 									MountPath: "/var/lib/supervisord",
 								},
 							},
-							Env: envVar,
+							Env:     envVar,
+							EnvFrom: envFrom,
 						},
 					},
 

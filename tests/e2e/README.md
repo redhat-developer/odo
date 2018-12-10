@@ -23,7 +23,8 @@
 | `create --binary`                  | Y              |
 | `delete`                           | Y              |
 | `describe`                         | Y              |
-| `link`                             | N              |
+| `link`                             | Y              |
+| `unlink`                           | Y              |
 | `list`                             | Y              |
 | `push` --local                     | Y              |
 | `push` --binary                    | Y              |

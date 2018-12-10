@@ -1001,7 +1001,14 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	)
 
 	// Generate the DeploymentConfig that will be used.
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, params.ImageName, commonImageMeta, inputEnvs, getResourceRequirementsFromRawData(params.Resources))
+	dc := generateSupervisordDeploymentConfig(
+		commonObjectMeta,
+		params.ImageName,
+		commonImageMeta,
+		inputEnvs,
+		[]corev1.EnvFromSource{},
+		getResourceRequirementsFromRawData(params.Resources),
+	)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -1337,7 +1344,14 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 
 	// Generate the SupervisorD Config
 	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
-	dc := generateSupervisordDeploymentConfig(commonObjectMeta, componentImageType, commonImageMeta, inputEnvs, &resourceLimits)
+	dc := generateSupervisordDeploymentConfig(
+		commonObjectMeta,
+		componentImageType,
+		commonImageMeta,
+		inputEnvs,
+		[]corev1.EnvFromSource{},
+		&resourceLimits,
+	)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
 	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
@@ -2027,46 +2041,78 @@ func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension,
 }
 
 // LinkSecret links a secret to the DeploymentConfig of a component
-func (c *Client) LinkSecret(secretName, componentName, applicationName, namespace string) error {
+func (c *Client) LinkSecret(secretName, componentName, applicationName string) error {
+	// Add the Secret as EnvVar to the container
+	var dcUpdater = func(dc *appsv1.DeploymentConfig) error {
+		dc.Spec.Template.Spec.Containers[0].EnvFrom =
+			append(
+				dc.Spec.Template.Spec.Containers[0].EnvFrom,
+				corev1.EnvFromSource{
+					SecretRef: &corev1.SecretEnvSource{
+						LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+					},
+				},
+			)
+
+		return nil
+	}
+
+	return c.updateDCOfComponent(componentName, applicationName, dcUpdater)
+}
+
+// UnlinkSecret unlinks a secret to the DeploymentConfig of a component
+func (c *Client) UnlinkSecret(secretName, componentName, applicationName string) error {
+	// Remove the Secret from the container
+	var dcUpdater = func(dc *appsv1.DeploymentConfig) error {
+		indexForRemoval := -1
+		for i, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
+			if env.SecretRef.Name == secretName {
+				indexForRemoval = i
+				break
+			}
+		}
+
+		if indexForRemoval == -1 {
+			return fmt.Errorf("DeploymentConfig does not contain a link to %s", secretName)
+		}
+
+		// actually remove the secret from the dc
+		dc.Spec.Template.Spec.Containers[0].EnvFrom =
+			append(dc.Spec.Template.Spec.Containers[0].EnvFrom[:indexForRemoval],
+				dc.Spec.Template.Spec.Containers[0].EnvFrom[indexForRemoval+1:]...)
+
+		return nil
+	}
+
+	return c.updateDCOfComponent(componentName, applicationName, dcUpdater)
+}
+
+// this function will look up the appropriate DC, execute the specified update on the DC
+// and push the update to the API server - this will result in the triggering of a redeployment
+func (c *Client) updateDCOfComponent(componentName, applicationName string, dcUpdater dcStructUpdater) error {
 	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return err
 	}
 
-	dc, err := c.appsClient.DeploymentConfigs(namespace).Get(dcName, metav1.GetOptions{})
+	dc, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(dcName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Unable to locate DeploymentConfig for component %s of application %s", componentName, applicationName)
 	}
 
-	// Add the Secret as EnvVar to the container
-	dc.Spec.Template.Spec.Containers[0].EnvFrom =
-		append(
-			dc.Spec.Template.Spec.Containers[0].EnvFrom,
-			corev1.EnvFromSource{
-				SecretRef: &corev1.SecretEnvSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				},
-			},
-		)
+	if dcUpdater != nil {
+		err = dcUpdater(dc)
+		if err != nil {
+			return errors.Wrap(err, "Unable to update the DeploymentConfig")
+		}
+	} else {
+		return errors.Wrapf(err, "dcUpdater was not properly set - this is definitely an implementation issue")
+	}
 
 	// update the DeploymentConfig with the secret
-	_, err = c.appsClient.DeploymentConfigs(namespace).Update(dc)
+	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
-	}
-
-	// Create a request that we will pass to the Deployment Config in order to trigger a new deployment
-	request := &appsv1.DeploymentRequest{
-		Name:   dcName,
-		Latest: true,
-		Force:  true,
-	}
-
-	// Redeploy the DeploymentConfig of the application
-	// This is needed for the newly added secret to be injected to the pod
-	_, err = c.appsClient.DeploymentConfigs(namespace).Instantiate(request.Name, request)
-	if err != nil {
-		return errors.Wrapf(err, "Redeployment of the DeploymentConfig failed %s", request.Name)
 	}
 
 	return nil
