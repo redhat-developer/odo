@@ -23,7 +23,7 @@ Available Parameters:
 UpdateNotification - Controls if an update notification is shown or not (true or false)
 NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
 Timeout - Timeout (in seconds) for OpenShift server connection check`,
-	Example: fmt.Sprintf("%s\n%s\n",
+	Example: fmt.Sprintf("%s\n%s",
 		configurationViewCmd.Example,
 		configurationSetCmd.Example),
 	Aliases: []string{"configuration"},
@@ -58,7 +58,7 @@ Timeout - Timeout (in seconds) for OpenShift server connection check`,
    # Set a configuration value
    odo utils config set UpdateNotification false
    odo utils config set NamePrefix "app"
-   odo utils config set timeout 20
+   odo utils config set Timeout 20
 	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
