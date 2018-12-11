@@ -269,14 +269,44 @@ func TestGetDNS1123Name(t *testing.T) {
 		want     string
 	}{
 		{
-			testName: "Case: Test get DNS-1123 name for namespace and version qualified imagestream",
+			testName: "Case 1: Test get DNS-1123 name for namespace and version qualified imagestream",
 			param:    "myproject/foo:3.5",
 			want:     "myproject-foo-3-5",
 		},
 		{
-			testName: "Case: Test get DNS-1123 name for doubly hyphenated string",
+			testName: "Case 2: Test get DNS-1123 name for doubly hyphenated string",
 			param:    "nodejs--myproject-foo-3.5",
 			want:     "nodejs-myproject-foo-3-5",
+		},
+		{
+			testName: "Case 3: Test get DNS-1123 name for string starting with underscore",
+			param:    "_nodejs--myproject-foo-3.5",
+			want:     "nodejs-myproject-foo-3-5",
+		},
+		{
+			testName: "Case 4: Test get DNS-1123 name for string ending with underscore",
+			param:    "nodejs--myproject-foo-3.5_",
+			want:     "nodejs-myproject-foo-3-5",
+		},
+		{
+			testName: "Case 5: Test get DNS-1123 name for string having multiple non alpha-numeric chars as prefix",
+			param:    "_#*nodejs--myproject-foo-3.5",
+			want:     "nodejs-myproject-foo-3-5",
+		},
+		{
+			testName: "Case 6: Test get DNS-1123 name for string having multiple non alpha-numeric chars as suffix",
+			param:    "nodejs--myproject-foo-3.5=_@",
+			want:     "nodejs-myproject-foo-3-5",
+		},
+		{
+			testName: "Case 7: Test get DNS-1123 name for string having with multiple non alpha-numeric chars as prefix and suffix",
+			param:    " _#*nodejs--myproject-foo-3.5=_@ ",
+			want:     "nodejs-myproject-foo-3-5",
+		},
+		{
+			testName: "Case 8: Test get DNS-1123 should remove invalid chars",
+			param:    "myproject/$foo@@:3.5",
+			want:     "myproject-foo-3-5",
 		},
 	}
 
