@@ -129,7 +129,7 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	// make a new displayClassInfo function available to survey templates to be able to add class information to the display
 	displayClassInfo := "displayClassInfo"
 	core.TemplateFuncs[displayClassInfo] = func(index int, pageEntries []string) string {
-		if len(pageEntries) > index+1 {
+		if index >= 0 && len(pageEntries) > index {
 			selected := pageEntries[index]
 			class := classes[selected]
 			return fmt.Sprintf("Name: %s\nDescription: %s\nLong: %s", class.GetExternalName(), class.GetDescription(), getLongDescription(class))
