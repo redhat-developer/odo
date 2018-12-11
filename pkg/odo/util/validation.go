@@ -25,12 +25,19 @@ func ValidateName(name string) error {
 
 }
 
+func validateNameAsValidator(name interface{}) error {
+	s := name.(string)
+	return ValidateName(s)
+}
+
+const NameValidatorKey = "odo_name_validator"
 const defaultIntegerValidatorKey = "odo_default_integer"
 
 // Validatable represents a common ancestor for validatable parameters
 type Validatable struct {
-	Required bool
-	Type     string
+	Required             bool
+	Type                 string
+	AdditionalValidators []string
 }
 
 // AsValidatable allows avoiding type casts in client code
@@ -73,4 +80,6 @@ func init() {
 		}
 		return nil
 	}
+
+	validators[NameValidatorKey] = validateNameAsValidator
 }
