@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/golang/glog"
 	"strings"
 
@@ -45,8 +46,19 @@ type ServicePlanParameter struct {
 	Description     string
 	HasDefaultValue bool
 	Default         string
-	Type            string
-	Required        bool
+	odoutil.Validatable
+}
+
+func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
+	return ServicePlanParameter{
+		Name:            name,
+		Default:         defaultValue,
+		HasDefaultValue: len(defaultValue) > 0,
+		Validatable: odoutil.Validatable{
+			Type:     typeName,
+			Required: required,
+		},
+	}
 }
 
 type servicePlanParameters []ServicePlanParameter

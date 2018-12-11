@@ -5,24 +5,17 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/mgutz/ansi"
 	"github.com/redhat-developer/odo/pkg/service"
 	terminal2 "golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
-	"os"
 	"sort"
-	"strconv"
 	"strings"
 )
-
-const defaultIntegerValidatorKey = "odo_default_integer"
-
-// Validator is a function that validates that the provided interface is conform to expectations or return an error
-type Validator func(interface{}) error
-
-var validators = make(map[string]Validator)
 
 // Retrieve the list of existing service class categories
 func getServiceClassesCategories(categories map[string][]scv1beta1.ClusterServiceClass) (keys []string) {
@@ -79,17 +72,6 @@ func getServiceClassNames(stringMap map[string]scv1beta1.ClusterServiceClass) (k
 	return keys
 }
 
-// handleError handles UI-related errors, in particular useful to gracefully handle ctrl-c interrupts gracefully
-func handleError(err error) {
-	if err != nil {
-		if err == terminal.InterruptErr {
-			os.Exit(-1)
-		} else {
-			glog.V(4).Infof("Encountered an error processing prompt: %v", err)
-		}
-	}
-}
-
 // SelectPlanNameInteractively lets the user to select the plan name from possible options, specifying which text should appear
 // in the prompt
 func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, promptText string) (plan string) {
@@ -98,20 +80,20 @@ func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, 
 		Options: GetServicePlanNames(plans),
 	}
 	err := survey.AskOne(prompt, &plan, nil)
-	handleError(err)
+	ui.HandleError(err)
 	return plan
 }
 
 // EnterServiceNameInteractively lets the user enter the name of the service instance to create, defaulting to the provided
 // default value and specifying both the prompt text and validation function for the name
-func EnterServiceNameInteractively(defaultValue, promptText string, validateName Validator) (serviceName string) {
+func EnterServiceNameInteractively(defaultValue, promptText string, validateName util.Validator) (serviceName string) {
 	// if only one arg is given, ask to Name the service providing the class Name as default
 	instancePrompt := &survey.Input{
 		Message: promptText,
 		Default: defaultValue,
 	}
 	err := survey.AskOne(instancePrompt, &serviceName, survey.Validator(validateName))
-	handleError(err)
+	ui.HandleError(err)
 	return serviceName
 }
 
@@ -124,7 +106,7 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 		Options: getServiceClassesCategories(classesByCategory),
 	}
 	err := survey.AskOne(prompt, &category, survey.Required)
-	handleError(err)
+	ui.HandleError(err)
 
 	classes := getServiceClassMap(classesByCategory[category])
 
@@ -162,7 +144,7 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	}
 
 	err = survey.AskOne(prompt, &serviceType, survey.Required)
-	handleError(err)
+	ui.HandleError(err)
 
 	return classes[serviceType], serviceType
 }
@@ -280,7 +262,7 @@ func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, s
 		}
 
 		err := survey.AskOne(confirm, &fillOptionalProps, survey.Required)
-		handleError(err)
+		ui.HandleError(err)
 		if fillOptionalProps {
 
 			for _, prop := range properties {
@@ -292,27 +274,6 @@ func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, s
 	return values
 }
 
-// always validates
-var nilValidator = func(ans interface{}) error { return nil }
-
-// getValidatorFor retrieves a Validator able to validate the specified property
-func getValidatorFor(prop service.ServicePlanParameter) (validator survey.Validator) {
-	// make sure we don't run into issues when composing validators
-	validator = nilValidator
-
-	if prop.Required {
-		validator = survey.Required
-	}
-
-	switch prop.Type {
-	case "integer":
-		validator = survey.ComposeValidators(validator, survey.Validator(validators[defaultIntegerValidatorKey]))
-	}
-
-	return
-}
-
-// addValueFor adds the property value based on user input to the specified values map
 func addValueFor(prop service.ServicePlanParameter, values map[string]string, stdio ...terminal.Stdio) {
 	var result string
 	prompt := &survey.Input{
@@ -327,8 +288,8 @@ func addValueFor(prop service.ServicePlanParameter, values map[string]string, st
 		prompt.Default = prop.Default
 	}
 
-	err := survey.AskOne(prompt, &result, getValidatorFor(prop))
-	handleError(err)
+	err := survey.AskOne(prompt, &result, ui.GetValidatorFor(prop.AsValidatable()))
+	ui.HandleError(err)
 	values[prop.Name] = result
 }
 
@@ -346,16 +307,4 @@ func propDesc(prop service.ServicePlanParameter) string {
 	}
 
 	return prop.Name + msg
-}
-
-// init initializes default validators
-func init() {
-	validators[defaultIntegerValidatorKey] = func(ans interface{}) error {
-		s := ans.(string)
-		_, err := strconv.Atoi(s)
-		if err != nil {
-			return fmt.Errorf("invalid integer value '%s': %s", s, err)
-		}
-		return nil
-	}
 }
