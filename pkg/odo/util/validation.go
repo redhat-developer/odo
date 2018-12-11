@@ -30,6 +30,7 @@ func validateNameAsValidator(name interface{}) error {
 	return ValidateName(s)
 }
 
+// NameValidatorKey is the key used to identify the validator associated with ValidateName function
 const NameValidatorKey = "odo_name_validator"
 const defaultIntegerValidatorKey = "odo_default_integer"
 

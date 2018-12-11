@@ -49,6 +49,7 @@ type ServicePlanParameter struct {
 	odoutil.Validatable
 }
 
+// NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
 func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
 	return ServicePlanParameter{
 		Name:            name,
