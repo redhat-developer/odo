@@ -66,7 +66,7 @@ func (o *ServiceDeleteOptions) Run() (err error) {
 		_, _ = fmt.Scanln(&confirmDeletion)
 	}
 	if strings.ToLower(confirmDeletion) == "y" {
-		err = svc.DeleteService(o.Client, o.serviceName, o.Application)
+		err = svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
 		if err != nil {
 			return fmt.Errorf("unable to delete service %s:\n%v", o.serviceName, err)
 		}
