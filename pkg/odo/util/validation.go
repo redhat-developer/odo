@@ -53,21 +53,32 @@ var nilValidator = func(ans interface{}) error { return nil }
 
 var validators = make(map[string]Validator)
 
-// GetValidatorFor retrieves a validator for the specified validatable
+// GetValidatorFor retrieves a validator for the specified validatable, first validating its required state, then its value
+// based on type then any additional validators in the order specified by Validatable.AdditionalValidators
 func GetValidatorFor(prop Validatable) (validator Validator) {
 	// make sure we don't run into issues when composing validators
-	validator = nilValidator
+	validatorChain := make([]survey.Validator, 0, 5)
 
 	if prop.Required {
-		validator = survey.Required
+		validatorChain = append(validatorChain, survey.Required)
 	}
 
 	switch prop.Type {
 	case "integer":
-		validator = Validator(survey.ComposeValidators(survey.Validator(validator), survey.Validator(validators[defaultIntegerValidatorKey])))
+		validatorChain = append(validatorChain, survey.Validator(validators[defaultIntegerValidatorKey]))
 	}
 
-	return
+	for i := range prop.AdditionalValidators {
+		if v, ok := validators[prop.AdditionalValidators[i]]; ok {
+			validatorChain = append(validatorChain, survey.Validator(v))
+		}
+	}
+
+	if len(validatorChain) > 0 {
+		return Validator(survey.ComposeValidators(validatorChain...))
+	}
+
+	return nilValidator
 }
 
 // init initializes the default validators
