@@ -20,8 +20,9 @@ We'll be going over the following steps:
 5. [Pushing new changes to the component](#5-pushing-new-changes-to-the-component)
 6. [Adding storage to the component](#6-adding-storage-to-the-component)
 
-**Extra documentation:**
+**Extra documentation**
 
+- [Command completion](#Command-completion)
 - [OpenShift Notes](#openshift-notes)
 - [Adding a Custom Builder](#adding-a-custom-builder)
 
