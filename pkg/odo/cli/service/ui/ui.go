@@ -52,6 +52,7 @@ func GetServicePlanNames(stringMap map[string]scv1beta1.ClusterServicePlan) (key
 	return keys
 }
 
+// getServiceClassMap converts the specified array of service classes to a name-service class map
 func getServiceClassMap(classes []scv1beta1.ClusterServiceClass) (classMap map[string]scv1beta1.ClusterServiceClass) {
 	classMap = make(map[string]scv1beta1.ClusterServiceClass, len(classes))
 	for _, v := range classes {
@@ -61,6 +62,7 @@ func getServiceClassMap(classes []scv1beta1.ClusterServiceClass) (classMap map[s
 	return classMap
 }
 
+// getServiceClassNames retrieves the keys (service class names) of the specified name-service class mappings
 func getServiceClassNames(stringMap map[string]scv1beta1.ClusterServiceClass) (keys []string) {
 	keys = make([]string, len(stringMap))
 
@@ -75,6 +77,7 @@ func getServiceClassNames(stringMap map[string]scv1beta1.ClusterServiceClass) (k
 	return keys
 }
 
+// handleError handles UI-related errors, in particular useful to gracefully handle ctrl-c interrupts gracefully
 func handleError(err error) {
 	if err != nil {
 		if err == terminal.InterruptErr {
@@ -160,6 +163,7 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	return classes[serviceType], serviceType
 }
 
+// restoreOriginalTemplate restores the original survey template once we're done with the display
 func restoreOriginalTemplate(original string) {
 	survey.SelectQuestionTemplate = original
 }
@@ -187,6 +191,8 @@ func EnterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan) (
 	return enterServicePropertiesInteractively(svcPlan)
 }
 
+// enterServicePropertiesInteractively lets user enter the properties interactively using the specified Stdio instance (useful
+// for testing purposes)
 func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, stdio ...terminal.Stdio) (values map[string]string) {
 	planDetails, _ := service.NewServicePlan(svcPlan)
 
@@ -232,8 +238,10 @@ func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, s
 	return values
 }
 
+// always validates
 var nilValidator = func(ans interface{}) error { return nil }
 
+// getValidatorFor retrieves a Validator able to validate the specified property
 func getValidatorFor(prop service.ServicePlanParameter) (validator survey.Validator) {
 	// make sure we don't run into issues when composing validators
 	validator = nilValidator
@@ -250,6 +258,7 @@ func getValidatorFor(prop service.ServicePlanParameter) (validator survey.Valida
 	return
 }
 
+// addValueFor adds the property value based on user input to the specified values map
 func addValueFor(prop service.ServicePlanParameter, values map[string]string, stdio ...terminal.Stdio) {
 	var result string
 	prompt := &survey.Input{
@@ -269,6 +278,7 @@ func addValueFor(prop service.ServicePlanParameter, values map[string]string, st
 	values[prop.Name] = result
 }
 
+// propDesc computes a human-readable description of the specified property
 func propDesc(prop service.ServicePlanParameter) string {
 	msg := ""
 	if len(prop.Title) > 0 {
@@ -284,6 +294,7 @@ func propDesc(prop service.ServicePlanParameter) string {
 	return prop.Name + msg
 }
 
+// init initializes default validators
 func init() {
 	validators[defaultIntegerValidatorKey] = func(ans interface{}) error {
 		s := ans.(string)
