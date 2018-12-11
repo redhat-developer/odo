@@ -343,12 +343,42 @@ func getEnvFromPodEnvs(envName string, podEnvs []corev1.EnvVar) string {
 	return ""
 }
 
+func getS2IPaths(podEnvs []corev1.EnvVar) []string {
+	retVal := []string{}
+	s2iPathEnvs := []string{
+		occlient.EnvS2IDeploymentDir,
+		occlient.EnvS2ISrcOrBinPath,
+		occlient.EnvAppRoot,
+	}
+	for _, s2iPathEnv := range s2iPathEnvs {
+		envVal := getEnvFromPodEnvs(s2iPathEnv, podEnvs)
+		isEnvValPresent := false
+		if envVal != "" {
+			for _, e := range retVal {
+				if envVal == e {
+					isEnvValPresent = true
+					break
+				}
+			}
+			if !isEnvValPresent {
+				if filepath.Base(envVal) != "src" {
+					envVal = filepath.Join(envVal, "src")
+				}
+				retVal = append(retVal, envVal)
+			}
+		}
+	}
+	retVal = append(retVal, "/opt/app-root/backup")
+	return retVal
+}
+
 // PushLocal push local code to the cluster and trigger build there.
 // files is list of changed files captured during `odo watch` as well as binary file path
 // During copying binary components, path represent base directory path to binary and files contains path of binary
 // During copying local source components, path represent base directory path whereas files is empty
 // During `odo watch`, path represent base directory path whereas files contains list of changed Files
-func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
+func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool) error {
+	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -372,17 +402,34 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	targetPath := fmt.Sprintf("%s/src", s2iSrcPath)
 
+	if len(delFiles) > 0 {
+		s := log.Spinner(fmt.Sprintf("propogating deletion of files %s to pod", strings.Join(delFiles, " ")))
+		err := client.PropogateDeletes(pod.Name, delFiles, getS2IPaths(pod.Spec.Containers[0].Env))
+		if err != nil {
+			return errors.Wrapf(err, "unable to propogate file deletions %+v", delFiles)
+		}
+		s.End(true)
+	}
+
 	// Copy the files to the pod
 
-	s := log.Spinner("Copying files to pod")
-	err = client.CopyFile(path, pod.Name, targetPath, files)
-	if err != nil {
-		s.End(false)
-		return errors.Wrap(err, "unable push files to pod")
+	if !isForcePush {
+		if len(files) == 0 && len(delFiles) == 0 {
+			return fmt.Errorf("pass files modifications/deletions to sync to component pod or force push")
+		}
 	}
-	s.End(true)
 
-	s = log.Spinner("Building component")
+	if isForcePush || len(files) > 0 {
+		s := log.Spinner("Copying files to pod")
+		err = client.CopyFile(path, pod.Name, targetPath, files)
+		if err != nil {
+			s.End(false)
+			return errors.Wrap(err, "unable push files to pod")
+		}
+		s.End(true)
+	}
+
+	s := log.Spinner("Building component")
 	defer s.End(false)
 
 	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer

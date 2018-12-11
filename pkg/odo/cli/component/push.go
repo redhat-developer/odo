@@ -89,11 +89,11 @@ var pushCmd = &cobra.Command{
 
 			if sourceType == "local" {
 				glog.V(4).Infof("Copying directory %s to pod", localLocation)
-				err = component.PushLocal(client, componentName, applicationName, localLocation, os.Stdout, []string{})
+				err = component.PushLocal(client, componentName, applicationName, localLocation, os.Stdout, []string{}, []string{}, true)
 			} else {
 				dir := filepath.Dir(localLocation)
 				glog.V(4).Infof("Copying file %s to pod", localLocation)
-				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation})
+				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation}, []string{}, true)
 			}
 			odoutil.LogErrorAndExit(err, fmt.Sprintf("Failed to push component: %v", componentName))
 

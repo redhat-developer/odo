@@ -3092,3 +3092,30 @@ func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
 
 	return dc.Spec.Template.Spec.Containers[0].Env, nil
 }
+
+// PropogateDeletes deletes the watch detecte deleted files from remote component pod
+// Parameters:
+//	targetPodName: Name of component pod
+//	delSrcRelPaths: Paths to be deleted on the remote pod
+//	s2iPaths: Slice of all s2i paths -- deployment dir, destination dir, working dir, etc..
+func (c *Client) PropogateDeletes(targetPodName string, delSrcRelPaths []string, s2iPaths []string) error {
+	reader, writer := io.Pipe()
+	var rmPaths []string
+	if len(s2iPaths) == 0 || len(delSrcRelPaths) == 0 {
+		return fmt.Errorf("Failed to propogate deletions: s2iPaths: %+v and delSrcRelPaths: %+v", s2iPaths, delSrcRelPaths)
+	}
+	for _, s2iPath := range s2iPaths {
+		for _, delRelPath := range delSrcRelPaths {
+			rmPaths = append(rmPaths, filepath.Join(s2iPath, delRelPath))
+		}
+	}
+	glog.V(4).Infof("s2ipaths marked  for deletion are %+v", rmPaths)
+	cmdArr := []string{"rm", "-rf"}
+	cmdArr = append(cmdArr, rmPaths...)
+
+	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
+	if err != nil {
+		return err
+	}
+	return err
+}

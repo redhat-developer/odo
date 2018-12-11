@@ -30,7 +30,7 @@ type WatchParameters struct {
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string) error
+	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string, []string, bool) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
 	StartChan chan bool
 	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
@@ -170,6 +170,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 		dirty        bool
 		lastChange   time.Time
 		watchError   error
+		deletedPaths []string
 		changedFiles []string
 	)
 
@@ -239,7 +240,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 					watchError = errors.Wrap(err, "unable to watch changes")
 				}
 				if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
-					changedFiles = append(changedFiles, event.Name)
+					if event.Op&fsnotify.Remove != fsnotify.Remove {
+						changedFiles = append(changedFiles, event.Name)
+					}
 				}
 
 				lastChange = time.Now()
@@ -247,6 +250,14 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
 					if e := watcher.Remove(event.Name); e != nil {
 						glog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
+					}
+					// append the file to list of deleted files
+					if !alreadyInChangedFiles && !matched {
+						relPath, err := filepath.Rel(parameters.Path, event.Name)
+						if err != nil {
+							watchError = errors.Wrapf(err, "failed to propogate delete of file %s as its relative to %s couldn't be found", event.Name, parameters.Path)
+						}
+						deletedPaths = append(deletedPaths, relPath)
 					}
 				} else {
 					if e := addRecursiveWatch(watcher, parameters.Path, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
@@ -295,7 +306,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 			for _, file := range changedFiles {
 				fmt.Fprintf(out, "File %s changed\n", file)
 			}
-			if len(changedFiles) > 0 {
+			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
 				fmt.Fprintf(out, "Pushing files...\n")
 				fileInfo, err := os.Stat(parameters.Path)
 				if err != nil {
@@ -303,11 +314,11 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false)
 				} else {
 					pathDir := filepath.Dir(parameters.Path)
 					glog.V(4).Infof("Copying file %s to pod", parameters.Path)
-					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path})
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false)
 				}
 				if err != nil {
 					// Intentionally not exiting on error here.
