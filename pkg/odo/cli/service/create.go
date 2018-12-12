@@ -119,9 +119,20 @@ func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 	return
 }
 
-var validateNameFn = func(i interface{}) error {
+func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 	s := i.(string)
-	return util.ValidateName(s)
+	err = util.ValidateName(s)
+	if err != nil {
+		return err
+	}
+	exists, err := svc.SvcExists(o.Client, s, o.Application)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("%s service already exists in the current application", o.serviceName)
+	}
+	return
 }
 
 // Validate validates the ServiceCreateOptions based on completed values
