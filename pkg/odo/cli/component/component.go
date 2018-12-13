@@ -66,7 +66,7 @@ var componentSetCmd = &cobra.Command{
 	Short: "Set active component.",
 	Long:  "Set component as active.",
 	Example: `  # Set component named 'frontend' as active
-  odo set component frontend
+  odo component set frontend
   `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
