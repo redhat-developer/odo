@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/types"
 	"net"
 	"net/url"
 	"os"
@@ -2040,30 +2041,29 @@ func serviceInstanceParameters(params map[string]string) (*runtime.RawExtension,
 	return &runtime.RawExtension{Raw: paramsJSON}, nil
 }
 
+// Define a function that is meant to create patch based on the contents of the DC
+type dcPatchProvider func(dc *appsv1.DeploymentConfig) (string, error)
+
 // LinkSecret links a secret to the DeploymentConfig of a component
 func (c *Client) LinkSecret(secretName, componentName, applicationName string) error {
-	// Add the Secret as EnvVar to the container
-	var dcUpdater = func(dc *appsv1.DeploymentConfig) error {
-		dc.Spec.Template.Spec.Containers[0].EnvFrom =
-			append(
-				dc.Spec.Template.Spec.Containers[0].EnvFrom,
-				corev1.EnvFromSource{
-					SecretRef: &corev1.SecretEnvSource{
-						LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-					},
-				},
-			)
 
-		return nil
+	var dcPatchProvider = func(dc *appsv1.DeploymentConfig) (string, error) {
+		if len(dc.Spec.Template.Spec.Containers[0].EnvFrom) > 0 {
+			// we always add the link as the first value in the envFrom array. That way we don't need to know the existing value
+			return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom/0", "value": {"secretRef": {"name": "%s"}} }]`, secretName), nil
+		}
+
+		//in this case we need to add the full envFrom value
+		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
 	}
 
-	return c.updateDCOfComponent(componentName, applicationName, dcUpdater)
+	return c.patchDCOfComponent(componentName, applicationName, dcPatchProvider)
 }
 
 // UnlinkSecret unlinks a secret to the DeploymentConfig of a component
 func (c *Client) UnlinkSecret(secretName, componentName, applicationName string) error {
 	// Remove the Secret from the container
-	var dcUpdater = func(dc *appsv1.DeploymentConfig) error {
+	var dcPatchProvider = func(dc *appsv1.DeploymentConfig) (string, error) {
 		indexForRemoval := -1
 		for i, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
 			if env.SecretRef.Name == secretName {
@@ -2073,23 +2073,20 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		}
 
 		if indexForRemoval == -1 {
-			return fmt.Errorf("DeploymentConfig does not contain a link to %s", secretName)
+			return "", fmt.Errorf("DeploymentConfig does not contain a link to %s", secretName)
 		}
 
-		// actually remove the secret from the dc
-		dc.Spec.Template.Spec.Containers[0].EnvFrom =
-			append(dc.Spec.Template.Spec.Containers[0].EnvFrom[:indexForRemoval],
-				dc.Spec.Template.Spec.Containers[0].EnvFrom[indexForRemoval+1:]...)
-
-		return nil
+		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
 	}
 
-	return c.updateDCOfComponent(componentName, applicationName, dcUpdater)
+	return c.patchDCOfComponent(componentName, applicationName, dcPatchProvider)
 }
 
-// this function will look up the appropriate DC, execute the specified update on the DC
-// and push the update to the API server - this will result in the triggering of a redeployment
-func (c *Client) updateDCOfComponent(componentName, applicationName string, dcUpdater dcStructUpdater) error {
+// this function will look up the appropriate DC, and execute the specified patch
+// the whole point of using patch is to avoid race conditions where we try to update
+// dc while it's being simultaneously updated from another source (for example Kubernetes itself)
+// this will result in the triggering of a redeployment
+func (c *Client) patchDCOfComponent(componentName, applicationName string, dcPatchProvider dcPatchProvider) error {
 	dcName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return err
@@ -2100,19 +2097,19 @@ func (c *Client) updateDCOfComponent(componentName, applicationName string, dcUp
 		return errors.Wrapf(err, "Unable to locate DeploymentConfig for component %s of application %s", componentName, applicationName)
 	}
 
-	if dcUpdater != nil {
-		err = dcUpdater(dc)
+	if dcPatchProvider != nil {
+		patch, err := dcPatchProvider(dc)
 		if err != nil {
-			return errors.Wrap(err, "Unable to update the DeploymentConfig")
+			return errors.Wrap(err, "Unable to create a patch for the DeploymentConfig")
+		}
+
+		// patch the DeploymentConfig with the secret
+		_, err = c.appsClient.DeploymentConfigs(c.Namespace).Patch(dcName, types.JSONPatchType, []byte(patch))
+		if err != nil {
+			return errors.Wrapf(err, "DeploymentConfig not patched %s", dc.Name)
 		}
 	} else {
-		return errors.Wrapf(err, "dcUpdater was not properly set - this is definitely an implementation issue")
-	}
-
-	// update the DeploymentConfig with the secret
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-	if err != nil {
-		return errors.Wrapf(err, "DeploymentConfig not updated %s", dc.Name)
+		return errors.Wrapf(err, "dcPatch was not properly set")
 	}
 
 	return nil

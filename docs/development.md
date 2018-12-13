@@ -201,6 +201,23 @@ make test-service-e2e
 Running a subset of tests is possible with ginkgo by using focused specs mechanism
 https://onsi.github.io/ginkgo/#focused-specs
 
+### Race conditions
+
+It is not uncommon that during the execution of the integration tests, test failures occur.
+Although it's possible that this is due to the tests themselves, more often than not this occurs due to the the actual odo code is written.
+For example, the following error has been encountered multiple times:
+
+```
+Operation cannot be fulfilled on deploymentconfigs.apps.openshift.io "component-app": the object has been modified; please apply your changes to the latest version and try again
+```
+
+The reason this happens is because the `read DeploymentCondif` / `update DC in memory` / `call Update` can potentially fail to due 
+the DC being updated concurrently by some other component (usually by Kubernetes/Openshift itself)
+
+For such case it's recommended to avoid the read/update-in-memory-/push-update as much as possible.
+One remedy is to use the Patch operation (see `Resource Operations` section from [this](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/) docs page)
+Another remedy would be to retry the operation when the optimistic concurrency error is encountered  
+
 ## Dependency Management
 
 odo uses `glide` to manage dependencies.
