@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -68,7 +67,7 @@ var updateCmd = &cobra.Command{
 
 		// if --git is not specified but --ref is still given then error has to be thrown
 		if len(componentGit) == 0 && len(componentGitRef) != 0 {
-			fmt.Println("The --ref flag is only valid for --git flag")
+			log.Errorf("The --ref flag is only valid for --git flag")
 			os.Exit(1)
 		}
 

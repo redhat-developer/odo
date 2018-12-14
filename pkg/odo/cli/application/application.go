@@ -354,7 +354,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string) error {
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}
-		fmt.Println("Component", currentComponent.Name, "will be deleted.")
+		log.Info("Component", currentComponent.Name, "will be deleted.")
 
 		if len(componentDesc.URLs) != 0 {
 			fmt.Println("  Externally exposed URLs will be removed")

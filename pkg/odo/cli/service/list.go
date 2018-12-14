@@ -5,6 +5,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
@@ -48,11 +49,11 @@ func (o *ServiceListOptions) Validate() (err error) {
 func (o *ServiceListOptions) Run() (err error) {
 	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
 	if err != nil {
-		return fmt.Errorf("service catalog is not enabled in your cluster:\n%v", err)
+		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
 	}
 
 	if len(services) == 0 {
-		fmt.Println("There are no services deployed for this application")
+		log.Error("There are no services deployed for this application")
 		return
 	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)

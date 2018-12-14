@@ -198,7 +198,7 @@ var storageListCmd = &cobra.Command{
 
 		if storageAllListflag {
 			if len(genericclioptions.FlagValueIfSet(cmd, genericclioptions.ComponentFlagName)) > 0 {
-				fmt.Println("Invalid arguments. Component name is not needed")
+				log.Error("Invalid arguments. Component name is not needed")
 				os.Exit(1)
 			}
 			printMountedStorageInAllComponent(client, applicationName)
@@ -231,7 +231,7 @@ var storageMountCmd = &cobra.Command{
 		exists, err := storage.Exists(client, storageName, applicationName)
 		odoutil.CheckError(err, "unable to check if the storage exists in the current application")
 		if !exists {
-			fmt.Printf("The storage %v does not exists in the current application '%v'", storageName, applicationName)
+			log.Errorf("The storage %v does not exists in the current application '%v'", storageName, applicationName)
 			os.Exit(1)
 		}
 		isMounted, err := storage.IsMounted(client, storageName, componentName, applicationName)
@@ -331,10 +331,10 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 		}
 
 		// print all mounted storage of the given component
-		fmt.Printf("The component '%v' has the following storage attached:\n", componentName)
+		log.Infof("The component '%v' has the following storage attached:", componentName)
 		tabWriterMounted.Flush()
 	} else {
-		fmt.Printf("The component '%v' has no storage attached\n", componentName)
+		log.Infof("The component '%v' has no storage attached", componentName)
 	}
 	fmt.Println("")
 }
@@ -369,7 +369,7 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 		}
 
 		// print unmounted storage of all the application
-		fmt.Printf("Storage that are not mounted to any component:\n")
+		log.Info("Storage that are not mounted to any component:")
 		tabWriterUnmounted.Flush()
 	}
 	fmt.Println("")

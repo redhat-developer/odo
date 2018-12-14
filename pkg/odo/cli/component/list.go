@@ -5,6 +5,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 
@@ -31,7 +32,7 @@ var componentListCmd = &cobra.Command{
 		components, err := component.List(client, applicationName)
 		odoutil.CheckError(err, "")
 		if len(components) == 0 {
-			fmt.Println("There are no components deployed.")
+			log.Errorf("There are no components deployed.")
 			return
 		}
 

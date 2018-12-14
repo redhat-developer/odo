@@ -53,7 +53,7 @@ var componentGetCmd = &cobra.Command{
 			fmt.Print(component)
 		} else {
 			if component == "" {
-				log.Info("No component is set as current")
+				log.Error("No component is set as current")
 				return
 			}
 			log.Infof("The current component is: %v", component)
@@ -77,7 +77,7 @@ var componentSetCmd = &cobra.Command{
 
 		err := component.SetCurrent(componentName, applicationName, projectName)
 		odoutil.CheckError(err, "")
-		fmt.Printf("Switched to component: %v\n", componentName)
+		log.Infof("Switched to component: %v", componentName)
 	},
 }
 

@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -133,7 +132,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// if --git is not specified but --ref is still given then error has to be thrown
 		if len(componentGit) == 0 && len(componentGitRef) != 0 {
-			fmt.Println("The --ref flag is only valid for --git flag")
+			log.Errorf("The --ref flag is only valid for --git flag")
 			os.Exit(1)
 		}
 
@@ -315,13 +314,13 @@ A full list of component types that can be deployed is available using: 'odo cat
 // when the only thing specified is the min or max value, we exit the application
 func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourceName string) {
 	if resourceMin != "" && resourceMax != "" && resource != "" {
-		fmt.Printf("`--%s` will be ignored as `--min-%s` and `--max-%s` has been passed\n", resourceName, resourceName, resourceName)
+		log.Infof("`--%s` will be ignored as `--min-%s` and `--max-%s` has been passed\n", resourceName, resourceName, resourceName)
 	}
 	if (resourceMin == "") != (resourceMax == "") && resource != "" {
-		fmt.Printf("Using `--%s` %s for min and max limits.\n", resourceName, resource)
+		log.Infof("Using `--%s` %s for min and max limits.\n", resourceName, resource)
 	}
 	if (resourceMin == "") != (resourceMax == "") && resource == "" {
-		fmt.Printf("`--min-%s` should accompany `--max-%s` or pass `--%s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName)
+		log.Errorf("`--min-%s` should accompany `--max-%s` or pass `--%s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName)
 		os.Exit(1)
 	}
 }

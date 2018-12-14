@@ -1,6 +1,8 @@
 package completion
 
 import (
+	"strings"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/application"
@@ -14,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 // ServiceCompletionHandler provides service name completion for the current project and application
