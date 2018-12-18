@@ -53,9 +53,7 @@ var pushCmd = &cobra.Command{
 
 		// if the componentName is blank then there is no active component set
 		if len(componentName) == 0 {
-			log.Error("No component is set as active.\n" +
-				"Use 'odo component set' to set and existing component as active \n" +
-				"or call this command with component name as an argument.")
+			log.Error("No component is set as active. Use 'odo component set' to set an active component.")
 			os.Exit(1)
 		}
 
