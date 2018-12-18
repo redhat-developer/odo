@@ -82,7 +82,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			eventBus := events.GetEventBus()
 			err := eventBus.DispatchEvent(events.Event{
-				Name: fullName,
+				Name: events.EventNameFrom(cmd),
 				Type: events.PreRun,
 			})
 			util.CheckError(err, "pre-run even dispatch failed")
@@ -90,12 +90,13 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			eventBus := events.GetEventBus()
 			err := eventBus.DispatchEvent(events.Event{
-				Name: fullName,
+				Name: events.EventNameFrom(cmd),
 				Type: events.PostRun,
 			})
 			util.CheckError(err, "post-run even dispatch failed")
 		},
 	}
+
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
