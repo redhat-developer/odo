@@ -15,8 +15,7 @@ import (
 // RecommendedCommandName is the recommended service command name
 const RecommendedCommandName = "service"
 
-var serviceLongDesc = ktemplates.LongDesc(`
-Perform service catalog operations, limited to template service broker and OpenShift Ansible Broker only.`)
+var serviceLongDesc = ktemplates.LongDesc(`Perform service catalog operations, limited to template service broker and OpenShift Ansible Broker only.`)
 
 // NewCmdService implements the odo service command
 func NewCmdService(name, fullName string) *cobra.Command {
@@ -27,7 +26,7 @@ func NewCmdService(name, fullName string) *cobra.Command {
 		Use:   name,
 		Short: "Perform service catalog operations",
 		Long:  serviceLongDesc,
-		Example: fmt.Sprintf("%s\n%s\n%s",
+		Example: fmt.Sprintf("%s\n\n%s\n\n%s",
 			serviceCreateCmd.Example,
 			serviceDeleteCmd.Example,
 			serviceListCmd.Example),

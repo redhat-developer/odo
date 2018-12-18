@@ -21,12 +21,14 @@ var (
     # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
     %[1]s dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret`)
 
+	createShortDesc = `Create a new service from service catalog using the plan defined and deploy it on OpenShift.`
+
 	createLongDesc = ktemplates.LongDesc(`
 Create a new service from service catalog using the plan defined and deploy it on OpenShift.
-If service name is not provided, service type value will be used. The plan to be used must be passed along the service type
-using this convention <service_type>/<plan>. The parameters to configure the service are passed as a list of key=value pairs.
-The list of the parameters and their type is defined according to the plan selected.
-A full list of service types that can be deployed are available using: 'odo catalog list services'`)
+
+A --plan must be passed along with the service type. Parameters to configure the service are passed as key=value pairs.
+
+For a full list of service types, use: 'odo catalog list services'`)
 )
 
 // ServiceCreateOptions encapsulates the options for the odo service create command
@@ -116,7 +118,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	o := NewServiceCreateOptions()
 	serviceCreateCmd := &cobra.Command{
 		Use:     name + " <service_type> --plan <plan_name> [service_name]",
-		Short:   "Create a new service",
+		Short:   createShortDesc,
 		Long:    createLongDesc,
 		Example: fmt.Sprintf(createExample, fullName),
 		Args:    cobra.RangeArgs(1, 2),
