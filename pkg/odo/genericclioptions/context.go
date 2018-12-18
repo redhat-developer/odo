@@ -203,3 +203,6 @@ func ignoreButLog(err error) {
 		glog.V(4).Infof("Ignoring error as it usually means flag wasn't set: %v", err)
 	}
 }
+
+// ContextLoader loads the context for the specified command
+type ContextLoader func(command *cobra.Command) *Context
