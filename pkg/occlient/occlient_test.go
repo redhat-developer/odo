@@ -2013,8 +2013,8 @@ func TestLinkSecret(t *testing.T) {
 			secretName:      "secret",
 			componentName:   "component",
 			applicationName: "app",
-			existingDC:      *fakeDeploymentConfig("foo", "", nil, nil, nil),
-			expectedUpdatedDC: *fakeDeploymentConfig("foo", "", nil,
+			existingDC:      *fakeDeploymentConfig("component-app", "", nil, nil, nil),
+			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
 						SecretRef: &corev1.SecretEnvSource{
@@ -2030,7 +2030,7 @@ func TestLinkSecret(t *testing.T) {
 			secretName:      "secret",
 			componentName:   "component",
 			applicationName: "app",
-			existingDC: *fakeDeploymentConfig("foo", "", nil,
+			existingDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
 						SecretRef: &corev1.SecretEnvSource{
@@ -2039,7 +2039,7 @@ func TestLinkSecret(t *testing.T) {
 					},
 				},
 				nil),
-			expectedUpdatedDC: *fakeDeploymentConfig("foo", "", nil,
+			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
 						SecretRef: &corev1.SecretEnvSource{
@@ -2070,9 +2070,9 @@ func TestLinkSecret(t *testing.T) {
 			})
 
 			// Fake updating DC
-			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fakeClientSet.AppsClientset.PrependReactor("patch", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if len(tt.componentName) == 0 {
-					return true, nil, fmt.Errorf("could not update dc")
+					return true, nil, fmt.Errorf("could not patch dc")
 				}
 				return true, &tt.expectedUpdatedDC, nil
 			})
@@ -2087,9 +2087,9 @@ func TestLinkSecret(t *testing.T) {
 					t.Errorf("expected 1 AppsClientset.Actions() in LinkSecret, got: %v", fakeClientSet.AppsClientset.Actions())
 				}
 
-				updatedDc := fakeClientSet.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
-				if !reflect.DeepEqual(updatedDc.Spec, tt.expectedUpdatedDC.Spec) {
-					t.Errorf("deployment Config Spec not matching with expected values, expected: %v, got %v", tt.expectedUpdatedDC.Spec, updatedDc.Spec)
+				dcPatched := fakeClientSet.AppsClientset.Actions()[1].(ktesting.PatchAction).GetName()
+				if dcPatched != tt.existingDC.Name {
+					t.Errorf("Expected patch to be performed on dc named: %s but instead got: %s", tt.expectedUpdatedDC.Name, dcPatched)
 				}
 			}
 		})
@@ -2135,7 +2135,7 @@ func TestUnlinkSecret(t *testing.T) {
 			secretName:      "secret",
 			componentName:   "component",
 			applicationName: "app",
-			existingDC: *fakeDeploymentConfig("foo", "", nil,
+			existingDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
 						SecretRef: &corev1.SecretEnvSource{
@@ -2144,7 +2144,7 @@ func TestUnlinkSecret(t *testing.T) {
 					},
 				},
 				nil),
-			expectedUpdatedDC: *fakeDeploymentConfig("foo", "", nil, []corev1.EnvFromSource{}, nil),
+			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil, []corev1.EnvFromSource{}, nil),
 			wantErr:           false,
 		},
 		{
@@ -2152,7 +2152,7 @@ func TestUnlinkSecret(t *testing.T) {
 			secretName:      "secret",
 			componentName:   "component",
 			applicationName: "app",
-			existingDC: *fakeDeploymentConfig("foo", "", nil,
+			existingDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
 						SecretRef: &corev1.SecretEnvSource{
@@ -2171,7 +2171,7 @@ func TestUnlinkSecret(t *testing.T) {
 					},
 				},
 				nil),
-			expectedUpdatedDC: *fakeDeploymentConfig("foo", "", nil,
+			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
 						SecretRef: &corev1.SecretEnvSource{
@@ -2202,9 +2202,9 @@ func TestUnlinkSecret(t *testing.T) {
 			})
 
 			// Fake updating DC
-			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fakeClientSet.AppsClientset.PrependReactor("patch", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if len(tt.componentName) == 0 {
-					return true, nil, fmt.Errorf("could not update dc")
+					return true, nil, fmt.Errorf("could not patch dc")
 				}
 				return true, &tt.expectedUpdatedDC, nil
 			})
@@ -2219,9 +2219,9 @@ func TestUnlinkSecret(t *testing.T) {
 					t.Errorf("expected 1 AppsClientset.Actions() in LinkSecret, got: %v", fakeClientSet.AppsClientset.Actions())
 				}
 
-				updatedDc := fakeClientSet.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
-				if !reflect.DeepEqual(updatedDc.Spec, tt.expectedUpdatedDC.Spec) {
-					t.Errorf("deployment Config Spec not matching with expected values, expected: %v, got %v", tt.expectedUpdatedDC.Spec, updatedDc.Spec)
+				dcPatched := fakeClientSet.AppsClientset.Actions()[1].(ktesting.PatchAction).GetName()
+				if dcPatched != tt.existingDC.Name {
+					t.Errorf("Expected patch to be performed on dc named: %s but instead got: %s", tt.expectedUpdatedDC.Name, dcPatched)
 				}
 			}
 		})
