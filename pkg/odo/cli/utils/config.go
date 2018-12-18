@@ -13,16 +13,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const availableParameters = `
+Available Parameters:
+UpdateNotification - Controls if an update notification is shown or not (true or false)
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
+Timeout - Timeout (in seconds) for OpenShift server connection check
+PodTimeout - Pod Timeout (in seconds) to wait for an OpenShift Pod to start when deploying a component
+`
+
 // configurationCmd represents the app command
 var configurationCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Modifies configuration settings",
 	Long: `Modifies Odo specific configuration settings within the config file.
-
-Available Parameters:
-UpdateNotification - Controls if an update notification is shown or not (true or false)
-NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
-Timeout - Timeout (in seconds) for OpenShift server connection check`,
+	` + availableParameters,
 	Example: fmt.Sprintf("%s\n%s",
 		configurationViewCmd.Example,
 		configurationSetCmd.Example),
@@ -49,16 +53,13 @@ var configurationSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Set a value in odo config file",
 	Long: `Set an individual value in the Odo configuration file
-
-Available Parameters:
-UpdateNotification - Controls if an update notification is shown or not (true or false)
-NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.
-Timeout - Timeout (in seconds) for OpenShift server connection check`,
+	` + availableParameters,
 	Example: `
    # Set a configuration value
    odo utils config set UpdateNotification false
    odo utils config set NamePrefix "app"
    odo utils config set Timeout 20
+   odo utils config set PodTimeout 20
 	`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
@@ -96,6 +97,7 @@ var configurationViewCmd = &cobra.Command{
 		fmt.Fprintln(w, "UpdateNotification", "\t", cfg.GetUpdateNotification())
 		fmt.Fprintln(w, "NamePrefix", "\t", cfg.GetNamePrefix())
 		fmt.Fprintln(w, "Timeout", "\t", cfg.GetTimeout())
+		fmt.Fprintln(w, "PodTimeout", "\t", cfg.GetPodTimeout())
 		w.Flush()
 	},
 }

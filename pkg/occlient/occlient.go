@@ -98,9 +98,6 @@ const (
 	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment
 	supervisordVolumeName = "odo-supervisord-shared-data"
 
-	// waitForPodTimeOut controls how long we should wait for a pod before giving up
-	waitForPodTimeOut = 120 * time.Second
-
 	// ComponentPortAnnotationName annotation is used on the secrets that are created for each exposed port of the component
 	ComponentPortAnnotationName = "component-port"
 
@@ -1561,6 +1558,15 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 	}
 	defer w.Stop()
 
+	// Retrieve the PodTimeout configuration parameter
+	podTimeout := config.DefaultPodTimeout * time.Second
+	cfg, configReadErr := config.New()
+	if configReadErr != nil {
+		glog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
+	} else {
+		podTimeout = time.Duration(time.Duration(cfg.GetPodTimeout()) * time.Second)
+	}
+
 	podChannel := make(chan *corev1.Pod)
 	watchErrorChannel := make(chan error)
 
@@ -1598,8 +1604,8 @@ func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 		return val, nil
 	case err := <-watchErrorChannel:
 		return nil, err
-	case <-time.After(waitForPodTimeOut):
-		return nil, errors.Errorf("waited %s but couldn't find running pod matching selector: '%s'", waitForPodTimeOut, selector)
+	case <-time.After(podTimeout):
+		return nil, errors.Errorf("waited %s but couldn't find running pod matching selector: '%s'", podTimeout, selector)
 	}
 }
 

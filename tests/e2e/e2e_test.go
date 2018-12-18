@@ -78,6 +78,7 @@ var _ = Describe("odoe2e", func() {
 		})
 	})
 
+	// NOTE: This will permanently set the config for the rest of the tests..
 	Context("odo utils config", func() {
 		It("should get true for updatenotification by default", func() {
 			configOutput := runCmd("odo utils config view")
@@ -90,12 +91,15 @@ var _ = Describe("odoe2e", func() {
 		})
 		It("should be checking to see if config values are the same as the configured ones", func() {
 			runCmd("odo utils config set updatenotification false")
-			runCmd("odo utils config set timeout 5")
+			runCmd("odo utils config set timeout 31")
+			runCmd("odo utils config set podtimeout 121")
 			configOutput := runCmd("odo utils config view|grep UpdateNotification")
 			Expect(configOutput).To(ContainSubstring("false"))
 			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
 			configOutput = runCmd("odo utils config view|grep Timeout")
-			Expect(configOutput).To(ContainSubstring("5"))
+			Expect(configOutput).To(ContainSubstring("31"))
+			configOutput = runCmd("odo utils config view|grep PodTimeout")
+			Expect(configOutput).To(ContainSubstring("121"))
 		})
 	})
 

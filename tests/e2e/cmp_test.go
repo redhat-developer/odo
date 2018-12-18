@@ -49,6 +49,11 @@ var _ = Describe("odoCmpE2e", func() {
 
 	Context("odo component creation", func() {
 
+		// This is required as some CI's (such as TravisCI) requires a little bit more time
+		It("should set an appropriate test-configured PodTimeout", func() {
+			runCmd("odo utils config set PodTimeout 121")
+		})
+
 		It("should create the project and application", func() {
 			runCmd("odo project create " + projName)
 			runCmd("odo app create " + appTestName)
@@ -119,9 +124,6 @@ var _ = Describe("odoCmpE2e", func() {
 			runCmd("curl -L -o " + tmpDir + "/sample-binary-testing-1.war " +
 				"https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/e5bc575ac8b14ba2b23d66b5cb4873657e1a1489/sample.war")
 			runCmd("odo create wildfly wildfly --binary " + tmpDir + "/sample-binary-testing-1.war --memory 500Mi")
-
-			// TODO: remove this once https://github.com/redhat-developer/odo/issues/943 is implemented
-			time.Sleep(90 * time.Second)
 
 			// Run push
 			runCmd("odo push -v 4")

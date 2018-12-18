@@ -16,8 +16,12 @@ import (
 const (
 	configEnvName  = "ODOCONFIG"
 	configFileName = "odo"
+
 	//DefaultTimeout for openshift server connection check
 	DefaultTimeout = 1
+
+	// Default PodTimeout for OpenShift
+	DefaultPodTimeout = 120
 )
 
 // OdoSettings holds all odo specific configurations
@@ -28,6 +32,8 @@ type OdoSettings struct {
 	NamePrefix *string `json:"nameprefix,omitempty"`
 	// Timeout for openshift server connection check
 	Timeout *int `json:"timeout,omitempty"`
+	// PodTimeout for OpenShift Pods
+	PodTimeout *int `json:"podtimeout,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -154,6 +160,16 @@ func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 		}
 		c.OdoSettings.Timeout = &typedval
 
+	case "podtimeout":
+		typedval, err := strconv.Atoi(value)
+		if err != nil {
+			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+		}
+		if typedval < 0 {
+			return errors.Errorf("cannot set podtimeout to less than 0")
+		}
+		c.OdoSettings.PodTimeout = &typedval
+
 	case "updatenotification":
 		val, err := strconv.ParseBool(strings.ToLower(value))
 		if err != nil {
@@ -181,6 +197,14 @@ func (c *ConfigInfo) GetTimeout() int {
 		return DefaultTimeout
 	}
 	return *c.OdoSettings.Timeout
+}
+
+// GetPodTimeout returns the value of PodTimeout from config
+func (c *ConfigInfo) GetPodTimeout() int {
+	if c.OdoSettings.PodTimeout == nil {
+		return DefaultPodTimeout
+	}
+	return *c.OdoSettings.PodTimeout
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from config
