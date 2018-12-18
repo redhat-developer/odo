@@ -51,6 +51,12 @@ var pushCmd = &cobra.Command{
 		}
 		componentName := context.Component(argComponent)
 
+		// if the componentName is blank then there is no active component set
+		if len(componentName) == 0 {
+			log.Error("No component is set as active. Use 'odo component set' to set an active component.")
+			os.Exit(1)
+		}
+
 		log.Namef("Pushing changes to component: %v", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
