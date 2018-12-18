@@ -139,19 +139,19 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	defer delete(core.TemplateFuncs, displayClassInfo)
 
 	// record original template and defer restoring it once done
-	original := survey.SelectQuestionTemplate
-	defer restoreOriginalTemplate(original)
+	/*original := survey.SelectQuestionTemplate
+		defer restoreOriginalTemplate(original)
 
-	// add more information about the currently selected class
-	survey.SelectQuestionTemplate = original + `
-{{- if not .ShowAnswer}}
-{{$classInfo:=(displayClassInfo .SelectedIndex .PageEntries)}}
-  {{- if $classInfo}}
-===
-{{$classInfo}}
-  {{- end}}
-{{- end}}`
-
+		// add more information about the currently selected class
+		survey.SelectQuestionTemplate = original + `
+	{{- if not .ShowAnswer}}
+	{{$classInfo:=(displayClassInfo .SelectedIndex .PageEntries)}}
+	  {{- if $classInfo}}
+	===
+	{{$classInfo}}
+	  {{- end}}
+	{{- end}}`
+	*/
 	prompt = &survey.Select{
 		Message: "Which " + category + " service class should we use",
 		Options: getServiceClassNames(classes),
