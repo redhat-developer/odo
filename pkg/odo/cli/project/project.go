@@ -152,7 +152,7 @@ var projectDeleteCmd = &cobra.Command{
 			odoutil.CheckError(err, "")
 		}
 
-		fmt.Printf("Deleted project : %v\n", projectName)
+		log.Infof("Deleted project : %v", projectName)
 
 		if currentProject != "" {
 			log.Infof("%s has been set as the active project\n", currentProject)

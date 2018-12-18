@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/url"
 )
 
@@ -18,9 +19,9 @@ func CheckError(err error, context string, a ...interface{}) {
 	if err != nil {
 		glog.V(4).Infof("Error:\n%v", err)
 		if context == "" {
-			fmt.Println(errors.Cause(err))
+			log.Error(errors.Cause(err))
 		} else {
-			fmt.Printf(fmt.Sprintf("%s\n", context), a...)
+			log.Errorf(fmt.Sprintf("%s\n", context), a...)
 		}
 		os.Exit(1)
 	}

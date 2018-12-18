@@ -1,13 +1,12 @@
 package genericclioptions
 
 import (
-	"fmt"
-
 	"os"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/project"
@@ -50,7 +49,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 		skipConnectionCheck = shouldSkipConnectionCheck[0]
 	default:
 		// safeguard: fail if more than one optional bool is passed because it would be a programming error
-		fmt.Printf("client function only accepts one optional argument, was given: %v", shouldSkipConnectionCheck)
+		log.Errorf("client function only accepts one optional argument, was given: %v", shouldSkipConnectionCheck)
 		os.Exit(1)
 	}
 
@@ -169,7 +168,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		// if we're not specifying a component to resolve, get the current one (resolved in NewContext as cmp)
 		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we exit with error
 		if !allowEmpty && len(o.cmp) == 0 {
-			fmt.Println("No component is set")
+			log.Errorf("No component is set")
 			os.Exit(1)
 		}
 	case 1:
@@ -181,7 +180,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		}
 	default:
 		// safeguard: fail if more than one optional string is passed because it would be a programming error
-		fmt.Printf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
+		log.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
 		os.Exit(1)
 	}
 
@@ -193,7 +192,7 @@ func (o *Context) checkComponentExistsOrFail(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
 	util.CheckError(err, "")
 	if !exists {
-		fmt.Printf("Component %v does not exist in application %s\n", cmp, o.Application)
+		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
 		os.Exit(1)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -61,7 +62,7 @@ func (o *ServiceDeleteOptions) Run() (err error) {
 	if o.serviceForceDeleteFlag {
 		confirmDeletion = "y"
 	} else {
-		fmt.Printf("Are you sure you want to delete %v from %v? [y/N] ", o.serviceName, o.Application)
+		log.Askf("Are you sure you want to delete %v from %v? [y/N] ", o.serviceName, o.Application)
 		_, _ = fmt.Scanln(&confirmDeletion)
 	}
 	if strings.ToLower(confirmDeletion) == "y" {
@@ -69,9 +70,9 @@ func (o *ServiceDeleteOptions) Run() (err error) {
 		if err != nil {
 			return fmt.Errorf("unable to delete service %s:\n%v", o.serviceName, err)
 		}
-		fmt.Printf("Service %s from application %s has been deleted\n", o.serviceName, o.Application)
+		log.Infof("Service %s from application %s has been deleted", o.serviceName, o.Application)
 	} else {
-		fmt.Printf("Aborting deletion of service: %v\n", o.serviceName)
+		log.Errorf("Aborting deletion of service: %v", o.serviceName)
 	}
 	return
 }
