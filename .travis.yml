@@ -40,7 +40,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-main-e2e
+        - make test-e2e ODO_TEST_SCENARIO="odo-main-e2e"
 
     # Run component e2e tests
     - <<: *base-test
@@ -51,7 +51,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - travis_wait make test-cmp-e2e
+        - travis_wait make test-e2e ODO_TEST_SCENARIO="odo-cmp-e2e"
 
     # Run java e2e tests
     - <<: *base-test
@@ -62,7 +62,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-java-e2e
+        - make test-e2e ODO_TEST_SCENARIO="odo-java-e2e"
 
     # Run source e2e tests
     - <<: *base-test
@@ -73,7 +73,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-source-e2e
+        - make test-e2e ODO_TEST_SCENARIO="odo-source-e2e"
 
     # Run service-catalog e2e tests
     - <<: *base-test
@@ -84,7 +84,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-service-e2e
+        - make test-e2e ODO_TEST_SCENARIO="odo-service-e2e"
 
     # Run link e2e tests
     - <<: *base-test
@@ -95,7 +95,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-link-e2e
+        - make test-e2e ODO_TEST_SCENARIO="odo-link-e2e"
 
     # test installation script on linux
     # - stage: test

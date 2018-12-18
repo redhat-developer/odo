@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var _ = Describe("odoServiceE2e", func() {
+var _ = Describe("odo-service-e2e", func() {
 
 	Context("odo service creation", func() {
 		It("should be able to create a service", func() {

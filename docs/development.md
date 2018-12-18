@@ -182,20 +182,20 @@ Requirements:
  - A `minishift` or OpenShift environment with Service Catalog enabled
  - `odo` and `oc` binaries in $PATH
 
-To deploy an e2e test:
+To deploy an test availaible in test the suite, one can use a variable `ODO_TEST_SCENARIO`. No use of this variable execute the entire test suite.
 
 ```sh
 # The entire suite
 make test-e2e
 
 # Just the main tests
-make test-main-e2e
+make test-e2e ODO_TEST_SCENARIO="odo-main-e2e"
 
 # Just component tests
-make test-cmp-e2e
+make test-e2e ODO_TEST_SCENARIO="odo-cmp-e2e"
 
 # Just service catalog tests
-make test-service-e2e
+make test-e2e ODO_TEST_SCENARIO="odo-service-e2e"
 ```
 
 Running a subset of tests is possible with ginkgo by using focused specs mechanism

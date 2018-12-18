@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var _ = Describe("odoLinkE2e", func() {
+var _ = Describe("odo-link-e2e", func() {
 
 	var t = strconv.FormatInt(time.Now().Unix(), 10)
 	var projName = fmt.Sprintf("odolnk-%s", t)

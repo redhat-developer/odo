@@ -8,7 +8,7 @@ import (
 
 const sourceExamples = "examples/source/"
 
-var _ = Describe("odoSourceE2e", func() {
+var _ = Describe("odo-source-e2e", func() {
 	const t = "source"
 	var projName = fmt.Sprintf("odo-%s", t)
 

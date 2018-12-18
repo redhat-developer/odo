@@ -8,7 +8,7 @@ import (
 
 const javaFiles = "examples/binary/java/"
 
-var _ = Describe("odoJavaE2e", func() {
+var _ = Describe("odo-java-e2e", func() {
 	const t = "java"
 	var projName = fmt.Sprintf("odo-%s", t)
 

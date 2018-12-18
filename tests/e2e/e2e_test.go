@@ -49,7 +49,7 @@ var _ = BeforeSuite(func() {
 	curProj = runCmd("oc project -q")
 })
 
-var _ = Describe("odoe2e", func() {
+var _ = Describe("odo-main-e2e", func() {
 	var t = strconv.FormatInt(time.Now().Unix(), 10)
 	var projName = fmt.Sprintf("odo-%s", t)
 	const appTestName = "testing"

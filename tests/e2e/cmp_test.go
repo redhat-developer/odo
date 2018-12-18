@@ -31,7 +31,7 @@ func SourceTest(appTestName string, sourceType string, source string) {
 	Expect(getDc).To(ContainSubstring(source))
 }
 
-var _ = Describe("odoCmpE2e", func() {
+var _ = Describe("odo-cmp-e2e", func() {
 	const bootStrapSupervisorURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
 	const initContainerName = "copy-files-to-volume"
 	const wildflyURI1 = "https://github.com/marekjelen/katacoda-odo-backend"
