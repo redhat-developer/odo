@@ -10,7 +10,7 @@ import (
 // completionHandler wraps a ContextualizedPredictor providing needed information for its invocation during the Predict function
 type completionHandler struct {
 	cmd       *cobra.Command
-	ctxLoader contextLoader
+	ctxLoader genericclioptions.ContextLoader
 	predictor ContextualizedPredictor
 }
 
@@ -31,8 +31,6 @@ type parsedArgs struct {
 	// flagValues provides a map associating parsed flag name and its value as string
 	flagValues map[string]string
 }
-
-type contextLoader func(command *cobra.Command) *genericclioptions.Context
 
 // ContextualizedPredictor predicts completion based on specified arguments, potentially using the context provided by the
 // specified client to resolve the entities to be completed
