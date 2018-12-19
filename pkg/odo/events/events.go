@@ -16,6 +16,11 @@ type Listener interface {
 	OnEvent(event Event) error
 }
 
+type Subscription struct {
+	Listener        Listener
+	SupportedEvents map[string]EventType
+}
+
 type EventType int
 
 func (t EventType) String() string {
@@ -55,7 +60,13 @@ func (bus *EventBus) RegisterToAll(listener Listener) {
 	bus.allListeners = append(bus.allListeners, listener)
 }
 
-func (bus *EventBus) Register(event string, eventType EventType, listener Listener) {
+func (bus *EventBus) Register(subscription Subscription) {
+	for k, v := range subscription.SupportedEvents {
+		bus.RegisterSingle(k, v, subscription.Listener)
+	}
+}
+
+func (bus *EventBus) RegisterSingle(event string, eventType EventType, listener Listener) {
 	listenersForEvent, ok := bus.listeners[event]
 	if !ok {
 		listenersForEvent = make(typesToListeners, 10)
