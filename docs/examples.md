@@ -1,6 +1,6 @@
 # Examples
 
-Odo is compatible with any language or runtime listed within OpenShift's catalog of component types. To create url for component, see the [cli reference for `odo url`](cli-reference.md#url).
+Odo is compatible with any language or runtime listed within OpenShift's catalog of component types. In order to access the component over the web, you can create a URL using `odo url create`.
 
 This can be found by using `odo catalog list components`.
 
