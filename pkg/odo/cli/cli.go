@@ -3,9 +3,6 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/events"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-
 	"github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
@@ -78,22 +75,6 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		Short:   "Odo (OpenShift Do)",
 		Long:    odoLong,
 		Example: fmt.Sprintf(odoExample, fullName),
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			eventBus := events.GetEventBus()
-			err := eventBus.DispatchEvent(events.Event{
-				Name: events.EventNameFrom(cmd),
-				Type: events.PreRun,
-			})
-			util.CheckError(err, "pre-run even dispatch failed")
-		},
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			eventBus := events.GetEventBus()
-			err := eventBus.DispatchEvent(events.Event{
-				Name: events.EventNameFrom(cmd),
-				Type: events.PostRun,
-			})
-			util.CheckError(err, "post-run even dispatch failed")
-		},
 	}
 
 	// Here you will define your flags and configuration settings.
