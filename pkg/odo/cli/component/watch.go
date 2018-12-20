@@ -74,6 +74,12 @@ var watchCmd = &cobra.Command{
 		}
 		watchPath := util.ReadFilePath(u, runtime.GOOS)
 
+		rules, err := util.GetIgnoreRulesFromDirectory(watchPath)
+		if err != nil {
+			odoutil.CheckError(err, "")
+		}
+		ignores = append(ignores, rules...)
+
 		err = component.WatchAndPush(
 			client,
 			stdout,
