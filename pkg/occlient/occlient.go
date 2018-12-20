@@ -98,7 +98,7 @@ const (
 	nameLength = 5
 
 	// Image that will be used containing the supervisord binary and assembly scripts
-	bootstrapperImage = "quay.io/openshiftdo/supervisord:0.5.0"
+	bootstrapperImage = "quay.io/openshiftdo/supervisord:0.6.0"
 
 	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment
 	supervisordVolumeName = "odo-supervisord-shared-data"
@@ -118,6 +118,13 @@ const (
 	// EnvS2ISrcOrBinPath is an env var exposed by s2i to indicate where the builder image expects the component source or binary to reside
 	EnvS2ISrcOrBinPath = "ODO_S2I_SRC_BIN_PATH"
 
+	// EnvS2ISrcBackupDir is the env var that points to the directory that holds a backup of component source
+	// This is required bcoz, s2i assemble script moves(hence deletes contents) the contents of $ODO_S2I_SRC_BIN_PATH to $APP_ROOT during which $APP_DIR alo needs to be empty so that mv doesn't complain pushing to an already exisiting dir with same name
+	EnvS2ISrcBackupDir = "ODO_SRC_BACKUP_DIR"
+
+	// EnvAppRoot is env var s2i exposes in component container to indicate the path where component source resides
+	EnvAppRoot = "APP_ROOT"
+
 	// S2IScriptsURLLabel S2I script location Label name
 	// Ref: https://docs.openshift.com/enterprise/3.2/creating_images/s2i.html#build-process
 	S2IScriptsURLLabel = "io.openshift.s2i.scripts-url"
@@ -131,6 +138,12 @@ const (
 	// DefaultS2ISrcOrBinPath is the default path where S2I expects source/binary artifacts in absence of $S2ISrcOrBinLabel in builder image
 	// Ref: https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#required-image-contents
 	DefaultS2ISrcOrBinPath = "/tmp"
+
+	// DefaultS2ISrcBackupDir is the default path where odo backs up the component source
+	DefaultS2ISrcBackupDir = "/opt/app-root/src-backup"
+
+	// EnvS2IWorkingDir is an env var to odo-supervisord-image assemble-and-restart.sh to indicate to it the s2i working directory
+	EnvS2IWorkingDir = "ODO_S2I_WORKING_DIR"
 )
 
 // S2IPaths is a struct that will hold path to S2I scripts and the protocol indicating access to them, component source/binary paths, artifacts deployments directory
@@ -140,6 +153,8 @@ type S2IPaths struct {
 	ScriptsPath         string
 	SrcOrBinPath        string
 	DeploymentDir       string
+	WorkingDir          string
+	SrcBackupPath       string
 }
 
 // S2IDeploymentsDir is a set of possible S2I labels that provides S2I deployments directory
@@ -824,7 +839,8 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths
 
 	// Define structs for internal un-marshalling of imagestreamimage to extract label from it
 	type ContainerConfig struct {
-		Labels map[string]string `json:"Labels"`
+		Labels     map[string]string `json:"Labels"`
+		WorkingDir string            `json:"WorkingDir"`
 	}
 	type DockerImageMetaDataRaw struct {
 		ContainerConfig ContainerConfig `json:"ContainerConfig"`
@@ -884,6 +900,8 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths
 		ScriptsPath:         s2iScriptsPath,
 		SrcOrBinPath:        s2iSrcOrBinPath,
 		DeploymentDir:       s2iDestinationDir,
+		WorkingDir:          dimdr.ContainerConfig.WorkingDir,
+		SrcBackupPath:       DefaultS2ISrcBackupDir,
 	}, nil
 }
 
@@ -908,6 +926,16 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 	}
 
 	return retVal
+}
+
+func deleteNonRequiredEnvVars(existingEnvs []corev1.EnvVar, envTobeDeleted string) []corev1.EnvVar {
+	for ind, envVar := range existingEnvs {
+		if envVar.Name == envTobeDeleted {
+			existingEnvs = append(existingEnvs[:ind], existingEnvs[ind+1:]...)
+			break
+		}
+	}
+	return existingEnvs
 }
 
 // BootstrapSupervisoredS2I uses S2I (Source To Image) to inject Supervisor into the application container.
@@ -1001,7 +1029,21 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 			Name:  EnvS2IDeploymentDir,
 			Value: s2iPaths.DeploymentDir,
 		},
+		corev1.EnvVar{
+			Name:  EnvS2IWorkingDir,
+			Value: s2iPaths.WorkingDir,
+		},
 	)
+
+	if params.SourceType == LOCAL {
+		inputEnvs = uniqueAppendOrOverwriteEnvVars(
+			inputEnvs,
+			corev1.EnvVar{
+				Name:  EnvS2ISrcBackupDir,
+				Value: s2iPaths.SrcBackupPath,
+			},
+		)
+	}
 
 	// Generate the DeploymentConfig that will be used.
 	dc := generateSupervisordDeploymentConfig(
@@ -1279,7 +1321,7 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 }
 
 // UpdateDCToSupervisor updates the current DeploymentConfig to a SupervisorD configuration.
-func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, componentImageType string) error {
+func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, componentImageType string, isToLocal bool) error {
 
 	// Parse the image
 	imageNS, imageName, imageTag, _, err := ParseImageName(componentImageType)
@@ -1343,7 +1385,23 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 			Name:  EnvS2IDeploymentDir,
 			Value: s2iPaths.DeploymentDir,
 		},
+		corev1.EnvVar{
+			Name:  EnvS2IWorkingDir,
+			Value: s2iPaths.WorkingDir,
+		},
 	)
+
+	if isToLocal {
+		inputEnvs = uniqueAppendOrOverwriteEnvVars(
+			inputEnvs,
+			corev1.EnvVar{
+				Name:  EnvS2ISrcBackupDir,
+				Value: s2iPaths.SrcBackupPath,
+			},
+		)
+	} else {
+		inputEnvs = deleteNonRequiredEnvVars(inputEnvs, EnvS2ISrcBackupDir)
+	}
 
 	// Generate the SupervisorD Config
 	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)

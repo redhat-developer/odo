@@ -691,7 +691,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		}
 
 		// Update the DeploymentConfig
-		err = client.UpdateDCToSupervisor(commonObjectMeta, componentImageType)
+		err = client.UpdateDCToSupervisor(commonObjectMeta, componentImageType, newSourceType == "local")
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig for %s component", componentName)
 		}
