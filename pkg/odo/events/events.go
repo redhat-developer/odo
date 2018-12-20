@@ -2,6 +2,7 @@ package events
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 
@@ -123,6 +124,15 @@ func EventNameFrom(cmd *cobra.Command) string {
 		return EventNameFrom(cmd.Parent()) + ":" + cmd.Name()
 	}
 	return cmd.Name()
+}
+
+func DispatchEvent(cmd *cobra.Command, eventType EventType) {
+	eventBus := GetEventBus()
+	err := eventBus.DispatchEvent(Event{
+		Name: EventNameFrom(cmd),
+		Type: eventType,
+	})
+	util.CheckError(err, "%v even dispatch failed", eventType)
 }
 
 type tracer struct{}
