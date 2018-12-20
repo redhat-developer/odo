@@ -2,9 +2,31 @@ package events
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
+	"reflect"
 )
+
+type EventCausedAbortError struct {
+	Listener Listener
+	Source   Event
+	cause    error
+}
+
+func (e *EventCausedAbortError) Error() string {
+	return fmt.Sprintf("listener %s aborted processing on event %v, cause: %v", e.Listener.Name(), e.Source, e.cause)
+}
+
+func (e *EventCausedAbortError) Cause() error {
+	return e.cause
+}
+
+func NewEventCausedAbortError(listener Listener, event Event, cause error) *EventCausedAbortError {
+	return &EventCausedAbortError{
+		Listener: listener,
+		Source:   event,
+		cause:    cause,
+	}
+}
 
 type typesToListeners map[EventType][]Listener
 
@@ -15,6 +37,8 @@ type EventBus struct {
 
 type Listener interface {
 	OnEvent(event Event) error
+	OnAbort(abortError *EventCausedAbortError)
+	Name() string
 }
 
 type Subscription struct {
@@ -90,6 +114,8 @@ func (bus *EventBus) RegisterSingle(event string, eventType EventType, listener 
 func (bus *EventBus) DispatchEvent(event Event) (err error) {
 	errors := make([]error, 0, 10)
 	listenersForEvent, ok := bus.listeners[event.Name]
+	processedListeners := make([]Listener, 0, 10)
+	var abort bool
 	if ok {
 		listenersForType, ok := listenersForEvent[event.Type]
 		if ok {
@@ -97,18 +123,33 @@ func (bus *EventBus) DispatchEvent(event Event) (err error) {
 				listener := listenersForType[i]
 				err := listener.OnEvent(event)
 				if err != nil {
+					if IsEventCausedAbort(err) {
+						abort = true
+						return err
+					}
 					errors = append(errors, err)
 				}
+
+				processedListeners = append(processedListeners, listener)
 			}
 		}
 	}
 
 	for i := range bus.allListeners {
-		err := bus.allListeners[i].OnEvent(event)
+		listener := bus.allListeners[i]
+		err := listener.OnEvent(event)
 		if err != nil {
+			if IsEventCausedAbort(err) {
+				abort = true
+				return err
+			}
 			errors = append(errors, err)
 		}
+
+		processedListeners = append(processedListeners, listener)
 	}
+
+	defer revertProcessedListenersOnAbort(abort, err, processedListeners)
 
 	if len(errors) > 0 {
 		msg := ""
@@ -120,6 +161,19 @@ func (bus *EventBus) DispatchEvent(event Event) (err error) {
 	return
 }
 
+func revertProcessedListenersOnAbort(abort bool, err error, listeners []Listener) {
+	if abort {
+
+		for i := range listeners {
+			listeners[i].OnAbort(err.(*EventCausedAbortError))
+		}
+	}
+}
+
+func IsEventCausedAbort(err error) bool {
+	return reflect.TypeOf(err) == reflect.TypeOf(EventCausedAbortError{})
+}
+
 func EventNameFrom(cmd *cobra.Command) string {
 	if cmd.HasParent() {
 		return EventNameFrom(cmd.Parent()) + ":" + cmd.Name()
@@ -127,14 +181,15 @@ func EventNameFrom(cmd *cobra.Command) string {
 	return cmd.Name()
 }
 
-func DispatchEvent(cmd *cobra.Command, eventType EventType, payload interface{}) {
+func DispatchEvent(cmd *cobra.Command, eventType EventType, payload interface{}) error {
 	eventBus := GetEventBus()
 	err := eventBus.DispatchEvent(Event{
 		Name:    EventNameFrom(cmd),
 		Type:    eventType,
 		Payload: payload,
 	})
-	util.CheckError(err, "%v even dispatch failed", eventType)
+
+	return err
 }
 
 type tracer struct{}
@@ -142,6 +197,14 @@ type tracer struct{}
 func (t tracer) OnEvent(event Event) error {
 	fmt.Printf("got event %v\n", event)
 	return nil
+}
+
+func (t tracer) OnAbort(abortError *EventCausedAbortError) {
+	fmt.Printf("abort: %v\n", abortError)
+}
+
+func (t tracer) Name() string {
+	return "tracer"
 }
 
 /*func init() {

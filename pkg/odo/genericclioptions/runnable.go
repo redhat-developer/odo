@@ -1,9 +1,11 @@
 package genericclioptions
 
 import (
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/events"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 type Runnable interface {
@@ -13,11 +15,18 @@ type Runnable interface {
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
-	events.DispatchEvent(cmd, events.PreRun, args)
+	exitIfAbort(events.DispatchEvent(cmd, events.PreRun, args), cmd)
 	util.CheckError(o.Complete(cmd.Name(), cmd, args), "")
-	events.DispatchEvent(cmd, events.PostComplete, o)
+	exitIfAbort(events.DispatchEvent(cmd, events.PostComplete, o), cmd)
 	util.CheckError(o.Validate(), "")
-	events.DispatchEvent(cmd, events.PostValidate, o)
+	exitIfAbort(events.DispatchEvent(cmd, events.PostValidate, o), cmd)
 	util.CheckError(o.Run(), "")
-	events.DispatchEvent(cmd, events.PostRun, o)
+	exitIfAbort(events.DispatchEvent(cmd, events.PostRun, o), cmd)
+}
+
+func exitIfAbort(err error, cmd *cobra.Command) {
+	if events.IsEventCausedAbort(err) {
+		log.Errorf("Processing of %s command was aborted: %v", cmd.Name(), err)
+		os.Exit(1)
+	}
 }
