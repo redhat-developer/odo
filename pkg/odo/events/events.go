@@ -30,12 +30,16 @@ func (t EventType) String() string {
 var eventTypes = []string{
 	"Unknown",
 	"PreRun",
+	"PostComplete",
+	"PostValidate",
 	"PostRun",
 }
 
 const (
 	Unknown EventType = iota
 	PreRun
+	PostComplete
+	PostValidate
 	PostRun
 )
 
