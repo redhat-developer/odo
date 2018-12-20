@@ -45,8 +45,9 @@ const (
 )
 
 type Event struct {
-	Name string
-	Type EventType
+	Name    string
+	Type    EventType
+	Payload interface{}
 }
 
 func (e Event) String() string {
@@ -126,11 +127,12 @@ func EventNameFrom(cmd *cobra.Command) string {
 	return cmd.Name()
 }
 
-func DispatchEvent(cmd *cobra.Command, eventType EventType) {
+func DispatchEvent(cmd *cobra.Command, eventType EventType, payload interface{}) {
 	eventBus := GetEventBus()
 	err := eventBus.DispatchEvent(Event{
-		Name: EventNameFrom(cmd),
-		Type: eventType,
+		Name:    EventNameFrom(cmd),
+		Type:    eventType,
+		Payload: payload,
 	})
 	util.CheckError(err, "%v even dispatch failed", eventType)
 }
