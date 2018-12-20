@@ -1,6 +1,9 @@
 package events
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 type tracer struct{}
 
@@ -17,6 +20,8 @@ func (t tracer) Name() string {
 	return "tracer"
 }
 
-/*func init() {
-	GetEventBus().RegisterToAll(tracer{})
-}*/
+func init() {
+	if os.Getenv("ODO_EVENT_TRACER") == "true" {
+		GetEventBus().RegisterToAll(tracer{})
+	}
+}
