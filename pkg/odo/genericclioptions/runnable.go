@@ -13,11 +13,11 @@ type Runnable interface {
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
-	events.DispatchEvent(cmd, events.PreRun)
+	events.DispatchEvent(cmd, events.PreRun, args)
 	util.CheckError(o.Complete(cmd.Name(), cmd, args), "")
-	events.DispatchEvent(cmd, events.PostComplete)
+	events.DispatchEvent(cmd, events.PostComplete, o)
 	util.CheckError(o.Validate(), "")
-	events.DispatchEvent(cmd, events.PostValidate)
+	events.DispatchEvent(cmd, events.PostValidate, o)
 	util.CheckError(o.Run(), "")
-	events.DispatchEvent(cmd, events.PostRun)
+	events.DispatchEvent(cmd, events.PostRun, o)
 }
