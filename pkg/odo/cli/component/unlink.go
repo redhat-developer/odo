@@ -6,6 +6,7 @@ import (
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/redhat-developer/odo/pkg/odo/util"
