@@ -1,5 +1,5 @@
-hash: 8495b5732f21ca7d7b05e9232d5d9690f87f04f1f7027614f7e0f4a33c0987c0
-updated: 2018-11-09T17:50:10.869167042+05:30
+hash: 258d0fb5c8587f4a5522abc9760017aaed0bccdfca7f523db0f9ea4979f04a1f
+updated: 2018-12-20T16:45:55.872824335+05:30
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -78,6 +78,8 @@ imports:
   version: 1de3e0542de65ad8d75452a595886fdd0befb363
 - name: github.com/go-openapi/swag
   version: f3f9494671f93fcff853e3c6e9e948b3eb71e590
+- name: github.com/gobwas/glob
+  version: e7a84e9525fe90abcda167b604e483cc959ad4aa
 - name: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
@@ -153,7 +155,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 3fb116b820352b7f0c281308a4d6250c22d94e27
 - name: github.com/mattn/go-runewidth
-  version: b20a3daf6a39840c202fd42cc23d53607162b045
+  version: 703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211
 - name: github.com/matttproud/golang_protobuf_extensions
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
@@ -246,6 +248,8 @@ imports:
   - image/clientset/versioned/scheme
   - image/clientset/versioned/typed/image/v1
   - image/clientset/versioned/typed/image/v1/fake
+  - oauth/clientset/versioned/scheme
+  - oauth/clientset/versioned/typed/oauth/v1
   - project/clientset/versioned
   - project/clientset/versioned/fake
   - project/clientset/versioned/scheme
@@ -396,7 +400,6 @@ imports:
   - http2/hpack
   - idna
   - lex/httplex
-  - websocket
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
@@ -663,7 +666,7 @@ imports:
   - util/jsonpath
   - util/retry
 - name: k8s.io/kube-openapi
-  version: 91cfa479c814065e420cee7ed227db0f63a5854e
+  version: 8a9b82f00b3a86eac24681da3f9fe6c34c01cea2
   subpackages:
   - pkg/util/proto
   - pkg/util/proto/validation

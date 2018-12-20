@@ -50,7 +50,7 @@ func TestIsRegExpMatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			matched, err := isRegExpMatch(tt.strToMatch, tt.regExps)
+			matched, err := isRegExpMatch("", tt.strToMatch, tt.regExps)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)

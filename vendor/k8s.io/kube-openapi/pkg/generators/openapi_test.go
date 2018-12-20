@@ -378,7 +378,6 @@ func TestCustomDefs(t *testing.T) {
 	callErr, funcErr, assert, callBuffer, funcBuffer := testOpenAPITypeWriter(t, `
 package foo
 
-// Blah is a custom type
 type Blah struct {
 }
 
@@ -397,7 +396,6 @@ func (_ Blah) OpenAPISchemaFormat() string { return "date-time" }
 return common.OpenAPIDefinition{
 Schema: spec.Schema{
 SchemaProps: spec.SchemaProps{
-Description: "Blah is a custom type",
 Type:foo.Blah{}.OpenAPISchemaType(),
 Format:foo.Blah{}.OpenAPISchemaFormat(),
 },
