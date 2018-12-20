@@ -5,6 +5,7 @@ import (
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/redhat-developer/odo/pkg/odo/util"
@@ -103,9 +104,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(linkExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.CheckError(o.Complete(name, cmd, args), "")
-			util.CheckError(o.Validate(), "")
-			util.CheckError(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 
