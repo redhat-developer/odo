@@ -78,7 +78,9 @@ var watchCmd = &cobra.Command{
 		if err != nil {
 			odoutil.CheckError(err, "")
 		}
-		ignores = append(ignores, rules...)
+		if len(rules) > 0 {
+			ignores = append(ignores, rules...)
+		}
 
 		err = component.WatchAndPush(
 			client,
