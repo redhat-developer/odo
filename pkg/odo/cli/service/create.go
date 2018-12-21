@@ -66,7 +66,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 		return fmt.Errorf("unable to create service because Service Catalog is not enabled in your cluster:\n%v", err)
 	}
 	if matchingService == nil {
-		return fmt.Errorf("service %v doesn't exist\nRun 'odo service catalog' to see a list of supported services.\n", o.serviceType)
+		return fmt.Errorf("service %v doesn't exist\nRun 'odo catalog list services' to see a list of supported services.\n", o.serviceType)
 	}
 	if len(o.plan) == 0 {
 		// when the plan has not been supplied, if there is only one available plan, we select it
