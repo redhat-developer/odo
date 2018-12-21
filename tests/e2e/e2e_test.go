@@ -213,7 +213,7 @@ var _ = Describe("odoe2e", func() {
 				// TODO: add tests for --git
 				curProj = strings.TrimSuffix(runCmd("oc project -q"), "\n")
 				// Sleep until status tags and their annotations are created
-				time.Sleep(15 * time.Second)
+				// time.Sleep(15 * time.Second)
 				runCmd("odo create " + curProj + "/nodejs nodejs --local " + tmpDir + "/nodejs-ex")
 				runCmd("odo push")
 			})
