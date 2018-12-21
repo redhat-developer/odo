@@ -16,7 +16,7 @@ import (
 
 const (
 	configEnvName  = "ODOCONFIG"
-	configFileName = "odo"
+	configFileName = "odo-config"
 	//DefaultTimeout for openshift server connection check
 	DefaultTimeout = 1
 )
@@ -62,12 +62,12 @@ type ConfigInfo struct {
 	Config
 }
 
-func getDefaultConfigFile() string {
+func getGlobalConfigFile() string {
 	currentUser, err := user.Current()
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(currentUser.HomeDir, ".kube", configFileName)
+	return filepath.Join(currentUser.HomeDir, ".odo", configFileName)
 }
 
 func getOdoConfigFile() (string, error) {
@@ -75,7 +75,7 @@ func getOdoConfigFile() (string, error) {
 		return env, nil
 	}
 
-	if file := getDefaultConfigFile(); len(file) > 0 {
+	if file := getGlobalConfigFile(); len(file) > 0 {
 		return file, nil
 	}
 
