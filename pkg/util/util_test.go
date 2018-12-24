@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -560,6 +561,7 @@ func TestCheckPathExists(t *testing.T) {
 		}
 	}
 }
+
 func TestGetHostWithPort(t *testing.T) {
 
 	tests := []struct {
@@ -609,5 +611,87 @@ func TestGetHostWithPort(t *testing.T) {
 				t.Errorf("getHostWithPort() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestGetIgnoreRulesFromDirectory(t *testing.T) {
+	testDir, err := ioutil.TempDir(os.TempDir(), "odo-tests")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(testDir)
+	tests := []struct {
+		name          string
+		directoryName string
+		fileName      string
+		rulesOnFile   string
+		wantRules     []string
+		wantErr       bool
+	}{
+		{
+			name:          "test case 1: no odoignore and no gitignore",
+			directoryName: testDir,
+			fileName:      "",
+			rulesOnFile:   "",
+			wantRules:     []string{},
+			wantErr:       false,
+		},
+		{
+			name:          "test case 2: no odoignore but gitignore exists with no rules",
+			directoryName: testDir,
+			fileName:      ".gitignore",
+			rulesOnFile:   "",
+			wantRules:     []string{},
+			wantErr:       false,
+		},
+		{
+			name:          "test case 3: no odoignore but gitignore exists with rules",
+			directoryName: testDir,
+			fileName:      ".gitignore",
+			rulesOnFile:   "*.js\n\n/openshift/**/*.json\n/tests",
+			wantRules:     []string{"*.js", "/openshift/**/*.json", "/tests"},
+			wantErr:       false,
+		},
+		{
+			name:          "test case 4: odoignore exists with no rules",
+			directoryName: testDir,
+			fileName:      ".odoignore",
+			rulesOnFile:   "",
+			wantRules:     []string{},
+			wantErr:       false,
+		},
+		{
+			name:          "test case 5: odoignore exists with rules",
+			directoryName: testDir,
+			fileName:      ".odoignore",
+			rulesOnFile:   "*.json\n\n/openshift/**/*.js",
+			wantRules:     []string{"*.json", "/openshift/**/*.js"},
+			wantErr:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		if tt.fileName != "" {
+			err := testingutil.MakeFileWithContent(testDir, tt.fileName, tt.rulesOnFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		gotRules, err := GetIgnoreRulesFromDirectory(testDir)
+
+		if err == nil && !tt.wantErr {
+			if !reflect.DeepEqual(gotRules, tt.wantRules) {
+				t.Errorf("the expected value of rules are different, excepted: %v, got: %v", tt.wantRules, gotRules)
+			}
+		} else if err == nil && tt.wantErr {
+			t.Error("error was expected, but no error was returned")
+		} else if err != nil && !tt.wantErr {
+			t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+		}
+		err = testingutil.RemoveContentsFromDir(testDir)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
