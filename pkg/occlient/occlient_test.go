@@ -3971,6 +3971,8 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 				ScriptsPath:         "/usr/libexec/s2i",
 				SrcOrBinPath:        "/tmp",
 				DeploymentDir:       "/opt/app-root/src",
+				WorkingDir:          "/opt/app-root/src",
+				SrcBackupPath:       "/opt/app-root/src-backup",
 			},
 			wantErr: false,
 		},
@@ -3986,6 +3988,8 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 				ScriptsPath:         "/usr/libexec/s2i",
 				SrcOrBinPath:        "/tmp",
 				DeploymentDir:       "/opt/app-root/src",
+				WorkingDir:          "/opt/app-root/src",
+				SrcBackupPath:       "/opt/app-root/src-backup",
 			},
 			wantErr: false,
 		},
@@ -4001,6 +4005,8 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 				ScriptsPath:         "http(s):///usr/libexec/s2i",
 				SrcOrBinPath:        "/tmp",
 				DeploymentDir:       "/opt/app-root/src",
+				WorkingDir:          "/opt/app-root/src",
+				SrcBackupPath:       "/opt/app-root/src-backup",
 			},
 			wantErr: false,
 		},
@@ -4016,6 +4022,8 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 				ScriptsPath:         "/usr/local/s2i",
 				SrcOrBinPath:        "/tmp",
 				DeploymentDir:       "/deployments",
+				WorkingDir:          "/opt/app-root/src",
+				SrcBackupPath:       "/opt/app-root/src-backup",
 			},
 			wantErr: false,
 		},
@@ -4049,6 +4057,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 		imageName      string
 		expectedImage  string
 		imageNamespace string
+		isToLocal      bool
 		dc             appsv1.DeploymentConfig
 	}
 	tests := []struct {
@@ -4064,6 +4073,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "nodejs",
 				expectedImage:  "nodejs",
 				imageNamespace: "openshift",
+				isToLocal:      true,
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					[]corev1.EnvFromSource{}, fakeResourceConsumption()),
@@ -4078,6 +4088,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "foo",
 				expectedImage:  "foobar",
 				imageNamespace: "testing",
+				isToLocal:      false,
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					[]corev1.EnvFromSource{}, []util.ResourceRequirementInfo{}),
@@ -4138,7 +4149,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 			})
 
 			// Run function UpdateDCToSupervisor
-			err := fakeClient.UpdateDCToSupervisor(metav1.ObjectMeta{Name: tt.args.name}, tt.args.imageName)
+			err := fakeClient.UpdateDCToSupervisor(metav1.ObjectMeta{Name: tt.args.name}, tt.args.imageName, tt.args.isToLocal)
 
 			// Error checking UpdateDCToSupervisor
 			if !tt.wantErr == (err != nil) {
