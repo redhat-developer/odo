@@ -89,6 +89,10 @@ type LocalConfigInfo struct {
 }
 
 func getGlobalConfigFile() (string, error) {
+	if env, ok := os.LookupEnv(globalConfigEnvName); ok {
+		return env, nil
+	}
+
 	currentUser, err := user.Current()
 	if err != nil {
 		return "", err
@@ -97,6 +101,10 @@ func getGlobalConfigFile() (string, error) {
 }
 
 func getLocalConfigFile() (string, error) {
+	if env, ok := os.LookupEnv(localConfigEnvName); ok {
+		return env, nil
+	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", err
