@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/util"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -10,15 +9,25 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/util"
+
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
 const (
-	configEnvName  = "ODOCONFIG"
-	configFileName = "odo-config"
+	globalConfigEnvName = "GLOBALODOCONFIG"
+	localConfigEnvName  = "LOCALODOCONFIG"
+	configFileName      = "odo-config"
 	//DefaultTimeout for openshift server connection check
 	DefaultTimeout = 1
+)
+
+type ConfigType int
+
+const (
+	Local = iota
+	Global
 )
 
 // OdoSettings holds all odo specific configurations
@@ -29,6 +38,13 @@ type OdoSettings struct {
 	NamePrefix *string `json:"nameprefix,omitempty"`
 	// Timeout for openshift server connection check
 	Timeout *int `json:"timeout,omitempty"`
+}
+
+// ComponentSettings holds all component related information
+type ComponentSettings struct {
+
+	// The builder image to use
+	ComponentType *string `json:"component_type,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -43,10 +59,9 @@ type ApplicationInfo struct {
 	ActiveComponent string `json:"activeComponent"`
 }
 
-// Config records odo's configuration
-type Config struct {
-	// odo specific configuration settings
-	OdoSettings OdoSettings `json:"settings"`
+type GlobalConfig struct {
+	// global config has all the attributes of global config as well
+	*LocalConfig
 	// remember active applications and components per project
 	// when project or applications is switched we can go back to last active app/component
 
@@ -54,47 +69,80 @@ type Config struct {
 	// multiple applications can be active but each one has to be in different project
 	// there shouldn't be more active applications in one project
 	ActiveApplications []ApplicationInfo `json:"activeApplications"`
+
+	// Odo settings holds the odo specific global settings
+	OdoSettings OdoSettings `json:"settings"`
 }
 
-// ConfigInfo records information about odo's configuration
-type ConfigInfo struct {
+type LocalConfig struct {
+	ComponentSettings ComponentSettings `json:"component_settings"`
+}
+
+type GlobalConfigInfo struct {
 	Filename string
-	Config
+	GlobalConfig
 }
 
-func getGlobalConfigFile() string {
+type LocalConfigInfo struct {
+	Filename string
+	LocalConfig
+}
+
+func getGlobalConfigFile() (string, error) {
 	currentUser, err := user.Current()
 	if err != nil {
-		return ""
+		return "", err
 	}
-	return filepath.Join(currentUser.HomeDir, ".odo", configFileName)
+	return filepath.Join(currentUser.HomeDir, ".odo", configFileName), nil
 }
 
-func getOdoConfigFile() (string, error) {
-	if env, ok := os.LookupEnv(configEnvName); ok {
-		return env, nil
+func getLocalConfigFile() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
 	}
 
-	if file := getGlobalConfigFile(); len(file) > 0 {
-		return file, nil
-	}
-
-	return "", errors.New("unable to get config file")
+	return filepath.Join(wd, ".odo", configFileName), nil
 }
 
-// New gets the configInfo from config file and creates the config file in case it's
+// NewGlobalConfig gets the GlobalConfigInfo from global config file and global creates the config file in case it's
 // not present then it
-func New() (*ConfigInfo, error) {
-	configFile, err := getOdoConfigFile()
+func NewGlobalConfig() (*GlobalConfigInfo, error) {
+	configFile, err := getGlobalConfigFile()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
-	// Check whether directory present or not
-	_, err = os.Stat(filepath.Dir(configFile))
+	// Check whether directory and file are not present if they aren't then create them
+	if err = createIfNotExists(configFile); err != nil {
+		return nil, err
+	}
+	c := GlobalConfigInfo{}
+	c.Filename = configFile
+	get(c.GlobalConfig, c.Filename)
+	return &c, nil
+}
+
+func NewLocalConfig() (*LocalConfigInfo, error) {
+	configFile, err := getLocalConfigFile()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get odo config file")
+	}
+	// Check whether directory and file are not present if they aren't then create them
+	if err = createIfNotExists(configFile); err != nil {
+		return nil, err
+	}
+	c := LocalConfigInfo{}
+	c.Filename = configFile
+	get(c.LocalConfig, c.Filename)
+	return &c, nil
+}
+
+func createIfNotExists(configFile string) error {
+	_, err := os.Stat(filepath.Dir(configFile))
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(configFile), 0755)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to create directory")
+			return errors.Wrap(err, "unable to create directory")
 		}
 	}
 	// Check whether config file is present or not
@@ -102,21 +150,18 @@ func New() (*ConfigInfo, error) {
 	if os.IsNotExist(err) {
 		file, err := os.Create(configFile)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to create config file")
+			return errors.Wrap(err, "unable to create config file")
 		}
 		defer file.Close()
 	}
 
-	c := ConfigInfo{}
-	c.Filename = configFile
-	c.get()
-	return &c, nil
+	return nil
 }
 
-func (c *ConfigInfo) get() error {
-	configData, err := ioutil.ReadFile(c.Filename)
+func get(c interface{}, filename string) error {
+	configData, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to read file %v", c.Filename)
+		return errors.Wrapf(err, "unable to read file %v", filename)
 	}
 
 	err = yaml.Unmarshal(configData, &c)
@@ -127,15 +172,15 @@ func (c *ConfigInfo) get() error {
 	return nil
 }
 
-func (c *ConfigInfo) writeToFile() error {
-	data, err := yaml.Marshal(&c.Config)
+func writeToFile(c interface{}, filename string) error {
+	data, err := yaml.Marshal(&c)
 	if err != nil {
 		return errors.Wrap(err, "unable to marshal odo config data")
 	}
 
-	err = ioutil.WriteFile(c.Filename, data, 0600)
+	err = ioutil.WriteFile(filename, data, 0600)
 	if err != nil {
-		return errors.Wrapf(err, "unable to write config to file %v", c.Filename)
+		return errors.Wrapf(err, "unable to write config to file %v", c)
 	}
 
 	return nil
@@ -143,7 +188,7 @@ func (c *ConfigInfo) writeToFile() error {
 
 // SetConfiguration modifies Odo configurations in the config file
 // as of now being used for nameprefix, timeout, updatenotification
-func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
+func (c *GlobalConfigInfo) SetConfiguration(parameter string, value string) error {
 	if p, ok := asSupportedParameter(parameter); ok {
 		// processing values according to the parameter names
 		switch p {
@@ -157,7 +202,6 @@ func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 				return errors.Errorf("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.Timeout = &typedval
-
 		case "updatenotification":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
@@ -172,7 +216,7 @@ func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}
 
-	err := c.writeToFile()
+	err := writeToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s", parameter)
 	}
@@ -180,7 +224,7 @@ func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
 }
 
 // GetTimeout returns the value of Timeout from config
-func (c *ConfigInfo) GetTimeout() int {
+func (c *GlobalConfigInfo) GetTimeout() int {
 	// default timeout value is 1
 	if c.OdoSettings.Timeout == nil {
 		return DefaultTimeout
@@ -189,7 +233,7 @@ func (c *ConfigInfo) GetTimeout() int {
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from config
-func (c *ConfigInfo) GetUpdateNotification() bool {
+func (c *GlobalConfigInfo) GetUpdateNotification() bool {
 	if c.OdoSettings.UpdateNotification == nil {
 		return true
 	}
@@ -197,7 +241,7 @@ func (c *ConfigInfo) GetUpdateNotification() bool {
 }
 
 // GetNamePrefix returns the value of Prefix from config
-func (c *ConfigInfo) GetNamePrefix() string {
+func (c *GlobalConfigInfo) GetNamePrefix() string {
 	if c.OdoSettings.NamePrefix == nil {
 		return ""
 	}
@@ -206,7 +250,7 @@ func (c *ConfigInfo) GetNamePrefix() string {
 
 // SetActiveComponent sets active component for given project and application.
 // application must exist
-func (c *ConfigInfo) SetActiveComponent(componentName string, applicationName string, projectName string) error {
+func (c *GlobalConfigInfo) SetActiveComponent(componentName string, applicationName string, projectName string) error {
 	found := false
 
 	if c.ActiveApplications != nil {
@@ -223,7 +267,7 @@ func (c *ConfigInfo) SetActiveComponent(componentName string, applicationName st
 		return errors.Errorf("unable to set %s componentName as active, applicationName %s in %s projectName doesn't exists", componentName, applicationName, projectName)
 	}
 
-	err := c.writeToFile()
+	err := writeToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s as active componentName", componentName)
 	}
@@ -231,7 +275,7 @@ func (c *ConfigInfo) SetActiveComponent(componentName string, applicationName st
 }
 
 // UnsetActiveComponent sets the active component as blank of the given project in the configuration file
-func (c *ConfigInfo) UnsetActiveComponent(project string) error {
+func (c *GlobalConfigInfo) UnsetActiveComponent(project string) error {
 	if c.ActiveApplications == nil {
 		c.ActiveApplications = []ApplicationInfo{}
 	}
@@ -243,7 +287,7 @@ func (c *ConfigInfo) UnsetActiveComponent(project string) error {
 	}
 
 	// Write the configuration to file
-	err := c.writeToFile()
+	err := writeToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to write configuration file")
 	}
@@ -252,7 +296,7 @@ func (c *ConfigInfo) UnsetActiveComponent(project string) error {
 }
 
 // UnsetActiveApplication sets the active application as blank of the given project in the configuration file
-func (c *ConfigInfo) UnsetActiveApplication(project string) error {
+func (c *GlobalConfigInfo) UnsetActiveApplication(project string) error {
 	if c.ActiveApplications == nil {
 		c.ActiveApplications = []ApplicationInfo{}
 	}
@@ -263,7 +307,7 @@ func (c *ConfigInfo) UnsetActiveApplication(project string) error {
 		}
 	}
 
-	err := c.writeToFile()
+	err := writeToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrap(err, "unable to write configuration file")
 	}
@@ -271,7 +315,7 @@ func (c *ConfigInfo) UnsetActiveApplication(project string) error {
 }
 
 // GetActiveComponent if no component is set as current returns empty string
-func (c *ConfigInfo) GetActiveComponent(application string, project string) string {
+func (c *GlobalConfigInfo) GetActiveComponent(application string, project string) string {
 	if c.ActiveApplications != nil {
 		for _, app := range c.ActiveApplications {
 			if app.Project == project && app.Name == application && app.Active == true {
@@ -284,7 +328,7 @@ func (c *ConfigInfo) GetActiveComponent(application string, project string) stri
 
 // GetActiveApplication get currently active application for given project
 // if no application is active return empty string
-func (c *ConfigInfo) GetActiveApplication(project string) string {
+func (c *GlobalConfigInfo) GetActiveApplication(project string) string {
 	if c.ActiveApplications != nil {
 		for _, app := range c.ActiveApplications {
 			if app.Project == project && app.Active == true {
@@ -296,7 +340,7 @@ func (c *ConfigInfo) GetActiveApplication(project string) string {
 }
 
 // SetActiveApplication set application as active for given project
-func (c *ConfigInfo) SetActiveApplication(application string, project string) error {
+func (c *GlobalConfigInfo) SetActiveApplication(application string, project string) error {
 	if c.ActiveApplications == nil {
 		c.ActiveApplications = []ApplicationInfo{}
 	}
@@ -322,7 +366,7 @@ func (c *ConfigInfo) SetActiveApplication(application string, project string) er
 		}
 	}
 
-	err := c.writeToFile()
+	err := writeToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
 	}
@@ -331,7 +375,7 @@ func (c *ConfigInfo) SetActiveApplication(application string, project string) er
 
 // AddApplication add  new application to the config file
 // Newly create application is NOT going to be se as Active.
-func (c *ConfigInfo) AddApplication(application string, project string) error {
+func (c *GlobalConfigInfo) AddApplication(application string, project string) error {
 	if c.ActiveApplications == nil {
 		c.ActiveApplications = []ApplicationInfo{}
 	}
@@ -350,7 +394,7 @@ func (c *ConfigInfo) AddApplication(application string, project string) error {
 			Active:  false,
 		})
 
-	err := c.writeToFile()
+	err := writeToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set add %s application", application)
 	}
@@ -358,7 +402,7 @@ func (c *ConfigInfo) AddApplication(application string, project string) error {
 }
 
 // DeleteApplication deletes application from given project from config file
-func (c *ConfigInfo) DeleteApplication(application string, project string) error {
+func (c *GlobalConfigInfo) DeleteApplication(application string, project string) error {
 	if c.ActiveApplications == nil {
 		c.ActiveApplications = []ApplicationInfo{}
 	}
@@ -378,7 +422,7 @@ func (c *ConfigInfo) DeleteApplication(application string, project string) error
 
 	}
 
-	err := c.writeToFile()
+	err := writeToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", application)
 	}
@@ -386,7 +430,7 @@ func (c *ConfigInfo) DeleteApplication(application string, project string) error
 }
 
 // DeleteProject deletes applications belonging to the given project from the config file
-func (c *ConfigInfo) DeleteProject(projectName string) error {
+func (c *GlobalConfigInfo) DeleteProject(projectName string) error {
 	// looping in reverse and removing to avoid panic from index out of bounds
 	for i := len(c.ActiveApplications) - 1; i >= 0; i-- {
 		if c.ActiveApplications[i].Project == projectName {
@@ -394,7 +438,7 @@ func (c *ConfigInfo) DeleteProject(projectName string) error {
 			c.ActiveApplications = append(c.ActiveApplications[:i], c.ActiveApplications[i+1:]...)
 		}
 	}
-	err := c.writeToFile()
+	err := writeToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete project from config")
 	}
@@ -402,17 +446,17 @@ func (c *ConfigInfo) DeleteProject(projectName string) error {
 }
 
 const (
-	// Name of the setting controlling update notification
+	// UpdateNotificationSetting is the name of the setting controlling update notification
 	UpdateNotificationSetting = "UpdateNotification"
-	// Human-readable description for the update notification setting
+	// UpdateNotificationSettingDescription is human-readable description for the update notification setting
 	UpdateNotificationSettingDescription = "Controls if an update notification is shown or not (true or false)"
-	// Name of the setting controlling name prefix
+	// NamePrefixSetting is the name of the setting controlling name prefix
 	NamePrefixSetting = "NamePrefix"
-	// Human-readable description for the name prefix setting
+	// NamePrefixSettingDescription is human-readable description for the name prefix setting
 	NamePrefixSettingDescription = "Default prefix is the current directory name. Use this value to set a default name prefix"
-	// Name of the setting controlling timeout for connection check
+	// TimeoutSetting Name of the setting controlling timeout for connection check
 	TimeoutSetting = "Timeout"
-	// Human-readable description for the timeout setting
+	// TimeoutSettingDescription is human-readable description for the timeout setting
 	TimeoutSettingDescription = "Timeout (in seconds) for OpenShift server connection check"
 )
 
