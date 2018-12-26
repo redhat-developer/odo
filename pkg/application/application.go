@@ -30,7 +30,7 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 	}
 
 	// Get the desired app name prefix from odo config
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to fetch config")
 	}
@@ -63,7 +63,7 @@ func Create(client *occlient.Client, appName string) error {
 		return fmt.Errorf("unable to create new application, %s application already exists", appName)
 	}
 
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return errors.Wrap(err, "unable to create new application")
 	}
@@ -87,7 +87,7 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 func ListInProject(client *occlient.Client) ([]config.ApplicationInfo, error) {
 	var applications []config.ApplicationInfo
 
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new application")
 	}
@@ -139,7 +139,7 @@ func Delete(client *occlient.Client, name string) error {
 	}
 
 	// delete from config
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
@@ -155,7 +155,7 @@ func Delete(client *occlient.Client, name string) error {
 // GetCurrent returns currently active application.
 // If no application is active this functions returns empty string
 func GetCurrent(projectName string) (string, error) {
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
@@ -207,7 +207,7 @@ func SetCurrent(client *occlient.Client, appName string) error {
 	}
 	glog.V(4).Infof("Setting application %s as current.\n", appName)
 
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
 	}

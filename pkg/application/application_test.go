@@ -67,7 +67,7 @@ func TestGetDefaultAppName(t *testing.T) {
 			r, _ := regexp.Compile(tt.wantRE)
 			match := r.MatchString(name)
 			if !match {
-				fetchedConfig, _ := config.New()
+				fetchedConfig, _ := config.NewGlobalConfig()
 				t.Errorf("randomly generated application name %s does not match regexp %s and config is %+v\nthe prefix is %s", name, tt.wantRE, fetchedConfig, *fetchedConfig.OdoSettings.NamePrefix)
 			}
 		})

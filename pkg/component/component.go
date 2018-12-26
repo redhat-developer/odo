@@ -85,7 +85,7 @@ func GetDefaultComponentName(componentPath string, componentPathType occlient.Cr
 	}
 
 	// Fetch config
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to generate random component name")
 	}
@@ -287,7 +287,7 @@ func Delete(client *occlient.Client, componentName string, applicationName strin
 	s := log.Spinnerf("Deleting component %s", componentName)
 	defer s.End(false)
 
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to create new configuration to delete %s", componentName)
 	}
@@ -339,7 +339,7 @@ func Delete(client *occlient.Client, componentName string, applicationName strin
 
 // SetCurrent sets the given componentName as active component
 func SetCurrent(componentName string, applicationName string, projectName string) error {
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to set current component %s", componentName)
 	}
@@ -355,7 +355,7 @@ func SetCurrent(componentName string, applicationName string, projectName string
 // GetCurrent component in active application
 // returns "" if there is no active component
 func GetCurrent(applicationName string, projectName string) (string, error) {
-	cfg, err := config.New()
+	cfg, err := config.NewGlobalConfig()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get config")
 	}
