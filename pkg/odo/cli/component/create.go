@@ -314,7 +314,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		}
 
 		if !wait {
-			log.Info("This may take few moments to be ready\n")
+			log.Info("This may take few moments to be ready")
 		}
 	},
 }

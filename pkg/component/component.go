@@ -244,6 +244,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	if err != nil {
 		return err
 	}
+	s.End(true)
 
 	if params.Wait {
 
@@ -251,18 +252,14 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 		if err != nil {
 			return err
 		}
-		s := log.Spinner("Waiting for Pod to come up")
-		defer s.End(false)
 		podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
 		_, err = client.WaitAndGetPod(podSelector)
 		if err != nil {
 			return err
 		}
-		s.End(true)
 		return nil
 	}
 
-	s.End(true)
 	return nil
 }
 
@@ -456,6 +453,7 @@ func Build(client *occlient.Client, componentName string, applicationName string
 	if err != nil {
 		return errors.Wrapf(err, "unable to rebuild %s", componentName)
 	}
+	s.End(true)
 
 	// Retrieve the Build Log and write to buffer if debug is disabled, else we we output to stdout / debug.
 
@@ -474,7 +472,6 @@ func Build(client *occlient.Client, componentName string, applicationName string
 		}
 	}
 
-	s.End(true)
 	return nil
 }
 
