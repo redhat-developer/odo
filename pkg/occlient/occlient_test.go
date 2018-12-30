@@ -4051,6 +4051,68 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 	}
 }
 
+func TestDeleteNonRequiredEnvVars(t *testing.T) {
+	tests := []struct {
+		name           string
+		existingEnvs   []corev1.EnvVar
+		envTobeDeleted string
+		want           []corev1.EnvVar
+	}{
+		{
+			name: "Case 1: valid case of delete",
+			existingEnvs: []corev1.EnvVar{
+				{
+					Name:  "abc",
+					Value: "123",
+				},
+				{
+					Name:  "def",
+					Value: "456",
+				},
+			},
+			envTobeDeleted: "def",
+			want: []corev1.EnvVar{
+				{
+					Name:  "abc",
+					Value: "123",
+				},
+			},
+		},
+		{
+			name: "Case 2: valid case of delete non-existant env",
+			existingEnvs: []corev1.EnvVar{
+				{
+					Name:  "abc",
+					Value: "123",
+				},
+				{
+					Name:  "def",
+					Value: "456",
+				},
+			},
+			envTobeDeleted: "ghi",
+			want: []corev1.EnvVar{
+				{
+					Name:  "abc",
+					Value: "123",
+				},
+				{
+					Name:  "def",
+					Value: "456",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := deleteNonRequiredEnvVars(tt.existingEnvs, tt.envTobeDeleted)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got: %+v, want: %+v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestUpdateDCToSupervisor(t *testing.T) {
 	type args struct {
 		name           string

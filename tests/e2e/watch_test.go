@@ -50,6 +50,9 @@ var _ = Describe("odoWatchE2e", func() {
 					fileModificationCmd := fmt.Sprintf("sed -i 's/World/odo/g' %s", filepath.Join(tmpDir, "os-sample-python", "wsgi.py"))
 					runCmd(fileModificationCmd)
 					fmt.Printf("Triggered file modification %s\n\n", fileModificationCmd)
+					runCmd(fmt.Sprintf("mkdir -p %s/os-sample-python/tests", tmpDir))
+					runCmd(fmt.Sprintf("touch %s/os-sample-python/tests/test_1.py", tmpDir))
+					runCmd(fmt.Sprintf("rm -fr %s/os-sample-python/tests", tmpDir))
 					if err != nil {
 						fmt.Printf("Failed performing file operation with error %v", err)
 					}
@@ -109,6 +112,11 @@ var _ = Describe("odoWatchE2e", func() {
 						fileModificationPath,
 					)
 					runCmd(fileModificationCmd)
+
+					runCmd(fmt.Sprintf("mkdir -p %s/katacoda-odo-backend/tests", tmpDir))
+					runCmd(fmt.Sprintf("touch %s/katacoda-odo-backend/tests/test_1.java", tmpDir))
+					runCmd(fmt.Sprintf("rm -fr %s/katacoda-odo-backend/tests", tmpDir))
+
 					fmt.Printf("Triggered file modification %s\n\n", fileModificationCmd)
 					if err != nil {
 						fmt.Printf("Failed performing file operation with error %v", err)
@@ -166,6 +174,10 @@ var _ = Describe("odoWatchE2e", func() {
 						fileModificationPath,
 					)
 					runCmd(fileModificationCmd)
+
+					runCmd(fmt.Sprintf("mkdir -p %s/javalin-helloworld/tests", tmpDir))
+					runCmd(fmt.Sprintf("touch %s/javalin-helloworld/tests/test_1.java", tmpDir))
+					runCmd(fmt.Sprintf("rm -fr %s/javalin-helloworld/tests", tmpDir))
 				}
 			}()
 			success, err := pollNonRetCmdStdOutForString("odo watch openjdk-watch -v 4", time.Duration(5)*time.Minute, func(output string) bool {
@@ -219,6 +231,10 @@ var _ = Describe("odoWatchE2e", func() {
 					if err != nil {
 						fmt.Printf("Failed performing file operation with error %v", err)
 					}
+
+					runCmd(fmt.Sprintf("mkdir -p %s/nodejs-ex/tests/sample-tests", tmpDir))
+					runCmd(fmt.Sprintf("touch %s/nodejs-ex/tests/sample-tests/test_1.js", tmpDir))
+					runCmd(fmt.Sprintf("rm -fr %s/nodejs-ex/tests/sample-tests", tmpDir))
 				}
 			}()
 			success, err := pollNonRetCmdStdOutForString("odo watch nodejs-watch -v 4", time.Duration(20)*time.Minute, func(output string) bool {
