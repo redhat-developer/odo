@@ -16,16 +16,16 @@ func TestNew(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name    string
-		output  *ConfigInfo
+		output  *GlobalConfigInfo
 		success bool
 	}{
 		{
 			name: "Test filename is being set",
-			output: &ConfigInfo{
+			output: &GlobalConfigInfo{
 				Filename: tempConfigFile.Name(),
 			},
 			success: true,
@@ -34,7 +34,7 @@ func TestNew(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfi, err := New()
+			cfi, err := NewGlobalConfig()
 			switch test.success {
 			case true:
 				if err != nil {
@@ -59,11 +59,11 @@ func TestSetActiveComponent(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name           string
-		existingConfig Config
+		existingConfig GlobalConfig
 		component      string
 		project        string
 		application    string
@@ -72,7 +72,7 @@ func TestSetActiveComponent(t *testing.T) {
 	}{
 		{
 			name:           "activeComponents nil",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			component:      "foo",
 			project:        "bar",
 			application:    "app",
@@ -81,7 +81,7 @@ func TestSetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "activeComponents empty",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "a",
@@ -105,7 +105,7 @@ func TestSetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "project doesn't exists",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -123,7 +123,7 @@ func TestSetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "application doesn't exists",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -141,7 +141,7 @@ func TestSetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "overwrite existing active component (apps with same name in different projects)",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -178,7 +178,7 @@ func TestSetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "overwrite existing active component (different apps in the same project)",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -217,12 +217,11 @@ func TestSetActiveComponent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := New()
+			cfg, err := NewGlobalConfig()
 			if err != nil {
 				t.Error(err)
 			}
-			cfg.Config = tt.existingConfig
-
+			cfg.GlobalConfig = tt.existingConfig
 			err = cfg.SetActiveComponent(tt.component, tt.application, tt.project)
 			if tt.wantErr {
 				if (err != nil) != tt.wantErr {
@@ -245,25 +244,25 @@ func TestGetActiveComponent(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name              string
-		existingConfig    Config
+		existingConfig    GlobalConfig
 		activeApplication string
 		activeProject     string
 		activeComponent   string
 	}{
 		{
 			name:              "empty config",
-			existingConfig:    Config{},
+			existingConfig:    GlobalConfig{},
 			activeApplication: "test",
 			activeProject:     "test",
 			activeComponent:   "",
 		},
 		{
 			name: "ActiveApplications empty",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
 			},
 			activeApplication: "test",
@@ -272,7 +271,7 @@ func TestGetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "no active component record for given application",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "a",
@@ -287,7 +286,7 @@ func TestGetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "activeComponents for one project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -303,7 +302,7 @@ func TestGetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "inactive project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -319,7 +318,7 @@ func TestGetActiveComponent(t *testing.T) {
 		},
 		{
 			name: "multiple projects",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -343,8 +342,8 @@ func TestGetActiveComponent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := ConfigInfo{
-				Config: tt.existingConfig,
+			cfg := GlobalConfigInfo{
+				GlobalConfig: tt.existingConfig,
 			}
 			output := cfg.GetActiveComponent(tt.activeApplication, tt.activeProject)
 
@@ -359,21 +358,21 @@ func TestGetActiveComponent(t *testing.T) {
 func TestSetActiveApplication(t *testing.T) {
 	tests := []struct {
 		name           string
-		existingConfig Config
+		existingConfig GlobalConfig
 		setApplication string
 		project        string
 		wantErr        bool
 	}{
 		{
 			name:           "activeApplication nil",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			setApplication: "app",
 			project:        "proj",
 			wantErr:        true,
 		},
 		{
 			name: "activeApplication empty",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
 			},
 			setApplication: "app",
@@ -382,7 +381,7 @@ func TestSetActiveApplication(t *testing.T) {
 		},
 		{
 			name: "no Active value",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -396,7 +395,7 @@ func TestSetActiveApplication(t *testing.T) {
 		},
 		{
 			name: "multiple apps in the same project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -417,7 +416,7 @@ func TestSetActiveApplication(t *testing.T) {
 		},
 		{
 			name: "same app name in different projects",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -438,7 +437,7 @@ func TestSetActiveApplication(t *testing.T) {
 		},
 		{
 			name: "nonexisting application",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -456,11 +455,11 @@ func TestSetActiveApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := New()
+			cfg, err := NewGlobalConfig()
 			if err != nil {
 				t.Error(err)
 			}
-			cfg.Config = tt.existingConfig
+			cfg.GlobalConfig = tt.existingConfig
 
 			err = cfg.SetActiveApplication(tt.setApplication, tt.project)
 			if tt.wantErr {
@@ -493,16 +492,16 @@ func TestSetActiveApplication(t *testing.T) {
 func TestAddApplication(t *testing.T) {
 	tests := []struct {
 		name           string
-		existingConfig Config
-		resultConfig   Config
+		existingConfig GlobalConfig
+		resultConfig   GlobalConfig
 		addApplication string
 		project        string
 		wantErr        bool
 	}{
 		{
 			name:           "activeApplication nil",
-			existingConfig: Config{},
-			resultConfig: Config{
+			existingConfig: GlobalConfig{},
+			resultConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "app",
@@ -517,10 +516,10 @@ func TestAddApplication(t *testing.T) {
 		},
 		{
 			name: "activeApplication empty",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
 			},
-			resultConfig: Config{
+			resultConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "app",
@@ -535,7 +534,7 @@ func TestAddApplication(t *testing.T) {
 		},
 		{
 			name: "multiple apps in the same project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -551,7 +550,7 @@ func TestAddApplication(t *testing.T) {
 					},
 				},
 			},
-			resultConfig: Config{
+			resultConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -577,7 +576,7 @@ func TestAddApplication(t *testing.T) {
 		},
 		{
 			name: "same app name in different projects",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -593,7 +592,7 @@ func TestAddApplication(t *testing.T) {
 					},
 				},
 			},
-			resultConfig: Config{
+			resultConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -619,7 +618,7 @@ func TestAddApplication(t *testing.T) {
 		},
 		{
 			name: "application already exist",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -629,7 +628,7 @@ func TestAddApplication(t *testing.T) {
 					},
 				},
 			},
-			resultConfig: Config{
+			resultConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -647,11 +646,11 @@ func TestAddApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := New()
+			cfg, err := NewGlobalConfig()
 			if err != nil {
 				t.Error(err)
 			}
-			cfg.Config = tt.existingConfig
+			cfg.GlobalConfig = tt.existingConfig
 
 			err = cfg.AddApplication(tt.addApplication, tt.project)
 			if tt.wantErr {
@@ -665,8 +664,8 @@ func TestAddApplication(t *testing.T) {
 				}
 			}
 
-			if !reflect.DeepEqual(cfg.Config, tt.resultConfig) {
-				t.Errorf("expected output doesn't match what was returned: \n expected:\n%#v\n returned:\n%#v\n", tt.resultConfig, cfg.Config)
+			if !reflect.DeepEqual(cfg.GlobalConfig, tt.resultConfig) {
+				t.Errorf("expected output doesn't match what was returned: \n expected:\n%#v\n returned:\n%#v\n", tt.resultConfig, cfg.GlobalConfig)
 			}
 
 		})
@@ -680,23 +679,23 @@ func TestGetActiveApplication(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name              string
-		existingConfig    Config
+		existingConfig    GlobalConfig
 		activeProject     string
 		activeApplication string
 	}{
 		{
 			name:              "activeApplication nil",
-			existingConfig:    Config{},
+			existingConfig:    GlobalConfig{},
 			activeApplication: "",
 			activeProject:     "proj",
 		},
 		{
 			name: "activeApplication empty",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
 			},
 			activeApplication: "",
@@ -704,7 +703,7 @@ func TestGetActiveApplication(t *testing.T) {
 		},
 		{
 			name: "no Active value",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -718,7 +717,7 @@ func TestGetActiveApplication(t *testing.T) {
 		},
 		{
 			name: "multiple apps in the same project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -739,7 +738,7 @@ func TestGetActiveApplication(t *testing.T) {
 		},
 		{
 			name: "same app name in different projects",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "app",
@@ -762,8 +761,8 @@ func TestGetActiveApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := ConfigInfo{
-				Config: tt.existingConfig,
+			cfg := GlobalConfigInfo{
+				GlobalConfig: tt.existingConfig,
 			}
 			output := cfg.GetActiveApplication(tt.activeProject)
 
@@ -781,11 +780,11 @@ func TestDeleteApplication(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name           string
-		existingConfig Config
+		existingConfig GlobalConfig
 		application    string
 		project        string
 		wantErr        bool
@@ -793,7 +792,7 @@ func TestDeleteApplication(t *testing.T) {
 	}{
 		{
 			name:           "empty config",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			application:    "foo",
 			project:        "bar",
 			wantErr:        true,
@@ -801,7 +800,7 @@ func TestDeleteApplication(t *testing.T) {
 		},
 		{
 			name: "delete not existing application",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "a",
@@ -819,7 +818,7 @@ func TestDeleteApplication(t *testing.T) {
 		},
 		{
 			name: "delete existing application",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -836,7 +835,7 @@ func TestDeleteApplication(t *testing.T) {
 		},
 		{
 			name: "delete application (apps with same name in different projects)",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -866,7 +865,7 @@ func TestDeleteApplication(t *testing.T) {
 		},
 		{
 			name: "delete application (different apps in the same project)",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:            "a",
@@ -898,11 +897,11 @@ func TestDeleteApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := New()
+			cfg, err := NewGlobalConfig()
 			if err != nil {
 				t.Error(err)
 			}
-			cfg.Config = tt.existingConfig
+			cfg.GlobalConfig = tt.existingConfig
 
 			err = cfg.DeleteApplication(tt.application, tt.project)
 			if tt.wantErr {
@@ -926,23 +925,23 @@ func TestGetTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 	zeroValue := 0
 	nonzeroValue := 5
 	tests := []struct {
 		name           string
-		existingConfig Config
+		existingConfig GlobalConfig
 		want           int
 	}{
 		{
 			name:           "Case 1: validating value 1 from config in default case",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			want:           1,
 		},
 
 		{
 			name: "Case 2: validating value 0 from config",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				OdoSettings: OdoSettings{
 					Timeout: &zeroValue,
 				},
@@ -952,7 +951,7 @@ func TestGetTimeout(t *testing.T) {
 
 		{
 			name: "Case 3: validating value 5 from config",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				OdoSettings: OdoSettings{
 					Timeout: &nonzeroValue,
 				},
@@ -962,11 +961,11 @@ func TestGetTimeout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := New()
+			cfg, err := NewGlobalConfig()
 			if err != nil {
 				t.Error(err)
 			}
-			cfg.Config = tt.existingConfig
+			cfg.GlobalConfig = tt.existingConfig
 
 			output := cfg.GetTimeout()
 			if output != tt.want {
@@ -982,21 +981,21 @@ func TestDeleteProject(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 	fakePrefix := "name"
 
 	tests := []struct {
 		name           string
-		existingConfig Config
+		existingConfig GlobalConfig
 		project        string
 		wantErr        bool
-		result         Config
+		result         GlobalConfig
 	}{
 		{
 			name: "test case 1: no applications to the project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
 				OdoSettings: OdoSettings{
 					NamePrefix:         &fakePrefix,
@@ -1005,7 +1004,7 @@ func TestDeleteProject(t *testing.T) {
 			},
 			project: "project-1",
 			wantErr: false,
-			result: Config{
+			result: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
 				OdoSettings: OdoSettings{
 					NamePrefix:         &fakePrefix,
@@ -1015,7 +1014,7 @@ func TestDeleteProject(t *testing.T) {
 		},
 		{
 			name: "test case 2: one application to the project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "blah",
@@ -1029,7 +1028,7 @@ func TestDeleteProject(t *testing.T) {
 			},
 			project: "project-1",
 			wantErr: false,
-			result: Config{
+			result: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
 				OdoSettings: OdoSettings{
 					NamePrefix:         &fakePrefix,
@@ -1039,7 +1038,7 @@ func TestDeleteProject(t *testing.T) {
 		},
 		{
 			name: "test case 3: two applications to the project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "blah",
@@ -1057,7 +1056,7 @@ func TestDeleteProject(t *testing.T) {
 			},
 			project: "project-1",
 			wantErr: false,
-			result: Config{
+			result: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
 				OdoSettings: OdoSettings{
 					NamePrefix:         &fakePrefix,
@@ -1067,7 +1066,7 @@ func TestDeleteProject(t *testing.T) {
 		},
 		{
 			name: "test case 4: two applications to the project and one in another project",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "blah",
@@ -1089,7 +1088,7 @@ func TestDeleteProject(t *testing.T) {
 			},
 			project: "project-1",
 			wantErr: false,
-			result: Config{
+			result: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{
 					{
 						Name:    "blah",
@@ -1106,11 +1105,11 @@ func TestDeleteProject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := New()
+			cfg, err := NewGlobalConfig()
 			if err != nil {
 				t.Error(err)
 			}
-			cfg.Config = tt.existingConfig
+			cfg.GlobalConfig = tt.existingConfig
 			err = cfg.DeleteProject(tt.project)
 
 			if err == nil && !tt.wantErr {
@@ -1139,7 +1138,7 @@ func TestSetConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 	zeroValue := 0
@@ -1148,7 +1147,7 @@ func TestSetConfiguration(t *testing.T) {
 		name           string
 		parameter      string
 		value          string
-		existingConfig Config
+		existingConfig GlobalConfig
 		wantErr        bool
 		want           interface{}
 	}{
@@ -1157,7 +1156,7 @@ func TestSetConfiguration(t *testing.T) {
 			name:           fmt.Sprintf("Case 1: %s set nil to true", UpdateNotificationSetting),
 			parameter:      UpdateNotificationSetting,
 			value:          "true",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			want:           true,
 			wantErr:        false,
 		},
@@ -1165,7 +1164,7 @@ func TestSetConfiguration(t *testing.T) {
 			name:      fmt.Sprintf("Case 2: %s set true to false", UpdateNotificationSetting),
 			parameter: UpdateNotificationSetting,
 			value:     "false",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				OdoSettings: OdoSettings{
 					UpdateNotification: &trueValue,
 				},
@@ -1177,7 +1176,7 @@ func TestSetConfiguration(t *testing.T) {
 			name:      fmt.Sprintf("Case 3: %s set false to true", UpdateNotificationSetting),
 			parameter: UpdateNotificationSetting,
 			value:     "true",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				OdoSettings: OdoSettings{
 					UpdateNotification: &falseValue,
 				},
@@ -1190,7 +1189,7 @@ func TestSetConfiguration(t *testing.T) {
 			name:           fmt.Sprintf("Case 4: %s invalid value", UpdateNotificationSetting),
 			parameter:      UpdateNotificationSetting,
 			value:          "invalid_value",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			wantErr:        true,
 		},
 		// time out
@@ -1198,7 +1197,7 @@ func TestSetConfiguration(t *testing.T) {
 			name:      fmt.Sprintf("Case 5: %s set to 5 from 0", TimeoutSetting),
 			parameter: TimeoutSetting,
 			value:     "5",
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				OdoSettings: OdoSettings{
 					Timeout: &zeroValue,
 				},
@@ -1210,7 +1209,7 @@ func TestSetConfiguration(t *testing.T) {
 			name:           fmt.Sprintf("Case 6: %s set to 300", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "300",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			want:           300,
 			wantErr:        false,
 		},
@@ -1218,7 +1217,7 @@ func TestSetConfiguration(t *testing.T) {
 			name:           fmt.Sprintf("Case 7: %s set to 0", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "0",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			want:           0,
 			wantErr:        false,
 		},
@@ -1226,21 +1225,21 @@ func TestSetConfiguration(t *testing.T) {
 			name:           fmt.Sprintf("Case 8: %s set to -1", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "-1",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			wantErr:        true,
 		},
 		{
 			name:           fmt.Sprintf("Case 9: %s invalid value", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "this",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			wantErr:        true,
 		},
 		{
 			name:           fmt.Sprintf("Case 10: %s set to 300 with mixed case in parameter name", TimeoutSetting),
 			parameter:      "TimeOut",
 			value:          "300",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			want:           300,
 			wantErr:        false,
 		},
@@ -1248,17 +1247,17 @@ func TestSetConfiguration(t *testing.T) {
 		{
 			name:           "Case 11: invalid parameter",
 			parameter:      "invalid_parameter",
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			wantErr:        true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := New()
+			cfg, err := NewGlobalConfig()
 			if err != nil {
 				t.Error(err)
 			}
-			cfg.Config = tt.existingConfig
+			cfg.GlobalConfig = tt.existingConfig
 
 			err = cfg.SetConfiguration(tt.parameter, tt.value)
 
@@ -1301,23 +1300,23 @@ func TestGetupdateNotification(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(configEnvName, tempConfigFile.Name())
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 
 	tests := []struct {
 		name           string
-		existingConfig Config
+		existingConfig GlobalConfig
 		want           bool
 	}{
 		{
 			name:           fmt.Sprintf("Case 1: %s nil", UpdateNotificationSetting),
-			existingConfig: Config{},
+			existingConfig: GlobalConfig{},
 			want:           true,
 		},
 		{
 			name: fmt.Sprintf("Case 2: %s true", UpdateNotificationSetting),
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				OdoSettings: OdoSettings{
 					UpdateNotification: &trueValue,
 				},
@@ -1326,7 +1325,7 @@ func TestGetupdateNotification(t *testing.T) {
 		},
 		{
 			name: fmt.Sprintf("Case 3: %s false", UpdateNotificationSetting),
-			existingConfig: Config{
+			existingConfig: GlobalConfig{
 				OdoSettings: OdoSettings{
 					UpdateNotification: &falseValue,
 				},
@@ -1337,8 +1336,8 @@ func TestGetupdateNotification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := ConfigInfo{
-				Config: tt.existingConfig,
+			cfg := GlobalConfigInfo{
+				GlobalConfig: tt.existingConfig,
 			}
 			output := cfg.GetUpdateNotification()
 
