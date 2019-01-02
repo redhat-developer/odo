@@ -38,7 +38,7 @@ import:
 - package: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - package: gopkg.in/AlecAivazis/survey.v1
-  version: v1.6.2
+  version: v1.7.1
 - package: github.com/hinshun/vt10x
   version: master
 - package: github.com/Netflix/go-expect
