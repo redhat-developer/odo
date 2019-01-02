@@ -9,6 +9,7 @@ redirect_from:
 
 - [Workflow](https://github.com/redhat-developer/odo/blob/master/docs/development.md#workflow)
 - [Unit Tests](https://github.com/redhat-developer/odo/blob/master/docs/development.md#unit-tests)
+- [Integration Tests](https://github.com/redhat-developer/odo/blob/master/docs/development.md#integration-tests)
 - [Dependency Management](https://github.com/redhat-developer/odo/blob/master/docs/development.md#dependency-management)
 - [Release Guide](https://github.com/redhat-developer/odo/blob/master/docs/development.md#release-guide)
 - [Odo Bot](https://github.com/redhat-developer/odo/blob/master/docs/development.md#odo-bot)
@@ -29,6 +30,12 @@ The following commands assume that you have the $GOPATH environment variable pro
 git clone https://github.com/$YOUR_GITHUB_USERNAME/odo.git $GOPATH/src/github.com/redhat-developer/odo
 cd $GOPATH/src/github.com/redhat-developer/odo
 git remote add upstream 'https://github.com/redhat-developer/odo'
+```
+
+While cloning Odo, the Windows terminal such as PowerShell or CMD may throw an error of `Filename too long`. To avoid such an error, set your Git config as so:
+
+```sh
+git config --system core.longpaths true
 ```
 
 ### Create a branch and make changes
