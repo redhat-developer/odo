@@ -126,7 +126,10 @@ func NewGlobalConfig() (*GlobalConfigInfo, error) {
 	}
 	c := GlobalConfigInfo{}
 	c.Filename = configFile
-	get(c.GlobalConfig, c.Filename)
+	err = get(&c.GlobalConfig, c.Filename)
+	if err != nil {
+		return nil, err
+	}
 	return &c, nil
 }
 
@@ -141,7 +144,10 @@ func NewLocalConfig() (*LocalConfigInfo, error) {
 	}
 	c := LocalConfigInfo{}
 	c.Filename = configFile
-	get(c.LocalConfig, c.Filename)
+	err = get(&c.LocalConfig, c.Filename)
+	if err != nil {
+		return nil, err
+	}
 	return &c, nil
 }
 
@@ -172,7 +178,7 @@ func get(c interface{}, filename string) error {
 		return errors.Wrapf(err, "unable to read file %v", filename)
 	}
 
-	err = yaml.Unmarshal(configData, &c)
+	err = yaml.Unmarshal(configData, c)
 	if err != nil {
 		return errors.Wrap(err, "unable to unmarshal odo config file")
 	}

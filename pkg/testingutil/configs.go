@@ -27,7 +27,7 @@ func getConfFolder() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir, err := ioutil.TempDir(currentUser.HomeDir, ".kube")
+	dir, err := ioutil.TempDir(currentUser.HomeDir, ".odo")
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +53,7 @@ func setupTempConfigFile(confFile string) (*os.File, error) {
 func setupEnv(envName string, odoconfigfile string) error {
 	err := os.Setenv(envName, odoconfigfile)
 	if err != nil {
-		return errors.Wrap(err, "unable to set ODOCONFIG to odo-test-config")
+		return errors.Wrap(err, fmt.Sprintf("unable to set %s to %s", envName, odoconfigfile))
 	}
 	return nil
 }
