@@ -51,6 +51,32 @@ var _ = Describe("odoJavaE2e", func() {
 			runCmd("odo delete javaee-git-test -f")
 		})
 
+		It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
+
+			// Deploy the git repo / wildfly example
+			cmpCreateLog := runCmd("odo create wildfly wo-wait-javaee-git-test --git " + warGitRepo)
+			Expect(cmpCreateLog).Should(ContainSubstring("This may take few moments to be ready"))
+			dcName := runCmd("oc get dc | grep wo-wait-javaee-git-test | cut -f 1 -d ' '")
+			// following the logs and waiting for the build to finish
+			_ = runCmd("oc logs --version=1 dc/" + dcName)
+
+			cmpList := runCmd("odo list")
+			Expect(cmpList).To(ContainSubstring("wo-wait-javaee-git-test"))
+
+			// Push changes
+			runCmd("odo push")
+
+			// Create a URL
+			runCmd("odo url create")
+			routeURL := determineRouteURL()
+
+			// Ping said URL
+			waitForEqualCmd("curl -s "+routeURL+" | grep 'Insult' | wc -l | tr -d '\n'", "1", 10)
+
+			// Delete the component
+			runCmd("odo delete wo-wait-javaee-git-test -f")
+		})
+
 		It("Should be able to deploy a .war file using wildfly", func() {
 			cmpCreateLog := runCmd("odo create wildfly javaee-war-test --binary " + javaFiles + "/wildfly/ROOT.war -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
