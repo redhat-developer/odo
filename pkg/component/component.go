@@ -348,7 +348,8 @@ func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 	s2iPathEnvs := []string{
 		occlient.EnvS2IDeploymentDir,
 		occlient.EnvS2ISrcOrBinPath,
-		occlient.EnvAppRoot,
+		occlient.EnvS2IWorkingDir,
+		occlient.EnvS2ISrcBackupDir,
 	}
 	for _, s2iPathEnv := range s2iPathEnvs {
 		envVal := getEnvFromPodEnvs(s2iPathEnv, podEnvs)
