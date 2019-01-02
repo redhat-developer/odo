@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	"github.com/mgutz/ansi"
 	"github.com/redhat-developer/odo/pkg/service"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
@@ -132,26 +133,28 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 		if index >= 0 && len(pageEntries) > index {
 			selected := pageEntries[index]
 			class := classes[selected]
-			return fmt.Sprintf("Name: %s\nDescription: %s\nLong: %s", class.GetExternalName(), class.GetDescription(), getLongDescription(class))
+			return ansi.ColorCode("default+bu") + "Service class details" + ansi.ColorCode("reset") + ":\n" +
+				classInfoItem("Name", class.GetExternalName()) +
+				classInfoItem("Description", class.GetDescription()) +
+				classInfoItem("Long", getLongDescription(class))
 		}
 		return "No matching entry"
 	}
 	defer delete(core.TemplateFuncs, displayClassInfo)
 
 	// record original template and defer restoring it once done
-	/*original := survey.SelectQuestionTemplate
-		defer restoreOriginalTemplate(original)
+	original := survey.SelectQuestionTemplate
+	defer restoreOriginalTemplate(original)
 
-		// add more information about the currently selected class
-		survey.SelectQuestionTemplate = original + `
+	// add more information about the currently selected class
+	survey.SelectQuestionTemplate = original + `
 	{{- if not .ShowAnswer}}
 	{{$classInfo:=(displayClassInfo .SelectedIndex .PageEntries)}}
 	  {{- if $classInfo}}
-	===
-	{{$classInfo}}
+{{$classInfo}}
 	  {{- end}}
 	{{- end}}`
-	*/
+
 	prompt = &survey.Select{
 		Message: "Which " + category + " service class should we use",
 		Options: getServiceClassNames(classes),
@@ -161,6 +164,13 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	handleError(err)
 
 	return classes[serviceType], serviceType
+}
+
+func classInfoItem(name, value string) string {
+	if len(value) > 0 {
+		return ansi.ColorCode("default+b") + name + ansi.ColorCode("reset") + ": " + value + "\n"
+	}
+	return ""
 }
 
 // restoreOriginalTemplate restores the original survey template once we're done with the display
