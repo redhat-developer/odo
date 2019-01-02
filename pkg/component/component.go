@@ -247,7 +247,8 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	s.End(true)
 
 	if params.Wait {
-
+		// if wait flag is present then extract the podselector
+		// use the podselector for calling WaitAndGetPod
 		selectorLabels, err := util.NamespaceOpenShiftObject(labels[componentlabels.ComponentLabel], labels["app"])
 		if err != nil {
 			return err
