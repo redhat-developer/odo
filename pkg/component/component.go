@@ -343,6 +343,11 @@ func getEnvFromPodEnvs(envName string, podEnvs []corev1.EnvVar) string {
 	return ""
 }
 
+// getS2IPaths returns slice of s2i paths of odo interest
+// Parameters:
+//	podEnvs: Slice of env vars extracted from pod template
+// Returns:
+//	Slice of s2i paths extracted from passed parameters
 func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 	retVal := []string{}
 	s2iPathEnvs := []string{
