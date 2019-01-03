@@ -7,6 +7,7 @@ import (
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/mgutz/ansi"
 	"github.com/redhat-developer/odo/pkg/service"
+	terminal2 "golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
@@ -167,10 +168,53 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 }
 
 func classInfoItem(name, value string) string {
+	// wrap value if needed accounting for size of value "header" (its name)
+	value = wrapIfNeeded(value, len(name)+3)
+
 	if len(value) > 0 {
 		return ansi.ColorCode("default+b") + name + ansi.ColorCode("reset") + ": " + value + "\n"
 	}
 	return ""
+}
+
+func wrapIfNeeded(value string, prefixSize int) string {
+	// get the width of the terminal
+	width, _, err := terminal2.GetSize(0)
+	if err != nil {
+		width = 80
+	}
+
+	// if the value length is greater than the width, wrap it
+	// note that we need to account for the size of the name of the value being displayed before the value (i.e. its name)
+	valueSize := len(value)
+	if valueSize+prefixSize >= width {
+		// look at each line of the value
+		split := strings.Split(value, "\n")
+		for index, line := range split {
+			// for each line, trim it and split it in space-separated clusters ("words")
+			line = strings.TrimSpace(line)
+			words := strings.Split(line, " ")
+			newLine := ""
+			lineSize := 0
+
+			for _, word := range words {
+				if lineSize+len(word)+1+prefixSize < width {
+					// concatenate word to the new computed line only if adding it to the line won't make it larger than acceptable
+					newLine = newLine + " " + word
+					lineSize = lineSize + 1 + len(word) // accumulate the line size
+				} else {
+					// otherwise, break the line and add the word on a new "line"
+					newLine = newLine + "\n" + word
+					lineSize = len(word) // reset the line size
+				}
+			}
+			// replace the initial line with the new computed version
+			split[index] = strings.TrimSpace(newLine)
+		}
+		// compute the new value by joining all the modified lines
+		value = strings.Join(split, "\n")
+	}
+	return value
 }
 
 // restoreOriginalTemplate restores the original survey template once we're done with the display
