@@ -27,6 +27,9 @@ func TestNew(t *testing.T) {
 			name: "Test filename is being set",
 			output: &GlobalConfigInfo{
 				Filename: tempConfigFile.Name(),
+				GlobalConfig: GlobalConfig{
+					LocalConfig: &LocalConfig{},
+				},
 			},
 			success: true,
 		},
