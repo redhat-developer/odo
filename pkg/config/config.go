@@ -23,12 +23,10 @@ const (
 	DefaultTimeout = 1
 )
 
-type ConfigType int
-
-const (
-	Local = iota
-	Global
-)
+// ConfigInfo is implemented by configuration managers
+type ConfigInfo interface {
+	SetConfiguration(parameter string, value string) error
+}
 
 // OdoSettings holds all odo specific configurations
 type OdoSettings struct {
@@ -44,7 +42,7 @@ type OdoSettings struct {
 type ComponentSettings struct {
 
 	// The builder image to use
-	ComponentType *string `json:"component_type,omitempty"`
+	ComponentType *string `json:"componenttype,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -124,7 +122,11 @@ func NewGlobalConfig() (*GlobalConfigInfo, error) {
 	if err = createIfNotExists(configFile); err != nil {
 		return nil, err
 	}
-	c := GlobalConfigInfo{}
+	c := GlobalConfigInfo{
+		GlobalConfig: GlobalConfig{
+			LocalConfig: &LocalConfig{},
+		},
+	}
 	c.Filename = configFile
 	err = get(&c.GlobalConfig, c.Filename)
 	if err != nil {
@@ -235,6 +237,35 @@ func (c *GlobalConfigInfo) SetConfiguration(parameter string, value string) erro
 		return errors.Wrapf(err, "unable to set %s", parameter)
 	}
 	return nil
+}
+
+// SetConfiguration sets the common config settings like component type, min memory
+// max memory etc.
+func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) error {
+
+	err := lci.setConfig(parameter, value)
+	if err != nil {
+		return err
+	}
+	return writeToFile(lci.LocalConfig, lci.Filename)
+}
+
+func (lc *LocalConfig) setConfig(parameter string, value string) error {
+	switch parameter {
+	case "componenttype":
+		lc.ComponentSettings.ComponentType = &value
+	default:
+		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
+	}
+
+	return nil
+}
+
+func (lc *LocalConfig) GetComponentType() string {
+	if lc.ComponentSettings.ComponentType == nil {
+		return ""
+	}
+	return *lc.ComponentSettings.ComponentType
 }
 
 // GetTimeout returns the value of Timeout from config
