@@ -19,7 +19,7 @@ func TestIsRegExpMatch(t *testing.T) {
 		testName      string
 		directoryName string
 		strToMatch    string
-		regExps       []string
+		globExps      []string
 		want          bool
 		wantErr       bool
 	}{
@@ -27,7 +27,7 @@ func TestIsRegExpMatch(t *testing.T) {
 			testName:      "Test glob matches",
 			directoryName: "/home/redhat/nodejs-ex/",
 			strToMatch:    "/home/redhat/nodejs-ex/.git",
-			regExps:       []string{".git", "tests/"},
+			globExps:      []string{".git", "tests/"},
 			want:          true,
 			wantErr:       false,
 		},
@@ -35,7 +35,7 @@ func TestIsRegExpMatch(t *testing.T) {
 			testName:      "Test glob does not match",
 			directoryName: "/home/redhat/nodejs-ex/",
 			strToMatch:    "/home/redhat/nodejs-ex/gimmt.gimmt",
-			regExps:       []string{".git/", "tests/"},
+			globExps:      []string{".git/", "tests/"},
 			want:          false,
 			wantErr:       false,
 		},
@@ -43,7 +43,7 @@ func TestIsRegExpMatch(t *testing.T) {
 			testName:      "Test glob match files",
 			directoryName: "/home/redhat/nodejs-ex/",
 			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
-			regExps:       []string{"*.json", "tests/"},
+			globExps:      []string{"*.json", "tests/"},
 			want:          true,
 			wantErr:       false,
 		},
@@ -51,15 +51,31 @@ func TestIsRegExpMatch(t *testing.T) {
 			testName:      "Test '**' glob matches",
 			directoryName: "/home/redhat/nodejs-ex/",
 			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
-			regExps:       []string{"openshift/**/*.json"},
+			globExps:      []string{"openshift/**/*.json"},
 			want:          true,
 			wantErr:       false,
+		},
+		{
+			testName:      "Test '!' in glob matches",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:      []string{"!*.json", "tests/"},
+			want:          false,
+			wantErr:       false,
+		},
+		{
+			testName:      "Test [ in glob matches",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:      []string{"["},
+			want:          false,
+			wantErr:       true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			matched, err := isRegExpMatch(tt.directoryName, tt.strToMatch, tt.regExps)
+			matched, err := isRegExpMatch(tt.directoryName, tt.strToMatch, tt.globExps)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)

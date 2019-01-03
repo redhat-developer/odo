@@ -621,58 +621,78 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 	}
 	defer os.RemoveAll(testDir)
 	tests := []struct {
-		name          string
-		directoryName string
-		fileName      string
-		rulesOnFile   string
-		wantRules     []string
-		wantErr       bool
+		name             string
+		directoryName    string
+		filesToCreate    []string
+		rulesOnGitIgnore string
+		rulesOnOdoIgnore string
+		wantRules        []string
+		wantErr          bool
 	}{
 		{
-			name:          "test case 1: no odoignore and no gitignore",
-			directoryName: testDir,
-			fileName:      "",
-			rulesOnFile:   "",
-			wantRules:     []string{},
-			wantErr:       false,
+			name:             "test case 1: no odoignore and no gitignore",
+			directoryName:    testDir,
+			filesToCreate:    []string{""},
+			rulesOnGitIgnore: "",
+			rulesOnOdoIgnore: "",
+			wantRules:        []string{},
+			wantErr:          false,
 		},
 		{
-			name:          "test case 2: no odoignore but gitignore exists with no rules",
-			directoryName: testDir,
-			fileName:      ".gitignore",
-			rulesOnFile:   "",
-			wantRules:     []string{},
-			wantErr:       false,
+			name:             "test case 2: no odoignore but gitignore exists with no rules",
+			directoryName:    testDir,
+			filesToCreate:    []string{".gitignore"},
+			rulesOnGitIgnore: "",
+			rulesOnOdoIgnore: "",
+			wantRules:        []string{},
+			wantErr:          false,
 		},
 		{
-			name:          "test case 3: no odoignore but gitignore exists with rules",
-			directoryName: testDir,
-			fileName:      ".gitignore",
-			rulesOnFile:   "*.js\n\n/openshift/**/*.json\n/tests",
-			wantRules:     []string{"*.js", "/openshift/**/*.json", "/tests"},
-			wantErr:       false,
+			name:             "test case 3: no odoignore but gitignore exists with rules",
+			directoryName:    testDir,
+			filesToCreate:    []string{".gitignore"},
+			rulesOnGitIgnore: "*.js\n\n/openshift/**/*.json\n/tests",
+			rulesOnOdoIgnore: "",
+			wantRules:        []string{"*.js", "/openshift/**/*.json", "/tests"},
+			wantErr:          false,
 		},
 		{
-			name:          "test case 4: odoignore exists with no rules",
-			directoryName: testDir,
-			fileName:      ".odoignore",
-			rulesOnFile:   "",
-			wantRules:     []string{},
-			wantErr:       false,
+			name:             "test case 4: odoignore exists with no rules",
+			directoryName:    testDir,
+			filesToCreate:    []string{".odoignore"},
+			rulesOnGitIgnore: "",
+			rulesOnOdoIgnore: "",
+			wantRules:        []string{},
+			wantErr:          false,
 		},
 		{
-			name:          "test case 5: odoignore exists with rules",
-			directoryName: testDir,
-			fileName:      ".odoignore",
-			rulesOnFile:   "*.json\n\n/openshift/**/*.js",
-			wantRules:     []string{"*.json", "/openshift/**/*.js"},
-			wantErr:       false,
+			name:             "test case 5: odoignore exists with rules",
+			directoryName:    testDir,
+			filesToCreate:    []string{".odoignore"},
+			rulesOnGitIgnore: "",
+			rulesOnOdoIgnore: "*.json\n\n/openshift/**/*.js",
+			wantRules:        []string{"*.json", "/openshift/**/*.js"},
+			wantErr:          false,
+		},
+		{
+			name:             "test case 6: odoignore and gitignore both exists with rules",
+			directoryName:    testDir,
+			filesToCreate:    []string{".gitignore", ".odoignore"},
+			rulesOnGitIgnore: "/tests",
+			rulesOnOdoIgnore: "*.json\n\n/openshift/**/*.js",
+			wantRules:        []string{"*.json", "/openshift/**/*.js"},
+			wantErr:          false,
 		},
 	}
 
 	for _, tt := range tests {
-		if tt.fileName != "" {
-			err := testingutil.MakeFileWithContent(testDir, tt.fileName, tt.rulesOnFile)
+		for _, fileName := range tt.filesToCreate {
+			var err error
+			if fileName == ".gitignore" {
+				err = testingutil.MakeFileWithContent(testDir, fileName, tt.rulesOnGitIgnore)
+			} else if fileName == ".odoignore" {
+				err = testingutil.MakeFileWithContent(testDir, fileName, tt.rulesOnOdoIgnore)
+			}
 			if err != nil {
 				t.Fatal(err)
 			}

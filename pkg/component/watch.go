@@ -41,10 +41,12 @@ type WatchParameters struct {
 }
 
 // isRegExpMatch compiles strToMatch against each of the passed regExps
-// Parameters: the component directory, a string strToMatch and a list of regexp patterns to match strToMatch with
+// Parameters: the component directory (for converting relative path expressions to absolute ones), a string strToMatch and a list of regexp patterns to match strToMatch with
 // Returns: true if there is any match else false
 func isRegExpMatch(directory, strToMatch string, regExps []string) (bool, error) {
 	for _, regExp := range regExps {
+		// for glob matching with the library
+		// the relative paths in the glob expressions need to be converted to absolute paths
 		absExp := path.Join(directory, regExp)
 		pattern, err := glob.Compile(absExp)
 		if err != nil {
@@ -62,6 +64,9 @@ func isRegExpMatch(directory, strToMatch string, regExps []string) (bool, error)
 // and its subdirectories.  If a non-directory is specified, this call is a no-op.
 // Files matching glob pattern defined in ignores will be ignored.
 // Taken from https://github.com/openshift/origin/blob/85eb37b34f0657631592356d020cef5a58470f8e/pkg/util/fsnotification/fsnotification.go
+// directory is the name of the component source directory
+// path is the path of the file
+// ignores contains the glob rules for matching
 func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignores []string) error {
 	file, err := os.Stat(path)
 	if err != nil {
@@ -259,6 +264,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 			}
 		}
 	}()
+	// adding watch on the root folder, so directory and the path in addRecursiveWatch() are the same
 	err = addRecursiveWatch(watcher, parameters.Path, parameters.Path, parameters.FileIgnores)
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
