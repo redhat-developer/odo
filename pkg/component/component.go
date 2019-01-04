@@ -253,6 +253,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 		if err != nil {
 			return err
 		}
+
 		podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
 		_, err = client.WaitAndGetPod(podSelector)
 		if err != nil {

@@ -223,7 +223,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 			// Git is the only one using BuildConfig since we need to retrieve the git
 			err = component.Build(client, componentName, applicationName, wait, stdout)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 
 		} else if len(componentLocal) != 0 {
 			fileInfo, err := os.Stat(componentPath)
