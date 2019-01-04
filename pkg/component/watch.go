@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"sync"
 	"time"
 
@@ -120,16 +119,15 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignore
 		}
 		return nil
 	})
-	for _, v := range folders {
+	for _, folder := range folders {
 		ignore := false
-		for _, pattern := range ignores {
-			if matched, _ := regexp.MatchString(pattern, v); matched {
-				ignore = true
-				break
-			}
+
+		if matched, _ := isGlobExpMatch(directory, folder, ignores); matched {
+			ignore = true
 		}
+
 		if ignore {
-			glog.V(4).Infof("ignoring watch for %s", v)
+			glog.V(4).Infof("ignoring watch for %s", folder)
 			continue
 		}
 
@@ -138,14 +136,14 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignore
 			continue
 		}
 
-		glog.V(4).Infof("adding watch on path %s", v)
-		err = watcher.Add(v)
+		glog.V(4).Infof("adding watch on path %s", folder)
+		err = watcher.Add(folder)
 		if err != nil {
 			// Linux "no space left on device" issues are usually resolved via
 			// $ sudo sysctl fs.inotify.max_user_watches=65536
 			// BSD / OSX: "too many open files" issues are ussualy resolved via
 			// $ sysctl variables "kern.maxfiles" and "kern.maxfilesperproc",
-			glog.V(4).Infof("error adding watcher for path %s: %v", v, err)
+			glog.V(4).Infof("error adding watcher for path %s: %v", folder, err)
 		}
 	}
 	return nil
