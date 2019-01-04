@@ -329,6 +329,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				showWaitingMessage = true
 				// Reset changedfiles
 				changedFiles = []string{}
+				// Reset deletedPaths
+				deletedPaths = []string{}
 			}
 		}
 		changeLock.Unlock()
