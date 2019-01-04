@@ -44,7 +44,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	case 0:
 		var err error
 		skipConnectionCheck, err = command.Flags().GetBool(SkipConnectionCheckFlagName)
-		util.CheckError(err, "")
+		util.LogErrorAndExit(err, "")
 	case 1:
 		skipConnectionCheck = shouldSkipConnectionCheck[0]
 	default:
@@ -54,7 +54,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	}
 
 	client, err := occlient.New(skipConnectionCheck)
-	util.CheckError(err, "")
+	util.LogErrorAndExit(err, "")
 
 	return client
 }
@@ -69,7 +69,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
 		_, err := project.Exists(client, projectFlag)
-		util.CheckError(err, "")
+		util.LogErrorAndExit(err, "")
 		ns = projectFlag
 	} else {
 		// otherwise use the current project
@@ -83,7 +83,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	if len(appFlag) > 0 {
 		// if we specified an application via flag, check that it exists and use it
 		_, err := application.Exists(client, appFlag)
-		util.CheckError(err, "")
+		util.LogErrorAndExit(err, "")
 		app = appFlag
 	} else {
 		var err error
@@ -94,7 +94,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 			// if we asked an app to be created if missing, get the existing one or creating one if needed
 			app, err = application.GetCurrentOrGetCreateSetDefault(client)
 		}
-		util.CheckError(err, "unable to get current application")
+		util.LogErrorAndExit(err, "unable to get current application")
 	}
 
 	// create the internal context representation based on calculated values
@@ -116,7 +116,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		// retrieve the current component if it exists if we didn't set the component flag
 		var err error
 		cmp, err = component.GetCurrent(app, ns)
-		util.CheckError(err, "could not get current component")
+		util.LogErrorAndExit(err, "could not get current component")
 	} else {
 		// if flag is set, check that the specified component exists
 		context.checkComponentExistsOrFail(cmpFlag)
@@ -190,7 +190,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
 func (o *Context) checkComponentExistsOrFail(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
-	util.CheckError(err, "")
+	util.LogErrorAndExit(err, "")
 	if !exists {
 		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
 		os.Exit(1)

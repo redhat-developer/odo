@@ -85,26 +85,26 @@ var updateCmd = &cobra.Command{
 
 		if len(componentGit) != 0 {
 			err := component.Update(client, componentName, applicationName, "git", componentGit, componentGitRef, stdout)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			log.Successf("The component %s was updated successfully", componentName)
 		} else if len(componentLocal) != 0 {
 			// we want to use and save absolute path for component
 			dir, err := pkgUtil.GetAbsPath(componentLocal)
-			util.CheckError(err, "")
+			util.LogErrorAndExit(err, "")
 			fileInfo, err := os.Stat(dir)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			if !fileInfo.IsDir() {
 				log.Error("Please provide a path to the directory")
 				os.Exit(1)
 			}
 			err = component.Update(client, componentName, applicationName, "local", dir, "", stdout)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", componentName)
 		} else if len(componentBinary) != 0 {
 			path, err := pkgUtil.GetAbsPath(componentBinary)
-			util.CheckError(err, "")
+			util.LogErrorAndExit(err, "")
 			err = component.Update(client, componentName, applicationName, "binary", path, "", stdout)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", componentName)
 		}
 	},

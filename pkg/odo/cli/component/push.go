@@ -60,7 +60,7 @@ var pushCmd = &cobra.Command{
 		log.Namef("Pushing changes to component: %v", componentName)
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
-		odoutil.CheckError(err, "unable to get component source")
+		odoutil.LogErrorAndExit(err, "unable to get component source")
 		switch sourceType {
 		case "local", "binary":
 			// use value of '--dir' as source if it was used
@@ -73,7 +73,7 @@ var pushCmd = &cobra.Command{
 			}
 
 			u, err := url.Parse(sourcePath)
-			odoutil.CheckError(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
+			odoutil.LogErrorAndExit(err, fmt.Sprintf("unable to parse source %s from component %s", sourcePath, componentName))
 
 			if u.Scheme != "" && u.Scheme != "file" {
 				log.Errorf("Component %s has invalid source path %s", componentName, u.Scheme)
@@ -84,7 +84,7 @@ var pushCmd = &cobra.Command{
 
 			_, err = os.Stat(localLocation)
 			if err != nil {
-				odoutil.CheckError(err, "")
+				odoutil.LogErrorAndExit(err, "")
 			}
 
 			if sourceType == "local" {
@@ -95,7 +95,7 @@ var pushCmd = &cobra.Command{
 				glog.V(4).Infof("Copying file %s to pod", localLocation)
 				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation})
 			}
-			odoutil.CheckError(err, fmt.Sprintf("Failed to push component: %v", componentName))
+			odoutil.LogErrorAndExit(err, fmt.Sprintf("Failed to push component: %v", componentName))
 
 		case "git":
 			// currently we don't support changing build type
@@ -105,7 +105,7 @@ var pushCmd = &cobra.Command{
 				os.Exit(1)
 			}
 			err := component.Build(client, componentName, applicationName, true, stdout)
-			odoutil.CheckError(err, fmt.Sprintf("failed to push component: %v", componentName))
+			odoutil.LogErrorAndExit(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
 		log.Successf("Changes successfully pushed to component: %v", componentName)

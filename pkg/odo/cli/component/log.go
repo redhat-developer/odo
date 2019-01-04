@@ -42,7 +42,7 @@ var logCmd = &cobra.Command{
 
 		// Retrieve the log
 		err := component.GetLogs(client, componentName, applicationName, logFollow, stdout)
-		odoutil.CheckError(err, "Unable to retrieve logs, does your component exist?")
+		odoutil.LogErrorAndExit(err, "Unable to retrieve logs, does your component exist?")
 	},
 }
 

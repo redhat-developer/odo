@@ -47,7 +47,7 @@ var watchCmd = &cobra.Command{
 			var err error
 			glog.V(4).Info("No component name passed, assuming current component")
 			componentName, err = component.GetCurrent(applicationName, projectName)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			if componentName == "" {
 				log.Infof("No component is set as active.")
 				log.Infof("Use 'odo component set <component name> to set and existing component as active or call this command with component name as and argument.")
@@ -58,7 +58,7 @@ var watchCmd = &cobra.Command{
 		}
 
 		sourceType, sourcePath, err := component.GetComponentSource(client, componentName, applicationName)
-		odoutil.CheckError(err, "Unable to get source for %s component.", componentName)
+		odoutil.LogErrorAndExit(err, "Unable to get source for %s component.", componentName)
 
 		if sourceType != "binary" && sourceType != "local" {
 			log.Errorf("Watch is supported by binary and local components only and source type of component %s is %s", componentName, sourceType)
@@ -66,7 +66,7 @@ var watchCmd = &cobra.Command{
 		}
 
 		u, err := url.Parse(sourcePath)
-		odoutil.CheckError(err, "Unable to parse source %s from component %s.", sourcePath, componentName)
+		odoutil.LogErrorAndExit(err, "Unable to parse source %s from component %s.", sourcePath, componentName)
 
 		if u.Scheme != "" && u.Scheme != "file" {
 			log.Errorf("Component %s has invalid source path %s.", componentName, u.Scheme)
@@ -88,7 +88,7 @@ var watchCmd = &cobra.Command{
 				WatchHandler:    component.PushLocal,
 			},
 		)
-		odoutil.CheckError(err, "Error while trying to watch %s", watchPath)
+		odoutil.LogErrorAndExit(err, "Error while trying to watch %s", watchPath)
 	},
 }
 

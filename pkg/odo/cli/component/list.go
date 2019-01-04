@@ -30,7 +30,7 @@ var componentListCmd = &cobra.Command{
 		applicationName := context.Application
 
 		components, err := component.List(client, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if len(components) == 0 {
 			log.Errorf("There are no components deployed.")
 			return

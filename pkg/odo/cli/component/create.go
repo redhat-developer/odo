@@ -106,7 +106,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		if len(componentBinary) != 0 {
 			componentPath = componentBinary
 			path, err := util.GetAbsPath(componentPath)
-			odoutil.CheckError(err, "Failed to resolve %s to absolute path", componentPath)
+			odoutil.LogErrorAndExit(err, "Failed to resolve %s to absolute path", componentPath)
 			componentPath = path
 			componentPathType = occlient.BINARY
 			checkFlag++
@@ -119,7 +119,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		if len(componentLocal) != 0 {
 			componentPath = componentLocal
 			path, err := util.GetAbsPath(componentPath)
-			odoutil.CheckError(err, "Failed to resolve %s to absolute path", componentPath)
+			odoutil.LogErrorAndExit(err, "Failed to resolve %s to absolute path", componentPath)
 			componentPath = path
 			componentPathType = occlient.LOCAL
 			checkFlag++
@@ -140,7 +140,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// Fetch list of existing components in-order to attempt generation of unique component name
 		componentList, err := component.List(client, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		// Generate unique name for component
 		componentName, err := component.GetDefaultComponentName(
@@ -149,11 +149,11 @@ A full list of component types that can be deployed is available using: 'odo cat
 			componentType,
 			componentList,
 		)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		// Check to see if the catalog type actually exists
 		exists, err := catalog.Exists(client, componentType)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if !exists {
 			log.Errorf("Invalid component type: %v", componentType)
 			log.Info("Run 'odo catalog list components' for a list of supported component types")
@@ -162,7 +162,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// Check to see if that particular version exists
 		versionExists, err := catalog.VersionExists(client, componentType, componentVersion)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if !versionExists {
 			log.Errorf("Invalid component version: %v", componentVersion)
 			log.Info("Run 'odo catalog list components' to see a list of supported component type versions")
@@ -176,9 +176,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// Validate component name
 		err = odoutil.ValidateName(componentName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		exists, err = component.Exists(client, componentName, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if exists {
 			log.Errorf("component with the name %s already exists in the current application", componentName)
 			os.Exit(1)
@@ -217,15 +217,15 @@ A full list of component types that can be deployed is available using: 'odo cat
 					ApplicationName: applicationName,
 				},
 			)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 
 			// Git is the only one using BuildConfig since we need to retrieve the git
 			err = component.Build(client, componentName, applicationName, true, stdout)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 
 		} else if len(componentLocal) != 0 {
 			fileInfo, err := os.Stat(componentPath)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			if !fileInfo.IsDir() {
 				log.Errorf("Please provide a path to the directory")
 				os.Exit(1)
@@ -245,7 +245,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 					ApplicationName: applicationName,
 				},
 			)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 
 		} else if len(componentBinary) != 0 {
 			// Deploy the component with a binary
@@ -264,12 +264,12 @@ A full list of component types that can be deployed is available using: 'odo cat
 					ApplicationName: applicationName,
 				},
 			)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 
 		} else {
 			// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
 			dir, err := util.GetAbsPath("./")
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 
 			// Create
 			err = component.CreateFromPath(
@@ -285,11 +285,11 @@ A full list of component types that can be deployed is available using: 'odo cat
 					ApplicationName: applicationName,
 				},
 			)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 		}
 
 		ports, err := component.GetComponentPorts(client, componentName, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		if len(ports) > 1 {
 			log.Successf("Component '%s' was created and ports %s were opened", componentName, strings.Join(ports, ","))
@@ -299,9 +299,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 
 		// after component is successfully created, set is as active
 		err = application.SetCurrent(client, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		err = component.SetCurrent(componentName, applicationName, projectName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		log.Successf("Component '%s' is now set as active component", componentName)
 
 		if len(componentGit) == 0 {

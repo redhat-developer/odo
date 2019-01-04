@@ -82,25 +82,25 @@ If no app name is passed, a default app name will be auto-generated.
 			// Desired app name is not passed so, generate a new app name
 			// Fetch existing list of apps
 			apps, err := application.List(client)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 
 			// Generate a random name that's not already in use for the existing apps
 			appName, err = application.GetDefaultAppName(apps)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 		}
 		// validate application name
 		err := odoutil.ValidateName(appName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		log.Progressf("Creating application: %v in project: %v", appName, projectName)
 		err = application.Create(client, appName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		err = application.SetCurrent(client, appName)
 
 		// TODO: updating the app name should be done via SetCurrent and passing the Context
 		// not strictly needed here but Context should stay in sync
 		context.Application = appName
 
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		log.Infof("Switched to application: %v in project: %v", appName, projectName)
 	},
 }
@@ -151,9 +151,9 @@ var applicationDeleteCmd = &cobra.Command{
 
 		// Print App Information which will be deleted
 		err := printDeleteAppInfo(client, appName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		exists, err := application.Exists(client, appName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if !exists {
 			log.Errorf("Application %v in project %v does not exist", appName, projectName)
 			os.Exit(1)
@@ -168,7 +168,7 @@ var applicationDeleteCmd = &cobra.Command{
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := application.Delete(client, appName)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			log.Infof("Deleted application: %s from project: %v", appName, projectName)
 		} else {
 			log.Infof("Aborting deletion of application: %v", appName)
@@ -193,7 +193,7 @@ var applicationListCmd = &cobra.Command{
 		projectName := context.Project
 
 		apps, err := application.ListInProject(client)
-		odoutil.CheckError(err, "unable to get list of applications")
+		odoutil.LogErrorAndExit(err, "unable to get list of applications")
 		if len(apps) > 0 {
 			log.Infof("The project '%v' has the following applications:", projectName)
 			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -237,14 +237,14 @@ var applicationSetCmd = &cobra.Command{
 		// error if application does not exist
 		appName := args[0]
 		exists, err := application.Exists(client, appName)
-		odoutil.CheckError(err, "unable to check if application exists")
+		odoutil.LogErrorAndExit(err, "unable to check if application exists")
 		if !exists {
 			log.Errorf("Application %v does not exist", appName)
 			os.Exit(1)
 		}
 
 		err = application.SetCurrent(client, appName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		log.Infof("Switched to application: %v in project: %v", args[0], projectName)
 
 		// TODO: updating the app name should be done via SetCurrent and passing the Context
@@ -276,7 +276,7 @@ var applicationDescribeCmd = &cobra.Command{
 			appName = args[0]
 			//Check whether application exist or not
 			exists, err := application.Exists(client, appName)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			if !exists {
 				log.Errorf("Application with the name %s does not exist in %s ", appName, projectName)
 				os.Exit(1)
@@ -285,7 +285,7 @@ var applicationDescribeCmd = &cobra.Command{
 
 		// List of Component
 		componentList, err := component.List(client, appName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if len(componentList) == 0 {
 			log.Errorf("Application %s has no components deployed.", appName)
 			os.Exit(1)
@@ -293,7 +293,7 @@ var applicationDescribeCmd = &cobra.Command{
 		fmt.Printf("Application Name: %s has %v components:\n--------------------------------------\n", appName, len(componentList))
 		for _, currentComponent := range componentList {
 			componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			odoutil.PrintComponentInfo(currentComponent.Name, componentDesc)
 			fmt.Println("--------------------------------------")
 		}

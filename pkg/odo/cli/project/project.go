@@ -55,14 +55,14 @@ var projectSetCmd = &cobra.Command{
 		current := context.Project
 
 		exists, err := project.Exists(client, projectName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if !exists {
 			log.Errorf("The project %s does not exist", projectName)
 			os.Exit(1)
 		}
 
 		err = project.SetCurrent(client, projectName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if projectShortFlag {
 			fmt.Print(projectName)
 		} else {
@@ -107,9 +107,9 @@ var projectCreateCmd = &cobra.Command{
 		projectName := args[0]
 		client := genericclioptions.Client(cmd)
 		err := project.Create(client, projectName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		err = project.SetCurrent(client, projectName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		log.Successf("New project created and now using project : %v", projectName)
 	},
 }
@@ -128,7 +128,7 @@ var projectDeleteCmd = &cobra.Command{
 
 		// Validate existence of the project to be deleted
 		isValidProject, err := project.Exists(client, projectName)
-		odoutil.CheckError(err, "Failed to delete project %s", projectName)
+		odoutil.LogErrorAndExit(err, "Failed to delete project %s", projectName)
 		if !isValidProject {
 			log.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", projectName)
 			os.Exit(1)
@@ -149,7 +149,7 @@ var projectDeleteCmd = &cobra.Command{
 
 		currentProject, err := project.Delete(client, projectName)
 		if err != nil {
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 		}
 
 		log.Infof("Deleted project : %v", projectName)
@@ -175,7 +175,7 @@ var projectListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := genericclioptions.Client(cmd)
 		projects, err := project.List(client)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		if len(projects) == 0 {
 			log.Errorf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
 			os.Exit(1)

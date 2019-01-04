@@ -51,7 +51,7 @@ var catalogListComponentCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := genericclioptions.Client(cmd)
 		catalogList, err := catalog.List(client)
-		odoutil.CheckError(err, "unable to list components")
+		odoutil.LogErrorAndExit(err, "unable to list components")
 		switch len(catalogList) {
 		case 0:
 			log.Errorf("No deployable components found")
@@ -96,7 +96,7 @@ var catalogListServiceCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := genericclioptions.Client(cmd)
 		catalogList, err := svc.ListCatalog(client)
-		odoutil.CheckError(err, "unable to list services because Service Catalog is not enabled in your cluster")
+		odoutil.LogErrorAndExit(err, "unable to list services because Service Catalog is not enabled in your cluster")
 		switch len(catalogList) {
 		case 0:
 			log.Errorf("No deployable services found")
@@ -145,7 +145,7 @@ components.
 		client := genericclioptions.Client(cmd)
 		searchTerm := args[0]
 		components, err := catalog.Search(client, searchTerm)
-		odoutil.CheckError(err, "unable to search for components")
+		odoutil.LogErrorAndExit(err, "unable to search for components")
 
 		switch len(components) {
 		case 0:
@@ -176,7 +176,7 @@ services from service catalog.
 		client := genericclioptions.Client(cmd)
 		searchTerm := args[0]
 		components, err := svc.Search(client, searchTerm)
-		odoutil.CheckError(err, "unable to search for services")
+		odoutil.LogErrorAndExit(err, "unable to search for services")
 
 		switch len(components) {
 		case 0:
@@ -219,7 +219,7 @@ This describes the service and the associated plans.
 		client := genericclioptions.Client(cmd)
 		serviceName := args[0]
 		service, plans, err := svc.GetServiceClassAndPlans(client, serviceName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetBorder(false)

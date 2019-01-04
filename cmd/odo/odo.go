@@ -55,13 +55,13 @@ func main() {
 	// before proceeding with fetching the latest version
 	cfg, err := config.New()
 	if err != nil {
-		util.CheckError(err, "")
+		util.LogErrorAndExit(err, "")
 	}
 	if cfg.GetUpdateNotification() {
 		updateInfo := make(chan string)
 		go version.GetLatestReleaseInfo(updateInfo)
 
-		util.CheckError(root.Execute(), "")
+		util.LogErrorAndExit(root.Execute(), "")
 		select {
 		case message := <-updateInfo:
 			fmt.Println(message)
@@ -69,7 +69,7 @@ func main() {
 			glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
 	} else {
-		util.CheckError(root.Execute(), "")
+		util.LogErrorAndExit(root.Execute(), "")
 	}
 }
 
