@@ -560,3 +560,54 @@ func TestCheckPathExists(t *testing.T) {
 		}
 	}
 }
+func TestGetHostWithPort(t *testing.T) {
+
+	tests := []struct {
+		inputURL string
+		want     string
+		wantErr  bool
+	}{
+		{
+			inputURL: "https://example.com",
+			want:     "example.com:443",
+			wantErr:  false,
+		},
+		{
+			inputURL: "https://example.com:8443",
+			want:     "example.com:8443",
+			wantErr:  false,
+		},
+		{
+			inputURL: "http://example.com",
+			want:     "example.com:80",
+			wantErr:  false,
+		},
+		{
+			inputURL: "notexisting://example.com",
+			want:     "",
+			wantErr:  true,
+		},
+		{
+			inputURL: "http://127.0.0.1",
+			want:     "127.0.0.1:80",
+			wantErr:  false,
+		},
+		{
+			inputURL: "example.com:1234",
+			want:     "",
+			wantErr:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Testing inputURL: %s", tt.inputURL), func(t *testing.T) {
+			got, err := GetHostWithPort(tt.inputURL)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getHostWithPort() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getHostWithPort() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
