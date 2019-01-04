@@ -2,18 +2,19 @@ package events
 
 import (
 	"fmt"
+	api "github.com/metacosm/odo-event-api/odo/api/events"
 	"github.com/spf13/cobra"
 )
 
-type typesToListeners map[EventType][]Listener
+type typesToListeners map[api.EventType][]api.Listener
 
 type EventBus struct {
 	listeners    map[string]typesToListeners
-	allListeners []Listener
+	allListeners []api.Listener
 }
 
 var bus = &EventBus{
-	allListeners: make([]Listener, 0, 5),
+	allListeners: make([]api.Listener, 0, 5),
 }
 
 func GetEventBus() *EventBus {
@@ -27,9 +28,9 @@ func EventNameFrom(cmd *cobra.Command) string {
 	return cmd.Name()
 }
 
-func DispatchEvent(cmd *cobra.Command, eventType EventType, payload interface{}) error {
+func DispatchEvent(cmd *cobra.Command, eventType api.EventType, payload interface{}) error {
 	eventBus := GetEventBus()
-	err := eventBus.DispatchEvent(Event{
+	err := eventBus.DispatchEvent(api.Event{
 		Name:    EventNameFrom(cmd),
 		Type:    eventType,
 		Payload: payload,
@@ -38,13 +39,13 @@ func DispatchEvent(cmd *cobra.Command, eventType EventType, payload interface{})
 	return err
 }
 
-func (bus *EventBus) RegisterToAll(listener Listener) {
+func (bus *EventBus) RegisterToAll(listener api.Listener) {
 	bus.allListeners = append(bus.allListeners, listener)
 }
 
 type Subscription struct {
-	Listener        Listener
-	SupportedEvents map[string]EventType
+	Listener        api.Listener
+	SupportedEvents map[string]api.EventType
 }
 
 func (bus *EventBus) Register(subscription Subscription) {
@@ -53,7 +54,7 @@ func (bus *EventBus) Register(subscription Subscription) {
 	}
 }
 
-func (bus *EventBus) RegisterSingle(event string, eventType EventType, listener Listener) {
+func (bus *EventBus) RegisterSingle(event string, eventType api.EventType, listener api.Listener) {
 	listenersForEvent, ok := bus.listeners[event]
 	if !ok {
 		listenersForEvent = make(typesToListeners, 10)
@@ -62,16 +63,16 @@ func (bus *EventBus) RegisterSingle(event string, eventType EventType, listener 
 
 	listenersForType, ok := listenersForEvent[eventType]
 	if !ok {
-		listenersForType = make([]Listener, 0, 10)
+		listenersForType = make([]api.Listener, 0, 10)
 	}
 
 	listenersForEvent[eventType] = append(listenersForType, listener)
 }
 
-func (bus *EventBus) DispatchEvent(event Event) (err error) {
+func (bus *EventBus) DispatchEvent(event api.Event) (err error) {
 	errors := make([]error, 0, 10)
 	listenersForEvent, ok := bus.listeners[event.Name]
-	processedListeners := make([]Listener, 0, 10)
+	processedListeners := make([]api.Listener, 0, 10)
 	var abort bool
 	if ok {
 		listenersForType, ok := listenersForEvent[event.Type]
@@ -80,7 +81,7 @@ func (bus *EventBus) DispatchEvent(event Event) (err error) {
 				listener := listenersForType[i]
 				err := listener.OnEvent(event)
 				if err != nil {
-					if IsEventCausedAbort(err) {
+					if api.IsEventCausedAbort(err) {
 						abort = true
 						return err
 					}
@@ -96,7 +97,7 @@ func (bus *EventBus) DispatchEvent(event Event) (err error) {
 		listener := bus.allListeners[i]
 		err := listener.OnEvent(event)
 		if err != nil {
-			if IsEventCausedAbort(err) {
+			if api.IsEventCausedAbort(err) {
 				abort = true
 				return err
 			}
@@ -118,11 +119,11 @@ func (bus *EventBus) DispatchEvent(event Event) (err error) {
 	return
 }
 
-func revertProcessedListenersOnAbort(abort bool, err error, listeners []Listener) {
+func revertProcessedListenersOnAbort(abort bool, err error, listeners []api.Listener) {
 	if abort {
 
 		for i := range listeners {
-			listeners[i].OnAbort(err.(*EventCausedAbortError))
+			listeners[i].OnAbort(err.(*api.EventCausedAbortError))
 		}
 	}
 }
