@@ -59,6 +59,35 @@ type ConfigInfo struct {
 	Config
 }
 
+func GetConfigDir() (string, error) {
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	configDir := filepath.Join(currentUser.HomeDir, ".odo")
+
+	// Check whether directory present or not
+	_, err = os.Stat(filepath.Dir(configDir))
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(configDir), 0755)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return configDir, nil
+}
+
+func GetPluginsDir() (string, error) {
+	configDir, err := GetConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(configDir, "plugins"), nil
+}
+
 func getDefaultConfigFile() string {
 	currentUser, err := user.Current()
 	if err != nil {
