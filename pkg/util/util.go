@@ -412,7 +412,8 @@ func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 
 			return []string{}, err
 		}
-		if len(line) > 0 {
+		spaceTrimmedLine := strings.TrimSpace(string(line))
+		if len(spaceTrimmedLine) > 0 && string(spaceTrimmedLine[0]) != "#" {
 			rules = append(rules, string(line))
 		}
 	}

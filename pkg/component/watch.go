@@ -40,20 +40,21 @@ type WatchParameters struct {
 	PushDiffDelay int
 }
 
-// isRegExpMatch compiles strToMatch against each of the passed regExps
+// isGlobExpMatch compiles strToMatch against each of the passed regExps
 // Parameters: the component directory (for converting relative path expressions to absolute ones), a string strToMatch and a list of regexp patterns to match strToMatch with
 // Returns: true if there is any match else false
-func isRegExpMatch(directory, strToMatch string, regExps []string) (bool, error) {
-	for _, regExp := range regExps {
+func isGlobExpMatch(directory, strToMatch string, globExps []string) (bool, error) {
+	for _, globExp := range globExps {
 		// for glob matching with the library
 		// the relative paths in the glob expressions need to be converted to absolute paths
-		absExp := path.Join(directory, regExp)
+		absExp := path.Join(directory, globExp)
 		pattern, err := glob.Compile(absExp)
 		if err != nil {
 			return false, err
 		}
 		matched := pattern.Match(strToMatch)
 		if matched {
+			glog.V(4).Infof("ignoring path %s because of glob rule %s", strToMatch, globExp)
 			return true, nil
 		}
 	}
@@ -78,7 +79,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignore
 
 	mode := file.Mode()
 	if mode.IsRegular() {
-		matched, err := isRegExpMatch(directory, path, ignores)
+		matched, err := isGlobExpMatch(directory, path, ignores)
 		if err != nil {
 			return errors.Wrapf(err, "unable to watcher on %s", path)
 		}
@@ -106,7 +107,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignore
 
 		if info.IsDir() {
 			// If the current directory matches any of the ignore patterns, ignore them so that their contents are also not ignored
-			matched, err := isRegExpMatch(directory, newPath, ignores)
+			matched, err := isGlobExpMatch(directory, newPath, ignores)
 			if err != nil {
 				return errors.Wrapf(err, "unable to addRecursiveWatch on %s", newPath)
 			}
@@ -236,7 +237,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				// ignores paths because, when a directory that is ignored, is deleted,
 				// because its parent is watched, the fsnotify automatically raises an event
 				// for it.
-				matched, err := isRegExpMatch(parameters.Path, event.Name, parameters.FileIgnores)
+				matched, err := isGlobExpMatch(parameters.Path, event.Name, parameters.FileIgnores)
 				glog.V(4).Infof("Matching %s with %s\n.matched %v, err: %v", event.Name, parameters.FileIgnores, matched, err)
 				if err != nil {
 					watchError = errors.Wrap(err, "unable to watch changes")
@@ -264,7 +265,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 			}
 		}
 	}()
-	// adding watch on the root folder, so directory and the path in addRecursiveWatch() are the same
+	// adding watch on the root folder and the sub folders recursively
+	// so directory and the path in addRecursiveWatch() are the same
 	err = addRecursiveWatch(watcher, parameters.Path, parameters.Path, parameters.FileIgnores)
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)

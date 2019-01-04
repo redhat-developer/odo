@@ -71,11 +71,19 @@ func TestIsRegExpMatch(t *testing.T) {
 			want:          false,
 			wantErr:       true,
 		},
+		{
+			testName:      "Test '#' comment glob matches",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:      []string{"#openshift/**/*.json"},
+			want:          false,
+			wantErr:       false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			matched, err := isRegExpMatch(tt.directoryName, tt.strToMatch, tt.globExps)
+			matched, err := isGlobExpMatch(tt.directoryName, tt.strToMatch, tt.globExps)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)

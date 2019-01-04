@@ -683,6 +683,24 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			wantRules:        []string{"*.json", "/openshift/**/*.js"},
 			wantErr:          false,
 		},
+		{
+			name:             "test case 7: no odoignore but gitignore exists with rules and comments",
+			directoryName:    testDir,
+			filesToCreate:    []string{".gitignore"},
+			rulesOnGitIgnore: "*.js\n\n/openshift/**/*.json\n\n\n#/tests",
+			rulesOnOdoIgnore: "",
+			wantRules:        []string{"*.js", "/openshift/**/*.json"},
+			wantErr:          false,
+		},
+		{
+			name:             "test case 8: odoignore exists exists with rules and comments",
+			directoryName:    testDir,
+			filesToCreate:    []string{".odoignore"},
+			rulesOnOdoIgnore: "*.js\n\n\n/openshift/**/*.json\n\n\n#/tests\n/bin",
+			rulesOnGitIgnore: "",
+			wantRules:        []string{"*.js", "/openshift/**/*.json", "/bin"},
+			wantErr:          false,
+		},
 	}
 
 	for _, tt := range tests {
