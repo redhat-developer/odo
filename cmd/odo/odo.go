@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/golang/glog"
+	api "github.com/metacosm/odo-event-api/odo/api/events"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -145,7 +146,7 @@ func loadPlugins() {
 			}
 
 			// Assert that Listener is indeed a Listener :)
-			listener, ok := candidate.(events.Listener)
+			listener, ok := candidate.(api.Listener)
 			if !ok {
 				log.Error("exported Listener variable is not implementing the Listener interface")
 				os.Exit(1)
