@@ -3,20 +3,26 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-
 	"github.com/golang/glog"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
+	"github.com/redhat-developer/odo/pkg/odo/events"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"os"
+	"path/filepath"
+	"plugin"
+	"strings"
 )
 
 func main() {
+	loadPlugins()
+
 	// create the complete command
 	root := cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName)
 	rootCmp := createCompletion(root)
@@ -112,4 +118,44 @@ func createCompletion(root *cobra.Command) complete.Command {
 	rootCmp.Args = handler
 
 	return rootCmp
+}
+
+func loadPlugins() {
+	configDir, err := config.GetPluginsDir()
+	if err != nil {
+		panic(err)
+	}
+
+	bus := events.GetEventBus()
+
+	err = filepath.Walk(configDir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, ".so") {
+			// Open the plugin library
+			plug, err := plugin.Open(path)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			// Look up the exporter Listener variable
+			candidate, err := plug.Lookup("Listener")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			// Assert that Listener is indeed a Listener :)
+			listener, ok := candidate.(events.Listener)
+			if !ok {
+				log.Error("exported Listener variable is not implementing the Listener interface")
+				os.Exit(1)
+			}
+
+			bus.RegisterToAll(listener)
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
 }
