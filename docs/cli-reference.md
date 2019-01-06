@@ -304,27 +304,32 @@ The source component can then consume the entries of the secret as environment v
 For example:
 
 We have created a frontend application called 'frontend':
-odo create nodejs frontend
+
+    odo create nodejs frontend
 
 We've also created a backend application called 'backend' with port 8080 exposed:
-odo create nodejs backend --port 8080
+
+    odo create nodejs backend --port 8080
 
 You can now link the two applications:
-odo link backend --component frontend
+
+    odo link backend --component frontend
 
 Now the frontend has 2 ENV variables it can use:
-COMPONENT_BACKEND_HOST=backend-app
-COMPONENT_BACKEND_PORT=8080
+
+    COMPONENT_BACKEND_HOST=backend-app
+    COMPONENT_BACKEND_PORT=8080
 
 If you wish to use a database, we can use the Service Catalog and link it to our backend:
-odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret
-odo link dh-postgresql-apb
+
+    odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret
+    odo link dh-postgresql-apb
 
 Now backend has 2 ENV variables it can use:
-DB_USER=luke
-DB_PASSWORD=secret
 
-
+    DB_USER=luke
+    DB_PASSWORD=secret
+	
 ## list
 
 `list`
