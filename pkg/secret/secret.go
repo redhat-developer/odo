@@ -34,7 +34,8 @@ Please delete the component and recreate it using 'odo create'`, componentName)
 			return secrets[0].Name, nil
 		}
 		return "", fmt.Errorf(`Multiple secrets exist for component %s. 
-Please select one of the following ports: '%s'`, componentName, strings.Join(availablePorts(secrets), ","))
+Please select one of the following ports: '%s' 
+by supplying the --port option and rerun the command`, componentName, strings.Join(availablePorts(secrets), ","))
 	}
 
 	// search each secret to see which port is corresponds to
@@ -44,7 +45,8 @@ Please select one of the following ports: '%s'`, componentName, strings.Join(ava
 		}
 	}
 	return "", fmt.Errorf(`None of the secrets that exist for component %s match port %s. 
-Please select one of the following ports: '%s'`, componentName, port, strings.Join(availablePorts(secrets), ","))
+Please select one of the following ports: '%s' 
+by supplying the --port option and rerun the command`, componentName, port, strings.Join(availablePorts(secrets), ","))
 
 }
 
