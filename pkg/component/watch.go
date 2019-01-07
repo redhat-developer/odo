@@ -65,7 +65,7 @@ func isGlobExpMatch(directory, strToMatch string, globExps []string) (bool, erro
 // Files matching glob pattern defined in ignores will be ignored.
 // Taken from https://github.com/openshift/origin/blob/85eb37b34f0657631592356d020cef5a58470f8e/pkg/util/fsnotification/fsnotification.go
 // directory is the name of the component source directory
-// path is the path of the file
+// path is the path of the file or the directory
 // ignores contains the glob rules for matching
 func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignores []string) error {
 	file, err := os.Stat(path)
@@ -120,13 +120,8 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignore
 		return nil
 	})
 	for _, folder := range folders {
-		ignore := false
 
 		if matched, _ := isGlobExpMatch(directory, folder, ignores); matched {
-			ignore = true
-		}
-
-		if ignore {
 			glog.V(4).Infof("ignoring watch for %s", folder)
 			continue
 		}
