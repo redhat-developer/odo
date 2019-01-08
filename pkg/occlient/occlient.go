@@ -2137,6 +2137,11 @@ func (c *Client) GetClusterServiceClassExternalNamesAndPlans() ([]Service, error
 		return nil, errors.Wrap(err, "Unable to get service plans")
 	}
 	for _, class := range classes {
+
+		// if the class has a "hidden" tag then its deprecated and shouldn't be shown
+		if isHidden(class.Spec.Tags) {
+			continue
+		}
 		var planList []string
 		for _, plan := range planListItems {
 			if plan.Spec.ClusterServiceClassRef.Name == class.Spec.ExternalID {
