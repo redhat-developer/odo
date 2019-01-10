@@ -19,6 +19,7 @@ type CatalogImage struct {
 
 // List lists all the available component types
 func List(client *occlient.Client) ([]CatalogImage, error) {
+
 	catalogList, err := getDefaultBuilderImages(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get image streams")
@@ -137,18 +138,22 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 	// Resultant imagestreams is list of imagestreams from current and openshift namespaces
 	imageStreams = append(imageStreams, openshiftNSImageStreams...)
 	imageStreams = append(imageStreams, currentNSImageStreams...)
+
 	var builderImages []CatalogImage
 
 	// Get builder images from the available imagestreams
 	for _, imageStream := range imageStreams {
 		var allTags []string
 		buildImage := false
+
 		for _, tag := range imageStream.Spec.Tags {
+
 			allTags = append(allTags, tag.Name)
 
 			// Check to see if it is a "builder" image
 			if _, ok := tag.Annotations["tags"]; ok {
 				for _, t := range strings.Split(tag.Annotations["tags"], ",") {
+
 					// If the tag has "builder" then we will add the image to the list
 					if t == "builder" {
 						buildImage = true
@@ -157,6 +162,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 			}
 
 		}
+
 		// Append to the list of images if a "builder" tag was found
 		if buildImage {
 			builderImages = append(builderImages, CatalogImage{Name: imageStream.Name, Namespace: imageStream.Namespace, Tags: allTags})
