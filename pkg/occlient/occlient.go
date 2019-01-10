@@ -928,6 +928,12 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 	return retVal
 }
 
+// deleteNonRequiredEnvVars deletes the passed env var from the list of passed env vars
+// Parameters:
+//	existingEnvs: Slice of existing env vars
+//	envTobeDeleted: The name of env var to be deleted
+// Returns:
+//	slice of env vars with delete reflected
 func deleteNonRequiredEnvVars(existingEnvs []corev1.EnvVar, envTobeDeleted string) []corev1.EnvVar {
 	for ind, envVar := range existingEnvs {
 		if envVar.Name == envTobeDeleted {

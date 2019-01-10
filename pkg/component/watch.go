@@ -240,6 +240,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 					watchError = errors.Wrap(err, "unable to watch changes")
 				}
 				if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
+					// Append the new file change event to changedFiles if and only if the event is not a file remove event
 					if event.Op&fsnotify.Remove != fsnotify.Remove {
 						changedFiles = append(changedFiles, event.Name)
 					}

@@ -350,13 +350,16 @@ func getEnvFromPodEnvs(envName string, podEnvs []corev1.EnvVar) string {
 //	Slice of s2i paths extracted from passed parameters
 func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 	retVal := []string{}
+	// List of s2i Paths exported for use in container pod for working with source/binary
 	s2iPathEnvs := []string{
 		occlient.EnvS2IDeploymentDir,
 		occlient.EnvS2ISrcOrBinPath,
 		occlient.EnvS2IWorkingDir,
 		occlient.EnvS2ISrcBackupDir,
 	}
+	// For each of the required env var
 	for _, s2iPathEnv := range s2iPathEnvs {
+		// try to fetch the value of required env from the ones set already in the component container like for the case of watch or multiple pushes
 		envVal := getEnvFromPodEnvs(s2iPathEnv, podEnvs)
 		isEnvValPresent := false
 		if envVal != "" {
@@ -367,6 +370,7 @@ func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 				}
 			}
 			if !isEnvValPresent {
+				// If `src` not in path, append it
 				if filepath.Base(envVal) != "src" {
 					envVal = filepath.Join(envVal, "src")
 				}
@@ -374,15 +378,24 @@ func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 			}
 		}
 	}
+	// Append binary backup path to s2i paths list
 	retVal = append(retVal, "/opt/app-root/backup")
 	return retVal
 }
 
 // PushLocal push local code to the cluster and trigger build there.
-// files is list of changed files captured during `odo watch` as well as binary file path
 // During copying binary components, path represent base directory path to binary and files contains path of binary
 // During copying local source components, path represent base directory path whereas files is empty
 // During `odo watch`, path represent base directory path whereas files contains list of changed Files
+// Parameters:
+//	componentName is name of the component to update sources to
+//	applicationName is the name of the application of which the component is a part
+//	path is base path of the component source/binary
+// 	files is list of changed files captured during `odo watch` as well as binary file path
+// 	delFiles is the list of files identified as deleted
+// 	isForcePush indicates if the sources to be updated are due to a push in which case its a full source directory push or only push of identified sources
+// Returns
+//	Error if any
 func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool) error {
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 	// Find DeploymentConfig for component
@@ -408,6 +421,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	targetPath := fmt.Sprintf("%s/src", s2iSrcPath)
 
+	// If there are files identified as deleted, propogate them to the component pod
 	if len(delFiles) > 0 {
 		s := log.Spinner(fmt.Sprintf("propogating deletion of files %s to pod", strings.Join(delFiles, " ")))
 		err := client.PropogateDeletes(pod.Name, delFiles, getS2IPaths(pod.Spec.Containers[0].Env))
