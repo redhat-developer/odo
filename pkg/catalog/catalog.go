@@ -143,20 +143,12 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 	for _, imageStream := range imageStreams {
 		var allTags []string
 		buildImage := false
-		hidden := false
 		for _, tag := range imageStream.Spec.Tags {
-
 			allTags = append(allTags, tag.Name)
 
 			// Check to see if it is a "builder" image
 			if _, ok := tag.Annotations["tags"]; ok {
 				for _, t := range strings.Split(tag.Annotations["tags"], ",") {
-					// if there is a "hidden" tag then the image stream is deprecated
-					if t == "hidden" {
-
-						hidden = true
-						break
-					}
 					// If the tag has "builder" then we will add the image to the list
 					if t == "builder" {
 						buildImage = true
@@ -164,13 +156,9 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 				}
 			}
 
-			if hidden {
-				break
-			}
-
 		}
 		// Append to the list of images if a "builder" tag was found
-		if buildImage && !hidden {
+		if buildImage {
 			builderImages = append(builderImages, CatalogImage{Name: imageStream.Name, Namespace: imageStream.Namespace, Tags: allTags})
 		}
 

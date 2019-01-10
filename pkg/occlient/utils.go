@@ -1,8 +1,8 @@
 package occlient
 
-func isHidden(tags []string) bool {
+func hasTag(tags []string, requiredTag string) bool {
 	for _, tag := range tags {
-		if tag == "hidden" {
+		if tag == requiredTag {
 			return true
 		}
 	}
