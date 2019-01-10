@@ -8,6 +8,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -102,14 +103,7 @@ var catalogListServiceCmd = &cobra.Command{
 			log.Errorf("No deployable services found")
 			os.Exit(1)
 		default:
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "PLANS")
-			for _, service := range catalogList {
-				if !service.Hidden {
-					fmt.Fprintln(w, service.Name, "\t", strings.Join(service.PlanList, ","))
-				}
-			}
-			w.Flush()
+			displayServices(catalogList)
 
 		}
 	},
@@ -185,15 +179,7 @@ services from service catalog.
 			log.Errorf("No service matched the query: %v", searchTerm)
 			os.Exit(1)
 		default:
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "PLANS")
-			for _, service := range services {
-				if !service.Hidden {
-					fmt.Fprintln(w, service.Name, "\t", strings.Join(service.PlanList, ","))
-				}
-			}
-			w.Flush()
-
+			displayServices(services)
 		}
 	},
 }
@@ -295,6 +281,17 @@ This describes the service and the associated plans.
 			os.Exit(1)
 		}
 	},
+}
+
+func displayServices(services []occlient.Service) {
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(w, "NAME", "\t", "PLANS")
+	for _, service := range services {
+		if !service.Hidden {
+			fmt.Fprintln(w, service.Name, "\t", strings.Join(service.PlanList, ","))
+		}
+	}
+	w.Flush()
 }
 
 // NewCmdCatalog implements the odo catalog command
