@@ -54,11 +54,11 @@ var componentDeleteCmd = &cobra.Command{
 
 		if strings.ToLower(confirmDeletion) == "y" {
 			err := component.Delete(client, componentName, applicationName)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			log.Successf("Component %s from application %s has been deleted", componentName, applicationName)
 
 			currentComponent, err := component.GetCurrent(applicationName, projectName)
-			odoutil.CheckError(err, "Unable to get current component")
+			odoutil.LogErrorAndExit(err, "Unable to get current component")
 
 			if currentComponent == "" {
 				log.Info("No default component has been set")

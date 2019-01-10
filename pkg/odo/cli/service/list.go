@@ -75,9 +75,9 @@ func NewCmdServiceList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			util.CheckError(o.Complete(name, cmd, args), "")
-			util.CheckError(o.Validate(), "")
-			util.CheckError(o.Run(), "")
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 	return serviceListCmd

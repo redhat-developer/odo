@@ -40,7 +40,7 @@ var loginCmd = &cobra.Command{
 		}
 		err := auth.Login(server, userName, password, token, caAuth, skipTLS)
 		if err != nil {
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 		}
 	},
 }

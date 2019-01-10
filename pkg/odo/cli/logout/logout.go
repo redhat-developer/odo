@@ -20,7 +20,7 @@ var logoutCmd = &cobra.Command{
 		context := genericclioptions.NewContext(cmd)
 		client := context.Client
 		err := client.RunLogout(os.Stdout)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 	},
 }
 

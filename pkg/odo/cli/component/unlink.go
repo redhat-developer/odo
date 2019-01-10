@@ -76,9 +76,9 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(unlinkExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.CheckError(o.Complete(name, cmd, args), "")
-			util.CheckError(o.Validate(), "")
-			util.CheckError(o.Run(), "")
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 

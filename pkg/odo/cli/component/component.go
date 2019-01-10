@@ -76,7 +76,7 @@ var componentSetCmd = &cobra.Command{
 		componentName := context.Component(args[0])
 
 		err := component.SetCurrent(componentName, applicationName, projectName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		log.Infof("Switched to component: %v", componentName)
 	},
 }

@@ -89,7 +89,7 @@ var configurationViewCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.New()
 		if err != nil {
-			odoutil.CheckError(err, "unable to view configuration")
+			odoutil.LogErrorAndExit(err, "unable to view configuration")
 		}
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")

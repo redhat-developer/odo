@@ -25,7 +25,7 @@ This will append your PS1 environment variable with Odo component and applicatio
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		err := TerminalGenerate(os.Stdout, cmd, args)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		return nil
 	},

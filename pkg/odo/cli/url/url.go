@@ -68,7 +68,7 @@ The created URL can be used to access the specified component from outside the O
 		componentName := context.Component()
 
 		componentPort, err := url.GetValidPortNumber(client, urlPort, componentName, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		var urlName string
 		switch len(args) {
@@ -90,7 +90,7 @@ The created URL can be used to access the specified component from outside the O
 
 		log.Infof("Adding URL to component: %v", componentName)
 		urlRoute, err := url.Create(client, urlName, componentPort, componentName, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		urlCreated := url.GetURLString(*urlRoute)
 		log.Successf("URL created for component: %v\n\n"+
@@ -98,7 +98,7 @@ The created URL can be used to access the specified component from outside the O
 
 		if urlOpenFlag {
 			err := util.OpenBrowser(urlCreated)
-			odoutil.CheckError(err, "Unable to open URL within default browser")
+			odoutil.LogErrorAndExit(err, "Unable to open URL within default browser")
 		}
 	},
 }
@@ -120,7 +120,7 @@ var urlDeleteCmd = &cobra.Command{
 		urlName := args[0]
 
 		exists, err := url.Exists(client, urlName, componentName, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		if !exists {
 			log.Errorf("The URL %s does not exist within the component %s", urlName, componentName)
@@ -138,7 +138,7 @@ var urlDeleteCmd = &cobra.Command{
 		if strings.ToLower(confirmDeletion) == "y" {
 
 			err = url.Delete(client, urlName, applicationName)
-			odoutil.CheckError(err, "")
+			odoutil.LogErrorAndExit(err, "")
 			log.Infof("Deleted URL: %v", urlName)
 		} else {
 			log.Errorf("Aborting deletion of url: %v", urlName)
@@ -162,7 +162,7 @@ var urlListCmd = &cobra.Command{
 		componentName := context.Component()
 
 		urls, err := url.List(client, componentName, applicationName)
-		odoutil.CheckError(err, "")
+		odoutil.LogErrorAndExit(err, "")
 
 		if len(urls) == 0 {
 			log.Errorf("No URLs found for component %v in application %v", componentName, applicationName)
