@@ -77,7 +77,7 @@ var watchCmd = &cobra.Command{
 		if len(ignores) == 0 {
 			rules, err := util.GetIgnoreRulesFromDirectory(watchPath)
 			if err != nil {
-				odoutil.CheckError(err, "")
+				odoutil.LogErrorAndExit(err, "")
 			}
 			if len(rules) == 0 {
 				ignores = append(ignores, ".git")
