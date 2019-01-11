@@ -41,7 +41,7 @@ type WatchParameters struct {
 
 // isGlobExpMatch compiles strToMatch against each of the passed regExps
 // Parameters: the component directory (for converting relative path expressions to absolute ones), a string strToMatch and a list of regexp patterns to match strToMatch with
-// Returns: true if there is any match else false
+// Returns: true if there is any match else false and the error (if any)
 func isGlobExpMatch(directory, strToMatch string, globExps []string) (bool, error) {
 	for _, globExp := range globExps {
 		// for glob matching with the library
