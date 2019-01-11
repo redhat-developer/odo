@@ -8,6 +8,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -97,17 +98,13 @@ var catalogListServiceCmd = &cobra.Command{
 		client := genericclioptions.Client(cmd)
 		catalogList, err := svc.ListCatalog(client)
 		odoutil.LogErrorAndExit(err, "unable to list services because Service Catalog is not enabled in your cluster")
+		catalogList = filterHiddenServices(catalogList)
 		switch len(catalogList) {
 		case 0:
 			log.Errorf("No deployable services found")
 			os.Exit(1)
 		default:
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "PLANS")
-			for _, service := range catalogList {
-				fmt.Fprintln(w, service.Name, "\t", strings.Join(service.PlanList, ","))
-			}
-			w.Flush()
+			displayServices(catalogList)
 
 		}
 	},
@@ -175,21 +172,16 @@ services from service catalog.
 	Run: func(cmd *cobra.Command, args []string) {
 		client := genericclioptions.Client(cmd)
 		searchTerm := args[0]
-		components, err := svc.Search(client, searchTerm)
+		services, err := svc.Search(client, searchTerm)
 		odoutil.LogErrorAndExit(err, "unable to search for services")
+		services = filterHiddenServices(services)
 
-		switch len(components) {
+		switch len(services) {
 		case 0:
 			log.Errorf("No service matched the query: %v", searchTerm)
 			os.Exit(1)
 		default:
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "PLANS")
-			for _, component := range components {
-				fmt.Fprintln(w, component.Name, "\t", strings.Join(component.PlanList, ","))
-			}
-			w.Flush()
-
+			displayServices(services)
 		}
 	},
 }
@@ -291,6 +283,25 @@ This describes the service and the associated plans.
 			os.Exit(1)
 		}
 	},
+}
+
+func displayServices(services []occlient.Service) {
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(w, "NAME", "\t", "PLANS")
+	for _, service := range services {
+		fmt.Fprintln(w, service.Name, "\t", strings.Join(service.PlanList, ","))
+	}
+	w.Flush()
+}
+
+func filterHiddenServices(services []occlient.Service) []occlient.Service {
+	var filteredServices []occlient.Service
+	for _, service := range services {
+		if !service.Hidden {
+			filteredServices = append(filteredServices, service)
+		}
+	}
+	return filteredServices
 }
 
 // NewCmdCatalog implements the odo catalog command

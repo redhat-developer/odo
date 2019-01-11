@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/types"
 	"net"
 	"os"
 	"path"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
@@ -2119,6 +2120,7 @@ func (c *Client) patchDCOfComponent(componentName, applicationName string, dcPat
 // Service struct holds the servicename and it's corresponding list of plans
 type Service struct {
 	Name     string
+	Hidden   bool
 	PlanList []string
 }
 
@@ -2137,14 +2139,14 @@ func (c *Client) GetClusterServiceClassExternalNamesAndPlans() ([]Service, error
 		return nil, errors.Wrap(err, "Unable to get service plans")
 	}
 	for _, class := range classes {
+
 		var planList []string
 		for _, plan := range planListItems {
 			if plan.Spec.ClusterServiceClassRef.Name == class.Spec.ExternalID {
 				planList = append(planList, plan.Spec.ExternalName)
 			}
 		}
-
-		classNames = append(classNames, Service{Name: class.Spec.ExternalName, PlanList: planList})
+		classNames = append(classNames, Service{Name: class.Spec.ExternalName, PlanList: planList, Hidden: hasTag(class.Spec.Tags, "hidden")})
 	}
 	return classNames, nil
 }
