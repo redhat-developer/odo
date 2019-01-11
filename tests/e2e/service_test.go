@@ -2,9 +2,11 @@ package e2e
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo"
 	"os"
 	"strings"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("odoServiceE2e", func() {
@@ -79,6 +81,14 @@ var _ = Describe("odoServiceE2e", func() {
 
 				// Delete the service
 				runCmd("odo service delete dh-postgresql-apb -f")
+			})
+		})
+
+		Context("odo hides a hidden service in service catalog", func() {
+			It("not show a hidden service in the catalog", func() {
+				runCmd("oc apply -f https://github.com/openshift/library/raw/master/official/sso/templates/sso72-https.json -n openshift")
+				output := runFailCmd("odo catalog search service sso72-https")
+				Expect(output).To(ContainSubstring("No service matched the query: sso72-https"))
 			})
 		})
 	}
