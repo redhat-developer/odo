@@ -98,6 +98,7 @@ var catalogListServiceCmd = &cobra.Command{
 		client := genericclioptions.Client(cmd)
 		catalogList, err := svc.ListCatalog(client)
 		odoutil.LogErrorAndExit(err, "unable to list services because Service Catalog is not enabled in your cluster")
+		catalogList = filterHiddenServices(catalogList)
 		switch len(catalogList) {
 		case 0:
 			log.Errorf("No deployable services found")
@@ -173,6 +174,7 @@ services from service catalog.
 		searchTerm := args[0]
 		services, err := svc.Search(client, searchTerm)
 		odoutil.LogErrorAndExit(err, "unable to search for services")
+		services = filterHiddenServices(services)
 
 		switch len(services) {
 		case 0:
@@ -287,11 +289,19 @@ func displayServices(services []occlient.Service) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "NAME", "\t", "PLANS")
 	for _, service := range services {
-		if !service.Hidden {
-			fmt.Fprintln(w, service.Name, "\t", strings.Join(service.PlanList, ","))
-		}
+		fmt.Fprintln(w, service.Name, "\t", strings.Join(service.PlanList, ","))
 	}
 	w.Flush()
+}
+
+func filterHiddenServices(services []occlient.Service) []occlient.Service {
+	var filteredServices []occlient.Service
+	for _, service := range services {
+		if !service.Hidden {
+			filteredServices = append(filteredServices, service)
+		}
+	}
+	return filteredServices
 }
 
 // NewCmdCatalog implements the odo catalog command
