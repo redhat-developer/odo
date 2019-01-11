@@ -35,6 +35,11 @@ var _ = Describe("odoLinkE2e", func() {
 			Expect(cmpList).To(ContainSubstring("backend"))
 		})
 
+		It("reports error when using wrong port", func() {
+			output := runFailCmd("odo link backend --component frontend --port 1234")
+			Expect(output).To(ContainSubstring("8080"))
+		})
+
 		It("link the frontend application to the backend", func() {
 			runCmd("odo link backend --component frontend")
 
