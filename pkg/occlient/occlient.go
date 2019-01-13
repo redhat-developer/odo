@@ -928,20 +928,21 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 	return retVal
 }
 
-// deleteNonRequiredEnvVars deletes the passed env var from the list of passed env vars
+// deleteEnvVars deletes the passed env var from the list of passed env vars
 // Parameters:
 //	existingEnvs: Slice of existing env vars
 //	envTobeDeleted: The name of env var to be deleted
 // Returns:
 //	slice of env vars with delete reflected
-func deleteNonRequiredEnvVars(existingEnvs []corev1.EnvVar, envTobeDeleted string) []corev1.EnvVar {
-	for ind, envVar := range existingEnvs {
+func deleteEnvVars(existingEnvs []corev1.EnvVar, envTobeDeleted string) []corev1.EnvVar {
+	retVal := existingEnvs
+	for ind, envVar := range retVal {
 		if envVar.Name == envTobeDeleted {
-			existingEnvs = append(existingEnvs[:ind], existingEnvs[ind+1:]...)
+			retVal = append(retVal[:ind], retVal[ind+1:]...)
 			break
 		}
 	}
-	return existingEnvs
+	return retVal
 }
 
 // BootstrapSupervisoredS2I uses S2I (Source To Image) to inject Supervisor into the application container.
@@ -1327,6 +1328,12 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 }
 
 // UpdateDCToSupervisor updates the current DeploymentConfig to a SupervisorD configuration.
+// Parameters:
+//	commonObjectMeta: dc meta object
+//	componentImageType: type of builder image
+//	isToLocal: bool used to indicate if component is to be updated to local in which case a source backup dir will be injected into compoennt env
+// Returns:
+//	errors if any or nil
 func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, componentImageType string, isToLocal bool) error {
 
 	// Parse the image
@@ -1406,7 +1413,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 			},
 		)
 	} else {
-		inputEnvs = deleteNonRequiredEnvVars(inputEnvs, EnvS2ISrcBackupDir)
+		inputEnvs = deleteEnvVars(inputEnvs, EnvS2ISrcBackupDir)
 	}
 
 	// Generate the SupervisorD Config
@@ -3157,12 +3164,12 @@ func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
 	return dc.Spec.Template.Spec.Containers[0].Env, nil
 }
 
-// PropogateDeletes deletes the watch detecte deleted files from remote component pod
+// PropagateDeletes deletes the watch detected deleted files from remote component pod from each of the paths in passed s2iPaths
 // Parameters:
 //	targetPodName: Name of component pod
-//	delSrcRelPaths: Paths to be deleted on the remote pod
+//	delSrcRelPaths: Paths to be deleted on the remote pod relative to component source base path ex: Compoent src: /abc/src, file deleted: abc/src/foo.lang => relative path: foo.lang
 //	s2iPaths: Slice of all s2i paths -- deployment dir, destination dir, working dir, etc..
-func (c *Client) PropogateDeletes(targetPodName string, delSrcRelPaths []string, s2iPaths []string) error {
+func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string, s2iPaths []string) error {
 	reader, writer := io.Pipe()
 	var rmPaths []string
 	if len(s2iPaths) == 0 || len(delSrcRelPaths) == 0 {

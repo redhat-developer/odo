@@ -423,12 +423,19 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	// If there are files identified as deleted, propogate them to the component pod
 	if len(delFiles) > 0 {
-		s := log.Spinner(fmt.Sprintf("propogating deletion of files %s to pod", strings.Join(delFiles, " ")))
-		err := client.PropogateDeletes(pod.Name, delFiles, getS2IPaths(pod.Spec.Containers[0].Env))
+		glog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
+		/*
+			Delete files observed by watch to have been deleted from each of s2i directories like:
+				deployment dir: In interpreted runtimes like python, source is copied over to deployment dir so delete needs to happen here as well
+				destination dir: This is the directory where s2i expects source to be copied for it be built and deployed
+				working dir: Directory where, sources are copied over from deployment dir from where the s2i builds and deploys source.
+							 Deletes need to happen here as well otherwise, even if the latest source is copied over, the stale source files remain
+				source backup dir: Directory used for backing up source across multiple iterations of push and watch in component container
+		*/
+		err := client.PropagateDeletes(pod.Name, delFiles, getS2IPaths(pod.Spec.Containers[0].Env))
 		if err != nil {
 			return errors.Wrapf(err, "unable to propogate file deletions %+v", delFiles)
 		}
-		s.End(true)
 	}
 
 	// Copy the files to the pod
@@ -440,13 +447,11 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 
 	if isForcePush || len(files) > 0 {
-		s := log.Spinner("Copying files to pod")
+		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		err = client.CopyFile(path, pod.Name, targetPath, files)
 		if err != nil {
-			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
 		}
-		s.End(true)
 	}
 
 	s := log.Spinner("Building component")
