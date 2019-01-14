@@ -635,7 +635,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{""},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{},
+			wantRules:        []string{".git"},
 			wantErr:          false,
 		},
 		{
@@ -644,7 +644,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".gitignore"},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{},
+			wantRules:        []string{".git"},
 			wantErr:          false,
 		},
 		{
@@ -653,7 +653,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".gitignore"},
 			rulesOnGitIgnore: "*.js\n\n/openshift/**/*.json\n/tests",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{"*.js", "/openshift/**/*.json", "/tests"},
+			wantRules:        []string{".git", "*.js", "/openshift/**/*.json", "/tests"},
 			wantErr:          false,
 		},
 		{
@@ -662,7 +662,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".odoignore"},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{},
+			wantRules:        []string{".git"},
 			wantErr:          false,
 		},
 		{
@@ -671,7 +671,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".odoignore"},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "*.json\n\n/openshift/**/*.js",
-			wantRules:        []string{"*.json", "/openshift/**/*.js"},
+			wantRules:        []string{".git", "*.json", "/openshift/**/*.js"},
 			wantErr:          false,
 		},
 		{
@@ -680,7 +680,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".gitignore", ".odoignore"},
 			rulesOnGitIgnore: "/tests",
 			rulesOnOdoIgnore: "*.json\n\n/openshift/**/*.js",
-			wantRules:        []string{"*.json", "/openshift/**/*.js"},
+			wantRules:        []string{".git", "*.json", "/openshift/**/*.js"},
 			wantErr:          false,
 		},
 		{
@@ -689,7 +689,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".gitignore"},
 			rulesOnGitIgnore: "*.js\n\n/openshift/**/*.json\n\n\n#/tests",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{"*.js", "/openshift/**/*.json"},
+			wantRules:        []string{".git", "*.js", "/openshift/**/*.json"},
 			wantErr:          false,
 		},
 		{
@@ -698,7 +698,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".odoignore"},
 			rulesOnOdoIgnore: "*.js\n\n\n/openshift/**/*.json\n\n\n#/tests\n/bin",
 			rulesOnGitIgnore: "",
-			wantRules:        []string{"*.js", "/openshift/**/*.json", "/bin"},
+			wantRules:        []string{".git", "*.js", "/openshift/**/*.json", "/bin"},
 			wantErr:          false,
 		},
 	}

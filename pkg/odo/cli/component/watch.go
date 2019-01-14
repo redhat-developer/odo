@@ -79,11 +79,7 @@ var watchCmd = &cobra.Command{
 			if err != nil {
 				odoutil.LogErrorAndExit(err, "")
 			}
-			if len(rules) == 0 {
-				ignores = append(ignores, ".git")
-			} else if len(rules) > 0 {
-				ignores = append(ignores, rules...)
-			}
+			ignores = append(ignores, rules...)
 		}
 
 		err = component.WatchAndPush(

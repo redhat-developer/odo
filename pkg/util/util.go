@@ -382,7 +382,7 @@ func GetHostWithPort(inputURL string) (string, error) {
 // directory is the name of the directory to look into for either of the files
 // rules is the array of rules (in string form)
 func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
-	rules := []string{}
+	rules := []string{".git"}
 	// checking for presence of .odoignore file
 	pathIgnore := path.Join(directory, ".odoignore")
 	if _, err := os.Stat(pathIgnore); os.IsNotExist(err) {
@@ -391,7 +391,7 @@ func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 		pathIgnore = path.Join(directory, ".gitignore")
 		if _, err := os.Stat(pathIgnore); os.IsNotExist(err) {
 			// both doesn't exist, return empty array
-			return []string{}, nil
+			return rules, nil
 		}
 	}
 
@@ -410,10 +410,10 @@ func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 				break
 			}
 
-			return []string{}, err
+			return rules, err
 		}
 		spaceTrimmedLine := strings.TrimSpace(string(line))
-		if len(spaceTrimmedLine) > 0 && string(spaceTrimmedLine[0]) != "#" {
+		if len(spaceTrimmedLine) > 0 && !strings.HasPrefix(string(line), "#") && !strings.HasPrefix(string(line), ".git") {
 			rules = append(rules, string(line))
 		}
 	}
