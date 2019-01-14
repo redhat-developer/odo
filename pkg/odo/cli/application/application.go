@@ -1,13 +1,17 @@
 package application
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util/validation"
-	"github.com/redhat-developer/odo/pkg/service"
 	"os"
 	"strings"
+	"text/tabwriter"
+
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"github.com/redhat-developer/odo/pkg/service"
 
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -15,10 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-
-	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -28,13 +29,8 @@ import (
 var (
 	applicationShortFlag       bool
 	applicationForceDeleteFlag bool
+	outputFlag                 string
 )
-
-// Description holds all information about application
-type Description struct {
-	Name       string `json:"applicationName,omitempty"`
-	Components []component.Description
-}
 
 // applicationCmd represents the app command
 var applicationCmd = &cobra.Command{
@@ -197,17 +193,40 @@ var applicationListCmd = &cobra.Command{
 		apps, err := application.ListInProject(client)
 		odoutil.LogErrorAndExit(err, "unable to get list of applications")
 		if len(apps) > 0 {
-			log.Infof("The project '%v' has the following applications:", projectName)
-			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(tabWriter, "ACTIVE", "\t", "NAME")
-			for _, app := range apps {
-				activeMark := " "
-				if app.Active {
-					activeMark = "*"
+
+			if outputFlag == "json" {
+				var appList []application.App
+				for _, app := range apps {
+					appDef := getMachineReadableFormat(client, app.Name, projectName, app.Active)
+					appList = append(appList, appDef)
 				}
-				fmt.Fprintln(tabWriter, activeMark, "\t", app.Name)
+
+				appListDef := application.AppList{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "List",
+						APIVersion: "odo.openshift.io/v1beta1",
+					},
+					ListMeta: metav1.ListMeta{},
+					Items:    appList,
+				}
+				out, err := json.Marshal(appListDef)
+				odoutil.LogErrorAndExit(err, "")
+				fmt.Println(string(out))
+
+			} else {
+
+				log.Infof("The project '%v' has the following applications:", projectName)
+				tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+				fmt.Fprintln(tabWriter, "ACTIVE", "\t", "NAME")
+				for _, app := range apps {
+					activeMark := " "
+					if app.Active {
+						activeMark = "*"
+					}
+					fmt.Fprintln(tabWriter, activeMark, "\t", app.Name)
+				}
+				tabWriter.Flush()
 			}
-			tabWriter.Flush()
 		} else {
 			log.Infof("There are no applications deployed in the project '%v'.", projectName)
 		}
@@ -285,32 +304,42 @@ var applicationDescribeCmd = &cobra.Command{
 			}
 		}
 
-		// List of Component
-		componentList, err := component.List(client, appName)
-		odoutil.LogErrorAndExit(err, "")
+		if outputFlag == "json" {
+			app, _ := application.GetCurrent(projectName)
+			appDef := getMachineReadableFormat(client, appName, projectName, app == appName)
+			out, err := json.Marshal(appDef)
+			odoutil.LogErrorAndExit(err, "")
+			fmt.Println(string(out))
 
-		//we ignore service errors here because it's entirely possible that the service catalog has not been installed
-		serviceList, _ := service.ListWithDetailedStatus(client, appName)
-
-		if len(componentList) == 0 && len(serviceList) == 0 {
-			log.Errorf("Application %s has no components or services deployed.", appName)
 		} else {
-			fmt.Printf("Application Name: %s has %v component(s) and %v service(s):\n--------------------------------------\n",
-				appName, len(componentList), len(serviceList))
-			if len(componentList) > 0 {
-				for _, currentComponent := range componentList {
-					componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName, projectName)
-					odoutil.LogErrorAndExit(err, "")
-					odoutil.PrintComponentInfo(currentComponent.Name, componentDesc)
-					fmt.Println("--------------------------------------")
+
+			// List of Component
+			componentList, err := component.List(client, appName)
+			odoutil.LogErrorAndExit(err, "")
+
+			//we ignore service errors here because it's entirely possible that the service catalog has not been installed
+			serviceList, _ := service.ListWithDetailedStatus(client, appName)
+
+			if len(componentList) == 0 && len(serviceList) == 0 {
+				log.Errorf("Application %s has no components or services deployed.", appName)
+			} else {
+				fmt.Printf("Application Name: %s has %v component(s) and %v service(s):\n--------------------------------------\n",
+					appName, len(componentList), len(serviceList))
+				if len(componentList) > 0 {
+					for _, currentComponent := range componentList {
+						componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, appName, projectName)
+						odoutil.LogErrorAndExit(err, "")
+						odoutil.PrintComponentInfo(currentComponent.ComponentName, componentDesc)
+						fmt.Println("--------------------------------------")
+					}
 				}
-			}
-			if len(serviceList) > 0 {
-				for _, currentService := range serviceList {
-					fmt.Printf("Service Name: %s\n", currentService.Name)
-					fmt.Printf("Type: %s\n", currentService.Type)
-					fmt.Printf("Status: %s\n", currentService.Status)
-					fmt.Println("--------------------------------------")
+				if len(serviceList) > 0 {
+					for _, currentService := range serviceList {
+						fmt.Printf("Service Name: %s\n", currentService.Name)
+						fmt.Printf("Type: %s\n", currentService.Type)
+						fmt.Printf("Status: %s\n", currentService.Status)
+						fmt.Println("--------------------------------------")
+					}
 				}
 			}
 		}
@@ -318,11 +347,41 @@ var applicationDescribeCmd = &cobra.Command{
 	},
 }
 
+// getMachineReadableFormat returns resource information in machine readable format
+func getMachineReadableFormat(client *occlient.Client, appName string, projectName string, active bool) application.App {
+	componentList, _ := component.List(client, appName)
+	var compList []string
+	for _, comp := range componentList {
+		compList = append(compList, comp.ComponentName)
+	}
+	appDef := application.App{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "app",
+			APIVersion: "odo.openshift.io/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      appName,
+			Namespace: projectName,
+		},
+		Spec: application.AppSpec{
+			Components: compList,
+		},
+		Status: application.AppStatus{
+			Active: active,
+		},
+	}
+	return appDef
+}
+
 // NewCmdApplication implements the odo application command
 func NewCmdApplication() *cobra.Command {
 	applicationDeleteCmd.Flags().BoolVarP(&applicationForceDeleteFlag, "force", "f", false, "Delete application without prompting")
 
 	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
+
+	applicationDescribeCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "output in json format")
+	applicationListCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "output in json format")
+
 	// add flags from 'get' to application command
 	applicationCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
 
@@ -367,11 +426,11 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 	}
 
 	for _, currentComponent := range componentList {
-		componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName, projectName)
+		componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, appName, projectName)
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}
-		log.Info("Component", currentComponent.Name, "will be deleted.")
+		log.Info("Component", currentComponent.ComponentName, "will be deleted.")
 
 		if len(componentDesc.URLs) != 0 {
 			fmt.Println("  Externally exposed URLs will be removed")

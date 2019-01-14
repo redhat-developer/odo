@@ -1,0 +1,29 @@
+package component
+
+import (
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// Component
+type Component struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              ComponentSpec `json:"spec,omitempty"`
+}
+
+// ComponentSpec is spec of components
+type ComponentSpec struct {
+	Type    string   `json:"type,omitempty"`
+	Source  string   `json:"source,omitempty"`
+	URL     []string `json:"url,omitempty"`
+	Storage []string `json:"storage,omitempty"`
+	Env     []corev1.EnvVar
+}
+
+// ComponentList is list of components
+type ComponentList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Component `json:"items"`
+}

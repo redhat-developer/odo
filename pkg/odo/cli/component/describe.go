@@ -1,15 +1,17 @@
 package component
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	"github.com/spf13/cobra"
 )
@@ -23,12 +25,13 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
+	outputFlag string
 	*ComponentOptions
 }
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{&ComponentOptions{}}
+	return &DescribeOptions{"", &ComponentOptions{}}
 }
 
 // Complete completes describe args
@@ -55,10 +58,48 @@ func (do *DescribeOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
+	if do.outputFlag == "json" {
+		componentDef := getMachineReadableFormat(componentDesc)
+		out, err := json.Marshal(componentDef)
+		odoutil.LogErrorAndExit(err, "")
+		fmt.Println(string(out))
+	} else {
 
-	odoutil.PrintComponentInfo(do.componentName, componentDesc)
+		odoutil.PrintComponentInfo(do.componentName, componentDesc)
+	}
 
 	return
+}
+
+func getMachineReadableFormat(componentDesc component.Description) component.Component {
+	var urls []string
+	for _, url := range componentDesc.URLs {
+		urls = append(urls, url.Name)
+	}
+
+	var storage []string
+	for _, store := range componentDesc.Storage {
+		storage = append(storage, store.Name)
+	}
+
+	componentDef := component.Component{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Component",
+			APIVersion: "odo.openshift.io/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: componentDesc.ComponentName,
+		},
+		Spec: component.ComponentSpec{
+			Type:    componentDesc.ComponentImageType,
+			Source:  componentDesc.Path,
+			URL:     urls,
+			Storage: storage,
+			Env:     componentDesc.Env,
+		},
+	}
+
+	return componentDef
 }
 
 // NewCmdDescribe implements the describe odo command
@@ -82,6 +123,7 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	describeCmd.Annotations = map[string]string{"command": "component"}
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
+	describeCmd.Flags().StringVarP(&do.outputFlag, "output", "o", "", "output in json format")
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(describeCmd)

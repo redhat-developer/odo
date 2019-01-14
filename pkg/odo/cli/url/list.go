@@ -26,6 +26,7 @@ var (
 
 // URLListOptions encapsulates the options for the odo url list command
 type URLListOptions struct {
+	outputFlag string
 	*genericclioptions.Context
 }
 
@@ -55,8 +56,27 @@ func (o *URLListOptions) Run() (err error) {
 
 	if len(urls) == 0 {
 		return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
-	}
-	log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
+	} else{
+		if o.outputFlag == "json" {
+			var urlList []url.Url
+			for _, u := range urls {
+				urlList = append(urlList, getMachineReadableFormat(u))
+			}
+			appDef := url.UrlList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.openshift.io/v1beta1",
+				},
+				ListMeta: metav1.ListMeta{},
+				Items:    urlList,
+			}
+
+			out, err := json.Marshal(appDef)
+			odoutil.LogErrorAndExit(err, "")
+			fmt.Println(string(out))
+
+		}else{
+			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
 
 	tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
@@ -67,6 +87,10 @@ func (o *URLListOptions) Run() (err error) {
 		fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
 	}
 	tabWriterURL.Flush()
+
+		}
+	}
+	
 
 	return
 }
@@ -86,6 +110,17 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
+	urlListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the form of json")
 
 	return urlListCmd
+}
+
+// getMachineReadableFormat gives machine readable URL definition
+func getMachineReadableFormat(u url.URL) url.Url {
+	return url.Url{
+		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1beta1"},
+		ObjectMeta: metav1.ObjectMeta{Name: u.Name},
+		Spec:       url.UrlSpec{URL: u.URL},
+	}
+
 }

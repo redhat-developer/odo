@@ -1,20 +1,22 @@
 package component
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
 
-	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-
-	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +29,7 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
+	outputFlag string
 	*genericclioptions.Context
 }
 
@@ -48,7 +51,7 @@ func (lo *ListOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run() (err error) {
-	components, err := component.List(lo.Context.Client, lo.Context.Application)
+	components, err := component.List(lo.Client, lo.Application)
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch components list")
 	}
@@ -56,20 +59,43 @@ func (lo *ListOptions) Run() (err error) {
 		log.Errorf("There are no components deployed.")
 		return
 	}
-
-	activeMark := " "
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
-	currentComponent := lo.Context.ComponentAllowingEmpty(true)
-	for _, comp := range components {
-		if comp.Name == currentComponent {
-			activeMark = "*"
+	if lo.outputFlag == "json" {
+		var compList []component.Component
+		for _, compo := range components {
+			componentDesc, err := component.GetComponentDesc(lo.Client, compo.ComponentName, lo.Application, lo.Project)
+			odoutil.LogErrorAndExit(err, "")
+			compoDef := getMachineReadableFormat(componentDesc)
+			compList = append(compList, compoDef)
 		}
-		fmt.Fprintln(w, activeMark, "\t", comp.Name, "\t", comp.Type)
-		activeMark = " "
-	}
-	w.Flush()
 
+		compListDef := component.ComponentList{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "List",
+				APIVersion: "odo.openshift.io/v1beta1",
+			},
+			ListMeta: metav1.ListMeta{},
+			Items:    compList,
+		}
+
+		out, err := json.Marshal(compListDef)
+		odoutil.LogErrorAndExit(err, "")
+		fmt.Println(string(out))
+
+	} else {
+
+		activeMark := " "
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
+		currentComponent := lo.Context.ComponentAllowingEmpty(true)
+		for _, comp := range components {
+			if comp.ComponentName == currentComponent {
+				activeMark = "*"
+			}
+			fmt.Fprintln(w, activeMark, "\t", comp.ComponentName, "\t", comp.ComponentImageType)
+			activeMark = " "
+		}
+		w.Flush()
+	}
 	return
 }
 
@@ -91,6 +117,8 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	}
 	// Add a defined annotation in order to appear in the help menu
 	componentListCmd.Annotations = map[string]string{"command": "component"}
+
+	componentListCmd.Flags().StringVarP(&lo.outputFlag, "output", "o", "", "output in json format")
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)

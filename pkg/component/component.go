@@ -33,12 +33,6 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 
-// Info holds all important information about one component
-type Info struct {
-	Name string
-	Type string
-}
-
 // Description holds all information about component
 type Description struct {
 	ComponentName      string                `json:"componentName,omitempty"`
@@ -81,13 +75,13 @@ func GetComponentDir(path string, paramType occlient.CreateType) (string, error)
 // GetDefaultComponentName generates a unique component name
 // Parameters: desired default component name(w/o prefix) and slice of existing component names
 // Returns: Unique component name and error if any
-func GetDefaultComponentName(componentPath string, componentPathType occlient.CreateType, componentType string, existingComponentList []Info) (string, error) {
+func GetDefaultComponentName(componentPath string, componentPathType occlient.CreateType, componentType string, existingComponentList []Description) (string, error) {
 	var prefix string
 
 	// Get component names from component list
 	var existingComponentNames []string
 	for _, componentInfo := range existingComponentList {
-		existingComponentNames = append(existingComponentNames, componentInfo.Name)
+		existingComponentNames = append(existingComponentNames, componentInfo.ComponentName)
 	}
 
 	// Fetch config
@@ -323,7 +317,7 @@ func Delete(client *occlient.Client, componentName string, applicationName strin
 
 			// If there's more than one component, set it to the first one..
 			if len(components) > 0 {
-				err = cfg.SetActiveComponent(components[0].Name, applicationName, client.Namespace)
+				err = cfg.SetActiveComponent(components[0].ComponentName, applicationName, client.Namespace)
 
 				if err != nil {
 					return errors.Wrapf(err, "unable to set current component to '%s'", componentName)
@@ -607,7 +601,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
-func List(client *occlient.Client, applicationName string) ([]Info, error) {
+func List(client *occlient.Client, applicationName string) ([]Description, error) {
 
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 
@@ -617,14 +611,14 @@ func List(client *occlient.Client, applicationName string) ([]Info, error) {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
 
-	var components []Info
+	var components []Description
 
 	// extract the labels we care about from each component
 	for _, elem := range dcList {
 		components = append(components,
-			Info{
-				Name: elem.Labels[componentlabels.ComponentLabel],
-				Type: elem.Labels[componentlabels.ComponentTypeLabel],
+			Description{
+				ComponentName:      elem.Labels[componentlabels.ComponentLabel],
+				ComponentImageType: elem.Labels[componentlabels.ComponentTypeLabel],
 			},
 		)
 	}
@@ -816,7 +810,7 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 		return false, errors.Wrap(err, "unable to get the component list")
 	}
 	for _, component := range componentList {
-		if component.Name == componentName {
+		if component.ComponentName == componentName {
 			return true, nil
 		}
 	}
