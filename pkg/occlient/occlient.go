@@ -129,8 +129,14 @@ const (
 	// Ref: https://docs.openshift.com/enterprise/3.2/creating_images/s2i.html#build-process
 	S2IScriptsURLLabel = "io.openshift.s2i.scripts-url"
 
-	// S2ISrcOrBinLabel is the label that is provides, path where S2I expects component source or binary
+	// S2IBuilderImageName is the S2I builder image name
+	S2IBuilderImageName = "name"
+
+	// S2ISrcOrBinLabel is the label that provides, path where S2I expects component source or binary
 	S2ISrcOrBinLabel = "io.openshift.s2i.destination"
+
+	// EnvS2IBuilderImageName is the label that provides the name of builder image in component
+	EnvS2IBuilderImageName = "ODO_S2I_BUILDER_IMG"
 
 	// EnvS2IDeploymentDir is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate s2i deployment directory
 	EnvS2IDeploymentDir = "ODO_S2I_DEPLOYMENT_DIR"
@@ -155,6 +161,7 @@ type S2IPaths struct {
 	DeploymentDir       string
 	WorkingDir          string
 	SrcBackupPath       string
+	BuilderImgName      string
 }
 
 // S2IDeploymentsDir is a set of possible S2I labels that provides S2I deployments directory
@@ -834,8 +841,8 @@ func getS2ILabelValue(labels map[string]string, expectedLabelsSet []string) stri
 	return ""
 }
 
-// GetS2IPathsFromBuilderImg returns script path protocol, S2I scripts path, S2I source or binary expected path, S2I deployment dir and errors(if any) from the passed builder image
-func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths, error) {
+// GetS2IMetaInfoFromBuilderImg returns script path protocol, S2I scripts path, S2I source or binary expected path, S2I deployment dir and errors(if any) from the passed builder image
+func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths, error) {
 
 	// Define structs for internal un-marshalling of imagestreamimage to extract label from it
 	type ContainerConfig struct {
@@ -866,6 +873,7 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths
 	// Extract the label containing S2I scripts URL
 	s2iScriptsURL := dimdr.ContainerConfig.Labels[S2IScriptsURLLabel]
 	s2iSrcOrBinPath := dimdr.ContainerConfig.Labels[S2ISrcOrBinLabel]
+	s2iBuilderImgName := dimdr.ContainerConfig.Labels[S2IBuilderImageName]
 
 	if s2iSrcOrBinPath == "" {
 		// In cases like nodejs builder image, where there is no concept of binary and sources are directly run, use destination as source
@@ -902,6 +910,7 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths
 		DeploymentDir:       s2iDestinationDir,
 		WorkingDir:          dimdr.ContainerConfig.WorkingDir,
 		SrcBackupPath:       DefaultS2ISrcBackupDir,
+		BuilderImgName:      s2iBuilderImgName,
 	}, nil
 }
 
@@ -1012,7 +1021,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 
 	// Extract s2i scripts path and path type from imagestream image
 	//s2iScriptsProtocol, s2iScriptsURL, s2iSrcOrBinPath, s2iDestinationDir
-	s2iPaths, err := GetS2IPathsFromBuilderImg(imageStreamImage)
+	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1039,6 +1048,10 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		corev1.EnvVar{
 			Name:  EnvS2IWorkingDir,
 			Value: s2iPaths.WorkingDir,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IBuilderImageName,
+			Value: s2iPaths.BuilderImgName,
 		},
 	)
 
@@ -1374,7 +1387,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 		Ports:     foundCurrentDCContainer.Ports,
 	}
 
-	s2iPaths, err := GetS2IPathsFromBuilderImg(imageStreamImage)
+	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1401,6 +1414,10 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 		corev1.EnvVar{
 			Name:  EnvS2IWorkingDir,
 			Value: s2iPaths.WorkingDir,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IBuilderImageName,
+			Value: s2iPaths.BuilderImgName,
 		},
 	)
 
