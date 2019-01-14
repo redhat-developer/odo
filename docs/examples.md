@@ -91,7 +91,7 @@ Build and run WildFly applications on CentOS 7. For more information about using
 
 ### java 
 
-Java can be used to deploy binary artifact
+Java can be used to deploy binary artifact, for example:
 
 ```sh
   git clone https://github.com/spring-projects/spring-petclinic.git
@@ -109,4 +109,3 @@ WildFly can deploy a binary application.
   wget -O example.war 'https://github.com/appuio/hello-world-war/blob/master/repo/ch/appuio/hello-world-war/1.0.0/hello-world-war-1.0.0.war?raw=true'
   odo create wildfly --binary example.war
 ```
-
