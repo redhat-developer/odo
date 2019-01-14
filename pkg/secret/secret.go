@@ -44,7 +44,7 @@ Please delete the component and recreate it using 'odo create'`, componentName)
 			return secret.Name, nil
 		}
 	}
-	return "", fmt.Errorf("Unable to properly link to component %s. "+
+	return "", fmt.Errorf("Unable to properly link to component %s using port %s. "+
 		"Please select one of the following ports: '%s' "+
 		"by supplying the --port option and rerun the command", componentName, port, strings.Join(availablePorts(secrets), ","))
 }
