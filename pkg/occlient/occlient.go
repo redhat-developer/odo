@@ -944,7 +944,8 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 // Returns:
 //	slice of env vars with delete reflected
 func deleteEnvVars(existingEnvs []corev1.EnvVar, envTobeDeleted string) []corev1.EnvVar {
-	retVal := existingEnvs
+	retVal := make([]corev1.EnvVar, len(existingEnvs))
+	copy(retVal, existingEnvs)
 	for ind, envVar := range retVal {
 		if envVar.Name == envTobeDeleted {
 			retVal = append(retVal[:ind], retVal[ind+1:]...)

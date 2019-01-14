@@ -4055,7 +4055,7 @@ func TestGetS2IMetaInfoFromBuilderImg(t *testing.T) {
 	}
 }
 
-func TestDeleteNonRequiredEnvVars(t *testing.T) {
+func TestDeleteEnvVars(t *testing.T) {
 	tests := []struct {
 		name           string
 		existingEnvs   []corev1.EnvVar
@@ -4109,12 +4109,8 @@ func TestDeleteNonRequiredEnvVars(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tEnvVars := tt.existingEnvs
 			got := deleteEnvVars(tt.existingEnvs, tt.envTobeDeleted)
 			// Verify the passed param is not changed after call to function
-			if !reflect.DeepEqual(tEnvVars, tt.existingEnvs) {
-				t.Errorf("tEnvVars: %+v, tt.existingEnvs: %+v", tEnvVars, tt.existingEnvs)
-			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("got: %+v, want: %+v", got, tt.want)
 			}
