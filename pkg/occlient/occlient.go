@@ -1793,20 +1793,20 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 	glog.V(4).Infof("Selectors used for deletion: %s", selector)
 
 	// Listing out serviceInstance because `DeleteCollection` method don't work on serviceInstance
-	svcCatList, err := c.GetServiceInstanceList(selector)
+	serviceInstances, err := c.GetServiceInstanceList(selector)
 	if err != nil {
 		return errors.Wrap(err, "unable to list service instance")
 	}
 
 	// Iterating over serviceInstance List and deleting one by one
-	for _, svc := range svcCatList {
+	for _, serviceInstance := range serviceInstances {
 		// we need to delete the ServiceBinding before deleting the ServiceInstance
-		err = c.serviceCatalogClient.ServiceBindings(c.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		err = c.serviceCatalogClient.ServiceBindings(c.Namespace).Delete(serviceInstance.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrap(err, "unable to delete serviceBinding")
 		}
 		// now we perform the actual deletion
-		err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
+		err = c.serviceCatalogClient.ServiceInstances(c.Namespace).Delete(serviceInstance.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrap(err, "unable to delete serviceInstance")
 		}
@@ -2005,19 +2005,19 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 
 // CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
 // service instance created using the service's parameters.
-func (c *Client) CreateServiceBinding(componentName string, namespace string) error {
+func (c *Client) CreateServiceBinding(bindingName string, namespace string) error {
 	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
 		&scv1beta1.ServiceBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      componentName,
+				Name:      bindingName,
 				Namespace: namespace,
 			},
 			Spec: scv1beta1.ServiceBindingSpec{
 				//ExternalID: UUID,
 				ServiceInstanceRef: scv1beta1.LocalObjectReference{
-					Name: componentName,
+					Name: bindingName,
 				},
-				SecretName: componentName,
+				SecretName: bindingName,
 			},
 		})
 

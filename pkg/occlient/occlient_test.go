@@ -3532,6 +3532,89 @@ func TestGetServiceInstanceList(t *testing.T) {
 	}
 }
 
+func TestDeleteServiceInstance(t *testing.T) {
+
+	tests := []struct {
+		name        string
+		serviceName string
+		labels      map[string]string
+		serviceList scv1beta1.ServiceInstanceList
+		wantErr     bool
+	}{
+		{
+			name:        "Delete service instance",
+			serviceName: "mongodb",
+			labels: map[string]string{
+				applabels.ApplicationLabel:     "app",
+				componentlabels.ComponentLabel: "mongodb",
+			},
+			serviceList: scv1beta1.ServiceInstanceList{
+				Items: []scv1beta1.ServiceInstance{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mongodb",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "mongodb",
+								componentlabels.ComponentTypeLabel: "mongodb-persistent",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+
+			//fake the services listing
+			fkclientset.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.serviceList, nil
+			})
+
+			// Fake the servicebinding delete
+			fkclientset.ServiceCatalogClientSet.PrependReactor("delete", "servicebindings", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			// Fake the serviceinstance delete
+			fkclientset.ServiceCatalogClientSet.PrependReactor("delete", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
+			err := fkclient.DeleteServiceInstance(tt.labels)
+			// Checks for error in positive cases
+			if !tt.wantErr && (err != nil) {
+				t.Errorf(" client.DeleteServiceInstance(labels) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			// Check for validating actions performed
+			// deleting based on the labels means listing the services and then delete the instance and binding for each
+			// thus we have 1 list action that always takes place, plus another 2 (delete instance, delete binding)
+			// for each service
+			expectedNumberOfServiceCatalogActions := 1 + (2 * len(tt.serviceList.Items))
+			if len(fkclientset.ServiceCatalogClientSet.Actions()) != expectedNumberOfServiceCatalogActions && !tt.wantErr {
+				t.Errorf("expected %d action in CreateServiceInstace got: %v",
+					expectedNumberOfServiceCatalogActions, fkclientset.ServiceCatalogClientSet.Actions())
+			}
+
+			// Check that the correct service binding was deleted
+			DeletedServiceBinding := fkclientset.ServiceCatalogClientSet.Actions()[1].(ktesting.DeleteAction).GetName()
+			if DeletedServiceBinding != tt.serviceName {
+				t.Errorf("Delete action is performed with wrong ServiceBinding, expected: %s, got %s", tt.serviceName, DeletedServiceBinding)
+			}
+
+			// Check that the correct service instance was deleted
+			DeletedServiceInstance := fkclientset.ServiceCatalogClientSet.Actions()[2].(ktesting.DeleteAction).GetName()
+			if DeletedServiceInstance != tt.serviceName {
+				t.Errorf("Delete action is performed with wrong ServiceInstance, expected: %s, got %s", tt.serviceName, DeletedServiceInstance)
+			}
+		})
+	}
+}
+
 func TestPatchCurrentDC(t *testing.T) {
 	type args struct {
 		name              string

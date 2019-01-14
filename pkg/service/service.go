@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"strings"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -100,16 +101,40 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 	return nil
 }
 
-// DeleteService will delete the service with the provided `name`
-func DeleteService(client *occlient.Client, name string, applicationName string) error {
-
-	labels := componentlabels.GetLabels(name, applicationName, false)
+// DeleteServiceAndUnlinkComponents will delete the service with the provided `name`
+// it also removes links to that service in components of the application
+func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName string, applicationName string) error {
+	// first we attempt to delete the service instance itself
+	labels := componentlabels.GetLabels(serviceName, applicationName, false)
 	err := client.DeleteServiceInstance(labels)
 	if err != nil {
-		return errors.Wrapf(err, "unable to retrieve list of services")
+		return err
 	}
-	return nil
 
+	// lookup all the components of the application
+	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+	componentsDCs, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+	if err != nil {
+		return errors.Wrapf(err, "unable to list the components in order to check if they need to be unlinked")
+	}
+
+	// go through the components and check if they have the service name as part of the envFrom configuration
+	for _, dc := range componentsDCs {
+		for _, envFromSourceName := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
+			if envFromSourceName.SecretRef.Name == serviceName {
+				if componentName, ok := dc.Labels[componentlabels.ComponentLabel]; ok {
+					err := client.UnlinkSecret(serviceName, componentName, applicationName)
+					if err != nil {
+						glog.Warningf("Unable to unlink component %s from service", componentName)
+					} else {
+						glog.V(2).Infof("Component %s was succesfully unlinked from service", componentName)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // List lists all the deployed services

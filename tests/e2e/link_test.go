@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,7 +24,7 @@ var _ = Describe("odoLinkE2e", func() {
 		})
 	})
 
-	Context("odo link/unlink handling between components", func() {
+	Context("odo link/unlink handling between components and service", func() {
 
 		It("create a frontend and backend application", func() {
 			runCmd("odo create nodejs frontend")
@@ -41,6 +42,37 @@ var _ = Describe("odoLinkE2e", func() {
 			envFromOutput :=
 				runCmd("oc get dc frontend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
 			Expect(envFromOutput).To(ContainSubstring("backend"))
+		})
+
+		It("should be able to create a service", func() {
+			runCmd("odo service create mysql-persistent")
+
+			waitForCmdOut("oc get serviceinstance -o name", 1, func(output string) bool {
+				return strings.Contains(output, "mysql-persistent")
+			})
+		})
+
+		It("should link backend to service", func() {
+			runCmd("odo link mysql-persistent -w --component backend")
+
+			// ensure that the proper envFrom entry was created
+			envFromOutput :=
+				runCmd("oc get dc backend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
+			Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
+		})
+
+		It("delete the service", func() {
+			runCmd("odo service delete mysql-persistent -f")
+
+			// ensure that the backend no longer has an envFrom value
+			backendEnvFromOutput :=
+				runCmd("oc get dc backend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
+			Expect(backendEnvFromOutput).To(BeEmpty())
+
+			// ensure that the frontend envFrom was not changed
+			frontEndEnvFromOutput :=
+				runCmd("oc get dc frontend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
+			Expect(frontEndEnvFromOutput).To(ContainSubstring("backend"))
 		})
 
 		It("unlink the backend from the frontend", func() {
