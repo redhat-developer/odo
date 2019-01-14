@@ -1,6 +1,6 @@
 # Examples
 
-Odo is compatible with any language or runtime listed within OpenShift's catalog of component types.
+Odo is compatible with any language or runtime listed within OpenShift's catalog of component types. In order to access the component over the web, you can create a URL using `odo url create`.
 
 This can be found by using `odo catalog list components`.
 
@@ -10,6 +10,7 @@ Example:
 NAME        PROJECT       TAGS
 dotnet      openshift     2.0,latest
 httpd       openshift     2.4,latest
+java        openshift     8,latest
 nginx       openshift     1.10,1.12,1.8,latest
 nodejs      openshift     0.10,4,6,8,latest
 perl        openshift     5.16,5.20,5.24,latest
@@ -28,6 +29,14 @@ Build and serve static content via httpd on CentOS 7. For more information about
 
 ```sh
   odo create httpd --git https://github.com/openshift/httpd-ex.git
+```
+
+### java 
+
+Build and run fat JAR Java applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/fabric8io-images/s2i/blob/master/README.md.
+
+```sh
+  odo create java --git https://github.com/spring-projects/spring-petclinic.git
 ```
 
 ### nodejs
@@ -79,6 +88,18 @@ Build and run WildFly applications on CentOS 7. For more information about using
 ```
 
 ## Binary example
+
+### java 
+
+Java can be used to deploy binary artifact, for example:
+
+```sh
+  git clone https://github.com/spring-projects/spring-petclinic.git
+  cd spring-petclinic
+  mvn package
+  odo create java test3 --binary target/*.jar
+  odo push
+```
 
 ### wildfly
 
