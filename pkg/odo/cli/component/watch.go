@@ -104,7 +104,7 @@ var watchCmd = &cobra.Command{
 func NewCmdWatch() *cobra.Command {
 	// ignore git as it can change even if no source file changed
 	// for example some plugins providing git info in PS1 doing that
-	watchCmd.Flags().StringSliceVar(&ignores, "ignore", []string{}, "Files or folders to be ignored via regular expressions.")
+	watchCmd.Flags().StringSliceVar(&ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	watchCmd.Flags().IntVar(&delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	// Add a defined annotation in order to appear in the help menu
 	watchCmd.Annotations = map[string]string{"command": "component"}
