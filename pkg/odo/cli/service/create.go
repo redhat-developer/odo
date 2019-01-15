@@ -95,6 +95,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	return
 }
 
+// validateServiceName adopts the Validator interface and checks that the name of the service being created is valid
 func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 	s := i.(string)
 	err = util.ValidateName(s)
