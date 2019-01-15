@@ -2583,7 +2583,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 		}
 		if err != nil {
 			glog.Errorf("Error while creating tar: %#v", err)
-			os.Exit(-1)
+			os.Exit(1)
 		}
 
 	}()
