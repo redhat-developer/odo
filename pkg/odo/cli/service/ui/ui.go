@@ -17,7 +17,10 @@ import (
 	"strings"
 )
 
-const defaultIntegerValidatorKey = "odo_default_integer"
+const (
+	defaultIntegerValidatorKey    = "odo_default_integer"
+	defaultColumnNumberBeforeWrap = 80
+)
 
 // Validator is a function that validates that the provided interface is conform to expectations or return an error
 type Validator func(interface{}) error
@@ -181,7 +184,7 @@ func wrapIfNeeded(value string, prefixSize int) string {
 	// get the width of the terminal
 	width, _, err := terminal2.GetSize(0)
 	if err != nil {
-		width = 80
+		width = defaultColumnNumberBeforeWrap
 	}
 
 	// if the value length is greater than the width, wrap it
