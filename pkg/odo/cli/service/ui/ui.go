@@ -83,7 +83,7 @@ func getServiceClassNames(stringMap map[string]scv1beta1.ClusterServiceClass) (k
 func handleError(err error) {
 	if err != nil {
 		if err == terminal.InterruptErr {
-			os.Exit(-1)
+			os.Exit(1)
 		} else {
 			glog.V(4).Infof("Encountered an error processing prompt: %v", err)
 		}
