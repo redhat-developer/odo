@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -570,24 +571,25 @@ var _ = Describe("odoe2e", func() {
 			waitForDeleteCmd("odo project list", projName)
 		})
 	})
-	Context("validate odo version cmd with oc version", func() {
-		// test for odo version
-		It("should show the version of OpenShift server", func() {
+
+	Context("validate odo version cmd with other major components version", func() {
+		It("should show the version of odo major components", func() {
 			odoVersion := runCmd("odo version")
+			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+\s*\(\w+\)`)
+			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
+			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+\+\w+`)
+			kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
+			Expect(odoVersionStringMatch).Should(BeTrue())
+			Expect(kubernetesVersionStringMatch).Should(BeTrue())
+		})
 
-			ocServer := runCmd("oc version|grep Server|cut -d ' ' -f 2")
-			ocVersion := runCmd("oc version|grep openshift|cut -d ' ' -f 2")
-			k8sVersion := runCmd("oc version|grep kubernetes|tail -1|cut -d ' ' -f 2")
-
-			Expect(odoVersion).To(ContainSubstring("Server"))
-			Expect(odoVersion).To(ContainSubstring(ocServer))
-			Expect(odoVersion).To(ContainSubstring("OpenShift"))
-			Expect(odoVersion).To(ContainSubstring(ocVersion))
-			Expect(odoVersion).To(ContainSubstring("Kubernetes"))
-			Expect(odoVersion).To(ContainSubstring(k8sVersion))
+		It("should show server login URL", func() {
+			odoVersion := runCmd("odo version")
+			reServerURL := regexp.MustCompile(`Server:\s*https:\/\/([0-9]+.){3}[0-9]+:8443`)
+			serverURLStringMatch := reServerURL.MatchString(odoVersion)
+			Expect(serverURLStringMatch).Should(BeTrue())
 		})
 	})
-
 })
 
 var _ = Describe("updateE2e", func() {

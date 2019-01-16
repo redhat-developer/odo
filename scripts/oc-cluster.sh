@@ -3,6 +3,9 @@
 ## Script for installing and running `oc cluster up`
 ## Inspired by https://github.com/radanalyticsio/oshinko-cli/blob/master/.travis.yml
 
+## Use this variable to get more control over downloading client binary
+OPENSHIFT_CLIENT_BINARY_URL=${OPENSHIFT_CLIENT_BINARY_URL:-'https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz'}
+
 sudo service docker stop
 
 sudo sed -i -e 's/sock/sock --insecure-registry 172.30.0.0\/16/' /etc/default/docker
@@ -12,7 +15,7 @@ sudo service docker start
 sudo service docker status
 
 ## download oc binaries
-sudo wget https://github.com/openshift/origin/releases/download/v3.10.0/openshift-origin-client-tools-v3.10.0-dd10d17-linux-64bit.tar.gz -O /tmp/openshift-origin-client-tools.tar.gz 2> /dev/null > /dev/null
+sudo wget $OPENSHIFT_CLIENT_BINARY_URL -O /tmp/openshift-origin-client-tools.tar.gz 2> /dev/null > /dev/null
 
 sudo tar -xvzf /tmp/openshift-origin-client-tools.tar.gz --strip-components=1 -C /usr/local/bin
 
@@ -20,7 +23,8 @@ sudo tar -xvzf /tmp/openshift-origin-client-tools.tar.gz --strip-components=1 -C
 oc version
 
 ## below cmd is important to get oc working in ubuntu
-sudo docker run -v /:/rootfs -ti --rm --entrypoint=/bin/bash --privileged openshift/origin:v3.10.0 -c "mv /rootfs/bin/findmnt /rootfs/bin/findmnt.backup"
+OPENSHIFT_CLIENT_VERSION=`echo $OPENSHIFT_CLIENT_BINARY_URL | awk -F '//' '{print $2}' | cut -d '/' -f 6`
+sudo docker run -v /:/rootfs -ti --rm --entrypoint=/bin/bash --privileged openshift/origin:$OPENSHIFT_CLIENT_VERSION -c "mv /rootfs/bin/findmnt /rootfs/bin/findmnt.backup"
 
 while true; do
     if [ "$1" = "service-catalog" ]; then
