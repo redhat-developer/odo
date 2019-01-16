@@ -1,4 +1,4 @@
-// +build !windows,!js
+// +build !js,!appengine
 
 package runewidth
 
@@ -15,6 +15,7 @@ var _ sort.Interface = (*table)(nil)
 
 func init() {
 	os.Setenv("RUNEWIDTH_EASTASIAN", "")
+	handleEnv()
 }
 
 func (t table) Len() int {
@@ -61,7 +62,7 @@ func TestTableChecksums(t *testing.T) {
 	check(combining, 2097, "b1dabe5f35b7ccf868999bf6df6134f346ae14a4eb16f22e1dc8a98240ba1b53")
 	check(doublewidth, 180993, "06f5d5d5ebb8b9ee74fdf6003ecfbb313f9c042eb3cb4fce2a9e06089eb68dda")
 	check(ambiguous, 138739, "d05e339a10f296de6547ff3d6c5aee32f627f6555477afebd4a3b7e3cf74c9e3")
-	check(emoji, 119, "f27639895919692c22e46d710792cc3b5210359afb6c51acb9ec1a6588c55edd")
+	check(emoji, 1236, "9b2d75cf8ca48c5075c525a92ce5cf2608fa451c589f33d7d153e9df93f4e2f7")
 	check(notassigned, 846357, "b06b7acc03725de394d92b09306aa7a9c0c0b53f36884db4c835cbb04971e421")
 	check(neutral, 25561, "87fffca79a3a6d413d23adf1c591bdcc1ea5d906d0d466b12a76357bbbb74607")
 }
@@ -367,9 +368,37 @@ func TestEnv(t *testing.T) {
 	old := os.Getenv("RUNEWIDTH_EASTASIAN")
 	defer os.Setenv("RUNEWIDTH_EASTASIAN", old)
 
-	os.Setenv("RUNEWIDTH_EASTASIAN", "1")
+	os.Setenv("RUNEWIDTH_EASTASIAN", "0")
+	handleEnv()
 
 	if w := RuneWidth('│'); w != 1 {
 		t.Errorf("RuneWidth('│') = %d, want %d", w, 1)
+	}
+}
+
+func TestZeroWidthJointer(t *testing.T) {
+	c := NewCondition()
+	c.ZeroWidthJoiner = true
+
+	var tests = []struct {
+		in   string
+		want int
+	}{
+		{"👩", 2},
+		{"👩‍", 2},
+		{"👩‍🍳", 2},
+		{"‍🍳", 2},
+		{"👨‍👨", 2},
+		{"👨‍👨‍👧", 2},
+		{"🏳️‍🌈", 2},
+		{"あ👩‍🍳い", 6},
+		{"あ‍🍳い", 6},
+		{"あ‍い", 4},
+	}
+
+	for _, tt := range tests {
+		if got := c.StringWidth(tt.in); got != tt.want {
+			t.Errorf("StringWidth(%q) = %d, want %d", tt.in, got, tt.want)
+		}
 	}
 }

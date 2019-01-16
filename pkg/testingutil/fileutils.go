@@ -130,3 +130,36 @@ func SimulateFileModifications(basePath string, fileModification FileProperties)
 	}
 	return "", nil
 }
+
+// MakeFileWithContent creates file with a given name in the given directory and writes the content to it
+// dir is the name of the directory
+// fileName is the name of the file to be created
+// content is the string to be written to the file
+func MakeFileWithContent(dir string, fileName string, content string) error {
+	file, err := os.Create(dir + string(os.PathSeparator) + fileName)
+	if err != nil {
+		return errors.Wrapf(err, "error while creating file")
+	}
+	defer file.Close()
+	_, err = file.WriteString(content)
+	if err != nil {
+		return errors.Wrapf(err, "error while writing to file")
+	}
+	return nil
+}
+
+// RemoveContentsFromDir removes content from the given directory
+// dir is the name of the directory
+func RemoveContentsFromDir(dir string) error {
+	files, err := filepath.Glob(filepath.Join(dir, "*"))
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		err = os.RemoveAll(file)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

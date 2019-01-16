@@ -16,41 +16,74 @@ import (
 func TestIsRegExpMatch(t *testing.T) {
 
 	tests := []struct {
-		testName   string
-		strToMatch string
-		regExps    []string
-		want       bool
-		wantErr    bool
+		testName      string
+		directoryName string
+		strToMatch    string
+		globExps      []string
+		want          bool
+		wantErr       bool
 	}{
 		{
-			testName:   "Test regexp matches",
-			strToMatch: "/home/redhat/git-srcs/src/github.com/redhat-developer/nodejs-ex/.git/",
-			regExps:    []string{".*\\.git.*", "tests"},
-			want:       true,
-			wantErr:    false,
+			testName:      "Test glob matches",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/.git",
+			globExps:      []string{".git", "tests/"},
+			want:          true,
+			wantErr:       false,
 		},
 		{
-			testName:   "Test regexp does not match",
-			strToMatch: "/home/redhat/git-srcs/src/github.com/redhat-developer/nodejs-ex/gimmt.gimmt/",
-			regExps:    []string{".*\\.git.*", "tests"},
-			want:       false,
-			wantErr:    false,
+			testName:      "Test glob does not match",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/gimmt.gimmt",
+			globExps:      []string{".git/", "tests/"},
+			want:          false,
+			wantErr:       false,
 		},
 		{
-			testName:   "Test incorrect regexp",
-			strToMatch: "a(b",
-			regExps:    []string{"a(b"},
-			want:       false,
-			wantErr:    true,
+			testName:      "Test glob match files",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:      []string{"*.json", "tests/"},
+			want:          true,
+			wantErr:       false,
+		},
+		{
+			testName:      "Test '**' glob matches",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:      []string{"openshift/**/*.json"},
+			want:          true,
+			wantErr:       false,
+		},
+		{
+			testName:      "Test '!' in glob matches",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:      []string{"!*.json", "tests/"},
+			want:          false,
+			wantErr:       false,
+		},
+		{
+			testName:      "Test [ in glob matches",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:      []string{"["},
+			want:          false,
+			wantErr:       true,
+		},
+		{
+			testName:      "Test '#' comment glob matches",
+			directoryName: "/home/redhat/nodejs-ex/",
+			strToMatch:    "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:      []string{"#openshift/**/*.json"},
+			want:          false,
+			wantErr:       false,
 		},
 	}
 
-	// Test that it "joins"
-
 	for _, tt := range tests {
-		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			matched, err := isRegExpMatch(tt.strToMatch, tt.regExps)
+			matched, err := isGlobExpMatch(tt.directoryName, tt.strToMatch, tt.globExps)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)

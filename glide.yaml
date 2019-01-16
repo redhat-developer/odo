@@ -39,6 +39,8 @@ import:
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - package: github.com/posener/complete
   version: v1.1.2
+- package: github.com/gobwas/glob
+  version: e7a84e9525fe90abcda167b604e483cc959ad4aa
 - package: github.com/openshift/origin
   version: v3.11.0
   subpackages:

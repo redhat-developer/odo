@@ -1,13 +1,16 @@
 package util
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -341,10 +344,10 @@ func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max str
 // CheckPathExists checks if a path exists or not
 func CheckPathExists(path string) bool {
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		// path to file does not exist
-		glog.V(4).Infof("path %s doesn't exist, skipping it", path)
+		// path to file does exist
 		return true
 	}
+	glog.V(4).Infof("path %s doesn't exist, skipping it", path)
 	return false
 }
 
@@ -371,4 +374,49 @@ func GetHostWithPort(inputURL string) (string, error) {
 		address = fmt.Sprintf("%s:%s", u.Host, port)
 	}
 	return address, nil
+}
+
+// GetIgnoreRulesFromDirectory reads the .odoignore file, if present, and reads the rules from it
+// if the .odoignore file is not found, then .gitignore is searched for the rules
+// if both are not found, return emtpy array
+// directory is the name of the directory to look into for either of the files
+// rules is the array of rules (in string form)
+func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
+	rules := []string{".git"}
+	// checking for presence of .odoignore file
+	pathIgnore := path.Join(directory, ".odoignore")
+	if _, err := os.Stat(pathIgnore); os.IsNotExist(err) {
+		// .odoignore doesn't exist
+		// checking presence of .gitignore file
+		pathIgnore = path.Join(directory, ".gitignore")
+		if _, err := os.Stat(pathIgnore); os.IsNotExist(err) {
+			// both doesn't exist, return empty array
+			return rules, nil
+		}
+	}
+
+	file, err := os.Open(pathIgnore)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	scanner := bufio.NewReader(file)
+	for {
+		line, _, err := scanner.ReadLine()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			return rules, err
+		}
+		spaceTrimmedLine := strings.TrimSpace(string(line))
+		if len(spaceTrimmedLine) > 0 && !strings.HasPrefix(string(line), "#") && !strings.HasPrefix(string(line), ".git") {
+			rules = append(rules, string(line))
+		}
+	}
+
+	return rules, nil
 }
