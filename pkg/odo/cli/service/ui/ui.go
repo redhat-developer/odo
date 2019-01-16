@@ -187,7 +187,7 @@ func classInfoItem(name, value string) string {
 func wrapIfNeeded(value string, prefixSize int) string {
 	// get the width of the terminal
 	width, _, err := terminal2.GetSize(0)
-	if err != nil {
+	if width == 0 || err != nil {
 		// if for some reason we couldn't get the size use default value
 		width = defaultColumnNumberBeforeWrap
 	}
