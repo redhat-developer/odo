@@ -45,15 +45,6 @@ func FakeClusterServicePlan(name string, planNumber int) v1beta1.ClusterServiceP
 	}
 }
 
-// fakePlanExternalMetaDataRaw creates fake plan metadata for testing purposes
-func fakePlanExternalMetaDataRaw() ([][]byte, error) {
-	var data [][]byte
-	data = append(data, fakePlanExternalMetaData(1))
-	data = append(data, fakePlanExternalMetaData(2))
-
-	return data, nil
-}
-
 // fakePlanExternalMetaData creates fake plan metadata using "plan-name-<number>" as "displayName"
 func fakePlanExternalMetaData(number int) []byte {
 	planExternalMetaData1 := make(map[string]string)
