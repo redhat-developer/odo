@@ -18,6 +18,7 @@ func init() {
 }
 
 func TestEnterServicePropertiesInteractively(t *testing.T) {
+	// TODO: this test is currently skipped because it is not currently working properly. :(
 	t.Skip("TODO: Skip this test until we can figure out what is wrong with it")
 
 	planExternalMetaDataRaw, err := testingutil.FakePlanExternalMetaDataRaw()
