@@ -2150,12 +2150,10 @@ func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta
 	for _, class := range classes {
 		tags := class.Spec.Tags
 		category := "other"
-		if len(tags) > 0 {
+		if len(tags) > 0 && len(tags[0]) > 0 {
 			category = tags[0]
 		}
-		if len(category) > 0 {
-			categories[category] = append(categories[category], class)
-		}
+		categories[category] = append(categories[category], class)
 	}
 
 	return categories, err
