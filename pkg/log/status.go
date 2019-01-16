@@ -162,13 +162,13 @@ func Successf(format string, a ...interface{}) {
 // Errorf will output in an appropriate "progress" manner
 func Errorf(format string, a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Printf(" %s%s%s\n", red("✗"), suffixSpacing, fmt.Sprintf(format, a...))
+	fmt.Fprintf(os.Stderr, " %s%s%s\n", red("✗"), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Error will output in an appropriate "progress" manner
 func Error(a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Printf(" %s%s%s\n", red("✗"), suffixSpacing, fmt.Sprintln(a...))
+	fmt.Fprintf(os.Stderr, " %s%s%s\n", red("✗"), suffixSpacing, fmt.Sprintln(a...))
 }
 
 // Info will simply print out information on a new (bolded) line

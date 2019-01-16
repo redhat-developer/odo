@@ -27,8 +27,8 @@ func runCmd(cmdS string) string {
 }
 
 // runFailCmd runs a failing command
-// and returns the stdout
-func runFailCmd(cmdS string) string {
+// and returns the stdout and stderr
+func runFailCmd(cmdS string) (string, error) {
 	cmd := exec.Command("/bin/sh", "-c", cmdS)
 	fmt.Fprintf(GinkgoWriter, "Running command: %s\n", cmdS)
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -38,7 +38,7 @@ func runFailCmd(cmdS string) string {
 	Expect(session.ExitCode()).To(Equal(1))
 	Expect(err).NotTo(HaveOccurred())
 
-	return string(session.Out.Contents())
+	return string(session.Out.Contents()), err
 }
 
 // waitForCmdOut runs a command until it gets

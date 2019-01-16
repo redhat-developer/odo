@@ -947,7 +947,7 @@ var _ = Describe("updateE2e", func() {
 			runFailCmd("oc whoami")
 		})
 		It("should throw error if user is not logged in", func() {
-			logoutMsg := runFailCmd("odo logout")
+			logoutMsg, _ := runFailCmd("odo logout")
 			Expect(logoutMsg).To(Equal("Please log in to the cluster\n"))
 		})
 	})
