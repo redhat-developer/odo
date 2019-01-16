@@ -367,7 +367,7 @@ func NewServicePlan(result scv1beta1.ClusterServicePlan) (plan ServicePlan, err 
 	plan.Parameters = make([]ServicePlanParameter, 0, len(schema.Properties))
 	for k, v := range schema.Properties {
 		v.Name = k
-		// we set the Required flag is the name of parameter
+		// we set the Required flag if the name of parameter
 		// is one of the parameters indicated as required
 		// these parameters are not strictly required since they might have default values
 		v.Required = isRequired(schema.Required, k)
@@ -381,6 +381,7 @@ func NewServicePlan(result scv1beta1.ClusterServicePlan) (plan ServicePlan, err 
 	return
 }
 
+// isRequired checks whether the parameter with the specified name is among the given list of required ones
 func isRequired(required []string, name string) bool {
 	for _, n := range required {
 		if n == name {
