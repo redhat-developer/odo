@@ -35,12 +35,19 @@ For a full list of service types, use: 'odo catalog list services'`)
 
 // ServiceCreateOptions encapsulates the options for the odo service create command
 type ServiceCreateOptions struct {
-	parameters    []string
-	plan          string
-	serviceType   string
-	serviceName   string
+	// parameters hold the user-provided values for service class parameters via flags (populated by cobra)
+	parameters []string
+	// plan is the selected service plan
+	plan string
+	// serviceType corresponds to the service class name
+	serviceType string
+	// serviceName is how the service will be named and known by odo
+	serviceName string
+	// parametersMap is populated from the flag-provided values (parameters) and/or the interactive mode and is the expected format by the business logic
 	parametersMap map[string]string
-	interactive   bool
+	// interactive specifies whether the command operates in interactive mode or not
+	interactive bool
+	// generic context options common to all commands
 	*genericclioptions.Context
 }
 
