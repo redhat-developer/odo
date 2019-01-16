@@ -246,15 +246,15 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 					})
 
 					if !reflect.DeepEqual(wantedServicePlan.Parameters, gotServicePlan.Parameters) {
-						t.Errorf("Different plan parameters value. Expected: %v , got: %v", gotServicePlan.Parameters, wantedServicePlan.Parameters)
+						t.Errorf("Different plan parameters value. Expected: %v , got: %v", wantedServicePlan.Parameters, gotServicePlan.Parameters)
 					}
 
 					if !reflect.DeepEqual(wantedServicePlan.DisplayName, gotServicePlan.DisplayName) {
-						t.Errorf("Different plan display name value. Expected: %v , got: %v", gotServicePlan.DisplayName, wantedServicePlan.DisplayName)
+						t.Errorf("Different plan display name value. Expected: %v , got: %v", wantedServicePlan.DisplayName, gotServicePlan.DisplayName)
 					}
 
 					if !reflect.DeepEqual(wantedServicePlan.Description, gotServicePlan.Description) {
-						t.Errorf("Different plan description value. Expected: %v , got: %v", gotServicePlan.Description, wantedServicePlan.Description)
+						t.Errorf("Different plan description value. Expected: %v , got: %v", wantedServicePlan.Description, gotServicePlan.Description)
 					}
 				}
 
