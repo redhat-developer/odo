@@ -3191,7 +3191,7 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 	reader, writer := io.Pipe()
 	var rmPaths []string
 	if len(s2iPaths) == 0 || len(delSrcRelPaths) == 0 {
-		return fmt.Errorf("Failed to propogate deletions: s2iPaths: %+v and delSrcRelPaths: %+v", s2iPaths, delSrcRelPaths)
+		return fmt.Errorf("Failed to propagate deletions: s2iPaths: %+v and delSrcRelPaths: %+v", s2iPaths, delSrcRelPaths)
 	}
 	for _, s2iPath := range s2iPaths {
 		for _, delRelPath := range delSrcRelPaths {

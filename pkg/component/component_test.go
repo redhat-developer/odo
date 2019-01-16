@@ -2,6 +2,7 @@ package component
 
 import (
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
@@ -25,12 +26,6 @@ func TestGetS2IPaths(t *testing.T) {
 		podEnvs []corev1.EnvVar
 		want    []string
 	}{
-		/*
-			occlient.EnvS2IDeploymentDir,
-			occlient.EnvS2ISrcOrBinPath,
-			occlient.EnvS2IWorkingDir,
-			occlient.EnvS2ISrcBackupDir,
-		*/
 		{
 			name: "Case 1: odo expected s2i envs available",
 			podEnvs: []corev1.EnvVar{
@@ -53,10 +48,10 @@ func TestGetS2IPaths(t *testing.T) {
 			},
 			want: []string{
 				"/opt/app-root/backup",
-				"abc/src",
-				"def/src",
-				"ghi/src",
-				"ijk/src",
+				filepath.FromSlash("abc/src"),
+				filepath.FromSlash("def/src"),
+				filepath.FromSlash("ghi/src"),
+				filepath.FromSlash("ijk/src"),
 			},
 		},
 		{
@@ -77,9 +72,9 @@ func TestGetS2IPaths(t *testing.T) {
 			},
 			want: []string{
 				"/opt/app-root/backup",
-				"abc/src",
-				"def/src",
-				"ijk/src",
+				filepath.FromSlash("abc/src"),
+				filepath.FromSlash("def/src"),
+				filepath.FromSlash("ijk/src"),
 			},
 		},
 	}

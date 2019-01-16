@@ -421,7 +421,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	targetPath := fmt.Sprintf("%s/src", s2iSrcPath)
 
-	// If there are files identified as deleted, propogate them to the component pod
+	// If there are files identified as deleted, propagate them to the component pod
 	if len(delFiles) > 0 {
 		glog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
 		/*
@@ -431,10 +431,13 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 				working dir: Directory where, sources are copied over from deployment dir from where the s2i builds and deploys source.
 							 Deletes need to happen here as well otherwise, even if the latest source is copied over, the stale source files remain
 				source backup dir: Directory used for backing up source across multiple iterations of push and watch in component container
+								   In case of python, s2i image moves sources from destination dir to workingdir which means sources are deleted from destination dir
+								   So, during the subsequent watch pushing new diff to component pod, the source as a whole doesn't exist at destination dir and hence needs
+								   to be backed up.
 		*/
 		err := client.PropagateDeletes(pod.Name, delFiles, getS2IPaths(pod.Spec.Containers[0].Env))
 		if err != nil {
-			return errors.Wrapf(err, "unable to propogate file deletions %+v", delFiles)
+			return errors.Wrapf(err, "unable to propagate file deletions %+v", delFiles)
 		}
 	}
 

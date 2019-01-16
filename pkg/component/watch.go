@@ -248,7 +248,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 
 				lastChange = time.Now()
 				dirty = true
-				if event.Op&fsnotify.Remove == fsnotify.Remove {
+				// Rename operation triggers RENAME event on old path + CREATE event for renamed path so delete old path in case of rename
+				// Also weirdly, fsnotify raises a RENAME event for deletion of files/folders with space in their name so even that should be handled here
+				if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
 					if e := watcher.Remove(event.Name); e != nil {
 						glog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
 					}
@@ -256,7 +258,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 					if !alreadyInChangedFiles && !matched {
 						relPath, err := filepath.Rel(parameters.Path, event.Name)
 						if err != nil {
-							watchError = errors.Wrapf(err, "failed to propogate delete of file %s as its relative to %s couldn't be found", event.Name, parameters.Path)
+							watchError = errors.Wrapf(err, "failed to propagate delete of file %s as its relative to %s couldn't be found", event.Name, parameters.Path)
 						}
 						deletedPaths = append(deletedPaths, relPath)
 					}
