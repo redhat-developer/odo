@@ -3,6 +3,7 @@ package occlient
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"reflect"
 	"strings"
 	"testing"
@@ -4915,4 +4916,33 @@ func TestCreateBuildConfig(t *testing.T) {
 
 		})
 	}
+}
+
+func TestGetServiceClassesByCategory(t *testing.T) {
+	t.Run("GetServiceClassesByCategory should work", func(t *testing.T) {
+		client, fakeClientSet := FakeNew()
+		foo := testingutil.FakeClusterServiceClass("foo", "footag", "footag2")
+		bar := testingutil.FakeClusterServiceClass("bar", "")
+		boo := testingutil.FakeClusterServiceClass("boo")
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, &scv1beta1.ClusterServiceClassList{
+				Items: []scv1beta1.ClusterServiceClass{
+					foo,
+					bar,
+					boo,
+				},
+			}, nil
+		})
+
+		expected := map[string][]scv1beta1.ClusterServiceClass{"footag": {foo}, "other": {bar, boo}}
+		categories, err := client.GetServiceClassesByCategory()
+
+		if err != nil {
+			t.Errorf("test failed due to %s", err.Error())
+		}
+
+		if !reflect.DeepEqual(expected, categories) {
+			t.Errorf("test failed, expected %v, got %v", expected, categories)
+		}
+	})
 }

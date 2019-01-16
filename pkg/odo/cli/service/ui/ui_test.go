@@ -1,14 +1,13 @@
 package ui
 
 import (
-	"fmt"
 	"github.com/Netflix/go-expect"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
-	"k8s.io/apimachinery/pkg/runtime"
+	"reflect"
 	"testing"
 )
 
@@ -17,21 +16,24 @@ func init() {
 	core.DisableColor = true
 }
 
+func TestGetCategories(t *testing.T) {
+	t.Run("getServiceClassesCategories should work", func(t *testing.T) {
+		foo := testingutil.FakeClusterServiceClass("foo", "footag", "footag2")
+		bar := testingutil.FakeClusterServiceClass("bar", "")
+		boo := testingutil.FakeClusterServiceClass("boo")
+		classes := map[string][]scv1beta1.ClusterServiceClass{"footag": {foo}, "other": {bar, boo}}
+
+		categories := getServiceClassesCategories(classes)
+		expected := []string{"footag", "other"}
+		if !reflect.DeepEqual(expected, categories) {
+			t.Errorf("test failed, expected %v, got %v", expected, categories)
+		}
+	})
+}
+
 func TestEnterServicePropertiesInteractively(t *testing.T) {
 	// TODO: this test is currently skipped because it is not currently working properly. :(
 	t.Skip("TODO: Skip this test until we can figure out what is wrong with it")
-
-	planExternalMetaDataRaw, err := testingutil.FakePlanExternalMetaDataRaw()
-	if err != nil {
-		fmt.Printf("error occured %v during marshalling", err)
-		return
-	}
-
-	planServiceInstanceCreateParameterSchemasRaw, err := testingutil.FakePlanServiceInstanceCreateParameterSchemasRaw()
-	if err != nil {
-		fmt.Printf("error occured %v during marshalling", err)
-		return
-	}
 
 	tests := []struct {
 		name           string
@@ -39,20 +41,8 @@ func TestEnterServicePropertiesInteractively(t *testing.T) {
 		expectedValues map[string]string
 	}{
 		{
-			name: "test 1 : with correct values",
-			servicePlan: scv1beta1.ClusterServicePlan{
-				Spec: scv1beta1.ClusterServicePlanSpec{
-					ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-						Name: "1dda1477cace09730bd8ed7a6505607e",
-					},
-					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName:                         "dev",
-						Description:                          "this is a example description 1",
-						ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
-						ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[0]},
-					},
-				},
-			},
+			name:        "test 1 : with correct values",
+			servicePlan: testingutil.FakeClusterServicePlan("dev", 1),
 			expectedValues: map[string]string{
 				"PLAN_DATABASE_URI":      "someuri",
 				"PLAN_DATABASE_USERNAME": "default",

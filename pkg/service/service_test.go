@@ -32,21 +32,11 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 		return
 	}
 
-	planExternalMetaDataRaw, err := testingutil.FakePlanExternalMetaDataRaw()
-	if err != nil {
-		fmt.Printf("error occured %v during marshalling", err)
-		return
-	}
-
-	planServiceInstanceCreateParameterSchemasRaw, err := testingutil.FakePlanServiceInstanceCreateParameterSchemasRaw()
-	if err != nil {
-		fmt.Printf("error occured %v during marshalling", err)
-		return
-	}
-
 	type args struct {
 		ServiceName string
 	}
+	plan1 := testingutil.FakeClusterServicePlan("dev", 1)
+	plan2 := testingutil.FakeClusterServicePlan("prod", 2)
 	tests := []struct {
 		name                 string
 		args                 args
@@ -80,34 +70,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 					},
 				},
 			},
-			returnedServicePlan: []scv1beta1.ClusterServicePlan{
-				{
-					Spec: scv1beta1.ClusterServicePlanSpec{
-						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-							Name: "1dda1477cace09730bd8ed7a6505607e",
-						},
-						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-							ExternalName:                         "dev",
-							Description:                          "this is a example description 1",
-							ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
-							ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[0]},
-						},
-					},
-				},
-				{
-					Spec: scv1beta1.ClusterServicePlanSpec{
-						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-							Name: "1dda1477cace09730bd8ed7a6505607e",
-						},
-						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-							ExternalName:                         "prod",
-							Description:                          "this is a example description 2",
-							ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[1]},
-							ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[1]},
-						},
-					},
-				},
-			},
+			returnedServicePlan: []scv1beta1.ClusterServicePlan{plan1, plan2},
 			wantedServiceClass: ServiceClass{
 				Name:              "class name",
 				ShortDescription:  "example description",

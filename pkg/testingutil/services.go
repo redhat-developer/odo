@@ -2,39 +2,71 @@ package testingutil
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
+	"fmt"
+	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // M is an alias for map[string]interface{}
 type M map[string]interface{}
 
-// FakePlanExternalMetaDataRaw creates fake plan metadata for testing purposes
-func FakePlanExternalMetaDataRaw() ([][]byte, error) {
-	planExternalMetaData1 := make(map[string]string)
-	planExternalMetaData1["displayName"] = "plan-name-1"
-
-	planExternalMetaData2 := make(map[string]string)
-	planExternalMetaData2["displayName"] = "plan-name-2"
-
-	planExternalMetaDataRaw1, err := json.Marshal(planExternalMetaData1)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
+// FakeClusterServiceClass creates a fake service class with the specified name for testing purposes
+func FakeClusterServiceClass(name string, tags ...string) v1beta1.ClusterServiceClass {
+	class := v1beta1.ClusterServiceClass{
+		Spec: v1beta1.ClusterServiceClassSpec{
+			CommonServiceClassSpec: v1beta1.CommonServiceClassSpec{
+				ExternalName: name,
+			},
+		},
 	}
 
-	planExternalMetaDataRaw2, err := json.Marshal(planExternalMetaData2)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
+	if len(tags) > 0 {
+		class.Spec.Tags = tags
 	}
 
+	return class
+}
+
+// FakeClusterServicePlan creates a fake plan with the specified external name and using planNumber to customize description,
+// metadata and parameter values
+func FakeClusterServicePlan(name string, planNumber int) v1beta1.ClusterServicePlan {
+	return v1beta1.ClusterServicePlan{
+		Spec: v1beta1.ClusterServicePlanSpec{
+			ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+				Name: "1dda1477cace09730bd8ed7a6505607e",
+			},
+			CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+				ExternalName:                         name,
+				Description:                          fmt.Sprintf("this is a example description %d", planNumber),
+				ExternalMetadata:                     &runtime.RawExtension{Raw: fakePlanExternalMetaData(planNumber)},
+				ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: FakePlanServiceInstanceCreateParameterSchemasRaw()[(planNumber-1)%2]},
+			},
+		},
+	}
+}
+
+// fakePlanExternalMetaDataRaw creates fake plan metadata for testing purposes
+func fakePlanExternalMetaDataRaw() ([][]byte, error) {
 	var data [][]byte
-	data = append(data, planExternalMetaDataRaw1)
-	data = append(data, planExternalMetaDataRaw2)
+	data = append(data, fakePlanExternalMetaData(1))
+	data = append(data, fakePlanExternalMetaData(2))
 
 	return data, nil
 }
 
+// fakePlanExternalMetaData creates fake plan metadata using "plan-name-<number>" as "displayName"
+func fakePlanExternalMetaData(number int) []byte {
+	planExternalMetaData1 := make(map[string]string)
+	planExternalMetaData1["displayName"] = fmt.Sprintf("plan-name-%d", number)
+	planExternalMetaDataRaw1, err := json.Marshal(planExternalMetaData1)
+	if err != nil {
+		panic(err)
+	}
+	return planExternalMetaDataRaw1
+}
+
 // FakePlanServiceInstanceCreateParameterSchemasRaw creates 2 create parameter schemas for testing purposes
-func FakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
+func FakePlanServiceInstanceCreateParameterSchemasRaw() [][]byte {
 	planServiceInstanceCreateParameterSchema1 := make(M)
 	planServiceInstanceCreateParameterSchema1["required"] = []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"}
 	planServiceInstanceCreateParameterSchema1["properties"] = map[string]M{
@@ -70,14 +102,14 @@ func FakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
 	planServiceInstanceCreateParameterSchemaRaw1, err := json.Marshal(planServiceInstanceCreateParameterSchema1)
 	if err != nil {
 		if err != nil {
-			return nil, errors.Wrap(err, "")
+			panic(err)
 		}
 	}
 
 	planServiceInstanceCreateParameterSchemaRaw2, err := json.Marshal(planServiceInstanceCreateParameterSchema2)
 	if err != nil {
 		if err != nil {
-			return nil, errors.Wrap(err, "")
+			panic(err)
 		}
 	}
 
@@ -85,5 +117,5 @@ func FakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
 	data = append(data, planServiceInstanceCreateParameterSchemaRaw1)
 	data = append(data, planServiceInstanceCreateParameterSchemaRaw2)
 
-	return data, nil
+	return data
 }
