@@ -48,7 +48,24 @@ func NewParsedArgs(args complete.Args, cmd *cobra.Command) parsedArgs {
 	typed := getUserTypedCommands(args, cmd)
 	commands, flagValues := getCommandsAndFlags(typed, cmd)
 
-	complete.Log("Parsed flag values: %v", flagValues)
+	complete.Log("Parsed commands values for full input: %v", commands)
+	complete.Log("Parsed flag values for full input: %v", flagValues)
+
+	// this part is meant to handle incomplete flags when other input already exists,
+	// so 2 tokens is the minimum that makes sense
+	if len(typed) > 2 {
+		typedWithoutLast := make([]string, len(typed))
+		copy(typedWithoutLast, typed)
+		typedWithoutLast = typedWithoutLast[:len(typedWithoutLast)-1]
+		_, flagValuesWithoutLast := getCommandsAndFlags(typedWithoutLast, cmd)
+
+		complete.Log("Parsed flag values for input without last: %v", flagValuesWithoutLast)
+
+		// now we merge the two maps
+		for k, v := range flagValuesWithoutLast {
+			flagValues[k] = v
+		}
+	}
 
 	parsed := parsedArgs{
 		original:   args,

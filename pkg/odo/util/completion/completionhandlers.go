@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"fmt"
 	"strings"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -39,14 +40,90 @@ var ServiceClassCompletionHandler = func(cmd *cobra.Command, args parsedArgs, co
 	completions = make([]string, 0)
 	services, err := context.Client.GetClusterServiceClasses()
 	if err != nil {
+		complete.Log("error retrieving services")
 		return completions
 	}
 
+	complete.Log(fmt.Sprintf("found %d services", len(services)))
 	for _, class := range services {
 		completions = append(completions, class.Spec.ExternalName)
 	}
 
 	return
+}
+
+// ServicePlanCompletionHandler provides completion for the the plan of a selected service
+var ServicePlanCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
+	completions = make([]string, 0)
+	if len(args.original.Completed) < 2 {
+		complete.Log("Couldn't extract the service name")
+		return completions
+	}
+
+	inputServiceName := args.original.Completed[1]
+
+	complete.Log(fmt.Sprintf("Using input: serviceName = %s", inputServiceName))
+
+	_, servicePlans, err := service.GetServiceClassAndPlans(context.Client, inputServiceName)
+	if err != nil {
+		complete.Log("Error retrieving details of service")
+		return completions
+	}
+
+	for _, servicePlan := range servicePlans {
+		completions = append(completions, servicePlan.Name)
+	}
+
+	return completions
+}
+
+// ServiceParameterCompletionHandler provides completion for the parameter names of a selected service and plan
+var ServiceParameterCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
+	completions = make([]string, 0)
+	if len(args.original.Completed) < 2 {
+		complete.Log("Couldn't extract the service name")
+		return completions
+	}
+
+	inputServiceName := args.original.Completed[1]
+	inputPlanName := args.flagValues["plan"]
+
+	complete.Log(fmt.Sprintf("Using input: serviceName = %s, servicePlan = %s", inputServiceName, inputPlanName))
+
+	_, servicePlans, err := service.GetServiceClassAndPlans(context.Client, inputServiceName)
+	if err != nil {
+		complete.Log("Error retrieving details of service")
+		return completions
+	}
+
+	var matchingServicePlan *service.ServicePlan = nil
+	if len(servicePlans) == 0 {
+		complete.Log("Service has no plans so no parameters can be found")
+		return completions
+	} else if len(servicePlans) == 1 && inputPlanName == "" {
+		matchingServicePlan = &servicePlans[0]
+	} else {
+		for _, servicePlan := range servicePlans {
+			if servicePlan.Name == inputPlanName {
+				matchingServicePlan = &servicePlan
+				break
+			}
+		}
+		if matchingServicePlan == nil {
+			complete.Log("No service plan for the service matched the supplied plan name")
+			return completions
+		}
+	}
+
+	alreadyAddedParameters := args.flagValues["parameters"]
+	for _, servicePlanParameter := range matchingServicePlan.Parameters {
+		// don't add the parameter if it's already on the command line
+		if !strings.Contains(alreadyAddedParameters, servicePlanParameter.Name) {
+			completions = append(completions, servicePlanParameter.Name)
+		}
+	}
+
+	return completions
 }
 
 // AppCompletionHandler provides completion for the app commands

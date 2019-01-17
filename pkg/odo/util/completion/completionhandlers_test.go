@@ -1,6 +1,10 @@
 package completion
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/posener/complete"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"reflect"
 	"sort"
 	"testing"
@@ -17,6 +21,239 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
+
+func TestServicePlanCompletionHandler(t *testing.T) {
+
+	classExternalMetaData := make(map[string]interface{})
+	classExternalMetaDataRaw, err := json.Marshal(classExternalMetaData)
+	if err != nil {
+		fmt.Printf("error occured %v during marshalling", err)
+		return
+	}
+
+	serviceClassList := &scv1beta1.ClusterServiceClassList{
+		Items: []scv1beta1.ClusterServiceClass{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: "1dda1477cace09730bd8ed7a6505607e"},
+				Spec: scv1beta1.ClusterServiceClassSpec{
+					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+						ExternalName:     "class name",
+						ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
+					},
+					ClusterServiceBrokerName: "broker name",
+				},
+			},
+		},
+	}
+	tests := []struct {
+		name                 string
+		returnedServiceClass *scv1beta1.ClusterServiceClassList
+		returnedServicePlan  []scv1beta1.ClusterServicePlan
+		output               []string
+		parsedArgs           parsedArgs
+	}{
+		{
+			name: "Case 0: no service name supplied",
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create"},
+				},
+			},
+			output: []string{},
+		},
+		{
+			name:                 "Case 1: single plan exists",
+			returnedServiceClass: serviceClassList,
+			returnedServicePlan:  []scv1beta1.ClusterServicePlan{testingutil.FakeClusterServicePlan("default", 1)},
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create", "class name"},
+				},
+			},
+			output: []string{"default"},
+		},
+		{
+			name:                 "Case 2: multiple plans exist",
+			returnedServiceClass: serviceClassList,
+			returnedServicePlan: []scv1beta1.ClusterServicePlan{
+				testingutil.FakeClusterServicePlan("plan1", 1),
+				testingutil.FakeClusterServicePlan("plan2", 2),
+			},
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create", "class name"},
+				},
+			},
+			output: []string{"plan1", "plan2"},
+		},
+	}
+
+	for _, tt := range tests {
+		client, fakeClientSet := occlient.FakeNew()
+		context := genericclioptions.NewFakeContext("project", "app", "component", client)
+
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, tt.returnedServiceClass, nil
+		})
+
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, &scv1beta1.ClusterServicePlanList{Items: tt.returnedServicePlan}, nil
+		})
+
+		completions := ServicePlanCompletionHandler(nil, tt.parsedArgs, context)
+		sort.Strings(completions)
+
+		// Sort the output and expected o/p in-order to avoid issues due to order as its not important
+		sort.Strings(completions)
+		sort.Strings(tt.output)
+
+		if !reflect.DeepEqual(tt.output, completions) {
+			t.Errorf("expected output: %#v,got: %#v", tt.output, completions)
+		}
+	}
+}
+
+func TestServiceParameterCompletionHandler(t *testing.T) {
+
+	classExternalMetaData := make(map[string]interface{})
+	classExternalMetaDataRaw, err := json.Marshal(classExternalMetaData)
+	if err != nil {
+		fmt.Printf("error occured %v during marshalling", err)
+		return
+	}
+
+	serviceClassList := &scv1beta1.ClusterServiceClassList{
+		Items: []scv1beta1.ClusterServiceClass{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: "1dda1477cace09730bd8ed7a6505607e"},
+				Spec: scv1beta1.ClusterServiceClassSpec{
+					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
+						ExternalName:     "class name",
+						ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
+					},
+					ClusterServiceBrokerName: "broker name",
+				},
+			},
+		},
+	}
+	tests := []struct {
+		name                 string
+		returnedServiceClass *scv1beta1.ClusterServiceClassList
+		returnedServicePlan  []scv1beta1.ClusterServicePlan
+		output               []string
+		parsedArgs           parsedArgs
+	}{
+		{
+			name: "Case 0: no service name supplied",
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create"},
+				},
+			},
+			output: []string{},
+		},
+		{
+			name:                 "Case 1: no plan supplied and single plan exists",
+			returnedServiceClass: serviceClassList,
+			returnedServicePlan:  []scv1beta1.ClusterServicePlan{testingutil.FakeClusterServicePlan("default", 1)},
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create", "class name"},
+				},
+			},
+			output: []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD", "SOME_OTHER"},
+		},
+		{
+			name:                 "Case 2: no plan supplied and multiple plans exists",
+			returnedServiceClass: serviceClassList,
+			returnedServicePlan: []scv1beta1.ClusterServicePlan{
+				testingutil.FakeClusterServicePlan("plan1", 1),
+				testingutil.FakeClusterServicePlan("plan2", 2),
+			},
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create", "class name"},
+				},
+			},
+			output: []string{},
+		},
+		{
+			name:                 "Case 3: plan supplied but doesn't match",
+			returnedServiceClass: serviceClassList,
+			returnedServicePlan:  []scv1beta1.ClusterServicePlan{testingutil.FakeClusterServicePlan("default", 1)},
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create", "class name"},
+				},
+				flagValues: map[string]string{"plan": "other"},
+			},
+			output: []string{},
+		},
+		{
+			name:                 "Case 4: matching plan supplied and no other parameters supplied",
+			returnedServiceClass: serviceClassList,
+			returnedServicePlan: []scv1beta1.ClusterServicePlan{
+				testingutil.FakeClusterServicePlan("plan2", 2),
+				testingutil.FakeClusterServicePlan("plan1", 1),
+			},
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create", "class name"},
+				},
+				flagValues: map[string]string{"plan": "plan1"},
+			},
+			output: []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD", "SOME_OTHER"},
+		},
+		{
+			name:                 "Case 5: no plan supplied but some other parameters supplied",
+			returnedServiceClass: serviceClassList,
+			returnedServicePlan:  []scv1beta1.ClusterServicePlan{testingutil.FakeClusterServicePlan("default", 1)},
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create", "class name"},
+				},
+				flagValues: map[string]string{"parameters": "[PLAN_DATABASE_USERNAME, SOME_OTHER]"},
+			},
+			output: []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_PASSWORD"},
+		},
+		{
+			name:                 "Case 6: matching plan supplied but some other parameters supplied",
+			returnedServiceClass: serviceClassList,
+			returnedServicePlan:  []scv1beta1.ClusterServicePlan{testingutil.FakeClusterServicePlan("default", 1)},
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"create", "class name"},
+				},
+				flagValues: map[string]string{"plan": "default", "parameters": "[PLAN_DATABASE_USERNAME]"},
+			},
+			output: []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_PASSWORD", "SOME_OTHER"},
+		},
+	}
+
+	for _, tt := range tests {
+		client, fakeClientSet := occlient.FakeNew()
+		context := genericclioptions.NewFakeContext("project", "app", "component", client)
+
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, tt.returnedServiceClass, nil
+		})
+
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, &scv1beta1.ClusterServicePlanList{Items: tt.returnedServicePlan}, nil
+		})
+
+		completions := ServiceParameterCompletionHandler(nil, tt.parsedArgs, context)
+		sort.Strings(completions)
+
+		// Sort the output and expected o/p in-order to avoid issues due to order as its not important
+		sort.Strings(completions)
+		sort.Strings(tt.output)
+
+		if !reflect.DeepEqual(tt.output, completions) {
+			t.Errorf("expected output: %#v,got: %#v", tt.output, completions)
+		}
+	}
+}
 
 func TestLinkCompletionHandler(t *testing.T) {
 
