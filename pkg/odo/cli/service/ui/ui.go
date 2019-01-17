@@ -149,21 +149,28 @@ func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterSe
 	return classes[serviceType], serviceType
 }
 
+// classInfoItem computes how a given service class information item should be displayed
 func classInfoItem(name, value string) string {
 	// wrap value if needed accounting for size of value "header" (its name)
 	value = wrapIfNeeded(value, len(name)+3)
 
 	if len(value) > 0 {
+		// display the name using the default color, in bold and then reset style right after
 		return ansi.ColorCode("default+b") + name + ansi.ColorCode("reset") + ": " + value + "\n"
 	}
 	return ""
 }
 
+const defaultColumnNumberBeforeWrap = 80
+
+// wrapIfNeeded wraps the given string taking the given prefix size into account based on the width of the terminal (or
+// defaultColumnNumberBeforeWrap if terminal size cannot be determined).
 func wrapIfNeeded(value string, prefixSize int) string {
 	// get the width of the terminal
 	width, _, err := terminal2.GetSize(0)
-	if err != nil {
-		width = 80
+	if width == 0 || err != nil {
+		// if for some reason we couldn't get the size use default value
+		width = defaultColumnNumberBeforeWrap
 	}
 
 	// if the value length is greater than the width, wrap it

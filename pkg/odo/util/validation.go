@@ -30,9 +30,11 @@ func validateNameAsValidator(name interface{}) error {
 	return ValidateName(s)
 }
 
-// NameValidatorKey is the key used to identify the validator associated with ValidateName function
-const NameValidatorKey = "odo_name_validator"
-const defaultIntegerValidatorKey = "odo_default_integer"
+const (
+	// NameValidatorKey is the key used to identify the validator associated with ValidateName function
+	NameValidatorKey           = "odo_name_validator"
+	defaultIntegerValidatorKey = "odo_default_integer"
+)
 
 // Validatable represents a common ancestor for validatable parameters
 type Validatable struct {
@@ -56,7 +58,13 @@ var validators = make(map[string]Validator)
 
 // GetValidatorFor retrieves a validator for the specified validatable, first validating its required state, then its value
 // based on type then any additional validators in the order specified by Validatable.AdditionalValidators
-func GetValidatorFor(prop Validatable) (validator Validator) {
+func GetValidatorFor(prop Validatable) Validator {
+	v, _ := internalGetValidatorFor(prop)
+	return v
+}
+
+// internalGetValidatorFor exposed for testing purposes
+func internalGetValidatorFor(prop Validatable) (validator Validator, chain []survey.Validator) {
 	// make sure we don't run into issues when composing validators
 	validatorChain := make([]survey.Validator, 0, 5)
 
@@ -76,10 +84,10 @@ func GetValidatorFor(prop Validatable) (validator Validator) {
 	}
 
 	if len(validatorChain) > 0 {
-		return Validator(survey.ComposeValidators(validatorChain...))
+		return Validator(survey.ComposeValidators(validatorChain...)), validatorChain
 	}
 
-	return nilValidator
+	return nilValidator, validatorChain
 }
 
 // init initializes the default validators

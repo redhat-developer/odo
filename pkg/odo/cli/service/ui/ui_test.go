@@ -6,7 +6,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"reflect"
@@ -189,42 +188,6 @@ func TestGetLongDescription(t *testing.T) {
 			output := getLongDescription(tt.input)
 			if tt.expected != output {
 				t.Errorf("test failed, expected %s, got %s", tt.expected, output)
-			}
-		})
-	}
-}
-
-func TestGetValidator(t *testing.T) {
-	// TODO: improve this only test the most basic cases but this is quite difficult to test
-	tests := []struct {
-		name     string
-		prop     service.ServicePlanParameter
-		expected survey.Validator
-	}{
-		{
-			name:     "default",
-			prop:     service.ServicePlanParameter{},
-			expected: nilValidator,
-		},
-		{
-			name:     "required",
-			prop:     service.ServicePlanParameter{Required: true},
-			expected: survey.Required,
-		},
-		{
-			name:     "unknown type",
-			prop:     service.ServicePlanParameter{Type: "foo"},
-			expected: nilValidator,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			output := getValidatorFor(tt.prop)
-			f1 := reflect.ValueOf(tt.expected).Pointer()
-			f2 := reflect.ValueOf(output).Pointer()
-			if f1 != f2 {
-				t.Errorf("test failed, expected %v, got %v", tt.expected, output)
 			}
 		})
 	}
