@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
@@ -99,8 +100,8 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		component.NewCmdCreate(),
 		component.NewCmdDelete(),
 		component.NewCmdDescribe(),
-		component.NewCmdLink(component.RecommendedLinkCommandName, fullName+" "+component.RecommendedLinkCommandName),
-		component.NewCmdUnlink(component.RecommendedUnlinkCommandName, fullName+" "+component.RecommendedUnlinkCommandName),
+		component.NewCmdLink(component.RecommendedLinkCommandName, util.GetFullName(fullName, component.RecommendedLinkCommandName)),
+		component.NewCmdUnlink(component.RecommendedUnlinkCommandName, util.GetFullName(fullName, component.RecommendedUnlinkCommandName)),
 		component.NewCmdList(),
 		component.NewCmdLog(),
 		component.NewCmdPush(),
@@ -109,7 +110,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		login.NewCmdLogin(),
 		logout.NewCmdLogout(),
 		project.NewCmdProject(),
-		service.NewCmdService(service.RecommendedCommandName, fullName+" "+service.RecommendedCommandName),
+		service.NewCmdService(service.RecommendedCommandName, util.GetFullName(fullName, service.RecommendedCommandName)),
 		storage.NewCmdStorage(),
 		url.NewCmdURL(),
 		utils.NewCmdUtils(),
