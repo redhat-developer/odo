@@ -12,15 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var catalogCmd = &cobra.Command{
-	Use:   "catalog [options]",
-	Short: "Catalog related operations",
-	Long:  "Catalog related operations",
-	Example: fmt.Sprintf("%s\n%s\n%s",
-		catalogListCmd.Example,
-		catalogSearchCmd.Example,
-		catalogDescribeCmd.Example),
-}
+// RecommendedCatalogCommandName is the recommended catalog command name
+const RecommendedCatalogCommandName = "catalog"
 
 func displayServices(services []occlient.Service) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -42,7 +35,17 @@ func filterHiddenServices(services []occlient.Service) []occlient.Service {
 }
 
 // NewCmdCatalog implements the odo catalog command
-func NewCmdCatalog() *cobra.Command {
+func NewCmdCatalog(name, fullName string) *cobra.Command {
+	catalogCmd := &cobra.Command{
+		Use:   fmt.Sprintf("%s [options]", name),
+		Short: "Catalog related operations",
+		Long:  "Catalog related operations",
+		Example: fmt.Sprintf("%s\n%s\n%s",
+			catalogListCmd.Example,
+			catalogSearchCmd.Example,
+			catalogDescribeCmd.Example),
+	}
+
 	catalogCmd.AddCommand(catalogSearchCmd)
 	catalogCmd.AddCommand(catalogListCmd)
 	catalogCmd.AddCommand(catalogDescribeCmd)
