@@ -2124,6 +2124,61 @@ type Service struct {
 	PlanList []string
 }
 
+// GetServiceClass retrieves the ClusterServiceClass identified by the specified external name
+func (c *Client) GetServiceClass(externalName string) (class *scv1beta1.ClusterServiceClass, err error) {
+	classes, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{
+		FieldSelector: "spec.externalName==" + externalName,
+	})
+
+	if len(classes.Items) != 1 {
+		return nil, fmt.Errorf("%s: unknown service class", externalName)
+	}
+
+	return &classes.Items[0], err
+}
+
+// GetServiceClassesByCategory retrieves a map associating category name to ClusterServiceClasses matching the category
+func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta1.ClusterServiceClass, err error) {
+	categories = make(map[string][]scv1beta1.ClusterServiceClass)
+	classes, err := c.GetClusterServiceClasses()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get cluster service classes")
+	}
+
+	// TODO: Should we replicate the classification performed in
+	// https://github.com/openshift/console/blob/master/frontend/public/components/catalog/catalog-items.jsx?
+	for _, class := range classes {
+		tags := class.Spec.Tags
+		category := "other"
+		if len(tags) > 0 && len(tags[0]) > 0 {
+			category = tags[0]
+		}
+		categories[category] = append(categories[category], class)
+	}
+
+	return categories, err
+}
+
+// GetMatchingPlans retrieves a map associating service plan name to service plan instance associated with the specified service
+// class
+func (c *Client) GetMatchingPlans(class scv1beta1.ClusterServiceClass) (plans map[string]scv1beta1.ClusterServicePlan, err error) {
+	planList, err := c.serviceCatalogClient.ClusterServicePlans().List(metav1.ListOptions{
+		FieldSelector: "spec.clusterServiceClassRef.name==" + class.Spec.ExternalID,
+	})
+
+	plans = make(map[string]scv1beta1.ClusterServicePlan)
+	for _, v := range planList.Items {
+		plans[v.Spec.ExternalName] = v
+	}
+	return plans, err
+}
+
+// DoesPlanExist checks whether a plan with the specified name exists
+func (c *Client) DoesPlanExist(planName string) (bool, error) {
+	plan, e := c.serviceCatalogClient.ClusterServicePlans().Get(planName, metav1.GetOptions{})
+	return plan != nil, e
+}
+
 // GetClusterServiceClassExternalNamesAndPlans returns the names of all the cluster service
 // classes in the cluster
 func (c *Client) GetClusterServiceClassExternalNamesAndPlans() ([]Service, error) {

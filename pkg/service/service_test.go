@@ -3,13 +3,14 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/testingutil"
+
 	"reflect"
 	"sort"
 	"testing"
 
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
-	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/occlient"
@@ -18,87 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
-
-// M is an alias for map[string]interface{}
-type M map[string]interface{}
-
-func fakePlanExternalMetaDataRaw() ([][]byte, error) {
-	planExternalMetaData1 := make(map[string]string)
-	planExternalMetaData1["displayName"] = "plan-name-1"
-
-	planExternalMetaData2 := make(map[string]string)
-	planExternalMetaData2["displayName"] = "plan-name-2"
-
-	planExternalMetaDataRaw1, err := json.Marshal(planExternalMetaData1)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
-	}
-
-	planExternalMetaDataRaw2, err := json.Marshal(planExternalMetaData2)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
-	}
-
-	var data [][]byte
-	data = append(data, planExternalMetaDataRaw1)
-	data = append(data, planExternalMetaDataRaw2)
-
-	return data, nil
-}
-
-func fakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
-	planServiceInstanceCreateParameterSchema1 := make(M)
-	planServiceInstanceCreateParameterSchema1["required"] = []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"}
-	planServiceInstanceCreateParameterSchema1["properties"] = map[string]M{
-		"PLAN_DATABASE_URI": {
-			"default": "someuri",
-			"type":    "string",
-		},
-		"PLAN_DATABASE_USERNAME": {
-			"default": "name",
-			"type":    "string",
-		},
-		"PLAN_DATABASE_PASSWORD": {
-			"type": "string",
-		},
-		"SOME_OTHER": {
-			"default": "other",
-			"type":    "string",
-		},
-	}
-
-	planServiceInstanceCreateParameterSchema2 := make(M)
-	planServiceInstanceCreateParameterSchema2["required"] = []string{"PLAN_DATABASE_USERNAME_2", "PLAN_DATABASE_PASSWORD"}
-	planServiceInstanceCreateParameterSchema2["properties"] = map[string]M{
-		"PLAN_DATABASE_USERNAME_2": {
-			"default": "user2",
-			"type":    "string",
-		},
-		"PLAN_DATABASE_PASSWORD": {
-			"type": "string",
-		},
-	}
-
-	planServiceInstanceCreateParameterSchemaRaw1, err := json.Marshal(planServiceInstanceCreateParameterSchema1)
-	if err != nil {
-		if err != nil {
-			return nil, errors.Wrap(err, "")
-		}
-	}
-
-	planServiceInstanceCreateParameterSchemaRaw2, err := json.Marshal(planServiceInstanceCreateParameterSchema2)
-	if err != nil {
-		if err != nil {
-			return nil, errors.Wrap(err, "")
-		}
-	}
-
-	var data [][]byte
-	data = append(data, planServiceInstanceCreateParameterSchemaRaw1)
-	data = append(data, planServiceInstanceCreateParameterSchemaRaw2)
-
-	return data, nil
-}
 
 func TestGetServiceClassAndPlans(t *testing.T) {
 
@@ -112,21 +32,11 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 		return
 	}
 
-	planExternalMetaDataRaw, err := fakePlanExternalMetaDataRaw()
-	if err != nil {
-		fmt.Printf("error occured %v during marshalling", err)
-		return
-	}
-
-	planServiceInstanceCreateParameterSchemasRaw, err := fakePlanServiceInstanceCreateParameterSchemasRaw()
-	if err != nil {
-		fmt.Printf("error occured %v during marshalling", err)
-		return
-	}
-
 	type args struct {
 		ServiceName string
 	}
+	plan1 := testingutil.FakeClusterServicePlan("dev", 1)
+	plan2 := testingutil.FakeClusterServicePlan("prod", 2)
 	tests := []struct {
 		name                 string
 		args                 args
@@ -134,7 +44,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 		returnedServiceClass *scv1beta1.ClusterServiceClassList
 		returnedServicePlan  []scv1beta1.ClusterServicePlan
 		wantedServiceClass   ServiceClass
-		wantedServicePlans   []ServicePlans
+		wantedServicePlans   []ServicePlan
 		wantErr              bool
 	}{
 		{
@@ -160,34 +70,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 					},
 				},
 			},
-			returnedServicePlan: []scv1beta1.ClusterServicePlan{
-				{
-					Spec: scv1beta1.ClusterServicePlanSpec{
-						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-							Name: "1dda1477cace09730bd8ed7a6505607e",
-						},
-						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-							ExternalName:                         "dev",
-							Description:                          "this is a example description 1",
-							ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
-							ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[0]},
-						},
-					},
-				},
-				{
-					Spec: scv1beta1.ClusterServicePlanSpec{
-						ClusterServiceClassRef: scv1beta1.ClusterObjectReference{
-							Name: "1dda1477cace09730bd8ed7a6505607e",
-						},
-						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-							ExternalName:                         "prod",
-							Description:                          "this is a example description 2",
-							ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[1]},
-							ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[1]},
-						},
-					},
-				},
-			},
+			returnedServicePlan: []scv1beta1.ClusterServicePlan{plan1, plan2},
 			wantedServiceClass: ServiceClass{
 				Name:              "class name",
 				ShortDescription:  "example description",
@@ -197,7 +80,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 				ServiceBrokerName: "broker name",
 				VersionsAvailable: []string{"docker.io/centos/7", "docker.io/centos/8"},
 			},
-			wantedServicePlans: []ServicePlans{
+			wantedServicePlans: []ServicePlan{
 				{
 					Name:        "dev",
 					Description: "this is a example description 1",
@@ -206,14 +89,14 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 						{
 							Name:            "PLAN_DATABASE_URI",
 							Required:        true,
-							DefaultValue:    "someuri",
+							Default:         "someuri",
 							HasDefaultValue: true,
 							Type:            "string",
 						},
 						{
 							Name:            "PLAN_DATABASE_USERNAME",
 							Required:        true,
-							DefaultValue:    "name",
+							Default:         "name",
 							HasDefaultValue: true,
 							Type:            "string",
 						},
@@ -226,7 +109,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 						{
 							Name:            "SOME_OTHER",
 							Required:        false,
-							DefaultValue:    "other",
+							Default:         "other",
 							HasDefaultValue: true,
 							Type:            "string",
 						},
@@ -240,7 +123,7 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 						{
 							Name:            "PLAN_DATABASE_USERNAME_2",
 							Required:        true,
-							DefaultValue:    "user2",
+							Default:         "user2",
 							HasDefaultValue: true,
 							Type:            "string",
 						},
@@ -326,15 +209,15 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 					})
 
 					if !reflect.DeepEqual(wantedServicePlan.Parameters, gotServicePlan.Parameters) {
-						t.Errorf("Different plan parameters value. Expected: %v , got: %v", gotServicePlan.Parameters, wantedServicePlan.Parameters)
+						t.Errorf("Different plan parameters value. Expected: %v , got: %v", wantedServicePlan.Parameters, gotServicePlan.Parameters)
 					}
 
 					if !reflect.DeepEqual(wantedServicePlan.DisplayName, gotServicePlan.DisplayName) {
-						t.Errorf("Different plan display name value. Expected: %v , got: %v", gotServicePlan.DisplayName, wantedServicePlan.DisplayName)
+						t.Errorf("Different plan display name value. Expected: %v , got: %v", wantedServicePlan.DisplayName, gotServicePlan.DisplayName)
 					}
 
 					if !reflect.DeepEqual(wantedServicePlan.Description, gotServicePlan.Description) {
-						t.Errorf("Different plan description value. Expected: %v , got: %v", gotServicePlan.Description, wantedServicePlan.Description)
+						t.Errorf("Different plan description value. Expected: %v , got: %v", wantedServicePlan.Description, gotServicePlan.Description)
 					}
 				}
 

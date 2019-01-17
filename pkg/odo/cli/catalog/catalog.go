@@ -245,10 +245,9 @@ This describes the service and the associated plans.
 						// until we have a better solution for displaying the plan data (like a separate table perhaps)
 						// this is simplest thing to do
 						if parameter.HasDefaultValue {
-							defaultValueStr := fmt.Sprintf("%v", parameter.DefaultValue)
 							requiredWithOptionalUserInputParameterNames = append(
 								requiredWithOptionalUserInputParameterNames,
-								fmt.Sprintf("%s (default: '%s')", parameter.Name, defaultValueStr))
+								fmt.Sprintf("%s (default: '%s')", parameter.Name, parameter.Default))
 						} else {
 							requiredWithMandatoryUserInputParameterNames = append(requiredWithMandatoryUserInputParameterNames, parameter.Name)
 						}

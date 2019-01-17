@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"sort"
 	"testing"
 
@@ -44,9 +45,9 @@ func TestCompletions(t *testing.T) {
 	fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &v1beta1.ClusterServiceClassList{
 			Items: []v1beta1.ClusterServiceClass{
-				fakeClusterServiceClass("foo"),
-				fakeClusterServiceClass("bar"),
-				fakeClusterServiceClass("boo"),
+				testingutil.FakeClusterServiceClass("foo"),
+				testingutil.FakeClusterServiceClass("bar"),
+				testingutil.FakeClusterServiceClass("boo"),
 			},
 		}, nil
 	})
@@ -79,16 +80,6 @@ func TestCompletions(t *testing.T) {
 				t.Errorf("Failed %s: got: %q, want: %q", t.Name(), got, tt.want)
 			}
 		})
-	}
-}
-
-func fakeClusterServiceClass(name string) v1beta1.ClusterServiceClass {
-	return v1beta1.ClusterServiceClass{
-		Spec: v1beta1.ClusterServiceClassSpec{
-			CommonServiceClassSpec: v1beta1.CommonServiceClassSpec{
-				ExternalName: name,
-			},
-		},
 	}
 }
 
