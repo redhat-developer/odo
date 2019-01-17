@@ -312,6 +312,8 @@ func getValidatorFor(prop service.ServicePlanParameter) (validator survey.Valida
 		validator = survey.Required
 	}
 
+	// TODO: improve, it should be possible to register validators that get chosen automatically based on passed prop
+	//  (using acceptance criteria)
 	switch prop.Type {
 	case "integer":
 		validator = survey.ComposeValidators(validator, survey.Validator(validators[defaultIntegerValidatorKey]))

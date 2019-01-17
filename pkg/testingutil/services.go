@@ -38,22 +38,22 @@ func FakeClusterServicePlan(name string, planNumber int) v1beta1.ClusterServiceP
 			CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
 				ExternalName:                         name,
 				Description:                          fmt.Sprintf("this is a example description %d", planNumber),
-				ExternalMetadata:                     &runtime.RawExtension{Raw: fakePlanExternalMetaData(planNumber)},
+				ExternalMetadata:                     SingleValuedRawExtension("displayName", fmt.Sprintf("plan-name-%d", planNumber)),
 				ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: FakePlanServiceInstanceCreateParameterSchemasRaw()[(planNumber-1)%2]},
 			},
 		},
 	}
 }
 
-// fakePlanExternalMetaData creates fake plan metadata using "plan-name-<number>" as "displayName"
-func fakePlanExternalMetaData(number int) []byte {
-	planExternalMetaData1 := make(map[string]string)
-	planExternalMetaData1["displayName"] = fmt.Sprintf("plan-name-%d", number)
-	planExternalMetaDataRaw1, err := json.Marshal(planExternalMetaData1)
+// SingleValuedRawExtension creates a simple, single valued (name=value), raw extension
+func SingleValuedRawExtension(name, value string) *runtime.RawExtension {
+	metadata := make(map[string]string)
+	metadata[name] = value
+	serialized, err := json.Marshal(metadata)
 	if err != nil {
 		panic(err)
 	}
-	return planExternalMetaDataRaw1
+	return &runtime.RawExtension{Raw: serialized}
 }
 
 // FakePlanServiceInstanceCreateParameterSchemasRaw creates 2 create parameter schemas for testing purposes

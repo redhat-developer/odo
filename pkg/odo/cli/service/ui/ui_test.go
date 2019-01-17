@@ -2,9 +2,11 @@ package ui
 
 import (
 	"github.com/Netflix/go-expect"
-	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"reflect"
@@ -21,12 +23,26 @@ func TestGetCategories(t *testing.T) {
 		foo := testingutil.FakeClusterServiceClass("foo", "footag", "footag2")
 		bar := testingutil.FakeClusterServiceClass("bar", "")
 		boo := testingutil.FakeClusterServiceClass("boo")
-		classes := map[string][]scv1beta1.ClusterServiceClass{"footag": {foo}, "other": {bar, boo}}
+		classes := map[string][]beta1.ClusterServiceClass{"footag": {foo}, "other": {bar, boo}}
 
 		categories := getServiceClassesCategories(classes)
 		expected := []string{"footag", "other"}
 		if !reflect.DeepEqual(expected, categories) {
 			t.Errorf("test failed, expected %v, got %v", expected, categories)
+		}
+	})
+}
+
+func TestGetServicePlanNames(t *testing.T) {
+	t.Run("GetServicePlanNames should work", func(t *testing.T) {
+		foo := testingutil.FakeClusterServicePlan("foo", 1)
+		bar := testingutil.FakeClusterServicePlan("bar", 2)
+		boo := testingutil.FakeClusterServicePlan("boo", 3)
+
+		plans := GetServicePlanNames(map[string]beta1.ClusterServicePlan{"foo": foo, "bar": bar, "boo": boo})
+		expected := []string{"bar", "boo", "foo"}
+		if !reflect.DeepEqual(expected, plans) {
+			t.Errorf("test failed, expected %v, got %v", expected, plans)
 		}
 	})
 }
@@ -98,7 +114,7 @@ func TestEnterServicePropertiesInteractively(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		servicePlan    scv1beta1.ClusterServicePlan
+		servicePlan    beta1.ClusterServicePlan
 		expectedValues map[string]string
 	}{
 		{
@@ -133,5 +149,121 @@ func TestEnterServicePropertiesInteractively(t *testing.T) {
 		})
 
 		require.Equal(t, tt.expectedValues, *valuesPtr)
+	}
+}
+
+func TestGetLongDescription(t *testing.T) {
+	desc := testingutil.FakeClusterServiceClass("foo")
+	desc.Spec.ExternalMetadata = testingutil.SingleValuedRawExtension("longDescription", "description")
+	empty := testingutil.FakeClusterServiceClass("foo")
+	empty.Spec.ExternalMetadata = testingutil.SingleValuedRawExtension("longDescription", "")
+	tests := []struct {
+		name     string
+		input    beta1.ClusterServiceClass
+		expected string
+	}{
+		{
+			name:     "no metadata",
+			input:    testingutil.FakeClusterServiceClass("foo"),
+			expected: "",
+		},
+		{
+			name:     "description",
+			input:    desc,
+			expected: "description",
+		},
+		{
+			name:     "empty description",
+			input:    empty,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := getLongDescription(tt.input)
+			if tt.expected != output {
+				t.Errorf("test failed, expected %s, got %s", tt.expected, output)
+			}
+		})
+	}
+}
+
+func TestGetValidator(t *testing.T) {
+	// TODO: improve this only test the most basic cases but this is quite difficult to test
+	tests := []struct {
+		name     string
+		prop     service.ServicePlanParameter
+		expected survey.Validator
+	}{
+		{
+			name:     "default",
+			prop:     service.ServicePlanParameter{},
+			expected: nilValidator,
+		},
+		{
+			name:     "required",
+			prop:     service.ServicePlanParameter{Required: true},
+			expected: survey.Required,
+		},
+		{
+			name:     "unknown type",
+			prop:     service.ServicePlanParameter{Type: "foo"},
+			expected: nilValidator,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := getValidatorFor(tt.prop)
+			f1 := reflect.ValueOf(tt.expected).Pointer()
+			f2 := reflect.ValueOf(output).Pointer()
+			if f1 != f2 {
+				t.Errorf("test failed, expected %v, got %v", tt.expected, output)
+			}
+		})
+	}
+}
+
+func TestPropDesc(t *testing.T) {
+	tests := []struct {
+		name     string
+		prop     service.ServicePlanParameter
+		expected string
+	}{
+		{
+			name:     "empty",
+			prop:     service.ServicePlanParameter{},
+			expected: "",
+		},
+		{
+			name:     "name only",
+			prop:     service.ServicePlanParameter{Name: "foo"},
+			expected: "foo",
+		},
+		{
+			name:     "with title",
+			prop:     service.ServicePlanParameter{Name: "foo", Title: "title"},
+			expected: "foo (title)",
+		},
+		{
+			name:     "with description",
+			prop:     service.ServicePlanParameter{Name: "foo", Description: "desc"},
+			expected: "foo (desc)",
+		},
+		{
+			name:     "with title and description",
+			prop:     service.ServicePlanParameter{Name: "foo", Description: "desc", Title: "title"},
+			expected: "foo (title)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := propDesc(tt.prop)
+			if tt.expected != output {
+				t.Errorf("test failed, expected %v, got %v", tt.expected, output)
+			}
+		})
 	}
 }

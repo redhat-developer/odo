@@ -4946,3 +4946,56 @@ func TestGetServiceClassesByCategory(t *testing.T) {
 		}
 	})
 }
+
+func TestGetMatchingPlans(t *testing.T) {
+	t.Run("GetMatchingPlans should work", func(t *testing.T) {
+		client, fakeClientSet := FakeNew()
+		foo := testingutil.FakeClusterServiceClass("foo", "footag", "footag2")
+		dev := testingutil.FakeClusterServicePlan("dev", 1)
+		classId := foo.Spec.ExternalID
+		dev.Spec.ClusterServiceClassRef.Name = classId
+		prod := testingutil.FakeClusterServicePlan("prod", 2)
+		prod.Spec.ClusterServiceClassRef.Name = classId
+
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			value, _ := action.(ktesting.ListAction).GetListRestrictions().Fields.RequiresExactMatch("spec.clusterServiceClassRef.name")
+			if value != classId {
+				t.Errorf("cluster service plans list should have been filtered on 'spec.clusterServiceClassRef.name==%s'", classId)
+			}
+
+			return true, &scv1beta1.ClusterServicePlanList{
+				Items: []scv1beta1.ClusterServicePlan{
+					dev,
+					prod,
+				},
+			}, nil
+		})
+
+		expected := map[string]scv1beta1.ClusterServicePlan{"dev": dev, "prod": prod}
+		plans, err := client.GetMatchingPlans(foo)
+
+		if err != nil {
+			t.Errorf("test failed due to %s", err.Error())
+		}
+
+		if !reflect.DeepEqual(expected, plans) {
+			t.Errorf("test failed, expected %v, got %v", expected, plans)
+		}
+	})
+}
+
+func TestDoesPlanExist(t *testing.T) {
+	name := "foo"
+	client, fakeClientSet := FakeNew()
+	fakeClientSet.ServiceCatalogClientSet.PrependReactor("get", "clusterserviceplans", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		if name != action.(ktesting.GetAction).GetName() {
+			t.Errorf("should have have attempted to get service plan '%s'", name)
+		}
+		plan := testingutil.FakeClusterServicePlan(name, 1)
+		return true, &plan, nil
+	})
+
+	if ok, _ := client.DoesPlanExist(name); !ok {
+		t.Error("test failed")
+	}
+}

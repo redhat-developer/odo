@@ -2159,7 +2159,7 @@ func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta
 	return categories, err
 }
 
-// GetMatchingPlans retrieves a map associated service plan name to service plan instance associated with the specified service
+// GetMatchingPlans retrieves a map associating service plan name to service plan instance associated with the specified service
 // class
 func (c *Client) GetMatchingPlans(class scv1beta1.ClusterServiceClass) (plans map[string]scv1beta1.ClusterServicePlan, err error) {
 	planList, err := c.serviceCatalogClient.ClusterServicePlans().List(metav1.ListOptions{
