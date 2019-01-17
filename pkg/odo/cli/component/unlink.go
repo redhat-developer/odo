@@ -70,7 +70,7 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	o := NewUnlinkOptions()
 
 	unlinkCmd := &cobra.Command{
-		Use:     fmt.Sprintf("%s <service> --component [component] OR unlink <component> --component [component]", name),
+		Use:     fmt.Sprintf("%s <service> --component [component] OR %s <component> --component [component]", name, name),
 		Short:   "Unlink component to a service or component",
 		Long:    unlinkLongDesc,
 		Example: fmt.Sprintf(unlinkExample, fullName),

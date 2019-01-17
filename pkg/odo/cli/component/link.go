@@ -97,7 +97,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	o := NewLinkOptions()
 
 	linkCmd := &cobra.Command{
-		Use:     fmt.Sprintf("%s <service> --component [component] OR link <component> --component [component]", name),
+		Use:     fmt.Sprintf("%s <service> --component [component] OR %s <component> --component [component]", name, name),
 		Short:   "Link component to a service or component",
 		Long:    linkLongDesc,
 		Example: fmt.Sprintf(linkExample, fullName),
