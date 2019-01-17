@@ -12,10 +12,17 @@ type M map[string]interface{}
 
 // FakeClusterServiceClass creates a fake service class with the specified name for testing purposes
 func FakeClusterServiceClass(name string, tags ...string) v1beta1.ClusterServiceClass {
+	classExternalMetaData := make(map[string]interface{})
+	classExternalMetaDataRaw, err := json.Marshal(classExternalMetaData)
+	if err != nil {
+		panic(err)
+	}
+
 	class := v1beta1.ClusterServiceClass{
 		Spec: v1beta1.ClusterServiceClassSpec{
 			CommonServiceClassSpec: v1beta1.CommonServiceClassSpec{
-				ExternalName: name,
+				ExternalName:     name,
+				ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
 			},
 		},
 	}

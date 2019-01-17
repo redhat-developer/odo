@@ -1,8 +1,6 @@
 package completion
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"reflect"
@@ -23,27 +21,8 @@ import (
 )
 
 func TestServicePlanCompletionHandler(t *testing.T) {
-
-	classExternalMetaData := make(map[string]interface{})
-	classExternalMetaDataRaw, err := json.Marshal(classExternalMetaData)
-	if err != nil {
-		fmt.Printf("error occured %v during marshalling", err)
-		return
-	}
-
 	serviceClassList := &scv1beta1.ClusterServiceClassList{
-		Items: []scv1beta1.ClusterServiceClass{
-			{
-				ObjectMeta: metav1.ObjectMeta{Name: "1dda1477cace09730bd8ed7a6505607e"},
-				Spec: scv1beta1.ClusterServiceClassSpec{
-					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
-						ExternalName:     "class name",
-						ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
-					},
-					ClusterServiceBrokerName: "broker name",
-				},
-			},
-		},
+		Items: []scv1beta1.ClusterServiceClass{testingutil.FakeClusterServiceClass("class name", "dummy")},
 	}
 	tests := []struct {
 		name                 string
@@ -114,27 +93,8 @@ func TestServicePlanCompletionHandler(t *testing.T) {
 }
 
 func TestServiceParameterCompletionHandler(t *testing.T) {
-
-	classExternalMetaData := make(map[string]interface{})
-	classExternalMetaDataRaw, err := json.Marshal(classExternalMetaData)
-	if err != nil {
-		fmt.Printf("error occured %v during marshalling", err)
-		return
-	}
-
 	serviceClassList := &scv1beta1.ClusterServiceClassList{
-		Items: []scv1beta1.ClusterServiceClass{
-			{
-				ObjectMeta: metav1.ObjectMeta{Name: "1dda1477cace09730bd8ed7a6505607e"},
-				Spec: scv1beta1.ClusterServiceClassSpec{
-					CommonServiceClassSpec: scv1beta1.CommonServiceClassSpec{
-						ExternalName:     "class name",
-						ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
-					},
-					ClusterServiceBrokerName: "broker name",
-				},
-			},
-		},
+		Items: []scv1beta1.ClusterServiceClass{testingutil.FakeClusterServiceClass("class name", "dummy")},
 	}
 	tests := []struct {
 		name                 string
