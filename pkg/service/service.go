@@ -27,6 +27,7 @@ type ServiceInfo struct {
 	Status string
 }
 
+// ServiceClass holds the information regarding a service catalog service class
 type ServiceClass struct {
 	Name              string
 	Bindable          bool
@@ -37,6 +38,7 @@ type ServiceClass struct {
 	ServiceBrokerName string
 }
 
+// ServicePlanParameter holds the information regarding a service catalog plan parameter
 type ServicePlanParameter struct {
 	Name            string
 	Title           string
@@ -61,6 +63,7 @@ func (params servicePlanParameters) Swap(i, j int) {
 	params[i], params[j] = params[j], params[i]
 }
 
+// ServicePlan holds the information about service catalog plans associated to service classes
 type ServicePlan struct {
 	Name        string
 	DisplayName string
