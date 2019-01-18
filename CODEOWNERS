@@ -36,8 +36,8 @@ Makefile @kadel @cdrage @amitkrout
 /pkg/config/ @syamgk  @mohammedzee1000 
 /pkg/log/ @girishramnani  @cdrage
 /pkg/notify/ @girishramnani  @cdrage
-/pkg/occlient/ @kadel @metacosm @geoand  @cdrage
-/pkg/odo/ @anmolbabu  @geoand 
+/pkg/occlient/ @kadel @metacosm @geoand @cdrage
+/pkg/odo/ @anmolbabu @geoand @metacosm
 /pkg/project/ @mik-dass  @mohammedzee1000 
 /pkg/secret/ @girishramnani @geoand
 /pkg/service/ @surajnarwade @geoand
