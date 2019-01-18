@@ -53,6 +53,7 @@ var _ = BeforeSuite(func() {
 var _ = Describe("odoe2e", func() {
 	var t = strconv.FormatInt(time.Now().Unix(), 10)
 	var projName = fmt.Sprintf("odo-%s", t)
+	var projName1 = fmt.Sprintf(projName + "-new-project")
 	const appTestName = "testing"
 
 	tmpDir, err := ioutil.TempDir("", "odo")
@@ -77,6 +78,15 @@ var _ = Describe("odoe2e", func() {
 			listProj := runCmd("sleep 5s && odo project list")
 			Expect(listProj).To(ContainSubstring(projName))
 		})
+	})
+
+	// Context for temporary fix for new project creation using odo new-project
+	// Ref https://github.com/redhat-developer/odo/issues/1017
+	Context("odo new-project", func(){
+		It("should create a new project", func({
+			session = runCmd("odo new-project " + projName1)
+			Expect(session).To(ContainSubstring(projName1))
+		}))
 	})
 
 	Context("odo utils config", func() {
