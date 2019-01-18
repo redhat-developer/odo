@@ -51,8 +51,14 @@ func NewParsedArgs(args complete.Args, cmd *cobra.Command) parsedArgs {
 	complete.Log("Parsed commands values for full input: %v", commands)
 	complete.Log("Parsed flag values for full input: %v", flagValues)
 
-	// this part is meant to handle incomplete flags when other input already exists,
-	// so 2 tokens is the minimum that makes sense
+	// the parsing above won't work properly when we have previously supplied flags and we are trying to complete
+	// another flag
+	// For example when the user has typed "odo service create --plan prod -p "
+	// the flagValues var above would not contains the plan flag and value
+	// So in the following part of the code we strip the last thing the user added and parse again
+	// any new parsed flags will be added
+	// There is no need to do this extra parsing if the user has not already added a flag. So as a heuristic
+	// we only perform this parsing when at the user has added at least 2 tokens
 	if len(typed) > 2 {
 		typedWithoutLast := make([]string, len(typed))
 		copy(typedWithoutLast, typed)
