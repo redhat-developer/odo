@@ -8,11 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	projectShortFlag       bool
-	projectForceDeleteFlag bool
-)
-
 var newProjectCmd = &cobra.Command{
 	Use:   "new-project",
 	Short: "none",
