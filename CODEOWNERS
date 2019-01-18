@@ -26,6 +26,7 @@
 Makefile @kadel @cdrage @amitkrout
 /tests/ @amitkrout @mohammedzee1000
 /scripts/ @syamgk @kadel @cdrage @amitkrout
+/cmd/ @metacosm
 
 # Odo specific
 /pkg/application/ @syamgk  @cdrage
@@ -38,8 +39,8 @@ Makefile @kadel @cdrage @amitkrout
 /pkg/occlient/ @kadel @metacosm @geoand  @cdrage
 /pkg/odo/ @anmolbabu  @geoand 
 /pkg/project/ @mik-dass  @mohammedzee1000 
-/pkg/secret/ @girishramnani 
-/pkg/service/ @surajnarwade 
+/pkg/secret/ @girishramnani @geoand
+/pkg/service/ @surajnarwade @geoand
 /pkg/storage/ @girishramnani @mik-dass 
 /pkg/testingutil/  @amitkrout  @mohammedzee1000 
 /pkg/url/  @mik-dass  @mohammedzee1000 
