@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/login"
 	"github.com/redhat-developer/odo/pkg/odo/cli/logout"
+	"github.com/redhat-developer/odo/pkg/odo/cli/newproject"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/service"
 	"github.com/redhat-developer/odo/pkg/odo/cli/storage"
@@ -110,6 +111,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		login.NewCmdLogin(),
 		logout.NewCmdLogout(),
 		project.NewCmdProject(),
+		newproject.NewCmdNewProject(),
 		service.NewCmdService(service.RecommendedCommandName, util.GetFullName(fullName, service.RecommendedCommandName)),
 		storage.NewCmdStorage(),
 		url.NewCmdURL(),
