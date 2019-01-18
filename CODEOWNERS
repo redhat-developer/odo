@@ -1,0 +1,46 @@
+# This is a file that will automatically ping select "owners"
+# of directories or files within the Odo repository
+
+# List of current maintainers / assigned code owners
+# @syamgk 
+# @anmolbabu 
+# @kadel 
+# @surajnarwade 
+# @girishramnani 
+# @metacosm
+# @geoand 
+# @mik-dass 
+# @amitkrout 
+# @mohammedzee1000 
+# @sspeiche 
+# @cdrage
+
+# Language specific
+*.md @cdrage @sspeiche
+*.java @geoand @metacosm
+*.xml @geoand @metacosm
+*.py @anmolbabu
+*.js @girishramnani @geoand
+
+# Folder / file specific
+Makefile @kadel @cdrage @amitkrout
+/tests/ @amitkrout @mohammedzee1000
+/scripts/ @syamgk @kadel @cdrage @amitkrout
+
+# Odo specific
+/pkg/application/ @syamgk  @cdrage
+/pkg/auth/ @anmolbabu @girishramnani 
+/pkg/catalog/ @surajnarwade @girishramnani @metacosm @geoand 
+/pkg/component/ @anmolbabu  @mohammedzee1000 
+/pkg/config/ @syamgk  @mohammedzee1000 
+/pkg/log/ @girishramnani  @cdrage
+/pkg/notify/ @girishramnani  @cdrage
+/pkg/occlient/ @kadel @metacosm @geoand  @cdrage
+/pkg/odo/ @anmolbabu  @geoand 
+/pkg/project/ @mik-dass  @mohammedzee1000 
+/pkg/secret/ @girishramnani 
+/pkg/service/ @surajnarwade 
+/pkg/storage/ @girishramnani @mik-dass 
+/pkg/testingutil/  @amitkrout  @mohammedzee1000 
+/pkg/url/  @mik-dass  @mohammedzee1000 
+/pkg/util/ @anmolbabu @surajnarwade 
