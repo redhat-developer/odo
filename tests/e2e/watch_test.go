@@ -28,7 +28,7 @@ var _ = Describe("odoWatchE2e", func() {
 		Fail(err.Error())
 	}
 
-	Context("watch component created from local source", func() {
+	Context("watch component created from local source or binary", func() {
 		It("should create the project and application", func() {
 			runCmd("odo project create " + projName)
 			runCmd("odo app create " + appTestName)
@@ -304,6 +304,131 @@ var _ = Describe("odoWatchE2e", func() {
 			)
 			Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
 			getMemoryRequest := runCmd("oc get dc nodejs-watch-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
+			)
+			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
+		})
+
+		It("watch openjdk component created from local binary", func() {
+			importOpenJDKImage()
+			runCmd("git clone " + openjdkURI + " " + tmpDir + "/binary/javalin-helloworld")
+			runCmd("mvn package -f " + tmpDir + "/binary/javalin-helloworld")
+			runCmd("odo create openjdk18 openjdk-watch-binary --binary " + tmpDir + "/binary/javalin-helloworld/target/javalin-hello-world-0.1-SNAPSHOT.jar --min-memory 400Mi --max-memory 700Mi")
+			runCmd("odo push -v 4")
+			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+			runCmd("odo push -v 4")
+			runCmd("odo url create --port 8080")
+
+			startSimulationCh := make(chan bool)
+			go func() {
+				startMsg := <-startSimulationCh
+				if startMsg {
+					fmt.Println("Received signal, starting file modification simulation")
+
+					fileModificationPath := filepath.Join(
+						tmpDir,
+						"binary",
+						"javalin-helloworld",
+						"src",
+						"main",
+						"java",
+						"Application.java",
+					)
+
+					fileModificationCmd := fmt.Sprintf(
+						"sed -i 's/Hello World/Hello odo/g' %s",
+						fileModificationPath,
+					)
+					runCmd(fileModificationCmd)
+					runCmd("mvn package -f " + tmpDir + "/binary/javalin-helloworld")
+				}
+			}()
+			success, err := pollNonRetCmdStdOutForString("odo watch openjdk-watch-binary -v 4", time.Duration(5)*time.Minute, func(output string) bool {
+				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
+				curlOp := runCmd(fmt.Sprintf("curl %s", url))
+				return strings.Contains(curlOp, "Hello odo")
+			}, startSimulationCh, func(output string) bool {
+				return strings.Contains(output, "Waiting for something to change")
+			})
+			Expect(success).To(Equal(true))
+			Expect(err).To(BeNil())
+
+			// Verify memory limits to be same as configured
+			getMemoryLimit := runCmd("oc get dc openjdk-watch-binary-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
+			)
+			Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
+			getMemoryRequest := runCmd("oc get dc openjdk-watch-binary-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
+			)
+			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
+		})
+
+		It("watch wildfly component created from binary", func() {
+			runCmd("git clone " + wildflyURI + " " + tmpDir + "/binary/katacoda-odo-backend")
+			runCmd("odo create wildfly wildfly-watch-binary --local " + tmpDir + "/binary/katacoda-odo-backend --min-memory 400Mi --max-memory 700Mi")
+			runCmd("odo push -v 4")
+			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+			runCmd("odo push -v 4")
+			runCmd("odo url create --port 8080")
+
+			startSimulationCh := make(chan bool)
+			go func() {
+				startMsg := <-startSimulationCh
+				if startMsg {
+					fmt.Println("Received signal, starting file modification simulation")
+
+					runCmd(fmt.Sprintf("mkdir -p %s/binary/katacoda-odo-backend/tests", tmpDir))
+					runCmd(fmt.Sprintf("touch %s/binary/katacoda-odo-backend/tests/test_1.java", tmpDir))
+					runCmd("mkdir -p " + tmpDir + "/binary/katacoda-odo-backend/src" + "/'.a b'")
+					runCmd("mkdir -p " + tmpDir + "/binary/katacoda-odo-backend/src" + "/'a b'")
+					runCmd("touch " + tmpDir + "/binary/katacoda-odo-backend/src" + "/'a b.txt'")
+					// Delete during watch
+					runCmd(fmt.Sprintf("rm -fr %s/binary/katacoda-odo-backend/tests", tmpDir))
+					runCmd("rm -fr " + tmpDir + "/binary/katacoda-odo-backend/src/'a b.txt'")
+
+					fileModificationPath := filepath.Join(
+						tmpDir,
+						"binary",
+						"katacoda-odo-backend",
+						"src",
+						"main",
+						"java",
+						"eu",
+						"mjelen",
+						"katacoda",
+						"odo",
+						"BackendServlet.java",
+					)
+					fmt.Printf("Triggering filemodification @; %s\n", fileModificationPath)
+					fileModificationCmd := fmt.Sprintf(
+						"sed -i 's/response.getWriter().println(counter.toString())/response.getWriter().println(\"Hello odo\" + counter.toString())/g' %s",
+						fileModificationPath,
+					)
+					runCmd(fileModificationCmd)
+				}
+			}()
+			success, err := pollNonRetCmdStdOutForString("odo watch wildfly-watch-binary -v 4", time.Duration(5)*time.Minute, func(output string) bool {
+				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
+				url = fmt.Sprintf("%s/counter", url)
+				curlOp := runCmd(fmt.Sprintf("curl %s", url))
+				return strings.Contains(curlOp, "Hello odo")
+			}, startSimulationCh, func(output string) bool {
+				return strings.Contains(output, "Waiting for something to change")
+			})
+			Expect(success).To(Equal(true))
+			Expect(err).To(BeNil())
+
+			// Verify memory limits to be same as configured
+			getMemoryLimit := runCmd("oc get dc wildfly-watch-binary-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
+			)
+			Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
+			getMemoryRequest := runCmd("oc get dc wildfly-watch-binary-" +
 				appTestName +
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
 			)
