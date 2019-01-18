@@ -2117,7 +2117,7 @@ func (c *Client) patchDCOfComponent(componentName, applicationName string, dcPat
 	return nil
 }
 
-// Service struct holds the servicename and it's corresponding list of plans
+// Service struct holds the service name and its corresponding list of plans
 type Service struct {
 	Name     string
 	Hidden   bool
