@@ -64,7 +64,7 @@ var ServicePlanCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 
 	complete.Log(fmt.Sprintf("Using input: serviceName = %s", inputServiceName))
 
-	_, servicePlans, err := service.GetServiceClassAndPlans(context.Client, inputServiceName)
+	servicePlans, err := context.Client.GetClusterPlansFromServiceName(inputServiceName)
 	if err != nil {
 		complete.Log("Error retrieving details of service")
 		return completions

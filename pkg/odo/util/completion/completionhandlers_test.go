@@ -71,10 +71,6 @@ func TestServicePlanCompletionHandler(t *testing.T) {
 		client, fakeClientSet := occlient.FakeNew()
 		context := genericclioptions.NewFakeContext("project", "app", "component", client)
 
-		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceclasses", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-			return true, tt.returnedServiceClass, nil
-		})
-
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "clusterserviceplans", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 			return true, &scv1beta1.ClusterServicePlanList{Items: tt.returnedServicePlan}, nil
 		})
