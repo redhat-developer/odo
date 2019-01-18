@@ -37,7 +37,6 @@ var projectCmd = &cobra.Command{
 			projectGetCmd.Run(cmd, args)
 		}
 	},
-	Aliases: []string{"new-project"},
 }
 
 var projectSetCmd = &cobra.Command{
