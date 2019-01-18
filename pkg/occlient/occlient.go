@@ -2117,24 +2117,11 @@ func (c *Client) patchDCOfComponent(componentName, applicationName string, dcPat
 	return nil
 }
 
-// Service struct holds the servicename and it's corresponding list of plans
+// Service struct holds the service name and its corresponding list of plans
 type Service struct {
 	Name     string
 	Hidden   bool
 	PlanList []string
-}
-
-// GetServiceClass retrieves the ClusterServiceClass identified by the specified external name
-func (c *Client) GetServiceClass(externalName string) (class *scv1beta1.ClusterServiceClass, err error) {
-	classes, err := c.serviceCatalogClient.ClusterServiceClasses().List(metav1.ListOptions{
-		FieldSelector: "spec.externalName==" + externalName,
-	})
-
-	if len(classes.Items) != 1 {
-		return nil, fmt.Errorf("%s: unknown service class", externalName)
-	}
-
-	return &classes.Items[0], err
 }
 
 // GetServiceClassesByCategory retrieves a map associating category name to ClusterServiceClasses matching the category
