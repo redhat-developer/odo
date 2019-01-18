@@ -442,6 +442,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 
 	// Copy the files to the pod
+	s := log.Spinner("Copying files to component")
 
 	if !isForcePush {
 		if len(files) == 0 && len(delFiles) == 0 {
@@ -453,12 +454,13 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		err = client.CopyFile(path, pod.Name, targetPath, files)
 		if err != nil {
+			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
 		}
 	}
+	s.End(true)
 
-	s := log.Spinner("Building component")
-	defer s.End(false)
+	s = log.Spinner("Building component")
 
 	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
 	pipeReader, pipeWriter := io.Pipe()
@@ -487,6 +489,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	if err != nil {
 		// If we fail, log the output
 		log.Errorf("Unable to build files\n%v", cmdOutput)
+		s.End(false)
 		return errors.Wrap(err, "unable to execute assemble script")
 	}
 
