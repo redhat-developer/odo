@@ -212,7 +212,7 @@ Catalog related operations
   # Create new Node.js component with source from remote git repository.
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
 
-  # Create a new Node.js component with source from remote git repository and a branch.
+  # Create a new Node.js component with source from remote git repository using a branch, tag or commit ref.
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
 
   # Create a new Node.js component of version 6 from the 'openshift' namespace
