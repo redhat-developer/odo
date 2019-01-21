@@ -2,13 +2,12 @@ package list
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 const servicesRecommendedCommandName = "services"
@@ -16,7 +15,47 @@ const servicesRecommendedCommandName = "services"
 var servicesExample = `  # Get the supported services from service catalog
   %[1]s`
 
+// ListServicesOptions encapsulates the options for the odo catalog list services command
+type ListServicesOptions struct {
+	// list of known services
+	services []occlient.Service
+	// generic context options common to all commands
+	*genericclioptions.Context
+}
+
+// NewListServicesOptions creates a new ListServicesOptions instance
+func NewListServicesOptions() *ListServicesOptions {
+	return &ListServicesOptions{}
+}
+
+// Complete completes ListServicesOptions after they've been created
+func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context = genericclioptions.NewContext(cmd)
+	o.services, err = svc.ListCatalog(o.Client)
+	if err != nil {
+		return fmt.Errorf("unable to list services because Service Catalog is not enabled in your cluster: %v", err)
+	}
+	o.services = util.FilterHiddenServices(o.services)
+
+	return
+}
+
+// Validate validates the ListServicesOptions based on completed values
+func (o *ListServicesOptions) Validate() (err error) {
+	if len(o.services) == 0 {
+		return fmt.Errorf("no deployable services found")
+	}
+	return
+}
+
+// Run contains the logic for the odo catalog list services command
+func (o *ListServicesOptions) Run() (err error) {
+	util.DisplayServices(o.services)
+	return
+}
+
 func NewCmdCatalogListServices(name, fullName string) *cobra.Command {
+	o := NewListServicesOptions()
 	return &cobra.Command{
 		Use:     name,
 		Short:   "Lists all available services",
@@ -24,19 +63,9 @@ func NewCmdCatalogListServices(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(servicesExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			client := genericclioptions.Client(cmd)
-			catalogList, err := svc.ListCatalog(client)
-			odoutil.LogErrorAndExit(err, "unable to list services because Service Catalog is not enabled in your cluster")
-			catalogList = util.FilterHiddenServices(catalogList)
-			switch len(catalogList) {
-			case 0:
-				log.Errorf("No deployable services found")
-				os.Exit(1)
-			default:
-				util.DisplayServices(catalogList)
-
-			}
+			odoutil.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			odoutil.LogErrorAndExit(o.Validate(), "")
+			odoutil.LogErrorAndExit(o.Run(), "")
 		},
 	}
-
 }
