@@ -607,18 +607,25 @@ The URLs that are generated using this command, can be used to access the deploy
   source <(odo utils terminal zsh)
 
 
-   # Set a configuration value
-   odo utils config set UpdateNotification false
-   odo utils config set NamePrefix "app"
-   odo utils config set Timeout 20
+   # Set a global configuration value
+   odo utils config set --global UpdateNotification false
+   odo utils config set --global NamePrefix "app"
+   odo utils config set --global timeout 20
+   
+   # Set a local configuration value
+   odo utils config set ComponentType java
+  
 	
-  # For viewing the current configuration
+   # For viewing the current local configuration
    odo utils config view
+   
+   # For viewing the current global configuration
+   odo utils config view --global
   
 ```
 
 
-Utilities for terminal commands and modifying Odo configurations
+Utilities for terminal commands and modifying Odo local and global configurations
 
 ## version
 
