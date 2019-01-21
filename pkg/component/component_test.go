@@ -47,7 +47,7 @@ func TestGetS2IPaths(t *testing.T) {
 				},
 			},
 			want: []string{
-				"/opt/app-root/backup",
+				"/opt/app-root/deployment-backup",
 				filepath.FromSlash("abc/src"),
 				filepath.FromSlash("def/src"),
 				filepath.FromSlash("ghi/src"),
@@ -71,7 +71,7 @@ func TestGetS2IPaths(t *testing.T) {
 				},
 			},
 			want: []string{
-				"/opt/app-root/backup",
+				"/opt/app-root/deployment-backup",
 				filepath.FromSlash("abc/src"),
 				filepath.FromSlash("def/src"),
 				filepath.FromSlash("ijk/src"),

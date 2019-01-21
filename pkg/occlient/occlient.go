@@ -122,6 +122,10 @@ const (
 	// This is required bcoz, s2i assemble script moves(hence deletes contents) the contents of $ODO_S2I_SRC_BIN_PATH to $APP_ROOT during which $APP_DIR alo needs to be empty so that mv doesn't complain pushing to an already exisiting dir with same name
 	EnvS2ISrcBackupDir = "ODO_SRC_BACKUP_DIR"
 
+	// EnvS2IDeploymentBackupDir is the env var that points to the directory that holds a backup of component deployment artifacts
+	// This is required to persist deployed artifacts across supervisord restarts
+	EnvS2IDeploymentBackupDir = "ODO_DEPLOYMENT_BACKUP_DIR"
+
 	// EnvAppRoot is env var s2i exposes in component container to indicate the path where component source resides
 	EnvAppRoot = "APP_ROOT"
 
@@ -147,6 +151,9 @@ const (
 
 	// DefaultS2ISrcBackupDir is the default path where odo backs up the component source
 	DefaultS2ISrcBackupDir = "/opt/app-root/src-backup"
+
+	// DefaultS2IDeploymentBackupDir is the default path where odo backs up the built component artifacts
+	DefaultS2IDeploymentBackupDir = "/opt/app-root/deployment-backup"
 
 	// EnvS2IWorkingDir is an env var to odo-supervisord-image assemble-and-restart.sh to indicate to it the s2i working directory
 	EnvS2IWorkingDir = "ODO_S2I_WORKING_DIR"
@@ -1054,6 +1061,10 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 			Name:  EnvS2IBuilderImageName,
 			Value: s2iPaths.BuilderImgName,
 		},
+		corev1.EnvVar{
+			Name:  EnvS2IDeploymentBackupDir,
+			Value: DefaultS2IDeploymentBackupDir,
+		},
 	)
 
 	if params.SourceType == LOCAL {
@@ -1419,6 +1430,10 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 		corev1.EnvVar{
 			Name:  EnvS2IBuilderImageName,
 			Value: s2iPaths.BuilderImgName,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IDeploymentBackupDir,
+			Value: DefaultS2IDeploymentBackupDir,
 		},
 	)
 

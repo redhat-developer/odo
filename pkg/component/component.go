@@ -379,7 +379,7 @@ func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 		}
 	}
 	// Append binary backup path to s2i paths list
-	retVal = append(retVal, "/opt/app-root/backup")
+	retVal = append(retVal, occlient.DefaultS2IDeploymentBackupDir)
 	return retVal
 }
 

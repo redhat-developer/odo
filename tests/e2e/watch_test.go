@@ -35,6 +35,76 @@ var _ = Describe("odoWatchE2e", func() {
 			importOpenJDKImage()
 		})
 
+		It("watch nodejs component created from local source", func() {
+			runCmd("git clone " + nodejsURI + " " + tmpDir + "/nodejs-ex")
+			runCmd("odo create nodejs nodejs-watch --local " + tmpDir + "/nodejs-ex --min-memory 400Mi --max-memory 700Mi")
+			runCmd("time odo push -v 4")
+			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+			runCmd("time odo push -v 4")
+			runCmd("odo url create --port 8080")
+
+			startSimulationCh := make(chan bool)
+			go func() {
+				startMsg := <-startSimulationCh
+				if startMsg {
+					fileModificationPath := filepath.Join(
+						tmpDir,
+						"nodejs-ex",
+						"server.js",
+					)
+
+					fmt.Printf("Triggering filemodification @; %s\n", fileModificationPath)
+					fileModificationCmd := fmt.Sprintf(
+						"sed -i \"s/res.send('{ pageCount: -1 }')/res.send('{ pageCount: -1, message: Hello odo }')/g\" %s",
+						fileModificationPath,
+					)
+					fmt.Println("Received signal, starting file modification simulation")
+					runCmd("mkdir -p " + tmpDir + "/nodejs-ex" + "/'.a b'")
+					runCmd("mkdir -p " + tmpDir + "/nodejs-ex" + "/'a b'")
+					runCmd("touch " + tmpDir + "/nodejs-ex" + "/'a b.txt'")
+
+					runCmd(fmt.Sprintf("mkdir -p %s/nodejs-ex/tests/sample-tests", tmpDir))
+					runCmd(fmt.Sprintf("touch %s/nodejs-ex/tests/sample-tests/test_1.js", tmpDir))
+
+					// Delete during watch
+					runCmd(fmt.Sprintf("rm -fr %s/nodejs-ex/tests/sample-tests", tmpDir))
+					runCmd("rm -fr " + tmpDir + "/nodejs-ex/'a b.txt'")
+
+					runCmd(fileModificationCmd)
+				}
+			}()
+			success, err := pollNonRetCmdStdOutForString("odo watch nodejs-watch -v 4 --delay 60", time.Duration(20)*time.Minute, func(output string) bool {
+				waitForDCOfComponentToRolloutCompletely("nodejs-watch")
+				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
+				url = fmt.Sprintf("%s/pagecount", url)
+				curlOp := runCmd(fmt.Sprintf("curl %s", url))
+				if strings.Contains(curlOp, "Hello odo") {
+					// Verify delete from component pod
+					podName := runCmd("oc get pods | grep nodejs-watch | awk '{print $1}' | tr -d '\n'")
+					runFailCmd("oc exec "+podName+" -c nodejs-watch-testing -- ls -lai /tmp/src/tests/sample-tests/test_1.js /opt/app-root/src-backup/src/tests/sample-tests;exit", 2)
+					runCmd("oc exec " + podName + " -c nodejs-watch-testing -- ls -lai /tmp/src/ | grep 'a b';exit")
+					runFailCmd("oc exec "+podName+" -c nodejs-watch-testing -- ls -lai /tmp/src/ | grep 'a b.txt';exit", 1)
+				}
+				return strings.Contains(curlOp, "Hello odo")
+			}, startSimulationCh, func(output string) bool {
+				return strings.Contains(output, "Waiting for something to change")
+			})
+			Expect(success).To(Equal(true))
+			Expect(err).To(BeNil())
+
+			// Verify memory limits to be same as configured
+			getMemoryLimit := runCmd("oc get dc nodejs-watch-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
+			)
+			Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
+			getMemoryRequest := runCmd("oc get dc nodejs-watch-" +
+				appTestName +
+				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
+			)
+			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
+		})
+
 		It("should watch python component local sources for any changes", func() {
 			runCmd("git clone " + pythonURI + " " + tmpDir + "/os-sample-python")
 			runCmd("odo create python python-watch --local " + tmpDir + "/os-sample-python --memory 400Mi")
@@ -244,76 +314,6 @@ var _ = Describe("odoWatchE2e", func() {
 			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
 		})
 
-		It("watch nodejs component created from local source", func() {
-			runCmd("git clone " + nodejsURI + " " + tmpDir + "/nodejs-ex")
-			runCmd("odo create nodejs nodejs-watch --local " + tmpDir + "/nodejs-ex --min-memory 400Mi --max-memory 700Mi")
-			runCmd("time odo push -v 4")
-			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
-			runCmd("time odo push -v 4")
-			runCmd("odo url create --port 8080")
-
-			startSimulationCh := make(chan bool)
-			go func() {
-				startMsg := <-startSimulationCh
-				if startMsg {
-					fmt.Println("Received signal, starting file modification simulation")
-					runCmd("mkdir -p " + tmpDir + "/nodejs-ex" + "/'.a b'")
-					runCmd("mkdir -p " + tmpDir + "/nodejs-ex" + "/'a b'")
-					runCmd("touch " + tmpDir + "/nodejs-ex" + "/'a b.txt'")
-
-					runCmd(fmt.Sprintf("mkdir -p %s/nodejs-ex/tests/sample-tests", tmpDir))
-					runCmd(fmt.Sprintf("touch %s/nodejs-ex/tests/sample-tests/test_1.js", tmpDir))
-
-					// Delete during watch
-					runCmd(fmt.Sprintf("rm -fr %s/nodejs-ex/tests/sample-tests", tmpDir))
-					runCmd("rm -fr " + tmpDir + "/nodejs-ex/'a b.txt'")
-
-					fileModificationPath := filepath.Join(
-						tmpDir,
-						"nodejs-ex",
-						"server.js",
-					)
-
-					fmt.Printf("Triggering filemodification @; %s\n", fileModificationPath)
-					fileModificationCmd := fmt.Sprintf(
-						"sed -i \"s/res.send('{ pageCount: -1 }')/res.send('{ pageCount: -1, message: Hello odo }')/g\" %s",
-						fileModificationPath,
-					)
-					runCmd(fileModificationCmd)
-				}
-			}()
-			success, err := pollNonRetCmdStdOutForString("odo watch nodejs-watch -v 4 --delay 60", time.Duration(20)*time.Minute, func(output string) bool {
-				waitForDCOfComponentToRolloutCompletely("nodejs-watch")
-				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
-				url = fmt.Sprintf("%s/pagecount", url)
-				curlOp := runCmd(fmt.Sprintf("curl %s", url))
-				if strings.Contains(curlOp, "Hello odo") {
-					// Verify delete from component pod
-					podName := runCmd("oc get pods | grep nodejs-watch | awk '{print $1}' | tr -d '\n'")
-					runFailCmd("oc exec "+podName+" -c nodejs-watch-testing -- ls -lai /tmp/src/tests/sample-tests/test_1.js /opt/app-root/src-backup/src/tests/sample-tests;exit", 2)
-					runCmd("oc exec " + podName + " -c nodejs-watch-testing -- ls -lai /tmp/src/ | grep 'a b';exit")
-					runFailCmd("oc exec "+podName+" -c nodejs-watch-testing -- ls -lai /tmp/src/ | grep 'a b.txt';exit", 1)
-				}
-				return strings.Contains(curlOp, "Hello odo")
-			}, startSimulationCh, func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
-			Expect(success).To(Equal(true))
-			Expect(err).To(BeNil())
-
-			// Verify memory limits to be same as configured
-			getMemoryLimit := runCmd("oc get dc nodejs-watch-" +
-				appTestName +
-				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
-			)
-			Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
-			getMemoryRequest := runCmd("oc get dc nodejs-watch-" +
-				appTestName +
-				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
-			)
-			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
-		})
-
 		It("watch openjdk component created from local binary", func() {
 			runCmd("git clone " + openjdkURI + " " + tmpDir + "/binary/javalin-helloworld")
 			runCmd("mvn package -f " + tmpDir + "/binary/javalin-helloworld")
@@ -439,6 +439,5 @@ var _ = Describe("odoWatchE2e", func() {
 			)
 			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
 		})
-
 	})
 })
