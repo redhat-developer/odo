@@ -19,7 +19,7 @@ func NewCmdCatalogSearch(name, fullName string) *cobra.Command {
 This searches for a partial match for the given search term in all the available
 components & services.
 `,
-		Example: fmt.Sprintf("%s\n%s\n", component.Example, service.Example),
+		Example: fmt.Sprintf("%s\n\n%s\n", component.Example, service.Example),
 	}
 	catalogSearchCmd.AddCommand(component, service)
 
