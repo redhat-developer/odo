@@ -3,6 +3,7 @@ package catalog
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/describe"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/list"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/search"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -16,6 +17,7 @@ const RecommendedCatalogCommandName = "catalog"
 func NewCmdCatalog(name, fullName string) *cobra.Command {
 	catalogDescribeCmd := describe.NewCmdCatalogDescribe(describe.RecommendedCommandName, odoutil.GetFullName(fullName, describe.RecommendedCommandName))
 	catalogSearchCmd := search.NewCmdCatalogSearch(search.RecommendedCommandName, odoutil.GetFullName(fullName, search.RecommendedCommandName))
+	catalogListCmd := list.NewCmdCatalogList(list.RecommendedCommandName, odoutil.GetFullName(fullName, list.RecommendedCommandName))
 
 	catalogCmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [options]", name),
@@ -27,11 +29,7 @@ func NewCmdCatalog(name, fullName string) *cobra.Command {
 			catalogDescribeCmd.Example),
 	}
 
-	catalogCmd.AddCommand(catalogSearchCmd)
-	catalogCmd.AddCommand(catalogListCmd)
-	catalogCmd.AddCommand(catalogDescribeCmd)
-	catalogListCmd.AddCommand(catalogListComponentCmd)
-	catalogListCmd.AddCommand(catalogListServiceCmd)
+	catalogCmd.AddCommand(catalogSearchCmd, catalogListCmd, catalogDescribeCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
