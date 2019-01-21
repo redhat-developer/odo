@@ -23,7 +23,7 @@ var (
 	GITCOMMIT = "HEAD"
 )
 
-// RecommendedCommandName is the recommended service command name
+// RecommendedCommandName is the recommended version command name
 const RecommendedCommandName = "version"
 
 var versionLongDesc = ktemplates.LongDesc("Print the client version information")
@@ -36,12 +36,12 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 
 	// versionCmd represents the version command
 	var versionCmd = &cobra.Command{
-		Use:   "version",
-		Short: "Print the client version information",
+		Use:   name,
+		Short: versionLongDesc,
 		Long:  versionLongDesc,
-		Example: `  # Print the client version of Odo
-	  odo version
-		`,
+		Example: fmt.Sprintf("# Print the client version of Odo\n\n%s",
+			fullName,
+		),
 		Run: func(cmd *cobra.Command, args []string) {
 
 			// If verbose mode is enabled, dump all KUBECLT_* env variables
