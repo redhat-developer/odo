@@ -28,6 +28,11 @@ const RecommendedCommandName = "version"
 
 var versionLongDesc = ktemplates.LongDesc("Print the client version information")
 
+var versionExample = ktemplates.Examples(`
+# Print the client version of Odo
+%[1]s`,
+)
+
 var clientFlag bool
 
 // NewCmdVersion implements the version odo command
@@ -36,12 +41,10 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 
 	// versionCmd represents the version command
 	var versionCmd = &cobra.Command{
-		Use:   name,
-		Short: versionLongDesc,
-		Long:  versionLongDesc,
-		Example: fmt.Sprintf("# Print the client version of Odo\n\n%s",
-			fullName,
-		),
+		Use:     name,
+		Short:   versionLongDesc,
+		Long:    versionLongDesc,
+		Example: fmt.Sprintf(versionExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 
 			// If verbose mode is enabled, dump all KUBECLT_* env variables
