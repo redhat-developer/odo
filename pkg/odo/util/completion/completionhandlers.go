@@ -55,6 +55,8 @@ var ServiceClassCompletionHandler = func(cmd *cobra.Command, args parsedArgs, co
 // ServicePlanCompletionHandler provides completion for the the plan of a selected service
 var ServicePlanCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
+	// if we have less than two arguments, it means the use didn't specify the name of the service
+	// meaning that there is no point in providing suggestions
 	if len(args.original.Completed) < 2 {
 		complete.Log("Couldn't extract the service name")
 		return completions
