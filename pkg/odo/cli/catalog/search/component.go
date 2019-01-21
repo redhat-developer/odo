@@ -7,7 +7,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 const componentRecommendedCommandName = "component"
@@ -15,7 +14,48 @@ const componentRecommendedCommandName = "component"
 var componentExample = `  # Search for a component
   %[1]s python`
 
+// SearchComponentOptions encapsulates the options for the odo catalog describe service command
+type SearchComponentOptions struct {
+	searchTerm string
+	components []string
+	// generic context options common to all commands
+	*genericclioptions.Context
+}
+
+// NewSearchComponentOptions creates a new SearchComponentOptions instance
+func NewSearchComponentOptions() *SearchComponentOptions {
+	return &SearchComponentOptions{}
+}
+
+// Complete completes SearchComponentOptions after they've been created
+func (o *SearchComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context = genericclioptions.NewContext(cmd)
+	o.searchTerm = args[0]
+
+	o.components, err = catalog.Search(o.Client, o.searchTerm)
+	return err
+}
+
+// Validate validates the SearchComponentOptions based on completed values
+func (o *SearchComponentOptions) Validate() (err error) {
+	if len(o.components) == 0 {
+		return fmt.Errorf("no component matched the query: %s", o.searchTerm)
+	}
+
+	return
+}
+
+// Run contains the logic for the odo catalog describe service command
+func (o *SearchComponentOptions) Run() (err error) {
+	log.Infof("The following components were found:")
+	for _, component := range o.components {
+		fmt.Printf("- %v\n", component)
+	}
+	return
+}
+
 func NewCmdCatalogSearchComponent(name, fullName string) *cobra.Command {
+	o := NewSearchComponentOptions()
 	return &cobra.Command{
 		Use:   name,
 		Short: "Search component type in catalog",
@@ -27,21 +67,9 @@ components.
 		Args:    cobra.ExactArgs(1),
 		Example: fmt.Sprintf(componentExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
-			client := genericclioptions.Client(cmd)
-			searchTerm := args[0]
-			components, err := catalog.Search(client, searchTerm)
-			odoutil.LogErrorAndExit(err, "unable to search for components")
-
-			switch len(components) {
-			case 0:
-				log.Errorf("No component matched the query: %v", searchTerm)
-				os.Exit(1)
-			default:
-				log.Infof("The following components were found:")
-				for _, component := range components {
-					fmt.Printf("- %v\n", component)
-				}
-			}
+			odoutil.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			odoutil.LogErrorAndExit(o.Validate(), "")
+			odoutil.LogErrorAndExit(o.Run(), "")
 		},
 	}
 }
