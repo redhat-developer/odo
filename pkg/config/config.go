@@ -57,8 +57,10 @@ type ApplicationInfo struct {
 	ActiveComponent string `json:"activeComponent"`
 }
 
+// GlobalConfig stores all the config related to odo, its the superset of
+// local config.
 type GlobalConfig struct {
-	// global config has all the attributes of global config as well
+	// global config has all the attributes of local config as well
 	*LocalConfig
 	// remember active applications and components per project
 	// when project or applications is switched we can go back to last active app/component
@@ -72,15 +74,20 @@ type GlobalConfig struct {
 	OdoSettings OdoSettings `json:"settings"`
 }
 
+// LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
 	ComponentSettings ComponentSettings `json:"component_settings"`
 }
 
+// GlobalConfigInfo wraps the global config and provides helpers to
+// serialize it.
 type GlobalConfigInfo struct {
 	Filename string
 	GlobalConfig
 }
 
+// LocalConfigInfo wraps the local config and provides helpers to
+// serialize it.
 type LocalConfigInfo struct {
 	Filename string
 	LocalConfig
@@ -261,6 +268,7 @@ func (lc *LocalConfig) setConfig(parameter string, value string) error {
 	return nil
 }
 
+// GetComponentType returns type of component (builder image name) in the config
 func (lc *LocalConfig) GetComponentType() string {
 	if lc.ComponentSettings.ComponentType == nil {
 		return ""
