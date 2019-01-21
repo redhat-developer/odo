@@ -24,7 +24,7 @@ This describes the service and the associated plans.
 `)
 )
 
-// DescribeServiceOptions encapsulates the options for the odo describe service command
+// DescribeServiceOptions encapsulates the options for the odo catalog describe service command
 type DescribeServiceOptions struct {
 	// name of the service to describe, from command arguments
 	serviceName string
