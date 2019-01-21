@@ -80,9 +80,8 @@ func TestServicePlanCompletionHandler(t *testing.T) {
 		})
 
 		completions := ServicePlanCompletionHandler(nil, tt.parsedArgs, context)
-		sort.Strings(completions)
 
-		// Sort the output and expected o/p in-order to avoid issues due to order as its not important
+		// Sort the output and expected output in order to avoid false negatives (since ordering of the results is not important)
 		sort.Strings(completions)
 		sort.Strings(tt.output)
 
@@ -203,9 +202,8 @@ func TestServiceParameterCompletionHandler(t *testing.T) {
 		})
 
 		completions := ServiceParameterCompletionHandler(nil, tt.parsedArgs, context)
-		sort.Strings(completions)
 
-		// Sort the output and expected o/p in-order to avoid issues due to order as its not important
+		// Sort the output and expected output in order to avoid false negatives (since ordering of the results is not important)
 		sort.Strings(completions)
 		sort.Strings(tt.output)
 
