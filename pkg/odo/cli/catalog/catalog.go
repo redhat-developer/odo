@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/describe"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -36,6 +37,7 @@ func filterHiddenServices(services []occlient.Service) []occlient.Service {
 
 // NewCmdCatalog implements the odo catalog command
 func NewCmdCatalog(name, fullName string) *cobra.Command {
+	catalogDescribeCmd := describe.NewCmdCatalogDescribe(describe.RecommendedCommandName, odoutil.GetFullName(fullName, describe.RecommendedCommandName))
 	catalogCmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [options]", name),
 		Short: "Catalog related operations",
@@ -53,7 +55,7 @@ func NewCmdCatalog(name, fullName string) *cobra.Command {
 	catalogListCmd.AddCommand(catalogListServiceCmd)
 	catalogSearchCmd.AddCommand(catalogSearchComponentCmd)
 	catalogSearchCmd.AddCommand(catalogSearchServiceCmd)
-	catalogDescribeCmd.AddCommand(catalogDescribeServiceCmd)
+
 	// Add a defined annotation in order to appear in the help menu
 	catalogCmd.Annotations = map[string]string{"command": "other"}
 	catalogCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
