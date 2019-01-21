@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
@@ -84,13 +85,13 @@ var catalogListServiceCmd = &cobra.Command{
 		client := genericclioptions.Client(cmd)
 		catalogList, err := svc.ListCatalog(client)
 		odoutil.LogErrorAndExit(err, "unable to list services because Service Catalog is not enabled in your cluster")
-		catalogList = filterHiddenServices(catalogList)
+		catalogList = util.FilterHiddenServices(catalogList)
 		switch len(catalogList) {
 		case 0:
 			log.Errorf("No deployable services found")
 			os.Exit(1)
 		default:
-			displayServices(catalogList)
+			util.DisplayServices(catalogList)
 
 		}
 	},
