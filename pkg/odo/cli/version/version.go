@@ -26,7 +26,7 @@ var (
 // RecommendedCommandName is the recommended service command name
 const RecommendedCommandName = "version"
 
-var versonLongDesc = ktemplates.LongDesc("Print the client version information")
+var versionLongDesc = ktemplates.LongDesc("Print the client version information")
 
 var clientFlag bool
 
@@ -38,7 +38,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 	var versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Print the client version information",
-		Long:  versonLongDesc,
+		Long:  versionLongDesc,
 		Example: `  # Print the client version of Odo
 	  odo version
 		`,
