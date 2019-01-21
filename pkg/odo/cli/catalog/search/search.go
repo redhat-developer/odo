@@ -6,8 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "search"
 
+// NewCmdCatalogSearch implements the odo catalog search command
 func NewCmdCatalogSearch(name, fullName string) *cobra.Command {
 	component := NewCmdCatalogSearchComponent(componentRecommendedCommandName, util.GetFullName(fullName, componentRecommendedCommandName))
 	service := NewCmdCatalogSearchService(serviceRecommendedCommandName, util.GetFullName(fullName, serviceRecommendedCommandName))

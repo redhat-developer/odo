@@ -48,12 +48,13 @@ func (o *ListServicesOptions) Validate() (err error) {
 	return
 }
 
-// Run contains the logic for the odo catalog list services command
+// Run contains the logic for the command associated with ListServicesOptions
 func (o *ListServicesOptions) Run() (err error) {
 	util.DisplayServices(o.services)
 	return
 }
 
+// NewCmdCatalogListServices implements the odo catalog list services command
 func NewCmdCatalogListServices(name, fullName string) *cobra.Command {
 	o := NewListServicesOptions()
 	return &cobra.Command{

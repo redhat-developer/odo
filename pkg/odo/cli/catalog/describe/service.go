@@ -54,7 +54,7 @@ func (o *DescribeServiceOptions) Validate() (err error) {
 	return err
 }
 
-// Run contains the logic for the odo catalog describe service command
+// Run contains the logic for the command associated with DescribeServiceOptions
 func (o *DescribeServiceOptions) Run() (err error) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetBorder(false)
@@ -126,6 +126,7 @@ func (o *DescribeServiceOptions) Run() (err error) {
 	return
 }
 
+// NewCmdCatalogDescribeService implements the odo catalog describe service command
 func NewCmdCatalogDescribeService(name, fullName string) *cobra.Command {
 	o := NewDescribeServiceOptions()
 	command := &cobra.Command{

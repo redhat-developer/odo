@@ -49,7 +49,7 @@ func (o *ListComponentsOptions) Validate() (err error) {
 	return err
 }
 
-// Run contains the logic for the odo catalog list components command
+// Run contains the logic for the command associated with ListComponentsOptions
 func (o *ListComponentsOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS")
@@ -74,6 +74,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 	return
 }
 
+// NewCmdCatalogListComponents implements the odo catalog list components command
 func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 	o := NewListComponentsOptions()
 

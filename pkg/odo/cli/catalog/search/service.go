@@ -51,12 +51,13 @@ func (o *SearchServiceOptions) Validate() (err error) {
 	return
 }
 
-// Run contains the logic for the odo catalog describe service command
+// Run contains the logic for the command associated with SearchServiceOptions
 func (o *SearchServiceOptions) Run() (err error) {
 	util.DisplayServices(o.services)
 	return
 }
 
+// NewCmdCatalogSearchService implements the odo catalog search service command
 func NewCmdCatalogSearchService(name, fullName string) *cobra.Command {
 	o := NewSearchServiceOptions()
 	return &cobra.Command{

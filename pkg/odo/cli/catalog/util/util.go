@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 )
 
+// DisplayServices displays the specified services
 func DisplayServices(services []occlient.Service) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "NAME", "\t", "PLANS")
@@ -17,6 +18,7 @@ func DisplayServices(services []occlient.Service) {
 	w.Flush()
 }
 
+// FilterHiddenServices filters out services that should be hidden from the specified list
 func FilterHiddenServices(services []occlient.Service) []occlient.Service {
 	var filteredServices []occlient.Service
 	for _, service := range services {

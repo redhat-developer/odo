@@ -45,7 +45,7 @@ func (o *SearchComponentOptions) Validate() (err error) {
 	return
 }
 
-// Run contains the logic for the odo catalog describe service command
+// Run contains the logic for the command associated with SearchComponentOptions
 func (o *SearchComponentOptions) Run() (err error) {
 	log.Infof("The following components were found:")
 	for _, component := range o.components {
@@ -54,6 +54,7 @@ func (o *SearchComponentOptions) Run() (err error) {
 	return
 }
 
+// NewCmdCatalogSearchComponent implements the odo catalog search component command
 func NewCmdCatalogSearchComponent(name, fullName string) *cobra.Command {
 	o := NewSearchComponentOptions()
 	return &cobra.Command{

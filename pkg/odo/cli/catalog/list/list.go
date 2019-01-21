@@ -6,8 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "list"
 
+// NewCmdCatalogList implements the odo catalog list command
 func NewCmdCatalogList(name, fullName string) *cobra.Command {
 	components := NewCmdCatalogListComponents(componentsRecommendedCommandName, util.GetFullName(fullName, componentsRecommendedCommandName))
 	services := NewCmdCatalogListServices(servicesRecommendedCommandName, util.GetFullName(fullName, servicesRecommendedCommandName))
