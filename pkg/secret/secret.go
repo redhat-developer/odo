@@ -33,8 +33,9 @@ Please delete the component and recreate it using 'odo create'`, componentName)
 		if len(secrets) == 1 {
 			return secrets[0].Name, nil
 		}
-		return "", fmt.Errorf(`Multiple secrets exist for component %s. 
-Please select one of the following ports: '%s'`, componentName, strings.Join(availablePorts(secrets), ","))
+		return "", fmt.Errorf("Unable to properly link to component %s. "+
+			"Please select one of the following ports: '%s' "+
+			"by supplying the --port option and rerun the command", componentName, strings.Join(availablePorts(secrets), ","))
 	}
 
 	// search each secret to see which port is corresponds to
@@ -43,9 +44,9 @@ Please select one of the following ports: '%s'`, componentName, strings.Join(ava
 			return secret.Name, nil
 		}
 	}
-	return "", fmt.Errorf(`None of the secrets that exist for component %s match port %s. 
-Please select one of the following ports: '%s'`, componentName, port, strings.Join(availablePorts(secrets), ","))
-
+	return "", fmt.Errorf("Unable to properly link to component %s using port %s. "+
+		"Please select one of the following ports: '%s' "+
+		"by supplying the --port option and rerun the command", componentName, port, strings.Join(availablePorts(secrets), ","))
 }
 
 func availablePorts(secrets []corev1.Secret) []string {
