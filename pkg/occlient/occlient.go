@@ -1950,7 +1950,7 @@ func (c *Client) GetClusterServiceClass(serviceName string) (*scv1beta1.ClusterS
 }
 
 // GetClusterPlansFromServiceName returns the plans associated with a service class
-// serviceName is the name of the service class whose plans are required
+// serviceName is the name (the actual id, NOT the external name) of the service class whose plans are required
 // returns array of ClusterServicePlans or error
 func (c *Client) GetClusterPlansFromServiceName(serviceName string) ([]scv1beta1.ClusterServicePlan, error) {
 	opts := metav1.ListOptions{

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -12,10 +13,17 @@ type M map[string]interface{}
 
 // FakeClusterServiceClass creates a fake service class with the specified name for testing purposes
 func FakeClusterServiceClass(name string, tags ...string) v1beta1.ClusterServiceClass {
+	classExternalMetaData := make(map[string]interface{})
+	classExternalMetaDataRaw, err := json.Marshal(classExternalMetaData)
+	if err != nil {
+		panic(err)
+	}
+
 	class := v1beta1.ClusterServiceClass{
 		Spec: v1beta1.ClusterServiceClassSpec{
 			CommonServiceClassSpec: v1beta1.CommonServiceClassSpec{
-				ExternalName: name,
+				ExternalName:     name,
+				ExternalMetadata: &runtime.RawExtension{Raw: classExternalMetaDataRaw},
 			},
 		},
 	}
@@ -31,6 +39,9 @@ func FakeClusterServiceClass(name string, tags ...string) v1beta1.ClusterService
 // metadata and parameter values
 func FakeClusterServicePlan(name string, planNumber int) v1beta1.ClusterServicePlan {
 	return v1beta1.ClusterServicePlan{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
 		Spec: v1beta1.ClusterServicePlanSpec{
 			ClusterServiceClassRef: v1beta1.ClusterObjectReference{
 				Name: "1dda1477cace09730bd8ed7a6505607e",

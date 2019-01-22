@@ -7,7 +7,6 @@ import (
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -46,9 +45,6 @@ func NewCmdService(name, fullName string) *cobra.Command {
 	appCmd.AddApplicationFlag(serviceCreateCmd)
 	appCmd.AddApplicationFlag(serviceDeleteCmd)
 	appCmd.AddApplicationFlag(serviceListCmd)
-
-	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
-	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 
 	return serviceCmd
 }

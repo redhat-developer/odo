@@ -48,7 +48,30 @@ func NewParsedArgs(args complete.Args, cmd *cobra.Command) parsedArgs {
 	typed := getUserTypedCommands(args, cmd)
 	commands, flagValues := getCommandsAndFlags(typed, cmd)
 
-	complete.Log("Parsed flag values: %v", flagValues)
+	complete.Log("Parsed commands values for full input: %v", commands)
+	complete.Log("Parsed flag values for full input: %v", flagValues)
+
+	// the parsing above won't work properly when we have previously supplied flags and we are trying to complete
+	// another flag
+	// For example when the user has typed "odo service create --plan prod -p "
+	// the flagValues var above would not contains the plan flag and value
+	// So in the following part of the code we strip the last thing the user added and parse again
+	// any new parsed flags will be added
+	// There is no need to do this extra parsing if the user has not already added a flag. So as a heuristic
+	// we only perform this parsing when at the user has added at least 2 tokens
+	if len(typed) > 2 {
+		typedWithoutLast := make([]string, len(typed))
+		copy(typedWithoutLast, typed)
+		typedWithoutLast = typedWithoutLast[:len(typedWithoutLast)-1]
+		_, flagValuesWithoutLast := getCommandsAndFlags(typedWithoutLast, cmd)
+
+		complete.Log("Parsed flag values for input without last: %v", flagValuesWithoutLast)
+
+		// now we merge the two maps
+		for k, v := range flagValuesWithoutLast {
+			flagValues[k] = v
+		}
+	}
 
 	parsed := parsedArgs{
 		original:   args,
