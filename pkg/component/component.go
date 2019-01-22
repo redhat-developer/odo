@@ -464,14 +464,18 @@ func Build(client *occlient.Client, componentName string, applicationName string
 		stdout = bufio.NewWriter(&b)
 	}
 
-	if err := client.FollowBuildLog(buildName, stdout); err != nil {
-		return errors.Wrapf(err, "unable to follow logs for %s", buildName)
-	}
-
 	if wait {
+
+		s := log.Spinnerf("Waiting for build to finish")
+		defer s.End(false)
+		if err := client.FollowBuildLog(buildName, stdout); err != nil {
+			return errors.Wrapf(err, "unable to follow logs for %s", buildName)
+		}
+
 		if err := client.WaitForBuildToFinish(buildName); err != nil {
 			return errors.Wrapf(err, "unable to build %s, error: %s", buildName, b.String())
 		}
+		s.End(true)
 	}
 
 	return nil
