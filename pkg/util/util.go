@@ -385,11 +385,11 @@ func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 	rules := []string{".git"}
 	// checking for presence of .odoignore file
 	pathIgnore := path.Join(directory, ".odoignore")
-	if _, err := os.Stat(pathIgnore); os.IsNotExist(err) {
+	if _, err := os.Stat(pathIgnore); os.IsNotExist(err) || err != nil {
 		// .odoignore doesn't exist
 		// checking presence of .gitignore file
 		pathIgnore = path.Join(directory, ".gitignore")
-		if _, err := os.Stat(pathIgnore); os.IsNotExist(err) {
+		if _, err := os.Stat(pathIgnore); os.IsNotExist(err) || err != nil {
 			// both doesn't exist, return empty array
 			return rules, nil
 		}

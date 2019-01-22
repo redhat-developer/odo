@@ -2,13 +2,14 @@ package component
 
 import (
 	"fmt"
-	"github.com/gobwas/glob"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/gobwas/glob"
 
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -255,7 +256,10 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						glog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
 					}
 					// append the file to list of deleted files
-					if !alreadyInChangedFiles && !matched {
+					// When a file/folder is deleted, it raises 2 events:
+					//	a. RENAME with event.Name empty
+					//	b. REMOVE with event.Name as file name
+					if !alreadyInChangedFiles && !matched && event.Name != "" {
 						relPath, err := filepath.Rel(parameters.Path, event.Name)
 						if err != nil {
 							watchError = errors.Wrapf(err, "failed to propagate delete of file %s as its relative to %s couldn't be found", event.Name, parameters.Path)

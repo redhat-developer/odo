@@ -136,7 +136,7 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 	}
 	cmd.Stdout = &buf
 
-	ticker := time.NewTicker(time.Millisecond)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	timeoutCh := make(chan bool)

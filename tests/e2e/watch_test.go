@@ -73,22 +73,26 @@ var _ = Describe("odoWatchE2e", func() {
 					runCmd(fileModificationCmd)
 				}
 			}()
-			success, err := pollNonRetCmdStdOutForString("odo watch nodejs-watch -v 4 --delay 60", time.Duration(20)*time.Minute, func(output string) bool {
-				waitForDCOfComponentToRolloutCompletely("nodejs-watch")
-				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
-				url = fmt.Sprintf("%s/pagecount", url)
-				curlOp := runCmd(fmt.Sprintf("curl %s", url))
-				if strings.Contains(curlOp, "Hello odo") {
-					// Verify delete from component pod
-					podName := runCmd("oc get pods | grep nodejs-watch | awk '{print $1}' | tr -d '\n'")
-					runFailCmd("oc exec "+podName+" -c nodejs-watch-testing -- ls -lai /tmp/src/tests/sample-tests/test_1.js /opt/app-root/src-backup/src/tests/sample-tests;exit", 2)
-					runCmd("oc exec " + podName + " -c nodejs-watch-testing -- ls -lai /tmp/src/ | grep 'a b';exit")
-					runFailCmd("oc exec "+podName+" -c nodejs-watch-testing -- ls -lai /tmp/src/ | grep 'a b.txt';exit", 1)
-				}
-				return strings.Contains(curlOp, "Hello odo")
-			}, startSimulationCh, func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
+			success, err := pollNonRetCmdStdOutForString(
+				"odo watch nodejs-watch -v 4",
+				time.Duration(20)*time.Minute,
+				func(output string) bool {
+					url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
+					url = fmt.Sprintf("%s/pagecount", url)
+					curlOp := runCmd(fmt.Sprintf("curl %s", url))
+					if strings.Contains(curlOp, "Hello odo") {
+						// Verify delete from component pod
+						podName := runCmd("oc get pods | grep nodejs-watch | awk '{print $1}' | tr -d '\n'")
+						runFailCmd("oc exec "+podName+" -c nodejs-watch-testing -- ls -lai /tmp/src/tests/sample-tests/test_1.js /opt/app-root/src-backup/src/tests/sample-tests;exit", 2)
+						runCmd("oc exec " + podName + " -c nodejs-watch-testing -- ls -lai /tmp/src/ | grep 'a b';exit")
+						runFailCmd("oc exec "+podName+" -c nodejs-watch-testing -- ls -lai /tmp/src/ | grep 'a b.txt';exit", 1)
+					}
+					return strings.Contains(curlOp, "Hello odo")
+				},
+				startSimulationCh,
+				func(output string) bool {
+					return strings.Contains(output, "Waiting for something to change")
+				})
 			Expect(success).To(Equal(true))
 			Expect(err).To(BeNil())
 
@@ -132,25 +136,29 @@ var _ = Describe("odoWatchE2e", func() {
 					runCmd(fileModificationCmd)
 				}
 			}()
-			success, err := pollNonRetCmdStdOutForString("odo watch python-watch -v 4", time.Duration(5)*time.Minute, func(output string) bool {
-				waitForDCOfComponentToRolloutCompletely("python-watch")
-				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}'")
-				curlOp := runCmd(fmt.Sprintf("curl %s", url))
+			success, err := pollNonRetCmdStdOutForString(
+				"odo watch python-watch -v 4",
+				time.Duration(5)*time.Minute,
+				func(output string) bool {
+					url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}'")
+					curlOp := runCmd(fmt.Sprintf("curl %s", url))
 
-				if strings.Contains(curlOp, "Hello odo") {
-					podName := runCmd("oc get pods | grep python-watch | awk '{print $1}' | tr -d '\n'")
-					runCmd("oc exec " + podName + " -c python-watch-testing -- ls -lai /tmp/src/ | grep 'a b';exit")
+					if strings.Contains(curlOp, "Hello odo") {
+						podName := runCmd("oc get pods | grep python-watch | awk '{print $1}' | tr -d '\n'")
+						runCmd("oc exec " + podName + " -c python-watch-testing -- ls -lai /tmp/src/ | grep 'a b';exit")
 
-					// Verify delete from component pod
-					runFailCmd("oc exec "+podName+" -c python-watch-testing -- ls -lai /tmp/src/tests;exit", 2)
-					runFailCmd("oc exec "+podName+" -c python-watch-testing -- ls -lai /opt/app-root/src-backup/src/tests;exit", 2)
-					runFailCmd("oc exec "+podName+" -c python-watch-testing -- ls -lai /tmp/src/ | grep 'a b.txt';exit", 1)
-				}
+						// Verify delete from component pod
+						runFailCmd("oc exec "+podName+" -c python-watch-testing -- ls -lai /tmp/src/tests;exit", 2)
+						runFailCmd("oc exec "+podName+" -c python-watch-testing -- ls -lai /opt/app-root/src-backup/src/tests;exit", 2)
+						runFailCmd("oc exec "+podName+" -c python-watch-testing -- ls -lai /tmp/src/ | grep 'a b.txt';exit", 1)
+					}
 
-				return strings.Contains(curlOp, "Hello odo")
-			}, startSimulationCh, func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
+					return strings.Contains(curlOp, "Hello odo")
+				},
+				startSimulationCh,
+				func(output string) bool {
+					return strings.Contains(output, "Waiting for something to change")
+				})
 			Expect(success).To(Equal(true))
 			Expect(err).To(BeNil())
 
@@ -209,24 +217,28 @@ var _ = Describe("odoWatchE2e", func() {
 					runCmd(fileModificationCmd)
 				}
 			}()
-			success, err := pollNonRetCmdStdOutForString("odo watch wildfly-watch -v 4", time.Duration(5)*time.Minute, func(output string) bool {
-				waitForDCOfComponentToRolloutCompletely("wildfly-watch")
-				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
-				url = fmt.Sprintf("%s/counter", url)
-				curlOp := runCmd(fmt.Sprintf("curl %s", url))
-				if strings.Contains(curlOp, "Hello odo") {
-					// Verify delete from component pod
-					podName := runCmd("oc get pods | grep wildfly-watch | awk '{print $1}' | tr -d '\n'")
-					runFailCmd("oc exec "+podName+" -c wildfly-watch-testing -- ls -lai /opt/s2i/destination/src/tests /opt/app-root/src-backup/src/tests; exit", 2)
-					runCmd("oc exec " + podName + " -c wildfly-watch-testing -- ls -lai /opt/s2i/destination/src/src/ | grep 'a b';exit")
-					runFailCmd("oc exec "+podName+" -c wildfly-watch-testing -- ls -lai /opt/s2i/destination/src/src/tests;exit", 2)
-					runFailCmd("oc exec "+podName+" -c wildfly-watch-testing -- ls -lai /opt/app-root/src-backup/src/tests;exit", 2)
-					runFailCmd("oc exec "+podName+" -c wildfly-watch-testing -- ls -lai /opt/s2i/destination/src/src/ | grep 'a b.txt';exit", 1)
-				}
-				return strings.Contains(curlOp, "Hello odo")
-			}, startSimulationCh, func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
+			success, err := pollNonRetCmdStdOutForString(
+				"odo watch wildfly-watch -v 4",
+				time.Duration(5)*time.Minute,
+				func(output string) bool {
+					url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
+					url = fmt.Sprintf("%s/counter", url)
+					curlOp := runCmd(fmt.Sprintf("curl %s", url))
+					if strings.Contains(curlOp, "Hello odo") {
+						// Verify delete from component pod
+						podName := runCmd("oc get pods | grep wildfly-watch | awk '{print $1}' | tr -d '\n'")
+						runFailCmd("oc exec "+podName+" -c wildfly-watch-testing -- ls -lai /opt/s2i/destination/src/tests /opt/app-root/src-backup/src/tests; exit", 2)
+						runCmd("oc exec " + podName + " -c wildfly-watch-testing -- ls -lai /opt/s2i/destination/src/src/ | grep 'a b';exit")
+						runFailCmd("oc exec "+podName+" -c wildfly-watch-testing -- ls -lai /opt/s2i/destination/src/src/tests;exit", 2)
+						runFailCmd("oc exec "+podName+" -c wildfly-watch-testing -- ls -lai /opt/app-root/src-backup/src/tests;exit", 2)
+						runFailCmd("oc exec "+podName+" -c wildfly-watch-testing -- ls -lai /opt/s2i/destination/src/src/ | grep 'a b.txt';exit", 1)
+					}
+					return strings.Contains(curlOp, "Hello odo")
+				},
+				startSimulationCh,
+				func(output string) bool {
+					return strings.Contains(output, "Waiting for something to change")
+				})
 			Expect(success).To(Equal(true))
 			Expect(err).To(BeNil())
 
@@ -281,23 +293,27 @@ var _ = Describe("odoWatchE2e", func() {
 					runCmd(fileModificationCmd)
 				}
 			}()
-			success, err := pollNonRetCmdStdOutForString("odo watch openjdk-watch -v 4", time.Duration(5)*time.Minute, func(output string) bool {
-				waitForDCOfComponentToRolloutCompletely("openjdk-watch")
-				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
-				curlOp := runCmd(fmt.Sprintf("curl %s", url))
-				if strings.Contains(curlOp, "Hello odo") {
-					// Verify delete from component pod
-					podName := runCmd("oc get pods | grep openjdk-watch | awk '{print $1}' | tr -d '\n'")
-					runFailCmd("oc exec "+podName+" -c openjdk-watch-testing -- ls -lai /tmp/src/tests/test_1.java /opt/app-root/src-backup/src/tests/test_1.java;exit", 2)
-					runCmd("oc exec " + podName + " -c openjdk-watch-testing -- ls -lai /tmp/src/src/ | grep 'a b';exit")
-					runFailCmd("oc exec "+podName+" -c openjdk-watch-testing -- ls -lai /tmp/src/tests;exit", 2)
-					runFailCmd("oc exec "+podName+" -c openjdk-watch-testing -- ls -lai /opt/app-root/src-backup/src/tests;exit", 2)
-					runFailCmd("oc exec "+podName+" -c openjdk-watch-testing -- ls -lai /tmp/src/src/ | grep 'a b.txt';exit", 1)
-				}
-				return strings.Contains(curlOp, "Hello odo")
-			}, startSimulationCh, func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
+			success, err := pollNonRetCmdStdOutForString(
+				"odo watch openjdk-watch -v 4",
+				time.Duration(5)*time.Minute,
+				func(output string) bool {
+					url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
+					curlOp := runCmd(fmt.Sprintf("curl %s", url))
+					if strings.Contains(curlOp, "Hello odo") {
+						// Verify delete from component pod
+						podName := runCmd("oc get pods | grep openjdk-watch | awk '{print $1}' | tr -d '\n'")
+						runFailCmd("oc exec "+podName+" -c openjdk-watch-testing -- ls -lai /tmp/src/tests/test_1.java /opt/app-root/src-backup/src/tests/test_1.java;exit", 2)
+						runCmd("oc exec " + podName + " -c openjdk-watch-testing -- ls -lai /tmp/src/src/ | grep 'a b';exit")
+						runFailCmd("oc exec "+podName+" -c openjdk-watch-testing -- ls -lai /tmp/src/tests;exit", 2)
+						runFailCmd("oc exec "+podName+" -c openjdk-watch-testing -- ls -lai /opt/app-root/src-backup/src/tests;exit", 2)
+						runFailCmd("oc exec "+podName+" -c openjdk-watch-testing -- ls -lai /tmp/src/src/ | grep 'a b.txt';exit", 1)
+					}
+					return strings.Contains(curlOp, "Hello odo")
+				},
+				startSimulationCh,
+				func(output string) bool {
+					return strings.Contains(output, "Waiting for something to change")
+				})
 			Expect(success).To(Equal(true))
 			Expect(err).To(BeNil())
 
@@ -347,14 +363,20 @@ var _ = Describe("odoWatchE2e", func() {
 					runCmd("mvn package -f " + tmpDir + "/binary/javalin-helloworld")
 				}
 			}()
-			success, err := pollNonRetCmdStdOutForString("odo watch openjdk-watch-binary -v 4", time.Duration(5)*time.Minute, func(output string) bool {
-				waitForDCOfComponentToRolloutCompletely("openjdk-watch-binary")
-				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
-				curlOp := runCmd(fmt.Sprintf("curl %s", url))
-				return strings.Contains(curlOp, "Hello odo")
-			}, startSimulationCh, func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
+			success, err := pollNonRetCmdStdOutForString(
+				"odo watch openjdk-watch-binary -v 4",
+				time.Duration(5)*time.Minute,
+				func(output string) bool {
+					url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
+					curlOp := runCmd(fmt.Sprintf("curl %s", url))
+					return strings.Contains(curlOp, "Hello odo")
+				},
+				startSimulationCh,
+				func(output string) bool {
+					fmt.Println(output)
+					return strings.Contains(output, "Waiting for something to change")
+				},
+			)
 			Expect(success).To(Equal(true))
 			Expect(err).To(BeNil())
 
@@ -370,10 +392,10 @@ var _ = Describe("odoWatchE2e", func() {
 			)
 			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
 		})
-
 		It("watch wildfly component created from binary", func() {
 			runCmd("git clone " + wildflyURI + " " + tmpDir + "/binary/katacoda-odo-backend")
-			runCmd("odo create wildfly wildfly-watch-binary --local " + tmpDir + "/binary/katacoda-odo-backend --min-memory 400Mi --max-memory 700Mi")
+			runCmd("mvn package -f " + tmpDir + "/binary/katacoda-odo-backend")
+			runCmd("odo create wildfly wildfly-watch-binary --binary " + tmpDir + "/binary/katacoda-odo-backend/target/ROOT.war --min-memory 400Mi --max-memory 700Mi")
 			runCmd("time odo push -v 4")
 			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
 			runCmd("time odo push -v 4")
@@ -413,17 +435,22 @@ var _ = Describe("odoWatchE2e", func() {
 						fileModificationPath,
 					)
 					runCmd(fileModificationCmd)
+					runCmd("mvn package -f " + tmpDir + "/binary/katacoda-odo-backend")
 				}
 			}()
-			success, err := pollNonRetCmdStdOutForString("odo watch wildfly-watch-binary -v 4", time.Duration(5)*time.Minute, func(output string) bool {
-				waitForDCOfComponentToRolloutCompletely("wildfly-watch-binary")
-				url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
-				url = fmt.Sprintf("%s/counter", url)
-				curlOp := runCmd(fmt.Sprintf("curl %s", url))
-				return strings.Contains(curlOp, "Hello odo")
-			}, startSimulationCh, func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
+			success, err := pollNonRetCmdStdOutForString(
+				"odo watch wildfly-watch-binary -v 4",
+				time.Duration(5)*time.Minute,
+				func(output string) bool {
+					url := runCmd("odo url list | grep `odo component get -q` | grep 8080 | awk '{print $2}' | tr -d '\n'")
+					url = fmt.Sprintf("%s/counter", url)
+					curlOp := runCmd(fmt.Sprintf("curl %s", url))
+					return strings.Contains(curlOp, "Hello odo")
+				},
+				startSimulationCh,
+				func(output string) bool {
+					return strings.Contains(output, "Waiting for something to change")
+				})
 			Expect(success).To(Equal(true))
 			Expect(err).To(BeNil())
 

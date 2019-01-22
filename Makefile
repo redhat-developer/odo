@@ -143,9 +143,9 @@ endif
 .PHONY: test-watch-e2e
 test-watch-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.v -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.v
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct
 endif
 
 # Run all e2e tests
