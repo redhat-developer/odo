@@ -2,6 +2,8 @@ package e2e
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -28,12 +30,16 @@ var _ = Describe("odoJavaE2e", func() {
 
 	// Test Java
 	Context("odo component creation", func() {
-
 		It("Should be able to deploy a git repo that contains a wildfly application", func() {
 
 			// Deploy the git repo / wildfly example
 			cmpCreateLog := runCmd("odo create wildfly javaee-git-test --git " + warGitRepo + " -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
+			buildName := runCmd("oc get builds --output='name' | grep javaee-git-test | cut -d '/' -f 2")
+			Expect(buildName).To(ContainSubstring("javaee-git-test"))
+			buildStatus := runCmd("oc get build " + buildName)
+			Expect(buildStatus).To(ContainSubstring("Complete"))
+
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("javaee-git-test"))
 
@@ -52,11 +58,21 @@ var _ = Describe("odoJavaE2e", func() {
 		})
 
 		It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
-
 			// Deploy the git repo / wildfly example
 			cmpCreateLog := runCmd("odo create wildfly wo-wait-javaee-git-test --git " + warGitRepo)
 			Expect(cmpCreateLog).Should(ContainSubstring("This may take few moments to be ready"))
+			buildName := runCmd("oc get builds --output='name' | grep wo-wait-javaee-git-test | cut -d '/' -f 2")
+			Expect(buildName).To(ContainSubstring("wo-wait-javaee-git-test"))
+
 			dcName := runCmd("oc get dc | grep wo-wait-javaee-git-test | cut -f 1 -d ' '")
+			// For waiting until the deployment starts
+			for {
+				time.Sleep(5 * time.Second)
+				dcStatus := runCmd("oc get dc |grep wo-wait-javaee-git-test | cut -f 4 -d ' '")
+				if dcStatus == "1\n" {
+					break
+				}
+			}
 			// following the logs and waiting for the build to finish
 			_ = runCmd("oc logs --version=1 dc/" + dcName)
 
@@ -80,6 +96,10 @@ var _ = Describe("odoJavaE2e", func() {
 		It("Should be able to deploy a .war file using wildfly", func() {
 			cmpCreateLog := runCmd("odo create wildfly javaee-war-test --binary " + javaFiles + "/wildfly/ROOT.war -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
+			dcName := runCmd("oc get dc | grep javaee-war-test| cut -f 1 -d ' '")
+			// Following the logs
+			_ = runCmd("oc logs --version=1 dc/" + dcName)
+
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("javaee-war-test"))
 
@@ -103,6 +123,11 @@ var _ = Describe("odoJavaE2e", func() {
 			// Deploy the git repo / wildfly example
 			cmpCreateLog := runCmd("odo create openjdk18 uberjar-git-test --git " + jarGitRepo + " -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
+			buildName := runCmd("oc get builds --output='name' | grep uberjar-git-test | cut -d '/' -f 2")
+			Expect(buildName).To(ContainSubstring("uberjar-git-test"))
+			buildStatus := runCmd("oc get build " + buildName)
+			Expect(buildStatus).To(ContainSubstring("Complete"))
+
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("uberjar-git-test"))
 
@@ -125,6 +150,10 @@ var _ = Describe("odoJavaE2e", func() {
 
 			cmpCreateLog := runCmd("odo create openjdk18 sb-jar-test --binary " + javaFiles + "/openjdk/sb.jar -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
+
+			dcName := runCmd("oc get dc | grep sb-jar-test| cut -f 1 -d ' '")
+			Expect(dcName).To(ContainSubstring("sb-jar-test"))
+
 			cmpList := runCmd("odo list")
 			Expect(cmpList).To(ContainSubstring("sb-jar-test"))
 
