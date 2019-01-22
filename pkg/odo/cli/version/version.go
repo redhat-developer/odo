@@ -33,9 +33,7 @@ var versionExample = ktemplates.Examples(`
 %[1]s`,
 )
 
-var clientFlag bool
-
-// VersionOptions encapsulates all options for odo version command
+// Options encapsulates all options for odo version command
 type Options struct {
 	// clientFlag indicates if the user only wants client information
 	clientFlag bool
@@ -73,7 +71,7 @@ func (o *Options) Run(cmd *cobra.Command) (err error) {
 
 	fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
 
-	if !clientFlag {
+	if !o.clientFlag {
 		// Let's fetch the info about the server
 		serverInfo, err := genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
 		if err == nil {
@@ -96,6 +94,7 @@ func (o *Options) Run(cmd *cobra.Command) (err error) {
 
 // NewCmdVersion implements the version odo command
 func NewCmdVersion(name, fullName string) *cobra.Command {
+	o := NewVersionOptions()
 	// versionCmd represents the version command
 	var versionCmd = &cobra.Command{
 		Use:     name,
@@ -103,7 +102,6 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 		Long:    versionLongDesc,
 		Example: fmt.Sprintf(versionExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
-			o := NewVersionOptions()
 			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
 			util.LogErrorAndExit(o.Validate(), "")
 			util.LogErrorAndExit(o.Run(cmd), "")
@@ -113,7 +111,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	versionCmd.Annotations = map[string]string{"command": "utility"}
 	versionCmd.SetUsageTemplate(util.CmdUsageTemplate)
-	versionCmd.Flags().BoolVar(&clientFlag, "client", false, "Client version only (no server required).")
+	versionCmd.Flags().BoolVar(&o.clientFlag, "client", false, "Client version only (no server required).")
 
 	return versionCmd
 }
