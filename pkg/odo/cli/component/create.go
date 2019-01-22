@@ -70,8 +70,12 @@ A full list of component types that can be deployed is available using: 'odo cat
   # Create new Node.js component with source from remote git repository
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
 
-  # Create new Node.js git component while specifying a ref
-  odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref develop
+  # Create new Node.js git component while specifying a branch, tag or commit ref
+  odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
+
+  # Create new Node.js git component while specifying a tag
+  odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
+ 
 
   # Create a new Node.js component of version 6 from the 'openshift' namespace
   odo create openshift/nodejs:6 --local /nodejs-ex

@@ -12,7 +12,9 @@
   odo url create
 ``` 
 
-Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code. Find more information at https://github.com/redhat-developer/odo
+Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code. 
+
+Find more information at https://github.com/redhat-developer/odo
 
 # Syntax
 
@@ -35,6 +37,7 @@ Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast an
 | [push](#push)           | Push source code to a component                                  |
 | [service](#service)     | Perform service catalog operations                               |
 | [storage](#storage)     | Perform storage operations                                       |
+| [unlink](#unlink)       | Unlink component to a service or component                       |
 | [update](#update)       | Update the source code path of a component                       |
 | [url](#url)             | Expose component to the outside world                            |
 | [utils](#utils)         | Utilities for terminal commands and modifying Odo configurations |
@@ -65,7 +68,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
     component --short : Components of application.
         get --app --project --short : Get currently active component
         set --app --project : Set active component.
-    create --app --binary --cpu --env --git --local --max-cpu --max-memory --memory --min-cpu --min-memory --port --project : Create a new component
+    create --app --binary --cpu --env --git --local --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref : Create a new component
     delete --app --force --project : Delete an existing component
     describe --app --project : Describe the given component
     link --app --component --port --project --wait : Link component to a service or component
@@ -81,7 +84,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         set --short : Set the current active project
     push --app --local --project : Push source code to a component
     service : Perform service catalog operations
-        create --app --parameters --plan --project : Create a new service
+        create --app --parameters --plan --project : Create a new service from service catalog using the plan defined and deploy it on OpenShift.
         delete --app --force --project : Delete an existing service
         list --app --project : List all services in the current application
     storage : Perform storage operations
@@ -90,7 +93,8 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         list --all --app --component --project : List storage attached to a component
         mount --app --component --path --project : mount storage to a component
         unmount --app --component --project : Unmount storage from the given path or identified by its name, from the current component
-    update --app --binary --git --local --project : Update the source code path of a component
+    unlink --app --component --port --project : Unlink component to a service or component
+    update --app --binary --git --local --project --ref : Update the source code path of a component
     url : Expose component to the outside world
         create --app --component --open --port --project : Create a URL for a component
         delete --app --component --force --project : Delete a URL
@@ -177,7 +181,7 @@ Catalog related operations
   odo component get
 	
   # Set component named 'frontend' as active
-  odo set component frontend
+  odo component set frontend
   
 ```
 
@@ -209,11 +213,15 @@ Catalog related operations
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
 
-  # Create new Node.js component with source from remote git repository.
+  # Create new Node.js component with source from remote git repository
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
 
-  # Create a new Node.js component with source from remote git repository using a branch, tag or commit ref.
+  # Create new Node.js git component while specifying a branch, tag or commit ref
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
+
+  # Create new Node.js git component while specifying a tag
+  odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
+ 
 
   # Create a new Node.js component of version 6 from the 'openshift' namespace
   odo create openshift/nodejs:6 --local /nodejs-ex
@@ -281,58 +289,50 @@ Describe the given component.
 ```sh
   # Link the current component to the 'my-postgresql' service
   odo link my-postgresql
-
+  
   # Link component 'nodejs' to the 'my-postgresql' service
   odo link my-postgresql --component nodejs
-
+  
   # Link current component to the 'backend' component (backend must have a single exposed port)
   odo link backend
-
+  
   # Link component 'nodejs' to the 'backend' component
   odo link backend --component nodejs
-
-  # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed) 
+  
+  # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed)
   odo link backend --port 8080
-	
 ```
 
 
 Link component to a service or component
 
 If the source component is not provided, the current active component is assumed.
-
 In both use cases, link adds the appropriate secret to the environment of the source component. 
 The source component can then consume the entries of the secret as environment variables.
 
 For example:
 
-We have created a frontend application called 'frontend':
-
-    odo create nodejs frontend
+We have created a frontend application called 'frontend' using:
+odo create nodejs frontend
 
 We've also created a backend application called 'backend' with port 8080 exposed:
+odo create nodejs backend --port 8080
 
-    odo create nodejs backend --port 8080
-
-You can now link the two applications:
-
-    odo link backend --component frontend
+We can now link the two applications:
+odo link backend --component frontend
 
 Now the frontend has 2 ENV variables it can use:
-
-    COMPONENT_BACKEND_HOST=backend-app
-    COMPONENT_BACKEND_PORT=8080
+COMPONENT_BACKEND_HOST=backend-app
+COMPONENT_BACKEND_PORT=8080
 
 If you wish to use a database, we can use the Service Catalog and link it to our backend:
-
-    odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret
-    odo link dh-postgresql-apb
+odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret
+odo link dh-postgresql-apb
 
 Now backend has 2 ENV variables it can use:
+DB_USER=luke
+DB_PASSWORD=secret
 
-    DB_USER=luke
-    DB_PASSWORD=secret
-	
 ## list
 
 `list`
@@ -460,8 +460,10 @@ Push source code to a component.
 ```sh
   # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
   odo service create dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret
+
   # Delete the service named 'mysql-persistent'
   odo service delete mysql-persistent
+
   # List all services in the application
   odo service list
 ```
@@ -505,6 +507,33 @@ Perform service catalog operations, limited to template service broker and OpenS
 
 
 Perform storage operations
+
+## unlink
+
+`unlink <service> --component [component] OR unlink <component> --component [component]`
+
+> Example using unlink
+
+```sh
+  # Unlink the 'my-postgresql' service from the current component
+  odo unlink my-postgresql
+  
+  # Unlink the 'my-postgresql' service  from the 'nodejs' component
+  odo unlink my-postgresql --component nodejs
+  
+  # Unlink the 'backend' component from the current component (backend must have a single exposed port)
+  odo unlink backend
+  
+  # Unlink the 'backend' service  from the 'nodejs' component
+  odo unlink backend --component nodejs
+  
+  # Unlink the backend's 8080 port from the current component
+  odo unlink backend --port 8080
+```
+
+
+Unlink component or service from a component. 
+For this command to be successful, the service or component needs to have been linked prior to the invocation using 'odo link'
 
 ## update
 
@@ -582,7 +611,7 @@ The URLs that are generated using this command, can be used to access the deploy
    # Set a configuration value
    odo utils config set UpdateNotification false
    odo utils config set NamePrefix "app"
-   odo utils config set timeout 20
+   odo utils config set Timeout 20
 	
   # For viewing the current configuration
    odo utils config view
