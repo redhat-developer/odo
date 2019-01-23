@@ -38,9 +38,9 @@ var _ = Describe("odoWatchE2e", func() {
 		It("watch nodejs component created from local source", func() {
 			runCmd("git clone " + nodejsURI + " " + tmpDir + "/nodejs-ex")
 			runCmd("odo create nodejs nodejs-watch --local " + tmpDir + "/nodejs-ex --min-memory 400Mi --max-memory 700Mi")
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			runCmd("odo url create --port 8080")
 
 			startSimulationCh := make(chan bool)
@@ -112,9 +112,9 @@ var _ = Describe("odoWatchE2e", func() {
 		It("should watch python component local sources for any changes", func() {
 			runCmd("git clone " + pythonURI + " " + tmpDir + "/os-sample-python")
 			runCmd("odo create python python-watch --local " + tmpDir + "/os-sample-python --memory 400Mi")
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			runCmd("odo url create")
 
 			startSimulationCh := make(chan bool)
@@ -177,9 +177,9 @@ var _ = Describe("odoWatchE2e", func() {
 		It("watch wildfly component created from local source", func() {
 			runCmd("git clone " + wildflyURI + " " + tmpDir + "/katacoda-odo-backend")
 			runCmd("odo create wildfly wildfly-watch --local " + tmpDir + "/katacoda-odo-backend --min-memory 400Mi --max-memory 700Mi")
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			runCmd("odo url create --port 8080")
 
 			startSimulationCh := make(chan bool)
@@ -258,9 +258,9 @@ var _ = Describe("odoWatchE2e", func() {
 		It("watch openjdk component created from local source", func() {
 			runCmd("git clone " + openjdkURI + " " + tmpDir + "/javalin-helloworld")
 			runCmd("odo create openjdk18 openjdk-watch --local " + tmpDir + "/javalin-helloworld --min-memory 400Mi --max-memory 700Mi")
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			runCmd("odo url create --port 8080")
 
 			startSimulationCh := make(chan bool)
@@ -334,9 +334,9 @@ var _ = Describe("odoWatchE2e", func() {
 			runCmd("git clone " + openjdkURI + " " + tmpDir + "/binary/javalin-helloworld")
 			runCmd("mvn package -f " + tmpDir + "/binary/javalin-helloworld")
 			runCmd("odo create openjdk18 openjdk-watch-binary --binary " + tmpDir + "/binary/javalin-helloworld/target/javalin-hello-world-0.1-SNAPSHOT.jar --min-memory 400Mi --max-memory 700Mi")
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			runCmd("odo url create --port 8080")
 
 			startSimulationCh := make(chan bool)
@@ -396,9 +396,9 @@ var _ = Describe("odoWatchE2e", func() {
 			runCmd("git clone " + wildflyURI + " " + tmpDir + "/binary/katacoda-odo-backend")
 			runCmd("mvn package -f " + tmpDir + "/binary/katacoda-odo-backend")
 			runCmd("odo create wildfly wildfly-watch-binary --binary " + tmpDir + "/binary/katacoda-odo-backend/target/ROOT.war --min-memory 400Mi --max-memory 700Mi")
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
-			runCmd("time odo push -v 4")
+			runCmd("odo push -v 4")
 			runCmd("odo url create --port 8080")
 
 			startSimulationCh := make(chan bool)
