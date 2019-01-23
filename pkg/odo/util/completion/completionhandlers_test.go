@@ -518,3 +518,102 @@ func TestUnlinkCompletionHandler(t *testing.T) {
 		}
 	}
 }
+
+func TestServiceCompletionHandler(t *testing.T) {
+	tests := []struct {
+		name                          string
+		returnedServiceClassInstances *scv1beta1.ServiceInstanceList
+		output                        []string
+		parsedArgs                    parsedArgs
+	}{
+		{
+			name: "test case 1: no service instance class exists and name not typed",
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"delete"},
+				},
+			},
+			returnedServiceClassInstances: &scv1beta1.ServiceInstanceList{},
+			output:                        []string{},
+		},
+		{
+			name: "test case 2: one service class instance exists and name not typed",
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"delete"},
+				},
+			},
+			returnedServiceClassInstances: &scv1beta1.ServiceInstanceList{
+				Items: []scv1beta1.ServiceInstance{
+					testingutil.FakeServiceClassInstance("service-1", "mariadb-apb", "default", "ProvisionedSuccessfully"),
+				},
+			},
+			output: []string{"service-1"},
+		},
+		{
+			name: "test case 3: multiple service class instance exists and name not typed",
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"delete"},
+				},
+			},
+			returnedServiceClassInstances: &scv1beta1.ServiceInstanceList{
+				Items: []scv1beta1.ServiceInstance{
+					testingutil.FakeServiceClassInstance("service-1", "mariadb-apb", "default", "ProvisionedSuccessfully"),
+					testingutil.FakeServiceClassInstance("service-2", "mariadb-apb", "prod", "ProvisionedSuccessfully"),
+				},
+			},
+			output: []string{"service-1", "service-2"},
+		},
+		{
+			name: "test case 4: multiple service class instance exists and name half typed",
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"delete", "service"},
+				},
+			},
+			returnedServiceClassInstances: &scv1beta1.ServiceInstanceList{
+				Items: []scv1beta1.ServiceInstance{
+					testingutil.FakeServiceClassInstance("service-1", "mariadb-apb", "default", "ProvisionedSuccessfully"),
+					testingutil.FakeServiceClassInstance("service-2", "mariadb-apb", "prod", "ProvisionedSuccessfully"),
+				},
+			},
+			output: []string{"service-1", "service-2"},
+		},
+		{
+			name: "test case 5: multiple service class instance exists and name fully typed",
+			parsedArgs: parsedArgs{
+				original: complete.Args{
+					Completed: []string{"delete", "service-1"},
+				},
+			},
+			returnedServiceClassInstances: &scv1beta1.ServiceInstanceList{
+				Items: []scv1beta1.ServiceInstance{
+					testingutil.FakeServiceClassInstance("service-1", "mariadb-apb", "default", "ProvisionedSuccessfully"),
+					testingutil.FakeServiceClassInstance("service-2", "mariadb-apb", "prod", "ProvisionedSuccessfully"),
+				},
+			},
+			output: []string{"service-1", "service-2"},
+		},
+	}
+
+	for _, tt := range tests {
+		client, fakeClientSet := occlient.FakeNew()
+		context := genericclioptions.NewFakeContext("project", "app", "component", client)
+
+		//fake the services
+		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
+			return true, tt.returnedServiceClassInstances, nil
+		})
+
+		completions := ServiceCompletionHandler(nil, tt.parsedArgs, context)
+
+		// Sort the output and expected output in order to avoid false negatives (since ordering of the results is not important)
+		sort.Strings(completions)
+		sort.Strings(tt.output)
+
+		if !reflect.DeepEqual(tt.output, completions) {
+			t.Errorf("expected output: %#v,got: %#v", tt.output, completions)
+		}
+	}
+}
