@@ -22,9 +22,10 @@ var (
     %[1]s mysql-persistent`)
 
 	deleteLongDesc = ktemplates.LongDesc(`
-List all services in the current application`)
+	Delete an existing service`)
 )
 
+// ServiceDeleteOptions encapsulates the options for the odo service delete command
 type ServiceDeleteOptions struct {
 	serviceForceDeleteFlag bool
 	serviceName            string
