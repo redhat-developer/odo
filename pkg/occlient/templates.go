@@ -26,6 +26,9 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 		ObjectMeta: commonObjectMeta,
 		Spec: appsv1.DeploymentConfigSpec{
 			Replicas: 1,
+			Strategy: appsv1.DeploymentStrategy{
+				Type: appsv1.DeploymentStrategyTypeRecreate,
+			},
 			Selector: map[string]string{
 				"deploymentconfig": commonObjectMeta.Name,
 			},
@@ -147,6 +150,9 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 		ObjectMeta: commonObjectMeta,
 		Spec: appsv1.DeploymentConfigSpec{
 			Replicas: 1,
+			Strategy: appsv1.DeploymentStrategy{
+				Type: appsv1.DeploymentStrategyTypeRecreate,
+			},
 			Selector: map[string]string{
 				"deploymentconfig": commonObjectMeta.Name,
 			},
