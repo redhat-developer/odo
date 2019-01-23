@@ -31,21 +31,10 @@ import (
 
 // custom CLI loading spinner for kind
 var spinnerFrames = []string{
-	"⠈⠁",
-	"⠈⠑",
-	"⠈⠱",
-	"⠈⡱",
-	"⢀⡱",
-	"⢄⡱",
-	"⢄⡱",
-	"⢆⡱",
-	"⢎⡱",
-	"⢎⡰",
-	"⢎⡠",
-	"⢎⡀",
-	"⢎⠁",
-	"⠎⠁",
-	"⠊⠁",
+	"◐",
+	"◓",
+	"◑",
+	"◒",
 }
 
 // Spinner is a simple and efficient CLI loading spinner used by kind
@@ -67,7 +56,7 @@ func NewSpinner(w io.Writer) *Spinner {
 	return &Spinner{
 		frames: spinnerFrames,
 		stop:   make(chan struct{}, 1),
-		ticker: time.NewTicker(time.Millisecond * 100),
+		ticker: time.NewTicker(time.Millisecond * 200),
 		mu:     &sync.Mutex{},
 		writer: w,
 	}
