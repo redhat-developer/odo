@@ -86,6 +86,16 @@ jobs:
         - oc login -u developer
         - make test-service-e2e
 
+    - <<: *base-test
+      stage: test
+      name: "Watch e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh service-catalog
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - make test-watch-e2e TIMEOUT=1200s
+
     # Run link e2e tests
     - <<: *base-test
       stage: test

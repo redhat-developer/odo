@@ -2,11 +2,12 @@ package e2e
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"strconv"
 	"strings"
 	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("odoLinkE2e", func() {
@@ -36,7 +37,7 @@ var _ = Describe("odoLinkE2e", func() {
 		})
 
 		It("reports error when using wrong port", func() {
-			output := runFailCmd("odo link backend --component frontend --port 1234")
+			output := runFailCmd("odo link backend --component frontend --port 1234", 1)
 			Expect(output).To(ContainSubstring("8080"))
 		})
 

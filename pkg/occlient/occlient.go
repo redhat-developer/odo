@@ -98,7 +98,7 @@ const (
 	nameLength = 5
 
 	// Image that will be used containing the supervisord binary and assembly scripts
-	bootstrapperImage = "quay.io/openshiftdo/supervisord:0.5.0"
+	bootstrapperImage = "quay.io/openshiftdo/supervisord:0.6.0"
 
 	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment
 	supervisordVolumeName = "odo-supervisord-shared-data"
@@ -118,12 +118,29 @@ const (
 	// EnvS2ISrcOrBinPath is an env var exposed by s2i to indicate where the builder image expects the component source or binary to reside
 	EnvS2ISrcOrBinPath = "ODO_S2I_SRC_BIN_PATH"
 
+	// EnvS2ISrcBackupDir is the env var that points to the directory that holds a backup of component source
+	// This is required bcoz, s2i assemble script moves(hence deletes contents) the contents of $ODO_S2I_SRC_BIN_PATH to $APP_ROOT during which $APP_DIR alo needs to be empty so that mv doesn't complain pushing to an already exisiting dir with same name
+	EnvS2ISrcBackupDir = "ODO_SRC_BACKUP_DIR"
+
+	// EnvS2IDeploymentBackupDir is the env var that points to the directory that holds a backup of component deployment artifacts
+	// This is required to persist deployed artifacts across supervisord restarts
+	EnvS2IDeploymentBackupDir = "ODO_DEPLOYMENT_BACKUP_DIR"
+
+	// EnvAppRoot is env var s2i exposes in component container to indicate the path where component source resides
+	EnvAppRoot = "APP_ROOT"
+
 	// S2IScriptsURLLabel S2I script location Label name
 	// Ref: https://docs.openshift.com/enterprise/3.2/creating_images/s2i.html#build-process
 	S2IScriptsURLLabel = "io.openshift.s2i.scripts-url"
 
-	// S2ISrcOrBinLabel is the label that is provides, path where S2I expects component source or binary
+	// S2IBuilderImageName is the S2I builder image name
+	S2IBuilderImageName = "name"
+
+	// S2ISrcOrBinLabel is the label that provides, path where S2I expects component source or binary
 	S2ISrcOrBinLabel = "io.openshift.s2i.destination"
+
+	// EnvS2IBuilderImageName is the label that provides the name of builder image in component
+	EnvS2IBuilderImageName = "ODO_S2I_BUILDER_IMG"
 
 	// EnvS2IDeploymentDir is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate s2i deployment directory
 	EnvS2IDeploymentDir = "ODO_S2I_DEPLOYMENT_DIR"
@@ -131,6 +148,15 @@ const (
 	// DefaultS2ISrcOrBinPath is the default path where S2I expects source/binary artifacts in absence of $S2ISrcOrBinLabel in builder image
 	// Ref: https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#required-image-contents
 	DefaultS2ISrcOrBinPath = "/tmp"
+
+	// DefaultS2ISrcBackupDir is the default path where odo backs up the component source
+	DefaultS2ISrcBackupDir = "/opt/app-root/src-backup"
+
+	// DefaultS2IDeploymentBackupDir is the default path where odo backs up the built component artifacts
+	DefaultS2IDeploymentBackupDir = "/opt/app-root/deployment-backup"
+
+	// EnvS2IWorkingDir is an env var to odo-supervisord-image assemble-and-restart.sh to indicate to it the s2i working directory
+	EnvS2IWorkingDir = "ODO_S2I_WORKING_DIR"
 )
 
 // S2IPaths is a struct that will hold path to S2I scripts and the protocol indicating access to them, component source/binary paths, artifacts deployments directory
@@ -140,6 +166,9 @@ type S2IPaths struct {
 	ScriptsPath         string
 	SrcOrBinPath        string
 	DeploymentDir       string
+	WorkingDir          string
+	SrcBackupPath       string
+	BuilderImgName      string
 }
 
 // S2IDeploymentsDir is a set of possible S2I labels that provides S2I deployments directory
@@ -819,12 +848,13 @@ func getS2ILabelValue(labels map[string]string, expectedLabelsSet []string) stri
 	return ""
 }
 
-// GetS2IPathsFromBuilderImg returns script path protocol, S2I scripts path, S2I source or binary expected path, S2I deployment dir and errors(if any) from the passed builder image
-func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths, error) {
+// GetS2IMetaInfoFromBuilderImg returns script path protocol, S2I scripts path, S2I source or binary expected path, S2I deployment dir and errors(if any) from the passed builder image
+func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths, error) {
 
 	// Define structs for internal un-marshalling of imagestreamimage to extract label from it
 	type ContainerConfig struct {
-		Labels map[string]string `json:"Labels"`
+		Labels     map[string]string `json:"Labels"`
+		WorkingDir string            `json:"WorkingDir"`
 	}
 	type DockerImageMetaDataRaw struct {
 		ContainerConfig ContainerConfig `json:"ContainerConfig"`
@@ -850,6 +880,7 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths
 	// Extract the label containing S2I scripts URL
 	s2iScriptsURL := dimdr.ContainerConfig.Labels[S2IScriptsURLLabel]
 	s2iSrcOrBinPath := dimdr.ContainerConfig.Labels[S2ISrcOrBinLabel]
+	s2iBuilderImgName := dimdr.ContainerConfig.Labels[S2IBuilderImageName]
 
 	if s2iSrcOrBinPath == "" {
 		// In cases like nodejs builder image, where there is no concept of binary and sources are directly run, use destination as source
@@ -884,6 +915,9 @@ func GetS2IPathsFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPaths
 		ScriptsPath:         s2iScriptsPath,
 		SrcOrBinPath:        s2iSrcOrBinPath,
 		DeploymentDir:       s2iDestinationDir,
+		WorkingDir:          dimdr.ContainerConfig.WorkingDir,
+		SrcBackupPath:       DefaultS2ISrcBackupDir,
+		BuilderImgName:      s2iBuilderImgName,
 	}, nil
 }
 
@@ -907,6 +941,24 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 		retVal = append(retVal, envVar)
 	}
 
+	return retVal
+}
+
+// deleteEnvVars deletes the passed env var from the list of passed env vars
+// Parameters:
+//	existingEnvs: Slice of existing env vars
+//	envTobeDeleted: The name of env var to be deleted
+// Returns:
+//	slice of env vars with delete reflected
+func deleteEnvVars(existingEnvs []corev1.EnvVar, envTobeDeleted string) []corev1.EnvVar {
+	retVal := make([]corev1.EnvVar, len(existingEnvs))
+	copy(retVal, existingEnvs)
+	for ind, envVar := range retVal {
+		if envVar.Name == envTobeDeleted {
+			retVal = append(retVal[:ind], retVal[ind+1:]...)
+			break
+		}
+	}
 	return retVal
 }
 
@@ -977,7 +1029,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 
 	// Extract s2i scripts path and path type from imagestream image
 	//s2iScriptsProtocol, s2iScriptsURL, s2iSrcOrBinPath, s2iDestinationDir
-	s2iPaths, err := GetS2IPathsFromBuilderImg(imageStreamImage)
+	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1001,7 +1053,29 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 			Name:  EnvS2IDeploymentDir,
 			Value: s2iPaths.DeploymentDir,
 		},
+		corev1.EnvVar{
+			Name:  EnvS2IWorkingDir,
+			Value: s2iPaths.WorkingDir,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IBuilderImageName,
+			Value: s2iPaths.BuilderImgName,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IDeploymentBackupDir,
+			Value: DefaultS2IDeploymentBackupDir,
+		},
 	)
+
+	if params.SourceType == LOCAL {
+		inputEnvs = uniqueAppendOrOverwriteEnvVars(
+			inputEnvs,
+			corev1.EnvVar{
+				Name:  EnvS2ISrcBackupDir,
+				Value: s2iPaths.SrcBackupPath,
+			},
+		)
+	}
 
 	// Generate the DeploymentConfig that will be used.
 	dc := generateSupervisordDeploymentConfig(
@@ -1279,7 +1353,13 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 }
 
 // UpdateDCToSupervisor updates the current DeploymentConfig to a SupervisorD configuration.
-func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, componentImageType string) error {
+// Parameters:
+//	commonObjectMeta: dc meta object
+//	componentImageType: type of builder image
+//	isToLocal: bool used to indicate if component is to be updated to local in which case a source backup dir will be injected into compoennt env
+// Returns:
+//	errors if any or nil
+func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, componentImageType string, isToLocal bool) error {
 
 	// Parse the image
 	imageNS, imageName, imageTag, _, err := ParseImageName(componentImageType)
@@ -1319,7 +1399,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 		Ports:     foundCurrentDCContainer.Ports,
 	}
 
-	s2iPaths, err := GetS2IPathsFromBuilderImg(imageStreamImage)
+	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
@@ -1343,7 +1423,31 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 			Name:  EnvS2IDeploymentDir,
 			Value: s2iPaths.DeploymentDir,
 		},
+		corev1.EnvVar{
+			Name:  EnvS2IWorkingDir,
+			Value: s2iPaths.WorkingDir,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IBuilderImageName,
+			Value: s2iPaths.BuilderImgName,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IDeploymentBackupDir,
+			Value: DefaultS2IDeploymentBackupDir,
+		},
 	)
+
+	if isToLocal {
+		inputEnvs = uniqueAppendOrOverwriteEnvVars(
+			inputEnvs,
+			corev1.EnvVar{
+				Name:  EnvS2ISrcBackupDir,
+				Value: s2iPaths.SrcBackupPath,
+			},
+		)
+	} else {
+		inputEnvs = deleteEnvVars(inputEnvs, EnvS2ISrcBackupDir)
+	}
 
 	// Generate the SupervisorD Config
 	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
@@ -2608,8 +2712,6 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
 func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string) error {
-	isSingleFileTransfer := isSingleFileTransfer(copyFiles)
-
 	dest := path.Join(targetPath, filepath.Base(localPath))
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
@@ -2617,12 +2719,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 		defer writer.Close()
 
 		var err error
-		if isSingleFileTransfer {
-			onlyFile := copyFiles[0]
-			err = makeTar(onlyFile, targetPath+"/"+filepath.Base(onlyFile), writer, []string{})
-		} else {
-			err = makeTar(localPath, dest, writer, copyFiles)
-		}
+		err = makeTar(localPath, dest, writer, copyFiles)
 		if err != nil {
 			glog.Errorf("Error while creating tar: %#v", err)
 			os.Exit(1)
@@ -2631,29 +2728,12 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 	}()
 
 	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
-	if !isSingleFileTransfer {
-		cmdArr = append(cmdArr, "--strip", "1")
-	}
-
+	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
 	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-// isSingleFileTransfer returns true if copyFiles
-// contains a single, non-directory file
-func isSingleFileTransfer(copyFiles []string) bool {
-	if len(copyFiles) == 1 {
-		if stat, err := os.Lstat(copyFiles[0]); err == nil {
-			if !stat.IsDir() {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // checkFileExist check if given file exists or not
@@ -2674,13 +2754,23 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string) error {
 	srcPath = path.Clean(srcPath)
 	destPath = path.Clean(destPath)
 
+	glog.V(4).Infof("makeTar arguements: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
 		//watchTar
 		for _, fileName := range files {
 			if checkFileExist(fileName) {
+				// Fetch path of source file relative to that of source base path so that it can be passed to recursiveTar
+				// which uses path relative to base path for taro header to correctly identify file location when untarred
+				srcFile, err := filepath.Rel(srcPath, fileName)
+				if err != nil {
+					return err
+				}
+				srcFile = filepath.Join(filepath.Base(srcPath), srcFile)
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				return recursiveTar(path.Dir(srcPath), path.Base(srcPath), path.Dir(destPath), path.Base(destPath), tarWriter)
-
+				err = recursiveTar(path.Dir(srcPath), srcFile, path.Dir(destPath), srcFile, tarWriter)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	} else {
@@ -2729,6 +2819,7 @@ func tar(tw *taro.Writer, fileName string, destFile string) error {
 
 // recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
 func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer) error {
+	glog.V(4).Infof("recursiveTar arguements: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
 	filepath := path.Join(srcBase, srcFile)
 	stat, err := os.Lstat(filepath)
 	if err != nil {
@@ -3104,4 +3195,31 @@ func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
 	}
 
 	return dc.Spec.Template.Spec.Containers[0].Env, nil
+}
+
+// PropagateDeletes deletes the watch detected deleted files from remote component pod from each of the paths in passed s2iPaths
+// Parameters:
+//	targetPodName: Name of component pod
+//	delSrcRelPaths: Paths to be deleted on the remote pod relative to component source base path ex: Compoent src: /abc/src, file deleted: abc/src/foo.lang => relative path: foo.lang
+//	s2iPaths: Slice of all s2i paths -- deployment dir, destination dir, working dir, etc..
+func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string, s2iPaths []string) error {
+	reader, writer := io.Pipe()
+	var rmPaths []string
+	if len(s2iPaths) == 0 || len(delSrcRelPaths) == 0 {
+		return fmt.Errorf("Failed to propagate deletions: s2iPaths: %+v and delSrcRelPaths: %+v", s2iPaths, delSrcRelPaths)
+	}
+	for _, s2iPath := range s2iPaths {
+		for _, delRelPath := range delSrcRelPaths {
+			rmPaths = append(rmPaths, filepath.Join(s2iPath, delRelPath))
+		}
+	}
+	glog.V(4).Infof("s2ipaths marked  for deletion are %+v", rmPaths)
+	cmdArr := []string{"rm", "-rf"}
+	cmdArr = append(cmdArr, rmPaths...)
+
+	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
+	if err != nil {
+		return err
+	}
+	return err
 }

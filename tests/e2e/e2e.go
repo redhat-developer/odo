@@ -28,14 +28,14 @@ func runCmd(cmdS string) string {
 
 // runFailCmd runs a failing command
 // and returns the stdout
-func runFailCmd(cmdS string) string {
+func runFailCmd(cmdS string, exitCode int) string {
 	cmd := exec.Command("/bin/sh", "-c", cmdS)
 	fmt.Fprintf(GinkgoWriter, "Running command: %s\n", cmdS)
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 
 	// wait for the command execution to complete
 	<-session.Exited
-	Expect(session.ExitCode()).To(Equal(1))
+	Expect(session.ExitCode()).To(Equal(exitCode))
 	Expect(err).NotTo(HaveOccurred())
 
 	return string(session.Out.Contents())
@@ -70,6 +70,25 @@ func waitForCmdOut(cmd string, timeout int, check func(output string) bool) bool
 		}
 	}
 
+}
+
+// ensures that the DeploymentConfig of the specified component
+// has completely rolled out and that none of the old pods are running
+// this is very useful to avoid race conditions that can occur when
+// updating the component
+func waitForDCOfComponentToRolloutCompletely(componentName string) {
+	fullDCName := runCmd(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o name | tr -d '\n'", componentName))
+	// oc rollout status ensures that the existing DC is fully rolled out before it terminates
+	// we need this because a rolling DC could cause odo update to fail due to its use
+	// of the read/update-in-memory/write-changes pattern
+	runCmd("oc rollout status " + fullDCName)
+
+	simpleDCName := strings.Replace(fullDCName, "deploymentconfig.apps.openshift.io/", "", -1)
+	// ensure that no more changes will occur to the name DC by waiting until there is only one pod running (the old one has terminated)
+	waitForEqualCmd(fmt.Sprintf("oc get pod -o name -l deploymentconfig=%s | wc -l | tr -d '\n'", simpleDCName), "1", 2)
+
+	// done in order to make sure that Openshift has updated the DC with the latest events
+	time.Sleep(5 * time.Second)
 }
 
 // waitForEqualCmd calls the waitForCmdOut function to wait and check if the output is equal to the given string within 1 min
@@ -117,7 +136,7 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 	}
 	cmd.Stdout = &buf
 
-	ticker := time.NewTicker(time.Millisecond)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	timeoutCh := make(chan bool)

@@ -3,13 +3,8 @@
 package e2e
 
 import (
-	"strings"
-
-	"path/filepath"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	"fmt"
 	"io/ioutil"
@@ -55,7 +50,7 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 
 		It("should show an error when ref flag is provided with sources except git", func() {
-			output := runFailCmd(fmt.Sprintf("odo create nodejs cmp-git-%s --local test --ref test", t))
+			output := runFailCmd(fmt.Sprintf("odo create nodejs cmp-git-%s --local test --ref test", t), 1)
 			Expect(output).To(ContainSubstring("The --ref flag is only valid for --git flag"))
 		})
 
@@ -210,49 +205,6 @@ var _ = Describe("odoCmpE2e", func() {
 			Expect(getMemoryRequest).To(ContainSubstring("500Mi"))
 
 			SourceTest(appTestName, "local", "file://"+tmpDir+"/katacoda-odo-backend-1")
-		})
-
-		It("should watch the local sources for any changes", func() {
-			runCmd("odo create wildfly wildfly-watch --local " + tmpDir + "/katacoda-odo-backend-1 --min-memory 400Mi --max-memory 700Mi")
-			runCmd("odo push -v 4")
-
-			startSimulationCh := make(chan bool)
-			go func() {
-				startMsg := <-startSimulationCh
-				if startMsg {
-					fmt.Println("Received signal, starting file modification simulation")
-					fileModification := testingutil.FileProperties{
-						FileParent:       "src/main/java/eu/mjelen/katacoda/odo/",
-						FilePath:         "BackendServlet.java",
-						FileType:         testingutil.RegularFile,
-						ModificationType: testingutil.APPEND,
-					}
-					_, err := testingutil.SimulateFileModifications(filepath.Join(tmpDir, "katacoda-odo-backend-1"), fileModification)
-					fmt.Printf("Triggered file modification %+v\n\n", fileModification)
-					if err != nil {
-						fmt.Printf("Failed performing file operation with error %v", err)
-					}
-				}
-			}()
-			success, err := pollNonRetCmdStdOutForString("odo watch wildfly-watch -v 4", time.Duration(5)*time.Minute, func(output string) bool {
-				return strings.Contains(output, fmt.Sprintf("File %s changed", filepath.Join(filepath.Join(tmpDir, "katacoda-odo-backend-1"), "src/main/java/eu/mjelen/katacoda/odo/BackendServlet.java")))
-			}, startSimulationCh, func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
-			Expect(success).To(Equal(true))
-			Expect(err).To(BeNil())
-
-			// Verify memory limits to be same as configured
-			getMemoryLimit := runCmd("oc get dc wildfly-watch-" +
-				appTestName +
-				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
-			)
-			Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
-			getMemoryRequest := runCmd("oc get dc wildfly-watch-" +
-				appTestName +
-				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'",
-			)
-			Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
 		})
 
 		It("should update component from local to local", func() {
@@ -466,22 +418,3 @@ var _ = Describe("odoCmpE2e", func() {
 		})
 	})
 })
-
-// ensures that the DeploymentConfig of the specified component
-// has completely rolled out and that none of the old pods are running
-// this is very useful to avoid race conditions that can occur when
-// updating the component
-func waitForDCOfComponentToRolloutCompletely(componentName string) {
-	fullDCName := runCmd(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o name | tr -d '\n'", componentName))
-	// oc rollout status ensures that the existing DC is fully rolled out before it terminates
-	// we need this because a rolling DC could cause odo update to fail due to its use
-	// of the read/update-in-memory/write-changes pattern
-	runCmd("oc rollout status " + fullDCName)
-
-	simpleDCName := strings.Replace(fullDCName, "deploymentconfig.apps.openshift.io/", "", -1)
-	// ensure that no more changes will occur to the name DC by waiting until there is only one pod running (the old one has terminated)
-	waitForEqualCmd(fmt.Sprintf("oc get pod -o name -l deploymentconfig=%s | wc -l | tr -d '\n'", simpleDCName), "1", 2)
-
-	// done in order to make sure that Openshift has updated the DC with the latest events
-	time.Sleep(5 * time.Second)
-}

@@ -2,6 +2,7 @@ package component
 
 import (
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
@@ -18,6 +19,76 @@ import (
 	ktesting "k8s.io/client-go/testing"
 )
 
+func TestGetS2IPaths(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		podEnvs []corev1.EnvVar
+		want    []string
+	}{
+		{
+			name: "Case 1: odo expected s2i envs available",
+			podEnvs: []corev1.EnvVar{
+				corev1.EnvVar{
+					Name:  occlient.EnvS2IDeploymentDir,
+					Value: "abc",
+				},
+				corev1.EnvVar{
+					Name:  occlient.EnvS2ISrcOrBinPath,
+					Value: "def",
+				},
+				corev1.EnvVar{
+					Name:  occlient.EnvS2IWorkingDir,
+					Value: "ghi",
+				},
+				corev1.EnvVar{
+					Name:  occlient.EnvS2ISrcBackupDir,
+					Value: "ijk",
+				},
+			},
+			want: []string{
+				"/opt/app-root/deployment-backup",
+				filepath.FromSlash("abc/src"),
+				filepath.FromSlash("def/src"),
+				filepath.FromSlash("ghi/src"),
+				filepath.FromSlash("ijk/src"),
+			},
+		},
+		{
+			name: "Case 2: some of the odo expected s2i envs not available",
+			podEnvs: []corev1.EnvVar{
+				corev1.EnvVar{
+					Name:  occlient.EnvS2IDeploymentDir,
+					Value: "abc",
+				},
+				corev1.EnvVar{
+					Name:  occlient.EnvS2ISrcOrBinPath,
+					Value: "def",
+				},
+				corev1.EnvVar{
+					Name:  occlient.EnvS2ISrcBackupDir,
+					Value: "ijk",
+				},
+			},
+			want: []string{
+				"/opt/app-root/deployment-backup",
+				filepath.FromSlash("abc/src"),
+				filepath.FromSlash("def/src"),
+				filepath.FromSlash("ijk/src"),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getS2IPaths(tt.podEnvs)
+			sort.Strings(got)
+			sort.Strings(tt.want)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("got: %+v, want: %+v", got, tt.want)
+			}
+		})
+	}
+}
 func TestGetComponentPorts(t *testing.T) {
 	type args struct {
 		componentName   string

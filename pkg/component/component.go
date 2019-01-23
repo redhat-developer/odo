@@ -343,12 +343,61 @@ func getEnvFromPodEnvs(envName string, podEnvs []corev1.EnvVar) string {
 	return ""
 }
 
+// getS2IPaths returns slice of s2i paths of odo interest
+// Parameters:
+//	podEnvs: Slice of env vars extracted from pod template
+// Returns:
+//	Slice of s2i paths extracted from passed parameters
+func getS2IPaths(podEnvs []corev1.EnvVar) []string {
+	retVal := []string{}
+	// List of s2i Paths exported for use in container pod for working with source/binary
+	s2iPathEnvs := []string{
+		occlient.EnvS2IDeploymentDir,
+		occlient.EnvS2ISrcOrBinPath,
+		occlient.EnvS2IWorkingDir,
+		occlient.EnvS2ISrcBackupDir,
+	}
+	// For each of the required env var
+	for _, s2iPathEnv := range s2iPathEnvs {
+		// try to fetch the value of required env from the ones set already in the component container like for the case of watch or multiple pushes
+		envVal := getEnvFromPodEnvs(s2iPathEnv, podEnvs)
+		isEnvValPresent := false
+		if envVal != "" {
+			for _, e := range retVal {
+				if envVal == e {
+					isEnvValPresent = true
+					break
+				}
+			}
+			if !isEnvValPresent {
+				// If `src` not in path, append it
+				if filepath.Base(envVal) != "src" {
+					envVal = filepath.Join(envVal, "src")
+				}
+				retVal = append(retVal, envVal)
+			}
+		}
+	}
+	// Append binary backup path to s2i paths list
+	retVal = append(retVal, occlient.DefaultS2IDeploymentBackupDir)
+	return retVal
+}
+
 // PushLocal push local code to the cluster and trigger build there.
-// files is list of changed files captured during `odo watch` as well as binary file path
 // During copying binary components, path represent base directory path to binary and files contains path of binary
 // During copying local source components, path represent base directory path whereas files is empty
 // During `odo watch`, path represent base directory path whereas files contains list of changed Files
-func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string) error {
+// Parameters:
+//	componentName is name of the component to update sources to
+//	applicationName is the name of the application of which the component is a part
+//	path is base path of the component source/binary
+// 	files is list of changed files captured during `odo watch` as well as binary file path
+// 	delFiles is the list of files identified as deleted
+// 	isForcePush indicates if the sources to be updated are due to a push in which case its a full source directory push or only push of identified sources
+// Returns
+//	Error if any
+func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool) error {
+	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -372,18 +421,46 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	targetPath := fmt.Sprintf("%s/src", s2iSrcPath)
 
-	// Copy the files to the pod
+	// If there are files identified as deleted, propagate them to the component pod
+	if len(delFiles) > 0 {
+		glog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
+		/*
+			Delete files observed by watch to have been deleted from each of s2i directories like:
+				deployment dir: In interpreted runtimes like python, source is copied over to deployment dir so delete needs to happen here as well
+				destination dir: This is the directory where s2i expects source to be copied for it be built and deployed
+				working dir: Directory where, sources are copied over from deployment dir from where the s2i builds and deploys source.
+							 Deletes need to happen here as well otherwise, even if the latest source is copied over, the stale source files remain
+				source backup dir: Directory used for backing up source across multiple iterations of push and watch in component container
+								   In case of python, s2i image moves sources from destination dir to workingdir which means sources are deleted from destination dir
+								   So, during the subsequent watch pushing new diff to component pod, the source as a whole doesn't exist at destination dir and hence needs
+								   to be backed up.
+		*/
+		err := client.PropagateDeletes(pod.Name, delFiles, getS2IPaths(pod.Spec.Containers[0].Env))
+		if err != nil {
+			return errors.Wrapf(err, "unable to propagate file deletions %+v", delFiles)
+		}
+	}
 
-	s := log.Spinner("Copying files to pod")
-	err = client.CopyFile(path, pod.Name, targetPath, files)
-	if err != nil {
-		s.End(false)
-		return errors.Wrap(err, "unable push files to pod")
+	// Copy the files to the pod
+	s := log.Spinner("Copying files to component")
+
+	if !isForcePush {
+		if len(files) == 0 && len(delFiles) == 0 {
+			return fmt.Errorf("pass files modifications/deletions to sync to component pod or force push")
+		}
+	}
+
+	if isForcePush || len(files) > 0 {
+		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
+		err = client.CopyFile(path, pod.Name, targetPath, files)
+		if err != nil {
+			s.End(false)
+			return errors.Wrap(err, "unable push files to pod")
+		}
 	}
 	s.End(true)
 
 	s = log.Spinner("Building component")
-	defer s.End(false)
 
 	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
 	pipeReader, pipeWriter := io.Pipe()
@@ -412,6 +489,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	if err != nil {
 		// If we fail, log the output
 		log.Errorf("Unable to build files\n%v", cmdOutput)
+		s.End(false)
 		return errors.Wrap(err, "unable to execute assemble script")
 	}
 
@@ -644,7 +722,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		}
 
 		// Update the DeploymentConfig
-		err = client.UpdateDCToSupervisor(commonObjectMeta, componentImageType)
+		err = client.UpdateDCToSupervisor(commonObjectMeta, componentImageType, newSourceType == "local")
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig for %s component", componentName)
 		}

@@ -3952,7 +3952,7 @@ func TestUniqueAppendOrOverwriteEnvVars(t *testing.T) {
 	}
 }
 
-func TestGetS2IPathsFromBuilderImg(t *testing.T) {
+func TestGetS2IMetaInfoFromBuilderImg(t *testing.T) {
 	tests := []struct {
 		name             string
 		imageStreamImage *imagev1.ImageStreamImage
@@ -3971,6 +3971,9 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 				ScriptsPath:         "/usr/libexec/s2i",
 				SrcOrBinPath:        "/tmp",
 				DeploymentDir:       "/opt/app-root/src",
+				WorkingDir:          "/opt/app-root/src",
+				SrcBackupPath:       "/opt/app-root/src-backup",
+				BuilderImgName:      "bucharestgold/centos7-s2i-nodejs",
 			},
 			wantErr: false,
 		},
@@ -3986,6 +3989,9 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 				ScriptsPath:         "/usr/libexec/s2i",
 				SrcOrBinPath:        "/tmp",
 				DeploymentDir:       "/opt/app-root/src",
+				WorkingDir:          "/opt/app-root/src",
+				SrcBackupPath:       "/opt/app-root/src-backup",
+				BuilderImgName:      "bucharestgold/centos7-s2i-nodejs",
 			},
 			wantErr: false,
 		},
@@ -4001,6 +4007,9 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 				ScriptsPath:         "http(s):///usr/libexec/s2i",
 				SrcOrBinPath:        "/tmp",
 				DeploymentDir:       "/opt/app-root/src",
+				WorkingDir:          "/opt/app-root/src",
+				SrcBackupPath:       "/opt/app-root/src-backup",
+				BuilderImgName:      "bucharestgold/centos7-s2i-nodejs",
 			},
 			wantErr: false,
 		},
@@ -4009,13 +4018,16 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 			imageStreamImage: fakeImageStreamImage(
 				"redhat-openjdk18-openshift",
 				[]string{"8080/tcp"},
-				`{"kind":"DockerImage","apiVersion":"1.0","Id":"sha256:93de1230c12b512ebbaf28b159f450a44c632eda06bdc0754236f403f5876234","Created":"2018-10-19T15:43:13Z","ContainerConfig":{"Hostname":"8911994b686d","User":"1001","ExposedPorts":{"8080/tcp":{}},"Env":["PATH=/opt/app-root/src/node_modules/.bin/:/opt/app-root/src/.npm-global/bin/:/opt/app-root/src/bin:/opt/app-root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","SUMMARY=Platform for building and running Node.js 10.12.0 applications","DESCRIPTION=Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","STI_SCRIPTS_URL=http(s):///usr/libexec/s2i","STI_SCRIPTS_PATH=/usr/libexec/s2i","APP_ROOT=/opt/app-root","HOME=/opt/app-root/src","BASH_ENV=/opt/app-root/etc/scl_enable","ENV=/opt/app-root/etc/scl_enable","PROMPT_COMMAND=. /opt/app-root/etc/scl_enable","NODEJS_SCL=rh-nodejs8","NPM_RUN=start","NODE_VERSION=10.12.0","NPM_VERSION=6.4.1","NODE_LTS=false","NPM_CONFIG_LOGLEVEL=info","NPM_CONFIG_PREFIX=/opt/app-root/src/.npm-global","NPM_CONFIG_TARBALL=/usr/share/node/node-v10.12.0-headers.tar.gz","DEBUG_PORT=5858"],"Cmd":["/bin/sh","-c","#(nop) ","CMD [\"/bin/sh\" \"-c\" \"${STI_SCRIPTS_PATH}/usage\"]"],"Image":"sha256:d353b3f467c2d2ff59a1e09bb91cff1c493aedd6c8041ebb273346e892f8ee85","WorkingDir":"/opt/app-root/src","Entrypoint":["container-entrypoint"],"Labels":{"com.redhat.component":"s2i-base-container","org.jboss.deployments-dir": "/deployments","com.redhat.dev-mode":"DEV_MODE:false","com.rehdat.dev-mode.port":"DEBUG_PORT:5858","description":"Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","io.k8s.description":"Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","io.k8s.display-name":"Node.js 10.12.0","io.openshift.builder-version":"\"190ef14\"","io.openshift.expose-services":"8080:http","io.openshift.s2i.scripts-url":"image:///usr/local/s2i","org.jboss.deployments-dir": "/deployments","io.openshift.s2i.destination": "/tmp","io.openshift.tags":"builder,nodejs,nodejs-10.12.0","io.s2i.scripts-url":"image:///usr/libexec/s2i","maintainer":"Lance Ball \u003clball@redhat.com\u003e","name":"bucharestgold/centos7-s2i-nodejs","org.label-schema.build-date":"20180804","org.label-schema.license":"GPLv2","org.label-schema.name":"CentOS Base Image","org.label-schema.schema-version":"1.0","org.label-schema.vendor":"CentOS","release":"1","summary":"Platform for building and running Node.js 10.12.0 applications","version":"10.12.0"}},"DockerVersion":"18.06.0-ce","Config":{"Hostname":"8911994b686d","User":"1001","ExposedPorts":{"8080/tcp":{}},"Env":["PATH=/opt/app-root/src/node_modules/.bin/:/opt/app-root/src/.npm-global/bin/:/opt/app-root/src/bin:/opt/app-root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","SUMMARY=Platform for building and running Node.js 10.12.0 applications","DESCRIPTION=Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","STI_SCRIPTS_URL=image:///usr/libexec/s2i","STI_SCRIPTS_PATH=/usr/libexec/s2i","APP_ROOT=/opt/app-root","HOME=/opt/app-root/src","BASH_ENV=/opt/app-root/etc/scl_enable","ENV=/opt/app-root/etc/scl_enable","PROMPT_COMMAND=. /opt/app-root/etc/scl_enable","NODEJS_SCL=rh-nodejs8","NPM_RUN=start","NODE_VERSION=10.12.0","NPM_VERSION=6.4.1","NODE_LTS=false","NPM_CONFIG_LOGLEVEL=info","NPM_CONFIG_PREFIX=/opt/app-root/src/.npm-global","NPM_CONFIG_TARBALL=/usr/share/node/node-v10.12.0-headers.tar.gz","DEBUG_PORT=5858"],"Cmd":["/bin/sh","-c","${STI_SCRIPTS_PATH}/usage"],"Image":"57a00ab03a3f8c3af19e91c284e0c499b16d5115c925aa845b5d14eace949c34","WorkingDir":"/opt/app-root/src","Entrypoint":["container-entrypoint"],"Labels":{"com.redhat.component":"s2i-base-container","com.redhat.deployments-dir":"/opt/app-root/src","com.redhat.dev-mode":"DEV_MODE:false","com.rehdat.dev-mode.port":"DEBUG_PORT:5858","description":"Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","io.k8s.description":"Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","io.k8s.display-name":"Node.js 10.12.0","io.openshift.builder-version":"\"190ef14\"","io.openshift.expose-services":"8080:http","io.openshift.s2i.scripts-url":"image:///usr/libexec/s2i","io.openshift.tags":"builder,nodejs,nodejs-10.12.0","io.s2i.scripts-url":"image:///usr/libexec/s2i","maintainer":"Lance Ball \u003clball@redhat.com\u003e","name":"bucharestgold/centos7-s2i-nodejs","org.label-schema.build-date":"20180804","org.label-schema.license":"GPLv2","org.label-schema.name":"CentOS Base Image","org.label-schema.schema-version":"1.0","org.label-schema.vendor":"CentOS","release":"1","summary":"Platform for building and running Node.js 10.12.0 applications","version":"10.12.0"}},"Architecture":"amd64","Size":221580439}`,
+				`{"kind":"DockerImage","apiVersion":"1.0","Id":"sha256:93de1230c12b512ebbaf28b159f450a44c632eda06bdc0754236f403f5876234","Created":"2018-10-19T15:43:13Z","ContainerConfig":{"Hostname":"8911994b686d","User":"1001","ExposedPorts":{"8080/tcp":{}},"Env":["PATH=/opt/app-root/src/node_modules/.bin/:/opt/app-root/src/.npm-global/bin/:/opt/app-root/src/bin:/opt/app-root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","SUMMARY=Platform for building and running Node.js 10.12.0 applications","DESCRIPTION=Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","STI_SCRIPTS_URL=http(s):///usr/libexec/s2i","STI_SCRIPTS_PATH=/usr/libexec/s2i","APP_ROOT=/opt/app-root","HOME=/opt/app-root/src","BASH_ENV=/opt/app-root/etc/scl_enable","ENV=/opt/app-root/etc/scl_enable","PROMPT_COMMAND=. /opt/app-root/etc/scl_enable","NODEJS_SCL=rh-nodejs8","NPM_RUN=start","NODE_VERSION=10.12.0","NPM_VERSION=6.4.1","NODE_LTS=false","NPM_CONFIG_LOGLEVEL=info","NPM_CONFIG_PREFIX=/opt/app-root/src/.npm-global","NPM_CONFIG_TARBALL=/usr/share/node/node-v10.12.0-headers.tar.gz","DEBUG_PORT=5858"],"Cmd":["/bin/sh","-c","#(nop) ","CMD [\"/bin/sh\" \"-c\" \"${STI_SCRIPTS_PATH}/usage\"]"],"Image":"sha256:d353b3f467c2d2ff59a1e09bb91cff1c493aedd6c8041ebb273346e892f8ee85","WorkingDir":"/opt/app-root/src","Entrypoint":["container-entrypoint"],"Labels":{"com.redhat.component":"s2i-base-container","org.jboss.deployments-dir": "/deployments","com.redhat.dev-mode":"DEV_MODE:false","com.rehdat.dev-mode.port":"DEBUG_PORT:5858","description":"Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","io.k8s.description":"Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","io.k8s.display-name":"Node.js 10.12.0","io.openshift.builder-version":"\"190ef14\"","io.openshift.expose-services":"8080:http","io.openshift.s2i.scripts-url":"image:///usr/local/s2i","org.jboss.deployments-dir": "/deployments","io.openshift.s2i.destination": "/tmp","io.openshift.tags":"builder,nodejs,nodejs-10.12.0","io.s2i.scripts-url":"image:///usr/libexec/s2i","maintainer":"Lance Ball \u003clball@redhat.com\u003e","name":"redhat-openjdk-18/openjdk18-openshift","org.label-schema.build-date":"20180804","org.label-schema.license":"GPLv2","org.label-schema.name":"CentOS Base Image","org.label-schema.schema-version":"1.0","org.label-schema.vendor":"CentOS","release":"1","summary":"Platform for building and running Node.js 10.12.0 applications","version":"10.12.0"}},"DockerVersion":"18.06.0-ce","Config":{"Hostname":"8911994b686d","User":"1001","ExposedPorts":{"8080/tcp":{}},"Env":["PATH=/opt/app-root/src/node_modules/.bin/:/opt/app-root/src/.npm-global/bin/:/opt/app-root/src/bin:/opt/app-root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","SUMMARY=Platform for building and running Node.js 10.12.0 applications","DESCRIPTION=Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","STI_SCRIPTS_URL=image:///usr/libexec/s2i","STI_SCRIPTS_PATH=/usr/libexec/s2i","APP_ROOT=/opt/app-root","HOME=/opt/app-root/src","BASH_ENV=/opt/app-root/etc/scl_enable","ENV=/opt/app-root/etc/scl_enable","PROMPT_COMMAND=. /opt/app-root/etc/scl_enable","NODEJS_SCL=rh-nodejs8","NPM_RUN=start","NODE_VERSION=10.12.0","NPM_VERSION=6.4.1","NODE_LTS=false","NPM_CONFIG_LOGLEVEL=info","NPM_CONFIG_PREFIX=/opt/app-root/src/.npm-global","NPM_CONFIG_TARBALL=/usr/share/node/node-v10.12.0-headers.tar.gz","DEBUG_PORT=5858"],"Cmd":["/bin/sh","-c","${STI_SCRIPTS_PATH}/usage"],"Image":"57a00ab03a3f8c3af19e91c284e0c499b16d5115c925aa845b5d14eace949c34","WorkingDir":"/opt/app-root/src","Entrypoint":["container-entrypoint"],"Labels":{"com.redhat.component":"s2i-base-container","com.redhat.deployments-dir":"/opt/app-root/src","com.redhat.dev-mode":"DEV_MODE:false","com.rehdat.dev-mode.port":"DEBUG_PORT:5858","description":"Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","io.k8s.description":"Node.js  available as docker container is a base platform for building and running various Node.js  applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.","io.k8s.display-name":"Node.js 10.12.0","io.openshift.builder-version":"\"190ef14\"","io.openshift.expose-services":"8080:http","io.openshift.s2i.scripts-url":"image:///usr/libexec/s2i","io.openshift.tags":"builder,nodejs,nodejs-10.12.0","io.s2i.scripts-url":"image:///usr/libexec/s2i","maintainer":"Lance Ball \u003clball@redhat.com\u003e","name":"bucharestgold/centos7-s2i-nodejs","org.label-schema.build-date":"20180804","org.label-schema.license":"GPLv2","org.label-schema.name":"CentOS Base Image","org.label-schema.schema-version":"1.0","org.label-schema.vendor":"CentOS","release":"1","summary":"Platform for building and running Node.js 10.12.0 applications","version":"10.12.0"}},"Architecture":"amd64","Size":221580439}`,
 			),
 			want: S2IPaths{
 				ScriptsPathProtocol: "image://",
 				ScriptsPath:         "/usr/local/s2i",
 				SrcOrBinPath:        "/tmp",
 				DeploymentDir:       "/deployments",
+				WorkingDir:          "/opt/app-root/src",
+				SrcBackupPath:       "/opt/app-root/src-backup",
+				BuilderImgName:      "redhat-openjdk-18/openjdk18-openshift",
 			},
 			wantErr: false,
 		},
@@ -4032,12 +4044,75 @@ func TestGetS2IPathsFromBuilderImg(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s2iPaths, err := GetS2IPathsFromBuilderImg(tt.imageStreamImage)
+			s2iPaths, err := GetS2IMetaInfoFromBuilderImg(tt.imageStreamImage)
 			if !reflect.DeepEqual(tt.want, s2iPaths) {
 				t.Errorf("s2i paths are not matching with expected values, expected: %v, got %v", tt.want, s2iPaths)
 			}
 			if !tt.wantErr == (err != nil) {
 				t.Errorf(" GetS2IScriptsPathFromBuilderImg() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestDeleteEnvVars(t *testing.T) {
+	tests := []struct {
+		name           string
+		existingEnvs   []corev1.EnvVar
+		envTobeDeleted string
+		want           []corev1.EnvVar
+	}{
+		{
+			name: "Case 1: valid case of delete",
+			existingEnvs: []corev1.EnvVar{
+				{
+					Name:  "abc",
+					Value: "123",
+				},
+				{
+					Name:  "def",
+					Value: "456",
+				},
+			},
+			envTobeDeleted: "def",
+			want: []corev1.EnvVar{
+				{
+					Name:  "abc",
+					Value: "123",
+				},
+			},
+		},
+		{
+			name: "Case 2: valid case of delete non-existant env",
+			existingEnvs: []corev1.EnvVar{
+				{
+					Name:  "abc",
+					Value: "123",
+				},
+				{
+					Name:  "def",
+					Value: "456",
+				},
+			},
+			envTobeDeleted: "ghi",
+			want: []corev1.EnvVar{
+				{
+					Name:  "abc",
+					Value: "123",
+				},
+				{
+					Name:  "def",
+					Value: "456",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := deleteEnvVars(tt.existingEnvs, tt.envTobeDeleted)
+			// Verify the passed param is not changed after call to function
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got: %+v, want: %+v", got, tt.want)
 			}
 		})
 	}
@@ -4049,6 +4124,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 		imageName      string
 		expectedImage  string
 		imageNamespace string
+		isToLocal      bool
 		dc             appsv1.DeploymentConfig
 	}
 	tests := []struct {
@@ -4064,6 +4140,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "nodejs",
 				expectedImage:  "nodejs",
 				imageNamespace: "openshift",
+				isToLocal:      true,
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					[]corev1.EnvFromSource{}, fakeResourceConsumption()),
@@ -4078,6 +4155,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				imageName:      "foo",
 				expectedImage:  "foobar",
 				imageNamespace: "testing",
+				isToLocal:      false,
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					[]corev1.EnvFromSource{}, []util.ResourceRequirementInfo{}),
@@ -4138,7 +4216,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 			})
 
 			// Run function UpdateDCToSupervisor
-			err := fakeClient.UpdateDCToSupervisor(metav1.ObjectMeta{Name: tt.args.name}, tt.args.imageName)
+			err := fakeClient.UpdateDCToSupervisor(metav1.ObjectMeta{Name: tt.args.name}, tt.args.imageName, tt.args.isToLocal)
 
 			// Error checking UpdateDCToSupervisor
 			if !tt.wantErr == (err != nil) {
