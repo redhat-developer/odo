@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
