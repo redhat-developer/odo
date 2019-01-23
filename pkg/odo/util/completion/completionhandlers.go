@@ -29,6 +29,9 @@ var ServiceCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context
 	}
 
 	for _, class := range services {
+		if args.commands[class.Name] {
+			return nil
+		}
 		completions = append(completions, class.Name)
 	}
 
@@ -46,6 +49,9 @@ var ServiceClassCompletionHandler = func(cmd *cobra.Command, args parsedArgs, co
 
 	complete.Log(fmt.Sprintf("found %d services", len(services)))
 	for _, class := range services {
+		if args.commands[class.Spec.ExternalName] {
+			return nil
+		}
 		completions = append(completions, class.Spec.ExternalName)
 	}
 
@@ -144,6 +150,9 @@ var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *ge
 	}
 
 	for _, app := range applications {
+		if args.commands[app.Name] {
+			return nil
+		}
 		completions = append(completions, app.Name)
 	}
 	return

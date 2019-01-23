@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -120,4 +123,37 @@ func FakePlanServiceInstanceCreateParameterSchemasRaw() [][]byte {
 	data = append(data, planServiceInstanceCreateParameterSchemaRaw2)
 
 	return data
+}
+
+// FakeServiceClassInstance creates and returns a simple service class instance for testing purpose
+// serviceInstanceName is the name of the service class instance
+// serviceClassName is the name of the service class
+// planName is the name of the plan
+// status is the status of the service instance
+func FakeServiceClassInstance(serviceInstanceName string, serviceClassName string, planName string, status string) scv1beta1.ServiceInstance {
+	var service = scv1beta1.ServiceInstance{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: serviceInstanceName,
+			Labels: map[string]string{
+				applabels.ApplicationLabel:         "app",
+				componentlabels.ComponentLabel:     serviceInstanceName,
+				componentlabels.ComponentTypeLabel: "dh-mariadb-apb",
+			},
+			Namespace: "myproject",
+		},
+		Spec: scv1beta1.ServiceInstanceSpec{
+			PlanReference: scv1beta1.PlanReference{
+				ClusterServiceClassExternalName: serviceClassName,
+				ClusterServicePlanExternalName:  planName,
+			},
+		},
+		Status: scv1beta1.ServiceInstanceStatus{
+			Conditions: []scv1beta1.ServiceInstanceCondition{
+				{
+					Reason: status,
+				},
+			},
+		},
+	}
+	return service
 }
