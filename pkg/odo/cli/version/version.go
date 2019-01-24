@@ -5,12 +5,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/notify"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
 var (
@@ -23,58 +23,95 @@ var (
 	GITCOMMIT = "HEAD"
 )
 
-var clientFlag bool
+// RecommendedCommandName is the recommended version command name
+const RecommendedCommandName = "version"
 
-// versionCmd represents the version command
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print the client version information",
-	Long:  "Print the client version information",
-	Example: `  # Print the client version of Odo
-  odo version
-	`,
-	Run: func(cmd *cobra.Command, args []string) {
+var versionLongDesc = ktemplates.LongDesc("Print the client version information")
 
-		// If verbose mode is enabled, dump all KUBECLT_* env variables
-		// this is usefull for debuging oc plugin integration
-		for _, v := range os.Environ() {
-			if strings.HasPrefix(v, "KUBECTL_") {
-				glog.V(4).Info(v)
-			}
+var versionExample = ktemplates.Examples(`
+# Print the client version of Odo
+%[1]s`,
+)
+
+// VersionOptions encapsulates all options for odo version command
+type VersionOptions struct {
+	// clientFlag indicates if the user only wants client information
+	clientFlag bool
+}
+
+// NewVersionOptions creates a new VersionOptions instance
+func NewVersionOptions() *VersionOptions {
+	return &VersionOptions{}
+}
+
+// Complete completes VersionOptions after they have been created
+func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	return
+}
+
+// Validate validates the VersionOptions based on completed values
+func (o *VersionOptions) Validate() (err error) {
+	return
+}
+
+// Run contains the logic for the odo service create command
+func (o *VersionOptions) Run(cmd *cobra.Command) (err error) {
+	// If verbose mode is enabled, dump all KUBECLT_* env variables
+	// this is usefull for debuging oc plugin integration
+	for _, v := range os.Environ() {
+		if strings.HasPrefix(v, "KUBECTL_") {
+			glog.V(4).Info(v)
 		}
+	}
 
-		fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
+	fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
 
-		if !clientFlag {
-			// Let's fetch the info about the server
-			serverInfo, err := genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
-			if err == nil {
-				// make sure we only include Openshift info if we actually have it
-				openshiftStr := ""
-				if len(serverInfo.OpenShiftVersion) > 0 {
-					openshiftStr = fmt.Sprintf("OpenShift: %v\n", serverInfo.OpenShiftVersion)
-				}
-				fmt.Printf("\n"+
-					"Server: %v\n"+
-					"%v"+
-					"Kubernetes: %v\n",
-					serverInfo.Address,
-					openshiftStr,
-					serverInfo.KubernetesVersion)
+	if !o.clientFlag {
+		// Let's fetch the info about the server
+		serverInfo, err := genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
+		if err == nil {
+			// make sure we only include Openshift info if we actually have it
+			openshiftStr := ""
+			if len(serverInfo.OpenShiftVersion) > 0 {
+				openshiftStr = fmt.Sprintf("OpenShift: %v\n", serverInfo.OpenShiftVersion)
 			}
+			fmt.Printf("\n"+
+				"Server: %v\n"+
+				"%v"+
+				"Kubernetes: %v\n",
+				serverInfo.Address,
+				openshiftStr,
+				serverInfo.KubernetesVersion)
 		}
-	},
+	}
+	return
 }
 
 // NewCmdVersion implements the version odo command
-func NewCmdVersion() *cobra.Command {
+func NewCmdVersion(name, fullName string) *cobra.Command {
+	o := NewVersionOptions()
+	// versionCmd represents the version command
+	var versionCmd = &cobra.Command{
+		Use:     name,
+		Short:   versionLongDesc,
+		Long:    versionLongDesc,
+		Example: fmt.Sprintf(versionExample, fullName),
+		Run: func(cmd *cobra.Command, args []string) {
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(cmd), "")
+		},
+	}
+
 	// Add a defined annotation in order to appear in the help menu
 	versionCmd.Annotations = map[string]string{"command": "utility"}
 	versionCmd.SetUsageTemplate(util.CmdUsageTemplate)
-	versionCmd.Flags().BoolVar(&clientFlag, "client", false, "Client version only (no server required).")
+	versionCmd.Flags().BoolVar(&o.clientFlag, "client", false, "Client version only (no server required).")
 
 	return versionCmd
 }
+
+// GetLatestReleaseInfo Gets information about the latest release
 func GetLatestReleaseInfo(info chan<- string) {
 	newTag, err := notify.CheckLatestReleaseTag(VERSION)
 	if err != nil {

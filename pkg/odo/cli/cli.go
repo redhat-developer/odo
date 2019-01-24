@@ -3,7 +3,6 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
@@ -17,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/utils"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -114,7 +114,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		storage.NewCmdStorage(),
 		url.NewCmdURL(),
 		utils.NewCmdUtils(),
-		version.NewCmdVersion(),
+		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
 	)
 
 	return rootCmd
