@@ -204,7 +204,7 @@ var applicationListCmd = &cobra.Command{
 				appListDef := application.AppList{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "List",
-						APIVersion: "odo.openshift.io/v1beta1",
+						APIVersion: "odo.openshift.io/v1alpha1",
 					},
 					ListMeta: metav1.ListMeta{},
 					Items:    appList,
@@ -357,7 +357,7 @@ func getMachineReadableFormat(client *occlient.Client, appName string, projectNa
 	appDef := application.App{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "app",
-			APIVersion: "odo.openshift.io/v1beta1",
+			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appName,

@@ -85,7 +85,7 @@ func getMachineReadableFormat(componentDesc component.Description) component.Com
 	componentDef := component.Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
-			APIVersion: "odo.openshift.io/v1beta1",
+			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: componentDesc.ComponentName,
