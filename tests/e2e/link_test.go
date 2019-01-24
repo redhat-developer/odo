@@ -50,6 +50,11 @@ var _ = Describe("odoLinkE2e", func() {
 			Expect(envFromOutput).To(ContainSubstring("backend"))
 		})
 
+		It("link should fail when linking to the same component again", func() {
+			output := runFailCmd("odo link backend --component frontend", 1)
+			Expect(output).To(ContainSubstring("been linked"))
+		})
+
 		It("should be able to create a service", func() {
 			runCmd("odo service create mysql-persistent")
 
@@ -65,6 +70,11 @@ var _ = Describe("odoLinkE2e", func() {
 			envFromOutput :=
 				runCmd("oc get dc backend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
 			Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
+		})
+
+		It("link should fail when linking to the same service again", func() {
+			output := runFailCmd("odo link mysql-persistent --component backend", 1)
+			Expect(output).To(ContainSubstring("been linked"))
 		})
 
 		It("delete the service", func() {

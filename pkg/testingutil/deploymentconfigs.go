@@ -16,11 +16,13 @@ func getContainerPort(containerPort int32, containerProtocol corev1.Protocol) (c
 	}
 }
 
-func getContainer(componentName string, applicationName string, ports []corev1.ContainerPort) corev1.Container {
+func getContainer(componentName string, applicationName string, ports []corev1.ContainerPort,
+	envFromSources []corev1.EnvFromSource) corev1.Container {
 	return corev1.Container{
-		Name:  fmt.Sprintf("%v-%v", componentName, applicationName),
-		Image: fmt.Sprintf("%v-%v", componentName, applicationName),
-		Ports: ports,
+		Name:    fmt.Sprintf("%v-%v", componentName, applicationName),
+		Image:   fmt.Sprintf("%v-%v", componentName, applicationName),
+		Ports:   ports,
+		EnvFrom: envFromSources,
 	}
 }
 
@@ -84,7 +86,7 @@ func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 			ContainerPort: 9090,
 			Protocol:      corev1.ProtocolUDP,
 		},
-	})
+	}, nil)
 	c2 := getContainer(componentName, applicationName, []corev1.ContainerPort{
 		{
 			Name:          fmt.Sprintf("%v-%v-p1", componentName, applicationName),
@@ -96,7 +98,7 @@ func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 			ContainerPort: 10090,
 			Protocol:      corev1.ProtocolUDP,
 		},
-	})
+	}, nil)
 	dc1 := getDeploymentConfig("myproject", componentName, componentType, applicationName, []corev1.Container{c1, c2})
 
 	// DC2 with single container and single port
@@ -108,6 +110,21 @@ func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 			Name:          fmt.Sprintf("%v-%v-p1", componentName, applicationName),
 			ContainerPort: 8080,
 			Protocol:      corev1.ProtocolTCP,
+		},
+	}, []corev1.EnvFromSource{
+		{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "s1",
+				},
+			},
+		},
+		{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "s2",
+				},
+			},
 		},
 	})
 	dc2 := getDeploymentConfig("myproject", componentName, componentType, applicationName, []corev1.Container{c3})
@@ -127,7 +144,7 @@ func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 			ContainerPort: 8090,
 			Protocol:      corev1.ProtocolTCP,
 		},
-	})
+	}, nil)
 	dc3 := getDeploymentConfig("myproject", componentName, componentType, applicationName, []corev1.Container{c4})
 
 	return &v1.DeploymentConfigList{

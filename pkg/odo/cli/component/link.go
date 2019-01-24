@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/component"
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -84,7 +85,25 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the LinkOptions based on completed values
 func (o *LinkOptions) Validate() (err error) {
-	return o.validate(o.wait)
+	err = o.validate(o.wait)
+	if err != nil {
+		return err
+	}
+
+	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.Client, o.Component(), o.Application)
+	if err != nil {
+		return err
+	}
+	for _, alreadyLinkedSecretName := range alreadyLinkedSecretNames {
+		if alreadyLinkedSecretName == o.secretName {
+			targetType := "component"
+			if o.isTargetAService {
+				targetType = "service"
+			}
+			return fmt.Errorf("Component %s has previously been linked to %s %s", o.Component(), targetType, o.suppliedName)
+		}
+	}
+	return
 }
 
 // Run contains the logic for the odo link command
