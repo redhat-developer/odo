@@ -33,8 +33,8 @@ var versionExample = ktemplates.Examples(`
 %[1]s`,
 )
 
-// Options encapsulates all options for odo version command
-type Options struct {
+// VersionOptions encapsulates all options for odo version command
+type VersionOptions struct {
 	// clientFlag indicates if the user only wants client information
 	clientFlag bool
 	// generic context options common to all commands
@@ -42,25 +42,23 @@ type Options struct {
 }
 
 // NewVersionOptions creates a new VersionOptions instance
-func NewVersionOptions() *Options {
-	return &Options{}
+func NewVersionOptions() *VersionOptions {
+	return &VersionOptions{}
 }
 
 // Complete completes VersionOptions after they have been created
-func (o *Options) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
+func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	return
 }
 
 // Validate validates the VersionOptions based on completed values
-func (o *Options) Validate() (err error) {
+func (o *VersionOptions) Validate() (err error) {
 	// TODO : Figure out what validations need to be added
 	return
 }
 
 // Run contains the logic for the odo service create command
-func (o *Options) Run(cmd *cobra.Command) (err error) {
+func (o *VersionOptions) Run(cmd *cobra.Command) (err error) {
 	// If verbose mode is enabled, dump all KUBECLT_* env variables
 	// this is usefull for debuging oc plugin integration
 	for _, v := range os.Environ() {
