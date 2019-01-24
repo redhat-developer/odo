@@ -20,6 +20,7 @@ import (
 
 func main() {
 	loadPlugins()
+	defer plugin.CleanPlugins()
 
 	// create the complete command
 	root := cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName)
@@ -125,7 +126,7 @@ func loadPlugins() {
 	}
 
 	err = filepath.Walk(configDir, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".so") {
+		if strings.HasSuffix(path, ".listener.odo") {
 			plugin.InitPluginAt(path)
 		}
 		return nil

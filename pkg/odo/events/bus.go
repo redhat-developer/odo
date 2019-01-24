@@ -123,7 +123,7 @@ func revertProcessedListenersOnAbort(abort bool, err error, listeners []api.List
 	if abort {
 
 		for i := range listeners {
-			listeners[i].OnAbort(err.(*api.EventCausedAbortError))
+			listeners[i].OnAbort(err.(api.EventCausedAbortError))
 		}
 	}
 }
