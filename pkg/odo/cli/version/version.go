@@ -37,8 +37,6 @@ var versionExample = ktemplates.Examples(`
 type VersionOptions struct {
 	// clientFlag indicates if the user only wants client information
 	clientFlag bool
-	// generic context options common to all commands
-	*genericclioptions.Context
 }
 
 // NewVersionOptions creates a new VersionOptions instance
@@ -53,7 +51,6 @@ func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the VersionOptions based on completed values
 func (o *VersionOptions) Validate() (err error) {
-	// TODO : Figure out what validations need to be added
 	return
 }
 
