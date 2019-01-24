@@ -36,6 +36,7 @@ import (
 
 // Spacing for logging
 const suffixSpacing = "  "
+const prefixSpacing = " "
 
 // Status is used to track ongoing status in a CLI, with a nice loading spinner
 // when attached to a terminal
@@ -110,8 +111,9 @@ func (s *Status) Start(status string, debug bool) {
 
 	// If we are in debug mode, don't spin!
 	if !isTerm || debug {
-		fmt.Fprintf(s.writer, " •"+suffixSpacing+"%s  ...\n", s.status)
+		fmt.Fprintf(s.writer, prefixSpacing+"•"+suffixSpacing+"%s  ...\n", s.status)
 	} else {
+		s.spinner.SetPrefix(prefixSpacing)
 		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
 		s.spinner.Start()
 	}
@@ -133,10 +135,10 @@ func (s *Status) End(success bool) {
 
 	if success {
 		green := color.New(color.FgGreen).SprintFunc()
-		fmt.Fprintf(s.writer, " %s"+suffixSpacing+"%s\n", green("✓"), s.status)
+		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s\n", green("✓"), s.status)
 	} else {
 		red := color.New(color.FgRed).SprintFunc()
-		fmt.Fprintf(s.writer, " %s"+suffixSpacing+"%s\n", red("✗"), s.status)
+		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s\n", red("✗"), s.status)
 	}
 
 	s.status = ""
@@ -150,25 +152,25 @@ func Namef(format string, a ...interface{}) {
 
 // Progressf will output in an appropriate "progress" manner
 func Progressf(format string, a ...interface{}) {
-	fmt.Printf(" %s\n", fmt.Sprintf(format, a...))
+	fmt.Printf("%s%s\n", prefixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Successf will output in an appropriate "progress" manner
 func Successf(format string, a ...interface{}) {
 	green := color.New(color.FgGreen).SprintFunc()
-	fmt.Printf(" %s%s%s\n", green("✓"), suffixSpacing, fmt.Sprintf(format, a...))
+	fmt.Printf("%s%s%s%s\n", prefixSpacing, green("✓"), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Errorf will output in an appropriate "progress" manner
 func Errorf(format string, a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Printf(" %s%s%s\n", red("✗"), suffixSpacing, fmt.Sprintf(format, a...))
+	fmt.Printf("%s%s%s%s\n", prefixSpacing, red("✗"), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Error will output in an appropriate "progress" manner
 func Error(a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Printf(" %s%s%s\n", red("✗"), suffixSpacing, fmt.Sprintln(a...))
+	fmt.Printf("%s%s%s%s\n", prefixSpacing, red("✗"), suffixSpacing, fmt.Sprintln(a...))
 }
 
 // Info will simply print out information on a new (bolded) line
