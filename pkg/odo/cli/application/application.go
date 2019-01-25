@@ -151,7 +151,7 @@ var applicationDeleteCmd = &cobra.Command{
 		var confirmDeletion string
 
 		// Print App Information which will be deleted
-		err := printDeleteAppInfo(client, appName)
+		err := printDeleteAppInfo(client, appName, projectName)
 		odoutil.LogErrorAndExit(err, "")
 		exists, err := application.Exists(client, appName)
 		odoutil.LogErrorAndExit(err, "")
@@ -298,7 +298,7 @@ var applicationDescribeCmd = &cobra.Command{
 				appName, len(componentList), len(serviceList))
 			if len(componentList) > 0 {
 				for _, currentComponent := range componentList {
-					componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+					componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName, projectName)
 					odoutil.LogErrorAndExit(err, "")
 					odoutil.PrintComponentInfo(currentComponent.Name, componentDesc)
 					fmt.Println("--------------------------------------")
@@ -359,14 +359,14 @@ func AddApplicationFlag(cmd *cobra.Command) {
 }
 
 // printDeleteAppInfo will print things which will be deleted
-func printDeleteAppInfo(client *occlient.Client, appName string) error {
+func printDeleteAppInfo(client *occlient.Client, appName string, projectName string) error {
 	componentList, err := component.List(client, appName)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Component list")
 	}
 
 	for _, currentComponent := range componentList {
-		componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+		componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName, projectName)
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}

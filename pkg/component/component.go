@@ -47,6 +47,8 @@ type Description struct {
 	URLs               []urlpkg.URL          `json:"url,omitempty"`
 	Env                []corev1.EnvVar       `json:"environment,omitempty"`
 	Storage            []storage.StorageInfo `json:"storage,omitempty"`
+	LinkedComponents   map[string][]string   `json:"linkedComponents,omitempty"`
+	LinkedServices     []string              `json:"linkedComponents,omitempty"`
 }
 
 // GetComponentDir returns source repo name
@@ -802,7 +804,7 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 }
 
 // GetComponentDesc provides description such as source, url & storage about given component
-func GetComponentDesc(client *occlient.Client, componentName string, applicationName string) (componentDesc Description, err error) {
+func GetComponentDesc(client *occlient.Client, componentName string, applicationName string, projectName string) (componentDesc Description, err error) {
 	// Component Type
 	componentImageType, err := GetComponentType(client, componentName, applicationName)
 	if err != nil {
@@ -842,6 +844,28 @@ func GetComponentDesc(client *occlient.Client, componentName string, application
 	if err != nil {
 		return componentDesc, errors.Wrap(err, "unable to get envVars list")
 	}
+
+	linkedServices := make([]string, 0)
+	linkedComponents := make(map[string][]string)
+	linkedSecretNames, err := GetComponentLinkedSecretNames(client, componentName, applicationName)
+	if err != nil {
+		return componentDesc, errors.Wrap(err, "unable to list linked secrets")
+	}
+	for _, secretName := range linkedSecretNames {
+		secret, err := client.GetSecret(secretName, projectName)
+		if err != nil {
+			return componentDesc, errors.Wrapf(err, "unable to get info about secret %s", secretName)
+		}
+		componentName, containsComponentLabel := secret.Labels[componentlabels.ComponentLabel]
+		if containsComponentLabel {
+			if port, ok := secret.Annotations[occlient.ComponentPortAnnotationName]; ok {
+				linkedComponents[componentName] = append(linkedComponents[componentName], port)
+			}
+		} else {
+			linkedServices = append(linkedServices, secretName)
+		}
+	}
+
 	componentDesc = Description{
 		ComponentName:      componentName,
 		ComponentImageType: componentImageType,
@@ -849,6 +873,8 @@ func GetComponentDesc(client *occlient.Client, componentName string, application
 		Env:                filteredEnv,
 		Storage:            appStore,
 		URLs:               urlList,
+		LinkedComponents:   linkedComponents,
+		LinkedServices:     linkedServices,
 	}
 	return componentDesc, nil
 }

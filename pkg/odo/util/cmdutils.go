@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -82,6 +83,20 @@ func PrintComponentInfo(currentComponentName string, componentDesc component.Des
 			fmt.Printf(" - %v exposed via %v\n", url.GetURLString(componentUrl), componentUrl.Port)
 		}
 
+	}
+	// Linked services
+	if len(componentDesc.LinkedServices) > 0 {
+		fmt.Print("Linked Services: ")
+		fmt.Printf("%v\n", strings.Join(componentDesc.LinkedServices, ","))
+	}
+	// Linked components
+	if len(componentDesc.LinkedComponents) > 0 {
+		fmt.Println("\nLinked Components")
+		for name, ports := range componentDesc.LinkedComponents {
+			if len(ports) > 0 {
+				fmt.Printf("Name: %v - Port(s): %v\n", name, strings.Join(ports, ","))
+			}
+		}
 	}
 }
 

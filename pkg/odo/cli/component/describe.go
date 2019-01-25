@@ -32,7 +32,7 @@ var describeCmd = &cobra.Command{
 		} else {
 			componentName = context.Component(args[0])
 		}
-		componentDesc, err := component.GetComponentDesc(client, componentName, applicationName)
+		componentDesc, err := component.GetComponentDesc(client, componentName, applicationName, context.Project)
 		odoutil.LogErrorAndExit(err, "")
 
 		odoutil.PrintComponentInfo(componentName, componentDesc)

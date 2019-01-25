@@ -50,6 +50,14 @@ var _ = Describe("odoLinkE2e", func() {
 			Expect(envFromOutput).To(ContainSubstring("backend"))
 		})
 
+		It("describe should show the linked service", func() {
+			describeOutput := runCmd("odo describe frontend")
+
+			// ensure that the output contains the component and port
+			Expect(describeOutput).To(ContainSubstring("backend"))
+			Expect(describeOutput).To(ContainSubstring("8080"))
+		})
+
 		It("link should fail when linking to the same component again", func() {
 			output := runFailCmd("odo link backend --component frontend", 1)
 			Expect(output).To(ContainSubstring("been linked"))
@@ -82,6 +90,13 @@ var _ = Describe("odoLinkE2e", func() {
 		It("link should fail when linking to the same service again", func() {
 			output := runFailCmd("odo link mysql-persistent --component backend", 1)
 			Expect(output).To(ContainSubstring("been linked"))
+		})
+
+		It("describe should show the linked service", func() {
+			describeOutput := runCmd("odo describe backend")
+
+			// ensure that the output contains the service
+			Expect(describeOutput).To(ContainSubstring("mysql-persistent"))
 		})
 
 		It("delete the service", func() {
