@@ -95,7 +95,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 
 	rootCmd.AddCommand(
 		application.NewCmdApplication(),
-		catalog.NewCmdCatalog(),
+		catalog.NewCmdCatalog(catalog.RecommendedCatalogCommandName, util.GetFullName(fullName, catalog.RecommendedCatalogCommandName)),
 		component.NewCmdComponent(),
 		component.NewCmdCreate(),
 		component.NewCmdDelete(),
