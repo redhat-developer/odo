@@ -48,7 +48,7 @@ type Description struct {
 	Env                []corev1.EnvVar       `json:"environment,omitempty"`
 	Storage            []storage.StorageInfo `json:"storage,omitempty"`
 	LinkedComponents   map[string][]string   `json:"linkedComponents,omitempty"`
-	LinkedServices     []string              `json:"linkedComponents,omitempty"`
+	LinkedServices     []string              `json:"linkedServices,omitempty"`
 }
 
 // GetComponentDir returns source repo name
