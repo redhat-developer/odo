@@ -65,6 +65,9 @@ var _ = Describe("odoJavaE2e", func() {
 			buildName := runCmd("oc get builds --output='name' | grep wo-wait-javaee-git-test | cut -d '/' -f 2")
 			Expect(buildName).To(ContainSubstring("wo-wait-javaee-git-test"))
 
+			buildStatus := runCmd("oc get builds | grep wo-wait-javaee-git-test")
+			Expect(buildStatus).To(ContainSubstring("Pending"))
+
 			dcName := runCmd("oc get dc | grep wo-wait-javaee-git-test | cut -f 1 -d ' '")
 			// For waiting until the deployment starts
 			for {
