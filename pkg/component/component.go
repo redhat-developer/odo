@@ -845,7 +845,7 @@ func GetComponentDesc(client *occlient.Client, componentName string, application
 		return componentDesc, errors.Wrap(err, "unable to get envVars list")
 	}
 
-	linkedServices := make([]string, 0)
+	linkedServices := make([]string, 0, 5)
 	linkedComponents := make(map[string][]string)
 	linkedSecretNames, err := GetComponentLinkedSecretNames(client, componentName, applicationName)
 	if err != nil {
