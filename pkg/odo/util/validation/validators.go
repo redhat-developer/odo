@@ -18,12 +18,19 @@ type Validator func(interface{}) error
 func NilValidator(interface{}) error { return nil }
 
 func IntegerValidator(ans interface{}) error {
-	s := ans.(string)
-	_, err := strconv.Atoi(s)
-	if err != nil {
-		return fmt.Errorf("invalid integer value '%s': %s", s, err)
+	if _, ok := ans.(int); ok {
+		return nil
 	}
-	return nil
+
+	if s, ok := ans.(string); ok {
+		_, err := strconv.Atoi(s)
+		if err != nil {
+			return fmt.Errorf("invalid integer value '%s': %s", s, err)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("don't know how to convert %v into an integer", ans)
 }
 
 // GetValidatorFor retrieves a validator for the specified validatable, first validating its required state, then its value
