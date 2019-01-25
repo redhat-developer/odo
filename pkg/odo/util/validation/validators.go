@@ -7,8 +7,11 @@ import (
 )
 
 func NameValidator(name interface{}) error {
-	s := name.(string)
-	return ValidateName(s)
+	if s, ok := name.(string); ok {
+		return ValidateName(s)
+	}
+
+	return fmt.Errorf("can only validate strings, got %v", name)
 }
 
 // Validator is a function that validates that the provided interface conforms to expectations or return an error

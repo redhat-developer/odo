@@ -37,3 +37,20 @@ func TestNilValidator(t *testing.T) {
 		t.Error("nil validator should always validate even nil")
 	}
 }
+
+func TestNameValidator(t *testing.T) {
+	// note that we're just testing a single case here since presumably the underlying implementation is already tested in k8s
+	err := NameValidator("some-valid-name")
+	if err != nil {
+		t.Errorf("name validator should have accepted name, but got: %v instead", err)
+	}
+
+	err = NameValidator(new(interface{}))
+	if err == nil {
+		t.Error("name validator should only attempt to validate non-nil strings")
+	} else {
+		if !strings.Contains(err.Error(), "can only validate strings") {
+			t.Error("name validator should report error that it can only valida strings")
+		}
+	}
+}
