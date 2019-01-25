@@ -2,7 +2,7 @@ package ui
 
 import (
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"os"
@@ -21,6 +21,6 @@ func HandleError(err error) {
 
 // GetValidatorFor returns an implementation specific validator for the given validatable to avoid type casting at each calling
 // site
-func GetValidatorFor(prop util.Validatable) survey.Validator {
-	return survey.Validator(util.GetValidatorFor(prop))
+func GetValidatorFor(prop validation.Validatable) survey.Validator {
+	return survey.Validator(validation.GetValidatorFor(prop))
 }

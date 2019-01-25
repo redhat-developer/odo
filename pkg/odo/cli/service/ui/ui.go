@@ -7,7 +7,7 @@ import (
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/mgutz/ansi"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"github.com/redhat-developer/odo/pkg/service"
 	terminal2 "golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/AlecAivazis/survey.v1"
@@ -86,7 +86,7 @@ func SelectPlanNameInteractively(plans map[string]scv1beta1.ClusterServicePlan, 
 
 // EnterServiceNameInteractively lets the user enter the name of the service instance to create, defaulting to the provided
 // default value and specifying both the prompt text and validation function for the name
-func EnterServiceNameInteractively(defaultValue, promptText string, validateName util.Validator) (serviceName string) {
+func EnterServiceNameInteractively(defaultValue, promptText string, validateName validation.Validator) (serviceName string) {
 	// if only one arg is given, ask to Name the service providing the class Name as default
 	instancePrompt := &survey.Input{
 		Message: promptText,

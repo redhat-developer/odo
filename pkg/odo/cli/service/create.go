@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"strings"
 
 	"github.com/golang/glog"
@@ -105,7 +106,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 // validateServiceName adopts the Validator interface and checks that the name of the service being created is valid
 func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 	s := i.(string)
-	err = util.ValidateName(s)
+	err = validation.ValidateName(s)
 	if err != nil {
 		return err
 	}
@@ -121,7 +122,7 @@ func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 
 var validateNameFn = func(i interface{}) error {
 	s := i.(string)
-	return util.ValidateName(s)
+	return validation.ValidateName(s)
 }
 
 // Validate validates the ServiceCreateOptions based on completed values
@@ -168,7 +169,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 		}
 	}
 	//validate service name
-	err = util.ValidateName(o.serviceName)
+	err = validation.ValidateName(o.serviceName)
 	if err != nil {
 		return err
 	}

@@ -3,8 +3,8 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/golang/glog"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"strings"
 
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
@@ -46,7 +46,7 @@ type ServicePlanParameter struct {
 	Description     string
 	HasDefaultValue bool
 	Default         string
-	odoutil.Validatable
+	validation.Validatable
 }
 
 // NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
@@ -55,7 +55,7 @@ func NewServicePlanParameter(name, typeName, defaultValue string, required bool)
 		Name:            name,
 		Default:         defaultValue,
 		HasDefaultValue: len(defaultValue) > 0,
-		Validatable: odoutil.Validatable{
+		Validatable: validation.Validatable{
 			Type:     typeName,
 			Required: required,
 		},

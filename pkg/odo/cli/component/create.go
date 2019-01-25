@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"os"
 	"strings"
 
@@ -179,7 +180,7 @@ A full list of component types that can be deployed is available using: 'odo cat
 		}
 
 		// Validate component name
-		err = odoutil.ValidateName(componentName)
+		err = validation.ValidateName(componentName)
 		odoutil.LogErrorAndExit(err, "")
 		exists, err = component.Exists(client, componentName, applicationName)
 		odoutil.LogErrorAndExit(err, "")

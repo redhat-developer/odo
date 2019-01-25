@@ -1,4 +1,4 @@
-package util
+package validation
 
 import (
 	"gopkg.in/AlecAivazis/survey.v1"
@@ -66,11 +66,6 @@ func Test_validateName(t *testing.T) {
 func TestGetValidator(t *testing.T) {
 	// add test validator
 	testValidator := func(ans interface{}) error { return nil }
-	testKey := "test"
-	validators[testKey] = testValidator
-	defer func() {
-		delete(validators, testKey)
-	}()
 
 	tests := []struct {
 		name        string
@@ -80,7 +75,7 @@ func TestGetValidator(t *testing.T) {
 		{
 			name:        "default",
 			validatable: Validatable{},
-			expected:    []survey.Validator{nilValidator},
+			expected:    []survey.Validator{NilValidator},
 		},
 		{
 			name:        "required",
@@ -90,31 +85,31 @@ func TestGetValidator(t *testing.T) {
 		{
 			name:        "unknown type",
 			validatable: Validatable{Type: "foo"},
-			expected:    []survey.Validator{nilValidator},
+			expected:    []survey.Validator{NilValidator},
 		},
 		{
 			name:        "integer",
 			validatable: Validatable{Type: "integer"},
-			expected:    []survey.Validator{survey.Validator(validators[defaultIntegerValidatorKey])},
+			expected:    []survey.Validator{IntegerValidator},
 		},
 		{
 			name:        "integer and required",
 			validatable: Validatable{Type: "integer", Required: true},
-			expected:    []survey.Validator{survey.Required, survey.Validator(validators[defaultIntegerValidatorKey])},
+			expected:    []survey.Validator{survey.Required, IntegerValidator},
 		},
 		{
 			name:        "additional validator (name)",
-			validatable: Validatable{AdditionalValidators: []string{NameValidatorKey}},
-			expected:    []survey.Validator{validateNameAsValidator},
+			validatable: Validatable{AdditionalValidators: []Validator{NameValidator}},
+			expected:    []survey.Validator{NameValidator},
 		},
 		{
 			name:        "integer, required and additional validator (name)",
-			validatable: Validatable{Type: "integer", Required: true, AdditionalValidators: []string{NameValidatorKey}},
-			expected:    []survey.Validator{survey.Required, survey.Validator(validators[defaultIntegerValidatorKey]), validateNameAsValidator},
+			validatable: Validatable{Type: "integer", Required: true, AdditionalValidators: []Validator{NameValidator}},
+			expected:    []survey.Validator{survey.Required, IntegerValidator, NameValidator},
 		},
 		{
 			name:        "test validator",
-			validatable: Validatable{AdditionalValidators: []string{testKey}},
+			validatable: Validatable{AdditionalValidators: []Validator{testValidator}},
 			expected:    []survey.Validator{testValidator},
 		},
 	}
@@ -123,13 +118,13 @@ func TestGetValidator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			validator, chain := internalGetValidatorFor(tt.validatable)
 
-			// if validator chain is empty, only possible result is nilValidator
+			// if validator chain is empty, only possible result is NilValidator
 			if len(chain) == 0 {
 				// check that function pointers are equal
-				f1 := reflect.ValueOf(nilValidator).Pointer()
+				f1 := reflect.ValueOf(NilValidator).Pointer()
 				f2 := reflect.ValueOf(validator).Pointer()
 				if f1 != f2 {
-					t.Error("test failed, expected nilValidator")
+					t.Error("test failed, expected NilValidator")
 				}
 			} else {
 				if len(tt.expected) != len(chain) {

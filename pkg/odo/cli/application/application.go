@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/service"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"os"
 	"strings"
 
@@ -90,7 +91,7 @@ If no app name is passed, a default app name will be auto-generated.
 			odoutil.LogErrorAndExit(err, "")
 		}
 		// validate application name
-		err := odoutil.ValidateName(appName)
+		err := validation.ValidateName(appName)
 		odoutil.LogErrorAndExit(err, "")
 		log.Progressf("Creating application: %v in project: %v", appName, projectName)
 		err = application.Create(client, appName)
