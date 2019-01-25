@@ -25,3 +25,15 @@ func TestIntegerValidator(t *testing.T) {
 		}
 	}
 }
+
+func TestNilValidator(t *testing.T) {
+	err := NilValidator(new(interface{}))
+	if err != nil {
+		t.Error("nil validator should always validate any input")
+	}
+
+	err = NilValidator(nil)
+	if err != nil {
+		t.Error("nil validator should always validate even nil")
+	}
+}
