@@ -51,7 +51,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'Insult' | wc -l | tr -d '\n'", "1", 10)
+			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'Insult' | wc -l | tr -d '\n'", "1", 10)
+			Expect(pingValue).To(Equal(true))
 
 			// Delete the component
 			runCmd("odo delete javaee-git-test -f")
@@ -87,7 +88,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'Insult' | wc -l | tr -d '\n'", "1", 10)
+			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'Insult' | wc -l | tr -d '\n'", "1", 10)
+			Expect(pingValue).To(Equal(true))
 
 			// Delete the component
 			runCmd("odo delete wo-wait-javaee-git-test -f")
@@ -111,7 +113,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'Sample' | wc -l | tr -d '\n'", "2", 10)
+			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'Sample' | wc -l | tr -d '\n'", "2", 10)
+			Expect(pingValue).To(Equal(true))
 
 			// Delete the component
 			runCmd("odo delete javaee-war-test -f")
@@ -139,7 +142,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'Hello World' | wc -l | tr -d '\n'", "1", 10)
+			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'Hello World' | wc -l | tr -d '\n'", "1", 10)
+			Expect(pingValue).To(Equal(true))
 
 			// Delete the component
 			runCmd("odo delete uberjar-git-test -f")
@@ -165,7 +169,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'HTTP Booster' | wc -l | tr -d '\n'", "1", 10)
+			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'HTTP Booster' | wc -l | tr -d '\n'", "1", 10)
+			Expect(pingValue).To(Equal(true))
 
 			// Delete the component
 			runCmd("odo delete sb-jar-test -f")
