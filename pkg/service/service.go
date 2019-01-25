@@ -41,20 +41,18 @@ type ServiceClass struct {
 
 // ServicePlanParameter holds the information regarding a service catalog plan parameter
 type ServicePlanParameter struct {
-	Name            string
-	Title           string
-	Description     string
-	HasDefaultValue bool
-	Default         string
-	validation.Validatable
+	Name                   string `json:"name"`
+	Title                  string `json:"title,omitempty"`
+	Description            string `json:"description,omitempty"`
+	Default                string `json:"default,omitempty"`
+	validation.Validatable `json:",inline,omitempty"`
 }
 
 // NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
 func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
 	return ServicePlanParameter{
-		Name:            name,
-		Default:         defaultValue,
-		HasDefaultValue: len(defaultValue) > 0,
+		Name:    name,
+		Default: defaultValue,
 		Validatable: validation.Validatable{
 			Type:     typeName,
 			Required: required,
@@ -387,9 +385,6 @@ func NewServicePlan(result scv1beta1.ClusterServicePlan) (plan ServicePlan, err 
 		// is one of the parameters indicated as required
 		// these parameters are not strictly required since they might have default values
 		v.Required = isRequired(schema.Required, k)
-		if len(v.Default) > 0 {
-			v.HasDefaultValue = true
-		}
 
 		plan.Parameters = append(plan.Parameters, v)
 	}

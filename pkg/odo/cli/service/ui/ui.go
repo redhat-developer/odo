@@ -291,7 +291,7 @@ func addValueFor(prop service.ServicePlanParameter, values map[string]string, st
 		prompt.WithStdio(stdio[0])
 	}
 
-	if prop.HasDefaultValue {
+	if len(prop.Default) > 0 {
 		prompt.Default = prop.Default
 	}
 

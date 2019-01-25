@@ -87,7 +87,7 @@ func (o *DescribeServiceOptions) Run() (err error) {
 				if parameter.Required {
 					// until we have a better solution for displaying the plan data (like a separate table perhaps)
 					// this is simplest thing to do
-					if parameter.HasDefaultValue {
+					if len(parameter.Default) > 0 {
 						requiredWithOptionalUserInputParameterNames = append(
 							requiredWithOptionalUserInputParameterNames,
 							fmt.Sprintf("%s (default: '%s')", parameter.Name, parameter.Default))

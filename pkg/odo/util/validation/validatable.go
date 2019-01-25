@@ -2,9 +2,9 @@ package validation
 
 // Validatable represents a common ancestor for validatable parameters
 type Validatable struct {
-	Required             bool
-	Type                 string
-	AdditionalValidators []Validator
+	Required             bool        `json:"required,omitempty"`
+	Type                 string      `json:"type"`
+	AdditionalValidators []Validator `json:"-"`
 }
 
 // AsValidatable allows avoiding type casts in client code
