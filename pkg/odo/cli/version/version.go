@@ -2,6 +2,7 @@ package version
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"os"
 	"strings"
 
@@ -37,6 +38,8 @@ var versionExample = ktemplates.Examples(`
 type VersionOptions struct {
 	// clientFlag indicates if the user only wants client information
 	clientFlag bool
+	// serverInfo contains the remote server information if the user asked for it, nil otherwise
+	serverInfo *occlient.ServerInfo
 }
 
 // NewVersionOptions creates a new VersionOptions instance
@@ -46,6 +49,13 @@ func NewVersionOptions() *VersionOptions {
 
 // Complete completes VersionOptions after they have been created
 func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	if !o.clientFlag {
+		// Let's fetch the info about the server
+		o.serverInfo, err = genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
+		if err != nil {
+			return err
+		}
+	}
 	return
 }
 
@@ -55,7 +65,7 @@ func (o *VersionOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service create command
-func (o *VersionOptions) Run(cmd *cobra.Command) (err error) {
+func (o *VersionOptions) Run() (err error) {
 	// If verbose mode is enabled, dump all KUBECLT_* env variables
 	// this is usefull for debuging oc plugin integration
 	for _, v := range os.Environ() {
@@ -66,23 +76,19 @@ func (o *VersionOptions) Run(cmd *cobra.Command) (err error) {
 
 	fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
 
-	if !o.clientFlag {
-		// Let's fetch the info about the server
-		serverInfo, err := genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
-		if err == nil {
-			// make sure we only include Openshift info if we actually have it
-			openshiftStr := ""
-			if len(serverInfo.OpenShiftVersion) > 0 {
-				openshiftStr = fmt.Sprintf("OpenShift: %v\n", serverInfo.OpenShiftVersion)
-			}
-			fmt.Printf("\n"+
-				"Server: %v\n"+
-				"%v"+
-				"Kubernetes: %v\n",
-				serverInfo.Address,
-				openshiftStr,
-				serverInfo.KubernetesVersion)
+	if !o.clientFlag && o.serverInfo != nil {
+		// make sure we only include OpenShift info if we actually have it
+		openshiftStr := ""
+		if len(o.serverInfo.OpenShiftVersion) > 0 {
+			openshiftStr = fmt.Sprintf("OpenShift: %v\n", o.serverInfo.OpenShiftVersion)
 		}
+		fmt.Printf("\n"+
+			"Server: %v\n"+
+			"%v"+
+			"Kubernetes: %v\n",
+			o.serverInfo.Address,
+			openshiftStr,
+			o.serverInfo.KubernetesVersion)
 	}
 	return
 }
@@ -99,7 +105,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
 			util.LogErrorAndExit(o.Validate(), "")
-			util.LogErrorAndExit(o.Run(cmd), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 
