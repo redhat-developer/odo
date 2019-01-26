@@ -49,8 +49,10 @@ import:
   version: v1.1.2
 - package: github.com/gobwas/glob
   version: e7a84e9525fe90abcda167b604e483cc959ad4aa
-- package: github.com/hashicorp/go-plugin
-  version: master
+- package: github.com/metacosm/odo-event-api
+  version: go-plugin
+- package: google.golang.org/grpc
+  version: ^1.12.0
 - package: github.com/openshift/origin
   version: v3.11.0
   subpackages:

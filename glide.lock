@@ -1,5 +1,5 @@
-hash: 510f2beea873983c16f4b7086b9d209052c3255c9ba0d92f08ea166b45201c94
-updated: 2019-01-17T09:15:45.675858+01:00
+hash: 02e22276b5649149463f8f5414b9d33f2c27d9338d987610961479fdbf8fbc92
+updated: 2019-01-26T22:54:59.828592+01:00
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -123,12 +123,20 @@ imports:
   - diskcache
 - name: github.com/hashicorp/errwrap
   version: 8a6fb523712970c966eefc6b39ed2c5e74880354
+- name: github.com/hashicorp/go-hclog
+  version: 4783caec6f2e5cdd47fab8b2bb47ce2ce5c546b7
 - name: github.com/hashicorp/go-multierror
   version: 886a7fbe3eb1c874d46f623bfa70af45f425b3d1
+- name: github.com/hashicorp/go-plugin
+  version: f444068e8f5a19853177f7aa0aea7e7d95b5b528
+  subpackages:
+  - internal/proto
 - name: github.com/hashicorp/golang-lru
   version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
   subpackages:
   - simplelru
+- name: github.com/hashicorp/yamux
+  version: 2f1d1f20f75d5404f53b9edf6b53ed5505508675
 - name: github.com/hinshun/vt10x
   version: d55458df857cfff952e4bf72ce1b567c5a4e141c
 - name: github.com/imdario/mergo
@@ -169,13 +177,20 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 3fb116b820352b7f0c281308a4d6250c22d94e27
 - name: github.com/mattn/go-runewidth
-  version: 703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211
+  version: 9e777a8366cce605130a531d2cd6363d07ad7317
 - name: github.com/matttproud/golang_protobuf_extensions
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
   - pbutil
+- name: github.com/metacosm/odo-event-api
+  version: 7f75c2fc474587fb0bfa6efc68a08fba7ebf7e71
+  subpackages:
+  - odo/api/events
+  - odo/api/events/plugin
 - name: github.com/mgutz/ansi
   version: 9520e82c474b0a04dd04f8a40959027271bab992
+- name: github.com/mitchellh/go-testing-interface
+  version: 6d0b8010fcc857872e42fc6c931227569016843c
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/modern-go/concurrent
@@ -184,6 +199,8 @@ imports:
   version: 05fbef0ca5da472bbf96c9322b84a53edc03c9fd
 - name: github.com/Netflix/go-expect
   version: 9d1f4485533ba0665fa4ca2ef6f1210198f7eaae
+- name: github.com/oklog/run
+  version: 6934b124db28979da51d3470dadfa34d73d72652
 - name: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - name: github.com/onsi/ginkgo
@@ -426,7 +443,9 @@ imports:
   - http2
   - http2/hpack
   - idna
+  - internal/timeseries
   - lex/httplex
+  - trace
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
@@ -461,6 +480,45 @@ imports:
   version: f51c12702a4d776e4c1fa9b0fabab841babae631
   subpackages:
   - rate
+- name: google.golang.org/genproto
+  version: 09f6ed296fc66555a25fe4ce95173148778dfa85
+  subpackages:
+  - googleapis/rpc/status
+- name: google.golang.org/grpc
+  version: a02b0774206b209466313a0b525d2c738fe407eb
+  subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
+  - binarylog/grpc_binarylog_v1
+  - codes
+  - connectivity
+  - credentials
+  - credentials/internal
+  - encoding
+  - encoding/proto
+  - grpclog
+  - health
+  - health/grpc_health_v1
+  - internal
+  - internal/backoff
+  - internal/binarylog
+  - internal/channelz
+  - internal/envconfig
+  - internal/grpcrand
+  - internal/grpcsync
+  - internal/syscall
+  - internal/transport
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
+  - stats
+  - status
+  - tap
 - name: gopkg.in/AlecAivazis/survey.v1
   version: 38cdfa1242b19e0eb8b6f33004bf8e89832b8743
   subpackages:
