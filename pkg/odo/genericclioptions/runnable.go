@@ -17,13 +17,14 @@ type Runnable interface {
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
+	// gob.Register(o) // TODO: figure out how to properly serialize Runnable so that it can be passed as event payload
 	exitIfAbort(events.DispatchEvent(cmd, api.PreRun, args), cmd)
 	util.LogErrorAndExit(o.Complete(cmd.Name(), cmd, args), "")
-	exitIfAbort(events.DispatchEvent(cmd, api.PostComplete, o), cmd)
+	exitIfAbort(events.DispatchEvent(cmd, api.PostComplete, nil), cmd)
 	util.LogErrorAndExit(o.Validate(), "")
-	exitIfAbort(events.DispatchEvent(cmd, api.PostValidate, o), cmd)
+	exitIfAbort(events.DispatchEvent(cmd, api.PostValidate, nil), cmd)
 	util.LogErrorAndExit(o.Run(), "")
-	exitIfAbort(events.DispatchEvent(cmd, api.PostRun, o), cmd)
+	exitIfAbort(events.DispatchEvent(cmd, api.PostRun, nil), cmd)
 }
 
 func exitIfAbort(err error, cmd *cobra.Command) {
