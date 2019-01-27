@@ -14,6 +14,7 @@ type EventBus struct {
 }
 
 var bus = &EventBus{
+	listeners:    make(map[string]typesToListeners, 5),
 	allListeners: make([]api.Listener, 0, 5),
 }
 
