@@ -1,5 +1,5 @@
-hash: 02e22276b5649149463f8f5414b9d33f2c27d9338d987610961479fdbf8fbc92
-updated: 2019-01-26T22:54:59.828592+01:00
+hash: 9047aa41c936110b9f2f3940e4013185b3f116a13b566631a5ef3018b29daec9
+updated: 2019-01-27T14:22:57.423996+01:00
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -183,7 +183,7 @@ imports:
   subpackages:
   - pbutil
 - name: github.com/metacosm/odo-event-api
-  version: 7f75c2fc474587fb0bfa6efc68a08fba7ebf7e71
+  version: 6e46a5d440241491f61165ff1003d056dee661c3
   subpackages:
   - odo/api/events
   - odo/api/events/plugin
@@ -447,7 +447,7 @@ imports:
   - lex/httplex
   - trace
 - name: golang.org/x/sys
-  version: 95c6576299259db960f6c5b9b69ea52422860fce
+  version: fa43e7bc11baaae89f3f902b2b4d832b68234844
   subpackages:
   - unix
   - windows
