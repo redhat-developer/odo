@@ -69,28 +69,35 @@ func (bus *EventBus) RegisterSingle(event string, eventType api.EventType, liste
 	listenersForEvent[eventType] = append(listenersForType, listener)
 }
 
+func (bus *EventBus) getListenersFor(name string, eventType api.EventType) []api.Listener {
+	listenersForEvent, ok := bus.listeners[name]
+	if ok {
+		listenersForType, ok := listenersForEvent[eventType]
+		if ok {
+			return listenersForType
+		}
+	}
+	return []api.Listener{}
+}
+
 func (bus *EventBus) DispatchEvent(event api.Event) (err error) {
 	errors := make([]error, 0, 10)
-	listenersForEvent, ok := bus.listeners[event.Name]
-	processedListeners := make([]api.Listener, 0, 10)
 	var abort bool
-	if ok {
-		listenersForType, ok := listenersForEvent[event.Type]
-		if ok {
-			for i := range listenersForType {
-				listener := listenersForType[i]
-				err := listener.OnEvent(event)
-				if err != nil {
-					if api.IsEventCausedAbort(err) {
-						abort = true
-						return err
-					}
-					errors = append(errors, err)
-				}
+	processedListeners := make([]api.Listener, 0, 10)
 
-				processedListeners = append(processedListeners, listener)
+	listeners := bus.getListenersFor(event.Name, event.Type)
+	for i := range listeners {
+		listener := listeners[i]
+		err := listener.OnEvent(event)
+		if err != nil {
+			if api.IsEventCausedAbort(err) {
+				abort = true
+				return err
 			}
+			errors = append(errors, err)
 		}
+
+		processedListeners = append(processedListeners, listener)
 	}
 
 	for i := range bus.allListeners {
