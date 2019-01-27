@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/plugin"
 	"os"
 	"strings"
 
@@ -24,6 +25,7 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 		} else {
 			log.Errorf(fmt.Sprintf("%s\n", context), a...)
 		}
+		plugin.CleanPlugins()
 		os.Exit(1)
 	}
 }

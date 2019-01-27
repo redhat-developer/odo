@@ -5,6 +5,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/events"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/plugin"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -26,8 +27,12 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 }
 
 func exitIfAbort(err error, cmd *cobra.Command) {
-	if api.IsEventCausedAbort(err) {
-		log.Errorf("Processing of %s command was aborted: %v", cmd.Name(), err)
-		os.Exit(1)
+	if err != nil {
+		if api.IsEventCausedAbort(err) {
+			log.Errorf("Processing of %s command was aborted: %v", cmd.Name(), err)
+			plugin.CleanPlugins()
+			os.Exit(1)
+		}
+		log.Errorf("Error(s) during event dispatch: %v", err)
 	}
 }
