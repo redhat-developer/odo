@@ -51,10 +51,7 @@ func NewVersionOptions() *VersionOptions {
 func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if !o.clientFlag {
 		// Let's fetch the info about the server
-		o.serverInfo, err = genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
-		if err != nil {
-			return err
-		}
+		o.serverInfo, _ = genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
 	}
 	return
 }
