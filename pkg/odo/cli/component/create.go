@@ -1,7 +1,6 @@
 package component
 
 import (
-	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"os"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"

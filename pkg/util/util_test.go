@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/testingutil"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
 func TestNamespaceOpenShiftObject(t *testing.T) {
@@ -101,11 +102,11 @@ func TestExtractComponentType(t *testing.T) {
 
 }
 
-func TestParseCreateCmdArgs(t *testing.T) {
+func TestParseComponentImageName(t *testing.T) {
 
 	tests := []struct {
 		testName string
-		args     []string
+		args     string
 		want1    string
 		want2    string
 		want3    string
@@ -113,23 +114,19 @@ func TestParseCreateCmdArgs(t *testing.T) {
 	}{
 		{
 			testName: "Case1: Version not specified",
-			args: []string{
-				"nodejs",
-			},
-			want1: "nodejs",
-			want2: "nodejs",
-			want3: "nodejs",
-			want4: "latest",
+			args:     "nodejs",
+			want1:    "nodejs",
+			want2:    "nodejs",
+			want3:    "nodejs",
+			want4:    "latest",
 		},
 		{
 			testName: "Case1: Version not specified",
-			args: []string{
-				"python:3.5",
-			},
-			want1: "python:3.5",
-			want2: "python",
-			want3: "python",
-			want4: "3.5",
+			args:     "python:3.5",
+			want1:    "python:3.5",
+			want2:    "python",
+			want3:    "python",
+			want4:    "3.5",
 		},
 	}
 
@@ -138,7 +135,7 @@ func TestParseCreateCmdArgs(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			got1, got2, got3, got4 := ParseCreateCmdArgs(tt.args)
+			got1, got2, got3, got4 := ParseComponentImageName(tt.args)
 			if tt.want1 != got1 {
 				t.Errorf("Expected imagename to be: %s, got %s", tt.want1, got1)
 			}
