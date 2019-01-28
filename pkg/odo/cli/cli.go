@@ -111,7 +111,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		logout.NewCmdLogout(),
 		project.NewCmdProject(),
 		service.NewCmdService(service.RecommendedCommandName, util.GetFullName(fullName, service.RecommendedCommandName)),
-		storage.NewCmdStorage(),
+		storage.NewCmdStorage(storage.RecommendedCommandName, util.GetFullName(fullName, storage.RecommendedCommandName)),
 		url.NewCmdURL(),
 		utils.NewCmdUtils(),
 		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
