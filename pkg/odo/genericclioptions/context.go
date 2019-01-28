@@ -60,11 +60,8 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	return client
 }
 
-// newContext creates a new context based on the command flags, creating missing app when requested
-func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
-	client := client(command)
-
-	// resolve project
+// resolveProject resolves project
+func resolveProject(command *cobra.Command, client *occlient.Client) string {
 	var ns string
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
@@ -73,18 +70,15 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		util.LogErrorAndExit(err, "")
 		ns = projectFlag
 	} else {
-
 		// otherwise use the current project
 		ns = project.GetCurrent(client)
-
-		// If there is no current project or if 'default' project is used, then ask user to first create a project
-		// This will also ensures user create seperate project instead of using 'default' which may not always exist
-		// or user may not have appropriate permissions over
+		// if no current project, then ask user to create a project
 		if len(ns) <= 0 {
 			errFormat := "could not get current project. Please create a project\n\t%s project create <project_name>"
 			err := fmt.Errorf(errFormat, command.Root().Name())
 			util.LogErrorAndExit(err, "")
 		}
+		// If 'default' project set, ask user to create a new project or set different one as 'default' is set for all users, hence not recommended
 		if ns == "default" {
 			errFormat := "current project is 'default'. Please create or set a different project\n\t%s project create|set <project_name>"
 			err := fmt.Errorf(errFormat, command.Root().Name())
@@ -92,6 +86,15 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		}
 	}
 	client.Namespace = ns
+	return ns
+}
+
+// newContext creates a new context based on the command flags, creating missing app when requested
+func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
+	client := client(command)
+
+	// resolve project
+	ns := resolveProject(command, client)
 
 	// resolve application
 	var app string
