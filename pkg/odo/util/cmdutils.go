@@ -91,7 +91,7 @@ func PrintComponentInfo(currentComponentName string, componentDesc component.Des
 	}
 	// Linked components
 	if len(componentDesc.LinkedComponents) > 0 {
-		fmt.Println("\nLinked Components")
+		fmt.Println("Linked Components")
 		for name, ports := range componentDesc.LinkedComponents {
 			if len(ports) > 0 {
 				fmt.Printf("Name: %v - Port(s): %v\n", name, strings.Join(ports, ","))
