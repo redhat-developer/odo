@@ -1,6 +1,7 @@
 package genericclioptions
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/golang/glog"
@@ -72,8 +73,23 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		util.LogErrorAndExit(err, "")
 		ns = projectFlag
 	} else {
+
 		// otherwise use the current project
 		ns = project.GetCurrent(client)
+
+		// If there is no current project or if 'default' project is used, then ask user to first create a project
+		// This will also ensures user create seperate project instead of using 'default' which may not always exist
+		// or user may not have appropriate permissions over
+		if len(ns) <= 0 {
+			errFormat := "could not get current project. Please create a project\n\t%s project create <project_name>"
+			err := fmt.Errorf(errFormat, command.Root().Name())
+			util.LogErrorAndExit(err, "")
+		}
+		if ns == "default" {
+			errFormat := "current project is 'default'. Please create or set a different project\n\t%s project create|set <project_name>"
+			err := fmt.Errorf(errFormat, command.Root().Name())
+			util.LogErrorAndExit(err, "")
+		}
 	}
 	client.Namespace = ns
 
