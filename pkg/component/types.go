@@ -9,7 +9,8 @@ import (
 type Component struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              ComponentSpec `json:"spec,omitempty"`
+	Spec              ComponentSpec   `json:"spec,omitempty"`
+	Status            ComponentStatus `json:"status,omitempty"`
 }
 
 // ComponentSpec is spec of components
@@ -26,4 +27,9 @@ type ComponentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Component `json:"items"`
+}
+
+// ComponentStatus is Status of components
+type ComponentStatus struct {
+	Active bool `json:"active"`
 }

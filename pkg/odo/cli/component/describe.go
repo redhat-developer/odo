@@ -59,7 +59,7 @@ func (do *DescribeOptions) Run() (err error) {
 		return err
 	}
 	if do.outputFlag == "json" {
-		componentDef := getMachineReadableFormat(componentDesc)
+		componentDef := getMachineReadableFormat(componentDesc, do.Application, do.Project)
 		out, err := json.Marshal(componentDef)
 		odoutil.LogErrorAndExit(err, "")
 		fmt.Println(string(out))
@@ -71,7 +71,7 @@ func (do *DescribeOptions) Run() (err error) {
 	return
 }
 
-func getMachineReadableFormat(componentDesc component.Description) component.Component {
+func getMachineReadableFormat(componentDesc component.Description, applicationName, projectName string) component.Component {
 	var urls []string
 	for _, url := range componentDesc.URLs {
 		urls = append(urls, url.Name)
@@ -80,6 +80,11 @@ func getMachineReadableFormat(componentDesc component.Description) component.Com
 	var storage []string
 	for _, store := range componentDesc.Storage {
 		storage = append(storage, store.Name)
+	}
+
+	currentComponent, err := component.GetCurrent(applicationName, projectName)
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "")
 	}
 
 	componentDef := component.Component{
@@ -96,6 +101,9 @@ func getMachineReadableFormat(componentDesc component.Description) component.Com
 			URL:     urls,
 			Storage: storage,
 			Env:     componentDesc.Env,
+		},
+		Status: component.ComponentStatus{
+			Active: componentDesc.ComponentName == currentComponent,
 		},
 	}
 
