@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+// NameValidator provides a Validator view of the ValidateName function.
 func NameValidator(name interface{}) error {
 	if s, ok := name.(string); ok {
 		return ValidateName(s)
@@ -20,6 +21,7 @@ type Validator func(interface{}) error
 // NilValidator always validates
 func NilValidator(interface{}) error { return nil }
 
+// IntegerValidator validates that the provided object can be properly converted to an int value
 func IntegerValidator(ans interface{}) error {
 	if _, ok := ans.(int); ok {
 		return nil
