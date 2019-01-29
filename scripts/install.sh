@@ -99,7 +99,7 @@ install_odo() {
 
     if command_exists odo; then
         echo_stderr "# 
-odo version \"$(odo version)\" is already installed on your system, running this installer script might case issues with your current installation. If you want to install odo using this script, please remove the current installation of odo from you system.
+odo version \"$(odo version --client)\" is already installed on your system, running this installer script might case issues with your current installation. If you want to install odo using this script, please remove the current installation of odo from you system.
 Aborting now!
 "
         exit 1
@@ -221,7 +221,7 @@ verify_odo() {
     if command_exists odo; then
         echo "
 # Verification complete!
-# odo version \"$(odo version)\" has been installed at $(type -P odo)
+# odo version \"$(odo version --client)\" has been installed at $(type -P odo)
 "
     else
         echo_stderr "
