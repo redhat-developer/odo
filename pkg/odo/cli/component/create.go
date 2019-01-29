@@ -370,7 +370,6 @@ func NewCmdCreate() *cobra.Command {
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
 
 	completion.RegisterCommandHandler(componentSetCmd, completion.ComponentNameCompletionHandler)
-	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)
 
 	return componentCreateCmd
 }
