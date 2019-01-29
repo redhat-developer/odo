@@ -161,10 +161,9 @@ Performs application operations related to your OpenShift project.
 
   # Search for a service
   odo catalog search service mysql
-	
-  # Describe the given service
+
+  # Describe a service
   odo catalog describe service mysql-persistent
-	
 ```
 
 
@@ -630,7 +629,6 @@ Utilities for terminal commands and modifying Odo configurations
 ```sh
   # Print the client version of Odo
   odo version
-	
 ```
 
 
