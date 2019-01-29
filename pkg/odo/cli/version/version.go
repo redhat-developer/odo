@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/notify"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -48,12 +47,15 @@ func NewVersionOptions() *VersionOptions {
 }
 
 // Complete completes VersionOptions after they have been created
-func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) error {
 	if !o.clientFlag {
-		// Let's fetch the info about the server
-		o.serverInfo, _ = genericclioptions.ClientWithConnectionCheck(cmd, true).GetServerVersion()
+		// Let's fetch the info about the server, ignoring errors
+		client, err := occlient.New(true)
+		if err == nil {
+			o.serverInfo, _ = client.GetServerVersion()
+		}
 	}
-	return
+	return nil
 }
 
 // Validate validates the VersionOptions based on completed values
