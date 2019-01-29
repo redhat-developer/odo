@@ -12,7 +12,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
 )
 
 const mountRecommendedCommandName = "mount"
@@ -49,14 +48,14 @@ func (o *StorageMountOptions) Validate() (err error) {
 	exists, err := storage.Exists(o.Client, o.storageName, o.Application)
 	odoutil.LogErrorAndExit(err, "unable to check if the storage exists in the current application")
 	if !exists {
-		log.Errorf("The storage %v does not exists in the current application '%v'", o.storageName, o.Application)
-		os.Exit(1)
+		return fmt.Errorf("the storage %v does not exists in the current application '%v'", o.storageName, o.Application)
 	}
 	isMounted, err := storage.IsMounted(o.Client, o.storageName, o.Component(), o.Application)
-	odoutil.LogErrorAndExit(err, "unable to check if the component is already mounted or not")
+	if err != nil {
+		return fmt.Errorf("unable to check if the component is already mounted or not, cause %v", err)
+	}
 	if isMounted {
-		log.Errorf("The storage %v is already mounted on the current component '%v'", o.storageName, o.Component())
-		os.Exit(1)
+		return fmt.Errorf("the storage %v is already mounted on the current component '%v'", o.storageName, o.Component())
 	}
 	return
 }
@@ -64,7 +63,9 @@ func (o *StorageMountOptions) Validate() (err error) {
 // Run contains the logic for the odo storage list command
 func (o *StorageMountOptions) Run() (err error) {
 	err = storage.Mount(o.Client, storagePath, o.storageName, o.Component(), o.Application)
-	odoutil.LogErrorAndExit(err, "")
+	if err != nil {
+		return
+	}
 	log.Infof("The storage %v is successfully mounted to the current component '%v'", o.storageName, o.Component())
 	return
 }

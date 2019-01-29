@@ -12,7 +12,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
 	"strings"
 )
 
@@ -52,15 +51,16 @@ func (o *StorageDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 func (o *StorageDeleteOptions) Validate() (err error) {
 	exists, err := storage.Exists(o.Client, o.storageName, o.Application)
 
-	odoutil.LogErrorAndExit(err, "")
+	if err != nil {
+		return
+	}
 	if !exists {
-		log.Errorf("The storage %v does not exists in the application %v", o.storageName, o.Application)
-		os.Exit(1)
+		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.Application, err)
 	}
 
 	o.componentName, err = storage.GetComponentNameFromStorageName(o.Client, o.storageName)
 	if err != nil {
-		odoutil.LogErrorAndExit(err, "Unable to get component associated with %s storage.", o.storageName)
+		return fmt.Errorf("unable to get component associated with %s storage, cause %v", o.storageName, err)
 	}
 
 	return
@@ -82,15 +82,16 @@ func (o *StorageDeleteOptions) Run() (err error) {
 	}
 	if strings.ToLower(confirmDeletion) == "y" {
 		o.componentName, err = storage.Delete(o.Client, o.storageName, o.Application)
-		odoutil.LogErrorAndExit(err, "failed to delete storage")
+		if err != nil {
+			return fmt.Errorf("failed to delete storage, cause %v", err)
+		}
 		if o.componentName != "" {
 			log.Infof("Deleted storage %v from %v", o.storageName, o.componentName)
 		} else {
 			log.Infof("Deleted storage %v", o.storageName)
 		}
 	} else {
-		log.Errorf("Aborting deletion of storage: %v", o.storageName)
-		os.Exit(1)
+		return fmt.Errorf("aborting deletion of storage: %v", o.storageName)
 	}
 
 	return

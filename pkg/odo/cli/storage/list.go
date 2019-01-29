@@ -44,8 +44,7 @@ func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []st
 	o.Context = genericclioptions.NewContext(cmd)
 	if o.storageListAllFlag {
 		if len(genericclioptions.FlagValueIfSet(cmd, genericclioptions.ComponentFlagName)) > 0 {
-			log.Error("Invalid arguments. Component name is not needed")
-			os.Exit(1)
+			return fmt.Errorf("invalid arguments. Component name is not needed")
 		}
 	} else {
 		o.componentName = o.Component()

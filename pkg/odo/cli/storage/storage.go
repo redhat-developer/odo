@@ -26,11 +26,11 @@ var (
 
 // NewCmdStorage implements the odo storage command
 func NewCmdStorage(name, fullName string) *cobra.Command {
-	storageCreateCmd := NewCmdStorageCreate(createRecommendedCommandName, fullName+" "+createRecommendedCommandName)
-	storageDeleteCmd := NewCmdStorageDelete(deleteRecommendedCommandName, fullName+" "+deleteRecommendedCommandName)
-	storageListCmd := NewCmdStorageList(listRecommendedCommandName, fullName+" "+listRecommendedCommandName)
-	storageMountCmd := NewCmdStorageMount(mountRecommendedCommandName, fullName+" "+mountRecommendedCommandName)
-	storageUnMountCmd := NewCmdStorageUnMount(unMountRecommendedCommandName, fullName+" "+unMountRecommendedCommandName)
+	storageCreateCmd := NewCmdStorageCreate(createRecommendedCommandName, odoutil.GetFullName(fullName, createRecommendedCommandName))
+	storageDeleteCmd := NewCmdStorageDelete(deleteRecommendedCommandName, odoutil.GetFullName(fullName, deleteRecommendedCommandName))
+	storageListCmd := NewCmdStorageList(listRecommendedCommandName, odoutil.GetFullName(fullName, listRecommendedCommandName))
+	storageMountCmd := NewCmdStorageMount(mountRecommendedCommandName, odoutil.GetFullName(fullName, mountRecommendedCommandName))
+	storageUnMountCmd := NewCmdStorageUnMount(unMountRecommendedCommandName, odoutil.GetFullName(fullName, unMountRecommendedCommandName))
 
 	var storageCmd = &cobra.Command{
 		Use:   name,

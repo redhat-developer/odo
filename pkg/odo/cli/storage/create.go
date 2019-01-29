@@ -51,16 +51,15 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 // Validate validates the StorageCreateOptions based on completed values
 func (o *StorageCreateOptions) Validate() (err error) {
 	// validate storage path
-	err = validateStoragePath(o.Client, o.storageName, o.Component(), o.Application)
-	odoutil.LogErrorAndExit(err, "")
-	return
+	return validateStoragePath(o.Client, o.storageName, o.Component(), o.Application)
 }
 
 // Run contains the logic for the odo storage create command
 func (o *StorageCreateOptions) Run() (err error) {
 	_, err = storage.Create(o.Client, o.storageName, o.storageSize, o.storagePath, o.Component(), o.Application)
-	odoutil.LogErrorAndExit(err, "")
-	log.Successf("Added storage %v to %v", o.storageName, o.Component())
+	if err == nil {
+		log.Successf("Added storage %v to %v", o.storageName, o.Component())
+	}
 	return
 }
 

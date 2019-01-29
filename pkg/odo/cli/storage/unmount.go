@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	"os"
+	"strings"
 )
 
 const unMountRecommendedCommandName = "unmount"
@@ -51,7 +52,7 @@ func NewStorageUnMountOptions() *StorageUnMountOptions {
 func (o *StorageUnMountOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
-	if string(args[0][0]) == "/" {
+	if strings.HasPrefix(args[0], "/") {
 		o.storagePath = args[0]
 	} else {
 		o.storageName = args[0]
@@ -64,14 +65,17 @@ func (o *StorageUnMountOptions) Validate() (err error) {
 	// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
 	if len(o.storagePath) > 0 {
 		o.storageName, err = storage.GetStorageNameFromMountPath(o.Client, o.storagePath, o.Component(), o.Application)
-		odoutil.LogErrorAndExit(err, "Unable to get storage name from mount path")
+		if err != nil {
+			return fmt.Errorf("unable to get storage name from mount path, cause %v", err)
+		}
 		if o.storageName == "" {
-			log.Errorf("No storage is mounted to %s in the component %s", o.storagePath, o.Component())
-			os.Exit(1)
+			return fmt.Errorf("no storage is mounted to %s in the component %s", o.storagePath, o.Component())
 		}
 	} else {
 		exists, err := storage.IsMounted(o.Client, o.storageName, o.Component(), o.Application)
-		odoutil.LogErrorAndExit(err, "Unable to check if storage is mounted or not")
+		if err != nil {
+			return fmt.Errorf("unable to check if storage is mounted or not, cause %v", err)
+		}
 		if !exists {
 			log.Errorf("Storage %v does not exist in component %v", o.storageName, o.Component())
 			os.Exit(1)
@@ -83,7 +87,9 @@ func (o *StorageUnMountOptions) Validate() (err error) {
 // Run contains the logic for the odo storage list command
 func (o *StorageUnMountOptions) Run() (err error) {
 	err = storage.Unmount(o.Client, o.storageName, o.Component(), o.Application, true)
-	odoutil.LogErrorAndExit(err, "Unable to unmount storage %v from component %v", o.storageName, o.Component())
+	if err != nil {
+		return fmt.Errorf("unable to unmount storage %v from component %v", o.storageName, o.Component())
+	}
 
 	log.Infof("Unmounted storage %v from %v", o.storageName, o.Component())
 	return
