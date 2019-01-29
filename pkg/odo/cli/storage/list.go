@@ -59,15 +59,80 @@ func (o *StorageListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo storage list command
 func (o *StorageListOptions) Run() (err error) {
-	if storageAllListflag {
-		printMountedStorageInAllComponent(o.Client, o.Application)
-	} else {
-		// storageComponent is the input component name
-		componentName := o.Component()
-		printMountedStorageInComponent(o.Client, componentName, o.Application)
+	if outputFlag == "json" {
+		var storeList []storage.Storage
+		if storageAllListflag {
+			componentList, err := component.List(client, applicationName)
+			odoutil.LogErrorAndExit(err, "could not get component list")
+			for _, component := range componentList {
+				mountedStorages, err := storage.ListMounted(client, component.ComponentName, applicationName)
+				odoutil.LogErrorAndExit(err, "")
+				for _, storage := range mountedStorages {
+					mounted := getMachineReadableFormat(true, storage)
+					storeList = append(storeList, mounted)
+				}
+			}
+
+		} else {
+			componentName := context.Component()
+			mountedStorages, err := storage.ListMounted(client, componentName, applicationName)
+			odoutil.LogErrorAndExit(err, "")
+			for _, storage := range mountedStorages {
+				mounted := getMachineReadableFormat(true, storage)
+				storeList = append(storeList, mounted)
+
+			}
+		}
+		unmountedStorages, err := storage.ListUnmounted(client, applicationName)
+		odoutil.LogErrorAndExit(err, "")
+		for _, storage := range unmountedStorages {
+			unmounted := getMachineReadableFormat(false, storage)
+			storeList = append(storeList, unmounted)
+		}
+		storageList := storage.StorageList{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "List",
+				APIVersion: "odo.openshift.io/v1aplha1",
+			},
+			ListMeta: metav1.ListMeta{},
+			Items:    storeList,
+		}
+		out, err := json.Marshal(storageList)
+		odoutil.LogErrorAndExit(err, "")
+		fmt.Println(string(out))
+	}else{
+
+		if storageAllListflag {
+			printMountedStorageInAllComponent(o.Client, o.Application)
+		} else {
+			// storageComponent is the input component name
+			componentName := o.Component()
+			printMountedStorageInComponent(o.Client, componentName, o.Application)
+		}
+		printUnmountedStorage(o.Client, o.Application)
 	}
-	printUnmountedStorage(o.Client, o.Application)
 	return
+}
+
+// getMachineReadableFormat returns resource information in machine readable format
+func getMachineReadableFormat(mounted bool, stor storage.StorageInfo) storage.Storage {
+	return storage.Storage{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Storage",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: stor.Name,
+		},
+		Spec: storage.StorageSpec{
+			Size: stor.Size,
+			Path: stor.Path,
+		},
+		Status: storage.StorageStatus{
+			Mounted: mounted,
+		},
+	}
+
 }
 
 // NewCmdStorageList implements the odo storage list command.

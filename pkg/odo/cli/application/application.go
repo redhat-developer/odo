@@ -313,7 +313,7 @@ var applicationDescribeCmd = &cobra.Command{
 
 		} else {
 
-			// List of Component
+			// List of all the components
 			componentList, err := component.List(client, appName)
 			odoutil.LogErrorAndExit(err, "")
 
