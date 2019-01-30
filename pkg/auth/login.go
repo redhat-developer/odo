@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 
 	"github.com/openshift/origin/pkg/oc/cli/login"
@@ -56,8 +57,11 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 	var extraOut string
 	// If new-project is present in original message, then ask user to do the same in our message
 	if bytes.Contains(originalOutMsg, []byte("new-project")) {
-		extraOut = " No project? create one\n\todo project create <projectname>"
+		extraOut = "\nYou don't have any projects. You can try to create a new project, by running\n\n\todo project create <projectname>\n"
 	}
-	odolog.Successf("Logged in to \"%s\" as \"%s\"%s", a.Server, a.Username, extraOut)
+	odolog.Successf("Logged in to \"%s\" as \"%s\"", a.Server, a.Username)
+	if len(extraOut) > 0 {
+		fmt.Println(extraOut)
+	}
 	return nil
 }
