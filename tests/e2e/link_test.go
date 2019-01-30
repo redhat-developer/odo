@@ -50,7 +50,7 @@ var _ = Describe("odoLinkE2e", func() {
 			Expect(envFromOutput).To(ContainSubstring("backend"))
 		})
 
-		It("describe should show the linked service", func() {
+		It("describe on the frontend should show the linked backend component", func() {
 			describeOutput := runCmd("odo describe frontend")
 
 			// ensure that the output contains the component and port
@@ -92,7 +92,7 @@ var _ = Describe("odoLinkE2e", func() {
 			Expect(output).To(ContainSubstring("been linked"))
 		})
 
-		It("describe should show the linked service", func() {
+		It("describe on the backend should show the linked mysql service", func() {
 			describeOutput := runCmd("odo describe backend")
 
 			// ensure that the output contains the service
