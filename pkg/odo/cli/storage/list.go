@@ -1,10 +1,17 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"os"
+	"text/tabwriter"
+
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -13,8 +20,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"text/tabwriter"
 )
 
 const listRecommendedCommandName = "list"
@@ -31,6 +36,7 @@ var (
 type StorageListOptions struct {
 	storageListAllFlag bool
 	componentName      string
+	outputFlag         string
 	*genericclioptions.Context
 }
 
@@ -59,13 +65,13 @@ func (o *StorageListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo storage list command
 func (o *StorageListOptions) Run() (err error) {
-	if outputFlag == "json" {
+	if o.outputFlag == "json" {
 		var storeList []storage.Storage
 		if storageAllListflag {
-			componentList, err := component.List(client, applicationName)
+			componentList, err := component.List(o.Client, o.Application)
 			odoutil.LogErrorAndExit(err, "could not get component list")
 			for _, component := range componentList {
-				mountedStorages, err := storage.ListMounted(client, component.ComponentName, applicationName)
+				mountedStorages, err := storage.ListMounted(o.Client, component.ComponentName, o.Application)
 				odoutil.LogErrorAndExit(err, "")
 				for _, storage := range mountedStorages {
 					mounted := getMachineReadableFormat(true, storage)
@@ -74,8 +80,8 @@ func (o *StorageListOptions) Run() (err error) {
 			}
 
 		} else {
-			componentName := context.Component()
-			mountedStorages, err := storage.ListMounted(client, componentName, applicationName)
+			componentName := o.Component()
+			mountedStorages, err := storage.ListMounted(o.Client, componentName, o.Application)
 			odoutil.LogErrorAndExit(err, "")
 			for _, storage := range mountedStorages {
 				mounted := getMachineReadableFormat(true, storage)
@@ -83,7 +89,7 @@ func (o *StorageListOptions) Run() (err error) {
 
 			}
 		}
-		unmountedStorages, err := storage.ListUnmounted(client, applicationName)
+		unmountedStorages, err := storage.ListUnmounted(o.Client, o.Application)
 		odoutil.LogErrorAndExit(err, "")
 		for _, storage := range unmountedStorages {
 			unmounted := getMachineReadableFormat(false, storage)
@@ -100,7 +106,7 @@ func (o *StorageListOptions) Run() (err error) {
 		out, err := json.Marshal(storageList)
 		odoutil.LogErrorAndExit(err, "")
 		fmt.Println(string(out))
-	}else{
+	} else {
 
 		if storageAllListflag {
 			printMountedStorageInAllComponent(o.Client, o.Application)
@@ -151,7 +157,8 @@ func NewCmdStorageList(name, fullName string) *cobra.Command {
 		},
 	}
 
-	storageListCmd.Flags().BoolVarP(&storageAllListflag, "all", "a", false, "List all storage in all components")
+	storageListCmd.Flags().BoolVarP(&o.storageListAllFlag, "all", "a", false, "List all storage in all components")
+	storageListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
 
 	projectCmd.AddProjectFlag(storageListCmd)
 	appCmd.AddApplicationFlag(storageListCmd)
@@ -194,7 +201,7 @@ func printMountedStorageInAllComponent(client *occlient.Client, applicationName 
 
 	// iterating over all the components in the given aplication and project
 	for _, component := range componentList {
-		printMountedStorageInComponent(client, component.Name, applicationName)
+		printMountedStorageInComponent(client, component.ComponentName, applicationName)
 	}
 }
 
