@@ -18,9 +18,9 @@ var serviceLongDesc = ktemplates.LongDesc(`Perform service catalog operations, l
 
 // NewCmdService implements the odo service command
 func NewCmdService(name, fullName string) *cobra.Command {
-	serviceCreateCmd := NewCmdServiceCreate(createRecommendedCommandName, fullName+" "+createRecommendedCommandName)
-	serviceListCmd := NewCmdServiceList(listRecommendedCommandName, fullName+" "+listRecommendedCommandName)
-	serviceDeleteCmd := NewCmdServiceDelete(deleteRecommendedCommandName, fullName+" "+deleteRecommendedCommandName)
+	serviceCreateCmd := NewCmdServiceCreate(createRecommendedCommandName, util.GetFullName(fullName, createRecommendedCommandName))
+	serviceListCmd := NewCmdServiceList(listRecommendedCommandName, util.GetFullName(fullName, listRecommendedCommandName))
+	serviceDeleteCmd := NewCmdServiceDelete(deleteRecommendedCommandName, util.GetFullName(fullName, deleteRecommendedCommandName))
 	serviceCmd := &cobra.Command{
 		Use:   name,
 		Short: "Perform service catalog operations",
