@@ -47,7 +47,6 @@ var _ = Describe("odojsone2e", func() {
 		It("should be able to list components", func() {
 			actual := runCmd("odo list -o json")
 			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"],"Env":null},"status":{"active":true}}]}`
-			compareJSON(desired, actual)
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
@@ -79,8 +78,7 @@ var _ = Describe("odojsone2e", func() {
 })
 
 func compareJSON(desired, actual string) (bool, error) {
-	var o1 interface{}
-	var o2 interface{}
+	var o1, o2 interface{}
 	var err error
 	err = json.Unmarshal([]byte(actual), &o1)
 	if err != nil {
