@@ -2,7 +2,6 @@ package url
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -70,11 +69,12 @@ func (o *URLDeleteOptions) Run() (err error) {
 	if strings.ToLower(confirmDeletion) == "y" {
 
 		err = url.Delete(o.Client, o.urlName, o.Application)
-		odoutil.LogErrorAndExit(err, "")
+		if err != nil {
+			return err
+		}
 		log.Infof("Deleted URL: %v", o.urlName)
 	} else {
-		log.Errorf("Aborting deletion of url: %v", o.urlName)
-		os.Exit(1)
+		return fmt.Errorf("Aborting deletion of url: %v", o.urlName)
 	}
 	return
 }
