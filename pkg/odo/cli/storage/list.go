@@ -67,7 +67,7 @@ func (o *StorageListOptions) Validate() (err error) {
 func (o *StorageListOptions) Run() (err error) {
 	if o.outputFlag == "json" {
 		var storeList []storage.Storage
-		if storageAllListflag {
+		if o.storageListAllFlag {
 			componentList, err := component.List(o.Client, o.Application)
 			odoutil.LogErrorAndExit(err, "could not get component list")
 			for _, component := range componentList {
@@ -108,7 +108,7 @@ func (o *StorageListOptions) Run() (err error) {
 		fmt.Println(string(out))
 	} else {
 
-		if storageAllListflag {
+		if o.storageListAllFlag {
 			printMountedStorageInAllComponent(o.Client, o.Application)
 		} else {
 			// storageComponent is the input component name

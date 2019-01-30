@@ -15,7 +15,6 @@ var (
 	storageSize            string
 	storagePath            string
 	storageForceDeleteflag bool
-	storageAllListflag     bool
 )
 
 const RecommendedCommandName = "storage"
