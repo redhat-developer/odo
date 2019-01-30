@@ -13,7 +13,6 @@ import (
 	"runtime"
 
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/fatih/color"
@@ -26,14 +25,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var pushCmdExample string = `  # Push source code to the current component
-odo push
+var pushCmdExample = `  # Push source code to the current component
+%[1]s
 
 # Push data to the current component from the original source.
-odo push
+%[1]s
 
 # Push source code in ~/mycode to component called my-component
-odo push my-component --local ~/mycode
+%[1]s my-component --local ~/mycode
   `
 
 // RecommendedPushCommandName is the recommended push command name
@@ -41,27 +40,23 @@ const RecommendedPushCommandName = "push"
 
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {
-	local         string
-	componentName string
-	sourceType    string
-	sourcePath    string
-	*genericclioptions.Context
+	local      string
+	sourceType string
+	sourcePath string
+	*ComponentOptions
 }
 
 // NewPushOptions returns new instance of PushOptions
 func NewPushOptions() *PushOptions {
-	return &PushOptions{}
+	return &PushOptions{"", "", "", &ComponentOptions{}}
 }
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.Context = genericclioptions.NewContext(cmd)
-
-	var argComponent string
-	if len(args) == 1 {
-		argComponent = args[0]
+	err = po.ComponentOptions.Complete(name, cmd, args)
+	if err != nil {
+		return err
 	}
-	po.componentName = po.Context.Component(argComponent)
 
 	po.sourceType, po.sourcePath, err = component.GetComponentSource(po.Context.Client, po.componentName, po.Context.Application)
 	if err != nil {
@@ -91,7 +86,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 func (po *PushOptions) Validate() (err error) {
 	// if the componentName is blank then there is no active component set
 	if len(po.componentName) == 0 {
-		return fmt.Errorf("No component is set as active. Use 'odo component set' to set an active component.")
+		return fmt.Errorf("no component is set as active. Use 'odo component set' to set an active component")
 	}
 
 	// check if component name exists
@@ -106,7 +101,7 @@ func (po *PushOptions) Validate() (err error) {
 	switch po.sourceType {
 	case "binary":
 		if len(po.local) != 0 {
-			return fmt.Errorf("unable to push local directory:%s to component %s that uses binary %s.", po.local, po.componentName, po.sourcePath)
+			return fmt.Errorf("unable to push local directory:%s to component %s that uses binary %s", po.local, po.componentName, po.sourcePath)
 		}
 	}
 
@@ -145,7 +140,7 @@ func (po *PushOptions) Run() (err error) {
 	case "git":
 		// currently we don't support changing build type
 		// it doesn't make sense to use --dir with git build
-		if len(componentLocal) != 0 {
+		if len(po.local) != 0 {
 			log.Errorf("Unable to push local directory:%s to component %s that uses Git repository:%s.", po.local, po.componentName, po.sourcePath)
 			os.Exit(1)
 		}
@@ -166,7 +161,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		Use:     fmt.Sprintf("%s [component name]", name),
 		Short:   "Push source code to a component",
 		Long:    `Push source code to a component.`,
-		Example: pushCmdExample,
+		Example: fmt.Sprintf(pushCmdExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(po.Complete(name, cmd, args), "")

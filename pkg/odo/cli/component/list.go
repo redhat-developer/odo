@@ -10,6 +10,7 @@ import (
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
@@ -19,6 +20,10 @@ import (
 
 // RecommendedListCommandName is the recommended watch command name
 const RecommendedListCommandName = "list"
+
+var listExample = ktemplates.Examples(`  # List all components in the application
+%[1]s
+  `)
 
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
@@ -73,13 +78,11 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	lo := NewListOptions()
 
 	var componentListCmd = &cobra.Command{
-		Use:   name,
-		Short: "List all components in the current application",
-		Long:  "List all components in the current application.",
-		Example: `  # List all components in the application
-	  odo list
-		`,
-		Args: cobra.NoArgs,
+		Use:     name,
+		Short:   "List all components in the current application",
+		Long:    "List all components in the current application.",
+		Example: fmt.Sprintf(listExample, fullName),
+		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(lo.Complete(name, cmd, args), "")
 			odoutil.LogErrorAndExit(lo.Validate(), "")

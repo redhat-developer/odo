@@ -27,10 +27,10 @@ const RecommendedWatchCommandName = "watch"
 
 var watchLongDesc = ktemplates.LongDesc(`Watch for changes, update component on change.`)
 var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component
-odo watch
+%[1]s
 
 # Watch for changes in directory for component called frontend 
-odo watch frontend
+%[1]s frontend
   `)
 
 // WatchOptions contains attributes of the watch command
@@ -149,7 +149,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 		Use:     fmt.Sprintf("%s [component name]", name),
 		Short:   "Watch for changes, update component on change",
 		Long:    watchLongDesc,
-		Example: watchExample,
+		Example: fmt.Sprintf(watchExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(wo.Complete(name, cmd, args), "")

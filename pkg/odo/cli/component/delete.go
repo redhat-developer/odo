@@ -8,9 +8,9 @@ import (
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/golang/glog"
@@ -21,30 +21,24 @@ import (
 // RecommendedDeleteCommandName is the recommended delete command name
 const RecommendedDeleteCommandName = "delete"
 
+var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'. 
+%[1]s frontend
+  `)
+
 // DeleteOptions is a container to attach complete, validate and run pattern
 type DeleteOptions struct {
 	componentForceDeleteFlag bool
-	componentName            string
-	*genericclioptions.Context
+	*ComponentOptions
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{}
+	return &DeleteOptions{false, &ComponentOptions{}}
 }
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	do.Context = genericclioptions.NewContext(cmd)
-
-	// If no arguments have been passed, get the current component
-	// else, use the first argument and check to see if it exists
-	if len(args) == 0 {
-		do.componentName = do.Context.Component()
-	} else {
-		do.componentName = do.Context.Component(args[0])
-	}
-
+	err = do.ComponentOptions.Complete(name, cmd, args)
 	return
 }
 
@@ -55,7 +49,7 @@ func (do *DeleteOptions) Validate() (err error) {
 		return err
 	}
 	if !isExists {
-		return fmt.Errorf("Failed to delete component %s as it doesn't exist", do.componentName)
+		return fmt.Errorf("failed to delete component %s as it doesn't exist", do.componentName)
 	}
 	return
 }
@@ -104,13 +98,11 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	do := NewDeleteOptions()
 
 	var componentDeleteCmd = &cobra.Command{
-		Use:   fmt.Sprintf("%s <component_name>", name),
-		Short: "Delete an existing component",
-		Long:  "Delete an existing component.",
-		Example: `  # Delete component named 'frontend'. 
-	  odo delete frontend
-		`,
-		Args: cobra.MaximumNArgs(1),
+		Use:     fmt.Sprintf("%s <component_name>", name),
+		Short:   "Delete an existing component",
+		Long:    "Delete an existing component.",
+		Example: fmt.Sprintf(deleteExample, fullName),
+		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(do.Complete(name, cmd, args), "")
 			odoutil.LogErrorAndExit(do.Validate(), "")

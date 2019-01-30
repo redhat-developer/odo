@@ -7,8 +7,8 @@ import (
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -18,26 +18,24 @@ import (
 // RecommendedLogCommandName is the recommended watch command name
 const RecommendedLogCommandName = "log"
 
+var logExample = ktemplates.Examples(`  # Get the logs for the nodejs component
+%[1]s nodejs
+`)
+
 // LogOptions contains log options
 type LogOptions struct {
 	logFollow bool
-	*genericclioptions.Context
-	componentName string
+	*ComponentOptions
 }
 
 // NewLogOptions returns new instance of LogOptions
 func NewLogOptions() *LogOptions {
-	return &LogOptions{}
+	return &LogOptions{false, &ComponentOptions{}}
 }
 
 // Complete completes log args
 func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	lo.Context = genericclioptions.NewContext(cmd)
-	pCmpName := ""
-	if len(args) == 1 {
-		pCmpName = args[0]
-	}
-	lo.componentName = lo.Context.Component(pCmpName)
+	err = lo.ComponentOptions.Complete(name, cmd, args)
 	return
 }
 
@@ -60,13 +58,11 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 	lo := NewLogOptions()
 
 	var logCmd = &cobra.Command{
-		Use:   fmt.Sprintf("%s [component_name]", name),
-		Short: "Retrieve the log for the given component.",
-		Long:  `Retrieve the log for the given component.`,
-		Example: `  # Get the logs for the nodejs component
-	  odo log nodejs
-		`,
-		Args: cobra.RangeArgs(0, 1),
+		Use:     fmt.Sprintf("%s [component_name]", name),
+		Short:   "Retrieve the log for the given component.",
+		Long:    `Retrieve the log for the given component.`,
+		Example: fmt.Sprintf(logExample, fullName),
+		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(lo.Complete(name, cmd, args), "")
 			odoutil.LogErrorAndExit(lo.Validate(), "")

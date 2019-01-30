@@ -10,10 +10,15 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
 // RecommendedGetCommandName is the recommended get command name
 const RecommendedGetCommandName = "get"
+
+var getExample = ktemplates.Examples(`  # Get the currently active component
+%[1]s
+  `)
 
 // GetOptions encapsulates component get options
 type GetOptions struct {
@@ -60,13 +65,11 @@ func NewCmdGet(name, fullName string) *cobra.Command {
 	gto := NewGetOptions()
 
 	var componentGetCmd = &cobra.Command{
-		Use:   name,
-		Short: "Get currently active component",
-		Long:  "Get currently active component.",
-		Example: `  # Get the currently active component
-	  odo component get
-		`,
-		Args: cobra.NoArgs,
+		Use:     name,
+		Short:   "Get currently active component",
+		Long:    "Get currently active component.",
+		Example: fmt.Sprintf(getExample, fullName),
+		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(gto.Complete(name, cmd, args), "")
 			odoutil.LogErrorAndExit(gto.Validate(), "")

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -26,45 +26,37 @@ const RecommendedUpdateCommandName = "update"
 
 // UpdateOptions encapsulates the update command options
 type UpdateOptions struct {
-	binary        string
-	git           string
-	local         string
-	ref           string
-	componentName string
-	*genericclioptions.Context
+	binary string
+	git    string
+	local  string
+	ref    string
+	*ComponentOptions
 }
 
-var updateCmdExample string = `  # Change the source code path of a currently active component to local (use the current directory as a source)
-	  odo update --local
+var updateCmdExample = ktemplates.Examples(`  # Change the source code path of a currently active component to local (use the current directory as a source)
+	  %[1]s --local
 	
 	  # Change the source code path of the frontend component to local with source in ./frontend directory
-	  odo update frontend --local ./frontend
+	  %[1]s frontend --local ./frontend
 	
 	  # Change the source code path of a currently active component to git 
-	  odo update --git https://github.com/openshift/nodejs-ex.git
+	  %[1]s --git https://github.com/openshift/nodejs-ex.git
 	
 	  # Change the source code path of the component named node-ex to git
-	  odo update node-ex --git https://github.com/openshift/nodejs-ex.git
+	  %[1]s node-ex --git https://github.com/openshift/nodejs-ex.git
 	
 	  # Change the source code path of the component named wildfly to a binary named sample.war in ./downloads directory
-	  odo update wildfly --binary ./downloads/sample.war
-		`
+	  %[1]s wildfly --binary ./downloads/sample.war
+		`)
 
-// NewWatchOptions returns new instance of UpdateOptions
+// NewUpdateOptions returns new instance of UpdateOptions
 func NewUpdateOptions() *UpdateOptions {
-	return &UpdateOptions{}
+	return &UpdateOptions{"", "", "", "", &ComponentOptions{}}
 }
 
 // Complete completes update args
 func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	uo.Context = genericclioptions.NewContext(cmd)
-
-	if len(args) == 0 {
-		uo.componentName = uo.Context.Component()
-	} else {
-		uo.componentName = uo.Context.Component(args[0])
-	}
-
+	err = uo.ComponentOptions.Complete(name, cmd, args)
 	return
 }
 
@@ -103,15 +95,7 @@ func (uo *UpdateOptions) Run() (err error) {
 	stdout := color.Output
 
 	if len(uo.git) != 0 {
-		if err := component.Update(
-			uo.Context.Client,
-			uo.componentName,
-			uo.Context.Application,
-			"git",
-			uo.git,
-			uo.ref,
-			stdout,
-		); err != nil {
+		if err := component.Update(uo.Context.Client, uo.componentName, uo.Context.Application, "git", uo.git, uo.ref, stdout); err != nil {
 			return err
 		}
 		log.Successf("The component %s was updated successfully", uo.componentName)
@@ -128,16 +112,7 @@ func (uo *UpdateOptions) Run() (err error) {
 		if !fileInfo.IsDir() {
 			return fmt.Errorf("Please provide a path to the directory")
 		}
-		err = component.Update(
-			uo.Context.Client,
-			uo.componentName,
-			uo.Context.Application,
-			"local",
-			dir,
-			"",
-			stdout,
-		)
-		if err != nil {
+		if err = component.Update(uo.Context.Client, uo.componentName, uo.Context.Application, "local", dir, "", stdout); err != nil {
 			return err
 		}
 		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", uo.componentName)
@@ -146,16 +121,7 @@ func (uo *UpdateOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		err = component.Update(
-			uo.Context.Client,
-			uo.componentName,
-			uo.Context.Application,
-			"binary",
-			path,
-			"",
-			stdout,
-		)
-		if err != nil {
+		if err = component.Update(uo.Context.Client, uo.componentName, uo.Context.Application, "binary", path, "", stdout); err != nil {
 			return err
 		}
 		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", uo.componentName)
@@ -173,7 +139,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 		Args:    cobra.MaximumNArgs(1),
 		Short:   "Update the source code path of a component",
 		Long:    "Update the source code path of a component",
-		Example: updateCmdExample,
+		Example: fmt.Sprintf(updateCmdExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(uo.Complete(name, cmd, args), "")
 			odoutil.LogErrorAndExit(uo.Validate(), "")

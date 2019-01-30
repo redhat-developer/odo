@@ -1,34 +1,38 @@
 package component
 
 import (
+	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
 // RecommendedSetCommandName is the recommended push command name
 const RecommendedSetCommandName = "set"
 
+var setExample = ktemplates.Examples(`  # Set component named 'frontend' as active
+%[1]s frontend
+`)
+
 // SetOptions encapsulates component set options
 type SetOptions struct {
-	componentName string
-	*genericclioptions.Context
+	*ComponentOptions
 }
 
 // NewSetOptions returns new instance of SetOptions
 func NewSetOptions() *SetOptions {
-	return &SetOptions{}
+	return &SetOptions{&ComponentOptions{}}
 }
 
 // Complete completes get args
 func (sto *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	sto.Context = genericclioptions.NewContext(cmd)
-	sto.componentName = sto.Context.Component(args[0])
+	err = sto.ComponentOptions.Complete(name, cmd, args)
 	return
 }
 
@@ -52,13 +56,11 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	sto := NewSetOptions()
 
 	var componentSetCmd = &cobra.Command{
-		Use:   name,
-		Short: "Set active component.",
-		Long:  "Set component as active.",
-		Example: `  # Set component named 'frontend' as active
-  odo component set frontend
-  `,
-		Args: cobra.ExactArgs(1),
+		Use:     name,
+		Short:   "Set active component.",
+		Long:    "Set component as active.",
+		Example: fmt.Sprintf(setExample, fullName),
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(sto.Complete(name, cmd, args), "")
 			odoutil.LogErrorAndExit(sto.Validate(), "")
