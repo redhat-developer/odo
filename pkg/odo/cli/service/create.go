@@ -72,13 +72,13 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	if o.interactive {
 		classesByCategory, err := client.GetServiceClassesByCategory()
 		if err != nil {
-			return errors.Wrap(err, "couldn't retrieve the service classes")
+			return fmt.Errorf("unable to retrieve service classes: %v", err)
 		}
 		class, o.serviceType = ui.SelectClassInteractively(classesByCategory)
 
 		plans, err := client.GetMatchingPlans(class)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("couldn't retrieve plans for class %s", class.GetExternalName()))
+			return fmt.Errorf("couldn't retrieve plans for class %s: %v", class.GetExternalName(), err)
 		}
 
 		var svcPlan scv1beta1.ClusterServicePlan
