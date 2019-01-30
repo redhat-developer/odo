@@ -2,8 +2,8 @@ package application
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"github.com/redhat-developer/odo/pkg/service"
 	"os"
 	"strings"
 
