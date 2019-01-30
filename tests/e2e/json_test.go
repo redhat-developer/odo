@@ -79,8 +79,7 @@ var _ = Describe("odojsone2e", func() {
 
 func compareJSON(desired, actual string) (bool, error) {
 	var o1, o2 interface{}
-	var err error
-	err = json.Unmarshal([]byte(actual), &o1)
+	err := json.Unmarshal([]byte(actual), &o1)
 	if err != nil {
 		return false, fmt.Errorf("Error mashalling string :: %s", err.Error())
 	}
