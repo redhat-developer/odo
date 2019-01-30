@@ -16,11 +16,11 @@ const RecommendedCommandName = "project"
 // NewCmdProject implements the project odo command
 func NewCmdProject(name, fullName string) *cobra.Command {
 
-	projectCreateCmd := NewCmdProjectCreate(createRecommendedCommandName, fullName+" "+createRecommendedCommandName)
-	projectSetCmd := NewCmdProjectSet(setRecommendedCommandName, fullName+" "+setRecommendedCommandName)
-	projectListCmd := NewCmdProjectList(listRecommendedCommandName, fullName+" "+listRecommendedCommandName)
-	projectDeleteCmd := NewCmdProjectDelete(deleteRecommendedCommandName, fullName+" "+deleteRecommendedCommandName)
-	projectGetCmd := NewCmdProjectGet(getRecommendedCommandName, fullName+" "+getRecommendedCommandName)
+	projectCreateCmd := NewCmdProjectCreate(createRecommendedCommandName, odoutil.GetFullName(fullName, createRecommendedCommandName))
+	projectSetCmd := NewCmdProjectSet(setRecommendedCommandName, odoutil.GetFullName(fullName, setRecommendedCommandName))
+	projectListCmd := NewCmdProjectList(listRecommendedCommandName, odoutil.GetFullName(fullName, listRecommendedCommandName))
+	projectDeleteCmd := NewCmdProjectDelete(deleteRecommendedCommandName, odoutil.GetFullName(fullName, deleteRecommendedCommandName))
+	projectGetCmd := NewCmdProjectGet(getRecommendedCommandName, odoutil.GetFullName(fullName, getRecommendedCommandName))
 
 	projectCmd := &cobra.Command{
 		Use:   name + " [options]",

@@ -84,7 +84,7 @@ func (pso *ProjectSetOptions) Run() (err error) {
 
 // NewCmdProjectSet creates the project set command
 func NewCmdProjectSet(name, fullName string) *cobra.Command {
-	pso := NewProjectSetOptions()
+	o := NewProjectSetOptions()
 
 	projectSetCmd := &cobra.Command{
 		Use:     name,
@@ -93,13 +93,13 @@ func NewCmdProjectSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(setExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(pso.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(pso.Validate(), "")
-			util.LogErrorAndExit(pso.Run(), "")
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 
-	projectSetCmd.Flags().BoolVarP(&pso.projectShortFlag, "short", "q", false, "If true, display only the project name")
+	projectSetCmd.Flags().BoolVarP(&o.projectShortFlag, "short", "q", false, "If true, display only the project name")
 
 	return projectSetCmd
 }

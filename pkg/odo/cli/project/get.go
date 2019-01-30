@@ -65,22 +65,22 @@ func (pgo *ProjectGetOptions) Run() (err error) {
 
 // NewCmdProjectGet creates the project get command
 func NewCmdProjectGet(name, fullName string) *cobra.Command {
-	pgo := NewProjectGetOptions()
+	o := NewProjectGetOptions()
 
 	projectGetCmd := &cobra.Command{
 		Use:     name,
 		Short:   getShortDesc,
 		Long:    getLongDesc,
 		Example: fmt.Sprintf(getExample, fullName),
-		Args:    cobra.ExactArgs(1),
+		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(pgo.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(pgo.Validate(), "")
-			util.LogErrorAndExit(pgo.Run(), "")
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 
-	projectGetCmd.Flags().BoolVarP(&pgo.projectShortFlag, "short", "q", false, "If true, display only the project name")
+	projectGetCmd.Flags().BoolVarP(&o.projectShortFlag, "short", "q", false, "If true, display only the project name")
 
 	return projectGetCmd
 }

@@ -49,7 +49,7 @@ func (plo *ProjectListOptions) Run() (err error) {
 
 	projects, err := project.List(plo.Client)
 	if err != nil {
-		return fmt.Errorf("Project catalog is not enabled within your cluster: %v", err)
+		return err
 	}
 
 	if len(projects) == 0 {
@@ -70,7 +70,7 @@ func (plo *ProjectListOptions) Run() (err error) {
 
 // NewCmdProjectList implements the odo project list command.
 func NewCmdProjectList(name, fullName string) *cobra.Command {
-	plo := NewProjectListOptions()
+	o := NewProjectListOptions()
 	projectListCmd := &cobra.Command{
 		Use:     name,
 		Short:   listLongDesc,
@@ -78,9 +78,9 @@ func NewCmdProjectList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(plo.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(plo.Validate(), "")
-			util.LogErrorAndExit(plo.Run(), "")
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 	return projectListCmd

@@ -42,7 +42,7 @@ func NewProjectCreateOptions() *ProjectCreateOptions {
 // Complete completes ProjectCreateOptions after they've been created
 func (pco *ProjectCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pco.projectName = args[0]
-	pco.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	pco.Context = genericclioptions.NewContext(cmd)
 	return
 }
 
@@ -67,7 +67,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 
 // NewCmdProjectCreate creates the project create command
 func NewCmdProjectCreate(name, fullName string) *cobra.Command {
-	pco := NewProjectCreateOptions()
+	o := NewProjectCreateOptions()
 
 	projectCreateCmd := &cobra.Command{
 		Use:     name,
@@ -76,9 +76,9 @@ func NewCmdProjectCreate(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(createExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(pco.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(pco.Validate(), "")
-			util.LogErrorAndExit(pco.Run(), "")
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 

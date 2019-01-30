@@ -93,7 +93,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 
 // NewCmdProjectDelete creates the project delete command
 func NewCmdProjectDelete(name, fullName string) *cobra.Command {
-	pdo := NewProjectDeleteOptions()
+	o := NewProjectDeleteOptions()
 
 	projectDeleteCmd := &cobra.Command{
 		Use:     name,
@@ -102,13 +102,13 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(pdo.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(pdo.Validate(), "")
-			util.LogErrorAndExit(pdo.Run(), "")
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 
-	projectDeleteCmd.Flags().BoolVarP(&pdo.projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
+	projectDeleteCmd.Flags().BoolVarP(&o.projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
 
 	return projectDeleteCmd
 }
