@@ -53,7 +53,8 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 	}
 	// Process the messages returned by openshift login code and print our message
 	originalOutMsg := loginOutBuffer.Bytes()
-	loginSuccessMsg := bytes.TrimRight(bytes.Replace(originalOutMsg, []byte("new-project"), []byte("project create"), -1), "\n")
+	loginSuccessMsg := bytes.Replace(bytes.Replace(originalOutMsg, []byte("new-project"), []byte("project create"), -1), []byte("<projectname>"), []byte("<project-name>"), -1)
+	loginSuccessMsg = bytes.TrimRight(loginSuccessMsg, "\n")
 	odolog.Successf("%s\n", loginSuccessMsg)
 
 	return nil
