@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/service"
 	"os"
 	"strings"
 
@@ -286,16 +287,31 @@ var applicationDescribeCmd = &cobra.Command{
 		// List of Component
 		componentList, err := component.List(client, appName)
 		odoutil.LogErrorAndExit(err, "")
-		if len(componentList) == 0 {
-			log.Errorf("Application %s has no components deployed.", appName)
-			os.Exit(1)
-		}
-		fmt.Printf("Application Name: %s has %v components:\n--------------------------------------\n", appName, len(componentList))
-		for _, currentComponent := range componentList {
-			componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
-			odoutil.LogErrorAndExit(err, "")
-			odoutil.PrintComponentInfo(currentComponent.Name, componentDesc)
-			fmt.Println("--------------------------------------")
+
+		//we ignore service errors here because it's entirely possible that the service catalog has not been installed
+		serviceList, _ := service.ListWithDetailedStatus(client, appName)
+
+		if len(componentList) == 0 && len(serviceList) == 0 {
+			log.Errorf("Application %s has no components or services deployed.", appName)
+		} else {
+			fmt.Printf("Application Name: %s has %v component(s) and %v service(s):\n--------------------------------------\n",
+				appName, len(componentList), len(serviceList))
+			if len(componentList) > 0 {
+				for _, currentComponent := range componentList {
+					componentDesc, err := component.GetComponentDesc(client, currentComponent.Name, appName)
+					odoutil.LogErrorAndExit(err, "")
+					odoutil.PrintComponentInfo(currentComponent.Name, componentDesc)
+					fmt.Println("--------------------------------------")
+				}
+			}
+			if len(serviceList) > 0 {
+				for _, currentService := range serviceList {
+					fmt.Printf("Service Name: %s\n", currentService.Name)
+					fmt.Printf("Type: %s\n", currentService.Type)
+					fmt.Printf("Status: %s\n", currentService.Status)
+					fmt.Println("--------------------------------------")
+				}
+			}
 		}
 
 	},

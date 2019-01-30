@@ -63,6 +63,13 @@ var _ = Describe("odoLinkE2e", func() {
 			})
 		})
 
+		It("app describe should show the mysql service", func() {
+			describeOutput := runCmd("odo app describe")
+
+			// ensure that the output contains the service
+			Expect(describeOutput).To(ContainSubstring("mysql-persistent"))
+		})
+
 		It("should link backend to service", func() {
 			runCmd("odo link mysql-persistent -w --component backend")
 
