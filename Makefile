@@ -94,6 +94,15 @@ else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.succinct
 endif
 
+# Run json e2e tests
+.PHONY: test-json-e2e
+test-json-e2e:
+ifdef TIMEOUT
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odojsone2e" -ginkgo.succinct -timeout $(TIMEOUT)
+else
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odojsone2e" -ginkgo.succinct
+endif
+
 # Run component e2e tests
 .PHONY: test-cmp-e2e
 test-cmp-e2e:

@@ -14,8 +14,8 @@ type Url struct {
 // UrlSpec is
 type UrlSpec struct {
 	URL      string `json:"path,omitempty"`
-	Protocol string
-	Port     int
+	Protocol string `json:"protocol,omitempty"`
+	Port     int    `json:"port,omitempty"`
 }
 
 // AppList is a list of applications
