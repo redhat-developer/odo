@@ -63,7 +63,7 @@ var _ = Describe("odoLinkE2e", func() {
 			})
 		})
 
-		It("app describe should show the service", func() {
+		It("app describe should show the mysql service", func() {
 			describeOutput := runCmd("odo app describe")
 
 			// ensure that the output contains the service
