@@ -1345,9 +1345,9 @@ func TestGetupdateNotification(t *testing.T) {
 
 func TestFormatSupportedParameters(t *testing.T) {
 	expected := `
-UpdateNotification - Controls if an update notification is shown or not (true or false)
 NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
-Timeout - Timeout (in seconds) for OpenShift server connection check`
+Timeout - Timeout (in seconds) for OpenShift server connection check
+UpdateNotification - Controls if an update notification is shown or not (true or false)`
 	actual := FormatSupportedParameters()
 	if expected != actual {
 		t.Errorf("expected '%s', got '%s'", expected, actual)

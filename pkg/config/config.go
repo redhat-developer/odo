@@ -412,8 +412,8 @@ var (
 
 // FormatSupportedParameters outputs supported parameters and their description
 func FormatSupportedParameters() (result string) {
-	for k, v := range supportedParameterDescriptions {
-		result = result + "\n" + k + " - " + v
+	for _, v := range GetSupportedParameters() {
+		result = result + "\n" + v + " - " + supportedParameterDescriptions[v]
 	}
 	return
 }
