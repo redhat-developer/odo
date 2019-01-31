@@ -118,6 +118,17 @@ jobs:
         - oc login -u developer
         - make test-link-e2e
 
+    # Run json e2e tests
+    - <<: *base-test
+      stage: test
+      name: "json output tests"
+      script:
+        - ./scripts/oc-cluster.sh service-catalog
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - make test-json-e2e
+
     # test installation script on linux
     # - stage: test
     #   services:
