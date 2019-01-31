@@ -45,7 +45,12 @@ func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the UrlListOptions based on completed values
 func (o *URLListOptions) Validate() (err error) {
-	return
+	switch o.outputFlag {
+	case "", "json":
+		return
+	default:
+		return fmt.Errorf("Please input valid output format. available format: json")
+	}
 }
 
 // Run contains the logic for the odo url list command

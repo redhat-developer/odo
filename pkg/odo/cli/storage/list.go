@@ -60,7 +60,12 @@ func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []st
 
 // Validate validates the StorageListOptions based on completed values
 func (o *StorageListOptions) Validate() (err error) {
-	return
+	switch o.outputFlag {
+	case "", "json":
+		return
+	default:
+		return fmt.Errorf("Please input valid output format. available format: json")
+	}
 }
 
 // Run contains the logic for the odo storage list command
