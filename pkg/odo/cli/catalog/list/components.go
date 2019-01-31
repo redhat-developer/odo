@@ -3,6 +3,7 @@ package list
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -36,6 +37,7 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	if err != nil {
 		return err
 	}
+	o.catalogList = util.FilterHiddenComponents(o.catalogList)
 
 	return
 }
@@ -68,7 +70,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 				}
 			}
 		}
-		fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(component.Tags, ","))
+		fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(component.NonHiddenTags, ","))
 	}
 	w.Flush()
 	return

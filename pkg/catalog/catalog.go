@@ -12,9 +12,10 @@ import (
 )
 
 type CatalogImage struct {
-	Name      string
-	Namespace string
-	Tags      []string
+	Name          string
+	Namespace     string
+	AllTags       []string
+	NonHiddenTags []string
 }
 
 // List lists all the available component types
@@ -86,7 +87,10 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 	for _, supported := range catalogList {
 		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
 			// Now check to see if that version matches that components tag
-			for _, tag := range supported.Tags {
+			// here we use the AllTags, because if the user somehow got hold of a version that was hidden
+			// then it's safe to assume that this user went to a lot of trouble to actually use that version,
+			// so let's allow it
+			for _, tag := range supported.AllTags {
 				if componentVersion == tag {
 					s.End(true)
 					return true, nil
@@ -139,22 +143,46 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 	imageStreams = append(imageStreams, openshiftNSImageStreams...)
 	imageStreams = append(imageStreams, currentNSImageStreams...)
 
+	// create a map from name (builder image name + tag) to the ImageStreamTag
+	// we need this in order to filter out hidden tags
+	imageStreamTagMap := make(map[string]imagev1.ImageStreamTag)
+
+	currentNSImageStreamTags, currentNSImageStreamTagsErr := client.GetImageStreamTags(currentNamespace)
+	openshiftNSImageStreamTags, openshiftNSImageStreamTagsErr := client.GetImageStreamTags(occlient.OpenShiftNameSpace)
+
+	// If failure fetching imagestreamtags from both namespaces, error out
+	if currentNSImageStreamTagsErr != nil && openshiftNSImageStreamTagsErr != nil {
+		return nil, errors.Wrapf(
+			fmt.Errorf("%s.\n%s", currentNSImageStreamTagsErr, openshiftNSImageStreamTagsErr),
+			"Failed to fetch imagestreamtags from both openshift and %s namespaces.\nPlease ensure that a builder imagestream of required version for the component exists in either openshift or %s namespaces",
+			currentNamespace,
+			currentNamespace,
+		)
+	}
+
+	// create a map from name to ImageStreamTag out of all the ImageStreamTag objects we collect
+	var imageStreamTags []imagev1.ImageStreamTag
+	imageStreamTags = append(imageStreamTags, currentNSImageStreamTags...)
+	imageStreamTags = append(imageStreamTags, openshiftNSImageStreamTags...)
+	for _, imageStreamTag := range imageStreamTags {
+		imageStreamTagMap[imageStreamTag.Name] = imageStreamTag
+	}
+
 	var builderImages []CatalogImage
 
 	// Get builder images from the available imagestreams
 	for _, imageStream := range imageStreams {
 		var allTags []string
+		var hiddenTags []string
 		buildImage := false
 
-		for _, tag := range imageStream.Spec.Tags {
-
-			allTags = append(allTags, tag.Name)
+		for _, tagReference := range imageStream.Spec.Tags {
+			allTags = append(allTags, tagReference.Name)
 
 			// Check to see if it is a "builder" image
-			if _, ok := tag.Annotations["tags"]; ok {
-				for _, t := range strings.Split(tag.Annotations["tags"], ",") {
-
-					// If the tag has "builder" then we will add the image to the list
+			if _, ok := tagReference.Annotations["tags"]; ok {
+				for _, t := range strings.Split(tagReference.Annotations["tags"], ",") {
+					// If the tagReference has "builder" then we will add the image to the list
 					if t == "builder" {
 						buildImage = true
 					}
@@ -165,11 +193,48 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 
 		// Append to the list of images if a "builder" tag was found
 		if buildImage {
-			builderImages = append(builderImages, CatalogImage{Name: imageStream.Name, Namespace: imageStream.Namespace, Tags: allTags})
+			// We need to gauge the ImageStreamTag of each potential builder image, because it might contain
+			// the 'hidden' tag. If so, this builder image is deprecated and should not be offered to the user
+			// as candidate
+			for _, tag := range allTags {
+				imageStreamTag := imageStreamTagMap[imageStream.Name+":"+tag]
+				if _, ok := imageStreamTag.Annotations["tags"]; ok {
+					for _, t := range strings.Split(imageStreamTag.Annotations["tags"], ",") {
+						// If the tagReference has "builder" then we will add the image to the list
+						if t == "hidden" {
+							glog.V(5).Infof("Tag: %v of builder: %v is marked as hidden and therefore will be excluded", tag, imageStream.Name)
+							hiddenTags = append(hiddenTags, tag)
+						}
+					}
+				}
+
+			}
+
+			builderImages = append(builderImages,
+				CatalogImage{Name: imageStream.Name, Namespace: imageStream.Namespace,
+					AllTags: allTags, NonHiddenTags: getAllNonHiddenTags(allTags, hiddenTags)})
 		}
 
 	}
 
 	glog.V(4).Infof("Found builder images: %v", builderImages)
 	return builderImages, nil
+}
+
+func getAllNonHiddenTags(allTags []string, hiddenTags []string) []string {
+	result := make([]string, 0, len(allTags))
+	for _, t1 := range allTags {
+		found := false
+		for _, t2 := range hiddenTags {
+			if t1 == t2 {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			result = append(result, t1)
+		}
+	}
+	return result
 }
