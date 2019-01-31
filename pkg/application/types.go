@@ -26,5 +26,5 @@ type AppList struct {
 
 // AppStatus shows the application is active or not
 type AppStatus struct {
-	Active bool `json:"active,omitempty"`
+	Active bool `json:"active"`
 }
