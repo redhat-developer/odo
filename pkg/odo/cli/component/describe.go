@@ -23,13 +23,12 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
-	componentName string
 	*ComponentOptions
 }
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{"", &ComponentOptions{}}
+	return &DescribeOptions{&ComponentOptions{}}
 }
 
 // Complete completes describe args

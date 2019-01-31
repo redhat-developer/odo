@@ -108,7 +108,7 @@ func NewCreateOptions() *CreateOptions {
 	return &CreateOptions{}
 }
 
-func setCmpSourceAttrs(co *CreateOptions) (err error) {
+func (co *CreateOptions) setCmpSourceAttrs() (err error) {
 	componentCnt := 0
 
 	if len(co.componentBinary) != 0 {
@@ -146,7 +146,7 @@ func setCmpSourceAttrs(co *CreateOptions) (err error) {
 	return
 }
 
-func setCmpName(co *CreateOptions, args []string) (err error) {
+func (co *CreateOptions) setCmpName(args []string) (err error) {
 	componentImageName, componentType, _, _ := util.ParseComponentImageName(args[0])
 	co.CreateArgs.ImageName = componentImageName
 
@@ -173,7 +173,7 @@ func setCmpName(co *CreateOptions, args []string) (err error) {
 	return
 }
 
-func setResourceLimits(co *CreateOptions) {
+func (co *CreateOptions) setResourceLimits() {
 	ensureAndLogProperResourceUsage(co.memory, co.memoryMin, co.memoryMax, "memory")
 
 	ensureAndLogProperResourceUsage(co.cpu, co.cpuMin, co.cpuMax, "cpu")
@@ -197,17 +197,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	co.CreateArgs.Wait = co.wait
 
-	err = setCmpSourceAttrs(co)
+	err = co.setCmpSourceAttrs()
 	if err != nil {
 		return err
 	}
 
-	err = setCmpName(co, args)
+	err = co.setCmpName(args)
 	if err != nil {
 		return err
 	}
 
-	setResourceLimits(co)
+	co.setResourceLimits()
 
 	co.CreateArgs.Ports = co.componentPorts
 	co.CreateArgs.EnvVars = co.componentEnvVars
@@ -256,7 +256,7 @@ func (co *CreateOptions) Validate() (err error) {
 }
 
 // createComponent creates the component
-func createComponent(co *CreateOptions, stdout io.Writer) (err error) {
+func (co *CreateOptions) createComponent(stdout io.Writer) (err error) {
 	log.Successf("Initializing '%s' component", co.CreateArgs.Name)
 	switch co.CreateArgs.SourceType {
 	case occlient.GIT:
@@ -268,7 +268,7 @@ func createComponent(co *CreateOptions, stdout io.Writer) (err error) {
 			return errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
 		}
 		// Git is the only one using BuildConfig since we need to retrieve the git
-		if err = component.Build(co.Context.Client, co.CreateArgs.Name, co.CreateArgs.ApplicationName, wait, stdout); err != nil {
+		if err = component.Build(co.Context.Client, co.CreateArgs.Name, co.CreateArgs.ApplicationName, co.wait, stdout); err != nil {
 			return errors.Wrapf(err, "failed to build component with args %+v", co)
 		}
 	case occlient.LOCAL:
@@ -310,7 +310,7 @@ func (co *CreateOptions) Run() (err error) {
 	stdout := color.Output
 	glog.V(4).Infof("Component create called with args: %#v", co.CreateArgs)
 
-	err = createComponent(co, stdout)
+	err = co.createComponent(stdout)
 	if err != nil {
 		return err
 	}
