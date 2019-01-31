@@ -89,11 +89,11 @@ var pushCmd = &cobra.Command{
 
 			if sourceType == "local" {
 				glog.V(4).Infof("Copying directory %s to pod", localLocation)
-				err = component.PushLocal(client, componentName, applicationName, localLocation, os.Stdout, []string{}, []string{}, true)
+				err = component.PushLocal(client, componentName, applicationName, localLocation, os.Stdout, []string{}, []string{}, true, show)
 			} else {
 				dir := filepath.Dir(localLocation)
 				glog.V(4).Infof("Copying file %s to pod", localLocation)
-				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation}, []string{}, true)
+				err = component.PushLocal(client, componentName, applicationName, dir, os.Stdout, []string{localLocation}, []string{}, true, show)
 			}
 			odoutil.LogErrorAndExit(err, fmt.Sprintf("Failed to push component: %v", componentName))
 
@@ -104,7 +104,7 @@ var pushCmd = &cobra.Command{
 				log.Errorf("Unable to push local directory:%s to component %s that uses Git repository:%s.", componentLocal, componentName, sourcePath)
 				os.Exit(1)
 			}
-			err := component.Build(client, componentName, applicationName, true, stdout)
+			err := component.Build(client, componentName, applicationName, true, show, stdout)
 			odoutil.LogErrorAndExit(err, fmt.Sprintf("failed to push component: %v", componentName))
 		}
 
@@ -114,6 +114,7 @@ var pushCmd = &cobra.Command{
 
 // NewCmdPush implements the push odo command
 func NewCmdPush() *cobra.Command {
+	pushCmd.Flags().BoolVar(&show, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use given local directory as a source for component. (It must be a local component)")
 
 	// Add a defined annotation in order to appear in the help menu

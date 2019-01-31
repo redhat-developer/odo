@@ -196,18 +196,22 @@ func Askf(format string, a ...interface{}) {
 // Status creates a spinner, sets the prefix then returns it.
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)
-func Spinner(status string) *Status {
+// Spin parameter is used to start the initial spin. This helpful
+// for situations where spinning isn't viable (debug)
+func Spinner(spin bool, status string) *Status {
 	s := NewStatus(os.Stdout)
-	s.Start(status, IsDebug())
+	s.Start(status, IsDebug() || !spin)
 	return s
 }
 
 // Statusf creates a spinner, sets the prefix then returns it.
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)
-func Spinnerf(format string, a ...interface{}) *Status {
+// Spin parameter is used to start the initial spin. This helpful
+// for situations where spinning isn't viable (debug)
+func Spinnerf(spin bool, format string, a ...interface{}) *Status {
 	s := NewStatus(os.Stdout)
-	s.Start(fmt.Sprintf(format, a...), IsDebug())
+	s.Start(fmt.Sprintf(format, a...), IsDebug() || !spin)
 	return s
 }
 

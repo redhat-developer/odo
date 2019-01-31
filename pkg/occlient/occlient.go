@@ -1658,7 +1658,7 @@ func (c *Client) WaitAndGetDC(name string, field string, value string, timeout t
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 func (c *Client) WaitAndGetPod(selector string) (*corev1.Pod, error) {
 	glog.V(4).Infof("Waiting for %s pod", selector)
-	s := log.Spinner("Waiting for pod to start")
+	s := log.Spinner(true, "Waiting for pod to start")
 	defer s.End(false)
 
 	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{

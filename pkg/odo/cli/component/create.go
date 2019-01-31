@@ -38,6 +38,7 @@ var (
 	cpuMin           string
 	cpu              string
 	wait             bool
+	show             bool
 )
 
 var componentCreateCmd = &cobra.Command{
@@ -228,7 +229,9 @@ A full list of component types that can be deployed is available using: 'odo cat
 			odoutil.LogErrorAndExit(err, "")
 
 			// Git is the only one using BuildConfig since we need to retrieve the git
-			err = component.Build(client, componentName, applicationName, wait, stdout)
+			// Show has been set as "false" due to "git" building when using create.
+			// TODO: Building with git initially will be removed in the future..  for now, we hide the output (despite building..)
+			err = component.Build(client, componentName, applicationName, wait, false, stdout)
 			odoutil.LogErrorAndExit(err, "")
 
 		} else if len(componentLocal) != 0 {

@@ -53,7 +53,7 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 // Exists returns true if the given component type is valid, false if not
 func Exists(client *occlient.Client, componentType string) (bool, error) {
 
-	s := log.Spinner("Checking component")
+	s := log.Spinner(true, "Checking component")
 	defer s.End(false)
 	catalogList, err := List(client)
 	if err != nil {
@@ -73,7 +73,7 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 func VersionExists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
 
 	// Loading status
-	s := log.Spinner("Checking component version")
+	s := log.Spinner(true, "Checking component version")
 	defer s.End(false)
 
 	// Retrieve the catalogList

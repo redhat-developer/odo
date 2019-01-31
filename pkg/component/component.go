@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
@@ -145,7 +144,7 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Loading spinner
-	s := log.Spinnerf("Creating component %s", params.Name)
+	s := log.Spinnerf(true, "Creating component %s", params.Name)
 	defer s.End(false)
 
 	// Parse componentImageType before adding to labels
@@ -229,7 +228,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Loading spinner
-	s := log.Spinnerf("Creating component %s", params.Name)
+	s := log.Spinnerf(true, "Creating component %s", params.Name)
 	defer s.End(false)
 
 	// Parse componentImageType before adding to labels
@@ -290,7 +289,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 func Delete(client *occlient.Client, componentName string, applicationName string) error {
 
 	// Loading spinner
-	s := log.Spinnerf("Deleting component %s", componentName)
+	s := log.Spinnerf(true, "Deleting component %s", componentName)
 	defer s.End(false)
 
 	cfg, err := config.New()
@@ -433,7 +432,8 @@ func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 // 	isForcePush indicates if the sources to be updated are due to a push in which case its a full source directory push or only push of identified sources
 // Returns
 //	Error if any
-func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool) error {
+// 'show' will determine whether or not the log will be shown to the user
+func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, show bool) error {
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
@@ -478,8 +478,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		}
 	}
 
-	// Copy the files to the pod
-	s := log.Spinner("Copying files to component")
+	s := log.Spinner(true, "Copying files to component")
 
 	if !isForcePush {
 		if len(files) == 0 && len(delFiles) == 0 {
@@ -497,23 +496,20 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	s.End(true)
 
-	s = log.Spinner("Building component")
+	s = log.Spinner(true, "Building component")
 
-	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
 	pipeReader, pipeWriter := io.Pipe()
 	var cmdOutput string
 	go func() {
-		yellowFprintln := color.New(color.FgYellow).FprintlnFunc()
 		scanner := bufio.NewScanner(pipeReader)
 		for scanner.Scan() {
 			line := scanner.Text()
-			// color.Output is temporarily used as there is a error when passing in color.Output from cmd/create.go and casting to io.writer in windows
-			// TODO: Fix this in the future, more upstream in the code at cmd/create.go rather than within this function.
-			// If we are in debug mode, we should show the output
-			if log.IsDebug() {
-				yellowFprintln(color.Output, line)
+			if log.IsDebug() || show {
+				_, err := fmt.Fprintln(out, line)
+				if err != nil {
+					log.Errorf("Unable to print to stdout: %v", err)
+				}
 			}
-
 			cmdOutput += fmt.Sprintln(line)
 		}
 	}()
@@ -538,10 +534,11 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 // Build component from BuildConfig.
 // If 'wait' is true than it waits for build to successfully complete.
 // If 'wait' is false than this function won't return error even if build failed.
-func Build(client *occlient.Client, componentName string, applicationName string, wait bool, stdout io.Writer) error {
+// 'show' will determine whether or not the log will be shown to the user
+func Build(client *occlient.Client, componentName string, applicationName string, wait bool, show bool, stdout io.Writer) error {
 
-	// Loading spinner
-	s := log.Spinnerf("Triggering build from git")
+	// No loading spinner if we're showing the logging output
+	s := log.Spinnerf(!show, "Triggering build from git")
 	defer s.End(false)
 
 	// Namespace the component
@@ -556,16 +553,16 @@ func Build(client *occlient.Client, componentName string, applicationName string
 	}
 	s.End(true)
 
+	// Now we check to see if we're in debug or "show" mode
 	// Retrieve the Build Log and write to buffer if debug is disabled, else we we output to stdout / debug.
-
 	var b bytes.Buffer
-	if !log.IsDebug() {
+	if !log.IsDebug() && !show {
 		stdout = bufio.NewWriter(&b)
 	}
 
 	if wait {
 
-		s := log.Spinnerf("Waiting for build to finish")
+		s := log.Spinnerf(true, "Waiting for build to finish")
 		defer s.End(false)
 		if err := client.FollowBuildLog(buildName, stdout); err != nil {
 			return errors.Wrapf(err, "unable to follow logs for %s", buildName)
@@ -666,7 +663,8 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 // newSourceType indicates the type of the new source i.e git/local/binary
 // newSource indicates path of the source directory or binary or the git URL
 // stdout is the io writer for streaming build logs on stdout
-func Update(client *occlient.Client, componentName string, applicationName string, newSourceType string, newSource string, newSourceRef string, stdout io.Writer) error {
+// 'show' will determine whether or not the log will be shown to the user
+func Update(client *occlient.Client, componentName string, applicationName string, newSourceType string, newSource string, newSourceRef string, show bool, stdout io.Writer) error {
 
 	// STEP 1. Create the common Object Meta for updating.
 
@@ -743,7 +741,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		}
 
 		// Finally, we build!
-		err = Build(client, componentName, applicationName, true, stdout)
+		err = Build(client, componentName, applicationName, true, show, stdout)
 		if err != nil {
 			return errors.Wrapf(err, "unable to build the component %v", componentName)
 		}
@@ -787,7 +785,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 			}
 
 			// Build it
-			err = Build(client, componentName, applicationName, true, stdout)
+			err = Build(client, componentName, applicationName, true, show, stdout)
 
 		} else if newSourceType == "local" || newSourceType == "binary" {
 

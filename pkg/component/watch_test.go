@@ -163,7 +163,7 @@ var ExtChan = make(chan bool)
 var StartChan = make(chan bool)
 
 // Mock PushLocal to collect changed files and compare against expected changed files
-func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isPushForce bool) error {
+func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isPushForce bool, show bool) error {
 	for _, gotChangedFile := range files {
 		found := false
 		// Verify every file in expected file changes to be actually observed to be changed
@@ -369,6 +369,7 @@ func TestWatchAndPush(t *testing.T) {
 					PushDiffDelay:   tt.delayInterval,
 					StartChan:       StartChan,
 					ExtChan:         ExtChan,
+					Show:            false,
 					WatchHandler:    mockPushLocal,
 				},
 			)
