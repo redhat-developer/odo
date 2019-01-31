@@ -693,7 +693,7 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 	return nil, fmt.Errorf("unable to fetch image with tag %s corresponding to imagestream %+v", imageTag, imageStream)
 }
 
-// GetImageStreamTag returns all the ImageStreamTag objects in the given namespace
+// GetImageStreamTags returns all the ImageStreamTag objects in the given namespace
 func (c *Client) GetImageStreamTags(namespace string) ([]imagev1.ImageStreamTag, error) {
 	imageStreamTagList, err := c.imageClient.ImageStreamTags(namespace).List(metav1.ListOptions{})
 	if err != nil {

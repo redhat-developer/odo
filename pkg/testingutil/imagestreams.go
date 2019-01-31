@@ -62,7 +62,7 @@ func fakeImageStreamTag(imageName string, version string, namespace string, isHi
 	return image
 }
 
-// FakeImageStreams lists the imagestreams for the reactor
+// FakeImageStreamTags lists the imagestreams for the reactor
 func FakeImageStreamTags(imageName string, namespace string, tags []string, hiddenTags []string) *imagev1.ImageStreamTagList {
 	var list = []imagev1.ImageStreamTag{}
 	for _, tag := range tags {
