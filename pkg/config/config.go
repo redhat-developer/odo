@@ -2,11 +2,11 @@ package config
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/util"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -426,17 +426,7 @@ func asSupportedParameter(param string) (string, bool) {
 
 // GetSupportedParameters returns the name of the supported parameters
 func GetSupportedParameters() []string {
-	keys := make([]string, len(supportedParameterDescriptions))
-
-	i := 0
-	for k := range supportedParameterDescriptions {
-		keys[i] = k
-		i++
-	}
-
-	sort.Strings(keys)
-
-	return keys
+	return util.GetSortedKeys(supportedParameterDescriptions)
 }
 
 // getLowerCaseParameters creates a set-like map of supported parameters from the supported parameter names

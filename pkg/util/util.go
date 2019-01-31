@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -419,4 +420,19 @@ func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 	}
 
 	return rules, nil
+}
+
+// GetSortedKeys retrieves the alphabetically-sorted keys of the specified map
+func GetSortedKeys(mapping map[string]string) []string {
+	keys := make([]string, len(mapping))
+
+	i := 0
+	for k := range mapping {
+		keys[i] = k
+		i++
+	}
+
+	sort.Strings(keys)
+
+	return keys
 }

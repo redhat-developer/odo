@@ -3,11 +3,10 @@ package utils
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"os"
-	"sort"
-
+	util2 "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"os"
 )
 
 const (
@@ -111,15 +110,5 @@ func NewCmdTerminal(name, fullName string) *cobra.Command {
 }
 
 func getSupportedShells() []string {
-	keys := make([]string, len(supportedShells))
-
-	i := 0
-	for k := range supportedShells {
-		keys[i] = k
-		i++
-	}
-
-	sort.Strings(keys)
-
-	return keys
+	return util2.GetSortedKeys(supportedShells)
 }

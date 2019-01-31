@@ -730,3 +730,27 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 		}
 	}
 }
+
+/*func TestGetSortedKeys(t *testing.T) {
+	tests := []struct {
+		testName string
+		input    map[string]string
+		expected []string
+	}{
+		{
+			testName: "default",
+			input:    map[string]string{"a": "av", "c": "cv", "b": "bv"},
+			expected: []string{"a", "b", "c"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			actual := GetSortedKeys(tt.input)
+			if !reflect.DeepEqual(tt.expected, actual) {
+				t.Errorf("expected: %+v, got: %+v", tt.expected, actual)
+			}
+		})
+	}
+}*/
