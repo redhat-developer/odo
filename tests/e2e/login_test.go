@@ -28,6 +28,7 @@ var _ = Describe("odoLoginE2e", func() {
 	var backToCurrentUserCommand string
 	var testUserLoginCommand string
 	var testUserLoginCommandWithToken string
+	var testUserLoginFailCommandWithToken string
 	var testUserCreateProject1Command string
 	var testUserCreateProject2Command string
 
@@ -40,8 +41,10 @@ var _ = Describe("odoLoginE2e", func() {
 				testUserLoginCommand = fmt.Sprintf("%s -u %s -p %s", baseOdoLoginCommand, loginTestUser, loginTestUserPassword)
 				testUserCreateProject1Command = fmt.Sprintf("%s %s", baseOdoProjectCreate, odoTestProject1)
 				testUserCreateProject2Command = fmt.Sprintf("%s %s", baseOdoProjectCreate, odoTestProject2)
+				testUserLoginFailCommandWithToken = fmt.Sprintf("%s -t verybadtoken", baseOdoLoginCommand)
 			})
 		})
+
 		Context("Run login tests", func() {
 			AfterEach(func() {
 				t := runCmd("oc projects -q")
@@ -85,6 +88,12 @@ var _ = Describe("odoLoginE2e", func() {
 				Expect(session).To(ContainSubstring(odoTestProject1))
 				session = runCmd(ocWhoamiCommand)
 				Expect(session).To(ContainSubstring(loginTestUser))
+			})
+
+			It("Should fail login on invalid token with appropriate message", func() {
+				session = runFailCmd(testUserLoginFailCommandWithToken, 1)
+				Expect(session).To(ContainSubstring("The token provided is invalid or expired"))
+				runCmd(testUserLoginCommand)
 			})
 		})
 	})
