@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
+	"sort"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -117,6 +118,8 @@ func getSupportedShells() []string {
 		keys[i] = k
 		i++
 	}
+
+	sort.Strings(keys)
 
 	return keys
 }
