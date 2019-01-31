@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"strings"
 
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
@@ -40,13 +41,23 @@ type ServiceClass struct {
 
 // ServicePlanParameter holds the information regarding a service catalog plan parameter
 type ServicePlanParameter struct {
-	Name            string
-	Title           string
-	Description     string
-	HasDefaultValue bool
-	Default         string
-	Type            string
-	Required        bool
+	Name                   string `json:"name"`
+	Title                  string `json:"title,omitempty"`
+	Description            string `json:"description,omitempty"`
+	Default                string `json:"default,omitempty"`
+	validation.Validatable `json:",inline,omitempty"`
+}
+
+// NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
+func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
+	return ServicePlanParameter{
+		Name:    name,
+		Default: defaultValue,
+		Validatable: validation.Validatable{
+			Type:     typeName,
+			Required: required,
+		},
+	}
 }
 
 type servicePlanParameters []ServicePlanParameter
@@ -374,9 +385,6 @@ func NewServicePlan(result scv1beta1.ClusterServicePlan) (plan ServicePlan, err 
 		// is one of the parameters indicated as required
 		// these parameters are not strictly required since they might have default values
 		v.Required = isRequired(schema.Required, k)
-		if len(v.Default) > 0 {
-			v.HasDefaultValue = true
-		}
 
 		plan.Parameters = append(plan.Parameters, v)
 	}

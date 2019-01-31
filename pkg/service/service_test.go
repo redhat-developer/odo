@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/onsi/gomega/matchers"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	"reflect"
@@ -86,33 +87,10 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 					Description: "this is a example description 1",
 					DisplayName: "plan-name-1",
 					Parameters: []ServicePlanParameter{
-						{
-							Name:            "PLAN_DATABASE_URI",
-							Required:        true,
-							Default:         "someuri",
-							HasDefaultValue: true,
-							Type:            "string",
-						},
-						{
-							Name:            "PLAN_DATABASE_USERNAME",
-							Required:        true,
-							Default:         "name",
-							HasDefaultValue: true,
-							Type:            "string",
-						},
-						{
-							Name:            "PLAN_DATABASE_PASSWORD",
-							Required:        true,
-							HasDefaultValue: false,
-							Type:            "string",
-						},
-						{
-							Name:            "SOME_OTHER",
-							Required:        false,
-							Default:         "other",
-							HasDefaultValue: true,
-							Type:            "string",
-						},
+						NewServicePlanParameter("PLAN_DATABASE_URI", "string", "someuri", true),
+						NewServicePlanParameter("PLAN_DATABASE_USERNAME", "string", "name", true),
+						NewServicePlanParameter("PLAN_DATABASE_PASSWORD", "string", "", true),
+						NewServicePlanParameter("SOME_OTHER", "string", "other", false),
 					},
 				},
 				{
@@ -120,19 +98,8 @@ func TestGetServiceClassAndPlans(t *testing.T) {
 					Description: "this is a example description 2",
 					DisplayName: "plan-name-2",
 					Parameters: []ServicePlanParameter{
-						{
-							Name:            "PLAN_DATABASE_USERNAME_2",
-							Required:        true,
-							Default:         "user2",
-							HasDefaultValue: true,
-							Type:            "string",
-						},
-						{
-							Name:            "PLAN_DATABASE_PASSWORD",
-							Required:        true,
-							HasDefaultValue: false,
-							Type:            "string",
-						},
+						NewServicePlanParameter("PLAN_DATABASE_USERNAME_2", "string", "user2", true),
+						NewServicePlanParameter("PLAN_DATABASE_PASSWORD", "string", "", true),
 					},
 				},
 			},
@@ -650,5 +617,104 @@ func TestDeleteServiceAndUnlinkComponents(t *testing.T) {
 		if len(fakeClientSet.AppsClientset.Actions()) != 3 && !tt.wantErr {
 			t.Errorf("expected to see %d actions, got: %v", expectedNumberOfDCActions, fakeClientSet.AppsClientset.Actions())
 		}
+	}
+}
+
+func TestServicePlanParameterUnmarshalling(t *testing.T) {
+	parameter := NewServicePlanParameter("name", "string", "default", true)
+	parameter.Title = "title"
+	parameter.Description = "description"
+
+	tests := []struct {
+		name     string
+		json     string
+		expected ServicePlanParameter
+	}{
+		{
+			name: "full",
+			json: `{
+"name": "name",
+"title": "title",
+"description": "description",
+"default": "default",
+"required": true,
+"type": "string"
+}`,
+			expected: parameter,
+		},
+		{
+			name: "not required",
+			json: `{
+"name": "name",
+"default": "default",
+"type": "integer"
+}`,
+			expected: NewServicePlanParameter("name", "integer", "default", false),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spp := &ServicePlanParameter{}
+			err := json.Unmarshal([]byte(tt.json), &spp)
+			if err != nil {
+				t.Errorf("unmarshalling failed: %v", err)
+			}
+			if !reflect.DeepEqual(tt.expected, *spp) {
+				t.Errorf("param: %v, got: %v", tt.expected, *spp)
+			}
+		})
+	}
+}
+
+func TestServicePlanParameterMarshalling(t *testing.T) {
+	parameter := NewServicePlanParameter("name", "string", "default", true)
+	parameter.Title = "title"
+	parameter.Description = "description"
+
+	tests := []struct {
+		name  string
+		json  string
+		param ServicePlanParameter
+	}{
+		{
+			name: "full",
+			json: `{
+"name": "name",
+"title": "title",
+"description": "description",
+"default": "default",
+"required": true,
+"type": "string"
+}`,
+			param: parameter,
+		},
+		{
+			name: "not required",
+			json: `{
+"name": "name",
+"default": "default",
+"type": "integer"
+}`,
+			param: NewServicePlanParameter("name", "integer", "default", false),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := json.Marshal(tt.param)
+			if err != nil {
+				t.Errorf("marshalling failed: %v", err)
+			}
+			s := string(actual)
+			matcher := matchers.MatchJSONMatcher{JSONToMatch: tt.json}
+			success, err := matcher.Match(s)
+			if err != nil {
+				t.Errorf("couldn't match json: %v", err)
+			}
+			if !success {
+				t.Errorf("param: %v, got: %v", tt.json, s)
+			}
+		})
 	}
 }
