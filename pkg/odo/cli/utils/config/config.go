@@ -4,9 +4,17 @@ import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
 const RecommendedCommandName = "config"
+
+var configLongDesc = ktemplates.LongDesc(`Modifies Odo specific configuration settings within the config file.
+
+Available Parameters:
+UpdateNotification - Controls if an update notification is shown or not (true or false)
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
+Timeout - Timeout (in seconds) for OpenShift server connection check`)
 
 // NewCmdConfiguration implements the utils config odo command
 func NewCmdConfiguration(name, fullName string) *cobra.Command {
@@ -15,12 +23,7 @@ func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Modifies configuration settings",
-		Long: `Modifies Odo specific configuration settings within the config file.
-
-Available Parameters:
-UpdateNotification - Controls if an update notification is shown or not (true or false)
-NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
-Timeout - Timeout (in seconds) for OpenShift server connection check`,
+		Long:  configLongDesc,
 		Example: fmt.Sprintf("%s\n%s",
 			configurationViewCmd.Example,
 			configurationSetCmd.Example),
