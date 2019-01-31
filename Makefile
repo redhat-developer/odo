@@ -149,8 +149,8 @@ else
 endif
 
 # Run login e2e tests
-.PHONY: test-login-e2e
-test-login-e2e:
+.PHONY: test-odologin-e2e
+test-odo-login-e2e:
 ifdef TIMEOUT
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
