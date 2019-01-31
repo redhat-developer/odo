@@ -6,13 +6,12 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"strings"
 )
 
 const setCommandName = "set"
 
 var (
-	setLongDesc = ktemplates.LongDesc(fmt.Sprintf("Set an individual value in the Odo configuration file.\n%s", formatSupportedParameters()))
+	setLongDesc = ktemplates.LongDesc(fmt.Sprintf("Set an individual value in the Odo configuration file.\n%s", config.FormatSupportedParameters()))
 	setExample  = ktemplates.Examples(`
    # Set a configuration value
    %[1]s UpdateNotification false
@@ -34,16 +33,13 @@ func NewSetOptions() *SetOptions {
 
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.paramName = strings.ToLower(args[0])
+	o.paramName = args[0]
 	o.paramValue = args[1]
 	return
 }
 
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
-	if _, ok := supportedParameters[o.paramName]; !ok {
-		return fmt.Errorf("unknown parameter '%s', supported parameters: %v", o.paramName, getSupportedParameters())
-	}
 	return
 }
 

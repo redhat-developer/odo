@@ -1342,3 +1342,70 @@ func TestGetupdateNotification(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatSupportedParameters(t *testing.T) {
+	expected := `
+UpdateNotification - Controls if an update notification is shown or not (true or false)
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
+Timeout - Timeout (in seconds) for OpenShift server connection check`
+	actual := FormatSupportedParameters()
+	if expected != actual {
+		t.Errorf("expected '%s', got '%s'", expected, actual)
+	}
+}
+
+func TestLowerCaseParameters(t *testing.T) {
+	expected := map[string]bool{"nameprefix": true, "timeout": true, "updatenotification": true}
+	actual := getLowerCaseParameters()
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("expected '%v', got '%v'", expected, actual)
+	}
+}
+
+func TestIsSupportedParameter(t *testing.T) {
+	tests := []struct {
+		testName      string
+		param         string
+		expectedLower string
+		expected      bool
+	}{
+		{
+			testName:      "existing, lower case",
+			param:         "timeout",
+			expectedLower: "timeout",
+			expected:      true,
+		},
+		{
+			testName:      "existing, from description",
+			param:         "Timeout",
+			expectedLower: "timeout",
+			expected:      true,
+		},
+		{
+			testName:      "existing, mixed case",
+			param:         "TimeOut",
+			expectedLower: "timeout",
+			expected:      true,
+		},
+		{
+			testName: "empty",
+			param:    "",
+			expected: false,
+		},
+		{
+			testName: "unexisting",
+			param:    "foo",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			actual, ok := asSupportedParameter(tt.param)
+			if tt.expected != ok && tt.expectedLower != actual {
+				t.Fail()
+			}
+		})
+	}
+}

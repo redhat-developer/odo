@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -141,29 +142,31 @@ func (c *ConfigInfo) writeToFile() error {
 // SetConfiguration modifies Odo configurations in the config file
 // as of now being used for nameprefix, timeout, updatenotification
 func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
-	// processing values according to the parameter names
-	switch parameter {
+	if p, ok := asSupportedParameter(parameter); ok {
+		// processing values according to the parameter names
+		switch p {
 
-	case "timeout":
-		typedval, err := strconv.Atoi(value)
-		if err != nil {
-			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
-		}
-		if typedval < 0 {
-			return errors.Errorf("cannot set timeout to less than 0")
-		}
-		c.OdoSettings.Timeout = &typedval
+		case "timeout":
+			typedval, err := strconv.Atoi(value)
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			if typedval < 0 {
+				return errors.Errorf("cannot set timeout to less than 0")
+			}
+			c.OdoSettings.Timeout = &typedval
 
-	case "updatenotification":
-		val, err := strconv.ParseBool(strings.ToLower(value))
-		if err != nil {
-			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
-		}
-		c.OdoSettings.UpdateNotification = &val
+		case "updatenotification":
+			val, err := strconv.ParseBool(strings.ToLower(value))
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			c.OdoSettings.UpdateNotification = &val
 
-	case "nameprefix":
-		c.OdoSettings.NamePrefix = &value
-	default:
+		case "nameprefix":
+			c.OdoSettings.NamePrefix = &value
+		}
+	} else {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}
 
@@ -394,4 +397,48 @@ func (c *ConfigInfo) DeleteProject(projectName string) error {
 		return errors.Wrapf(err, "unable to delete project from config")
 	}
 	return nil
+}
+
+var (
+	supportedParameterDescriptions = map[string]string{
+		"UpdateNotification": "Controls if an update notification is shown or not (true or false)",
+		"NamePrefix":         "Default prefix is the current directory name. Use this value to set a default name prefix",
+		"Timeout":            "Timeout (in seconds) for OpenShift server connection check",
+	}
+	lowerCaseParameters = getLowerCaseParameters()
+)
+
+func FormatSupportedParameters() (result string) {
+	for k, v := range supportedParameterDescriptions {
+		result = result + "\n" + k + " - " + v
+	}
+	return
+}
+
+func asSupportedParameter(param string) (string, bool) {
+	lower := strings.ToLower(param)
+	return lower, lowerCaseParameters[lower]
+}
+
+func GetSupportedParameters() []string {
+	keys := make([]string, len(supportedParameterDescriptions))
+
+	i := 0
+	for k := range supportedParameterDescriptions {
+		keys[i] = k
+		i++
+	}
+
+	sort.Strings(keys)
+
+	return keys
+}
+
+func getLowerCaseParameters() map[string]bool {
+	parameters := GetSupportedParameters()
+	result := make(map[string]bool, len(parameters))
+	for _, v := range parameters {
+		result[strings.ToLower(v)] = true
+	}
+	return result
 }
