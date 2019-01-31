@@ -69,10 +69,14 @@ func (o *StorageListOptions) Run() (err error) {
 		var storeList []storage.Storage
 		if o.storageListAllFlag {
 			componentList, err := component.List(o.Client, o.Application)
-			odoutil.LogErrorAndExit(err, "could not get component list")
+			if err != nil {
+				return err
+			}
 			for _, component := range componentList {
 				mountedStorages, err := storage.ListMounted(o.Client, component.ComponentName, o.Application)
-				odoutil.LogErrorAndExit(err, "")
+				if err != nil {
+					return err
+				}
 				for _, storage := range mountedStorages {
 					mounted := getMachineReadableFormat(true, storage)
 					storeList = append(storeList, mounted)
@@ -82,7 +86,9 @@ func (o *StorageListOptions) Run() (err error) {
 		} else {
 			componentName := o.Component()
 			mountedStorages, err := storage.ListMounted(o.Client, componentName, o.Application)
-			odoutil.LogErrorAndExit(err, "")
+			if err != nil {
+				return err
+			}
 			for _, storage := range mountedStorages {
 				mounted := getMachineReadableFormat(true, storage)
 				storeList = append(storeList, mounted)
@@ -90,7 +96,9 @@ func (o *StorageListOptions) Run() (err error) {
 			}
 		}
 		unmountedStorages, err := storage.ListUnmounted(o.Client, o.Application)
-		odoutil.LogErrorAndExit(err, "")
+		if err != nil {
+			return err
+		}
 		for _, storage := range unmountedStorages {
 			unmounted := getMachineReadableFormat(false, storage)
 			storeList = append(storeList, unmounted)
@@ -104,7 +112,9 @@ func (o *StorageListOptions) Run() (err error) {
 			Items:    storeList,
 		}
 		out, err := json.Marshal(storageList)
-		odoutil.LogErrorAndExit(err, "")
+		if err != nil {
+			return err
+		}
 		fmt.Println(string(out))
 	} else {
 

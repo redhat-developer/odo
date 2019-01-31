@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
@@ -46,7 +47,9 @@ func (o *StorageMountOptions) Complete(name string, cmd *cobra.Command, args []s
 // Validate validates the StorageMountOptions based on completed values
 func (o *StorageMountOptions) Validate() (err error) {
 	exists, err := storage.Exists(o.Client, o.storageName, o.Application)
-	odoutil.LogErrorAndExit(err, "unable to check if the storage exists in the current application")
+	if err != nil {
+		return err
+	}
 	if !exists {
 		return fmt.Errorf("the storage %v does not exists in the current application '%v'", o.storageName, o.Application)
 	}
