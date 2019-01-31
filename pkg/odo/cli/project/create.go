@@ -35,6 +35,7 @@ type ProjectCreateOptions struct {
 	*genericclioptions.Context
 }
 
+// NewProjectCreateOptions creates a ProjectCreateOptions instance
 func NewProjectCreateOptions() *ProjectCreateOptions {
 	return &ProjectCreateOptions{}
 }

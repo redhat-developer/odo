@@ -39,6 +39,7 @@ type ProjectDeleteOptions struct {
 	*genericclioptions.Context
 }
 
+// NewProjectDeleteOptions creates a ProjectDeleteOptions instance
 func NewProjectDeleteOptions() *ProjectDeleteOptions {
 	return &ProjectDeleteOptions{}
 }
