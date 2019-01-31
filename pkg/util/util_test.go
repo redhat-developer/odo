@@ -3,11 +3,11 @@ package util
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"path/filepath"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"os/user"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"testing"
