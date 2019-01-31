@@ -9,26 +9,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// terminalCmd represents the terminal command
-var terminalCmd = &cobra.Command{
-	Use:   "terminal",
-	Short: "Add Odo terminal support to your development environment",
-	Long: `Add Odo terminal support to your development environment. 
+const terminalCommandName = "terminal"
+
+// NewCmdTerminal implements the utils terminal odo command
+func NewCmdTerminal(name, fullName string) *cobra.Command {
+	terminalCmd := &cobra.Command{
+		Use:   name,
+		Short: "Add Odo terminal support to your development environment",
+		Long: `Add Odo terminal support to your development environment. 
 
 This will append your PS1 environment variable with Odo component and application information.`,
-	Example: `  # Bash terminal PS1 support
+		Example: `  # Bash terminal PS1 support
   source <(odo utils terminal bash)
 
   # Zsh terminal PS1 support
   source <(odo utils terminal zsh)
 `,
-	RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-		err := TerminalGenerate(os.Stdout, cmd, args)
-		odoutil.LogErrorAndExit(err, "")
+			err := TerminalGenerate(os.Stdout, cmd, args)
+			odoutil.LogErrorAndExit(err, "")
 
-		return nil
-	},
+			return nil
+		},
+	}
+	return terminalCmd
 }
 
 // Generates the PS1 output for Odo terminal support (appends to current PS1 environment variable)
