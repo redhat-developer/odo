@@ -127,7 +127,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-json-e2e
+        - make test-json-format-output
 
     # test installation script on linux
     # - stage: test
