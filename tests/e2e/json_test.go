@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("odojsone2e", func() {
+var _ = Describe("odojsonoutput", func() {
 
 	Context("odo machine readable output", func() {
 		// // Basic creation
@@ -54,8 +54,9 @@ var _ = Describe("odojsone2e", func() {
 		// odo url list -o json
 		It("should be able to list url", func() {
 			actual := runCmd("odo url list -o json")
-			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"myurl-myapp-json-test.192.168.42.194.nip.io"}}]}
-			`
+			url := runCmd("oc get routes myurl-myapp -o jsonpath={.spec.host}")
+			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"%s"}}]}
+			`, url)
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 

@@ -72,7 +72,7 @@ func (o *URLListOptions) Run() (err error) {
 			appDef := url.UrlList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1beta1",
+					APIVersion: "odo.openshift.io/v1alpha1",
 				},
 				ListMeta: metav1.ListMeta{},
 				Items:    urlList,
@@ -126,7 +126,7 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 // getMachineReadableFormat gives machine readable URL definition
 func getMachineReadableFormat(u url.URL) url.Url {
 	return url.Url{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1beta1"},
+		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: u.Name},
 		Spec:       url.UrlSpec{URL: u.URL},
 	}
