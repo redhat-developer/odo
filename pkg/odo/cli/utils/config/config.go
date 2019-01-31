@@ -2,10 +2,8 @@ package config
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 const RecommendedCommandName = "config"
@@ -27,22 +25,6 @@ Timeout - Timeout (in seconds) for OpenShift server connection check`,
 			configurationViewCmd.Example,
 			configurationSetCmd.Example),
 		Aliases: []string{"configuration"},
-		// 'odo utils config' is the same as 'odo utils config --help'
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) >= 1 && args[0] != "view" && args[0] != "set" {
-				log.Errorf(`Unknown command, use "set" or "view"`)
-				os.Exit(1)
-			}
-			return nil
-		}, Run: func(cmd *cobra.Command, args []string) {
-			if len(args) > 0 && args[0] == "set" {
-				configurationSetCmd.Run(cmd, args)
-			} else if len(args) > 0 && args[0] == "view" {
-				configurationViewCmd.Run(cmd, args)
-			} else {
-				cmd.Help()
-			}
-		},
 	}
 
 	configurationCmd.AddCommand(configurationViewCmd, configurationSetCmd)
