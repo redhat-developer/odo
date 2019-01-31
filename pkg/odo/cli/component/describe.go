@@ -1,8 +1,9 @@
 package component
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"encoding/json"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"

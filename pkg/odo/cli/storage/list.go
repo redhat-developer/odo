@@ -1,25 +1,26 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
+	"os"
+
+	"encoding/json"
+	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"os"
-	"text/tabwriter"
-
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/storage"
-	"github.com/spf13/cobra"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+
+	"github.com/spf13/cobra"
 )
 
 const listRecommendedCommandName = "list"

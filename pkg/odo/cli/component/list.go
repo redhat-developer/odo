@@ -1,9 +1,10 @@
 package component
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+
+	"encoding/json"
 	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -17,6 +18,7 @@ import (
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	"github.com/pkg/errors"
+
 	"github.com/spf13/cobra"
 )
 

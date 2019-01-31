@@ -1,28 +1,27 @@
 package application
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+
+	"encoding/json"
 	"text/tabwriter"
-
-	"github.com/redhat-developer/odo/pkg/odo/util/validation"
-	"github.com/redhat-developer/odo/pkg/service"
-
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"github.com/redhat-developer/odo/pkg/service"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
