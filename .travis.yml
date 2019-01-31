@@ -123,7 +123,7 @@ jobs:
       stage: test
       name: "json output tests"
       script:
-        - ./scripts/oc-cluster.sh service-catalog
+        - ./scripts/oc-cluster.sh 
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
