@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"github.com/redhat-developer/odo/pkg/plugin"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"os"
@@ -12,7 +13,8 @@ import (
 func HandleError(err error) {
 	if err != nil {
 		if err == terminal.InterruptErr {
-			os.Exit(-1)
+			plugin.CleanPlugins()
+			os.Exit(1)
 		} else {
 			glog.V(4).Infof("Encountered an error processing prompt: %v", err)
 		}
