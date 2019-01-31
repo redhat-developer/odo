@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"strings"
 
@@ -69,10 +70,16 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 	var class scv1beta1.ClusterServiceClass
 	if o.interactive {
-		classesByCategory, _ := client.GetServiceClassesByCategory()
+		classesByCategory, err := client.GetServiceClassesByCategory()
+		if err != nil {
+			return fmt.Errorf("unable to retrieve service classes: %v", err)
+		}
 		class, o.serviceType = ui.SelectClassInteractively(classesByCategory)
 
-		plans, _ := client.GetMatchingPlans(class)
+		plans, err := client.GetMatchingPlans(class)
+		if err != nil {
+			return fmt.Errorf("couldn't retrieve plans for class %s: %v", class.GetExternalName(), err)
+		}
 
 		var svcPlan scv1beta1.ClusterServicePlan
 		// if there is only one available plan, we select it
@@ -130,7 +137,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 	// make sure the service type exists
 	classPtr, err := o.Client.GetClusterServiceClass(o.serviceType)
 	if err != nil {
-		return fmt.Errorf("unable to create service because Service Catalog is not enabled in your cluster:\n%v", err)
+		return errors.Wrap(err, "unable to create service because Service Catalog is not enabled in your cluster")
 	}
 	if classPtr == nil {
 		return fmt.Errorf("service %v doesn't exist\nRun 'odo catalog list services' to see a list of supported services.\n", o.serviceType)

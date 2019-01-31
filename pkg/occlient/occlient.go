@@ -2234,7 +2234,7 @@ func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta
 	categories = make(map[string][]scv1beta1.ClusterServiceClass)
 	classes, err := c.GetClusterServiceClasses()
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get cluster service classes")
+		return nil, err
 	}
 
 	// TODO: Should we replicate the classification performed in
