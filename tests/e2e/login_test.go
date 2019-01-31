@@ -49,7 +49,7 @@ var _ = Describe("odoLoginE2e", func() {
 				for _, p := range projects {
 					if len(p) > 0 {
 						runCmd(fmt.Sprintf("%s %s", baseOdoProjectDelete, p))
-						time.Sleep(240)
+						time.Sleep(100)
 					}
 				}
 				runCmd(backToCurrentUserCommand)
