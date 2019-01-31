@@ -7,11 +7,11 @@ repository_shorthand: redhat-developer/odo
 
 home_url: http://openshiftdo.org/
 
-author_name: Copyright ©2018 Red Hat, Inc.
+author_name: Copyright ©2019 Red Hat, Inc.
 author_url: https://github.com/redhat-developer/odo/graphs/contributors
 
 license: Odo (OpenShift Do) is an Apache 2.0 project.
-copyright: Copyright ©2018 Red Hat, Inc.
+copyright: Copyright ©2019 Red Hat, Inc.
 
 markdown: kramdown
 
