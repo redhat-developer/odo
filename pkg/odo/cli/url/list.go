@@ -1,6 +1,7 @@
 package url
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -10,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -56,7 +58,7 @@ func (o *URLListOptions) Run() (err error) {
 
 	if len(urls) == 0 {
 		return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
-	} else{
+	} else {
 		if o.outputFlag == "json" {
 			var urlList []url.Url
 			for _, u := range urls {
@@ -72,25 +74,26 @@ func (o *URLListOptions) Run() (err error) {
 			}
 
 			out, err := json.Marshal(appDef)
-			odoutil.LogErrorAndExit(err, "")
+			if err != nil {
+				return err
+			}
 			fmt.Println(string(out))
 
-		}else{
+		} else {
 			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
 
-	tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
-	//create headers
-	fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
+			//create headers
+			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
-	for _, u := range urls {
-		fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
-	}
-	tabWriterURL.Flush()
+			for _, u := range urls {
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
+			}
+			tabWriterURL.Flush()
 
 		}
 	}
-	
 
 	return
 }
