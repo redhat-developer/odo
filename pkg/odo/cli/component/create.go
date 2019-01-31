@@ -1,10 +1,12 @@
 package component
 
 import (
-	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"fmt"
+	"io"
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
@@ -22,9 +25,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
-var (
+// CreateOptions encapsulates create options
+type CreateOptions struct {
+	occlient.CreateArgs
+	*genericclioptions.Context
 	componentBinary  string
 	componentGit     string
 	componentGitRef  string
@@ -38,291 +45,305 @@ var (
 	cpuMin           string
 	cpu              string
 	wait             bool
-)
+}
 
-var componentCreateCmd = &cobra.Command{
-	Use:   "create <component_type> [component_name] [flags]",
-	Short: "Create a new component",
-	Long: `Create a new component to deploy on OpenShift.
+// RecommendedCreateCommandName is the recommended watch command name
+const RecommendedCreateCommandName = "create"
+
+var createLongDesc = ktemplates.LongDesc(`Create a new component to deploy on OpenShift.
 
 If a component name is not provided, it'll be auto-generated.
 
 By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest wil be chosen as the version.
 
-A full list of component types that can be deployed is available using: 'odo catalog list'`,
-	Example: `  # Create new Node.js component with the source in current directory.
-  odo create nodejs
+A full list of component types that can be deployed is available using: 'odo catalog list'`)
 
-  # A specific image version may also be specified
-  odo create nodejs:latest
+var createExample = ktemplates.Examples(`  # Create new Node.js component with the source in current directory.
+%[1]s nodejs
 
-  # Passing memory limits
-  odo create nodejs:latest --memory 150Mi
-  odo create nodejs:latest --min-memory 150Mi --max-memory 300 Mi
+# A specific image version may also be specified
+%[1]s nodejs:latest
 
-  # Passing cpu limits
-  odo create nodejs:latest --cpu 2
-  odo create nodejs:latest --min-cpu 0.25 --max-cpu 2
-  odo create nodejs:latest --min-cpu 200m --max-cpu 2
+# Passing memory limits
+%[1]s nodejs:latest --memory 150Mi
+%[1]s nodejs:latest --min-memory 150Mi --max-memory 300 Mi
 
-  # Create new Node.js component named 'frontend' with the source in './frontend' directory
-  odo create nodejs frontend --local ./frontend
+# Passing cpu limits
+%[1]s nodejs:latest --cpu 2
+%[1]s nodejs:latest --min-cpu 0.25 --max-cpu 2
+%[1]s nodejs:latest --min-cpu 200m --max-cpu 2
 
-  # Create new Node.js component with source from remote git repository
-  odo create nodejs --git https://github.com/openshift/nodejs-ex.git
+# Create new Node.js component named 'frontend' with the source in './frontend' directory
+%[1]s nodejs frontend --local ./frontend
 
-  # Create new Node.js git component while specifying a branch, tag or commit ref
-  odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
+# Create new Node.js component with source from remote git repository
+%[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
 
-  # Create new Node.js git component while specifying a tag
-  odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
- 
+# Create new Node.js git component while specifying a branch, tag or commit ref
+%[1]s nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
 
-  # Create a new Node.js component of version 6 from the 'openshift' namespace
-  odo create openshift/nodejs:6 --local /nodejs-ex
+# Create new Node.js git component while specifying a tag
+%[1]s nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
 
-  # Create new Wildfly component with binary named sample.war in './downloads' directory
-  odo create wildfly wildly --binary ./downloads/sample.war
 
-  # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
-  odo create nodejs --port 8080,8100/tcp,9100/udp
+# Create a new Node.js component of version 6 from the 'openshift' namespace
+%[1]s openshift/nodejs:6 --local /nodejs-ex
 
-  # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
-  odo create nodejs --env key=value,key1=value1
+# Create new Wildfly component with binary named sample.war in './downloads' directory
+%[1]s wildfly wildly --binary ./downloads/sample.war
 
-  # For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
-  odo create python --git https://github.com/openshift/django-ex.git
-	`,
-	Args: cobra.RangeArgs(1, 2),
-	Run: func(cmd *cobra.Command, args []string) {
+# Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
+%[1]s nodejs --port 8080,8100/tcp,9100/udp
 
-		stdout := color.Output
-		glog.V(4).Infof("Component create called with args: %#v, flags: binary=%s, git=%s, local=%s", strings.Join(args, " "), componentBinary, componentGit, componentLocal)
+# Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
+%[1]s nodejs --env key=value,key1=value1
 
-		context := genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-		client := context.Client
-		projectName := context.Project
-		applicationName := context.Application
+# For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
+%[1]s python --git https://github.com/openshift/django-ex.git
+  `)
 
-		checkFlag := 0
-		componentPath := ""
-		var componentPathType occlient.CreateType
+// NewCreateOptions returns new instance of CreateOptions
+func NewCreateOptions() *CreateOptions {
+	return &CreateOptions{}
+}
 
-		if len(componentBinary) != 0 {
-			componentPath = componentBinary
-			path, err := util.GetAbsPath(componentPath)
-			odoutil.LogErrorAndExit(err, "Failed to resolve %s to absolute path", componentPath)
-			componentPath = path
-			componentPathType = occlient.BINARY
-			checkFlag++
+func (co *CreateOptions) setCmpSourceAttrs() (err error) {
+	componentCnt := 0
+
+	if len(co.componentBinary) != 0 {
+		if co.CreateArgs.SourcePath, err = util.GetAbsPath(co.componentBinary); err != nil {
+			return err
 		}
-		if len(componentGit) != 0 {
-			componentPath = componentGit
-			componentPathType = occlient.GIT
-			checkFlag++
+		co.CreateArgs.SourceType = occlient.BINARY
+		componentCnt++
+	}
+	if len(co.componentGit) != 0 {
+		co.CreateArgs.SourcePath = co.componentGit
+		co.CreateArgs.SourceType = occlient.GIT
+		componentCnt++
+	}
+	if len(co.componentLocal) != 0 {
+		if co.CreateArgs.SourcePath, err = util.GetAbsPath(co.componentLocal); err != nil {
+			return err
 		}
-		if len(componentLocal) != 0 {
-			componentPath = componentLocal
-			path, err := util.GetAbsPath(componentPath)
-			odoutil.LogErrorAndExit(err, "Failed to resolve %s to absolute path", componentPath)
-			componentPath = path
-			componentPathType = occlient.LOCAL
-			checkFlag++
-		}
+		co.CreateArgs.SourceType = occlient.LOCAL
+		componentCnt++
+	}
 
-		if checkFlag > 1 {
-			log.Error("The source can be either --binary or --local or --git")
-			os.Exit(1)
-		}
+	if componentCnt > 1 {
+		return fmt.Errorf("The source can be either --binary or --local or --git")
+	}
 
-		// if --git is not specified but --ref is still given then error has to be thrown
-		if len(componentGit) == 0 && len(componentGitRef) != 0 {
-			log.Errorf("The --ref flag is only valid for --git flag")
-			os.Exit(1)
-		}
+	if len(co.componentGitRef) != 0 {
+		co.CreateArgs.SourceRef = co.componentGitRef
+	}
 
-		componentImageName, componentType, _, componentVersion := util.ParseCreateCmdArgs(args)
+	if len(co.componentGit) == 0 && len(co.componentGitRef) != 0 {
+		return fmt.Errorf("The --ref flag is only valid for --git flag")
+	}
 
-		// Fetch list of existing components in-order to attempt generation of unique component name
-		componentList, err := component.List(client, applicationName)
-		odoutil.LogErrorAndExit(err, "")
+	return
+}
 
-		// Generate unique name for component
-		componentName, err := component.GetDefaultComponentName(
-			componentPath,
-			componentPathType,
-			componentType,
-			componentList,
-		)
-		odoutil.LogErrorAndExit(err, "")
+func (co *CreateOptions) setCmpName(args []string) (err error) {
+	componentImageName, componentType, _, _ := util.ParseComponentImageName(args[0])
+	co.CreateArgs.ImageName = componentImageName
 
-		// Check to see if the catalog type actually exists
-		exists, err := catalog.Exists(client, componentType)
-		odoutil.LogErrorAndExit(err, "")
-		if !exists {
-			log.Errorf("Invalid component type: %v", componentType)
-			log.Info("Run 'odo catalog list components' for a list of supported component types")
-			os.Exit(1)
-		}
-
-		// Check to see if that particular version exists
-		versionExists, err := catalog.VersionExists(client, componentType, componentVersion)
-		odoutil.LogErrorAndExit(err, "")
-		if !versionExists {
-			log.Errorf("Invalid component version: %v", componentVersion)
-			log.Info("Run 'odo catalog list components' to see a list of supported component type versions")
-			os.Exit(1)
-		}
-
+	// Fetch list of existing components in-order to attempt generation of unique component name
+	if componentList, err := component.List(co.Context.Client, co.Context.Application); err == nil {
 		// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
 		if len(args) == 2 {
-			componentName = args[1]
-		}
-
-		// Validate component name
-		err = validation.ValidateName(componentName)
-		odoutil.LogErrorAndExit(err, "")
-		exists, err = component.Exists(client, componentName, applicationName)
-		odoutil.LogErrorAndExit(err, "")
-		if exists {
-			log.Errorf("component with the name %s already exists in the current application", componentName)
-			os.Exit(1)
-		}
-
-		log.Successf("Initializing '%s' component", componentName)
-		ensureAndLogProperResourceUsage(memory, memoryMin, memoryMax, "memory")
-
-		ensureAndLogProperResourceUsage(cpu, cpuMin, cpuMax, "cpu")
-
-		resourceQuantity := []util.ResourceRequirementInfo{}
-		memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, memoryMin, memoryMax, memory)
-		if memoryQuantity != nil {
-			resourceQuantity = append(resourceQuantity, *memoryQuantity)
-		}
-		cpuQuantity := util.FetchResourceQuantity(corev1.ResourceCPU, cpuMin, cpuMax, cpu)
-		if cpuQuantity != nil {
-			resourceQuantity = append(resourceQuantity, *cpuQuantity)
-		}
-
-		// Deploy the component with Git
-		if len(componentGit) != 0 {
-
-			// Use Git
-			err := component.CreateFromGit(
-				client,
-				occlient.CreateArgs{
-					Name:       componentName,
-					SourcePath: componentGit,
-					SourceRef:  componentGitRef,
-					SourceType: occlient.GIT,
-
-					ImageName:       componentImageName,
-					EnvVars:         componentEnvVars,
-					Ports:           componentPorts,
-					Resources:       resourceQuantity,
-					ApplicationName: applicationName,
-					Wait:            wait,
-				},
-			)
-			odoutil.LogErrorAndExit(err, "")
-
-			// Git is the only one using BuildConfig since we need to retrieve the git
-			err = component.Build(client, componentName, applicationName, wait, stdout)
-			odoutil.LogErrorAndExit(err, "")
-
-		} else if len(componentLocal) != 0 {
-			fileInfo, err := os.Stat(componentPath)
-			odoutil.LogErrorAndExit(err, "")
-			if !fileInfo.IsDir() {
-				log.Errorf("Please provide a path to the directory")
-				os.Exit(1)
-			}
-
-			// Create
-			err = component.CreateFromPath(
-				client,
-				occlient.CreateArgs{
-					Name:            componentName,
-					SourcePath:      componentPath,
-					SourceType:      occlient.LOCAL,
-					ImageName:       componentImageName,
-					EnvVars:         componentEnvVars,
-					Ports:           componentPorts,
-					Resources:       resourceQuantity,
-					ApplicationName: applicationName,
-					Wait:            wait,
-				},
-			)
-			odoutil.LogErrorAndExit(err, "")
-
-		} else if len(componentBinary) != 0 {
-			// Deploy the component with a binary
-
-			// Create
-			err = component.CreateFromPath(
-				client,
-				occlient.CreateArgs{
-					Name:            componentName,
-					SourcePath:      componentPath,
-					SourceType:      occlient.BINARY,
-					ImageName:       componentImageName,
-					EnvVars:         componentEnvVars,
-					Ports:           componentPorts,
-					Resources:       resourceQuantity,
-					ApplicationName: applicationName,
-					Wait:            wait,
-				},
-			)
-			odoutil.LogErrorAndExit(err, "")
-
+			co.CreateArgs.Name = args[1]
 		} else {
-			// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
-			dir, err := util.GetAbsPath("./")
-			odoutil.LogErrorAndExit(err, "")
-
-			// Create
-			err = component.CreateFromPath(
-				client,
-				occlient.CreateArgs{
-					Name:            componentName,
-					SourcePath:      dir,
-					SourceType:      occlient.LOCAL,
-					ImageName:       componentImageName,
-					EnvVars:         componentEnvVars,
-					Ports:           componentPorts,
-					Resources:       resourceQuantity,
-					ApplicationName: applicationName,
-					Wait:            wait,
-				},
-			)
-			odoutil.LogErrorAndExit(err, "")
+			if componentName, err := component.GetDefaultComponentName(
+				co.CreateArgs.SourcePath,
+				co.CreateArgs.SourceType,
+				componentType,
+				componentList,
+			); err == nil {
+				co.CreateArgs.Name = componentName
+			} else {
+				return err
+			}
 		}
+	} else {
+		return err
+	}
+	return
+}
 
-		ports, err := component.GetComponentPorts(client, componentName, applicationName)
-		odoutil.LogErrorAndExit(err, "")
+func (co *CreateOptions) setResourceLimits() {
+	ensureAndLogProperResourceUsage(co.memory, co.memoryMin, co.memoryMax, "memory")
 
-		if len(ports) > 1 {
-			log.Successf("Component '%s' was created and ports %s were opened", componentName, strings.Join(ports, ","))
-		} else if len(ports) == 1 {
-			log.Successf("Component '%s' was created and port %s was opened", componentName, ports[0])
+	ensureAndLogProperResourceUsage(co.cpu, co.cpuMin, co.cpuMax, "cpu")
+
+	resourceQuantity := []util.ResourceRequirementInfo{}
+	memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, co.memoryMin, co.memoryMax, co.memory)
+	if memoryQuantity != nil {
+		resourceQuantity = append(resourceQuantity, *memoryQuantity)
+	}
+	cpuQuantity := util.FetchResourceQuantity(corev1.ResourceCPU, co.cpuMin, co.cpuMax, co.cpu)
+	if cpuQuantity != nil {
+		resourceQuantity = append(resourceQuantity, *cpuQuantity)
+	}
+	co.CreateArgs.Resources = resourceQuantity
+}
+
+// Complete completes create args
+func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	co.CreateArgs.ApplicationName = co.Context.Application
+
+	co.CreateArgs.Wait = co.wait
+
+	err = co.setCmpSourceAttrs()
+	if err != nil {
+		return err
+	}
+
+	err = co.setCmpName(args)
+	if err != nil {
+		return err
+	}
+
+	co.setResourceLimits()
+
+	co.CreateArgs.Ports = co.componentPorts
+	co.CreateArgs.EnvVars = co.componentEnvVars
+
+	return
+}
+
+// Validate validates the create parameters
+func (co *CreateOptions) Validate() (err error) {
+	_, componentType, _, componentVersion := util.ParseComponentImageName(co.CreateArgs.ImageName)
+	// Check to see if the catalog type actually exists
+	exists, err := catalog.Exists(co.Context.Client, componentType)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create component of type %s", componentType)
+	}
+	if !exists {
+		log.Info("Run 'odo catalog list components' for a list of supported component types")
+		return fmt.Errorf("Failed to find component of type %s", componentType)
+	}
+
+	// Check to see if that particular version exists
+	versionExists, err := catalog.VersionExists(co.Context.Client, componentType, componentVersion)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create component of type %s of version %s", componentType, componentVersion)
+	}
+	if !versionExists {
+		log.Info("Run 'odo catalog list components' to see a list of supported component type versions")
+		return fmt.Errorf("Invalid component version %s:%s", componentType, componentVersion)
+	}
+
+	// Validate component name
+	err = validation.ValidateName(co.CreateArgs.Name)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create component of name %s", co.CreateArgs.Name)
+	}
+
+	exists, err = component.Exists(co.Context.Client, co.CreateArgs.Name, co.Context.Application)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", co.CreateArgs.Name, co.Context.Application)
+	}
+	if exists {
+		return fmt.Errorf("component with name %s already exists in application %s", co.CreateArgs.Name, co.Context.Application)
+	}
+
+	return
+}
+
+// createComponent creates the component
+func (co *CreateOptions) createComponent(stdout io.Writer) (err error) {
+	log.Successf("Initializing '%s' component", co.CreateArgs.Name)
+	switch co.CreateArgs.SourceType {
+	case occlient.GIT:
+		// Use Git
+		if err = component.CreateFromGit(
+			co.Context.Client,
+			co.CreateArgs,
+		); err != nil {
+			return errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
 		}
-
-		// after component is successfully created, set is as active
-		err = application.SetCurrent(client, applicationName)
-		odoutil.LogErrorAndExit(err, "")
-		err = component.SetCurrent(componentName, applicationName, projectName)
-		odoutil.LogErrorAndExit(err, "")
-		log.Successf("Component '%s' is now set as active component", componentName)
-
-		if len(componentGit) == 0 {
-			log.Info("To push source code to the component run 'odo push'")
+		// Git is the only one using BuildConfig since we need to retrieve the git
+		if err = component.Build(co.Context.Client, co.CreateArgs.Name, co.CreateArgs.ApplicationName, co.wait, stdout); err != nil {
+			return errors.Wrapf(err, "failed to build component with args %+v", co)
 		}
-
-		if !wait {
-			log.Info("This may take few moments to be ready")
+	case occlient.LOCAL:
+		fileInfo, err := os.Stat(co.CreateArgs.SourcePath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get info of path %+v of component %+v", co.CreateArgs.SourcePath, co.CreateArgs)
 		}
-	},
+		if !fileInfo.IsDir() {
+			return fmt.Errorf("component creation with args %+v as path needs to be a directory", co.CreateArgs)
+		}
+		// Create
+		if err = component.CreateFromPath(
+			co.Context.Client,
+			co.CreateArgs,
+		); err != nil {
+			return errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
+		}
+	case occlient.BINARY:
+		if err = component.CreateFromPath(co.Context.Client, co.CreateArgs); err != nil {
+			return errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
+		}
+	default:
+		// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
+		co.CreateArgs.SourceType = occlient.LOCAL
+		dir, err := util.GetAbsPath("./")
+		if err != nil {
+			return errors.Wrapf(err, "cannot create component with current path as local source path since no component source details are passed")
+		}
+		co.CreateArgs.SourcePath = dir
+		if err = component.CreateFromPath(co.Context.Client, co.CreateArgs); err != nil {
+			return errors.Wrapf(err, "")
+		}
+	}
+	return
+}
+
+// Run has the logic to perform the required actions as part of command
+func (co *CreateOptions) Run() (err error) {
+	stdout := color.Output
+	glog.V(4).Infof("Component create called with args: %#v", co.CreateArgs)
+
+	err = co.createComponent(stdout)
+	if err != nil {
+		return err
+	}
+
+	ports, err := component.GetComponentPorts(co.Context.Client, co.CreateArgs.Name, co.Context.Application)
+	if err != nil {
+		return errors.Wrapf(err, "error getting ports for component with details %+v", co.CreateArgs)
+	}
+
+	if len(ports) > 1 {
+		log.Successf("Component '%s' was created and ports %s were opened", co.CreateArgs.Name, strings.Join(ports, ","))
+	} else if len(ports) == 1 {
+		log.Successf("Component '%s' was created and port %s was opened", co.CreateArgs.Name, ports[0])
+	}
+
+	// after component is successfully created, set is as active
+	if err = application.SetCurrent(co.Context.Client, co.Context.Application); err != nil {
+		return errors.Wrapf(err, "failed to set %s application as current", co.Context.Application)
+	}
+	if err = component.SetCurrent(co.CreateArgs.Name, co.Context.Application, co.Context.Project); err != nil {
+		return errors.Wrapf(err, "failed to set %s as current component", co.CreateArgs.Name)
+	}
+	log.Successf("Component '%s' is now set as active component", co.CreateArgs.Name)
+
+	if len(co.componentGit) == 0 {
+		log.Info("To push source code to the component run 'odo push'")
+	}
+
+	if !co.wait {
+		log.Info("This may take few moments to be ready")
+	}
+
+	return
 }
 
 // The general cpu/memory is used as a fallback when it's set and both min-cpu/memory max-cpu/memory are not set
@@ -341,20 +362,33 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 }
 
 // NewCmdCreate implements the create odo command
-func NewCmdCreate() *cobra.Command {
-	componentCreateCmd.Flags().StringVarP(&componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
-	componentCreateCmd.Flags().StringVarP(&componentGit, "git", "g", "", "Use a git repository as the source file for the component")
-	componentCreateCmd.Flags().StringVarP(&componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
-	componentCreateCmd.Flags().StringVarP(&componentLocal, "local", "l", "", "Use local directory as a source file for the component")
-	componentCreateCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi")
-	componentCreateCmd.Flags().StringVar(&memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
-	componentCreateCmd.Flags().StringVar(&memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component. ex. 100Mi")
-	componentCreateCmd.Flags().StringVar(&cpu, "cpu", "", "Amount of cpu to be allocated to the component. ex. 100m or 0.1")
-	componentCreateCmd.Flags().StringVar(&cpuMin, "min-cpu", "", "Limit minimum amount of cpu to be allocated to the component. ex. 100m")
-	componentCreateCmd.Flags().StringVar(&cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
-	componentCreateCmd.Flags().StringSliceVarP(&componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
-	componentCreateCmd.Flags().StringSliceVar(&componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
-	componentCreateCmd.Flags().BoolVarP(&wait, "wait", "w", false, "Wait until the component is ready")
+func NewCmdCreate(name, fullName string) *cobra.Command {
+	co := NewCreateOptions()
+	var componentCreateCmd = &cobra.Command{
+		Use:     fmt.Sprintf("%s <component_type> [component_name] [flags]", name),
+		Short:   "Create a new component",
+		Long:    createLongDesc,
+		Example: fmt.Sprintf(createExample, fullName),
+		Args:    cobra.RangeArgs(1, 2),
+		Run: func(cmd *cobra.Command, args []string) {
+			odoutil.LogErrorAndExit(co.Complete(name, cmd, args), "")
+			odoutil.LogErrorAndExit(co.Validate(), "")
+			odoutil.LogErrorAndExit(co.Run(), "")
+		},
+	}
+	componentCreateCmd.Flags().StringVarP(&co.componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
+	componentCreateCmd.Flags().StringVarP(&co.componentGit, "git", "g", "", "Use a git repository as the source file for the component")
+	componentCreateCmd.Flags().StringVarP(&co.componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
+	componentCreateCmd.Flags().StringVarP(&co.componentLocal, "local", "l", "", "Use local directory as a source file for the component")
+	componentCreateCmd.Flags().StringVar(&co.memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&co.memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&co.memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&co.cpu, "cpu", "", "Amount of cpu to be allocated to the component. ex. 100m or 0.1")
+	componentCreateCmd.Flags().StringVar(&co.cpuMin, "min-cpu", "", "Limit minimum amount of cpu to be allocated to the component. ex. 100m")
+	componentCreateCmd.Flags().StringVar(&co.cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
+	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
+	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
+	componentCreateCmd.Flags().BoolVarP(&co.wait, "wait", "w", false, "Wait until the component is ready")
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCreateCmd.Annotations = map[string]string{"command": "component"}
@@ -368,17 +402,6 @@ func NewCmdCreate() *cobra.Command {
 	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
-
-	completion.RegisterCommandHandler(updateCmd, completion.ComponentNameCompletionHandler)
-	completion.RegisterCommandFlagHandler(updateCmd, "local", completion.FileCompletionHandler)
-	completion.RegisterCommandFlagHandler(updateCmd, "binary", completion.FileCompletionHandler)
-
-	completion.RegisterCommandHandler(componentSetCmd, completion.ComponentNameCompletionHandler)
-	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
-	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
-	completion.RegisterCommandHandler(watchCmd, completion.ComponentNameCompletionHandler)
-	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
-	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)
 
 	return componentCreateCmd
 }

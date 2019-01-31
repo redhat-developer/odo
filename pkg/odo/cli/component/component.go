@@ -3,101 +3,63 @@ package component
 import (
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/application"
-	"github.com/redhat-developer/odo/pkg/odo/cli/project"
-
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
-	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 
-var componentShortFlag bool
+// RecommendedComponentCommandName is the recommended component command name
+const RecommendedComponentCommandName = "component"
 
-// componentCmd represents the component command
-var componentCmd = &cobra.Command{
-	Use:   "component",
-	Short: "Components of application.",
-	Example: fmt.Sprintf("%s\n%s",
-		componentGetCmd.Example,
-		componentSetCmd.Example),
-	// 'odo component' is the same as 'odo component get'
-	// 'odo component <component_name>' is the same as 'odo component set <component_name>'
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 && args[0] != "get" && args[0] != "set" {
-			componentSetCmd.Run(cmd, args)
-		} else {
-			componentGetCmd.Run(cmd, args)
-		}
-	},
+// ComponentOptions encapsulates basic component options
+type ComponentOptions struct {
+	componentName string
+	*genericclioptions.Context
 }
 
-var componentGetCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Get currently active component",
-	Long:  "Get currently active component.",
-	Example: `  # Get the currently active component
-  odo component get
-	`,
-	Args: cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		glog.V(4).Infof("component get called")
-		context := genericclioptions.NewContext(cmd)
-		component := context.ComponentAllowingEmpty(true)
+// Complete completes component options
+func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	co.Context = genericclioptions.NewContext(cmd)
 
-		if componentShortFlag {
-			fmt.Print(component)
-		} else {
-			if component == "" {
-				log.Error("No component is set as current")
-				return
-			}
-			log.Infof("The current component is: %v", component)
-		}
-	},
-}
-
-var componentSetCmd = &cobra.Command{
-	Use:   "set",
-	Short: "Set active component.",
-	Long:  "Set component as active.",
-	Example: `  # Set component named 'frontend' as active
-  odo component set frontend
-  `,
-	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		context := genericclioptions.NewContext(cmd)
-		projectName := context.Project
-		applicationName := context.Application
-		componentName := context.Component(args[0])
-
-		err := component.SetCurrent(componentName, applicationName, projectName)
-		odoutil.LogErrorAndExit(err, "")
-		log.Infof("Switched to component: %v", componentName)
-	},
+	// If no arguments have been passed, get the current component
+	// else, use the first argument and check to see if it exists
+	if len(args) == 0 {
+		co.componentName = co.Context.Component()
+	} else {
+		co.componentName = co.Context.Component(args[0])
+	}
+	return
 }
 
 // NewCmdComponent implements the component odo command
-func NewCmdComponent() *cobra.Command {
+func NewCmdComponent(name, fullName string) *cobra.Command {
 
-	componentGetCmd.Flags().BoolVarP(&componentShortFlag, "short", "q", false, "If true, display only the component name")
+	componentGetCmd := NewCmdGet(RecommendedGetCommandName, odoutil.GetFullName(fullName, RecommendedGetCommandName))
+	componentSetCmd := NewCmdSet(RecommendedSetCommandName, odoutil.GetFullName(fullName, RecommendedSetCommandName))
+
+	// componentCmd represents the component command
+	var componentCmd = &cobra.Command{
+		Use:     name,
+		Short:   "Components of application.",
+		Example: fmt.Sprintf("%s\n%s", componentGetCmd.Example, componentSetCmd.Example),
+		// 'odo component' is the same as 'odo component get'
+		// 'odo component <component_name>' is the same as 'odo component set <component_name>'
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) > 0 && args[0] != "get" && args[0] != "set" {
+				componentSetCmd.Run(cmd, args)
+			} else {
+				componentGetCmd.Run(cmd, args)
+			}
+		},
+	}
+
+	componentCmd.AddCommand(componentGetCmd)
 
 	// add flags from 'get' to component command
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
-
-	componentCmd.AddCommand(componentGetCmd)
 	componentCmd.AddCommand(componentSetCmd)
-
-	//Adding `--project` flag
-	project.AddProjectFlag(componentGetCmd)
-	project.AddProjectFlag(componentSetCmd)
-	//Adding `--application` flag
-	application.AddApplicationFlag(componentGetCmd)
-	application.AddApplicationFlag(componentSetCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}
