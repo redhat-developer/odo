@@ -265,8 +265,24 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	if err != nil {
 		return err
 	}
-
 	s.End(true)
+
+	if params.Wait {
+		// if wait flag is present then extract the podselector
+		// use the podselector for calling WaitAndGetPod
+		selectorLabels, err := util.NamespaceOpenShiftObject(labels[componentlabels.ComponentLabel], labels["app"])
+		if err != nil {
+			return err
+		}
+
+		podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
+		_, err = client.WaitAndGetPod(podSelector)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	return nil
 }
 
@@ -538,6 +554,7 @@ func Build(client *occlient.Client, componentName string, applicationName string
 	if err != nil {
 		return errors.Wrapf(err, "unable to rebuild %s", componentName)
 	}
+	s.End(true)
 
 	// Retrieve the Build Log and write to buffer if debug is disabled, else we we output to stdout / debug.
 
@@ -546,17 +563,20 @@ func Build(client *occlient.Client, componentName string, applicationName string
 		stdout = bufio.NewWriter(&b)
 	}
 
-	if err := client.FollowBuildLog(buildName, stdout); err != nil {
-		return errors.Wrapf(err, "unable to follow logs for %s", buildName)
-	}
-
 	if wait {
+
+		s := log.Spinnerf("Waiting for build to finish")
+		defer s.End(false)
+		if err := client.FollowBuildLog(buildName, stdout); err != nil {
+			return errors.Wrapf(err, "unable to follow logs for %s", buildName)
+		}
+
 		if err := client.WaitForBuildToFinish(buildName); err != nil {
 			return errors.Wrapf(err, "unable to build %s, error: %s", buildName, b.String())
 		}
+		s.End(true)
 	}
 
-	s.End(true)
 	return nil
 }
 
