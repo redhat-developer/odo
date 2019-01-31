@@ -28,6 +28,17 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 	}
 }
 
+// CheckOutputFlag validates the -o flag
+func CheckOutputFlag(outputFlag string) error {
+	switch outputFlag {
+	case "", "json":
+		return nil
+	default:
+		return fmt.Errorf("Please input valid output format. available format: json")
+	}
+
+}
+
 var CmdUsageTemplate = `Usage:{{if .Runnable}}
   {{if .HasAvailableFlags}}{{appendIfNotPresent .UseLine "[flags]"}}{{else}}{{.UseLine}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
   {{ .CommandPath}} [command]{{end}}{{if gt .Aliases 0}}
