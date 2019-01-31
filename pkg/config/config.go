@@ -400,14 +400,17 @@ func (c *ConfigInfo) DeleteProject(projectName string) error {
 }
 
 var (
+	// records information on supported parameters
 	supportedParameterDescriptions = map[string]string{
 		"UpdateNotification": "Controls if an update notification is shown or not (true or false)",
 		"NamePrefix":         "Default prefix is the current directory name. Use this value to set a default name prefix",
 		"Timeout":            "Timeout (in seconds) for OpenShift server connection check",
 	}
+	// set-like map to quickly check if a parameter is supported
 	lowerCaseParameters = getLowerCaseParameters()
 )
 
+// FormatSupportedParameters outputs supported parameters and their description
 func FormatSupportedParameters() (result string) {
 	for k, v := range supportedParameterDescriptions {
 		result = result + "\n" + k + " - " + v
@@ -415,11 +418,13 @@ func FormatSupportedParameters() (result string) {
 	return
 }
 
+// asSupportedParameter checks that the given parameter is supported and returns a lower case version of it if it is
 func asSupportedParameter(param string) (string, bool) {
 	lower := strings.ToLower(param)
 	return lower, lowerCaseParameters[lower]
 }
 
+// GetSupportedParameters returns the name of the supported parameters
 func GetSupportedParameters() []string {
 	keys := make([]string, len(supportedParameterDescriptions))
 
@@ -434,6 +439,7 @@ func GetSupportedParameters() []string {
 	return keys
 }
 
+// getLowerCaseParameters creates a set-like map of supported parameters from the supported parameter names
 func getLowerCaseParameters() map[string]bool {
 	parameters := GetSupportedParameters()
 	result := make(map[string]bool, len(parameters))
