@@ -43,9 +43,9 @@ func (o *ViewOptions) Run() (err error) {
 	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
-	fmt.Fprintln(w, "UpdateNotification", "\t", cfg.GetUpdateNotification())
-	fmt.Fprintln(w, "NamePrefix", "\t", cfg.GetNamePrefix())
-	fmt.Fprintln(w, "Timeout", "\t", cfg.GetTimeout())
+	fmt.Fprintln(w, config.UpdateNotificationSetting, "\t", cfg.GetUpdateNotification())
+	fmt.Fprintln(w, config.NamePrefixSetting, "\t", cfg.GetNamePrefix())
+	fmt.Fprintln(w, config.TimeoutSetting, "\t", cfg.GetTimeout())
 	w.Flush()
 	return
 }

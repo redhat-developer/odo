@@ -399,12 +399,21 @@ func (c *ConfigInfo) DeleteProject(projectName string) error {
 	return nil
 }
 
+const (
+	UpdateNotificationSetting            = "UpdateNotification"
+	UpdateNotificationSettingDescription = "Controls if an update notification is shown or not (true or false)"
+	NamePrefixSetting                    = "NamePrefix"
+	NamePrefixSettingDescription         = "Default prefix is the current directory name. Use this value to set a default name prefix"
+	TimeoutSetting                       = "Timeout"
+	TimeoutSettingDescription            = "Timeout (in seconds) for OpenShift server connection check"
+)
+
 var (
 	// records information on supported parameters
 	supportedParameterDescriptions = map[string]string{
-		"UpdateNotification": "Controls if an update notification is shown or not (true or false)",
-		"NamePrefix":         "Default prefix is the current directory name. Use this value to set a default name prefix",
-		"Timeout":            "Timeout (in seconds) for OpenShift server connection check",
+		UpdateNotificationSetting: UpdateNotificationSettingDescription,
+		NamePrefixSetting:         NamePrefixSettingDescription,
+		TimeoutSetting:            TimeoutSettingDescription,
 	}
 	// set-like map to quickly check if a parameter is supported
 	lowerCaseParameters = getLowerCaseParameters()
