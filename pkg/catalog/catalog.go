@@ -43,7 +43,9 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 
 	// do a partial search in all the components
 	for _, component := range componentList {
-		if strings.Contains(component.Name, name) {
+		// we only show components that contain the search term and that have at least non-hidden tag
+		// since a component with all hidden tags is not shown in the odo catalog list components either
+		if strings.Contains(component.Name, name) && len(component.NonHiddenTags) > 0 {
 			result = append(result, component.Name)
 		}
 	}
