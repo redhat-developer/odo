@@ -75,7 +75,7 @@ func (lo *ListOptions) Run() (err error) {
 		compListDef := component.ComponentList{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "List",
-				APIVersion: "odo.openshift.io/v1beta1",
+				APIVersion: "odo.openshift.io/v1alpha1",
 			},
 			ListMeta: metav1.ListMeta{},
 			Items:    compList,

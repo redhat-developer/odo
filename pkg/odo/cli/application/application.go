@@ -192,7 +192,7 @@ var applicationListCmd = &cobra.Command{
 		apps, err := application.ListInProject(client)
 		odoutil.LogErrorAndExit(err, "unable to get list of applications")
 		if len(apps) > 0 {
-
+			odoutil.LogErrorAndExit(odoutil.CheckOutputFlag(outputFlag), "")
 			if outputFlag == "json" {
 				var appList []application.App
 				for _, app := range apps {
@@ -302,7 +302,7 @@ var applicationDescribeCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
-
+		odoutil.LogErrorAndExit(odoutil.CheckOutputFlag(outputFlag), "")
 		if outputFlag == "json" {
 			app, _ := application.GetCurrent(projectName)
 			appDef := getMachineReadableFormat(client, appName, projectName, app == appName)
