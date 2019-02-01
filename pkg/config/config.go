@@ -149,6 +149,8 @@ func NewGlobalConfig() (*GlobalConfigInfo, error) {
 	return &c, nil
 }
 
+// NewLocalConfig gets the LocalConfigInfo from local config file and creates the local config file in case it's
+// not present then it
 func NewLocalConfig() (*LocalConfigInfo, error) {
 	configFile, err := getLocalConfigFile()
 	if err != nil {

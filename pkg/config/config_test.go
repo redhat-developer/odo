@@ -28,7 +28,7 @@ func TestNew(t *testing.T) {
 			output: &GlobalConfigInfo{
 				Filename: tempConfigFile.Name(),
 				GlobalConfig: GlobalConfig{
-					LocalConfig: &LocalConfig{},
+					CommonConfig: &CommonConfig{},
 				},
 			},
 			success: true,
