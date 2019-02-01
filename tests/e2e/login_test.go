@@ -14,7 +14,6 @@ var _ = Describe("odoLoginE2e", func() {
 	const loginTestUser = "testdeveloper"
 	const loginTestUserPassword = "testdeveloper"
 	const odoTestProject1 = "testproject1"
-	const odoTestProject2 = "testproject2"
 
 	// Comand related constants
 	const baseOdoLoginCommand = "odo login"
@@ -30,7 +29,6 @@ var _ = Describe("odoLoginE2e", func() {
 	var testUserLoginCommandWithToken string
 	var testUserLoginFailCommandWithToken string
 	var testUserCreateProject1Command string
-	var testUserCreateProject2Command string
 
 	Describe("Check for successful login and logout", func() {
 		Context("Initialize", func() {
@@ -40,7 +38,6 @@ var _ = Describe("odoLoginE2e", func() {
 				backToCurrentUserCommand = fmt.Sprintf("%s -t %s", baseOdoLoginCommand, t)
 				testUserLoginCommand = fmt.Sprintf("%s -u %s -p %s", baseOdoLoginCommand, loginTestUser, loginTestUserPassword)
 				testUserCreateProject1Command = fmt.Sprintf("%s %s", baseOdoProjectCreate, odoTestProject1)
-				testUserCreateProject2Command = fmt.Sprintf("%s %s", baseOdoProjectCreate, odoTestProject2)
 				testUserLoginFailCommandWithToken = fmt.Sprintf("%s -t verybadtoken", baseOdoLoginCommand)
 			})
 		})
