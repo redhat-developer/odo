@@ -45,7 +45,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	return validateApp(o.Client, o.appName, o.Project)
+	return ensureAppExists(o.Client, o.appName, o.Project)
 }
 
 // Run contains the logic for the odo command

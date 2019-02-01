@@ -105,7 +105,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 	return nil
 }
 
-func validateApp(client *occlient.Client, appName, project string) error {
+func ensureAppExists(client *occlient.Client, appName, project string) error {
 	exists, err := application.Exists(client, appName)
 	if err != nil {
 		return err

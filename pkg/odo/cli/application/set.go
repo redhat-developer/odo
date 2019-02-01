@@ -39,7 +39,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
-	return validateApp(o.Client, o.appName, o.Project)
+	return ensureAppExists(o.Client, o.appName, o.Project)
 }
 
 // Run contains the logic for the odo command

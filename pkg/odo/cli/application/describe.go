@@ -47,7 +47,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("There's no active application in project: %v", o.Project)
 	}
 
-	return validateApp(o.Client, o.appName, o.Project)
+	return ensureAppExists(o.Client, o.appName, o.Project)
 }
 
 // Run contains the logic for the odo command
