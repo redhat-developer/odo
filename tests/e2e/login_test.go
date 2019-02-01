@@ -44,12 +44,11 @@ var _ = Describe("odoLoginE2e", func() {
 
 		Context("Run login tests", func() {
 			AfterEach(func() {
-				t := runCmd("oc projects -q")
-				projects := strings.Split(t, "\n")
+				projects := strings.Split(runCmd("oc projects -q"), "\n")
 				for _, p := range projects {
 					if len(p) > 0 {
 						runCmd(fmt.Sprintf("%s %s", baseOdoProjectDelete, p))
-						time.Sleep(100 * time.Millisecond)
+						time.Sleep(180 * time.Millisecond)
 					}
 				}
 				runCmd(backToCurrentUserCommand)
