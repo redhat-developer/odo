@@ -42,6 +42,17 @@ jobs:
         - oc login -u developer
         - make test-main-e2e
 
+    # Run odo login e2e tests
+    - <<: *base-test
+      stage: test
+      name: "Odo Login e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - make test-odo-login-e2e
+
     # Run component e2e tests
     - <<: *base-test
       stage: test

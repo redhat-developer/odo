@@ -148,6 +148,15 @@ else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct
 endif
 
+# Run login e2e tests
+.PHONY: test-odologin-e2e
+test-odo-login-e2e:
+ifdef TIMEOUT
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+else
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.succinct
+endif
+
 # Run all e2e tests
 .PHONY: test-e2e
 test-e2e:
