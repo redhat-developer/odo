@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -26,14 +27,19 @@ const (
 // ConfigInfo is implemented by configuration managers
 type ConfigInfo interface {
 	SetConfiguration(parameter string, value string) error
+	GetConfiguration(parameter string) (interface{}, bool)
+}
+
+// CommonConfig holds all the configs which will be present in both places
+type CommonConfig struct {
 }
 
 // OdoSettings holds all odo specific configurations
 type OdoSettings struct {
 	// Controls if an update notification is shown or not
-	UpdateNotification *bool `json:"updatenotification,omitempty"`
+	UpdateNotification *bool `json:"updateNotification,omitempty"`
 	// Holds the prefix part of generated random application name
-	NamePrefix *string `json:"nameprefix,omitempty"`
+	NamePrefix *string `json:"namePrefix,omitempty"`
 	// Timeout for openshift server connection check
 	Timeout *int `json:"timeout,omitempty"`
 }
@@ -42,7 +48,7 @@ type OdoSettings struct {
 type ComponentSettings struct {
 
 	// The builder image to use
-	ComponentType *string `json:"componenttype,omitempty"`
+	ComponentType *string `json:"componentType,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -60,8 +66,8 @@ type ApplicationInfo struct {
 // GlobalConfig stores all the config related to odo, its the superset of
 // local config.
 type GlobalConfig struct {
-	// global config has all the attributes of local config as well
-	*LocalConfig
+	// global config has all the attributes of common config as well
+	*CommonConfig `json:",omitempty"`
 	// remember active applications and components per project
 	// when project or applications is switched we can go back to last active app/component
 
@@ -71,26 +77,27 @@ type GlobalConfig struct {
 	ActiveApplications []ApplicationInfo `json:"activeApplications"`
 
 	// Odo settings holds the odo specific global settings
-	OdoSettings OdoSettings `json:"settings"`
+	OdoSettings OdoSettings `json:"settings,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
-	ComponentSettings ComponentSettings `json:"component_settings"`
+	*CommonConfig     `json:",omitempty"`
+	ComponentSettings ComponentSettings `json:"componentSettings,omitempty"`
 }
 
 // GlobalConfigInfo wraps the global config and provides helpers to
 // serialize it.
 type GlobalConfigInfo struct {
-	Filename string
-	GlobalConfig
+	Filename     string `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	GlobalConfig `json:",omitempty" yaml:",omitempty"`
 }
 
 // LocalConfigInfo wraps the local config and provides helpers to
 // serialize it.
 type LocalConfigInfo struct {
-	Filename string
-	LocalConfig
+	Filename    string `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	LocalConfig `json:",omitempty" yaml:",omitempty"`
 }
 
 func getGlobalConfigFile() (string, error) {
@@ -131,7 +138,7 @@ func NewGlobalConfig() (*GlobalConfigInfo, error) {
 	}
 	c := GlobalConfigInfo{
 		GlobalConfig: GlobalConfig{
-			LocalConfig: &LocalConfig{},
+			CommonConfig: &CommonConfig{},
 		},
 	}
 	c.Filename = configFile
@@ -246,26 +253,49 @@ func (c *GlobalConfigInfo) SetConfiguration(parameter string, value string) erro
 	return nil
 }
 
+// GetConfiguration gets the value of the specified parameter, it returns false in
+// case the value is not set or found
+func (c *GlobalConfigInfo) GetConfiguration(parameter string) (interface{}, bool) {
+	return getConfiguration(c.OdoSettings, parameter)
+}
+
+func getConfiguration(info interface{}, parameter string) (interface{}, bool) {
+	imm := reflect.ValueOf(info)
+	val := imm.FieldByNameFunc(caseInsensitive(parameter))
+
+	if !val.IsValid() || val.IsNil() {
+		return nil, false
+	}
+
+	// if the value is a Ptr then we need to de-ref it
+	if val.Kind() == reflect.Ptr {
+		return val.Elem().Interface(), true
+	}
+
+	return val.Interface(), true
+}
+
+func caseInsensitive(parameter string) func(word string) bool {
+	return func(word string) bool {
+		return strings.ToLower(parameter) == strings.ToLower(word)
+	}
+}
+
 // SetConfiguration sets the common config settings like component type, min memory
 // max memory etc.
 func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) error {
 
-	err := lci.setConfig(parameter, value)
-	if err != nil {
-		return err
+	switch parameter {
+	case "componenttype":
+		lci.ComponentSettings.ComponentType = &value
+	default:
+		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}
 	return writeToFile(lci.LocalConfig, lci.Filename)
 }
 
-func (lc *LocalConfig) setConfig(parameter string, value string) error {
-	switch parameter {
-	case "componenttype":
-		lc.ComponentSettings.ComponentType = &value
-	default:
-		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
-	}
-
-	return nil
+func (lci *LocalConfigInfo) GetConfiguration(parameter string) (interface{}, bool) {
+	return getConfiguration(lci.ComponentSettings, parameter)
 }
 
 // GetComponentType returns type of component (builder image name) in the config
