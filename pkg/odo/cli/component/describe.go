@@ -62,7 +62,9 @@ func (do *DescribeOptions) Run() (err error) {
 	if do.outputFlag == "json" {
 		componentDef := getMachineReadableFormat(componentDesc, do.Application, do.Project)
 		out, err := json.Marshal(componentDef)
-		odoutil.LogErrorAndExit(err, "")
+		if err != nil {
+			return err
+		}
 		fmt.Println(string(out))
 	} else {
 
@@ -84,9 +86,7 @@ func getMachineReadableFormat(componentDesc component.Description, applicationNa
 	}
 
 	currentComponent, err := component.GetCurrent(applicationName, projectName)
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "")
-	}
+	odoutil.LogErrorAndExit(err, "")
 
 	componentDef := component.Component{
 		TypeMeta: metav1.TypeMeta{

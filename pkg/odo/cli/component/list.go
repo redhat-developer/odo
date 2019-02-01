@@ -48,7 +48,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	return
+	return odoutil.CheckOutputFlag(lo.outputFlag)
 }
 
 // Run has the logic to perform the required actions as part of command
@@ -65,8 +65,10 @@ func (lo *ListOptions) Run() (err error) {
 		var compList []component.Component
 		for _, compo := range components {
 			componentDesc, err := component.GetComponentDesc(lo.Client, compo.ComponentName, lo.Application, lo.Project)
-			odoutil.LogErrorAndExit(err, "")
-			compoDef := getMachineReadableFormat(componentDesc)
+			if err != nil {
+				return err
+			}
+			compoDef := getMachineReadableFormat(componentDesc, lo.Application, lo.Project)
 			compList = append(compList, compoDef)
 		}
 
@@ -80,7 +82,9 @@ func (lo *ListOptions) Run() (err error) {
 		}
 
 		out, err := json.Marshal(compListDef)
-		odoutil.LogErrorAndExit(err, "")
+		if err != nil {
+			return err
+		}
 		fmt.Println(string(out))
 
 	} else {
