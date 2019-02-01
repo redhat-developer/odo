@@ -3,7 +3,6 @@ package e2e
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -45,10 +44,13 @@ var _ = Describe("odoLoginE2e", func() {
 		Context("Run login tests", func() {
 			AfterEach(func() {
 				projects := strings.Split(runCmd("oc projects -q"), "\n")
+				var waitOut bool
 				for _, p := range projects {
 					if len(p) > 0 {
-						runCmd(fmt.Sprintf("%s %s", baseOdoProjectDelete, p))
-						time.Sleep(180 * time.Millisecond)
+						waitOut = waitForCmdOut(fmt.Sprintf("%s %s", baseOdoProjectDelete, p), 10, func(out string) bool {
+							return strings.Contains(out, fmt.Sprintf("Deleted project : %s", p))
+						})
+						Expect(waitOut).To(BeTrue())
 					}
 				}
 				runCmd(backToCurrentUserCommand)
