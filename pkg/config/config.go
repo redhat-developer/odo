@@ -243,7 +243,7 @@ func (c *GlobalConfigInfo) SetConfiguration(parameter string, value string) erro
 			c.OdoSettings.NamePrefix = &value
 		}
 	} else {
-		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
+		return errors.Errorf("unknown parameter :'%s' is not a parameter in global odo config", parameter)
 	}
 
 	err := writeToFile(c.GlobalConfig, c.Filename)
@@ -289,7 +289,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) err
 	case "componenttype":
 		lci.ComponentSettings.ComponentType = &value
 	default:
-		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
+		return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 	}
 	return writeToFile(lci.LocalConfig, lci.Filename)
 }
