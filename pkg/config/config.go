@@ -19,7 +19,7 @@ import (
 const (
 	globalConfigEnvName = "GLOBALODOCONFIG"
 	localConfigEnvName  = "LOCALODOCONFIG"
-	configFileName      = "odo-config"
+	configFileName      = "odo-config.yaml"
 	//DefaultTimeout for openshift server connection check
 	DefaultTimeout = 1
 )
@@ -279,7 +279,7 @@ func getConfiguration(info interface{}, parameter string) (interface{}, bool) {
 
 func caseInsensitive(parameter string) func(word string) bool {
 	return func(word string) bool {
-		return strings.ToLower(parameter) == strings.ToLower(word)
+		return strings.EqualFold(word, parameter)
 	}
 }
 
