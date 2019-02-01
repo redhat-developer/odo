@@ -2,110 +2,72 @@ package application
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/spf13/cobra"
 )
 
 var (
 	applicationShortFlag       bool
 	applicationForceDeleteFlag bool
-	outputFlag                 string
 )
 
-// applicationCmd represents the app command
-var applicationCmd = &cobra.Command{
-	Use:   "app",
-	Short: "Perform application operations",
-	Long:  `Performs application operations related to your OpenShift project.`,
-	Example: fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s",
-		applicationCreateCmd.Example,
-		applicationGetCmd.Example,
-		applicationDeleteCmd.Example,
-		applicationDescribeCmd.Example,
-		applicationListCmd.Example,
-		applicationSetCmd.Example),
-	Aliases: []string{"application"},
-	// 'odo app' is the same as 'odo app get'
-	// 'odo app <application_name>' is the same as 'odo app set <application_name>'
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 && args[0] != "get" && args[0] != "set" {
-			applicationSetCmd.Run(cmd, args)
-		} else {
-			applicationGetCmd.Run(cmd, args)
-		}
-	},
+// Description holds all information about application
+type Description struct {
+	Name       string `json:"applicationName,omitempty"`
+	Components []component.Description
 }
 
-// getMachineReadableFormat returns resource information in machine readable format
-func getMachineReadableFormat(client *occlient.Client, appName string, projectName string, active bool) application.App {
-	componentList, _ := component.List(client, appName)
-	var compList []string
-	for _, comp := range componentList {
-		compList = append(compList, comp.ComponentName)
-	}
-	appDef := application.App{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "app",
-			APIVersion: "odo.openshift.io/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      appName,
-			Namespace: projectName,
-		},
-		Spec: application.AppSpec{
-			Components: compList,
-		},
-		Status: application.AppStatus{
-			Active: active,
-		},
-	}
-	return appDef
-}
+const RecommendedCommandName = "app"
 
 // NewCmdApplication implements the odo application command
-func NewCmdApplication() *cobra.Command {
-	applicationDeleteCmd.Flags().BoolVarP(&applicationForceDeleteFlag, "force", "f", false, "Delete application without prompting")
-
-	applicationGetCmd.Flags().BoolVarP(&applicationShortFlag, "short", "q", false, "If true, display only the application name")
-
-	applicationDescribeCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "output in json format")
-	applicationListCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "output in json format")
+func NewCmdApplication(name, fullName string) *cobra.Command {
+	create := NewCmdCreate(createRecommendedCommandName, odoutil.GetFullName(fullName, createRecommendedCommandName))
+	delete := NewCmdDelete(deleteRecommendedCommandName, odoutil.GetFullName(fullName, deleteRecommendedCommandName))
+	describe := NewCmdDescribe(describeRecommendedCommandName, odoutil.GetFullName(fullName, describeRecommendedCommandName))
+	get := NewCmdGet(getRecommendedCommandName, odoutil.GetFullName(fullName, getRecommendedCommandName))
+	list := NewCmdList(listRecommendedCommandName, odoutil.GetFullName(fullName, listRecommendedCommandName))
+	set := NewCmdSet(setRecommendedCommandName, odoutil.GetFullName(fullName, setRecommendedCommandName))
+	applicationCmd := &cobra.Command{
+		Use:   name,
+		Short: "Perform application operations",
+		Long:  `Performs application operations related to your OpenShift project.`,
+		Example: fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s",
+			create.Example,
+			get.Example,
+			delete.Example,
+			describe.Example,
+			list.Example,
+			set.Example),
+		Aliases: []string{"application"},
+		Run: func(cmd *cobra.Command, args []string) {
+			// 'odo app' is the same as 'odo app get'
+			// 'odo app <application_name>' is the same as 'odo app set <application_name>'
+			if len(args) == 1 && args[0] != getRecommendedCommandName && args[0] != setRecommendedCommandName {
+				set.Run(cmd, args)
+			} else {
+				get.Run(cmd, args)
+			}
+		},
+	}
 
 	// add flags from 'get' to application command
-	applicationCmd.Flags().AddFlagSet(applicationGetCmd.Flags())
+	applicationCmd.Flags().AddFlagSet(get.Flags())
 
-	applicationCmd.AddCommand(applicationListCmd)
-	applicationCmd.AddCommand(applicationDeleteCmd)
-	applicationCmd.AddCommand(applicationGetCmd)
-	applicationCmd.AddCommand(applicationCreateCmd)
-	applicationCmd.AddCommand(applicationSetCmd)
-	applicationCmd.AddCommand(applicationDescribeCmd)
-
-	//Adding `--project` flag
-	projectCmd.AddProjectFlag(applicationListCmd)
-	projectCmd.AddProjectFlag(applicationCreateCmd)
-	projectCmd.AddProjectFlag(applicationDeleteCmd)
-	projectCmd.AddProjectFlag(applicationDescribeCmd)
-	projectCmd.AddProjectFlag(applicationSetCmd)
-	projectCmd.AddProjectFlag(applicationGetCmd)
+	applicationCmd.AddCommand(create, delete, describe, get, list, set)
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}
 	applicationCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-
-	completion.RegisterCommandHandler(applicationDescribeCmd, completion.AppCompletionHandler)
-	completion.RegisterCommandHandler(applicationDeleteCmd, completion.AppCompletionHandler)
-	completion.RegisterCommandHandler(applicationSetCmd, completion.AppCompletionHandler)
 
 	return applicationCmd
 }
@@ -139,6 +101,17 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 			fmt.Println("  Storage", store.Name, "of size", store.Size, "will be removed")
 		}
 
+	}
+	return nil
+}
+
+func validateApp(client *occlient.Client, appName, project string) error {
+	exists, err := application.Exists(client, appName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("Application %v in project %v does not exist", appName, project)
 	}
 	return nil
 }

@@ -4,56 +4,97 @@ import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
-	"os"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	"strings"
 )
 
-var applicationDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete the given application",
-	Long:  "Delete the given application",
-	Example: `  # Delete the application
-  odo app delete myapp
-	`,
-	Args: cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		context := genericclioptions.NewContext(cmd)
-		client := context.Client
-		projectName := context.Project
-		appName := context.Application
-		if len(args) == 1 {
-			// If app name passed, consider it for deletion
-			appName = args[0]
-		}
+const deleteRecommendedCommandName = "delete"
 
-		var confirmDeletion string
+var (
+	deleteExample = ktemplates.Examples(`  # Delete the application
+  %[1]s myapp`)
+)
 
-		// Print App Information which will be deleted
-		err := printDeleteAppInfo(client, appName, projectName)
-		util.LogErrorAndExit(err, "")
-		exists, err := application.Exists(client, appName)
-		util.LogErrorAndExit(err, "")
-		if !exists {
-			log.Errorf("Application %v in project %v does not exist", appName, projectName)
-			os.Exit(1)
-		}
+// DeleteOptions encapsulates the options for the odo command
+type DeleteOptions struct {
+	appName string
+	force   bool
+	*genericclioptions.Context
+}
 
-		if applicationForceDeleteFlag {
-			confirmDeletion = "y"
-		} else {
-			log.Askf("Are you sure you want to delete the application: %v from project: %v? [y/N]: ", appName, projectName)
-			fmt.Scanln(&confirmDeletion)
-		}
+// NewDeleteOptions creates a new DeleteOptions instance
+func NewDeleteOptions() *DeleteOptions {
+	return &DeleteOptions{}
+}
 
-		if strings.ToLower(confirmDeletion) == "y" {
-			err := application.Delete(client, appName)
-			util.LogErrorAndExit(err, "")
-			log.Infof("Deleted application: %s from project: %v", appName, projectName)
-		} else {
-			log.Infof("Aborting deletion of application: %v", appName)
+// Complete completes DeleteOptions after they've been created
+func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context = genericclioptions.NewContext(cmd)
+	o.appName = o.Application
+	if len(args) == 1 {
+		// If app name passed, consider it for deletion
+		o.appName = args[0]
+	}
+	return
+}
+
+// Validate validates the DeleteOptions based on completed values
+func (o *DeleteOptions) Validate() (err error) {
+	return validateApp(o.Client, o.appName, o.Project)
+}
+
+// Run contains the logic for the odo command
+func (o *DeleteOptions) Run() (err error) {
+	// Print App Information which will be deleted
+	err = printDeleteAppInfo(o.Client, o.appName, o.Project)
+	if err != nil {
+		return err
+	}
+
+	var confirmDeletion string
+	if o.force {
+		confirmDeletion = "y"
+	} else {
+		log.Askf("Are you sure you want to delete the application: %v from project: %v? [y/N]: ", o.appName, o.Project)
+		fmt.Scanln(&confirmDeletion)
+	}
+
+	if strings.ToLower(confirmDeletion) == "y" {
+		err = application.Delete(o.Client, o.appName)
+		if err != nil {
+			return err
 		}
-	},
+		log.Infof("Deleted application: %s from project: %v", o.appName, o.Project)
+	} else {
+		log.Infof("Aborting deletion of application: %v", o.appName)
+	}
+	return
+}
+
+// NewCmdDelete implements the odo command.
+func NewCmdDelete(name, fullName string) *cobra.Command {
+	o := NewDeleteOptions()
+	command := &cobra.Command{
+		Use:     name,
+		Short:   "Delete the given application",
+		Long:    "Delete the given application",
+		Example: fmt.Sprintf(deleteExample, fullName),
+		Args:    cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
+		},
+	}
+
+	command.Flags().BoolVarP(&o.force, "force", "f", false, "Delete application without prompting")
+
+	project.AddProjectFlag(command)
+	completion.RegisterCommandHandler(command, completion.AppCompletionHandler)
+	return command
 }
