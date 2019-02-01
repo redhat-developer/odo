@@ -1352,9 +1352,11 @@ func TestGetupdateNotification(t *testing.T) {
 
 func TestFormatSupportedParameters(t *testing.T) {
 	expected := `
+Available Parameters:
 %s - %s
 %s - %s
-%s - %s`
+%s - %s
+`
 	expected = fmt.Sprintf(expected,
 		NamePrefixSetting, NamePrefixSettingDescription,
 		TimeoutSetting, TimeoutSettingDescription,

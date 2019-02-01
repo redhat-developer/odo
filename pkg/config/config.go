@@ -422,9 +422,9 @@ var (
 // FormatSupportedParameters outputs supported parameters and their description
 func FormatSupportedParameters() (result string) {
 	for _, v := range GetSupportedParameters() {
-		result = result + "\n" + v + " - " + supportedParameterDescriptions[v]
+		result = result + v + " - " + supportedParameterDescriptions[v] + "\n"
 	}
-	return
+	return "\nAvailable Parameters:\n" + result
 }
 
 // asSupportedParameter checks that the given parameter is supported and returns a lower case version of it if it is

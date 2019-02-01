@@ -10,7 +10,9 @@ import (
 
 const RecommendedCommandName = "config"
 
-var configLongDesc = ktemplates.LongDesc(fmt.Sprintf("Modifies Odo specific configuration settings within the config file.\n%s", config.FormatSupportedParameters()))
+var configLongDesc = ktemplates.LongDesc(`Modifies Odo specific configuration settings within the config file.
+
+%[1]s`)
 
 // NewCmdConfiguration implements the utils config odo command
 func NewCmdConfiguration(name, fullName string) *cobra.Command {
@@ -19,7 +21,7 @@ func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Modifies configuration settings",
-		Long:  configLongDesc,
+		Long:  fmt.Sprintf(configLongDesc, config.FormatSupportedParameters()),
 		Example: fmt.Sprintf("%s\n%s",
 			configurationViewCmd.Example,
 			configurationSetCmd.Example),

@@ -11,8 +11,10 @@ import (
 const setCommandName = "set"
 
 var (
-	setLongDesc = ktemplates.LongDesc(fmt.Sprintf("Set an individual value in the Odo configuration file.\n%s", config.FormatSupportedParameters()))
-	setExample  = ktemplates.Examples(`
+	setLongDesc = ktemplates.LongDesc(`Set an individual value in the Odo configuration file.
+
+%[1]s`)
+	setExample = ktemplates.Examples(`
    # Set a configuration value
    %[1]s %[2]s false
    %[1]s %[3]s "app"
@@ -58,7 +60,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	configurationSetCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Set a value in odo config file",
-		Long:    setLongDesc,
+		Long:    fmt.Sprintf(setLongDesc, config.FormatSupportedParameters()),
 		Example: fmt.Sprintf(setExample, fullName, config.UpdateNotificationSetting, config.NamePrefixSetting, config.TimeoutSetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
