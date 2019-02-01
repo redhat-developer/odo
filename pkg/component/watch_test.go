@@ -13,7 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
-func TestIsRegExpMatch(t *testing.T) {
+func TestIsGlobExpMatch(t *testing.T) {
 
 	tests := []struct {
 		testName      string
@@ -203,7 +203,7 @@ func TestWatchAndPush(t *testing.T) {
 			componentName:   "license-analysis",
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
-			ignores:         []string{".*\\.git.*", "tests", "LICENSE", ".*\\__init__.py"},
+			ignores:         []string{".git", "tests/", "LICENSE", "__init__.py"},
 			delayInterval:   1,
 			wantErr:         false,
 			requiredFilePaths: []testingutil.FileProperties{
