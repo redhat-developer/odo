@@ -296,11 +296,14 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) err
 	return writeToFile(lci.LocalConfig, lci.Filename)
 }
 
+// GetConfiguration uses reflection to get the parameter from the localconfig struct, currently
+// it only searches the componentSettings
 func (lci *LocalConfigInfo) GetConfiguration(parameter string) (interface{}, bool) {
 	return getConfiguration(lci.ComponentSettings, parameter)
 }
 
 // GetComponentType returns type of component (builder image name) in the config
+// and if absent then returns default
 func (lc *LocalConfig) GetComponentType() string {
 	if lc.ComponentSettings.ComponentType == nil {
 		return ""
@@ -309,6 +312,7 @@ func (lc *LocalConfig) GetComponentType() string {
 }
 
 // GetTimeout returns the value of Timeout from config
+// and if absent then returns default
 func (c *GlobalConfigInfo) GetTimeout() int {
 	// default timeout value is 1
 	if c.OdoSettings.Timeout == nil {
@@ -318,6 +322,7 @@ func (c *GlobalConfigInfo) GetTimeout() int {
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from config
+// and if absent then returns default
 func (c *GlobalConfigInfo) GetUpdateNotification() bool {
 	if c.OdoSettings.UpdateNotification == nil {
 		return true
@@ -326,6 +331,7 @@ func (c *GlobalConfigInfo) GetUpdateNotification() bool {
 }
 
 // GetNamePrefix returns the value of Prefix from config
+// and if absent then returns default
 func (c *GlobalConfigInfo) GetNamePrefix() string {
 	if c.OdoSettings.NamePrefix == nil {
 		return ""
