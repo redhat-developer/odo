@@ -5,6 +5,7 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"strings"
 
 	"fmt"
 	"io/ioutil"
@@ -106,6 +107,15 @@ var _ = Describe("odoCmpE2e", func() {
 			getProj := runCmd("odo catalog list components")
 			Expect(getProj).To(ContainSubstring("wildfly"))
 			Expect(getProj).To(ContainSubstring("ruby"))
+			Expect(getProj).To(ContainSubstring("nodejs"))
+
+			// check that the nodejs string does not contain the hidden versions
+			lines := strings.Split(strings.Replace(getProj, "\r\n", "\n", -1), "\n")
+			for _, line := range lines {
+				if strings.HasPrefix(line, "nodejs") {
+					Expect(getProj).To(Not(ContainSubstring("0.10")))
+				}
+			}
 		})
 	})
 

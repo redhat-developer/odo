@@ -693,6 +693,15 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 	return nil, fmt.Errorf("unable to fetch image with tag %s corresponding to imagestream %+v", imageTag, imageStream)
 }
 
+// GetImageStreamTags returns all the ImageStreamTag objects in the given namespace
+func (c *Client) GetImageStreamTags(namespace string) ([]imagev1.ImageStreamTag, error) {
+	imageStreamTagList, err := c.imageClient.ImageStreamTags(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list imagestreamtags")
+	}
+	return imageStreamTagList.Items, nil
+}
+
 // GetExposedPorts returns list of ContainerPorts that are exposed by given image
 func (c *Client) GetExposedPorts(imageStreamImage *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
 	var containerPorts []corev1.ContainerPort

@@ -41,3 +41,42 @@ func FakeImageStreams(imageName string, namespace string, tags []string) *imagev
 		Items: []imagev1.ImageStream{*fakeImageStream(imageName, namespace, tags)},
 	}
 }
+
+// fakeImageStreamTag gets imagestreamtag for the reactor
+func fakeImageStreamTag(imageName string, version string, namespace string, isHidden bool) *imagev1.ImageStreamTag {
+	tagsStr := ""
+	if isHidden {
+		tagsStr = "hidden"
+	}
+	image := &imagev1.ImageStreamTag{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      imageName + ":" + version,
+			Namespace: namespace,
+			Annotations: map[string]string{
+				"tags":    tagsStr,
+				"version": version,
+			},
+		},
+	}
+
+	return image
+}
+
+// FakeImageStreamTags lists the imagestreams for the reactor
+func FakeImageStreamTags(imageName string, namespace string, tags []string, hiddenTags []string) *imagev1.ImageStreamTagList {
+	var list = []imagev1.ImageStreamTag{}
+	for _, tag := range tags {
+		isHidden := false
+		for _, ht := range hiddenTags {
+			if ht == tag {
+				isHidden = true
+				break
+			}
+		}
+		list = append(list, *fakeImageStreamTag(imageName, tag, namespace, isHidden))
+	}
+
+	return &imagev1.ImageStreamTagList{
+		Items: list,
+	}
+}

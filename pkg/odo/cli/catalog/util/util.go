@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"os"
 	"strings"
@@ -19,12 +20,26 @@ func DisplayServices(services []occlient.Service) {
 }
 
 // FilterHiddenServices filters out services that should be hidden from the specified list
-func FilterHiddenServices(services []occlient.Service) []occlient.Service {
-	var filteredServices []occlient.Service
-	for _, service := range services {
+func FilterHiddenServices(input []occlient.Service) []occlient.Service {
+	inputLength := len(input)
+	filteredServices := make([]occlient.Service, 0, inputLength)
+	for _, service := range input {
 		if !service.Hidden {
 			filteredServices = append(filteredServices, service)
 		}
 	}
 	return filteredServices
+}
+
+// FilterHiddenComponents filters out components that should be hidden from the specified list
+func FilterHiddenComponents(input []catalog.CatalogImage) []catalog.CatalogImage {
+	inputLength := len(input)
+	filteredComponents := make([]catalog.CatalogImage, 0, inputLength)
+	for _, component := range input {
+		// we keep the image if it has tags that are no hidden
+		if len(component.NonHiddenTags) > 0 {
+			filteredComponents = append(filteredComponents, component)
+		}
+	}
+	return filteredComponents
 }
