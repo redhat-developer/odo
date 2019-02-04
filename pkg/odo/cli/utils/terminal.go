@@ -1,51 +1,18 @@
 package utils
 
 import (
-	"io"
-	"os"
-
-	"github.com/redhat-developer/odo/pkg/log"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	util2 "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"os"
 )
 
-// terminalCmd represents the terminal command
-var terminalCmd = &cobra.Command{
-	Use:   "terminal",
-	Short: "Add Odo terminal support to your development environment",
-	Long: `Add Odo terminal support to your development environment. 
+const (
+	terminalCommandName = "terminal"
 
-This will append your PS1 environment variable with Odo component and application information.`,
-	Example: `  # Bash terminal PS1 support
-  source <(odo utils terminal bash)
-
-  # Zsh terminal PS1 support
-  source <(odo utils terminal zsh)
-`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-
-		err := TerminalGenerate(os.Stdout, cmd, args)
-		odoutil.LogErrorAndExit(err, "")
-
-		return nil
-	},
-}
-
-// Generates the PS1 output for Odo terminal support (appends to current PS1 environment variable)
-func TerminalGenerate(out io.Writer, cmd *cobra.Command, args []string) error {
-	// Check the passed in arguments
-	if len(args) == 0 {
-		log.Error("Shell not specified. ex. odo completion [bash|zsh]")
-		os.Exit(1)
-	}
-	if len(args) > 1 {
-		log.Error("Too many arguments. Expected only the shell type. ex. odo completion [bash|zsh]")
-		os.Exit(1)
-	}
-	shell := args[0]
-
-	// sh function for retrieving component information
-	var PS1 = `
+	ps1 = `
 __odo_ps1() {
 
 		# Get application context
@@ -69,24 +36,79 @@ __odo_ps1() {
 `
 
 	// Bash output
-	var bashPS1Output = PS1 + `
+	bashPS1Output = ps1 + `
 PS1='$(__odo_ps1)'$PS1
 `
 
 	// Zsh output
-	var zshPS1Output = PS1 + `
+	zshPS1Output = ps1 + `
 setopt prompt_subst
 PROMPT='$(__odo_ps1)'$PROMPT
 `
+)
 
-	if shell == "bash" {
-		out.Write([]byte(bashPS1Output))
-	} else if shell == "zsh" {
-		out.Write([]byte(zshPS1Output))
-	} else {
-		log.Errorf("not a compatible shell, bash and zsh are only supported")
-		os.Exit(1)
+var (
+	terminalExample = ktemplates.Examples(`  # Bash terminal PS1 support
+  source <(%[1]s bash)
+
+  # Zsh terminal PS1 support
+  source <(%[1]s zsh)
+`)
+	terminalLongDesc = ktemplates.LongDesc(`Add Odo terminal support to your development environment. 
+
+This will append your PS1 environment variable with Odo component and application information.`)
+	supportedShells = map[string]string{"bash": bashPS1Output, "zsh": zshPS1Output}
+)
+
+// TerminalOptions encapsulates the options for the command
+type TerminalOptions struct {
+	shellType string
+}
+
+// NewTerminalOptions creates a new TerminalOptions instance
+func NewTerminalOptions() *TerminalOptions {
+	return &TerminalOptions{}
+}
+
+// Complete completes TerminalOptions after they've been created
+func (o *TerminalOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.shellType = args[0]
+	return
+}
+
+// Validate validates the TerminalOptions based on completed values
+func (o *TerminalOptions) Validate() (err error) {
+	if _, ok := supportedShells[o.shellType]; !ok {
+		return fmt.Errorf("unknown shell type %s, supported shells: %v", o.shellType, getSupportedShells())
 	}
+	return
+}
 
-	return nil
+// Run contains the logic for the command
+func (o *TerminalOptions) Run() (err error) {
+	// shell type is already validated so retrieval will work
+	_, err = os.Stdout.Write([]byte(supportedShells[o.shellType]))
+	return
+}
+
+// NewCmdTerminal implements the utils terminal odo command
+func NewCmdTerminal(name, fullName string) *cobra.Command {
+	o := NewTerminalOptions()
+	terminalCmd := &cobra.Command{
+		Use:     name,
+		Short:   "Add Odo terminal support to your development environment",
+		Long:    terminalLongDesc,
+		Example: fmt.Sprintf(terminalExample, fullName),
+		Args:    cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			util.LogErrorAndExit(o.Validate(), "")
+			util.LogErrorAndExit(o.Run(), "")
+		},
+	}
+	return terminalCmd
+}
+
+func getSupportedShells() []string {
+	return util2.GetSortedKeys(supportedShells)
 }

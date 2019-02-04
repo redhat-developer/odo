@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/util"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -42,6 +43,7 @@ type ApplicationInfo struct {
 	ActiveComponent string `json:"activeComponent"`
 }
 
+// Config records odo's configuration
 type Config struct {
 	// odo specific configuration settings
 	OdoSettings OdoSettings `json:"settings"`
@@ -54,6 +56,7 @@ type Config struct {
 	ActiveApplications []ApplicationInfo `json:"activeApplications"`
 }
 
+// ConfigInfo records information about odo's configuration
 type ConfigInfo struct {
 	Filename string
 	Config
@@ -141,29 +144,31 @@ func (c *ConfigInfo) writeToFile() error {
 // SetConfiguration modifies Odo configurations in the config file
 // as of now being used for nameprefix, timeout, updatenotification
 func (c *ConfigInfo) SetConfiguration(parameter string, value string) error {
-	// processing values according to the parameter names
-	switch parameter {
+	if p, ok := asSupportedParameter(parameter); ok {
+		// processing values according to the parameter names
+		switch p {
 
-	case "timeout":
-		typedval, err := strconv.Atoi(value)
-		if err != nil {
-			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
-		}
-		if typedval < 0 {
-			return errors.Errorf("cannot set timeout to less than 0")
-		}
-		c.OdoSettings.Timeout = &typedval
+		case "timeout":
+			typedval, err := strconv.Atoi(value)
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			if typedval < 0 {
+				return errors.Errorf("cannot set timeout to less than 0")
+			}
+			c.OdoSettings.Timeout = &typedval
 
-	case "updatenotification":
-		val, err := strconv.ParseBool(strings.ToLower(value))
-		if err != nil {
-			return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
-		}
-		c.OdoSettings.UpdateNotification = &val
+		case "updatenotification":
+			val, err := strconv.ParseBool(strings.ToLower(value))
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			c.OdoSettings.UpdateNotification = &val
 
-	case "nameprefix":
-		c.OdoSettings.NamePrefix = &value
-	default:
+		case "nameprefix":
+			c.OdoSettings.NamePrefix = &value
+		}
+	} else {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}
 
@@ -394,4 +399,59 @@ func (c *ConfigInfo) DeleteProject(projectName string) error {
 		return errors.Wrapf(err, "unable to delete project from config")
 	}
 	return nil
+}
+
+const (
+	// Name of the setting controlling update notification
+	UpdateNotificationSetting = "UpdateNotification"
+	// Human-readable description for the update notification setting
+	UpdateNotificationSettingDescription = "Controls if an update notification is shown or not (true or false)"
+	// Name of the setting controlling name prefix
+	NamePrefixSetting = "NamePrefix"
+	// Human-readable description for the name prefix setting
+	NamePrefixSettingDescription = "Default prefix is the current directory name. Use this value to set a default name prefix"
+	// Name of the setting controlling timeout for connection check
+	TimeoutSetting = "Timeout"
+	// Human-readable description for the timeout setting
+	TimeoutSettingDescription = "Timeout (in seconds) for OpenShift server connection check"
+)
+
+var (
+	// records information on supported parameters
+	supportedParameterDescriptions = map[string]string{
+		UpdateNotificationSetting: UpdateNotificationSettingDescription,
+		NamePrefixSetting:         NamePrefixSettingDescription,
+		TimeoutSetting:            TimeoutSettingDescription,
+	}
+	// set-like map to quickly check if a parameter is supported
+	lowerCaseParameters = getLowerCaseParameters()
+)
+
+// FormatSupportedParameters outputs supported parameters and their description
+func FormatSupportedParameters() (result string) {
+	for _, v := range GetSupportedParameters() {
+		result = result + v + " - " + supportedParameterDescriptions[v] + "\n"
+	}
+	return "\nAvailable Parameters:\n" + result
+}
+
+// asSupportedParameter checks that the given parameter is supported and returns a lower case version of it if it is
+func asSupportedParameter(param string) (string, bool) {
+	lower := strings.ToLower(param)
+	return lower, lowerCaseParameters[lower]
+}
+
+// GetSupportedParameters returns the name of the supported parameters
+func GetSupportedParameters() []string {
+	return util.GetSortedKeys(supportedParameterDescriptions)
+}
+
+// getLowerCaseParameters creates a set-like map of supported parameters from the supported parameter names
+func getLowerCaseParameters() map[string]bool {
+	parameters := GetSupportedParameters()
+	result := make(map[string]bool, len(parameters))
+	for _, v := range parameters {
+		result[strings.ToLower(v)] = true
+	}
+	return result
 }

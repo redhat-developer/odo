@@ -2,15 +2,15 @@ package util
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"os/user"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"testing"
-
-	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
 func TestNamespaceOpenShiftObject(t *testing.T) {
@@ -611,6 +611,39 @@ func TestGetHostWithPort(t *testing.T) {
 	}
 }
 
+// MakeFileWithContent creates file with a given name in the given directory and writes the content to it
+// dir is the name of the directory
+// fileName is the name of the file to be created
+// content is the string to be written to the file
+func MakeFileWithContent(dir string, fileName string, content string) error {
+	file, err := os.Create(dir + string(os.PathSeparator) + fileName)
+	if err != nil {
+		return errors.Wrapf(err, "error while creating file")
+	}
+	defer file.Close()
+	_, err = file.WriteString(content)
+	if err != nil {
+		return errors.Wrapf(err, "error while writing to file")
+	}
+	return nil
+}
+
+// RemoveContentsFromDir removes content from the given directory
+// dir is the name of the directory
+func RemoveContentsFromDir(dir string) error {
+	files, err := filepath.Glob(filepath.Join(dir, "*"))
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		err = os.RemoveAll(file)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 	testDir, err := ioutil.TempDir(os.TempDir(), "odo-tests")
 	if err != nil {
@@ -704,9 +737,9 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 		for _, fileName := range tt.filesToCreate {
 			var err error
 			if fileName == ".gitignore" {
-				err = testingutil.MakeFileWithContent(testDir, fileName, tt.rulesOnGitIgnore)
+				err = MakeFileWithContent(testDir, fileName, tt.rulesOnGitIgnore)
 			} else if fileName == ".odoignore" {
-				err = testingutil.MakeFileWithContent(testDir, fileName, tt.rulesOnOdoIgnore)
+				err = MakeFileWithContent(testDir, fileName, tt.rulesOnOdoIgnore)
 			}
 			if err != nil {
 				t.Fatal(err)
@@ -724,9 +757,33 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 		} else if err != nil && !tt.wantErr {
 			t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
 		}
-		err = testingutil.RemoveContentsFromDir(testDir)
+		err = RemoveContentsFromDir(testDir)
 		if err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func TestGetSortedKeys(t *testing.T) {
+	tests := []struct {
+		testName string
+		input    map[string]string
+		expected []string
+	}{
+		{
+			testName: "default",
+			input:    map[string]string{"a": "av", "c": "cv", "b": "bv"},
+			expected: []string{"a", "b", "c"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			actual := GetSortedKeys(tt.input)
+			if !reflect.DeepEqual(tt.expected, actual) {
+				t.Errorf("expected: %+v, got: %+v", tt.expected, actual)
+			}
+		})
 	}
 }

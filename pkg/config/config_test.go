@@ -1152,18 +1152,18 @@ func TestSetConfiguration(t *testing.T) {
 		wantErr        bool
 		want           interface{}
 	}{
-		// updatenotification
+		// update notification
 		{
-			name:           "Case 1: updatenotification set nil to true",
-			parameter:      "updatenotification",
+			name:           fmt.Sprintf("Case 1: %s set nil to true", UpdateNotificationSetting),
+			parameter:      UpdateNotificationSetting,
 			value:          "true",
 			existingConfig: Config{},
 			want:           true,
 			wantErr:        false,
 		},
 		{
-			name:      "Case 2: updatenotification set true to false",
-			parameter: "updatenotification",
+			name:      fmt.Sprintf("Case 2: %s set true to false", UpdateNotificationSetting),
+			parameter: UpdateNotificationSetting,
 			value:     "false",
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
@@ -1174,8 +1174,8 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      "Case 3: updatenotification set false to true",
-			parameter: "updatenotification",
+			name:      fmt.Sprintf("Case 3: %s set false to true", UpdateNotificationSetting),
+			parameter: UpdateNotificationSetting,
 			value:     "true",
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
@@ -1187,17 +1187,16 @@ func TestSetConfiguration(t *testing.T) {
 		},
 
 		{
-			name:           "Case 4: updatenotification invalid value",
-			parameter:      "updatenotification",
+			name:           fmt.Sprintf("Case 4: %s invalid value", UpdateNotificationSetting),
+			parameter:      UpdateNotificationSetting,
 			value:          "invalid_value",
 			existingConfig: Config{},
 			wantErr:        true,
 		},
-
-		// timeout
+		// time out
 		{
-			name:      "Case 5: Timeout set to 5 from 0",
-			parameter: "timeout",
+			name:      fmt.Sprintf("Case 5: %s set to 5 from 0", TimeoutSetting),
+			parameter: TimeoutSetting,
 			value:     "5",
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
@@ -1208,38 +1207,46 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           "Case 6: Timeout set to 300",
-			parameter:      "timeout",
+			name:           fmt.Sprintf("Case 6: %s set to 300", TimeoutSetting),
+			parameter:      TimeoutSetting,
 			value:          "300",
 			existingConfig: Config{},
 			want:           300,
 			wantErr:        false,
 		},
 		{
-			name:           "Case 7: Timeout set to 0",
-			parameter:      "timeout",
+			name:           fmt.Sprintf("Case 7: %s set to 0", TimeoutSetting),
+			parameter:      TimeoutSetting,
 			value:          "0",
 			existingConfig: Config{},
 			want:           0,
 			wantErr:        false,
 		},
 		{
-			name:           "Case 8: Timeout set to -1",
-			parameter:      "timeout",
+			name:           fmt.Sprintf("Case 8: %s set to -1", TimeoutSetting),
+			parameter:      TimeoutSetting,
 			value:          "-1",
 			existingConfig: Config{},
 			wantErr:        true,
 		},
 		{
-			name:           "Case 9: Timeout invalid value",
-			parameter:      "timeout",
+			name:           fmt.Sprintf("Case 9: %s invalid value", TimeoutSetting),
+			parameter:      TimeoutSetting,
 			value:          "this",
 			existingConfig: Config{},
 			wantErr:        true,
 		},
+		{
+			name:           fmt.Sprintf("Case 10: %s set to 300 with mixed case in parameter name", TimeoutSetting),
+			parameter:      "TimeOut",
+			value:          "300",
+			existingConfig: Config{},
+			want:           300,
+			wantErr:        false,
+		},
 		// invalid parameter
 		{
-			name:           "Case 10: invalid parameter",
+			name:           "Case 11: invalid parameter",
 			parameter:      "invalid_parameter",
 			existingConfig: Config{},
 			wantErr:        true,
@@ -1304,12 +1311,12 @@ func TestGetupdateNotification(t *testing.T) {
 		want           bool
 	}{
 		{
-			name:           "Case 1: updatenotification nil",
+			name:           fmt.Sprintf("Case 1: %s nil", UpdateNotificationSetting),
 			existingConfig: Config{},
 			want:           true,
 		},
 		{
-			name: "Case 2: updatenotification true",
+			name: fmt.Sprintf("Case 2: %s true", UpdateNotificationSetting),
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
 					UpdateNotification: &trueValue,
@@ -1318,7 +1325,7 @@ func TestGetupdateNotification(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "Case 3: updatenotification false",
+			name: fmt.Sprintf("Case 3: %s false", UpdateNotificationSetting),
 			existingConfig: Config{
 				OdoSettings: OdoSettings{
 					UpdateNotification: &falseValue,
@@ -1339,6 +1346,79 @@ func TestGetupdateNotification(t *testing.T) {
 				t.Errorf("GetUpdateNotification returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
 			}
 
+		})
+	}
+}
+
+func TestFormatSupportedParameters(t *testing.T) {
+	expected := `
+Available Parameters:
+%s - %s
+%s - %s
+%s - %s
+`
+	expected = fmt.Sprintf(expected,
+		NamePrefixSetting, NamePrefixSettingDescription,
+		TimeoutSetting, TimeoutSettingDescription,
+		UpdateNotificationSetting, UpdateNotificationSettingDescription)
+	actual := FormatSupportedParameters()
+	if expected != actual {
+		t.Errorf("expected '%s', got '%s'", expected, actual)
+	}
+}
+
+func TestLowerCaseParameters(t *testing.T) {
+	expected := map[string]bool{"nameprefix": true, "timeout": true, "updatenotification": true}
+	actual := getLowerCaseParameters()
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("expected '%v', got '%v'", expected, actual)
+	}
+}
+
+func TestIsSupportedParameter(t *testing.T) {
+	tests := []struct {
+		testName      string
+		param         string
+		expectedLower string
+		expected      bool
+	}{
+		{
+			testName:      "existing, lower case",
+			param:         "timeout",
+			expectedLower: "timeout",
+			expected:      true,
+		},
+		{
+			testName:      "existing, from description",
+			param:         "Timeout",
+			expectedLower: "timeout",
+			expected:      true,
+		},
+		{
+			testName:      "existing, mixed case",
+			param:         "TimeOut",
+			expectedLower: "timeout",
+			expected:      true,
+		},
+		{
+			testName: "empty",
+			param:    "",
+			expected: false,
+		},
+		{
+			testName: "unexisting",
+			param:    "foo",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Log("Running test: ", tt.testName)
+		t.Run(tt.testName, func(t *testing.T) {
+			actual, ok := asSupportedParameter(tt.param)
+			if tt.expected != ok && tt.expectedLower != actual {
+				t.Fail()
+			}
 		})
 	}
 }
