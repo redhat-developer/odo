@@ -79,10 +79,15 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 			util.LogErrorAndExit(err, "")
 		}
 		// If 'default' project set, ask user to create a new project or set different one as 'default' is set for all users, hence not recommended
+		// he should only be allowed to create or set a new project in this case
 		if ns == "default" {
-			errFormat := "current project is 'default'. Please create or set a different project\n\t%s project create|set <project_name>"
-			err := fmt.Errorf(errFormat, command.Root().Name())
-			util.LogErrorAndExit(err, "")
+			if (command.HasParent() && command.Parent().Name() == "project") && (command.Name() == "create" || command.Name() == "set") {
+
+			} else {
+				errFormat := "current project is 'default'. Please create or set a different project\n\t%s project create|set <project_name>"
+				err := fmt.Errorf(errFormat, command.Root().Name())
+				util.LogErrorAndExit(err, "")
+			}
 		}
 	}
 	client.Namespace = ns
