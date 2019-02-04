@@ -50,6 +50,7 @@ func (o *ViewOptions) Run() (err error) {
 	return
 }
 
+// NewCmdView implements the config view odo command
 func NewCmdView(name, fullName string) *cobra.Command {
 	o := NewViewOptions()
 	configurationViewCmd := &cobra.Command{

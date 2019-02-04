@@ -43,6 +43,7 @@ type ApplicationInfo struct {
 	ActiveComponent string `json:"activeComponent"`
 }
 
+// Config records odo's configuration
 type Config struct {
 	// odo specific configuration settings
 	OdoSettings OdoSettings `json:"settings"`
@@ -55,6 +56,7 @@ type Config struct {
 	ActiveApplications []ApplicationInfo `json:"activeApplications"`
 }
 
+// ConfigInfo records information about odo's configuration
 type ConfigInfo struct {
 	Filename string
 	Config
@@ -400,12 +402,18 @@ func (c *ConfigInfo) DeleteProject(projectName string) error {
 }
 
 const (
-	UpdateNotificationSetting            = "UpdateNotification"
+	// Name of the setting controlling update notification
+	UpdateNotificationSetting = "UpdateNotification"
+	// Human-readable description for the update notification setting
 	UpdateNotificationSettingDescription = "Controls if an update notification is shown or not (true or false)"
-	NamePrefixSetting                    = "NamePrefix"
-	NamePrefixSettingDescription         = "Default prefix is the current directory name. Use this value to set a default name prefix"
-	TimeoutSetting                       = "Timeout"
-	TimeoutSettingDescription            = "Timeout (in seconds) for OpenShift server connection check"
+	// Name of the setting controlling name prefix
+	NamePrefixSetting = "NamePrefix"
+	// Human-readable description for the name prefix setting
+	NamePrefixSettingDescription = "Default prefix is the current directory name. Use this value to set a default name prefix"
+	// Name of the setting controlling timeout for connection check
+	TimeoutSetting = "Timeout"
+	// Human-readable description for the timeout setting
+	TimeoutSettingDescription = "Timeout (in seconds) for OpenShift server connection check"
 )
 
 var (
