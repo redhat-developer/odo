@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -14,7 +15,6 @@ var (
 	storageSize            string
 	storagePath            string
 	storageForceDeleteflag bool
-	storageAllListflag     bool
 )
 
 const RecommendedCommandName = "storage"

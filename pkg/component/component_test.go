@@ -243,7 +243,7 @@ func TestList(t *testing.T) {
 		name    string
 		dcList  appsv1.DeploymentConfigList
 		wantErr bool
-		output  []Info
+		output  []Description
 	}{
 		{
 			name: "Case 1: Components are returned",
@@ -311,14 +311,14 @@ func TestList(t *testing.T) {
 					},
 				},
 			},
-			output: []Info{
+			output: []Description{
 				{
-					Name: "frontend",
-					Type: "nodejs",
+					ComponentName:      "frontend",
+					ComponentImageType: "nodejs",
 				},
 				{
-					Name: "backend",
-					Type: "java",
+					ComponentName:      "backend",
+					ComponentImageType: "java",
 				},
 			},
 			wantErr: false,
@@ -353,7 +353,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		componentType      string
 		componentPath      string
 		componentPathType  occlient.CreateType
-		existingComponents []Info
+		existingComponents []Description
 		wantErr            bool
 		wantRE             string
 		needPrefix         bool
@@ -363,7 +363,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "nodejs",
 			componentPathType:  occlient.GIT,
 			componentPath:      "https://github.com/openshift/nodejs.git",
-			existingComponents: []Info{},
+			existingComponents: []Description{},
 			wantErr:            false,
 			wantRE:             "nodejs-*",
 			needPrefix:         false,
@@ -373,7 +373,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "nodejs",
 			componentPathType:  occlient.LOCAL,
 			componentPath:      "./testing",
-			existingComponents: []Info{},
+			existingComponents: []Description{},
 			wantErr:            false,
 			wantRE:             "testing-nodejs-*",
 			needPrefix:         true,
@@ -383,7 +383,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "wildfly",
 			componentPathType:  occlient.BINARY,
 			componentPath:      "./testing.war",
-			existingComponents: []Info{},
+			existingComponents: []Description{},
 			wantErr:            false,
 			wantRE:             "testing-wildfly-*",
 			needPrefix:         true,

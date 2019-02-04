@@ -2,6 +2,11 @@ package storage
 
 import (
 	"fmt"
+	"os"
+
+	"encoding/json"
+	"text/tabwriter"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
@@ -11,10 +16,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/storage"
-	"github.com/spf13/cobra"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"text/tabwriter"
+
+	"github.com/spf13/cobra"
 )
 
 const listRecommendedCommandName = "list"
@@ -31,6 +37,7 @@ var (
 type StorageListOptions struct {
 	storageListAllFlag bool
 	componentName      string
+	outputFlag         string
 	*genericclioptions.Context
 }
 
@@ -54,20 +61,95 @@ func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []st
 
 // Validate validates the StorageListOptions based on completed values
 func (o *StorageListOptions) Validate() (err error) {
-	return
+	return odoutil.CheckOutputFlag(o.outputFlag)
 }
 
 // Run contains the logic for the odo storage list command
 func (o *StorageListOptions) Run() (err error) {
-	if storageAllListflag {
-		printMountedStorageInAllComponent(o.Client, o.Application)
+	if o.outputFlag == "json" {
+		var storeList []storage.Storage
+		if o.storageListAllFlag {
+			componentList, err := component.List(o.Client, o.Application)
+			if err != nil {
+				return err
+			}
+			for _, component := range componentList {
+				mountedStorages, err := storage.ListMounted(o.Client, component.ComponentName, o.Application)
+				if err != nil {
+					return err
+				}
+				for _, storage := range mountedStorages {
+					mounted := getMachineReadableFormat(true, storage)
+					storeList = append(storeList, mounted)
+				}
+			}
+
+		} else {
+			componentName := o.Component()
+			mountedStorages, err := storage.ListMounted(o.Client, componentName, o.Application)
+			if err != nil {
+				return err
+			}
+			for _, storage := range mountedStorages {
+				mounted := getMachineReadableFormat(true, storage)
+				storeList = append(storeList, mounted)
+
+			}
+		}
+		unmountedStorages, err := storage.ListUnmounted(o.Client, o.Application)
+		if err != nil {
+			return err
+		}
+		for _, storage := range unmountedStorages {
+			unmounted := getMachineReadableFormat(false, storage)
+			storeList = append(storeList, unmounted)
+		}
+		storageList := storage.StorageList{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "List",
+				APIVersion: "odo.openshift.io/v1aplha1",
+			},
+			ListMeta: metav1.ListMeta{},
+			Items:    storeList,
+		}
+		out, err := json.Marshal(storageList)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
 	} else {
-		// storageComponent is the input component name
-		componentName := o.Component()
-		printMountedStorageInComponent(o.Client, componentName, o.Application)
+
+		if o.storageListAllFlag {
+			printMountedStorageInAllComponent(o.Client, o.Application)
+		} else {
+			// storageComponent is the input component name
+			componentName := o.Component()
+			printMountedStorageInComponent(o.Client, componentName, o.Application)
+		}
+		printUnmountedStorage(o.Client, o.Application)
 	}
-	printUnmountedStorage(o.Client, o.Application)
 	return
+}
+
+// getMachineReadableFormat returns resource information in machine readable format
+func getMachineReadableFormat(mounted bool, stor storage.StorageInfo) storage.Storage {
+	return storage.Storage{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Storage",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: stor.Name,
+		},
+		Spec: storage.StorageSpec{
+			Size: stor.Size,
+			Path: stor.Path,
+		},
+		Status: storage.StorageStatus{
+			Mounted: mounted,
+		},
+	}
+
 }
 
 // NewCmdStorageList implements the odo storage list command.
@@ -86,7 +168,8 @@ func NewCmdStorageList(name, fullName string) *cobra.Command {
 		},
 	}
 
-	storageListCmd.Flags().BoolVarP(&storageAllListflag, "all", "a", false, "List all storage in all components")
+	storageListCmd.Flags().BoolVarP(&o.storageListAllFlag, "all", "a", false, "List all storage in all components")
+	storageListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
 
 	projectCmd.AddProjectFlag(storageListCmd)
 	appCmd.AddApplicationFlag(storageListCmd)
@@ -129,7 +212,7 @@ func printMountedStorageInAllComponent(client *occlient.Client, applicationName 
 
 	// iterating over all the components in the given aplication and project
 	for _, component := range componentList {
-		printMountedStorageInComponent(client, component.Name, applicationName)
+		printMountedStorageInComponent(client, component.ComponentName, applicationName)
 	}
 }
 

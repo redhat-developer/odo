@@ -298,12 +298,12 @@ var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 	for _, component := range components {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[component.Name]; ok && val {
+		if val, ok := args.commands[component.ComponentName]; ok && val {
 			return nil
 		}
 		// we don't want to show the selected component as a target for linking, so we remove it from the suggestions
-		if component.Name != context.Component() {
-			completions = append(completions, component.Name)
+		if component.ComponentName != context.Component() {
+			completions = append(completions, component.ComponentName)
 		}
 	}
 
@@ -343,15 +343,15 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	for _, component := range components {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[component.Name]; ok && val {
+		if val, ok := args.commands[component.ComponentName]; ok && val {
 			return nil
 		}
 		// we don't want to show the selected component as a target for linking, so we remove it from the suggestions
-		if component.Name != context.Component() {
+		if component.ComponentName != context.Component() {
 			// we also need to make sure that this component has been linked to the current component
 			for _, envFromSourceName := range dcOfCurrentComponent.Spec.Template.Spec.Containers[0].EnvFrom {
-				if strings.Contains(envFromSourceName.SecretRef.Name, component.Name) {
-					completions = append(completions, component.Name)
+				if strings.Contains(envFromSourceName.SecretRef.Name, component.ComponentName) {
+					completions = append(completions, component.ComponentName)
 				}
 			}
 
@@ -393,10 +393,10 @@ var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 	for _, component := range components {
 		// we found the component name in the list which means
 		// that the component name has been already selected by the user so no need to suggest more
-		if args.commands[component.Name] {
+		if args.commands[component.ComponentName] {
 			return nil
 		}
-		completions = append(completions, component.Name)
+		completions = append(completions, component.ComponentName)
 	}
 	return completions
 }

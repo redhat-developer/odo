@@ -1,6 +1,7 @@
 package url
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -10,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -26,6 +28,7 @@ var (
 
 // URLListOptions encapsulates the options for the odo url list command
 type URLListOptions struct {
+	outputFlag string
 	*genericclioptions.Context
 }
 
@@ -42,7 +45,7 @@ func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the UrlListOptions based on completed values
 func (o *URLListOptions) Validate() (err error) {
-	return
+	return util.CheckOutputFlag(o.outputFlag)
 }
 
 // Run contains the logic for the odo url list command
@@ -55,18 +58,42 @@ func (o *URLListOptions) Run() (err error) {
 
 	if len(urls) == 0 {
 		return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
+	} else {
+		if o.outputFlag == "json" {
+			var urlList []url.Url
+			for _, u := range urls {
+				urlList = append(urlList, getMachineReadableFormat(u))
+			}
+			appDef := url.UrlList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.openshift.io/v1alpha1",
+				},
+				ListMeta: metav1.ListMeta{},
+				Items:    urlList,
+			}
+
+			out, err := json.Marshal(appDef)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(out))
+
+		} else {
+			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
+
+			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+			//create headers
+			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
+
+			for _, u := range urls {
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
+			}
+			tabWriterURL.Flush()
+
+		}
 	}
-	log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
-
-	tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-
-	//create headers
-	fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
-
-	for _, u := range urls {
-		fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
-	}
-	tabWriterURL.Flush()
 
 	return
 }
@@ -86,6 +113,17 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
+	urlListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the form of json")
 
 	return urlListCmd
+}
+
+// getMachineReadableFormat gives machine readable URL definition
+func getMachineReadableFormat(u url.URL) url.Url {
+	return url.Url{
+		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+		ObjectMeta: metav1.ObjectMeta{Name: u.Name},
+		Spec:       url.UrlSpec{URL: u.URL, Port: u.Port},
+	}
+
 }
