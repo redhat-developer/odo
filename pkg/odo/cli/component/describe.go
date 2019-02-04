@@ -50,7 +50,8 @@ func (do *DescribeOptions) Validate() (err error) {
 	if !isExists {
 		return fmt.Errorf("component %s does not exist", do.componentName)
 	}
-	return
+
+	return odoutil.CheckOutputFlag(do.outputFlag)
 }
 
 // Run has the logic to perform the required actions as part of command

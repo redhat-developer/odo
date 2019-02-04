@@ -123,7 +123,7 @@ func getMachineReadableFormat(u url.URL) url.Url {
 	return url.Url{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: u.Name},
-		Spec:       url.UrlSpec{URL: u.URL},
+		Spec:       url.UrlSpec{URL: u.URL, Port: u.Port},
 	}
 
 }
