@@ -74,17 +74,18 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 		ns = project.GetCurrent(client)
 		// if no current project, then ask user to create a project
 		if len(ns) <= 0 {
-			errFormat := "could not get current project. Please create a project\n\t%s project create <project_name>"
-			err := fmt.Errorf(errFormat, command.Root().Name())
-			util.LogErrorAndExit(err, "")
+			// If user directly tries to create or delete anything other than a project, stop him, with correct error message
+			if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
+				errFormat := "could not get current project.  Please create or set a project\n\t%s project create|set <project_name>"
+				err := fmt.Errorf(errFormat, command.Root().Name())
+				util.LogErrorAndExit(err, "")
+			}
 		}
-		// If 'default' project set, ask user to create a new project or set different one as 'default' is set for all users, hence not recommended
-		// he should only be allowed to create or set a new project in this case
+		// If 'default' project set
 		if ns == "default" {
-			if command.HasParent() && command.Parent().Name() == "project" {
-
-			} else {
-				errFormat := "current project is 'default'. Please create or set a different project\n\t%s project create|set <project_name>"
+			// If user directly tries to create or delete anything other than a project, stop him, with correct error message
+			if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
+				errFormat := "current project is 'default' and is read only. Please create or set a different project\n\t%s project create|set <project_name>"
 				err := fmt.Errorf(errFormat, command.Root().Name())
 				util.LogErrorAndExit(err, "")
 			}
