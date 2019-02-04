@@ -15,11 +15,11 @@ type Component struct {
 
 // ComponentSpec is spec of components
 type ComponentSpec struct {
-	Type    string   `json:"type,omitempty"`
-	Source  string   `json:"source,omitempty"`
-	URL     []string `json:"url,omitempty"`
-	Storage []string `json:"storage,omitempty"`
-	Env     []corev1.EnvVar
+	Type    string          `json:"type,omitempty"`
+	Source  string          `json:"source,omitempty"`
+	URL     []string        `json:"url,omitempty"`
+	Storage []string        `json:"storage,omitempty"`
+	Env     []corev1.EnvVar `json:"env,omitempty"`
 }
 
 // ComponentList is list of components
