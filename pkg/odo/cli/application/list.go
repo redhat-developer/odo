@@ -118,7 +118,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 		},
 	}
 
-	command.Flags().StringVarP(&o.outputFormat, "output", "o", "json", "output in json format")
+	command.Flags().StringVarP(&o.outputFormat, "output", "o", "", "output in json format")
 	project.AddProjectFlag(command)
 	return command
 }
