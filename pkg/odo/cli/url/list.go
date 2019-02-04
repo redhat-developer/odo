@@ -3,6 +3,7 @@ package url
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"os"
 	"text/tabwriter"
 
