@@ -39,14 +39,14 @@ var _ = Describe("odojsonoutput", func() {
 		// odo describe nodejs -o json
 		It("should be able to describe component", func() {
 			actual := runCmd("odo describe nodejs -o json")
-			desired := `{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"],"Env":null},"status":{"active":true}}`
+			desired := `{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"]},"status":{"active":true}}`
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 		})
 		// odo list -o json
 		It("should be able to list components", func() {
 			actual := runCmd("odo list -o json")
-			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"],"Env":null},"status":{"active":true}}]}`
+			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"]},"status":{"active":true}}]}`
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
@@ -55,8 +55,7 @@ var _ = Describe("odojsonoutput", func() {
 		It("should be able to list url", func() {
 			actual := runCmd("odo url list -o json")
 			url := runCmd("oc get routes myurl-myapp -o jsonpath={.spec.host}")
-			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"%s"}}]}
-			`, url)
+			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"%s","port":8080}}]}`, url)
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
