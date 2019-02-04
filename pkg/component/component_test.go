@@ -29,19 +29,19 @@ func TestGetS2IPaths(t *testing.T) {
 		{
 			name: "Case 1: odo expected s2i envs available",
 			podEnvs: []corev1.EnvVar{
-				corev1.EnvVar{
+				{
 					Name:  occlient.EnvS2IDeploymentDir,
 					Value: "abc",
 				},
-				corev1.EnvVar{
+				{
 					Name:  occlient.EnvS2ISrcOrBinPath,
 					Value: "def",
 				},
-				corev1.EnvVar{
+				{
 					Name:  occlient.EnvS2IWorkingDir,
 					Value: "ghi",
 				},
-				corev1.EnvVar{
+				{
 					Name:  occlient.EnvS2ISrcBackupDir,
 					Value: "ijk",
 				},
@@ -57,15 +57,15 @@ func TestGetS2IPaths(t *testing.T) {
 		{
 			name: "Case 2: some of the odo expected s2i envs not available",
 			podEnvs: []corev1.EnvVar{
-				corev1.EnvVar{
+				{
 					Name:  occlient.EnvS2IDeploymentDir,
 					Value: "abc",
 				},
-				corev1.EnvVar{
+				{
 					Name:  occlient.EnvS2ISrcOrBinPath,
 					Value: "def",
 				},
-				corev1.EnvVar{
+				{
 					Name:  occlient.EnvS2ISrcBackupDir,
 					Value: "ijk",
 				},
