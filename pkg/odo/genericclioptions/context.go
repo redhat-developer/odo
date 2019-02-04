@@ -60,6 +60,15 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	return client
 }
 
+// checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
+// errFormatforCommand must contain one %s
+func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
+	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
+		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
+		util.LogErrorAndExit(err, "")
+	}
+}
+
 // resolveProject resolves project
 func resolveProject(command *cobra.Command, client *occlient.Client) string {
 	var ns string
@@ -72,23 +81,15 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 	} else {
 		// otherwise use the current project
 		ns = project.GetCurrent(client)
-		// if no current project, then ask user to create a project
+		// if no current project, then check if user is trying to create or delete something other than project
 		if len(ns) <= 0 {
-			// If user directly tries to create or delete anything other than a project, stop him, with correct error message
-			if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
-				errFormat := "could not get current project.  Please create or set a project\n\t%s project create|set <project_name>"
-				err := fmt.Errorf(errFormat, command.Root().Name())
-				util.LogErrorAndExit(err, "")
-			}
+			errFormat := "could not get current project.  Please create or set a project\n\t%s project create|set <project_name>"
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
-		// If 'default' project set
+		// If 'default' project set then check if user is trying to create or delete something other than project
 		if ns == "default" {
-			// If user directly tries to create or delete anything other than a project, stop him, with correct error message
-			if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
-				errFormat := "current project is 'default' and is read only. Please create or set a different project\n\t%s project create|set <project_name>"
-				err := fmt.Errorf(errFormat, command.Root().Name())
-				util.LogErrorAndExit(err, "")
-			}
+			errFormat := "Current project is default, which is read only.  Please create or set different project\n\t%s project create|set <project_name>"
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
 	client.Namespace = ns
