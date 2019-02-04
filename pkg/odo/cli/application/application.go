@@ -8,25 +8,14 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
+	"github.com/redhat-developer/odo/pkg/component"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	applicationShortFlag       bool
-	applicationForceDeleteFlag bool
-)
-
-// Description holds all information about application
-type Description struct {
-	Name       string `json:"applicationName,omitempty"`
-	Components []component.Description
-}
-
+// RecommendedCommandName is the recommended app command name
 const RecommendedCommandName = "app"
 
 // NewCmdApplication implements the odo application command
@@ -114,4 +103,30 @@ func ensureAppExists(client *occlient.Client, appName, project string) error {
 		return fmt.Errorf("Application %v in project %v does not exist", appName, project)
 	}
 	return nil
+}
+
+// getMachineReadableFormat returns resource information in machine readable format
+func getMachineReadableFormat(client *occlient.Client, appName string, projectName string, active bool) application.App {
+	componentList, _ := component.List(client, appName)
+	var compList []string
+	for _, comp := range componentList {
+		compList = append(compList, comp.ComponentName)
+	}
+	appDef := application.App{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "app",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      appName,
+			Namespace: projectName,
+		},
+		Spec: application.AppSpec{
+			Components: compList,
+		},
+		Status: application.AppStatus{
+			Active: active,
+		},
+	}
+	return appDef
 }
