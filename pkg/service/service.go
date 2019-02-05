@@ -185,7 +185,11 @@ func List(client *occlient.Client, applicationName string) ([]ServiceInfo, error
 	var services []ServiceInfo
 	// Iterate through serviceInstanceList and add to service
 	for _, elem := range serviceInstanceList {
-		services = append(services, ServiceInfo{Name: elem.Labels[componentlabels.ComponentLabel], Type: elem.Labels[componentlabels.ComponentTypeLabel], Status: elem.Status.Conditions[0].Reason})
+		conditions := elem.Status.Conditions
+		if len(conditions) == 0 {
+			return nil, fmt.Errorf("no condition in status for %+v", elem)
+		}
+		services = append(services, ServiceInfo{Name: elem.Labels[componentlabels.ComponentLabel], Type: elem.Labels[componentlabels.ComponentTypeLabel], Status: conditions[0].Reason})
 	}
 
 	return services, nil
