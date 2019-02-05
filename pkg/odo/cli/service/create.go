@@ -139,6 +139,7 @@ func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 	return
 }
 
+// outputNonInteractiveEquivalent outputs the populated options as the equivalent command that would be used in non-interactive mode
 func (o *ServiceCreateOptions) outputNonInteractiveEquivalent() string {
 	if o.outputCLI {
 		var tpl bytes.Buffer
