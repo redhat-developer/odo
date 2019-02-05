@@ -108,7 +108,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		component.NewCmdUpdate(component.RecommendedUpdateCommandName, util.GetFullName(fullName, component.RecommendedUpdateCommandName)),
 		component.NewCmdWatch(component.RecommendedWatchCommandName, util.GetFullName(fullName, component.RecommendedWatchCommandName)),
 		login.NewCmdLogin(),
-		logout.NewCmdLogout(),
+		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
 		project.NewCmdProject(project.RecommendedCommandName, util.GetFullName(fullName, project.RecommendedCommandName)),
 		service.NewCmdService(service.RecommendedCommandName, util.GetFullName(fullName, service.RecommendedCommandName)),
 		storage.NewCmdStorage(storage.RecommendedCommandName, util.GetFullName(fullName, storage.RecommendedCommandName)),
