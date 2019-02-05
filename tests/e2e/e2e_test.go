@@ -60,6 +60,15 @@ var _ = Describe("odoe2e", func() {
 		Fail(err.Error())
 	}
 
+	Context("odo service create", func() {
+		It("should return error if the cluster has no service catalog deployed", func() {
+			loginOutput := runCmd("odo login --username developer --password developer")
+			Expect(loginOutput).To(ContainSubstring("Login successful"))
+			sessionOutput := runFailCmd("odo service create", 1)
+			Expect(sessionOutput).To(ContainSubstring("unable to retrieve service classes"))
+		})
+	})
+
 	// TODO: Create component without creating application
 	Context("odo project", func() {
 		It("should create a new project", func() {
