@@ -22,9 +22,10 @@ import (
 
 const (
 	createRecommendedCommandName = "create"
-	equivalentTemplate           = `Equivalent command:
-{{.}}
-`
+	equivalentTemplate           = "{{.CmdFullName}} {{.ServiceType}}" +
+		"{{if .ServiceName}} {{.ServiceName}}{{end}}" +
+		"{{if .Plan}} --plan {{.Plan}}{{end}}" +
+		"{{range $key, $value := .ParametersMap}} -p{{$key}}={{$value}}{{end}}"
 )
 
 var (
@@ -143,11 +144,7 @@ func (o *ServiceCreateOptions) validateServiceName(i interface{}) (err error) {
 func (o *ServiceCreateOptions) outputNonInteractiveEquivalent() string {
 	if o.outputCLI {
 		var tpl bytes.Buffer
-		t := template.Must(template.New("service-create-cli").Parse(
-			"{{.CmdFullName}} {{.ServiceType}}" +
-				"{{if .ServiceName}} {{.ServiceName}}{{end}}" +
-				"{{if .Plan}} --plan {{.Plan}}{{end}}" +
-				"{{range $key, $value := .ParametersMap}} -p{{$key}}={{$value}}{{end}}"))
+		t := template.Must(template.New("service-create-cli").Parse(equivalentTemplate))
 		e := t.Execute(&tpl, o)
 		if e != nil {
 			panic(e) // shouldn't happen
