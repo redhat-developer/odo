@@ -56,7 +56,7 @@ var _ = Describe("odoLoginE2e", func() {
 			It("Should fail login on invalid token with appropriate message", func() {
 				session = runFailCmd("odo login -t verybadtoken", 1)
 				Expect(session).To(ContainSubstring("The token provided is invalid or expired"))
-				runCmd(fmt.Sprintf("oc login -t %s", testUserToken))
+				runCmd(fmt.Sprintf("oc login --token %s", testUserToken))
 			})
 		})
 
