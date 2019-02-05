@@ -79,7 +79,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 				ServiceType:   "foo",
 				ParametersMap: map[string]string{"param1": "value1", "param2": "value2"},
 			},
-			expected: RecommendedCommandName + " foo -pparam1=value1 -pparam2=value2",
+			expected: RecommendedCommandName + " foo -p param1=value1 -p param2=value2",
 		},
 		{
 			name: "all",
@@ -91,7 +91,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 				Plan:          "plan",
 				ParametersMap: map[string]string{"param1": "value1", "param2": "value2"},
 			},
-			expected: RecommendedCommandName + " foo name --plan plan -pparam1=value1 -pparam2=value2",
+			expected: RecommendedCommandName + " foo name --plan plan -p param1=value1 -p param2=value2",
 		},
 	}
 
