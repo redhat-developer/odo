@@ -47,7 +47,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 		// 'odo component' is the same as 'odo component get'
 		// 'odo component <component_name>' is the same as 'odo component set <component_name>'
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) > 0 && args[0] != "get" && args[0] != "set" {
+			if len(args) > 0 && args[0] != RecommendedGetCommandName && args[0] != RecommendedSetCommandName {
 				componentSetCmd.Run(cmd, args)
 			} else {
 				componentGetCmd.Run(cmd, args)
