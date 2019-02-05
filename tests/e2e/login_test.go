@@ -10,13 +10,14 @@ import (
 
 var _ = Describe("odoLoginE2e", func() {
 	// user related constants
-	const loginTestBaseUser = "testdeveloper"
+	const loginTestUserForNoProject = "developernoproject"
+	const loginTestUserForSingleProject1 = "developersingleproject1"
+	const odoTestProjectForSingleProject1 = "testproject1"
 	const loginTestUserPassword = "developer"
 
 	// variables to be used in test
 	var session string
 	var testUserToken string
-	var testUser string
 
 	Describe("Check for successful login and logout", func() {
 		Context("Initialize", func() {
@@ -33,12 +34,12 @@ var _ = Describe("odoLoginE2e", func() {
 			})
 
 			It("Should login successfully with username and password without any projects with appropriate message", func() {
-				session = runCmd(fmt.Sprintf("odo login -u %s -p %s", loginTestBaseUser, loginTestUserPassword))
+				session = runCmd(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForNoProject, loginTestUserPassword))
 				Expect(session).To(ContainSubstring("Login successful"))
 				Expect(session).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
 				Expect(session).To(ContainSubstring("odo project create <project-name>"))
 				session = runCmd("oc whoami")
-				Expect(session).To(ContainSubstring(loginTestBaseUser))
+				Expect(session).To(ContainSubstring(loginTestUserForNoProject))
 				// One initialization needs one login, hence it happens here
 				testUserToken = runCmd("oc whoami -t")
 			})
@@ -49,7 +50,7 @@ var _ = Describe("odoLoginE2e", func() {
 				Expect(session).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
 				Expect(session).To(ContainSubstring("odo project create <project-name>"))
 				session = runCmd("oc whoami")
-				Expect(session).To(ContainSubstring(loginTestBaseUser))
+				Expect(session).To(ContainSubstring(loginTestUserForNoProject))
 			})
 
 			It("Should fail login on invalid token with appropriate message", func() {
@@ -59,27 +60,32 @@ var _ = Describe("odoLoginE2e", func() {
 			})
 		})
 
-		Context("Run login tests with single active project", func() {
+		Context("Run login tests with single active project with username and password", func() {
 			AfterEach(func() {
-				runCmd("oc logout")
+				cleanUpAfterProjects([]string{odoTestProjectForSingleProject1})
 			})
 
 			It("Should login successfully with username and password single project with appropriate message", func() {
 				// Initialise for test
-				testUser = fmt.Sprintf("%s%s", loginTestBaseUser, "1")
-				runCmd(fmt.Sprintf("oc login -u %s -p %s", testUser, loginTestUserPassword))
-				runCmd("oc new-project testproject1")
+				runCmd(fmt.Sprintf("oc login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
+				runCmd(fmt.Sprintf("oc new-project %s", odoTestProjectForSingleProject1))
 				runCmd("oc logout")
-				session = runCmd("odo login -u %s -p %s")
+				session = runCmd(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
 				Expect(session).To(ContainSubstring("Login successful"))
-				Expect(session).To(ContainSubstring("testproject1"))
+				Expect(session).To(ContainSubstring(odoTestProjectForSingleProject1))
 				session = runCmd("oc whoami -t")
-				Expect(session).To(ContainSubstring("testproject1"))
-				deleteProject("testproject1")
+				Expect(session).To(ContainSubstring(loginTestUserForSingleProject1))
 			})
 		})
 	})
 })
+
+func cleanUpAfterProjects(projects []string) {
+	for _, p := range projects {
+		deleteProject(p)
+	}
+	runCmd("oc logout")
+}
 
 func deleteProject(project string) {
 	var waitOut bool
