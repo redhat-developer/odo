@@ -68,12 +68,12 @@ var _ = Describe("odoLoginE2e", func() {
 			It("Should login successfully with username and password single project with appropriate message", func() {
 				// Initialise for test
 				runCmd(fmt.Sprintf("oc login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
-				runCmd(fmt.Sprintf("oc new-project %s", odoTestProjectForSingleProject1))
+				runCmd(fmt.Sprintf("odo project create %s", odoTestProjectForSingleProject1))
 				runCmd("oc logout")
 				session = runCmd(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
 				Expect(session).To(ContainSubstring("Login successful"))
 				Expect(session).To(ContainSubstring(odoTestProjectForSingleProject1))
-				session = runCmd("oc whoami -t")
+				session = runCmd("oc whoami")
 				Expect(session).To(ContainSubstring(loginTestUserForSingleProject1))
 			})
 		})
