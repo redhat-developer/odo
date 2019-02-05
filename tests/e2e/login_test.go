@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const baseOdoProjectDelete = "odo project delete -f "
+
 var _ = Describe("odoLoginE2e", func() {
 	// user related constants
 	const loginTestUser = "testdeveloper"
@@ -17,7 +19,6 @@ var _ = Describe("odoLoginE2e", func() {
 	// Comand related constants
 	const baseOdoLoginCommand = "odo login"
 	const baseOdoProjectCreate = "odo project create"
-	const baseOdoProjectDelete = "odo project delete -f "
 	const ocWhoamiCommand = "oc whoami"
 	const ocTokenCommand = "oc whoami -t"
 
@@ -41,18 +42,8 @@ var _ = Describe("odoLoginE2e", func() {
 			})
 		})
 
-		Context("Run login tests", func() {
+		Context("Run login tests with no active projects, having default is also considered as not having active project", func() {
 			AfterEach(func() {
-				projects := strings.Split(runCmd("oc projects -q"), "\n")
-				var waitOut bool
-				for _, p := range projects {
-					if len(p) > 0 {
-						waitOut = waitForCmdOut(fmt.Sprintf("%s %s", baseOdoProjectDelete, p), 10, func(out string) bool {
-							return strings.Contains(out, fmt.Sprintf("Deleted project : %s", p))
-						})
-						Expect(waitOut).To(BeTrue())
-					}
-				}
 				runCmd(backToCurrentUserCommand)
 			})
 
@@ -77,6 +68,19 @@ var _ = Describe("odoLoginE2e", func() {
 				Expect(session).To(ContainSubstring(loginTestUser))
 			})
 
+			It("Should fail login on invalid token with appropriate message", func() {
+				session = runFailCmd(testUserLoginFailCommandWithToken, 1)
+				Expect(session).To(ContainSubstring("The token provided is invalid or expired"))
+				runCmd(testUserLoginCommand)
+			})
+		})
+
+		Context("Run login tests with single active project", func() {
+			AfterEach(func() {
+				deleteProject(odoTestProject1)
+				runCmd(backToCurrentUserCommand)
+			})
+
 			It("Should login successfully with username and password single project with appropriate message", func() {
 				runCmd(testUserLoginCommand)
 				runCmd(testUserCreateProject1Command)
@@ -87,12 +91,16 @@ var _ = Describe("odoLoginE2e", func() {
 				session = runCmd(ocWhoamiCommand)
 				Expect(session).To(ContainSubstring(loginTestUser))
 			})
-
-			It("Should fail login on invalid token with appropriate message", func() {
-				session = runFailCmd(testUserLoginFailCommandWithToken, 1)
-				Expect(session).To(ContainSubstring("The token provided is invalid or expired"))
-				runCmd(testUserLoginCommand)
-			})
 		})
 	})
 })
+
+func deleteProject(project string) {
+	var waitOut bool
+	if len(project) > 0 {
+		waitOut = waitForCmdOut(fmt.Sprintf("%s %s", baseOdoProjectDelete, project), 10, func(out string) bool {
+			return strings.Contains(out, fmt.Sprintf("Deleted project : %s", project))
+		})
+		Expect(waitOut).To(BeTrue())
+	}
+}
