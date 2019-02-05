@@ -97,6 +97,19 @@ func EnterServiceNameInteractively(defaultValue, promptText string, validateName
 	return serviceName
 }
 
+// ShouldOutputNonInteractiveEquivalent asks the user if they want to output the equivalent non-interactive command line version
+// of the interactively entered options
+func ShouldOutputNonInteractiveEquivalent() bool {
+	outputCLI := false
+	confirm := &survey.Confirm{
+		Message: "Output the non-interactive version of the selected options",
+	}
+
+	err := survey.AskOne(confirm, &outputCLI, survey.Required)
+	ui.HandleError(err)
+	return outputCLI
+}
+
 // SelectClassInteractively lets the user select target service class from possible options, first filtering by categories then
 // by class name
 func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterServiceClass) (class scv1beta1.ClusterServiceClass, serviceType string) {
