@@ -29,6 +29,7 @@ var (
 
 type StorageMountOptions struct {
 	storageName string
+	storagePath string
 	*genericclioptions.Context
 }
 
@@ -65,7 +66,7 @@ func (o *StorageMountOptions) Validate() (err error) {
 
 // Run contains the logic for the odo storage mount command
 func (o *StorageMountOptions) Run() (err error) {
-	err = storage.Mount(o.Client, storagePath, o.storageName, o.Component(), o.Application)
+	err = storage.Mount(o.Client, o.storagePath, o.storageName, o.Component(), o.Application)
 	if err != nil {
 		return
 	}
@@ -89,7 +90,7 @@ func NewCmdStorageMount(name, fullName string) *cobra.Command {
 		},
 	}
 
-	storageMountCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
+	storageMountCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
 	_ = storageMountCmd.MarkFlagRequired("path")
 
 	projectCmd.AddProjectFlag(storageMountCmd)
