@@ -8,8 +8,10 @@ import (
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
+// RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "login"
 
+// LoginOptions encapsulates the options for the odo command
 type LoginOptions struct {
 	userName string
 	password string
@@ -33,6 +35,7 @@ var loginExample = templates.Examples(`
   %[1]s localhost:8443 --token=xxxxxxxxxxxxxxxxxxxxxxx
 `)
 
+// NewLoginOptions creates a new LoginOptions instance
 func NewLoginOptions() *LoginOptions {
 	return &LoginOptions{}
 }
@@ -45,7 +48,7 @@ func (o *LoginOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	return
 }
 
-// Validate validates the GetOptions based on completed values
+// Validate validates the LoginOptions based on completed values
 func (o *LoginOptions) Validate() (err error) {
 	return
 }
@@ -55,7 +58,7 @@ func (o *LoginOptions) Run() (err error) {
 	return auth.Login(o.server, o.userName, o.password, o.token, o.caAuth, o.skipTLS)
 }
 
-// NewCmdLogin implements the login odo command
+// NewCmdLogin implements the odo command
 func NewCmdLogin(name, fullName string) *cobra.Command {
 	o := NewLoginOptions()
 	loginCmd := &cobra.Command{
