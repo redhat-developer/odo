@@ -227,12 +227,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
 			util.LogErrorAndExit(o.Validate(), "")
-			equivalent := o.outputNonInteractiveEquivalent()
-			if len(equivalent) > 0 {
-				log.Info("Equivalent command:")
-				fmt.Println(ui.StyledOutput(equivalent, "cyan"))
-			}
-			//util.LogErrorAndExit(o.Run(), "")
+			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
