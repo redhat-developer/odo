@@ -38,12 +38,25 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 
 	componentGetCmd := NewCmdGet(RecommendedGetCommandName, odoutil.GetFullName(fullName, RecommendedGetCommandName))
 	componentSetCmd := NewCmdSet(RecommendedSetCommandName, odoutil.GetFullName(fullName, RecommendedSetCommandName))
+	createCmd := NewCmdCreate(RecommendedCreateCommandName, odoutil.GetFullName(fullName, RecommendedCreateCommandName))
+	deleteCmd := NewCmdDelete(RecommendedDeleteCommandName, odoutil.GetFullName(fullName, RecommendedDeleteCommandName))
+	describeCmd := NewCmdDescribe(RecommendedDescribeCommandName, odoutil.GetFullName(fullName, RecommendedDescribeCommandName))
+	linkCmd := NewCmdLink(RecommendedLinkCommandName, odoutil.GetFullName(fullName, RecommendedLinkCommandName))
+	unlinkCmd := NewCmdUnlink(RecommendedUnlinkCommandName, odoutil.GetFullName(fullName, RecommendedUnlinkCommandName))
+	listCmd := NewCmdList(RecommendedListCommandName, odoutil.GetFullName(fullName, RecommendedListCommandName))
+	logCmd := NewCmdLog(RecommendedLogCommandName, odoutil.GetFullName(fullName, RecommendedLogCommandName))
+	pushCmd := NewCmdPush(RecommendedPushCommandName, odoutil.GetFullName(fullName, RecommendedPushCommandName))
+	updateCmd := NewCmdUpdate(RecommendedUpdateCommandName, odoutil.GetFullName(fullName, RecommendedUpdateCommandName))
+	watchCmd := NewCmdWatch(RecommendedWatchCommandName, odoutil.GetFullName(fullName, RecommendedWatchCommandName))
 
 	// componentCmd represents the component command
 	var componentCmd = &cobra.Command{
-		Use:     name,
-		Short:   "Components of application.",
-		Example: fmt.Sprintf("%s\n%s", componentGetCmd.Example, componentSetCmd.Example),
+		Use:   name,
+		Short: "Components of application.",
+		Example: fmt.Sprintf("%s\n%s\n\n  See sub-commands individually for more examples, e.g. %s %s -h",
+			componentGetCmd.Example,
+			componentSetCmd.Example,
+			fullName, RecommendedCreateCommandName),
 		// 'odo component' is the same as 'odo component get'
 		// 'odo component <component_name>' is the same as 'odo component set <component_name>'
 		Run: func(cmd *cobra.Command, args []string) {
@@ -55,11 +68,10 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 		},
 	}
 
-	componentCmd.AddCommand(componentGetCmd)
-
 	// add flags from 'get' to component command
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
-	componentCmd.AddCommand(componentSetCmd)
+
+	componentCmd.AddCommand(componentGetCmd, componentSetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}
