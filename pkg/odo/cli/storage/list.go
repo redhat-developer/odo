@@ -41,12 +41,12 @@ type StorageListOptions struct {
 	*genericclioptions.Context
 }
 
-// NewStorageListOptions creates a new UrlCreateOptions instance
+// NewStorageListOptions creates a new StorageListOptions instance
 func NewStorageListOptions() *StorageListOptions {
 	return &StorageListOptions{}
 }
 
-// Complete completes StorageListOptions after they've been Created
+// Complete completes StorageListOptions after they've been created
 func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	if o.storageListAllFlag {

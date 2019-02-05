@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedCommandName is the recommended service command name
+// RecommendedCommandName is the recommended project command name
 const RecommendedCommandName = "project"
 
 // NewCmdProject implements the project odo command

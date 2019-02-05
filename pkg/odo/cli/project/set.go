@@ -43,7 +43,7 @@ func NewProjectSetOptions() *ProjectSetOptions {
 	return &ProjectSetOptions{}
 }
 
-// Complete completes ProjectSetOptions after they've been setd
+// Complete completes ProjectSetOptions after they've been created
 func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pso.Context = genericclioptions.NewContext(cmd)
 	pso.projectName = args[0]

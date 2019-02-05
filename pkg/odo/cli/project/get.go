@@ -39,7 +39,7 @@ func NewProjectGetOptions() *ProjectGetOptions {
 	return &ProjectGetOptions{}
 }
 
-// Complete completes ProjectGetOptions after they've been getd
+// Complete completes ProjectGetOptions after they've been created
 func (pgo *ProjectGetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pgo.Context = genericclioptions.NewContext(cmd)
 	return
