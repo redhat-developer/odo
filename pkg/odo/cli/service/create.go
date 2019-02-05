@@ -25,7 +25,7 @@ const (
 	equivalentTemplate           = "{{.CmdFullName}} {{.ServiceType}}" +
 		"{{if .ServiceName}} {{.ServiceName}}{{end}}" +
 		"{{if .Plan}} --plan {{.Plan}}{{end}}" +
-		"{{range $key, $value := .ParametersMap}} -p{{$key}}={{$value}}{{end}}"
+		"{{range $key, $value := .ParametersMap}} -p {{$key}}={{$value}}{{end}}"
 )
 
 var (
