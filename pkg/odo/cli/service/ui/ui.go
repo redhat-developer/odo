@@ -169,9 +169,15 @@ func classInfoItem(name, value string) string {
 
 	if len(value) > 0 {
 		// display the name using the default color, in bold and then reset style right after
-		return ansi.ColorCode("default+b") + name + ansi.ColorCode("reset") + ": " + value + "\n"
+		return StyledOutput(name, "default+b") + ": " + value + "\n"
 	}
 	return ""
+}
+
+// StyledOutput returns an ANSI color code to style the specified text accordingly, issuing a reset code when done using the
+// https://github.com/mgutz/ansi#style-format format
+func StyledOutput(text, style string) string {
+	return ansi.ColorCode(style) + text + ansi.ColorCode("reset")
 }
 
 const defaultColumnNumberBeforeWrap = 80

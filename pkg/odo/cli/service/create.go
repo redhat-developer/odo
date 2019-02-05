@@ -209,7 +209,7 @@ func (o *ServiceCreateOptions) Run() (err error) {
 You can see the current status by executing 'odo service list'`)
 	equivalent := o.outputNonInteractiveEquivalent()
 	if len(equivalent) > 0 {
-		log.Info("Equivalent command:\n" + equivalent)
+		log.Info("Equivalent command:\n" + ui.StyledOutput(equivalent, "cyan"))
 	}
 	return
 }
@@ -227,7 +227,12 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
 			util.LogErrorAndExit(o.Validate(), "")
-			util.LogErrorAndExit(o.Run(), "")
+			equivalent := o.outputNonInteractiveEquivalent()
+			if len(equivalent) > 0 {
+				log.Info("Equivalent command:")
+				fmt.Println(ui.StyledOutput(equivalent, "cyan"))
+			}
+			//util.LogErrorAndExit(o.Run(), "")
 		},
 	}
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
