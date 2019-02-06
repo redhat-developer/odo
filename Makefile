@@ -112,6 +112,15 @@ else
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.succinct -timeout 15m
 endif
 
+# Run component subcommands e2e tests
+.PHONY: test-cmp-sub-e2e
+test-cmp-e2e:
+ifdef TIMEOUT
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+else
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.succinct -timeout 15m
+endif
+
 # Run java e2e tests
 .PHONY: test-java-e2e
 test-java-e2e:
