@@ -114,7 +114,7 @@ endif
 
 # Run component subcommands e2e tests
 .PHONY: test-cmp-sub-e2e
-test-cmp-e2e:
+test-cmp-sub-e2e:
 ifdef TIMEOUT
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
