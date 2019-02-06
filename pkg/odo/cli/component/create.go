@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
 	"io"
 	"os"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	catalogutil "github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -45,6 +47,7 @@ type CreateOptions struct {
 	cpuMin           string
 	cpu              string
 	wait             bool
+	interactive      bool
 }
 
 // RecommendedCreateCommandName is the recommended watch command name
@@ -150,27 +153,40 @@ func (co *CreateOptions) setCmpName(args []string) (err error) {
 	componentImageName, componentType, _, _ := util.ParseComponentImageName(args[0])
 	co.CreateArgs.ImageName = componentImageName
 
-	// Fetch list of existing components in-order to attempt generation of unique component name
-	if componentList, err := component.List(co.Context.Client, co.Context.Application); err == nil {
-		// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
-		if len(args) == 2 {
-			co.CreateArgs.Name = args[1]
-		} else {
-			if componentName, err := component.GetDefaultComponentName(
-				co.CreateArgs.SourcePath,
-				co.CreateArgs.SourceType,
-				componentType,
-				componentList,
-			); err == nil {
-				co.CreateArgs.Name = componentName
-			} else {
-				return err
-			}
-		}
-	} else {
+	if len(args) == 2 {
+		co.CreateArgs.Name = args[1]
+		return
+	}
+
+	componentName, err := createDefaultComponentName(co.Context, componentType, co.CreateArgs.SourceType, co.CreateArgs.SourcePath)
+	if err != nil {
 		return err
 	}
+
+	co.CreateArgs.Name = componentName
 	return
+}
+
+func createDefaultComponentName(context *genericclioptions.Context, componentType string, sourceType occlient.CreateType, sourcePath string) (string, error) {
+	// Fetch list of existing components in-order to attempt generation of unique component name
+	componentList, err := component.List(context.Client, context.Application)
+	if err != nil {
+		return "", err
+	}
+
+	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
+	componentName, err := component.GetDefaultComponentName(
+		sourcePath,
+		sourceType,
+		componentType,
+		componentList,
+	)
+
+	if err != nil {
+		return "", nil
+	}
+
+	return componentName, nil
 }
 
 func (co *CreateOptions) setResourceLimits() {
@@ -192,25 +208,90 @@ func (co *CreateOptions) setResourceLimits() {
 
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	if len(args) == 0 || !cmd.HasFlags() {
+		co.interactive = true
+	}
+
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	co.CreateArgs.ApplicationName = co.Context.Application
 
-	co.CreateArgs.Wait = co.wait
+	if co.interactive {
+		client := co.Client
 
-	err = co.setCmpSourceAttrs()
-	if err != nil {
-		return err
+		componentTypeCandidates, err := catalog.List(client)
+		if err != nil {
+			return err
+		}
+		componentTypeCandidates = catalogutil.FilterHiddenComponents(componentTypeCandidates)
+		selectedComponentType := ui.SelectComponentType(componentTypeCandidates)
+		selectedImageTag := ui.SelectImageTagInteractively(componentTypeCandidates, selectedComponentType)
+		co.CreateArgs.ImageName = selectedComponentType + ":" + selectedImageTag
+
+		selectedSourceType := ui.SelectSourceType([]occlient.CreateType{occlient.LOCAL, occlient.GIT, occlient.BINARY})
+		co.CreateArgs.SourceType = selectedSourceType
+		selectedSourcePath := ""
+		if selectedSourceType == occlient.LOCAL {
+			currentDirectory, err := util.GetAbsPath("./")
+			if err != nil {
+				return err
+			}
+			selectedSourcePath = ui.EnterInputTypePath("local", currentDirectory)
+		} else if selectedSourceType == occlient.BINARY {
+			selectedSourcePath = ui.EnterInputTypePath("binary", "")
+		} else if selectedSourceType == occlient.GIT {
+			var selectedGitRef string
+			selectedSourcePath, selectedGitRef = ui.EnterGitInfo()
+			co.CreateArgs.SourceRef = selectedGitRef
+		}
+		co.CreateArgs.SourcePath = selectedSourcePath
+
+		defaultComponentName, err := createDefaultComponentName(co.Context, selectedComponentType, selectedSourceType, selectedSourcePath)
+		if err != nil {
+			return err
+		}
+		co.CreateArgs.Name = ui.EnterComponentName(defaultComponentName)
+
+		if ui.Proceed("Do you wish to set advanced options") {
+			co.CreateArgs.Ports = ui.EnterPorts()
+			co.CreateArgs.EnvVars = ui.EnterEnvVars()
+
+			if ui.Proceed("Do you wish to set resource limits") {
+				memMin := ui.EnterMemory("minimum", "50Mi")
+				memMax := ui.EnterMemory("maximum", "512Mi")
+				cpuMin := ui.EnterCPU("minimum", "100m")
+				cpuMax := ui.EnterCPU("maximum", "1")
+
+				resourceQuantity := []util.ResourceRequirementInfo{}
+				memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, memMin, memMax, "")
+				if memoryQuantity != nil {
+					resourceQuantity = append(resourceQuantity, *memoryQuantity)
+				}
+				cpuQuantity := util.FetchResourceQuantity(corev1.ResourceCPU, cpuMin, cpuMax, "")
+				if cpuQuantity != nil {
+					resourceQuantity = append(resourceQuantity, *cpuQuantity)
+				}
+				co.CreateArgs.Resources = resourceQuantity
+			}
+
+			co.CreateArgs.Wait = ui.Proceed("Would you wish to wait until the component is fully ready after after creation")
+			// needed in order to avoid showing a misleading message at the end of process
+			co.wait = co.CreateArgs.Wait
+		}
+
+	} else {
+		co.CreateArgs.Wait = co.wait
+		err = co.setCmpSourceAttrs()
+		if err != nil {
+			return err
+		}
+		err = co.setCmpName(args)
+		if err != nil {
+			return err
+		}
+		co.setResourceLimits()
+		co.CreateArgs.Ports = co.componentPorts
+		co.CreateArgs.EnvVars = co.componentEnvVars
 	}
-
-	err = co.setCmpName(args)
-	if err != nil {
-		return err
-	}
-
-	co.setResourceLimits()
-
-	co.CreateArgs.Ports = co.componentPorts
-	co.CreateArgs.EnvVars = co.componentEnvVars
 
 	return
 }
@@ -369,7 +450,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		Short:   "Create a new component",
 		Long:    createLongDesc,
 		Example: fmt.Sprintf(createExample, fullName),
-		Args:    cobra.RangeArgs(1, 2),
+		Args:    cobra.RangeArgs(0, 2),
 		Run: func(cmd *cobra.Command, args []string) {
 			odoutil.LogErrorAndExit(co.Complete(name, cmd, args), "")
 			odoutil.LogErrorAndExit(co.Validate(), "")
