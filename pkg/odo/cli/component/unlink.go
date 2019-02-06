@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedUnlinkCommandName is the recommended unlink command name
+// UnlinkRecommendedCommandName is the recommended unlink command name
 const UnlinkRecommendedCommandName = "unlink"
 
 var (

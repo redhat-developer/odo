@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedCommandName is the recommended link command name
+// LinkRecommendedCommandName is the recommended link command name
 const LinkRecommendedCommandName = "link"
 
 var (

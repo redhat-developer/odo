@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedListCommandName is the recommended watch command name
+// ListRecommendedCommandName is the recommended watch command name
 const ListRecommendedCommandName = "list"
 
 var listExample = ktemplates.Examples(`  # List all components in the application
