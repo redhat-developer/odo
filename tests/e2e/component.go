@@ -25,7 +25,6 @@ func SourceTest(appTestName string, sourceType string, source string) {
 }
 
 func componentTests() {
-	const bootStrapSupervisorURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
 	const initContainerName = "copy-files-to-volume"
 	const wildflyURI1 = "https://github.com/marekjelen/katacoda-odo-backend"
 	const wildflyURI2 = "https://github.com/mik-dass/katacoda-odo-backend"
