@@ -88,7 +88,7 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 		}
 		// If 'default' project set then check if user is trying to create or delete something other than project
 		if ns == "default" {
-			errFormat := "Current project is default, which is read only.  Please create or set different project\n\t%s project create|set <project_name>"
+			errFormat := "Current project is default.  Please create or set a different project\n\t%s project create|set <project_name>"
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
