@@ -1,0 +1,200 @@
+def onmyduffynode(script){
+    ansiColor('xterm'){
+        timestamps{
+            sh 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -l root ${DUFFY_NODE}.ci.centos.org -t \"export REPO=${git_url}; export BRANCH=${ghprbActualCommit};\""' + script + '"'
+        }
+    }
+}
+
+def syncfromduffynode(rsyncpath){
+    sh 'rsync -e "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -l root " -Ha --include=' +  rsyncpath +  " ${DUFFY_NODE}.ci.centos.org:~/ ./"
+}
+
+def notifyBuild(String buildStatus = 'STARTED') {
+    buildStatus =  buildStatus ?: 'SUCCESSFUL'
+    emailext attachmentsPattern: 'odo/*.log', body: "See: ${env.BUILD_URL}", subject: "[${env.JOB_NAME}] Build #${env.BUILD_NUMBER}: ${buildStatus}", to: 'sgk@redhat.com'
+}
+
+node('odo') {
+
+            stage('Allocate Node'){
+                env.CICO_API_KEY = readFile("${env.HOME}/duffy.key").trim()
+                duffy_rtn=sh(
+                    script: 'cico --debug node get -f value -c hostname -c comment',
+                    returnStdout: true
+                    ).trim().tokenize(' ')
+                env.DUFFY_NODE=duffy_rtn[0]
+                env.SSID=duffy_rtn[1]
+                env.CLONE_DIR = 'go/src/github.com/redhat-developer/odo'
+            }
+    
+            try{
+                stage('Pre Setup Node'){
+                    onmyduffynode '''yum -y install git wget gcc docker &&
+                    wget https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz &&
+                    tar -C /usr/local -xzf go1.11.2.linux-amd64.tar.gz'''
+                }
+    
+                stage('git clone Tests') {
+                    onmyduffynode '''git clone --single-branch --branch master --depth 1 "https://github.com/redhat-developer/odo.git" ${CLONE_DIR} && 
+                    cd  ${CLONE_DIR} && ls -la'''
+                }
+    
+                stage('Build binary') {
+                        onmyduffynode '''export PATH=$PATH:/usr/local/go/bin:/root/go/bin &&
+                        go version &&
+                        cd ${CLONE_DIR} && 
+                        make goget-tools &&
+                        make cross &&
+                        tar -cvzf odo-linux-amd64.tar.gz -C dist/bin/linux-amd64 . &&
+                        tar -cvzf odo-linux-arm.tar.gz -C dist/bin/linux-arm . &&
+                        tar -cvzf odo-darwin-amd64.tar.gz -C dist/bin/darwin-amd64 . &&
+                        tar -cvzf odo-windows-amd64.tar.gz -C dist/bin/windows-amd64 . &&
+                        ls -la
+                        '''
+                }
+    
+                stage('Unit Test') {
+                        onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
+                        cd ${CLONE_DIR} &&
+                        make test |& tee unit_test.log'''
+                }
+
+                timeout(20) {
+                    stage('Main e2e Test') {
+                        onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
+                        cd ${CLONE_DIR} &&
+                        make &&
+                        cp odo /usr/local/go/bin &&
+                        git branch && 
+                        rpm --query centos-release &&
+                        echo "----------starting-cluster-provision-----------" &&
+                        ./scripts/minishift-setup.sh &&
+                        echo "----------finished-provisioning-cluster-----------" &&
+                        odo version &&
+                        oc whoami &&
+                        make test-main-e2e &&
+                        minishift delete -f 
+                        '''
+                    }
+                }
+
+                timeout(20) {
+                    stage('Component e2e tests') {
+                        onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
+                        cd ${CLONE_DIR} &&
+                        make &&
+                        cp odo /usr/local/go/bin &&
+                        git checkout cico-test && 
+                        rpm --query centos-release &&
+                        echo "----------starting-cluster-provision-----------" &&
+                        ./scripts/minishift-setup.sh &&
+                        echo "----------finished-provisioning-cluster-----------" &&
+                        odo version &&
+                        oc whoami &&
+                        make test-cmp-e2e &&
+                        minishift delete -f 
+                        '''
+                    }
+                }
+
+                timeout(20) {
+                    stage('Java e2e tests') {
+                        onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
+                        cd ${CLONE_DIR} &&
+                        make &&
+                        cp odo /usr/local/go/bin &&
+                        git checkout cico-test && 
+                        rpm --query centos-release &&
+                        echo "----------starting-cluster-provision-----------" &&
+                        ./scripts/minishift-setup.sh &&
+                        echo "----------finished-provisioning-cluster-----------" &&
+                        odo version &&
+                        oc whoami &&
+                        make test-java-e2e &&
+                        minishift delete -f 
+                        '''
+                    }
+                }
+
+                timeout(20) {
+                    stage('Source e2e tests') {
+                        onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
+                        cd ${CLONE_DIR} &&
+                        make &&
+                        cp odo /usr/local/go/bin &&
+                        git checkout cico-test && 
+                        rpm --query centos-release &&
+                        echo "----------starting-cluster-provision-----------" &&
+                        ./scripts/minishift-setup.sh service-catalog  &&
+                        echo "----------finished-provisioning-cluster-----------" &&
+                        odo version &&
+                        make test-source-e2e &&
+                        minishift delete -f 
+                        '''
+                    }
+                }
+
+                timeout(20) {
+                    stage('Service-Catalog e2e tests') {
+                        onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
+                        cd ${CLONE_DIR} &&
+                        make &&
+                        cp odo /usr/local/go/bin &&
+                        git checkout cico-test && 
+                        rpm --query centos-release &&
+                        echo "----------starting-cluster-provision-----------" &&
+                        ./scripts/minishift-setup.sh service-catalog  &&
+                        echo "----------finished-provisioning-cluster-----------" &&
+                        odo version &&
+                        make test-service-e2e &&
+                        minishift delete -f 
+                        '''
+                    }
+                }
+
+                timeout(20) {
+                    stage('Link e2e tests') {
+                        onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
+                        cd ${CLONE_DIR} &&
+                        make &&
+                        cp odo /usr/local/go/bin &&
+                        git checkout cico-test && 
+                        rpm --query centos-release &&
+                        echo "----------starting-cluster-provision-----------" &&
+                        ./scripts/minishift-setup.sh service-catalog  &&
+                        echo "----------finished-provisioning-cluster-----------" &&
+                        odo version &&
+                        make test-service-e2e &&
+                        minishift delete -f 
+                        '''
+                    }
+                }
+
+            }catch (e){
+                currentBuild.result = "FAILED"
+                throw e 
+            } finally {
+                try {
+                    stage('Archive the Logs and binary'){
+                        syncfromduffynode('${CLONE_DIR}/*.log')
+                        syncfromduffynode('${CLONE_DIR}/odo')
+                    }
+                    stage('Archive Artifacts'){
+                        archiveArtifacts artifacts: 'go/src/github.com/redhat-developer/odo/*.log'
+                        archiveArtifacts artifacts: 'go/src/github.com/redhat-developer/odo/*.tar.gz'
+                    }
+                } catch (e){
+                    currentBuild.result = "FAILED"
+                    throw e
+                } finally {
+                    stage('Deallocate Node'){
+                        sh 'cico node done ${SSID}'
+                    }
+                    stage('Notify Recipients'){
+                        notifyBuild(currentBuild.result)
+                    }
+                }
+            }
+}
+
