@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -79,21 +78,3 @@ var _ = Describe("odoLoginE2e", func() {
 		})
 	})
 })
-
-func cleanUpAfterProjects(projects []string) {
-	for _, p := range projects {
-		deleteProject(p)
-	}
-	// Logout of current user to ensure state
-	runCmd("oc logout")
-}
-
-func deleteProject(project string) {
-	var waitOut bool
-	if len(project) > 0 {
-		waitOut = waitForCmdOut(fmt.Sprintf("odo project delete -f %s", project), 10, func(out string) bool {
-			return strings.Contains(out, fmt.Sprintf("Deleted project : %s", project))
-		})
-		Expect(waitOut).To(BeTrue())
-	}
-}

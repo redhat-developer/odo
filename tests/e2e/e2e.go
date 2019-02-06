@@ -2,15 +2,14 @@ package e2e
 
 import (
 	"bytes"
+	"fmt"
+	"os/exec"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-
-	"fmt"
-	"os/exec"
-	"time"
 )
 
 func runCmd(cmdS string) string {
@@ -166,5 +165,25 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 				return true, nil
 			}
 		}
+	}
+}
+
+// cleanUpAfterProjects cleans up projects, after deleting them
+func cleanUpAfterProjects(projects []string) {
+	for _, p := range projects {
+		deleteProject(p)
+	}
+	// Logout of current user to ensure state
+	runCmd("oc logout")
+}
+
+// deletes a specified project
+func deleteProject(project string) {
+	var waitOut bool
+	if len(project) > 0 {
+		waitOut = waitForCmdOut(fmt.Sprintf("odo project delete -f %s", project), 10, func(out string) bool {
+			return strings.Contains(out, fmt.Sprintf("Deleted project : %s", project))
+		})
+		Expect(waitOut).To(BeTrue())
 	}
 }
