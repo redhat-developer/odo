@@ -30,8 +30,8 @@ func componentTests(componentCmdPrefix string) {
 	const wildflyURI2 = "https://github.com/mik-dass/katacoda-odo-backend"
 	const appRootVolumeName = "-testing-s2idata"
 
-	var t = strconv.FormatInt(time.Now().Unix(), 10)
-	var projName = fmt.Sprintf("odocmp-%s", t)
+	t := strconv.FormatInt(time.Now().Unix(), 10)
+	projName := generateTimeBasedName("odocmp")
 	const appTestName = "testing"
 
 	tmpDir, err := ioutil.TempDir("", "odoCmp")

@@ -3,8 +3,6 @@
 package e2e
 
 import (
-	"strconv"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -51,8 +49,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = Describe("odoe2e", func() {
-	var t = strconv.FormatInt(time.Now().Unix(), 10)
-	var projName = fmt.Sprintf("odo-%s", t)
+	projName := generateTimeBasedName("odo")
 	const appTestName = "testing"
 
 	tmpDir, err := ioutil.TempDir("", "odo")
@@ -604,8 +601,7 @@ var _ = Describe("odoe2e", func() {
 })
 
 var _ = Describe("updateE2e", func() {
-	var t = strconv.FormatInt(time.Now().Unix(), 10)
-	var projName = fmt.Sprintf("odo-%s", t)
+	projName := generateTimeBasedName("odo")
 	const appTestName = "testing"
 
 	const bootStrapSupervisorURI = "https://github.com/kadel/bootstrap-supervisored-s2i"
