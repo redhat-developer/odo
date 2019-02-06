@@ -339,7 +339,7 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able to list the url", func() {
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
@@ -371,7 +371,7 @@ var _ = Describe("odoe2e", func() {
 				// Switch to nodejs component
 				runCmd("odo component set nodejs")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 				getRoute = strings.TrimSpace(getRoute)
 
 				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1", 10)
@@ -389,7 +389,7 @@ var _ = Describe("odoe2e", func() {
 
 			It("should reflect the changes pushed", func() {
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 				getRoute = strings.TrimSpace(getRoute)
 
 				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1", 10)
@@ -406,7 +406,7 @@ var _ = Describe("odoe2e", func() {
 				runCmd("odo create nodejs nodejs-1 --git https://github.com/sclorg/nodejs-ex")
 				runCmd("odo url create nodejs --port 8080")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName_new + "-" + projName))
 
@@ -424,7 +424,7 @@ var _ = Describe("odoe2e", func() {
 				runCmd("odo component set nodejs-1")
 				runCmd("odo url delete nodejs -f")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).NotTo(ContainSubstring("nodejs-1-" + appTestName_new + "-" + projName))
 
@@ -558,7 +558,7 @@ var _ = Describe("odoe2e", func() {
 			runCmd("odo component set nodejs")
 			runCmd("odo url delete nodejs -f")
 
-			urlList := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+			urlList := getActiveElementFromCommandOutput("odo url list")
 			Expect(urlList).NotTo(ContainSubstring("nodejs"))
 		})
 

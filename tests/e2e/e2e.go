@@ -18,6 +18,10 @@ func generateTimeBasedName(prefix string) string {
 	return fmt.Sprintf("%s-%s", prefix, t)
 }
 
+func getActiveElementFromCommandOutput(command string) string {
+	return runCmd(command + " | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+}
+
 func runCmd(cmdS string) string {
 	cmd := exec.Command("/bin/sh", "-c", cmdS)
 	fmt.Fprintf(GinkgoWriter, "Running command: %s\n", cmdS)
