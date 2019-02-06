@@ -64,6 +64,17 @@ jobs:
         - oc login -u developer
         - travis_wait make test-cmp-e2e
 
+    # Run component e2e tests
+    - <<: *base-test
+      stage: test
+      name: "Component sub-commands e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - travis_wait make test-cmp-sub-e2e
+
     # Run java e2e tests
     - <<: *base-test
       stage: test
