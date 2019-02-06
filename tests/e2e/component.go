@@ -39,6 +39,36 @@ func componentTests(componentCmdPrefix string) {
 		Fail(err.Error())
 	}
 
+	Context("odo component creation without application", func() {
+		It("creating a component without an application should create one", func() {
+			// new project == no app
+			projectName := generateTimeBasedName("project")
+			runCmd("odo project create " + projectName)
+			Expect(runCmd("odo app list")).To(ContainSubstring("no applications"))
+
+			const frontend = "frontend"
+			// create a frontend component, an app should have been created
+			runCmd(componentCmdPrefix + " create nodejs " + frontend)
+			appName := getActiveElementFromCommandOutput("odo app list")
+			Expect(appName).ToNot(BeEmpty())
+
+			// check that we can get the component
+			Expect(runCmd(componentCmdPrefix + " get")).To(Equal("The current component is: " + frontend))
+
+			const backend = "backend"
+			runCmd(componentCmdPrefix + "create python " + backend)
+			Expect(runCmd(componentCmdPrefix + " get")).To(Equal("The current component is: " + backend))
+
+			// switch back to frontend component
+			Expect(runCmd(componentCmdPrefix + " set " + frontend)).To(Equal("Switched to component: " + frontend))
+
+			// clean up
+			runCmd("odo app delete " + appName + " -f")
+			runCmd("odo project delete " + projectName + " -f")
+			waitForDeleteCmd("odo project list", projectName)
+		})
+	})
+
 	Context("odo component creation", func() {
 
 		It("should create the project and application", func() {
@@ -47,7 +77,7 @@ func componentTests(componentCmdPrefix string) {
 		})
 
 		It("should show an error when ref flag is provided with sources except git", func() {
-			output := runFailCmd(fmt.Sprintf(componentCmdPrefix+"  create nodejs cmp-git-%s --local test --ref test", t), 1)
+			output := runFailCmd(fmt.Sprintf(componentCmdPrefix+" create nodejs cmp-git-%s --local test --ref test", t), 1)
 			Expect(output).To(ContainSubstring("The --ref flag is only valid for --git flag"))
 		})
 
