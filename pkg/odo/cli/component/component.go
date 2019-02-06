@@ -36,8 +36,8 @@ func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []str
 // NewCmdComponent implements the component odo command
 func NewCmdComponent(name, fullName string) *cobra.Command {
 
-	componentGetCmd := NewCmdGet(RecommendedGetCommandName, odoutil.GetFullName(fullName, RecommendedGetCommandName))
-	componentSetCmd := NewCmdSet(RecommendedSetCommandName, odoutil.GetFullName(fullName, RecommendedSetCommandName))
+	componentGetCmd := NewCmdGet(GetRecommendedCommandName, odoutil.GetFullName(fullName, GetRecommendedCommandName))
+	componentSetCmd := NewCmdSet(SetRecommendedCommandName, odoutil.GetFullName(fullName, SetRecommendedCommandName))
 	createCmd := NewCmdCreate(CreateRecommendedCommandName, odoutil.GetFullName(fullName, CreateRecommendedCommandName))
 	deleteCmd := NewCmdDelete(DeleteRecommendedCommandName, odoutil.GetFullName(fullName, DeleteRecommendedCommandName))
 	describeCmd := NewCmdDescribe(DescribeRecommendedCommandName, odoutil.GetFullName(fullName, DescribeRecommendedCommandName))
@@ -60,7 +60,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 		// 'odo component' is the same as 'odo component get'
 		// 'odo component <component_name>' is the same as 'odo component set <component_name>'
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) > 0 && args[0] != RecommendedGetCommandName && args[0] != RecommendedSetCommandName {
+			if len(args) > 0 && args[0] != GetRecommendedCommandName && args[0] != SetRecommendedCommandName {
 				componentSetCmd.Run(cmd, args)
 			} else {
 				componentGetCmd.Run(cmd, args)

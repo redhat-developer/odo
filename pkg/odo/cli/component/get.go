@@ -13,8 +13,8 @@ import (
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
-// RecommendedGetCommandName is the recommended get command name
-const RecommendedGetCommandName = "get"
+// GetRecommendedCommandName is the recommended get command name
+const GetRecommendedCommandName = "get"
 
 var getExample = ktemplates.Examples(`  # Get the currently active component
 %[1]s

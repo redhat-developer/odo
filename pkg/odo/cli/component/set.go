@@ -13,8 +13,8 @@ import (
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
-// RecommendedSetCommandName is the recommended push command name
-const RecommendedSetCommandName = "set"
+// SetRecommendedCommandName is the recommended push command name
+const SetRecommendedCommandName = "set"
 
 var setExample = ktemplates.Examples(`  # Set component named 'frontend' as active
 %[1]s frontend
