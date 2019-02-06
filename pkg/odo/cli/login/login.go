@@ -1,59 +1,86 @@
 package login
 
 import (
+	"fmt"
 	"github.com/redhat-developer/odo/pkg/auth"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
-var (
+// RecommendedCommandName is the recommended command name
+const RecommendedCommandName = "login"
+
+// LoginOptions encapsulates the options for the odo command
+type LoginOptions struct {
 	userName string
 	password string
 	token    string
 	caAuth   string
 	skipTLS  bool
-)
-
-// versionCmd represents the version command
-var loginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Login to cluster",
-	Long:  "Login to cluster",
-	Example: `
-  # Log in interactively
-  odo login
-
-  # Log in to the given server with the given certificate authority file
-  odo login localhost:8443 --certificate-authority=/path/to/cert.crt
-
-  # Log in to the given server with the given credentials (basic auth)
-  odo login localhost:8443 --username=myuser --password=mypass
-
-  # Log in to the given server with the given credentials (token)
-  odo login localhost:8443 --token=xxxxxxxxxxxxxxxxxxxxxxx
-	`,
-	Args: cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		var server string
-		if len(args) == 1 {
-			server = args[0]
-		}
-		err := auth.Login(server, userName, password, token, caAuth, skipTLS)
-		if err != nil {
-			odoutil.LogErrorAndExit(err, "")
-		}
-	},
+	server   string
 }
 
-// NewCmdLogin implements the login odo command
-func NewCmdLogin() *cobra.Command {
+var loginExample = templates.Examples(`
+  # Log in interactively
+  %[1]s
+
+  # Log in to the given server with the given certificate authority file
+  %[1]s localhost:8443 --certificate-authority=/path/to/cert.crt
+
+  # Log in to the given server with the given credentials (basic auth)
+  %[1]s localhost:8443 --username=myuser --password=mypass
+
+  # Log in to the given server with the given credentials (token)
+  %[1]s localhost:8443 --token=xxxxxxxxxxxxxxxxxxxxxxx
+`)
+
+// NewLoginOptions creates a new LoginOptions instance
+func NewLoginOptions() *LoginOptions {
+	return &LoginOptions{}
+}
+
+// Complete completes LoginOptions after they've been created
+func (o *LoginOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	if len(args) == 1 {
+		o.server = args[0]
+	}
+	return
+}
+
+// Validate validates the LoginOptions based on completed values
+func (o *LoginOptions) Validate() (err error) {
+	return
+}
+
+// Run contains the logic for the odo command
+func (o *LoginOptions) Run() (err error) {
+	return auth.Login(o.server, o.userName, o.password, o.token, o.caAuth, o.skipTLS)
+}
+
+// NewCmdLogin implements the odo command
+func NewCmdLogin(name, fullName string) *cobra.Command {
+	o := NewLoginOptions()
+	loginCmd := &cobra.Command{
+		Use:     name,
+		Short:   "Login to cluster",
+		Long:    "Login to cluster",
+		Example: fmt.Sprintf(loginExample, fullName),
+		Args:    cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			odoutil.LogErrorAndExit(o.Complete(name, cmd, args), "")
+			odoutil.LogErrorAndExit(o.Validate(), "")
+			odoutil.LogErrorAndExit(o.Run(), "")
+		},
+	}
+
 	// Add a defined annotation in order to appear in the help menu
 	loginCmd.Annotations = map[string]string{"command": "utility"}
 	loginCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	loginCmd.Flags().StringVarP(&userName, "username", "u", userName, "username, will prompt if not provided")
-	loginCmd.Flags().StringVarP(&password, "password", "p", password, "password, will prompt if not provided")
-	loginCmd.Flags().StringVarP(&token, "token", "t", token, "token, will prompt if not provided")
-	loginCmd.Flags().BoolVar(&skipTLS, "insecure-skip-tls-verify", false, "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure")
-	loginCmd.Flags().StringVar(&caAuth, "certificate-authority", userName, "Path to a cert file for the certificate authority")
+	loginCmd.Flags().StringVarP(&o.userName, "username", "u", "", "username, will prompt if not provided")
+	loginCmd.Flags().StringVarP(&o.password, "password", "p", "", "password, will prompt if not provided")
+	loginCmd.Flags().StringVarP(&o.token, "token", "t", "", "token, will prompt if not provided")
+	loginCmd.Flags().BoolVar(&o.skipTLS, "insecure-skip-tls-verify", false, "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure")
+	loginCmd.Flags().StringVar(&o.caAuth, "certificate-authority", "", "Path to a cert file for the certificate authority")
 	return loginCmd
 }
