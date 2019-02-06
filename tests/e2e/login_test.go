@@ -8,8 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var currentUserToken string
-
 var _ = Describe("odoLoginE2e", func() {
 	// user related constants
 	const loginTestUserForNoProject = "developernoproject"
@@ -24,8 +22,6 @@ var _ = Describe("odoLoginE2e", func() {
 	Describe("Check for successful login and logout", func() {
 		Context("Initialize", func() {
 			It("Should initialize some variables", func() {
-				// Save current user information
-				currentUserToken = runCmd("oc whoami -t")
 				// Logout of current user to ensure state
 				runCmd("oc logout")
 			})
@@ -33,8 +29,8 @@ var _ = Describe("odoLoginE2e", func() {
 
 		Context("Run login tests with no active projects, having default is also considered as not having active project", func() {
 			AfterEach(func() {
-				// Log in as original user
-				runCmd(fmt.Sprintf("oc login --token %s", currentUserToken))
+				// Logout of current user to ensure state
+				runCmd("oc logout")
 			})
 
 			It("Should login successfully with username and password without any projects with appropriate message", func() {
@@ -88,14 +84,14 @@ func cleanUpAfterProjects(projects []string) {
 	for _, p := range projects {
 		deleteProject(p)
 	}
-	// log back in as original user
-	runCmd(fmt.Sprintf("oc login --token %s", currentUserToken))
+	// Logout of current user to ensure state
+	runCmd("oc logout")
 }
 
 func deleteProject(project string) {
 	var waitOut bool
 	if len(project) > 0 {
-		waitOut = waitForCmdOut(fmt.Sprintf("odo project delete %s", project), 10, func(out string) bool {
+		waitOut = waitForCmdOut(fmt.Sprintf("odo project delete -f %s", project), 10, func(out string) bool {
 			return strings.Contains(out, fmt.Sprintf("Deleted project : %s", project))
 		})
 		Expect(waitOut).To(BeTrue())
