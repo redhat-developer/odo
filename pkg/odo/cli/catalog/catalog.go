@@ -11,7 +11,7 @@ import (
 )
 
 // RecommendedCatalogCommandName is the recommended catalog command name
-const RecommendedCatalogCommandName = "catalog"
+const RecommendedCommandName = "catalog"
 
 // NewCmdCatalog implements the odo catalog command
 func NewCmdCatalog(name, fullName string) *cobra.Command {
