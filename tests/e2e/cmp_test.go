@@ -6,4 +6,8 @@ import (
 	. "github.com/onsi/ginkgo"
 )
 
-var _ = Describe("odoCmpE2e", componentTests)
+func componentTestsNoSub() {
+	componentTests("odo")
+}
+
+var _ = Describe("odoCmpE2e", componentTestsNoSub)

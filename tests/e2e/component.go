@@ -24,7 +24,7 @@ func SourceTest(appTestName string, sourceType string, source string) {
 	Expect(getDc).To(ContainSubstring(source))
 }
 
-func componentTests() {
+func componentTests(componentCmdPrefix string) {
 	const initContainerName = "copy-files-to-volume"
 	const wildflyURI1 = "https://github.com/marekjelen/katacoda-odo-backend"
 	const wildflyURI2 = "https://github.com/mik-dass/katacoda-odo-backend"
@@ -47,12 +47,12 @@ func componentTests() {
 		})
 
 		It("should show an error when ref flag is provided with sources except git", func() {
-			output := runFailCmd(fmt.Sprintf("odo create nodejs cmp-git-%s --local test --ref test", t), 1)
+			output := runFailCmd(fmt.Sprintf(componentCmdPrefix+"  create nodejs cmp-git-%s --local test --ref test", t), 1)
 			Expect(output).To(ContainSubstring("The --ref flag is only valid for --git flag"))
 		})
 
 		It("should create the component from the branch ref when provided", func() {
-			runCmd(fmt.Sprintf("odo create ruby ref-test-%s --git https://github.com/girishramnani/ruby-ex.git --ref develop", t))
+			runCmd(fmt.Sprintf(componentCmdPrefix+" create ruby ref-test-%s --git https://github.com/girishramnani/ruby-ex.git --ref develop", t))
 			runCmd(fmt.Sprintf("odo url create ref-test-%s", t))
 
 			routeURL := determineRouteURL() + "/health"
@@ -60,7 +60,7 @@ func componentTests() {
 		})
 
 		It("should be able to create a component with git source", func() {
-			runCmd("odo create nodejs cmp-git --git https://github.com/openshift/nodejs-ex --min-memory 100Mi --max-memory 300Mi --min-cpu 0.1 --max-cpu 2")
+			runCmd(componentCmdPrefix + " create nodejs cmp-git --git https://github.com/openshift/nodejs-ex --min-memory 100Mi --max-memory 300Mi --min-cpu 0.1 --max-cpu 2")
 			getMemoryLimit := runCmd("oc get dc cmp-git-" +
 				appTestName +
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'",
@@ -85,17 +85,17 @@ func componentTests() {
 		})
 
 		It("should list the component", func() {
-			cmpList := runCmd("odo list")
+			cmpList := runCmd(componentCmdPrefix + " list")
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 		})
 
 		It("should be in component description", func() {
-			cmpDesc := runCmd("odo describe cmp-git")
+			cmpDesc := runCmd(componentCmdPrefix + " describe cmp-git")
 			Expect(cmpDesc).To(ContainSubstring("Source: https://github.com/openshift/nodejs-ex"))
 		})
 
 		It("should be in application description", func() {
-			appDesc := runCmd("odo describe")
+			appDesc := runCmd(componentCmdPrefix + " describe")
 			Expect(appDesc).To(ContainSubstring("Source: https://github.com/openshift/nodejs-ex"))
 		})
 
@@ -119,13 +119,13 @@ func componentTests() {
 		It("should be able to create binary component", func() {
 			runCmd("curl -L -o " + tmpDir + "/sample-binary-testing-1.war " +
 				"https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/e5bc575ac8b14ba2b23d66b5cb4873657e1a1489/sample.war")
-			runCmd("odo create wildfly wildfly --binary " + tmpDir + "/sample-binary-testing-1.war --memory 500Mi")
+			runCmd(componentCmdPrefix + " create wildfly wildfly --binary " + tmpDir + "/sample-binary-testing-1.war --memory 500Mi")
 
 			// TODO: remove this once https://github.com/redhat-developer/odo/issues/943 is implemented
 			time.Sleep(90 * time.Second)
 
 			// Run push
-			runCmd("odo push -v 4")
+			runCmd(componentCmdPrefix + " push -v 4")
 
 			// Verify memory limits to be same as configured
 			getMemoryLimit := runCmd("oc get dc wildfly-" +
@@ -139,7 +139,7 @@ func componentTests() {
 			)
 			Expect(getMemoryRequest).To(ContainSubstring("500Mi"))
 
-			cmpList := runCmd("odo list")
+			cmpList := runCmd(componentCmdPrefix + " list")
 			Expect(cmpList).To(ContainSubstring("wildfly"))
 
 			runCmd("oc get dc")
@@ -150,7 +150,7 @@ func componentTests() {
 				"'https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/85354d9ee8583a9c1e64a331425eede235b07a9e/sample%2520(1).war'")
 
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-2.war")
+			runCmd(componentCmdPrefix + " update wildfly --binary " + tmpDir + "/sample-binary-testing-2.war")
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -178,7 +178,7 @@ func componentTests() {
 				tmpDir + "/katacoda-odo-backend-1")
 
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
+			runCmd(componentCmdPrefix + " update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -218,7 +218,7 @@ func componentTests() {
 				tmpDir + "/katacoda-odo-backend-2")
 
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-2")
+			runCmd(componentCmdPrefix + " update wildfly --local " + tmpDir + "/katacoda-odo-backend-2")
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -243,7 +243,7 @@ func componentTests() {
 
 		It("should update component from local to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyURI1)
+			runCmd(componentCmdPrefix + " update wildfly --git " + wildflyURI1)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
@@ -271,7 +271,7 @@ func componentTests() {
 		})
 		It("should update component from git to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyURI2)
+			runCmd(componentCmdPrefix + " update wildfly --git " + wildflyURI2)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
@@ -300,13 +300,13 @@ func componentTests() {
 
 		// This is expected to be removed at the time of fixing https://github.com/redhat-developer/odo/issues/1008
 		It("should create a wildfly git component", func() {
-			runCmd("odo delete wildfly -f")
-			runCmd("odo create wildfly wildfly --git " + wildflyURI1)
+			runCmd(componentCmdPrefix + " delete wildfly -f")
+			runCmd(componentCmdPrefix + " create wildfly wildfly --git " + wildflyURI1)
 		})
 
 		It("should update component from git to local", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
+			runCmd(componentCmdPrefix + " update wildfly --local " + tmpDir + "/katacoda-odo-backend-1")
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -331,7 +331,7 @@ func componentTests() {
 
 		It("should update component from local to binary", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
+			runCmd(componentCmdPrefix + " update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -355,13 +355,13 @@ func componentTests() {
 		})
 
 		It("should create a wildfly git component", func() {
-			runCmd("odo delete wildfly -f")
-			runCmd("odo create wildfly wildfly --git " + wildflyURI1)
+			runCmd(componentCmdPrefix + " delete wildfly -f")
+			runCmd(componentCmdPrefix + " create wildfly wildfly --git " + wildflyURI1)
 		})
 
 		It("should update component from git to binary", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
+			runCmd(componentCmdPrefix + " update wildfly --binary " + tmpDir + "/sample-binary-testing-1.war")
 
 			// checking for init containers
 			getDc := runCmd("oc get dc wildfly-" + appTestName + " -o go-template='" +
@@ -386,7 +386,7 @@ func componentTests() {
 
 		It("should update component from binary to git", func() {
 			waitForDCOfComponentToRolloutCompletely("wildfly")
-			runCmd("odo update wildfly --git " + wildflyURI1)
+			runCmd(componentCmdPrefix + " update wildfly --git " + wildflyURI1)
 
 			// checking bc for updates
 			getBc := runCmd("oc get bc wildfly-" + appTestName + " -o go-template={{.spec.source.git.uri}}")
