@@ -32,12 +32,12 @@ type StorageCreateOptions struct {
 	*genericclioptions.Context
 }
 
-// NewStorageCreateOptions creates a new UrlCreateOptions instance
+// NewStorageCreateOptions creates a new StorageCreateOptions instance
 func NewStorageCreateOptions() *StorageCreateOptions {
 	return &StorageCreateOptions{}
 }
 
-// Complete completes StorageCreateOptions after they've been Created
+// Complete completes StorageCreateOptions after they've been created
 func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	if len(args) != 0 {

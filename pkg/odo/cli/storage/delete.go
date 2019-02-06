@@ -35,19 +35,19 @@ type StorageDeleteOptions struct {
 	*genericclioptions.Context
 }
 
-// NewUrlDeleteOptions creates a new UrlDeleteOptions instance
+// NewStorageDeleteOptions creates a new StorageDeleteOptions instance
 func NewStorageDeleteOptions() *StorageDeleteOptions {
 	return &StorageDeleteOptions{}
 }
 
-// Complete completes StorageCreateOptions after they've been Created
+// Complete completes StorageDeleteOptions after they've been created
 func (o *StorageDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	o.storageName = args[0]
 	return
 }
 
-// Validate validates the StorageCreateOptions based on completed values
+// Validate validates the StorageDeleteOptions based on completed values
 func (o *StorageDeleteOptions) Validate() (err error) {
 	exists, err := storage.Exists(o.Client, o.storageName, o.Application)
 
@@ -66,7 +66,7 @@ func (o *StorageDeleteOptions) Validate() (err error) {
 	return
 }
 
-// Run contains the logic for the odo storage create command
+// Run contains the logic for the odo storage delete command
 func (o *StorageDeleteOptions) Run() (err error) {
 	var confirmDeletion string
 	if o.storageForceDeleteFlag {

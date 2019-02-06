@@ -29,15 +29,16 @@ var (
 
 type StorageMountOptions struct {
 	storageName string
+	storagePath string
 	*genericclioptions.Context
 }
 
-// NewStorageCreateOptions creates a new UrlCreateOptions instance
+// NewStorageMountOptions creates a new StorageMountOptions instance
 func NewStorageMountOptions() *StorageMountOptions {
 	return &StorageMountOptions{}
 }
 
-// Complete completes StorageMountOptions after they've been Created
+// Complete completes StorageMountOptions after they've been created
 func (o *StorageMountOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	o.storageName = args[0]
@@ -63,9 +64,9 @@ func (o *StorageMountOptions) Validate() (err error) {
 	return
 }
 
-// Run contains the logic for the odo storage list command
+// Run contains the logic for the odo storage mount command
 func (o *StorageMountOptions) Run() (err error) {
-	err = storage.Mount(o.Client, storagePath, o.storageName, o.Component(), o.Application)
+	err = storage.Mount(o.Client, o.storagePath, o.storageName, o.Component(), o.Application)
 	if err != nil {
 		return
 	}
@@ -73,7 +74,7 @@ func (o *StorageMountOptions) Run() (err error) {
 	return
 }
 
-// NewCmdStorageCreate implements the odo storage create command.
+// NewCmdStorageMount implements the odo storage mount command.
 func NewCmdStorageMount(name, fullName string) *cobra.Command {
 	o := NewStorageMountOptions()
 	storageMountCmd := &cobra.Command{
@@ -89,7 +90,7 @@ func NewCmdStorageMount(name, fullName string) *cobra.Command {
 		},
 	}
 
-	storageMountCmd.Flags().StringVar(&storagePath, "path", "", "Path to mount the storage on")
+	storageMountCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
 	_ = storageMountCmd.MarkFlagRequired("path")
 
 	projectCmd.AddProjectFlag(storageMountCmd)

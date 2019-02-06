@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedCommandName is the recommended service command name
+// RecommendedCommandName is the recommended project command name
 const RecommendedCommandName = "project"
 
 // NewCmdProject implements the project odo command
@@ -35,7 +35,7 @@ func NewCmdProject(name, fullName string) *cobra.Command {
 		// 'odo project' is the same as 'odo project get'
 		// 'odo project <project_name>' is the same as 'odo project set <project_name>'
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) > 0 && args[0] != "get" && args[0] != "set" {
+			if len(args) > 0 && args[0] != getRecommendedCommandName && args[0] != setRecommendedCommandName {
 				projectSetCmd.Run(cmd, args)
 			} else {
 				projectGetCmd.Run(cmd, args)

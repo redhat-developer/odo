@@ -43,12 +43,12 @@ type StorageUnMountOptions struct {
 	*genericclioptions.Context
 }
 
-// NewStorageCreateOptions creates a new UrlCreateOptions instance
+// NewStorageUnMountOptions creates a new StorageUnMountOptions instance
 func NewStorageUnMountOptions() *StorageUnMountOptions {
 	return &StorageUnMountOptions{}
 }
 
-// Complete completes StorageMountOptions after they've been Created
+// Complete completes StorageUnMountOptions after they've been created
 func (o *StorageUnMountOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
@@ -60,7 +60,7 @@ func (o *StorageUnMountOptions) Complete(name string, cmd *cobra.Command, args [
 	return
 }
 
-// Validate validates the StorageMountOptions based on completed values
+// Validate validates the StorageUnMountOptions based on completed values
 func (o *StorageUnMountOptions) Validate() (err error) {
 	// checking if the first character in the argument is a "/", indicating a path or not, indicating a storage name
 	if len(o.storagePath) > 0 {
@@ -84,7 +84,7 @@ func (o *StorageUnMountOptions) Validate() (err error) {
 	return
 }
 
-// Run contains the logic for the odo storage list command
+// Run contains the logic for the odo storage unmount command
 func (o *StorageUnMountOptions) Run() (err error) {
 	err = storage.Unmount(o.Client, o.storageName, o.Component(), o.Application, true)
 	if err != nil {
@@ -95,7 +95,7 @@ func (o *StorageUnMountOptions) Run() (err error) {
 	return
 }
 
-// NewCmdStorageCreate implements the odo storage create command.
+// NewCmdStorageUnMount implements the odo storage unmount command.
 func NewCmdStorageUnMount(name, fullName string) *cobra.Command {
 	o := NewStorageUnMountOptions()
 	storageUnMountCmd := &cobra.Command{

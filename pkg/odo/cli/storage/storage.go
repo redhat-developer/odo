@@ -11,12 +11,7 @@ import (
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
-var (
-	storageSize            string
-	storagePath            string
-	storageForceDeleteflag bool
-)
-
+// RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "storage"
 
 var (
