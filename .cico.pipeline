@@ -63,7 +63,7 @@ node('odo') {
                 stage('Bringing up minishift') {
                         onmyduffynode '''cd ${CLONE_DIR} &&
                         echo "----------starting-cluster-provision-----------" &&
-                        ./scripts/minishift-setup.sh &&
+                        ./scripts/minishift-setup.sh service-catalog &&
                         echo "----------finished-provisioning-cluster-----------"
                         '''
                 }
