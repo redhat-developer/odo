@@ -18,7 +18,7 @@ import (
 )
 
 // RecommendedDescribeCommandName is the recommended describe command name
-const RecommendedDescribeCommandName = "describe"
+const DescribeRecommendedCommandName = "describe"
 
 var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 %[1]s nodejs

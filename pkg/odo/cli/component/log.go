@@ -16,7 +16,7 @@ import (
 )
 
 // RecommendedLogCommandName is the recommended watch command name
-const RecommendedLogCommandName = "log"
+const LogRecommendedCommandName = "log"
 
 var logExample = ktemplates.Examples(`  # Get the logs for the nodejs component
 %[1]s nodejs

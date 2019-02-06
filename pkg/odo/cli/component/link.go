@@ -15,7 +15,7 @@ import (
 )
 
 // RecommendedCommandName is the recommended link command name
-const RecommendedLinkCommandName = "link"
+const LinkRecommendedCommandName = "link"
 
 var (
 	linkExample = ktemplates.Examples(`# Link the current component to the 'my-postgresql' service

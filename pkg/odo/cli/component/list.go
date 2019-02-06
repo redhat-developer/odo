@@ -23,7 +23,7 @@ import (
 )
 
 // RecommendedListCommandName is the recommended watch command name
-const RecommendedListCommandName = "list"
+const ListRecommendedCommandName = "list"
 
 var listExample = ktemplates.Examples(`  # List all components in the application
 %[1]s

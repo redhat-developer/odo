@@ -48,7 +48,7 @@ type CreateOptions struct {
 }
 
 // RecommendedCreateCommandName is the recommended watch command name
-const RecommendedCreateCommandName = "create"
+const CreateRecommendedCommandName = "create"
 
 var createLongDesc = ktemplates.LongDesc(`Create a new component to deploy on OpenShift.
 

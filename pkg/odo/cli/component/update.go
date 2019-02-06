@@ -22,7 +22,7 @@ import (
 )
 
 // RecommendedUpdateCommandName is the recommended update command name
-const RecommendedUpdateCommandName = "update"
+const UpdateRecommendedCommandName = "update"
 
 // UpdateOptions encapsulates the update command options
 type UpdateOptions struct {
