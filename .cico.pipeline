@@ -39,7 +39,7 @@ node('odo') {
                     onmyduffynode '''git clone --single-branch --branch master --depth 1 "https://github.com/redhat-developer/odo.git" ${CLONE_DIR} && 
                     cd  ${CLONE_DIR} && ls -la'''
                 }
-    
+   
                 stage('Build binary') {
                         onmyduffynode '''export PATH=$PATH:/usr/local/go/bin:/root/go/bin &&
                         go version &&
@@ -60,6 +60,14 @@ node('odo') {
                         make test |& tee unit_test.log'''
                 }
 
+                stage('Bringing up minishift') {
+                        onmyduffynode '''cd ${CLONE_DIR} &&
+                        echo "----------starting-cluster-provision-----------" &&
+                        ./scripts/minishift-setup.sh &&
+                        echo "----------finished-provisioning-cluster-----------"
+                        '''
+                }
+ 
                 timeout(20) {
                     stage('Main e2e Test') {
                         onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
@@ -68,13 +76,9 @@ node('odo') {
                         cp odo /usr/local/go/bin &&
                         git branch && 
                         rpm --query centos-release &&
-                        echo "----------starting-cluster-provision-----------" &&
-                        ./scripts/minishift-setup.sh &&
-                        echo "----------finished-provisioning-cluster-----------" &&
                         odo version &&
                         oc whoami &&
-                        make test-main-e2e &&
-                        minishift delete -f 
+                        make test-main-e2e
                         '''
                     }
                 }
@@ -85,15 +89,10 @@ node('odo') {
                         cd ${CLONE_DIR} &&
                         make &&
                         cp odo /usr/local/go/bin &&
-                        git checkout cico-test && 
                         rpm --query centos-release &&
-                        echo "----------starting-cluster-provision-----------" &&
-                        ./scripts/minishift-setup.sh &&
-                        echo "----------finished-provisioning-cluster-----------" &&
                         odo version &&
                         oc whoami &&
-                        make test-cmp-e2e &&
-                        minishift delete -f 
+                        make test-cmp-e2e
                         '''
                     }
                 }
@@ -104,15 +103,10 @@ node('odo') {
                         cd ${CLONE_DIR} &&
                         make &&
                         cp odo /usr/local/go/bin &&
-                        git checkout cico-test && 
                         rpm --query centos-release &&
-                        echo "----------starting-cluster-provision-----------" &&
-                        ./scripts/minishift-setup.sh &&
-                        echo "----------finished-provisioning-cluster-----------" &&
                         odo version &&
                         oc whoami &&
-                        make test-java-e2e &&
-                        minishift delete -f 
+                        make test-java-e2e 
                         '''
                     }
                 }
@@ -123,14 +117,9 @@ node('odo') {
                         cd ${CLONE_DIR} &&
                         make &&
                         cp odo /usr/local/go/bin &&
-                        git checkout cico-test && 
                         rpm --query centos-release &&
-                        echo "----------starting-cluster-provision-----------" &&
-                        ./scripts/minishift-setup.sh service-catalog  &&
-                        echo "----------finished-provisioning-cluster-----------" &&
                         odo version &&
-                        make test-source-e2e &&
-                        minishift delete -f 
+                        make test-source-e2e 
                         '''
                     }
                 }
@@ -141,14 +130,9 @@ node('odo') {
                         cd ${CLONE_DIR} &&
                         make &&
                         cp odo /usr/local/go/bin &&
-                        git checkout cico-test && 
                         rpm --query centos-release &&
-                        echo "----------starting-cluster-provision-----------" &&
-                        ./scripts/minishift-setup.sh service-catalog  &&
-                        echo "----------finished-provisioning-cluster-----------" &&
                         odo version &&
-                        make test-service-e2e &&
-                        minishift delete -f 
+                        make test-service-e2e 
                         '''
                     }
                 }
@@ -159,14 +143,9 @@ node('odo') {
                         cd ${CLONE_DIR} &&
                         make &&
                         cp odo /usr/local/go/bin &&
-                        git checkout cico-test && 
                         rpm --query centos-release &&
-                        echo "----------starting-cluster-provision-----------" &&
-                        ./scripts/minishift-setup.sh service-catalog  &&
-                        echo "----------finished-provisioning-cluster-----------" &&
                         odo version &&
-                        make test-service-e2e &&
-                        minishift delete -f 
+                        make test-link-e2e 
                         '''
                     }
                 }
