@@ -24,14 +24,11 @@ const (
 	DefaultTimeout = 1
 )
 
-// ConfigInfo is implemented by configuration managers
-type ConfigInfo interface {
+// Info is implemented by configuration managers
+type Info interface {
 	SetConfiguration(parameter string, value string) error
 	GetConfiguration(parameter string) (interface{}, bool)
-}
-
-// CommonConfig holds all the configs which will be present in both places
-type CommonConfig struct {
+	DeleteConfiguration(parameter string) error
 }
 
 // OdoSettings holds all odo specific configurations
@@ -66,8 +63,6 @@ type ApplicationInfo struct {
 // GlobalConfig stores all the config related to odo, its the superset of
 // local config.
 type GlobalConfig struct {
-	// global config has all the attributes of common config as well
-	*CommonConfig `json:",omitempty"`
 	// remember active applications and components per project
 	// when project or applications is switched we can go back to last active app/component
 
@@ -77,13 +72,12 @@ type GlobalConfig struct {
 	ActiveApplications []ApplicationInfo `json:"activeApplications"`
 
 	// Odo settings holds the odo specific global settings
-	OdoSettings OdoSettings `json:"settings,omitempty"`
+	OdoSettings *OdoSettings `json:"settings,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
-	*CommonConfig     `json:",omitempty"`
-	ComponentSettings ComponentSettings `json:"componentSettings,omitempty"`
+	ComponentSettings *ComponentSettings `json:"componentSettings,omitempty"`
 }
 
 // GlobalConfigInfo wraps the global config and provides helpers to
@@ -143,7 +137,7 @@ func NewGlobalConfig() (*GlobalConfigInfo, error) {
 	}
 	c := GlobalConfigInfo{
 		GlobalConfig: GlobalConfig{
-			CommonConfig: &CommonConfig{},
+			OdoSettings: &OdoSettings{},
 		},
 	}
 	c.Filename = configFile
@@ -161,7 +155,11 @@ func NewLocalConfig() (*LocalConfigInfo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
-	c := LocalConfigInfo{}
+	c := LocalConfigInfo{
+		LocalConfig: LocalConfig{
+			&ComponentSettings{},
+		},
+	}
 	c.Filename = configFile
 
 	// if the config file doesn't exist then we dont worry about it and return
@@ -264,14 +262,47 @@ func (c *GlobalConfigInfo) SetConfiguration(parameter string, value string) erro
 	return nil
 }
 
+// DeleteConfiguration delete Odo configurations in the global config file
+// as of now being used for nameprefix, timeout, updatenotification
+func (c *GlobalConfigInfo) DeleteConfiguration(parameter string) error {
+	if p, ok := asSupportedParameter(parameter); ok {
+		// processing values according to the parameter names
+		switch p {
+		case "timeout":
+			c.OdoSettings.Timeout = nil
+		case "updatenotification":
+			c.OdoSettings.UpdateNotification = nil
+		case "nameprefix":
+			c.OdoSettings.NamePrefix = nil
+		}
+	} else {
+		return errors.Errorf("unknown parameter :'%s' is not a parameter in global odo config", parameter)
+	}
+
+	// if the whole struct is empty we should set the struct nil
+	if allNil(c.OdoSettings) {
+		c.OdoSettings = nil
+	}
+	err := writeToFile(c.GlobalConfig, c.Filename)
+	if err != nil {
+		return errors.Wrapf(err, "unable to set %s", parameter)
+	}
+	return nil
+}
+
 // GetConfiguration gets the value of the specified parameter, it returns false in
 // case the value is not set or found
 func (c *GlobalConfigInfo) GetConfiguration(parameter string) (interface{}, bool) {
 	return getConfiguration(c.OdoSettings, parameter)
 }
 
+// only supports flat structs
+// TODO: support deeper struct using recursion
 func getConfiguration(info interface{}, parameter string) (interface{}, bool) {
 	imm := reflect.ValueOf(info)
+	if imm.Kind() == reflect.Ptr {
+		imm = imm.Elem()
+	}
 	val := imm.FieldByNameFunc(caseInsensitive(parameter))
 
 	if !val.IsValid() || val.IsNil() {
@@ -301,15 +332,53 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (er
 			lci.ComponentSettings.ComponentType = &value
 		}
 		return writeToFile(lci.LocalConfig, lci.Filename)
-	} else {
-		return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 	}
+	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
+
 }
 
 // GetConfiguration uses reflection to get the parameter from the localconfig struct, currently
 // it only searches the componentSettings
 func (lci *LocalConfigInfo) GetConfiguration(parameter string) (interface{}, bool) {
 	return getConfiguration(lci.ComponentSettings, parameter)
+}
+
+// DeleteConfiguration is used to delete config from local odo config
+func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
+	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+		switch parameter {
+		case "componenttype":
+			lci.ComponentSettings.ComponentType = nil
+		}
+
+		// if the whole struct is empty we should set the struct nil
+		if allNil(lci.ComponentSettings) {
+			lci.ComponentSettings = nil
+		}
+		return writeToFile(lci.LocalConfig, lci.Filename)
+	}
+	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
+
+}
+
+func allNil(info interface{}) bool {
+	imm := reflect.ValueOf(info)
+
+	if imm.Kind() == reflect.Ptr {
+		imm = imm.Elem()
+	}
+
+	for i := 0; i < imm.NumField(); i++ {
+		val := imm.Field(i)
+		// everything in config param is a pointer
+		// if not nil then return true
+		if !val.IsNil() {
+			return false
+		}
+	}
+
+	return true
+
 }
 
 // GetComponentType returns type of component (builder image name) in the config

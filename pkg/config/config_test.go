@@ -27,10 +27,8 @@ func TestNew(t *testing.T) {
 		{
 			name: "Test filename is being set",
 			output: &GlobalConfigInfo{
-				Filename: tempConfigFile.Name(),
-				GlobalConfig: GlobalConfig{
-					CommonConfig: &CommonConfig{},
-				},
+				Filename:     tempConfigFile.Name(),
+				GlobalConfig: GlobalConfig{},
 			},
 			success: true,
 		},
@@ -946,7 +944,7 @@ func TestGetTimeout(t *testing.T) {
 		{
 			name: "Case 2: validating value 0 from config",
 			existingConfig: GlobalConfig{
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					Timeout: &zeroValue,
 				},
 			},
@@ -956,7 +954,7 @@ func TestGetTimeout(t *testing.T) {
 		{
 			name: "Case 3: validating value 5 from config",
 			existingConfig: GlobalConfig{
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					Timeout: &nonzeroValue,
 				},
 			},
@@ -1001,7 +999,7 @@ func TestDeleteProject(t *testing.T) {
 			name: "test case 1: no applications to the project",
 			existingConfig: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					NamePrefix:         &fakePrefix,
 					UpdateNotification: &trueValue,
 				},
@@ -1010,7 +1008,7 @@ func TestDeleteProject(t *testing.T) {
 			wantErr: false,
 			result: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					NamePrefix:         &fakePrefix,
 					UpdateNotification: &trueValue,
 				},
@@ -1025,7 +1023,7 @@ func TestDeleteProject(t *testing.T) {
 						Project: "project-1",
 					},
 				},
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					NamePrefix:         &fakePrefix,
 					UpdateNotification: &trueValue,
 				},
@@ -1034,7 +1032,7 @@ func TestDeleteProject(t *testing.T) {
 			wantErr: false,
 			result: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					NamePrefix:         &fakePrefix,
 					UpdateNotification: &trueValue,
 				},
@@ -1053,7 +1051,7 @@ func TestDeleteProject(t *testing.T) {
 						Project: "project-1",
 					},
 				},
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					NamePrefix:         &fakePrefix,
 					UpdateNotification: &trueValue,
 				},
@@ -1062,7 +1060,7 @@ func TestDeleteProject(t *testing.T) {
 			wantErr: false,
 			result: GlobalConfig{
 				ActiveApplications: []ApplicationInfo{},
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					NamePrefix:         &fakePrefix,
 					UpdateNotification: &trueValue,
 				},
@@ -1085,7 +1083,7 @@ func TestDeleteProject(t *testing.T) {
 						Project: "project-3",
 					},
 				},
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					NamePrefix:         &fakePrefix,
 					UpdateNotification: &falseValue,
 				},
@@ -1099,7 +1097,7 @@ func TestDeleteProject(t *testing.T) {
 						Project: "project-3",
 					},
 				},
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					NamePrefix:         &fakePrefix,
 					UpdateNotification: &falseValue,
 				},
@@ -1169,7 +1167,7 @@ func TestSetConfiguration(t *testing.T) {
 			parameter: UpdateNotificationSetting,
 			value:     "false",
 			existingConfig: GlobalConfig{
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					UpdateNotification: &trueValue,
 				},
 			},
@@ -1181,7 +1179,7 @@ func TestSetConfiguration(t *testing.T) {
 			parameter: UpdateNotificationSetting,
 			value:     "true",
 			existingConfig: GlobalConfig{
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					UpdateNotification: &falseValue,
 				},
 			},
@@ -1202,7 +1200,7 @@ func TestSetConfiguration(t *testing.T) {
 			parameter: TimeoutSetting,
 			value:     "5",
 			existingConfig: GlobalConfig{
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					Timeout: &zeroValue,
 				},
 			},
@@ -1321,7 +1319,7 @@ func TestGetupdateNotification(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 2: %s true", UpdateNotificationSetting),
 			existingConfig: GlobalConfig{
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					UpdateNotification: &trueValue,
 				},
 			},
@@ -1330,7 +1328,7 @@ func TestGetupdateNotification(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 3: %s false", UpdateNotificationSetting),
 			existingConfig: GlobalConfig{
-				OdoSettings: OdoSettings{
+				OdoSettings: &OdoSettings{
 					UpdateNotification: &falseValue,
 				},
 			},

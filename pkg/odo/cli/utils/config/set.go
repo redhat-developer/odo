@@ -56,7 +56,7 @@ func (o *SetOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *SetOptions) Run() (err error) {
-	var cfg config.ConfigInfo
+	var cfg config.Info
 
 	if o.configGlobalFlag {
 		cfg, err = config.NewGlobalConfig()

@@ -143,7 +143,7 @@ func FakeOdoConfig(confPath string, needNamePrefix bool, namePrefix string) conf
 		},
 	}
 	if needNamePrefix {
-		odoConfig.OdoSettings = config.OdoSettings{
+		odoConfig.OdoSettings = &config.OdoSettings{
 			NamePrefix: &namePrefix,
 		}
 	}
