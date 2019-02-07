@@ -290,15 +290,16 @@ func caseInsensitive(parameter string) func(word string) bool {
 
 // SetConfiguration sets the common config settings like component type, min memory
 // max memory etc.
-func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) error {
-
-	switch parameter {
-	case "componenttype":
-		lci.ComponentSettings.ComponentType = &value
-	default:
+func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (err error) {
+	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+		switch parameter {
+		case "componenttype":
+			lci.ComponentSettings.ComponentType = &value
+		}
+		return writeToFile(lci.LocalConfig, lci.Filename)
+	} else {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 	}
-	return writeToFile(lci.LocalConfig, lci.Filename)
 }
 
 // GetConfiguration uses reflection to get the parameter from the localconfig struct, currently
@@ -595,6 +596,11 @@ func FormatLocallySupportedParameters() (result string) {
 
 // asSupportedParameter checks that the given parameter is supported and returns a lower case version of it if it is
 func asSupportedParameter(param string) (string, bool) {
+	lower := strings.ToLower(param)
+	return lower, lowerCaseParameters[lower]
+}
+
+func asLocallySupportedParameter(param string) (string, bool) {
 	lower := strings.ToLower(param)
 	return lower, lowerCaseParameters[lower]
 }
