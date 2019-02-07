@@ -1371,7 +1371,7 @@ Available Parameters:
 
 func TestLowerCaseParameters(t *testing.T) {
 	expected := map[string]bool{"nameprefix": true, "timeout": true, "updatenotification": true}
-	actual := getLowerCaseParameters()
+	actual := getLowerCaseParameters(GetSupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
 	}
