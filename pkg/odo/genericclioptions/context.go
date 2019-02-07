@@ -83,12 +83,12 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 		ns = project.GetCurrent(client)
 		// if no current project, then check if user is trying to create or delete something other than project
 		if len(ns) <= 0 {
-			errFormat := "could not get current project.  Please create or set a project\n\t%s project create|set <project_name>"
+			errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 		// If 'default' project set then check if user is trying to create or delete something other than project
 		if ns == "default" {
-			errFormat := "Current project is default.  Please create or set a different project\n\t%s project create|set <project_name>"
+			errFormat := "Current project is default. Please create or set a different project\n\t%s project create|set <project_name>"
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
