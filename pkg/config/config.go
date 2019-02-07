@@ -34,30 +34,30 @@ type Info interface {
 // OdoSettings holds all odo specific configurations
 type OdoSettings struct {
 	// Controls if an update notification is shown or not
-	UpdateNotification *bool `json:"updateNotification,omitempty"`
+	UpdateNotification *bool `json:"UpdateNotification,omitempty"`
 	// Holds the prefix part of generated random application name
-	NamePrefix *string `json:"namePrefix,omitempty"`
+	NamePrefix *string `json:"NamePrefix,omitempty"`
 	// Timeout for openshift server connection check
-	Timeout *int `json:"timeout,omitempty"`
+	Timeout *int `json:"Timeout,omitempty"`
 }
 
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
 
 	// The builder image to use
-	ComponentType *string `json:"componentType,omitempty"`
+	ComponentType *string `json:"ComponentType,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
 type ApplicationInfo struct {
 	// name of the application
-	Name string `json:"name"`
+	Name string `json:"Name"`
 	// is this application active? Only one application can be active at the time
-	Active bool `json:"active"`
+	Active bool `json:"Active"`
 	// name of the openshift project this application belongs to
-	Project string `json:"project"`
+	Project string `json:"Project"`
 	// last active component for  this application
-	ActiveComponent string `json:"activeComponent"`
+	ActiveComponent string `json:"ActiveComponent"`
 }
 
 // GlobalConfig stores all the config related to odo, its the superset of
@@ -69,29 +69,29 @@ type GlobalConfig struct {
 	// Currently active application
 	// multiple applications can be active but each one has to be in different project
 	// there shouldn't be more active applications in one project
-	ActiveApplications []ApplicationInfo `json:"activeApplications"`
+	ActiveApplications []ApplicationInfo `json:"ActiveApplications"`
 
 	// Odo settings holds the odo specific global settings
-	OdoSettings *OdoSettings `json:"settings,omitempty"`
+	OdoSettings *OdoSettings `json:"Settings,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
-	ComponentSettings *ComponentSettings `json:"componentSettings,omitempty"`
+	ComponentSettings *ComponentSettings `json:"ComponentSettings,omitempty"`
 }
 
 // GlobalConfigInfo wraps the global config and provides helpers to
 // serialize it.
 type GlobalConfigInfo struct {
-	Filename     string `json:"fileName,omitempty" yaml:"fileName,omitempty"`
-	GlobalConfig `json:",omitempty" yaml:",omitempty"`
+	Filename     string `json:"FileName,omitempty"`
+	GlobalConfig `json:",omitempty"`
 }
 
 // LocalConfigInfo wraps the local config and provides helpers to
 // serialize it.
 type LocalConfigInfo struct {
-	Filename    string `json:"fileName,omitempty" yaml:"fileName,omitempty"`
-	LocalConfig `json:",omitempty" yaml:",omitempty"`
+	Filename    string `json:"FileName,omitempty"`
+	LocalConfig `json:",omitempty"`
 }
 
 func getGlobalConfigFile() (string, error) {
