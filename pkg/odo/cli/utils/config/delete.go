@@ -73,7 +73,7 @@ func (o *DeleteOptions) Run() (err error) {
 			return err
 		}
 	} else {
-		return errors.New("Config already unset, cannot delete an unset configuration.")
+		return errors.New("config already unset, cannot delete an unset configuration")
 	}
 
 	// cannot use the type switch on non-interface variables so a hack
