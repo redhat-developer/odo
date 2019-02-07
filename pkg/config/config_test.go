@@ -27,8 +27,10 @@ func TestNew(t *testing.T) {
 		{
 			name: "Test filename is being set",
 			output: &GlobalConfigInfo{
-				Filename:     tempConfigFile.Name(),
-				GlobalConfig: GlobalConfig{},
+				Filename: tempConfigFile.Name(),
+				GlobalConfig: GlobalConfig{
+					OdoSettings: &OdoSettings{},
+				},
 			},
 			success: true,
 		},
@@ -936,9 +938,11 @@ func TestGetTimeout(t *testing.T) {
 		want           int
 	}{
 		{
-			name:           "Case 1: validating value 1 from config in default case",
-			existingConfig: GlobalConfig{},
-			want:           1,
+			name: "Case 1: validating value 1 from config in default case",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			want: 1,
 		},
 
 		{
@@ -1155,12 +1159,14 @@ func TestSetConfiguration(t *testing.T) {
 	}{
 		// update notification
 		{
-			name:           fmt.Sprintf("Case 1: %s set nil to true", UpdateNotificationSetting),
-			parameter:      UpdateNotificationSetting,
-			value:          "true",
-			existingConfig: GlobalConfig{},
-			want:           true,
-			wantErr:        false,
+			name:      fmt.Sprintf("Case 1: %s set nil to true", UpdateNotificationSetting),
+			parameter: UpdateNotificationSetting,
+			value:     "true",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			want:    true,
+			wantErr: false,
 		},
 		{
 			name:      fmt.Sprintf("Case 2: %s set true to false", UpdateNotificationSetting),
@@ -1188,11 +1194,13 @@ func TestSetConfiguration(t *testing.T) {
 		},
 
 		{
-			name:           fmt.Sprintf("Case 4: %s invalid value", UpdateNotificationSetting),
-			parameter:      UpdateNotificationSetting,
-			value:          "invalid_value",
-			existingConfig: GlobalConfig{},
-			wantErr:        true,
+			name:      fmt.Sprintf("Case 4: %s invalid value", UpdateNotificationSetting),
+			parameter: UpdateNotificationSetting,
+			value:     "invalid_value",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			wantErr: true,
 		},
 		// time out
 		{
@@ -1208,49 +1216,61 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           fmt.Sprintf("Case 6: %s set to 300", TimeoutSetting),
-			parameter:      TimeoutSetting,
-			value:          "300",
-			existingConfig: GlobalConfig{},
-			want:           300,
-			wantErr:        false,
+			name:      fmt.Sprintf("Case 6: %s set to 300", TimeoutSetting),
+			parameter: TimeoutSetting,
+			value:     "300",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			want:    300,
+			wantErr: false,
 		},
 		{
-			name:           fmt.Sprintf("Case 7: %s set to 0", TimeoutSetting),
-			parameter:      TimeoutSetting,
-			value:          "0",
-			existingConfig: GlobalConfig{},
-			want:           0,
-			wantErr:        false,
+			name:      fmt.Sprintf("Case 7: %s set to 0", TimeoutSetting),
+			parameter: TimeoutSetting,
+			value:     "0",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			want:    0,
+			wantErr: false,
 		},
 		{
-			name:           fmt.Sprintf("Case 8: %s set to -1", TimeoutSetting),
-			parameter:      TimeoutSetting,
-			value:          "-1",
-			existingConfig: GlobalConfig{},
-			wantErr:        true,
+			name:      fmt.Sprintf("Case 8: %s set to -1", TimeoutSetting),
+			parameter: TimeoutSetting,
+			value:     "-1",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			wantErr: true,
 		},
 		{
-			name:           fmt.Sprintf("Case 9: %s invalid value", TimeoutSetting),
-			parameter:      TimeoutSetting,
-			value:          "this",
-			existingConfig: GlobalConfig{},
-			wantErr:        true,
+			name:      fmt.Sprintf("Case 9: %s invalid value", TimeoutSetting),
+			parameter: TimeoutSetting,
+			value:     "this",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			wantErr: true,
 		},
 		{
-			name:           fmt.Sprintf("Case 10: %s set to 300 with mixed case in parameter name", TimeoutSetting),
-			parameter:      "TimeOut",
-			value:          "300",
-			existingConfig: GlobalConfig{},
-			want:           300,
-			wantErr:        false,
+			name:      fmt.Sprintf("Case 10: %s set to 300 with mixed case in parameter name", TimeoutSetting),
+			parameter: "TimeOut",
+			value:     "300",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			want:    300,
+			wantErr: false,
 		},
 		// invalid parameter
 		{
-			name:           "Case 11: invalid parameter",
-			parameter:      "invalid_parameter",
-			existingConfig: GlobalConfig{},
-			wantErr:        true,
+			name:      "Case 11: invalid parameter",
+			parameter: "invalid_parameter",
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -1312,9 +1332,11 @@ func TestGetupdateNotification(t *testing.T) {
 		want           bool
 	}{
 		{
-			name:           fmt.Sprintf("Case 1: %s nil", UpdateNotificationSetting),
-			existingConfig: GlobalConfig{},
-			want:           true,
+			name: fmt.Sprintf("Case 1: %s nil", UpdateNotificationSetting),
+			existingConfig: GlobalConfig{
+				OdoSettings: &OdoSettings{},
+			},
+			want: true,
 		},
 		{
 			name: fmt.Sprintf("Case 2: %s true", UpdateNotificationSetting),
