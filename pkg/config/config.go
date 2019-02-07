@@ -125,6 +125,11 @@ func getLocalConfigFile() (string, error) {
 	return filepath.Join(wd, ".odo", configFileName), nil
 }
 
+// New returns the globalConfigInfo to retain the expected behavior
+func New() (*GlobalConfigInfo, error) {
+	return NewGlobalConfig()
+}
+
 // NewGlobalConfig gets the GlobalConfigInfo from global config file and global creates the config file in case it's
 // not present then it
 func NewGlobalConfig() (*GlobalConfigInfo, error) {
@@ -545,10 +550,14 @@ const (
 	NamePrefixSetting = "NamePrefix"
 	// NamePrefixSettingDescription is human-readable description for the name prefix setting
 	NamePrefixSettingDescription = "Default prefix is the current directory name. Use this value to set a default name prefix"
-	// TimeoutSetting Name of the setting controlling timeout for connection check
+	// TimeoutSetting is the name of the setting controlling timeout for connection check
 	TimeoutSetting = "Timeout"
 	// TimeoutSettingDescription is human-readable description for the timeout setting
 	TimeoutSettingDescription = "Timeout (in seconds) for OpenShift server connection check"
+	// ComponentType is the name of the setting controlling the component type i.e. builder image
+	ComponentType = "ComponentType"
+	// ComponentTypeDescription is human-readable description of the componentType setting
+	ComponentTypeDescription = "The type of component"
 )
 
 var (
@@ -558,8 +567,14 @@ var (
 		NamePrefixSetting:         NamePrefixSettingDescription,
 		TimeoutSetting:            TimeoutSettingDescription,
 	}
+
+	supportedLocalParameterDescriptions = map[string]string{
+		ComponentType: ComponentTypeDescription,
+	}
 	// set-like map to quickly check if a parameter is supported
-	lowerCaseParameters = getLowerCaseParameters()
+	lowerCaseParameters = getLowerCaseParameters(GetSupportedParameters())
+
+	lowerCaseLocalParameters = getLowerCaseParameters(GetLocallySupportedParameters())
 )
 
 // FormatSupportedParameters outputs supported parameters and their description
@@ -568,6 +583,14 @@ func FormatSupportedParameters() (result string) {
 		result = result + v + " - " + supportedParameterDescriptions[v] + "\n"
 	}
 	return "\nAvailable Parameters:\n" + result
+}
+
+// FormatLocallySupportedParameters outputs supported parameters and their description
+func FormatLocallySupportedParameters() (result string) {
+	for _, v := range GetLocallySupportedParameters() {
+		result = result + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
+	}
+	return "\nAvailable Local Parameters:\n" + result
 }
 
 // asSupportedParameter checks that the given parameter is supported and returns a lower case version of it if it is
@@ -581,9 +604,13 @@ func GetSupportedParameters() []string {
 	return util.GetSortedKeys(supportedParameterDescriptions)
 }
 
+// GetLocallySupportedParameters returns the name of the supported global parameters
+func GetLocallySupportedParameters() []string {
+	return util.GetSortedKeys(supportedLocalParameterDescriptions)
+}
+
 // getLowerCaseParameters creates a set-like map of supported parameters from the supported parameter names
-func getLowerCaseParameters() map[string]bool {
-	parameters := GetSupportedParameters()
+func getLowerCaseParameters(parameters []string) map[string]bool {
 	result := make(map[string]bool, len(parameters))
 	for _, v := range parameters {
 		result[strings.ToLower(v)] = true

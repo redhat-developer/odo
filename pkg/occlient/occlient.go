@@ -415,7 +415,7 @@ func isServerUp(server string) bool {
 	ocRequestTimeout := config.DefaultTimeout * time.Second
 	// checking the value of timeout in config
 	// before proceeding with default timeout
-	cfg, configReadErr := config.NewGlobalConfig()
+	cfg, configReadErr := config.New()
 	if configReadErr != nil {
 		glog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {

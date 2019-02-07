@@ -15,6 +15,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/redhat-developers/odo/pkg/config"
 )
 
 // TODO: A neater way to provide odo path. Currently we assume \

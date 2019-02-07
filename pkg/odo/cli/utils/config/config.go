@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -22,7 +23,7 @@ func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Modifies configuration settings",
-		Long:  fmt.Sprintf(configLongDesc, config.FormatSupportedParameters()),
+		Long:  fmt.Sprintf(configLongDesc, config.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
 		Example: fmt.Sprintf("%s\n%s",
 			configurationViewCmd.Example,
 			configurationSetCmd.Example),

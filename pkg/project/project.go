@@ -26,7 +26,7 @@ func GetCurrent(client *occlient.Client) string {
 func SetCurrent(client *occlient.Client, projectName string) error {
 	currentProject := GetCurrent(client)
 
-	cfg, err := config.NewGlobalConfig()
+	cfg, err := config.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to access config file")
 	}
@@ -91,7 +91,7 @@ func Delete(client *occlient.Client, projectName string) (string, error) {
 	}
 
 	// delete from config
-	cfg, err := config.NewGlobalConfig()
+	cfg, err := config.New()
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete project from config file")
 	}
