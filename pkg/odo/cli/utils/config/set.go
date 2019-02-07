@@ -70,7 +70,7 @@ func (o *SetOptions) Run() (err error) {
 
 	if !o.configForceFlag {
 		var confirmOveride string
-		if value, ok := cfg.GetConfiguration(o.paramName); ok {
+		if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
 			fmt.Printf("%v is already set. Current value is %v.\n", o.paramName, value)
 			log.Askf("Do you want to override it in the config? y/N ")
 			fmt.Scanln(&confirmOveride)

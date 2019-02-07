@@ -66,25 +66,28 @@ func (o *DeleteOptions) Run() (err error) {
 		return errors.Wrapf(err, "")
 	}
 
-	if _, ok := cfg.GetConfiguration(o.paramName); ok {
+	if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
 		err = cfg.DeleteConfiguration(strings.ToLower(o.paramName))
 		if err != nil {
 			return err
 		}
-	} else {
+
+		// cannot use the type switch on non-interface variables so a hack
+		var intfcfg interface{} = cfg
+		switch intfcfg.(type) {
+		case *config.GlobalConfigInfo:
+			fmt.Println("Global config was successfully updated.")
+		case *config.LocalConfigInfo:
+			fmt.Println("Local config was successfully updated.")
+
+		}
+		return nil
+		// if its found but nil then show the error
+	} else if ok && (value == nil) {
 		return errors.New("config already unset, cannot delete an unset configuration")
 	}
+	return errors.New(o.paramName + " is not a valid configuration variable")
 
-	// cannot use the type switch on non-interface variables so a hack
-	var intfcfg interface{} = cfg
-	switch intfcfg.(type) {
-	case *config.GlobalConfigInfo:
-		fmt.Println("Global config was successfully updated.")
-	case *config.LocalConfigInfo:
-		fmt.Println("Local config was successfully updated.")
-
-	}
-	return nil
 }
 
 // NewCmdDelete implements the config delete odo command
