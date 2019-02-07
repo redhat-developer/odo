@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -136,9 +135,7 @@ func NewCmdCatalogDescribeService(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(serviceExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(o.Validate(), "")
-			odoutil.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

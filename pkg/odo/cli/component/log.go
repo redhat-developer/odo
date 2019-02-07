@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"os"
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
@@ -55,7 +56,7 @@ func (lo *LogOptions) Run() (err error) {
 
 // NewCmdLog implements the log odo command
 func NewCmdLog(name, fullName string) *cobra.Command {
-	lo := NewLogOptions()
+	o := NewLogOptions()
 
 	var logCmd = &cobra.Command{
 		Use:     fmt.Sprintf("%s [component_name]", name),
@@ -64,13 +65,11 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(logExample, fullName),
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(lo.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(lo.Validate(), "")
-			odoutil.LogErrorAndExit(lo.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 
-	logCmd.Flags().BoolVarP(&lo.logFollow, "follow", "f", false, "Follow logs")
+	logCmd.Flags().BoolVarP(&o.logFollow, "follow", "f", false, "Follow logs")
 
 	// Add a defined annotation in order to appear in the help menu
 	logCmd.Annotations = map[string]string{"command": "component"}

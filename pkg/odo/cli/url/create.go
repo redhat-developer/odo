@@ -7,7 +7,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/url"
 
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 
@@ -106,9 +105,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(urlCreateExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(o.Validate(), "")
-			odoutil.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")

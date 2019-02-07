@@ -5,7 +5,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
@@ -64,9 +63,7 @@ func NewCmdCatalogListServices(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(servicesExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(o.Validate(), "")
-			odoutil.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 }

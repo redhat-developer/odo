@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/pkg/errors"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
@@ -164,9 +165,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(pushCmdExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(po.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(po.Validate(), "")
-			odoutil.LogErrorAndExit(po.Run(), "")
+			genericclioptions.GenericRun(po, cmd, args)
 		},
 	}
 

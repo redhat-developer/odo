@@ -2,12 +2,12 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -62,9 +62,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(setExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(sto.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(sto.Validate(), "")
-			odoutil.LogErrorAndExit(sto.Run(), "")
+			genericclioptions.GenericRun(sto, cmd, args)
 		},
 	}
 

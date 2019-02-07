@@ -371,9 +371,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(createExample, fullName),
 		Args:    cobra.RangeArgs(1, 2),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(co.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(co.Validate(), "")
-			odoutil.LogErrorAndExit(co.Run(), "")
+			genericclioptions.GenericRun(co, cmd, args)
 		},
 	}
 	componentCreateCmd.Flags().StringVarP(&co.componentBinary, "binary", "b", "", "Use a binary as the source file for the component")

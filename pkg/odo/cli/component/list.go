@@ -107,7 +107,7 @@ func (lo *ListOptions) Run() (err error) {
 
 // NewCmdList implements the list odo command
 func NewCmdList(name, fullName string) *cobra.Command {
-	lo := NewListOptions()
+	o := NewListOptions()
 
 	var componentListCmd = &cobra.Command{
 		Use:     name,
@@ -116,15 +116,13 @@ func NewCmdList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(lo.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(lo.Validate(), "")
-			odoutil.LogErrorAndExit(lo.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	// Add a defined annotation in order to appear in the help menu
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 
-	componentListCmd.Flags().StringVarP(&lo.outputFlag, "output", "o", "", "output in json format")
+	componentListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)

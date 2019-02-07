@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -141,9 +142,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 		Long:    "Update the source code path of a component",
 		Example: fmt.Sprintf(updateCmdExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(uo.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(uo.Validate(), "")
-			odoutil.LogErrorAndExit(uo.Run(), "")
+			genericclioptions.GenericRun(uo, cmd, args)
 		},
 	}
 
