@@ -192,6 +192,6 @@ var _ = Describe("odoJavaE2e", func() {
 
 func importOpenJDKImage() {
 	// we need to import the openjdk image which is used for jars because it's not available by default
-	runCmd("oc import-image openjdk18 --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift --confirm")
+	runCmd("oc import-image openjdk18 --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.5 --confirm")
 	runCmd("oc annotate istag/openjdk18:latest tags=builder --overwrite")
 }
