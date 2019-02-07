@@ -1,7 +1,7 @@
 def onmyduffynode(script){
     ansiColor('xterm'){
         timestamps{
-            sh 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -l root ${DUFFY_NODE}.ci.centos.org -t \"export REPO=${git_url}; export BRANCH=${ghprbActualCommit};\""' + script + '"'
+            sh 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -l root ${DUFFY_NODE}.ci.centos.org -t "' + script + '"'
         }
     }
 }
@@ -15,7 +15,15 @@ def notifyBuild(String buildStatus = 'STARTED') {
     emailext attachmentsPattern: 'odo/*.log', body: "See: ${env.BUILD_URL}", subject: "[${env.JOB_NAME}] Build #${env.BUILD_NUMBER}: ${buildStatus}", to: 'sgk@redhat.com'
 }
 
+def syncrepotoworker() {
+    sh 'rsync -e "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -l root " -Ha .' +  " ${DUFFY_NODE}.ci.centos.org:~/${CLONE_DIR}"
+}
+
 node('odo') {
+
+            // clearing the clone env
+            deleteDir()
+            checkout scm
 
             stage('Allocate Node'){
                 env.CICO_API_KEY = readFile("${env.HOME}/duffy.key").trim()
@@ -27,17 +35,27 @@ node('odo') {
                 env.SSID=duffy_rtn[1]
                 env.CLONE_DIR = 'go/src/github.com/redhat-developer/odo'
             }
-    
+
             try{
                 stage('Pre Setup Node'){
                     onmyduffynode '''yum -y install git wget gcc docker &&
                     wget https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz &&
-                    tar -C /usr/local -xzf go1.11.2.linux-amd64.tar.gz'''
+                    tar -C /usr/local -xzf go1.11.2.linux-amd64.tar.gz &&
+                    mkdir -p ${CLONE_DIR}
+                    '''
+                }
+
+                stage('copying the source') {
+                    sh 'pwd && ls -la'
+                    syncrepotoworker()
                 }
     
-                stage('git clone Tests') {
-                    onmyduffynode '''git clone --single-branch --branch master --depth 1 "https://github.com/redhat-developer/odo.git" ${CLONE_DIR} && 
-                    cd  ${CLONE_DIR} && ls -la'''
+                stage('git repo Tests') {
+                    onmyduffynode '''pwd&& 
+                    cd  ${CLONE_DIR} &&
+                    git branch &&
+                    ls -la
+                    '''
                 }
    
                 stage('Build binary') {
@@ -67,7 +85,7 @@ node('odo') {
                         echo "----------finished-provisioning-cluster-----------"
                         '''
                 }
- 
+/* 
                 timeout(20) {
                     stage('Main e2e Test') {
                         onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
@@ -96,7 +114,7 @@ node('odo') {
                         '''
                     }
                 }
-
+*/ /*
                 timeout(20) {
                     stage('Java e2e tests') {
                         onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
@@ -136,7 +154,7 @@ node('odo') {
                         '''
                     }
                 }
-
+*/ /*
                 timeout(20) {
                     stage('Link e2e tests') {
                         onmyduffynode '''export PATH=$PATH:/usr/local/go/bin &&
@@ -149,8 +167,8 @@ node('odo') {
                         '''
                     }
                 }
-
-            }catch (e){
+*/
+            } catch (e){
                 currentBuild.result = "FAILED"
                 throw e 
             } finally {
