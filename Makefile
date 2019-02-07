@@ -5,6 +5,7 @@ COMMON_FLAGS := -X $(PROJECT)/pkg/odo/cli/version.GITCOMMIT=$(GITCOMMIT)
 BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
 DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
+GINKO_OUTPUT_LEVEL := succinct
 
 default: bin
 
@@ -89,90 +90,90 @@ test:
 .PHONY: test-main-e2e
 test-main-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.${GINKO_OUTPUT_LEVEL}
 endif
 
 # Run json outout tests
 .PHONY: test-json-format-output
 test-json-format-output:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.${GINKO_OUTPUT_LEVEL}
 endif
 
 # Run component e2e tests
 .PHONY: test-cmp-e2e
 test-cmp-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.succinct -timeout 15m
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout 15m
 endif
 
 # Run java e2e tests
 .PHONY: test-java-e2e
 test-java-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct -timeout 20m
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout 20m
 endif
 
 # Run source e2e tests
 .PHONY: test-source-e2e
 test-source-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct -timeout 20m
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout 20m
 endif
 
 # Run service catalog e2e tests
 .PHONY: test-service-e2e
 test-service-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.${GINKO_OUTPUT_LEVEL}
 endif
 
 # Run link e2e tests
 .PHONY: test-link-e2e
 test-link-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.${GINKO_OUTPUT_LEVEL}
 endif
 
 # Run link e2e tests
 .PHONY: test-watch-e2e
 test-watch-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct -timeout 20m
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout 20m
 endif
 
 # Run login e2e tests
 .PHONY: test-odologin-e2e
 test-odo-login-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.${GINKO_OUTPUT_LEVEL}
 endif
 
 # Run all e2e tests
 .PHONY: test-e2e
 test-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e -ginkgo.${GINKO_OUTPUT_LEVEL} -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e -ginkgo.${GINKO_OUTPUT_LEVEL}
 endif
 
 # create deb and rpm packages using fpm in ./dist/pkgs/

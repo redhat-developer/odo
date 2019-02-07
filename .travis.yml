@@ -73,7 +73,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-java-e2e
+        - make test-java-e2e GINKO_OUTPUT_LEVEL=v
 
     # Run source e2e tests
     - <<: *base-test
@@ -84,7 +84,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-source-e2e
+        - make test-source-e2e GINKO_OUTPUT_LEVEL=v
 
     # Run service-catalog e2e tests
     - <<: *base-test
@@ -105,7 +105,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-watch-e2e TIMEOUT=1200s
+        - make test-watch-e2e TIMEOUT=1200s GINKO_OUTPUT_LEVEL=v
 
     # Run link e2e tests
     - <<: *base-test
