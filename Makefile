@@ -118,7 +118,7 @@ test-java-e2e:
 ifdef TIMEOUT
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct -timeout 20m
 endif
 
 # Run source e2e tests
@@ -127,7 +127,7 @@ test-source-e2e:
 ifdef TIMEOUT
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct -timeout 20m
 endif
 
 # Run service catalog e2e tests
@@ -154,7 +154,7 @@ test-watch-e2e:
 ifdef TIMEOUT
 	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct -timeout 20m
 endif
 
 # Run login e2e tests
