@@ -34,7 +34,6 @@ var (
 type DeleteOptions struct {
 	paramName        string
 	configGlobalFlag bool
-	configForceFlag  bool
 }
 
 // NewDeleteOptions creates a new DeleteOptions instance
