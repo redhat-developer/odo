@@ -48,7 +48,7 @@ func (o *ViewOptions) Run() (err error) {
 		cfg, err := config.NewGlobalConfig()
 
 		if err != nil {
-			util.LogErrorAndExit(err, "unable to view global configuration")
+			util.LogErrorAndExit(err, "")
 		}
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
@@ -59,7 +59,7 @@ func (o *ViewOptions) Run() (err error) {
 	} else {
 		cfg, err := config.NewLocalConfig()
 		if err != nil {
-			util.LogErrorAndExit(err, "unable to view local configuration")
+			util.LogErrorAndExit(err, "")
 		}
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")

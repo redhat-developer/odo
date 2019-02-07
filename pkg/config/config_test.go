@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"reflect"
 	"strconv"
 	"testing"
@@ -1374,6 +1375,27 @@ func TestLowerCaseParameters(t *testing.T) {
 	actual := getLowerCaseParameters(GetSupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
+	}
+}
+
+func TestLowerCaseParameterForLocalParameters(t *testing.T) {
+	expected := map[string]bool{"componenttype": true}
+	actual := getLowerCaseParameters(GetLocallySupportedParameters())
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("expected '%v', got '%v'", expected, actual)
+	}
+}
+
+func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
+	// cleaning up old odo files if any
+	os.RemoveAll(path.Join(".odo", configFileName))
+
+	conf, err := NewLocalConfig()
+	if err != nil {
+		t.Errorf("error while creating local config %v", err)
+	}
+	if _, err = os.Stat(conf.Filename); !os.IsNotExist(err) {
+		t.Errorf("local odo-config.yaml shouldn't exist yet")
 	}
 }
 

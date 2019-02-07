@@ -161,12 +161,13 @@ func NewLocalConfig() (*LocalConfigInfo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
-	// Check whether directory and file are not present if they aren't then create them
-	if err = createIfNotExists(configFile); err != nil {
-		return nil, err
-	}
 	c := LocalConfigInfo{}
 	c.Filename = configFile
+
+	// if the config file doesn't exist then we dont worry about it and return
+	if _, err = os.Stat(configFile); os.IsNotExist(err) {
+		return &c, nil
+	}
 	err = get(&c.LocalConfig, c.Filename)
 	if err != nil {
 		return nil, err
@@ -215,6 +216,9 @@ func writeToFile(c interface{}, filename string) error {
 		return errors.Wrap(err, "unable to marshal odo config data")
 	}
 
+	if err = createIfNotExists(filename); err != nil {
+		return err
+	}
 	err = ioutil.WriteFile(filename, data, 0600)
 	if err != nil {
 		return errors.Wrapf(err, "unable to write config to file %v", c)
@@ -602,7 +606,7 @@ func asSupportedParameter(param string) (string, bool) {
 
 func asLocallySupportedParameter(param string) (string, bool) {
 	lower := strings.ToLower(param)
-	return lower, lowerCaseParameters[lower]
+	return lower, lowerCaseLocalParameters[lower]
 }
 
 // GetSupportedParameters returns the name of the supported parameters
