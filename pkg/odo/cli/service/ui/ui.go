@@ -97,6 +97,19 @@ func EnterServiceNameInteractively(defaultValue, promptText string, validateName
 	return serviceName
 }
 
+// ShouldOutputNonInteractiveEquivalent asks the user if they want to output the equivalent non-interactive command line version
+// of the interactively entered options
+func ShouldOutputNonInteractiveEquivalent() bool {
+	outputCLI := false
+	confirm := &survey.Confirm{
+		Message: "Output the non-interactive version of the selected options",
+	}
+
+	err := survey.AskOne(confirm, &outputCLI, survey.Required)
+	ui.HandleError(err)
+	return outputCLI
+}
+
 // SelectClassInteractively lets the user select target service class from possible options, first filtering by categories then
 // by class name
 func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterServiceClass) (class scv1beta1.ClusterServiceClass, serviceType string) {
@@ -156,9 +169,15 @@ func classInfoItem(name, value string) string {
 
 	if len(value) > 0 {
 		// display the name using the default color, in bold and then reset style right after
-		return ansi.ColorCode("default+b") + name + ansi.ColorCode("reset") + ": " + value + "\n"
+		return StyledOutput(name, "default+b") + ": " + value + "\n"
 	}
 	return ""
+}
+
+// StyledOutput returns an ANSI color code to style the specified text accordingly, issuing a reset code when done using the
+// https://github.com/mgutz/ansi#style-format format
+func StyledOutput(text, style string) string {
+	return ansi.ColorCode(style) + text + ansi.ColorCode("reset")
 }
 
 const defaultColumnNumberBeforeWrap = 80
