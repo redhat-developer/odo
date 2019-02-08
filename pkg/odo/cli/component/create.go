@@ -256,10 +256,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.CreateArgs.EnvVars = ui.EnterEnvVars()
 
 			if ui.Proceed("Do you wish to set resource limits") {
-				memMin := ui.EnterMemory("minimum", "50Mi")
 				memMax := ui.EnterMemory("maximum", "512Mi")
-				cpuMin := ui.EnterCPU("minimum", "100m")
+				memMin := ui.EnterMemory("minimum", memMax)
 				cpuMax := ui.EnterCPU("maximum", "1")
+				cpuMin := ui.EnterCPU("minimum", cpuMax)
 
 				resourceQuantity := []util.ResourceRequirementInfo{}
 				memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, memMin, memMax, "")
