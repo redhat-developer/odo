@@ -115,7 +115,7 @@ var _ = Describe("odoe2e", func() {
 			Expect(configOutput).To(ContainSubstring("ComponentType"))
 		})
 
-		FIt("should allow unsetting a config locally", func() {
+		It("should allow unsetting a config locally", func() {
 			runCmd("odo utils config set componenttype java")
 			configOutput := runCmd("odo utils config unset -f componentType")
 			Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
@@ -123,7 +123,7 @@ var _ = Describe("odoe2e", func() {
 			Expect(configOutput).NotTo(ContainSubstring("java"))
 		})
 
-		FIt("should allow unsetting a config globally", func() {
+		It("should allow unsetting a config globally", func() {
 			runCmd("odo utils config set --global timeout 5")
 			configOutput := runCmd("odo utils config unset -f --global timeout")
 			Expect(configOutput).To(ContainSubstring("Global config was successfully updated."))
