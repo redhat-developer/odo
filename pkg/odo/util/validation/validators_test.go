@@ -1,6 +1,8 @@
 package validation
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -52,5 +54,23 @@ func TestNameValidator(t *testing.T) {
 		if !strings.Contains(err.Error(), "can only validate strings") {
 			t.Error("name validator should report error that it can only valida strings")
 		}
+	}
+}
+
+func TestPathValidator(t *testing.T) {
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+
+	err = PathValidator(exPath)
+	if err != nil {
+		t.Errorf("path validator should have accepted an existing path, but got: %v instead", err)
+	}
+
+	err = PathValidator("/tmp/1ewfvjnfkhvhbf")
+	if err == nil {
+		t.Error("path validator should return an error when the path does not exist")
 	}
 }

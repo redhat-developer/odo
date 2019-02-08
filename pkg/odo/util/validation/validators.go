@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"strconv"
 )
@@ -36,6 +37,19 @@ func IntegerValidator(ans interface{}) error {
 	}
 
 	return fmt.Errorf("don't know how to convert %v into an integer", ans)
+}
+
+func PathValidator(path interface{}) error {
+	if s, ok := path.(string); ok {
+		exists := util.CheckPathExists(s)
+		if exists {
+			return nil
+		}
+
+		return fmt.Errorf("path '%s' does not exist on the file system", s)
+	}
+
+	return fmt.Errorf("can only validate strings, got %v", path)
 }
 
 // GetValidatorFor retrieves a validator for the specified validatable, first validating its required state, then its value

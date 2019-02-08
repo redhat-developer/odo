@@ -6,6 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"sort"
 	"strings"
@@ -88,7 +89,7 @@ func EnterInputTypePath(inputType string, defaultPath string) string {
 	if len(defaultPath) > 0 {
 		prompt.Default = defaultPath
 	}
-	err := survey.AskOne(prompt, &path, survey.Required)
+	err := survey.AskOne(prompt, &path, validation.PathValidator)
 	ui.HandleError(err)
 	return path
 }
