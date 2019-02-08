@@ -56,7 +56,7 @@ func componentTests(componentCmdPrefix string) {
 			Expect(runCmd("odo component get")).To(ContainSubstring("The current component is: " + frontend))
 
 			const backend = "backend"
-			runCmd(componentCmdPrefix + "create python " + backend)
+			runCmd(componentCmdPrefix + " create python " + backend)
 			Expect(runCmd("odo component get")).To(ContainSubstring("The current component is: " + backend))
 
 			// switch back to frontend component
