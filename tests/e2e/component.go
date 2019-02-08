@@ -53,14 +53,14 @@ func componentTests(componentCmdPrefix string) {
 			Expect(appName).ToNot(BeEmpty())
 
 			// check that we can get the component
-			Expect(runCmd(componentCmdPrefix + " get")).To(Equal("The current component is: " + frontend))
+			Expect(runCmd("odo component get")).To(ContainSubstring("The current component is: " + frontend))
 
 			const backend = "backend"
 			runCmd(componentCmdPrefix + "create python " + backend)
-			Expect(runCmd(componentCmdPrefix + " get")).To(Equal("The current component is: " + backend))
+			Expect(runCmd("odo component get")).To(ContainSubstring("The current component is: " + backend))
 
 			// switch back to frontend component
-			Expect(runCmd(componentCmdPrefix + " set " + frontend)).To(Equal("Switched to component: " + frontend))
+			Expect(runCmd("odo component set " + frontend)).To(ContainSubstring("Switched to component: " + frontend))
 
 			// clean up
 			runCmd("odo app delete " + appName + " -f")
