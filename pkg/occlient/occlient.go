@@ -98,8 +98,11 @@ const (
 	// The length of the string to be generated for names of resources
 	nameLength = 5
 
-	// Image that will be used containing the supervisord binary and assembly scripts
-	bootstrapperImage = "quay.io/openshiftdo/supervisord:0.6.0"
+	// Default Image that will be used containing the supervisord binary and assembly scripts
+	// use getBoostrapperImage() function instead of this variable
+	defaultBootstrapperImage = "quay.io/openshiftdo/supervisord:0.6.0"
+	// ENV variable to overwrite image used to bootstrap SupervisorD in S2I builder Image
+	bootstrapperImageEnvName = "ODO_BOOTSTRAPPER_IMAGE"
 
 	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment
 	supervisordVolumeName = "odo-supervisord-shared-data"
@@ -197,6 +200,13 @@ type Client struct {
 	userClient           userclientset.UserV1Interface
 	KubeConfig           clientcmd.ClientConfig
 	Namespace            string
+}
+
+func getBootstrapperImage() string {
+	if env, ok := os.LookupEnv(bootstrapperImageEnvName); ok {
+		return env
+	}
+	return defaultBootstrapperImage
 }
 
 // New creates a new client

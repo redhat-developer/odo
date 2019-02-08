@@ -304,7 +304,7 @@ func addBootstrapSupervisordInitContainer(dc *appsv1.DeploymentConfig, dcName st
 	dc.Spec.Template.Spec.InitContainers = append(dc.Spec.Template.Spec.InitContainers,
 		corev1.Container{
 			Name:  "copy-supervisord",
-			Image: bootstrapperImage,
+			Image: getBootstrapperImage(),
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      supervisordVolumeName,
