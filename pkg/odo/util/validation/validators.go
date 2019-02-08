@@ -52,6 +52,18 @@ func PathValidator(path interface{}) error {
 	return fmt.Errorf("can only validate strings, got %v", path)
 }
 
+func PortsValidator(portsStr interface{}) error {
+	if s, ok := portsStr.(string); ok {
+		_, err := util.GetContainerPortsFromStrings(util.GetSplitValuesFromStr(s))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return fmt.Errorf("can only validate strings, got %v", portsStr)
+}
+
 // GetValidatorFor retrieves a validator for the specified validatable, first validating its required state, then its value
 // based on type then any additional validators in the order specified by Validatable.AdditionalValidators
 func GetValidatorFor(prop Validatable) Validator {

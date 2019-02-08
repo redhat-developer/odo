@@ -757,7 +757,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 			return errors.Wrapf(err, "unable to create s2i app for %s", commonObjectMeta.Name)
 		}
 		imageNS = imageStream.ObjectMeta.Namespace
-		containerPorts, err = getContainerPortsFromStrings(params.Ports)
+		containerPorts, err = util.GetContainerPortsFromStrings(params.Ports)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
 		}
@@ -1010,7 +1010,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		if err != nil {
 			return errors.Wrapf(err, "unable to bootstrap s2i supervisored for %s", commonObjectMeta.Name)
 		}
-		containerPorts, err = getContainerPortsFromStrings(params.Ports)
+		containerPorts, err = util.GetContainerPortsFromStrings(params.Ports)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
 		}
@@ -3076,46 +3076,6 @@ func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[s
 		return errors.Wrap(err, "unable to remove storage label from PVC")
 	}
 	return nil
-}
-
-// getContainerPortsFromStrings generates ContainerPort values from the array of string port values
-// ports is the array containing the string port values
-func getContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error) {
-	var containerPorts []corev1.ContainerPort
-	for _, port := range ports {
-		splits := strings.Split(port, "/")
-		if len(splits) < 1 || len(splits) > 2 {
-			return nil, errors.Errorf("unable to parse the port string %s", port)
-		}
-
-		portNumberI64, err := strconv.ParseInt(splits[0], 10, 32)
-		if err != nil {
-			return nil, errors.Wrapf(err, "invalid port number %s", splits[0])
-		}
-		portNumber := int32(portNumberI64)
-
-		var portProto corev1.Protocol
-		if len(splits) == 2 {
-			switch strings.ToUpper(splits[1]) {
-			case "TCP":
-				portProto = corev1.ProtocolTCP
-			case "UDP":
-				portProto = corev1.ProtocolUDP
-			default:
-				return nil, fmt.Errorf("invalid port protocol %s", splits[1])
-			}
-		} else {
-			portProto = corev1.ProtocolTCP
-		}
-
-		port := corev1.ContainerPort{
-			Name:          fmt.Sprintf("%d-%s", portNumber, strings.ToLower(string(portProto))),
-			ContainerPort: portNumber,
-			Protocol:      portProto,
-		}
-		containerPorts = append(containerPorts, port)
-	}
-	return containerPorts, nil
 }
 
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.

@@ -436,3 +436,56 @@ func GetSortedKeys(mapping map[string]string) []string {
 
 	return keys
 }
+
+//returns a slice containing the split string, using ',' as a separator
+func GetSplitValuesFromStr(inputStr string) []string {
+	if len(inputStr) == 0 {
+		return []string{}
+	}
+
+	result := strings.Split(inputStr, ",")
+	for i, port := range result {
+		result[i] = strings.TrimSpace(port)
+	}
+	return result
+}
+
+// GetContainerPortsFromStrings generates ContainerPort values from the array of string port values
+// ports is the array containing the string port values
+func GetContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error) {
+	var containerPorts []corev1.ContainerPort
+	for _, port := range ports {
+		splits := strings.Split(port, "/")
+		if len(splits) < 1 || len(splits) > 2 {
+			return nil, errors.Errorf("unable to parse the port string %s", port)
+		}
+
+		portNumberI64, err := strconv.ParseInt(splits[0], 10, 32)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid port number %s", splits[0])
+		}
+		portNumber := int32(portNumberI64)
+
+		var portProto corev1.Protocol
+		if len(splits) == 2 {
+			switch strings.ToUpper(splits[1]) {
+			case "TCP":
+				portProto = corev1.ProtocolTCP
+			case "UDP":
+				portProto = corev1.ProtocolUDP
+			default:
+				return nil, fmt.Errorf("invalid port protocol %s", splits[1])
+			}
+		} else {
+			portProto = corev1.ProtocolTCP
+		}
+
+		port := corev1.ContainerPort{
+			Name:          fmt.Sprintf("%d-%s", portNumber, strings.ToLower(string(portProto))),
+			ContainerPort: portNumber,
+			Protocol:      portProto,
+		}
+		containerPorts = append(containerPorts, port)
+	}
+	return containerPorts, nil
+}

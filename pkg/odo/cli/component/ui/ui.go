@@ -12,7 +12,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"sort"
-	"strings"
 )
 
 // SelectComponentType lets the user to select the builder image (name only) in the prompt
@@ -176,18 +175,6 @@ func Proceed(message string) bool {
 	return response
 }
 
-func getSplitValuesFromStr(inputStr string) []string {
-	if len(inputStr) == 0 {
-		return []string{}
-	}
-
-	result := strings.Split(inputStr, ",")
-	for i, port := range result {
-		result[i] = strings.TrimSpace(port)
-	}
-	return result
-}
-
 // EnterPorts allows the user to specify the ports to be used in a prompt
 func EnterPorts() []string {
 	var portsStr string
@@ -195,10 +182,10 @@ func EnterPorts() []string {
 		Message: "Enter the ports you wish to set (for example: 8080,8100/tcp,9100/udp)",
 		Default: "",
 	}
-	err := survey.AskOne(prompt, &portsStr, nil)
+	err := survey.AskOne(prompt, &portsStr, validation.PortsValidator)
 	ui.HandleError(err)
 
-	return getSplitValuesFromStr(portsStr)
+	return util.GetSplitValuesFromStr(portsStr)
 }
 
 // EnterEnvVars allows the user to specify the environment variables to be used in a prompt
@@ -211,7 +198,7 @@ func EnterEnvVars() []string {
 	err := survey.AskOne(prompt, &envVarsStr, nil)
 	ui.HandleError(err)
 
-	return getSplitValuesFromStr(envVarsStr)
+	return util.GetSplitValuesFromStr(envVarsStr)
 }
 
 // EnterMemory allows the user to specify the memory limits to be used in a prompt
