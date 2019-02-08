@@ -457,12 +457,12 @@ func GetContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 	for _, port := range ports {
 		splits := strings.Split(port, "/")
 		if len(splits) < 1 || len(splits) > 2 {
-			return nil, errors.Errorf("unable to parse the port string %s", port)
+			return nil, fmt.Errorf("unable to parse the port string %s", port)
 		}
 
 		portNumberI64, err := strconv.ParseInt(splits[0], 10, 32)
 		if err != nil {
-			return nil, errors.Wrapf(err, "invalid port number %s", splits[0])
+			return nil, fmt.Errorf("invalid port number %s", splits[0])
 		}
 		portNumber := int32(portNumberI64)
 
