@@ -152,9 +152,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(watchExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(wo.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(wo.Validate(), "")
-			odoutil.LogErrorAndExit(wo.Run(), "")
+			genericclioptions.GenericRun(wo, cmd, args)
 		},
 	}
 

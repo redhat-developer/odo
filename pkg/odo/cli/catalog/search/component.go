@@ -5,7 +5,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 
@@ -68,9 +67,7 @@ components.
 		Args:    cobra.ExactArgs(1),
 		Example: fmt.Sprintf(componentExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(o.Validate(), "")
-			odoutil.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 }

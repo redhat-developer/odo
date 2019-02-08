@@ -108,9 +108,7 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(urlListExample, fullName),
 		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(o.Validate(), "")
-			util.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	urlListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the form of json")

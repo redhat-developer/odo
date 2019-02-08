@@ -6,7 +6,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -86,9 +85,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(o.Validate(), "")
-			util.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

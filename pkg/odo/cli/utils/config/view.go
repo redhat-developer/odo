@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/config"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	"os"
@@ -60,9 +60,7 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(viewExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(o.Validate(), "")
-			util.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

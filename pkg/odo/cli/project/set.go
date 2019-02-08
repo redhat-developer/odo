@@ -5,7 +5,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 
@@ -93,9 +92,7 @@ func NewCmdProjectSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(setExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(o.Validate(), "")
-			util.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

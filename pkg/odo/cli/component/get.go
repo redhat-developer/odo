@@ -8,7 +8,6 @@ import (
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -62,7 +61,7 @@ func (gto *GetOptions) Run() (err error) {
 
 // NewCmdGet implements odo component get command
 func NewCmdGet(name, fullName string) *cobra.Command {
-	gto := NewGetOptions()
+	o := NewGetOptions()
 
 	var componentGetCmd = &cobra.Command{
 		Use:     name,
@@ -71,13 +70,11 @@ func NewCmdGet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(getExample, fullName),
 		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(gto.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(gto.Validate(), "")
-			odoutil.LogErrorAndExit(gto.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 
-	componentGetCmd.Flags().BoolVarP(&gto.componentShortFlag, "short", "q", false, "If true, display only the component name")
+	componentGetCmd.Flags().BoolVarP(&o.componentShortFlag, "short", "q", false, "If true, display only the component name")
 
 	//Adding `--project` flag
 	project.AddProjectFlag(componentGetCmd)

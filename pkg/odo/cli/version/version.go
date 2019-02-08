@@ -3,6 +3,7 @@ package version
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"os"
 	"strings"
 
@@ -102,9 +103,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 		Long:    versionLongDesc,
 		Example: fmt.Sprintf(versionExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(o.Validate(), "")
-			util.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

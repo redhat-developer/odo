@@ -162,9 +162,7 @@ func NewCmdStorageList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(storageListExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(o.Validate(), "")
-			odoutil.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

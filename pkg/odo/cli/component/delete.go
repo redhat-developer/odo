@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -104,9 +105,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(do.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(do.Validate(), "")
-			odoutil.LogErrorAndExit(do.Run(), "")
+			genericclioptions.GenericRun(do, cmd, args)
 		},
 	}
 

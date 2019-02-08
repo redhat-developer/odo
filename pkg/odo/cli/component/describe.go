@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"encoding/json"
 
@@ -123,9 +124,7 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(describeExample, fullName),
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
-			odoutil.LogErrorAndExit(do.Complete(name, cmd, args), "")
-			odoutil.LogErrorAndExit(do.Validate(), "")
-			odoutil.LogErrorAndExit(do.Run(), "")
+			genericclioptions.GenericRun(do, cmd, args)
 		},
 	}
 
