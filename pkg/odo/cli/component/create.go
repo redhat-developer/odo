@@ -272,11 +272,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 				co.CreateArgs.Resources = resourceQuantity
 			}
-
-			co.CreateArgs.Wait = ui.Proceed("Would you wish to wait until the component is fully ready after after creation")
-			// needed in order to avoid showing a misleading message at the end of process
-			co.wait = co.CreateArgs.Wait
 		}
+
+		co.CreateArgs.Wait = ui.Proceed("Would you wish to wait until the component is fully ready after after creation")
+		// needed in order to avoid showing a misleading message at the end of process
+		co.wait = co.CreateArgs.Wait
 
 	} else {
 		co.CreateArgs.Wait = co.wait
