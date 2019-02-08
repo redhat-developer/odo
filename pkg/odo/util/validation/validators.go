@@ -5,6 +5,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"strconv"
+	"strings"
 )
 
 // NameValidator provides a Validator view of the ValidateName function.
@@ -39,6 +40,7 @@ func IntegerValidator(ans interface{}) error {
 	return fmt.Errorf("don't know how to convert %v into an integer", ans)
 }
 
+// PathValidator validates whether the given path exists on the file system
 func PathValidator(path interface{}) error {
 	if s, ok := path.(string); ok {
 		exists := util.CheckPathExists(s)
@@ -52,12 +54,41 @@ func PathValidator(path interface{}) error {
 	return fmt.Errorf("can only validate strings, got %v", path)
 }
 
+// PortsValidator validates whether all the parts of the input are valid port declarations
+// examples of valid input are:
+// 8080
+// 8080, 9090/udp
+// 8080/tcp, 9090/udp
 func PortsValidator(portsStr interface{}) error {
 	if s, ok := portsStr.(string); ok {
 		_, err := util.GetContainerPortsFromStrings(util.GetSplitValuesFromStr(s))
 		if err != nil {
 			return err
 		}
+		return nil
+	}
+
+	return fmt.Errorf("can only validate strings, got %v", portsStr)
+}
+
+// KeyEqValFormatValidator ensures that all the parts of the input follow the key=value format
+// examples of valid input are:
+// NAME=JANE
+// PORT=8080,PATH=/health
+func KeyEqValFormatValidator(portsStr interface{}) error {
+	if s, ok := portsStr.(string); ok {
+		parts := util.GetSplitValuesFromStr(s)
+		for _, part := range parts {
+			kvParts := strings.Split(part, "=")
+			if len(kvParts) != 2 {
+				return fmt.Errorf("Part '%s' does not have the correct format", part)
+			}
+			if len(strings.TrimSpace(kvParts[0])) != len(kvParts[0]) ||
+				len(strings.TrimSpace(kvParts[1])) != len(kvParts[1]) {
+				return fmt.Errorf("Spaces are not allowed in '%s'", part)
+			}
+		}
+
 		return nil
 	}
 

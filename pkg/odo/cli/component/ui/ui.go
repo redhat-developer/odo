@@ -195,7 +195,7 @@ func EnterEnvVars() []string {
 		Message: "Enter the environment variables you would like to set (for example: MY_TYPE=backed,PROFILE=dev)",
 		Default: "",
 	}
-	err := survey.AskOne(prompt, &envVarsStr, nil)
+	err := survey.AskOne(prompt, &envVarsStr, validation.KeyEqValFormatValidator)
 	ui.HandleError(err)
 
 	return util.GetSplitValuesFromStr(envVarsStr)

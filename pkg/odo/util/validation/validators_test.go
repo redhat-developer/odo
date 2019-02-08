@@ -74,3 +74,27 @@ func TestPathValidator(t *testing.T) {
 		t.Error("path validator should return an error when the path does not exist")
 	}
 }
+
+func TestPortValidator(t *testing.T) {
+	err := PortsValidator("8080,9090/udp")
+	if err != nil {
+		t.Errorf("port validator should have accepted an correct port declaration, but got: %v instead", err)
+	}
+
+	err = PortsValidator("dummy")
+	if err == nil {
+		t.Error("port validator should return an error when the path does not exist")
+	}
+}
+
+func TestKeyEqValFormatValidator(t *testing.T) {
+	err := KeyEqValFormatValidator("NAME=VALUE,K=V")
+	if err != nil {
+		t.Errorf("key-eq-val-format validator should have accepted an correct port declaration, but got: %v instead", err)
+	}
+
+	err = KeyEqValFormatValidator("dummy")
+	if err == nil {
+		t.Error("key-eq-val-format validator should return an error when the path does not exist")
+	}
+}
