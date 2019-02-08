@@ -22,7 +22,7 @@ var configLongDesc = ktemplates.LongDesc(`Modifies Odo specific configuration se
 func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationViewCmd := NewCmdView(viewCommandName, util.GetFullName(fullName, viewCommandName))
 	configurationSetCmd := NewCmdSet(setCommandName, util.GetFullName(fullName, setCommandName))
-	configurationDeleteCmd := NewCmdDelete(deleteCommandName, util.GetFullName(fullName, deleteCommandName))
+	configurationUnsetCmd := NewCmdUnset(unsetCommandName, util.GetFullName(fullName, unsetCommandName))
 	configurationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Modifies configuration settings",
@@ -30,13 +30,13 @@ func NewCmdConfiguration(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf("%s\n%s\n%s",
 			configurationViewCmd.Example,
 			configurationSetCmd.Example,
-			configurationDeleteCmd.Example,
+			configurationUnsetCmd.Example,
 		),
 		Aliases: []string{"configuration"},
 	}
 
 	configurationCmd.AddCommand(configurationViewCmd, configurationSetCmd)
-	configurationCmd.AddCommand(configurationDeleteCmd)
+	configurationCmd.AddCommand(configurationUnsetCmd)
 	configurationCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return configurationCmd
