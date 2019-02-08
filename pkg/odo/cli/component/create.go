@@ -249,7 +249,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return err
 		}
-		co.CreateArgs.Name = ui.EnterComponentName(defaultComponentName)
+		co.CreateArgs.Name = ui.EnterComponentName(defaultComponentName, co.Context)
 
 		if ui.Proceed("Do you wish to set advanced options") {
 			co.CreateArgs.Ports = ui.EnterPorts()

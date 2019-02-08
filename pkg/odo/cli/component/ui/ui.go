@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"sort"
 	"strings"
@@ -94,14 +97,40 @@ func EnterInputTypePath(inputType string, defaultPath string) string {
 	return path
 }
 
+// we need this because the validator for the component name needs use info from the Context
+// so we effectively return a closure that references the context
+func createComponentNameValidator(context *genericclioptions.Context) survey.Validator {
+	return func(input interface{}) error {
+		if s, ok := input.(string); ok {
+			err := validation.ValidateName(s)
+			if err != nil {
+				return err
+			}
+
+			exists, err := component.Exists(context.Client, s, context.Application)
+			if err != nil {
+				glog.V(4).Info(err)
+				return fmt.Errorf("Unable to determine if component '%s' exists or not", s)
+			}
+			if exists {
+				return fmt.Errorf("Component with name '%s' already exists in application '%s'", s, context.Application)
+			}
+
+			return nil
+		}
+
+		return fmt.Errorf("can only validate strings, got %v", input)
+	}
+}
+
 // EnterComponentName allows the user to specify the component name in a prompt
-func EnterComponentName(defaultName string) string {
+func EnterComponentName(defaultName string, context *genericclioptions.Context) string {
 	var path string
 	prompt := &survey.Input{
 		Message: "How would you wish to name the new component",
 		Default: defaultName,
 	}
-	err := survey.AskOne(prompt, &path, survey.Required)
+	err := survey.AskOne(prompt, &path, createComponentNameValidator(context))
 	ui.HandleError(err)
 	return path
 }
