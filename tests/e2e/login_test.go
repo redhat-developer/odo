@@ -22,40 +22,40 @@ var _ = Describe("odoLoginE2e", func() {
 		Context("Initialize", func() {
 			It("Should initialize some variables", func() {
 				// Logout of current user to ensure state
-				runCmd("oc logout")
+				runCmdShouldPass("oc logout")
 			})
 		})
 
 		Context("Run login tests with no active projects, having default is also considered as not having active project", func() {
 			AfterEach(func() {
 				// Logout of current user to ensure state
-				runCmd("oc logout")
+				runCmdShouldPass("oc logout")
 			})
 
 			It("Should login successfully with username and password without any projects with appropriate message", func() {
-				session = runCmd(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForNoProject, loginTestUserPassword))
+				session = runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForNoProject, loginTestUserPassword))
 				Expect(session).To(ContainSubstring("Login successful"))
 				Expect(session).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
 				Expect(session).To(ContainSubstring("odo project create <project-name>"))
-				session = runCmd("oc whoami")
+				session = runCmdShouldPass("oc whoami")
 				Expect(session).To(ContainSubstring(loginTestUserForNoProject))
 				// One initialization needs one login, hence it happens here
-				testUserToken = runCmd("oc whoami -t")
+				testUserToken = runCmdShouldPass("oc whoami -t")
 			})
 
 			It("Should login successfully with token without any projects with appropriate message", func() {
-				session = runCmd(fmt.Sprintf("odo login -t %s", testUserToken))
+				session = runCmdShouldPass(fmt.Sprintf("odo login -t %s", testUserToken))
 				Expect(session).To(ContainSubstring("Logged into"))
 				Expect(session).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
 				Expect(session).To(ContainSubstring("odo project create <project-name>"))
-				session = runCmd("oc whoami")
+				session = runCmdShouldPass("oc whoami")
 				Expect(session).To(ContainSubstring(loginTestUserForNoProject))
 			})
 
 			It("Should fail login on invalid token with appropriate message", func() {
-				session = runFailCmd("odo login -t verybadtoken", 1)
-				Expect(session).To(ContainSubstring("The token provided is invalid or expired"))
-				runCmd(fmt.Sprintf("oc login --token %s", testUserToken))
+				sessionErr := runCmdShouldFail("odo login -t verybadtoken")
+				Expect(sessionErr).To(ContainSubstring("The token provided is invalid or expired"))
+				runCmdShouldPass(fmt.Sprintf("oc login --token %s", testUserToken))
 			})
 		})
 
@@ -66,16 +66,16 @@ var _ = Describe("odoLoginE2e", func() {
 
 			It("Should login successfully with username and password single project with appropriate message", func() {
 				// Initialise for test
-				runCmd(fmt.Sprintf("oc login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
-				runCmd(fmt.Sprintf("odo project create %s", odoTestProjectForSingleProject1))
+				runCmdShouldPass(fmt.Sprintf("oc login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
+				runCmdShouldPass(fmt.Sprintf("odo project create %s", odoTestProjectForSingleProject1))
 				//make sure that project has been created
-				runCmd("oc project")
-				runCmd("oc logout")
+				runCmdShouldPass("oc project")
+				runCmdShouldPass("oc logout")
 
-				session = runCmd(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
+				session = runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
 				Expect(session).To(ContainSubstring("Login successful"))
 				Expect(session).To(ContainSubstring(odoTestProjectForSingleProject1))
-				session = runCmd("oc whoami")
+				session = runCmdShouldPass("oc whoami")
 				Expect(session).To(ContainSubstring(loginTestUserForSingleProject1))
 			})
 		})
