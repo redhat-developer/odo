@@ -1,19 +1,13 @@
 package e2e
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"strings"
 )
 
 var _ = Describe("odoLinkE2e", func() {
-
-	var t = strconv.FormatInt(time.Now().Unix(), 10)
-	var projName = fmt.Sprintf("odolnk-%s", t)
+	projName := generateTimeBasedName("odolnk")
 	const appTestName = "testing"
 
 	// Create a separate project for Java

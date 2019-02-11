@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,6 +12,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
+
+func generateTimeBasedName(prefix string) string {
+	var t = strconv.FormatInt(time.Now().Unix(), 10)
+	return fmt.Sprintf("%s-%s", prefix, t)
+}
+
+func getActiveElementFromCommandOutput(command string) string {
+	result := runCmd(command + " | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+	return strings.TrimSpace(result)
+}
 
 func runCmd(cmdS string) string {
 	cmd := exec.Command("/bin/sh", "-c", cmdS)

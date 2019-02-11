@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedCommandName is the recommended link command name
-const RecommendedLinkCommandName = "link"
+// LinkRecommendedCommandName is the recommended link command name
+const LinkRecommendedCommandName = "link"
 
 var (
 	linkExample = ktemplates.Examples(`# Link the current component to the 'my-postgresql' service

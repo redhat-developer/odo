@@ -14,8 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedUnlinkCommandName is the recommended unlink command name
-const RecommendedUnlinkCommandName = "unlink"
+// UnlinkRecommendedCommandName is the recommended unlink command name
+const UnlinkRecommendedCommandName = "unlink"
 
 var (
 	unlinkExample = ktemplates.Examples(`# Unlink the 'my-postgresql' service from the current component 

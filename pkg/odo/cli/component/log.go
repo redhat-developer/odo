@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedLogCommandName is the recommended watch command name
-const RecommendedLogCommandName = "log"
+// LogRecommendedCommandName is the recommended watch command name
+const LogRecommendedCommandName = "log"
 
 var logExample = ktemplates.Examples(`  # Get the logs for the nodejs component
 %[1]s nodejs

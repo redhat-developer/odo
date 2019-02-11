@@ -22,8 +22,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedWatchCommandName is the recommended watch command name
-const RecommendedWatchCommandName = "watch"
+// WatchRecommendedCommandName is the recommended watch command name
+const WatchRecommendedCommandName = "watch"
 
 var watchLongDesc = ktemplates.LongDesc(`Watch for changes, update component on change.`)
 var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component

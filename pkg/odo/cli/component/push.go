@@ -36,8 +36,8 @@ var pushCmdExample = `  # Push source code to the current component
 %[1]s my-component --local ~/mycode
   `
 
-// RecommendedPushCommandName is the recommended push command name
-const RecommendedPushCommandName = "push"
+// PushRecommendedCommandName is the recommended push command name
+const PushRecommendedCommandName = "push"
 
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {

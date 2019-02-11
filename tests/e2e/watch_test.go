@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,8 +19,7 @@ var _ = Describe("odoWatchE2e", func() {
 	const nodejsURI = "https://github.com/openshift/nodejs-ex"
 	const openjdkURI = "https://github.com/geoand/javalin-helloworld"
 
-	var t = strconv.FormatInt(time.Now().Unix(), 10)
-	var projName = fmt.Sprintf("odowatch-%s", t)
+	projName := generateTimeBasedName("odowatch")
 
 	tmpDir, err := ioutil.TempDir("", "odoCmp")
 	if err != nil {

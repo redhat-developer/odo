@@ -3,8 +3,6 @@
 package e2e
 
 import (
-	"strconv"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -51,8 +49,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = Describe("odoe2e", func() {
-	var t = strconv.FormatInt(time.Now().Unix(), 10)
-	var projName = fmt.Sprintf("odo-%s", t)
+	projName := generateTimeBasedName("odo")
 	const appTestName = "testing"
 
 	tmpDir, err := ioutil.TempDir("", "odo")
@@ -364,8 +361,7 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able to list the url", func() {
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
-				getRoute = strings.TrimSpace(getRoute)
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
 				// Check the labels in `oc get route`
@@ -396,8 +392,7 @@ var _ = Describe("odoe2e", func() {
 				// Switch to nodejs component
 				runCmd("odo component set nodejs")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
-				getRoute = strings.TrimSpace(getRoute)
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 
 				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1", 10)
 				if curlRoute {
@@ -414,8 +409,7 @@ var _ = Describe("odoe2e", func() {
 
 			It("should reflect the changes pushed", func() {
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
-				getRoute = strings.TrimSpace(getRoute)
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 
 				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1", 10)
 				if curlRoute {
@@ -431,8 +425,7 @@ var _ = Describe("odoe2e", func() {
 				runCmd("odo create nodejs nodejs-1 --git https://github.com/sclorg/nodejs-ex")
 				runCmd("odo url create nodejs --port 8080")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
-				getRoute = strings.TrimSpace(getRoute)
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName_new + "-" + projName))
 
 				// Check the labels in `oc get route`
@@ -449,8 +442,7 @@ var _ = Describe("odoe2e", func() {
 				runCmd("odo component set nodejs-1")
 				runCmd("odo url delete nodejs -f")
 
-				getRoute := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
-				getRoute = strings.TrimSpace(getRoute)
+				getRoute := getActiveElementFromCommandOutput("odo url list")
 				Expect(getRoute).NotTo(ContainSubstring("nodejs-1-" + appTestName_new + "-" + projName))
 
 				runCmd("odo delete -f")
@@ -583,7 +575,7 @@ var _ = Describe("odoe2e", func() {
 			runCmd("odo component set nodejs")
 			runCmd("odo url delete nodejs -f")
 
-			urlList := runCmd("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+			urlList := getActiveElementFromCommandOutput("odo url list")
 			Expect(urlList).NotTo(ContainSubstring("nodejs"))
 		})
 
@@ -626,8 +618,7 @@ var _ = Describe("odoe2e", func() {
 })
 
 var _ = Describe("updateE2e", func() {
-	var t = strconv.FormatInt(time.Now().Unix(), 10)
-	var projName = fmt.Sprintf("odo-%s", t)
+	projName := generateTimeBasedName("odo")
 	const appTestName = "testing"
 
 	const bootStrapSupervisorURI = "https://github.com/kadel/bootstrap-supervisored-s2i"

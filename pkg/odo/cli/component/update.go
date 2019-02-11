@@ -22,8 +22,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedUpdateCommandName is the recommended update command name
-const RecommendedUpdateCommandName = "update"
+// UpdateRecommendedCommandName is the recommended update command name
+const UpdateRecommendedCommandName = "update"
 
 // UpdateOptions encapsulates the update command options
 type UpdateOptions struct {

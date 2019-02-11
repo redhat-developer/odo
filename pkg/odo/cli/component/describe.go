@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedDescribeCommandName is the recommended describe command name
-const RecommendedDescribeCommandName = "describe"
+// DescribeRecommendedCommandName is the recommended describe command name
+const DescribeRecommendedCommandName = "describe"
 
 var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 %[1]s nodejs

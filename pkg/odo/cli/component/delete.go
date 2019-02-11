@@ -19,8 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedDeleteCommandName is the recommended delete command name
-const RecommendedDeleteCommandName = "delete"
+// DeleteRecommendedCommandName is the recommended delete command name
+const DeleteRecommendedCommandName = "delete"
 
 var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'. 
 %[1]s frontend
