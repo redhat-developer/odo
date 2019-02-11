@@ -340,7 +340,6 @@ var _ = Describe("odoe2e", func() {
 
 			It("should be able to list the url", func() {
 				getRoute := getActiveElementFromCommandOutput("odo url list")
-				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
 				// Check the labels in `oc get route`
@@ -372,7 +371,6 @@ var _ = Describe("odoe2e", func() {
 				runCmd("odo component set nodejs")
 
 				getRoute := getActiveElementFromCommandOutput("odo url list")
-				getRoute = strings.TrimSpace(getRoute)
 
 				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1", 10)
 				if curlRoute {
@@ -390,7 +388,6 @@ var _ = Describe("odoe2e", func() {
 			It("should reflect the changes pushed", func() {
 
 				getRoute := getActiveElementFromCommandOutput("odo url list")
-				getRoute = strings.TrimSpace(getRoute)
 
 				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1", 10)
 				if curlRoute {
@@ -407,7 +404,6 @@ var _ = Describe("odoe2e", func() {
 				runCmd("odo url create nodejs --port 8080")
 
 				getRoute := getActiveElementFromCommandOutput("odo url list")
-				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName_new + "-" + projName))
 
 				// Check the labels in `oc get route`
@@ -425,7 +421,6 @@ var _ = Describe("odoe2e", func() {
 				runCmd("odo url delete nodejs -f")
 
 				getRoute := getActiveElementFromCommandOutput("odo url list")
-				getRoute = strings.TrimSpace(getRoute)
 				Expect(getRoute).NotTo(ContainSubstring("nodejs-1-" + appTestName_new + "-" + projName))
 
 				runCmd("odo delete -f")

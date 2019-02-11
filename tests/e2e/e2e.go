@@ -19,7 +19,8 @@ func generateTimeBasedName(prefix string) string {
 }
 
 func getActiveElementFromCommandOutput(command string) string {
-	return runCmd(command + " | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+	result := runCmd(command + " | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+	return strings.TrimSpace(result)
 }
 
 func runCmd(cmdS string) string {
