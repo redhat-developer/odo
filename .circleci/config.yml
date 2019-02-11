@@ -72,13 +72,19 @@ jobs:
         command: |
             cd ${HOME}/go/src/github.com/redhat-developer/odo
             make test-main-e2e
-    
+
+    - run: 
+        name: Login e2e test
+        command: |
+            cd ${HOME}/go/src/github.com/redhat-developer/odo
+            make test-odo-login-e2e
+ 
     - run: 
         name: Component e2e test
         command: |
             cd ${HOME}/go/src/github.com/redhat-developer/odo
             make test-cmp-e2e
-     
+
     - run: 
         name: Java e2e test
         command: |
@@ -108,14 +114,10 @@ jobs:
     #        command: |
     #            cd ${HOME}/go/src/github.com/redhat-developer/odo
     #            make test-link-e2e
+
     - run: 
         name: JSON e2e test
         command: |
             cd ${HOME}/go/src/github.com/redhat-developer/odo
             make test-json-format-output
 
-    - run: 
-        name: Login e2e test
-        command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
-            make test-odo-login-e2e
