@@ -2,11 +2,13 @@ package utils
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+
 	util2 "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
 )
 
 const (

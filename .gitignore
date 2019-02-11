@@ -68,3 +68,7 @@ tags
 
 # VSCode specific
 .vscode
+
+# local .odo config directory
+.odo
+*/**/.odo

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -13,24 +14,29 @@ const RecommendedCommandName = "config"
 
 var configLongDesc = ktemplates.LongDesc(`Modifies Odo specific configuration settings within the config file.
 
-%[1]s`)
+%[1]s
+%[2]s
+`)
 
 // NewCmdConfiguration implements the utils config odo command
 func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationViewCmd := NewCmdView(viewCommandName, util.GetFullName(fullName, viewCommandName))
 	configurationSetCmd := NewCmdSet(setCommandName, util.GetFullName(fullName, setCommandName))
+	configurationUnsetCmd := NewCmdUnset(unsetCommandName, util.GetFullName(fullName, unsetCommandName))
 	configurationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Modifies configuration settings",
-		Long:  fmt.Sprintf(configLongDesc, config.FormatSupportedParameters()),
-		Example: fmt.Sprintf("%s\n%s",
+		Long:  fmt.Sprintf(configLongDesc, config.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Example: fmt.Sprintf("%s\n%s\n%s",
 			configurationViewCmd.Example,
-			configurationSetCmd.Example),
+			configurationSetCmd.Example,
+			configurationUnsetCmd.Example,
+		),
 		Aliases: []string{"configuration"},
 	}
 
 	configurationCmd.AddCommand(configurationViewCmd, configurationSetCmd)
-
+	configurationCmd.AddCommand(configurationUnsetCmd)
 	configurationCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return configurationCmd

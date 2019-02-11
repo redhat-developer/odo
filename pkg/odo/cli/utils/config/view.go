@@ -2,22 +2,29 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"reflect"
+	"text/tabwriter"
+
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"text/tabwriter"
 )
 
 const viewCommandName = "view"
 
-var viewExample = ktemplates.Examples(`  # For viewing the current configuration
+var viewExample = ktemplates.Examples(`# For viewing the current local configuration
    %[1]s
+
+   For viewing the current global configuration
+   %[1]s --global
   `)
 
 // ViewOptions encapsulates the options for the command
 type ViewOptions struct {
+	configGlobalFlag bool
 }
 
 // NewViewOptions creates a new ViewOptions instance
@@ -37,17 +44,46 @@ func (o *ViewOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *ViewOptions) Run() (err error) {
-	cfg, err := config.New()
-	if err != nil {
-		return err
+	if o.configGlobalFlag {
+
+		cfg, err := config.NewGlobalConfig()
+
+		if err != nil {
+			util.LogErrorAndExit(err, "")
+		}
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
+		fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(cfg.OdoSettings.UpdateNotification))
+		fmt.Fprintln(w, "NamePrefix", "\t", showBlankIfNil(cfg.OdoSettings.NamePrefix))
+		fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(cfg.OdoSettings.Timeout))
+		w.Flush()
+	} else {
+		cfg, err := config.NewLocalConfig()
+		if err != nil {
+			util.LogErrorAndExit(err, "")
+		}
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
+		fmt.Fprintln(w, "ComponentType", "\t", showBlankIfNil(cfg.ComponentSettings.ComponentType))
+		w.Flush()
 	}
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
-	fmt.Fprintln(w, config.UpdateNotificationSetting, "\t", cfg.GetUpdateNotification())
-	fmt.Fprintln(w, config.NamePrefixSetting, "\t", cfg.GetNamePrefix())
-	fmt.Fprintln(w, config.TimeoutSetting, "\t", cfg.GetTimeout())
-	w.Flush()
 	return
+}
+
+func showBlankIfNil(intf interface{}) interface{} {
+	imm := reflect.ValueOf(intf)
+
+	// if the value is nil then we should return a blank string
+	if imm.IsNil() {
+		return ""
+	}
+
+	// if its a pointer then we should de-ref it because we cant de-ref an interface{}
+	if imm.Kind() == reflect.Ptr {
+		return imm.Elem().Interface()
+	}
+
+	return intf
 }
 
 // NewCmdView implements the config view odo command
@@ -57,12 +93,12 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		Use:     name,
 		Short:   "View current configuration values",
 		Long:    "View current configuration values",
-		Example: fmt.Sprintf(viewExample, fullName),
+		Example: fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
+	configurationViewCmd.Flags().BoolVarP(&o.configGlobalFlag, "global", "g", false, "Use the global config file")
 	return configurationViewCmd
 }

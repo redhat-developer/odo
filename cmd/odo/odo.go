@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/golang/glog"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -12,7 +14,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"os"
 )
 
 func main() {

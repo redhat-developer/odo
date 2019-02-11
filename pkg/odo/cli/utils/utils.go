@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/odo/cli/utils/config"
 
 	"github.com/redhat-developer/odo/pkg/odo/util"

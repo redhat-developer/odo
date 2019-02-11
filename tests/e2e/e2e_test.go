@@ -89,26 +89,48 @@ var _ = Describe("odoe2e", func() {
 	})
 
 	Context("odo utils config", func() {
-		It("should display all available settings and "+config.UpdateNotificationSetting+" should be true by default", func() {
-			configOutput := runCmd("odo utils config view")
-			Expect(configOutput).To(ContainSubstring("true"))
+		It("should get blank for updatenotification by default globally as its not set", func() {
+			configOutput := runCmd("odo utils config view --global")
 			Expect(configOutput).To(ContainSubstring(config.UpdateNotificationSetting))
 			Expect(configOutput).To(ContainSubstring(config.NamePrefixSetting))
 			Expect(configOutput).To(ContainSubstring(config.TimeoutSetting))
 		})
-		It("should be checking to see if timeout is the same as the constant", func() {
-			configOutput := runCmd("odo utils config view|grep " + config.TimeoutSetting)
-			Expect(configOutput).To(ContainSubstring(fmt.Sprintf("%d", config.DefaultTimeout)))
+		It("should be checking to see if timeout is shown as blank globally as its not set", func() {
+			configOutput := runCmd("odo utils config view --global|grep Timeout")
+			Expect(configOutput).To(ContainSubstring(fmt.Sprintf("Timeout")))
 		})
-		It("should be checking to see if config values are the same as the configured ones", func() {
-			runCmd("odo utils config set updatenotification false")
-			runCmd("odo utils config set timeout 5")
-			configOutput := runCmd("odo utils config view|grep " + config.UpdateNotificationSetting)
+		It("should be checking to see if global config values are the same as the configured ones", func() {
+			runCmd("odo utils config set --global updatenotification false")
+			runCmd("odo utils config set --global timeout 5")
+			configOutput := runCmd("odo utils config view --global |grep UpdateNotification")
 			Expect(configOutput).To(ContainSubstring("false"))
-			Expect(configOutput).To(ContainSubstring(config.UpdateNotificationSetting))
-			configOutput = runCmd("odo utils config view|grep " + config.TimeoutSetting)
+			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
+			configOutput = runCmd("odo utils config view --global |grep Timeout")
 			Expect(configOutput).To(ContainSubstring("5"))
 		})
+		It("should be checking to see if local config values are the same as the configured ones", func() {
+			runCmd("odo utils config set componenttype java")
+			configOutput := runCmd("odo utils config view|grep ComponentType")
+			Expect(configOutput).To(ContainSubstring("java"))
+			Expect(configOutput).To(ContainSubstring("ComponentType"))
+		})
+
+		It("should allow unsetting a config locally", func() {
+			runCmd("odo utils config set componenttype java")
+			configOutput := runCmd("odo utils config unset -f componentType")
+			Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
+			configOutput = runCmd("odo utils config view|grep ComponentType")
+			Expect(configOutput).NotTo(ContainSubstring("java"))
+		})
+
+		It("should allow unsetting a config globally", func() {
+			runCmd("odo utils config set --global timeout 5")
+			configOutput := runCmd("odo utils config unset -f --global timeout")
+			Expect(configOutput).To(ContainSubstring("Global config was successfully updated."))
+			configOutput = runCmd("odo utils config view --global |grep Timeout")
+			Expect(configOutput).NotTo(ContainSubstring("5"))
+		})
+
 	})
 
 	Context("creating component without an application", func() {
