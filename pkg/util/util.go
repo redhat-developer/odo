@@ -444,8 +444,8 @@ func GetSplitValuesFromStr(inputStr string) []string {
 	}
 
 	result := strings.Split(inputStr, ",")
-	for i, port := range result {
-		result[i] = strings.TrimSpace(port)
+	for i, value := range result {
+		result[i] = strings.TrimSpace(value)
 	}
 	return result
 }

@@ -78,7 +78,7 @@ func TestPathValidator(t *testing.T) {
 func TestPortValidator(t *testing.T) {
 	err := PortsValidator("8080,9090/udp")
 	if err != nil {
-		t.Errorf("port validator should have accepted an correct port declaration, but got: %v instead", err)
+		t.Errorf("port validator should have accepted a correct port declaration, but got: %v instead", err)
 	}
 
 	err = PortsValidator("dummy")

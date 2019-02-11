@@ -224,7 +224,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 		componentTypeCandidates = catalogutil.FilterHiddenComponents(componentTypeCandidates)
 		selectedComponentType := ui.SelectComponentType(componentTypeCandidates)
-		selectedImageTag := ui.SelectImageTagInteractively(componentTypeCandidates, selectedComponentType)
+		selectedImageTag := ui.SelectImageTag(componentTypeCandidates, selectedComponentType)
 		co.CreateArgs.ImageName = selectedComponentType + ":" + selectedImageTag
 
 		selectedSourceType := ui.SelectSourceType([]occlient.CreateType{occlient.LOCAL, occlient.GIT, occlient.BINARY})

@@ -35,8 +35,8 @@ func getComponentTypeNameCandidates(options []catalog.CatalogImage) []string {
 	return result
 }
 
-// SelectImageTagInteractively lets the user to select a specific tag for the previously selected builder image in a prompt
-func SelectImageTagInteractively(options []catalog.CatalogImage, selectedComponentType string) string {
+// SelectImageTag lets the user to select a specific tag for the previously selected builder image in a prompt
+func SelectImageTag(options []catalog.CatalogImage, selectedComponentType string) string {
 	var tag string
 	prompt := &survey.Select{
 		Message: fmt.Sprintf("Which version of '%s' component type would you wish to create", selectedComponentType),
@@ -179,7 +179,7 @@ func Proceed(message string) bool {
 func EnterPorts() []string {
 	var portsStr string
 	prompt := &survey.Input{
-		Message: "Enter the ports you wish to set (for example: 8080,8100/tcp,9100/udp)",
+		Message: "Enter the ports you wish to set (for example: 8080,8100/tcp,9100/udp). Simply press 'Enter' to avoid setting them",
 		Default: "",
 	}
 	err := survey.AskOne(prompt, &portsStr, validation.PortsValidator)
@@ -192,7 +192,7 @@ func EnterPorts() []string {
 func EnterEnvVars() []string {
 	var envVarsStr string
 	prompt := &survey.Input{
-		Message: "Enter the environment variables you would like to set (for example: MY_TYPE=backed,PROFILE=dev)",
+		Message: "Enter the environment variables you would like to set (for example: MY_TYPE=backed,PROFILE=dev). Simply press 'Enter' to avoid setting them",
 		Default: "",
 	}
 	err := survey.AskOne(prompt, &envVarsStr, validation.KeyEqValFormatValidator)
