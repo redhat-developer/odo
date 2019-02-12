@@ -31,39 +31,6 @@ jobs:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
 
-    # Run main e2e tests
-    - <<: *base-test
-      stage: test
-      name: "Main e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-main-e2e
-
-    # Run odo login e2e tests
-    - <<: *base-test
-      stage: test
-      name: "Odo Login e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-odo-login-e2e
-
-    # Run component e2e tests
-    - <<: *base-test
-      stage: test
-      name: "Component e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - travis_wait make test-cmp-e2e
-
     # Run component e2e tests
     - <<: *base-test
       stage: test
@@ -74,28 +41,6 @@ jobs:
         - sudo cp odo /usr/bin
         - oc login -u developer
         - travis_wait make test-cmp-sub-e2e
-
-    # Run java e2e tests
-    - <<: *base-test
-      stage: test
-      name: "Java e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-java-e2e
-
-    # Run source e2e tests
-    - <<: *base-test
-      stage: test
-      name: "Source e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-source-e2e
 
     # Run service-catalog e2e tests
     - <<: *base-test
@@ -128,17 +73,6 @@ jobs:
         - sudo cp odo /usr/bin
         - oc login -u developer
         - make test-link-e2e
-
-    # Run json e2e tests
-    - <<: *base-test
-      stage: test
-      name: "json output tests"
-      script:
-        - ./scripts/oc-cluster.sh 
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-json-format-output
 
     # test installation script on linux
     # - stage: test
