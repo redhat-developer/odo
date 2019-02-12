@@ -60,6 +60,8 @@ type ServiceCreateOptions struct {
 	outputCLI bool
 	// CmdFullName records the command's full name
 	CmdFullName string
+	// whether or not to wait for the service to be ready
+	wait bool
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -202,10 +204,23 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
+	s := log.Spinner("Creating service")
+	defer s.End(false)
 	err = svc.CreateService(o.Client, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
-	log.Successf(`Service '%s' was created`, o.ServiceName)
-	log.Info(`Progress of the provisioning will not be reported and might take a long time.
+	s.End(true)
+
+	if o.wait {
+		s = log.Spinner("Waiting for service to come up")
+		_, err = o.Client.WaitAndGetSecret(o.ServiceName, o.Project)
+		if err == nil {
+			s.End(true)
+			log.Successf(`Service '%s' is ready for use`, o.ServiceName)
+		}
+	} else {
+		log.Successf(`Service '%s' was created`, o.ServiceName)
+		log.Info(`Progress of the provisioning will not be reported and might take a long time.
 You can see the current status by executing 'odo service list'`)
+	}
 	equivalent := o.outputNonInteractiveEquivalent()
 	if len(equivalent) > 0 {
 		log.Info("Equivalent command:\n" + ui.StyledOutput(equivalent, "cyan"))
@@ -229,6 +244,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	}
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
+	serviceCreateCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the service is ready")
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	completion.RegisterCommandFlagHandler(serviceCreateCmd, "plan", completion.ServicePlanCompletionHandler)
 	completion.RegisterCommandFlagHandler(serviceCreateCmd, "parameters", completion.ServiceParameterCompletionHandler)
