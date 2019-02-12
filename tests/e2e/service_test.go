@@ -13,7 +13,7 @@ var _ = Describe("odoServiceE2e", func() {
 
 	Context("odo service creation", func() {
 		It("should be able to create a service", func() {
-			runCmd("odo service create mysql-persistent")
+			runCmd("odo service create mysql-persistent -w")
 			waitForCmdOut("oc get serviceinstance -o name", 1, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
