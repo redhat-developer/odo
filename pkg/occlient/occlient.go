@@ -2749,7 +2749,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 
 	// cmdArr will run inside container
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
-	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
+	err := c.ExecCMDInContainer(targetPodName, cmdArr, nil, nil, reader, false)
 	if err != nil {
 		return err
 	}
