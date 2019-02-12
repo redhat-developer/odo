@@ -46,6 +46,19 @@ type ComponentSettings struct {
 
 	// The builder image to use
 	ComponentType *string `json:"ComponentType,omitempty"`
+
+	ComponentName *string `json:"ComponentName,omitempty"`
+
+	MinMemory *string `json:"MinMemory,omitempty"`
+
+	MaxMemory *string `json:"MaxMemory,omitempty"`
+
+	// Ignore if set to true then odoignore file should be considered
+	Ignore *bool `json:"Ignore,omitempty"`
+
+	MinCPU *string
+
+	MaxCPU *string
 }
 
 // ApplicationInfo holds all important information about one application
@@ -261,18 +274,12 @@ func (c *GlobalConfigInfo) SetConfiguration(parameter string, value string) erro
 
 // DeleteConfiguration delete Odo configurations in the global config file
 // as of now being used for nameprefix, timeout, updatenotification
-// TODO: Use reflect to delete parameters
 func (c *GlobalConfigInfo) DeleteConfiguration(parameter string) error {
 	if p, ok := asSupportedParameter(parameter); ok {
 		// processing values according to the parameter names
 
-		switch p {
-		case "timeout":
-			c.OdoSettings.Timeout = nil
-		case "updatenotification":
-			c.OdoSettings.UpdateNotification = nil
-		case "nameprefix":
-			c.OdoSettings.NamePrefix = nil
+		if err := deleteConfiguration(c, p); err != nil {
+			return err
 		}
 	} else {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in global odo config", parameter)
@@ -330,7 +337,28 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (er
 		switch parameter {
 		case "componenttype":
 			lci.ComponentSettings.ComponentType = &value
+		case "componentname":
+			lci.ComponentSettings.ComponentName = &value
+		case "minmemory":
+			lci.ComponentSettings.MinMemory = &value
+		case "maxmemory":
+			lci.ComponentSettings.MaxMemory = &value
+		case "ignore":
+			val, err := strconv.ParseBool(strings.ToLower(value))
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			lci.ComponentSettings.Ignore = &val
+		case "mincpu":
+			lci.ComponentSettings.MinCPU = &value
+		case "maxcpu":
+			lci.ComponentSettings.MaxCPU = &value
+		case "cpu":
+			lci.ComponentSettings.MinCPU = &value
+			lci.ComponentSettings.MaxCPU = &value
+
 		}
+
 		return writeToFile(lci.LocalConfig, lci.Filename)
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
@@ -344,18 +372,37 @@ func (lci *LocalConfigInfo) GetConfiguration(parameter string) (interface{}, boo
 }
 
 // DeleteConfiguration is used to delete config from local odo config
-// TODO: Use reflect to delete parameters
 func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
-
-		switch parameter {
-		case "componenttype":
-			lci.ComponentSettings.ComponentType = nil
+		if parameter == "cpu" {
+			lci.ComponentSettings.MinCPU = nil
+			lci.ComponentSettings.MaxCPU = nil
 		}
-
+		if err := deleteConfiguration(lci, parameter); err != nil {
+			return err
+		}
 		return writeToFile(lci.LocalConfig, lci.Filename)
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
+
+}
+
+func deleteConfiguration(info interface{}, parameter string) error {
+
+	imm := reflect.ValueOf(info)
+	if imm.Kind() == reflect.Ptr {
+		imm = imm.Elem()
+	}
+	val := imm.FieldByNameFunc(caseInsensitive(parameter))
+	if !val.IsValid() {
+		return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
+
+	}
+	if val.CanSet() {
+		val.Set(reflect.Zero(val.Type()))
+		return nil
+	}
+	return fmt.Errorf("cannot set %s to nil", parameter)
 
 }
 
@@ -610,6 +657,34 @@ const (
 	ComponentType = "ComponentType"
 	// ComponentTypeDescription is human-readable description of the componentType setting
 	ComponentTypeDescription = "The type of component"
+	// ComponentName is the name of the setting controlling the component name
+	ComponentName = "ComponentName"
+	// ComponentNameDescription is human-readable description of the componentType setting
+	ComponentNameDescription = "The name of the component"
+	// MinMemory is the name of the setting controlling the min memory a component consumes
+	MinMemory = "MinMemory"
+	// MinMemoryDescription is the name of the setting controlling the minimum memory
+	MinMemoryDescription = "The minimum memory a component is provided"
+	// MaxMemory is the name of the setting controlling the min memory a component consumes
+	MaxMemory = "MaxMemory"
+	// MaxMemoryDescription is the name of the setting controlling the maximum memory
+	MaxMemoryDescription = "The maximum memory a component can consume"
+	// Ignore is the name of the setting controlling the min memory a component consumes
+	Ignore = "Ignore"
+	// IgnoreDescription is the name of the setting controlling the use of .odoignore file
+	IgnoreDescription = "Consider the .odoignore file for push and watch"
+	// MinCPU is the name of the setting controlling minimum cpu
+	MinCPU = "MinCPU"
+	// MinCPUDescription is the name of the setting controlling the min CPU value
+	MinCPUDescription = "The minimum cpu a component can consume"
+	// MaxCPU is the name of the setting controlling the use of .odoignore file
+	MaxCPU = "MaxCPU"
+	//MaxCPUDescription is the name of the setting controlling the max CPU value
+	MaxCPUDescription = "The maximum cpu a component can consume"
+	// CPU is the name of the setting controlling the cpu a component consumes
+	CPU = "CPU"
+	// CPUDescription is the name of the setting controlling the min and max CPU to same value
+	CPUDescription = "The minimum and maximum CPU a component can consume"
 )
 
 var (
@@ -622,6 +697,13 @@ var (
 
 	supportedLocalParameterDescriptions = map[string]string{
 		ComponentType: ComponentTypeDescription,
+		ComponentName: ComponentNameDescription,
+		MinMemory:     MinMemoryDescription,
+		MaxMemory:     MaxMemoryDescription,
+		Ignore:        IgnoreDescription,
+		MinCPU:        MinCPUDescription,
+		MaxCPU:        MaxCPUDescription,
+		CPU:           CPUDescription,
 	}
 	// set-like map to quickly check if a parameter is supported
 	lowerCaseParameters = getLowerCaseParameters(GetSupportedParameters())
