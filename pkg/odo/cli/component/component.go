@@ -3,6 +3,10 @@ package component
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -85,4 +89,34 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 func AddComponentFlag(cmd *cobra.Command) {
 	cmd.Flags().String(genericclioptions.ComponentFlagName, "", "Component, defaults to active component.")
 	completion.RegisterCommandFlagHandler(cmd, "component", completion.ComponentNameCompletionHandler)
+}
+
+// printDeleteComponentInfo will print things which will be deleted
+func printDeleteComponentInfo(client *occlient.Client, componentName string, appName string, projectName string) error {
+	componentDesc, err := component.GetComponentDesc(client, componentName, appName, projectName)
+	if err != nil {
+		return errors.Wrap(err, "unable to get component description")
+	}
+
+	if len(componentDesc.URLs) != 0 {
+		log.Info("This component has following urls that will be deleted with component")
+		for _, url := range componentDesc.URLs {
+			log.Info(" URL named ", url.Name, " with value ", url.URL)
+		}
+	}
+
+	if len(componentDesc.LinkedServices) != 0 {
+		log.Info("This component has following services linked to it, which will get unlinked")
+		for _, linkedService := range componentDesc.LinkedServices {
+			log.Info(" Service named ", linkedService)
+		}
+	}
+
+	if len(componentDesc.Storage) != 0 {
+		log.Info("This component has following storages which will be deleted with the component")
+		for _, store := range componentDesc.Storage {
+			log.Info("  Storage", store.Name, "of size", store.Size)
+		}
+	}
+	return nil
 }

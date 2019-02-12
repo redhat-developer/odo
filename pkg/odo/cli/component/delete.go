@@ -64,6 +64,7 @@ func (do *DeleteOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
+
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
 		err := component.Delete(do.Client, do.componentName, do.Application)
 		if err != nil {
