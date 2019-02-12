@@ -78,23 +78,32 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 		return errors.Wrap(err, "failed to get Component list")
 	}
 
-	for _, currentComponent := range componentList.Items {
-		componentDesc, err := component.GetComponent(client, currentComponent.Name, appName, projectName)
-		if err != nil {
-			return errors.Wrap(err, "unable to get component description")
-		}
-		log.Info("Component", currentComponent.Name, "will be deleted.")
+	if len(componentList.Items) != 0 {
+		log.Info("This application has following components that will be deleted")
+		for _, currentComponent := range componentList.Items {
+			componentDesc, err := component.GetComponent(client, currentComponent.Name, appName, projectName)
+			if err != nil {
+				return errors.Wrap(err, "unable to get component description")
+			}
+			log.Info(" component named ", currentComponent.Name)
 
-		if len(componentDesc.Spec.URL) != 0 {
-			fmt.Println("  Externally exposed URLs will be removed")
-		}
-		storages, err := storage.List(client, currentComponent.Name, appName)
-		odoutil.LogErrorAndExit(err, "")
-		for _, storageName := range componentDesc.Spec.Storage {
-			store := storages.Get(storageName)
-			fmt.Println("  Storage", store.Name, "of size", store.Spec.Size, "will be removed")
-		}
+			if len(componentDesc.Spec.URL) != 0 {
+				log.Info("  The component has following routes, which will be removed")
+				for _, u := range componentDesc.Spec.URL {
 
+					fmt.Println(" URL ", u)
+				}
+			}
+			storages, err := storage.List(client, currentComponent.Name, appName)
+			odoutil.LogErrorAndExit(err, "")
+			if len(storages.Items) != 0 {
+				log.Info("  The component has following storages which will be deleted with the component")
+				for _, storageName := range componentDesc.Spec.Storage {
+					store := storages.Get(storageName)
+					log.Info("   Storage named ", store.GetName(), " of size ", store.Spec.Size)
+				}
+			}
+		}
 	}
 	return nil
 }
