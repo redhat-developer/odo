@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -59,6 +60,10 @@ func (do *DeleteOptions) Run() (err error) {
 	glog.V(4).Infof("component delete called")
 	glog.V(4).Infof("args: %#v", do)
 
+	err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
+	if err != nil {
+		return err
+	}
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
 		err := component.Delete(do.Client, do.componentName, do.Application)
 		if err != nil {
