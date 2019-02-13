@@ -1377,7 +1377,8 @@ func TestLowerCaseParameters(t *testing.T) {
 }
 
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"componenttype": true}
+	expected := map[string]bool{"componenttype": true, "componentname": true, "minmemory": true, "maxmemory": true,
+		"ignore": true, "mincpu": true, "maxcpu": true, "cpu": true}
 	actual := getLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
