@@ -71,13 +71,11 @@ func (o *UnsetOptions) Run() (err error) {
 	if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
 		if !o.configForceFlag {
 			var confirmOveride string
-			if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
-				log.Askf("Do you want to unset %s in the config? y/N ", o.paramName)
-				fmt.Scanln(&confirmOveride)
-				if confirmOveride != "y" {
-					fmt.Println("Aborted by the user.")
-					return nil
-				}
+			log.Askf("Do you want to unset %s in the config? y/N ", o.paramName)
+			fmt.Scanln(&confirmOveride)
+			if confirmOveride != "y" {
+				fmt.Println("Aborted by the user.")
+				return nil
 			}
 		}
 		err = cfg.DeleteConfiguration(strings.ToLower(o.paramName))

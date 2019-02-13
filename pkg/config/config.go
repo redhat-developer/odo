@@ -278,7 +278,7 @@ func (c *GlobalConfigInfo) DeleteConfiguration(parameter string) error {
 	if p, ok := asSupportedParameter(parameter); ok {
 		// processing values according to the parameter names
 
-		if err := deleteConfiguration(c, p); err != nil {
+		if err := deleteConfiguration(&c.OdoSettings, p); err != nil {
 			return err
 		}
 	} else {
@@ -383,7 +383,7 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 			lci.ComponentSettings.MinCPU = nil
 			lci.ComponentSettings.MaxCPU = nil
 		}
-		if err := deleteConfiguration(lci, parameter); err != nil {
+		if err := deleteConfiguration(&lci.ComponentSettings, parameter); err != nil {
 			return err
 		}
 		return writeToFile(lci.LocalConfig, lci.Filename)
@@ -400,9 +400,9 @@ func deleteConfiguration(info interface{}, parameter string) error {
 	}
 	val := imm.FieldByNameFunc(caseInsensitive(parameter))
 	if !val.IsValid() {
-		return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
-
+		return fmt.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
 	}
+
 	if val.CanSet() {
 		val.Set(reflect.Zero(val.Type()))
 		return nil
