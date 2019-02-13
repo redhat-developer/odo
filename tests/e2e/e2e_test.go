@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/pkg/config"
-	"log"
 	"os"
 	"time"
 
@@ -175,17 +174,16 @@ var _ = Describe("odoe2e", func() {
 			Expect(configOutput).To(ContainSubstring(config.TimeoutSetting))
 		})
 		It("should be checking to see if timeout is shown as blank globally as its not set", func() {
-			configOutput := runCmdShouldPass("odo utils config view --global|grep Timeout")
-			Expect(configOutput).To(ContainSubstring(fmt.Sprintf("Timeout")))
+			timeoutValue := findGlobalConfigValueOfGivenKey("Timeout")
+			Expect(timeoutValue).To(BeEmpty())
 		})
 		It("should be checking to see if global config values are the same as the configured ones", func() {
 			runCmdShouldPass("odo utils config set --global updatenotification false")
 			runCmdShouldPass("odo utils config set --global timeout 5")
-			configOutput := runCmdShouldPass("odo utils config view --global |grep UpdateNotification")
-			Expect(configOutput).To(ContainSubstring("false"))
-			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
-			configOutput = runCmdShouldPass("odo utils config view --global |grep Timeout")
-			Expect(configOutput).To(ContainSubstring("5"))
+			UpdateNotificationValue := findGlobalConfigValueOfGivenKey("UpdateNotification")
+			Expect(UpdateNotificationValue).To(ContainSubstring("false"))
+			TimeoutValue := findGlobalConfigValueOfGivenKey("Timeout")
+			Expect(TimeoutValue).To(ContainSubstring("5"))
 		})
 
 		It("should be checking to see if local config values are the same as the configured ones", func() {
@@ -212,9 +210,8 @@ var _ = Describe("odoe2e", func() {
 			}
 			for _, testCase := range cases {
 				runCmdShouldPass(fmt.Sprintf("odo utils config set %s %s", testCase.paramName, testCase.paramValue))
-				configOutput := runCmdShouldPass(fmt.Sprintf("odo utils config view|grep %v", testCase.paramName))
-				Expect(configOutput).To(ContainSubstring(testCase.paramValue))
-				Expect(configOutput).To(ContainSubstring(testCase.paramName))
+				Value := findLocalConfigValueOfGivenKey(testCase.paramName)
+				Expect(Value).To(ContainSubstring(testCase.paramValue))
 			}
 
 		})
@@ -243,12 +240,11 @@ var _ = Describe("odoe2e", func() {
 			}
 
 			for _, testCase := range cases {
-
 				runCmdShouldPass(fmt.Sprintf("odo utils config set %s %s", testCase.paramName, testCase.paramValue))
 				configOutput := runCmdShouldPass(fmt.Sprintf("odo utils config unset -f %s", testCase.paramName))
 				Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
-				configOutput = runCmdShouldPass(fmt.Sprintf("odo utils config view|grep %s", testCase.paramName))
-				Expect(configOutput).NotTo(ContainSubstring(testCase.paramValue))
+				Value := findLocalConfigValueOfGivenKey(testCase.paramName)
+				Expect(Value).To(BeEmpty())
 			}
 		})
 
@@ -256,8 +252,8 @@ var _ = Describe("odoe2e", func() {
 			runCmdShouldPass("odo utils config set --global timeout 5")
 			configOutput := runCmdShouldPass("odo utils config unset -f --global timeout")
 			Expect(configOutput).To(ContainSubstring("Global config was successfully updated."))
-			configOutput = runCmdShouldPass("odo utils config view --global |grep Timeout")
-			Expect(configOutput).NotTo(ContainSubstring("5"))
+			timeoutValue := findGlobalConfigValueOfGivenKey("Timeout")
+			Expect(timeoutValue).To(BeEmpty())
 		})
 
 	})
@@ -534,7 +530,7 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able to list the url", func() {
-				getRoute := getActiveElementFromCommandOutput("odo url list")
+				getRoute := determineRouteURL()
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName + "-" + projName))
 
 				// Check the labels in `oc get route`
@@ -565,31 +561,20 @@ var _ = Describe("odoe2e", func() {
 				// Switch to nodejs component
 				runCmdShouldPass("odo component set nodejs")
 
-				getRoute := getActiveElementFromCommandOutput("odo url list")
-
-				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1", 10)
-				if curlRoute {
-					grepBeforePush := runCmdShouldPass("curl -s " + getRoute + " | grep 'Welcome to your Node.js application on OpenShift'")
-					log.Printf("Text before odo push: %s", strings.TrimSpace(grepBeforePush))
-				}
+				getRoute := determineRouteURL()
+				responseStringMatchStatus := retryingForOutputMatchStringOfHTTPResponse(getRoute, "Welcome to your Node.js application on OpenShift", 30, 1)
+				Expect(responseStringMatchStatus).Should(BeTrue())
 
 				// Make changes to the html file
-				runCmdShouldPass("sed -i 's/Welcome to your Node.js application on OpenShift/Welcome to your Node.js on ODO/g' " + tmpDir + "/nodejs-ex/views/index.html")
+				replaceTextStatus := replaceTextInFile(tmpDir+"/nodejs-ex/views/index.html", "Welcome to your Node.js application on OpenShift", "Welcome to your Node.js application on ODO")
+				Expect(replaceTextStatus).To(BeNil())
 
 				// Push the changes
 				runCmdShouldPass("odo push --local " + tmpDir + "/nodejs-ex")
-			})
 
-			It("should reflect the changes pushed", func() {
-
-				getRoute := getActiveElementFromCommandOutput("odo url list")
-
-				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1", 10)
-				if curlRoute {
-					grepAfterPush := runCmdShouldPass("curl -s " + getRoute + " | grep -i odo")
-					log.Printf("Text after odo push: %s", strings.TrimSpace(grepAfterPush))
-					Expect(grepAfterPush).To(ContainSubstring("ODO"))
-				}
+				// Verify the changes
+				responseStringChangeMatchStatus := retryingForOutputMatchStringOfHTTPResponse(getRoute, "Welcome to your Node.js application on ODO", 30, 1)
+				Expect(responseStringChangeMatchStatus).Should(BeTrue())
 			})
 
 			It("should be able to create the url with same name in different application", func() {
@@ -598,7 +583,7 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldPass("odo create nodejs nodejs-1 --git https://github.com/sclorg/nodejs-ex")
 				runCmdShouldPass("odo url create nodejs --port 8080")
 
-				getRoute := getActiveElementFromCommandOutput("odo url list")
+				getRoute := determineRouteURL()
 				Expect(getRoute).To(ContainSubstring("nodejs-" + appTestName_new + "-" + projName))
 
 				// Check the labels in `oc get route`
@@ -615,7 +600,7 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldPass("odo component set nodejs-1")
 				runCmdShouldPass("odo url delete nodejs -f")
 
-				getRoute := getActiveElementFromCommandOutput("odo url list")
+				getRoute := determineRouteURL()
 				Expect(getRoute).NotTo(ContainSubstring("nodejs-1-" + appTestName_new + "-" + projName))
 
 				runCmdShouldPass("odo delete -f")
@@ -748,7 +733,7 @@ var _ = Describe("odoe2e", func() {
 			runCmdShouldPass("odo component set nodejs")
 			runCmdShouldPass("odo url delete nodejs -f")
 
-			urlList := getActiveElementFromCommandOutput("odo url list")
+			urlList := determineRouteURL()
 			Expect(urlList).NotTo(ContainSubstring("nodejs"))
 		})
 

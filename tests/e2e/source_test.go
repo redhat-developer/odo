@@ -40,7 +40,8 @@ var _ = Describe("odoSourceE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'WSGI' | wc -l | tr -d '\n'", "1", 10)
+			responseStringMatchStatus := retryingForOutputMatchStringOfHTTPResponse(routeURL, "WSGI", 30, 1)
+			Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete python-app -f")
@@ -61,7 +62,8 @@ var _ = Describe("odoSourceE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'Javalin' | wc -l | tr -d '\n'", "1", 10)
+			responseStringMatchStatus := retryingForOutputMatchStringOfHTTPResponse(routeURL, "Javalin", 30, 1)
+			Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete openjdk-app -f")
@@ -80,7 +82,8 @@ var _ = Describe("odoSourceE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'Insult' | wc -l | tr -d '\n'", "1", 10)
+			responseStringMatchStatus := retryingForOutputMatchStringOfHTTPResponse(routeURL, "Insult", 30, 1)
+			Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete wildfly-app -f")
@@ -99,7 +102,8 @@ var _ = Describe("odoSourceE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'node.js' | wc -l | tr -d '\n'", "1", 10)
+			responseStringMatchStatus := retryingForOutputMatchStringOfHTTPResponse(routeURL, "node.js", 30, 1)
+			Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete nodejs-app -f")
@@ -118,7 +122,8 @@ var _ = Describe("odoSourceE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'dotnet' | wc -l | tr -d '\n'", "1", 10)
+			responseStringMatchStatus := retryingForOutputMatchStringOfHTTPResponse(routeURL, "dotnet", 30, 1)
+			Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete dotnet-app -f")

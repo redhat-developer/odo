@@ -50,7 +50,7 @@ func componentTests(componentCmdPrefix string) {
 			const frontend = "frontend"
 			// create a frontend component, an app should have been created
 			runCmdShouldPass(componentCmdPrefix + " create nodejs " + frontend)
-			appName := getActiveElementFromCommandOutput("odo app list")
+			appName := getActiveApplication()
 			Expect(appName).ToNot(BeEmpty())
 
 			// check that we can get the component
@@ -87,7 +87,8 @@ func componentTests(componentCmdPrefix string) {
 			runCmdShouldPass(fmt.Sprintf("odo url create ref-test-%s", t))
 
 			routeURL := determineRouteURL() + "/health"
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'develop' | wc -l | tr -d '\n'", "1", 10)
+			responseStringMatchStatus := retryingForOutputMatchStringOfHTTPResponse(routeURL, "develop", 30, 1)
+			Expect(responseStringMatchStatus).Should(BeTrue())
 		})
 
 		It("should be able to create a component with git source", func() {

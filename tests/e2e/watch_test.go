@@ -3,6 +3,7 @@ package e2e
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -57,16 +58,17 @@ var _ = Describe("odoWatchE2e", func() {
 						fileModificationPath,
 					)
 					fmt.Println("Received signal, starting file modification simulation")
-					runCmdShouldPass("mkdir -p " + tmpDir + "/nodejs-ex" + "/'.a b'")
-					runCmdShouldPass("mkdir -p " + tmpDir + "/nodejs-ex" + "/'a b'")
-					runCmdShouldPass("touch " + tmpDir + "/nodejs-ex" + "/'a b.txt'")
-
-					runCmdShouldPass(fmt.Sprintf("mkdir -p %s/nodejs-ex/tests/sample-tests", tmpDir))
-					runCmdShouldPass(fmt.Sprintf("touch %s/nodejs-ex/tests/sample-tests/test_1.js", tmpDir))
+					Expect(createDir(tmpDir + "/nodejs-ex" + "/.a")).To(BeNil())
+					Expect(createDir(tmpDir + "/nodejs-ex" + "/a")).To(BeNil())
+					Expect(createDir(tmpDir + "/nodejs-ex" + "/b")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/nodejs-ex", "b.txt")).To(BeNil())
+					Expect(createDir(tmpDir + "/nodejs-ex/tests/sample-tests")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/nodejs-ex/tests/sample-tests", "test_1.js")).To(BeNil())
 
 					// Delete during watch
-					runCmdShouldPass(fmt.Sprintf("rm -fr %s/nodejs-ex/tests/sample-tests", tmpDir))
-					runCmdShouldPass("rm -fr " + tmpDir + "/nodejs-ex/'a b.txt'")
+					Expect(os.RemoveAll(tmpDir + "/nodejs-ex/tests/sample-tests")).To(BeNil())
+					Expect(os.RemoveAll(tmpDir + "/nodejs-ex/a")).To(BeNil())
+					Expect(os.Remove(tmpDir + "/nodejs-ex/b.txt")).To(BeNil())
 
 					runCmdShouldPass(fileModificationCmd)
 				}
@@ -121,16 +123,18 @@ var _ = Describe("odoWatchE2e", func() {
 				if startMsg {
 					fmt.Println("Received signal, starting file modification simulation")
 					fileModificationCmd := fmt.Sprintf("sed -i 's/World/odo/g' %s", filepath.Join(tmpDir, "os-sample-python", "wsgi.py"))
-
-					runCmdShouldPass(fmt.Sprintf("mkdir -p %s/os-sample-python/tests", tmpDir))
-					runCmdShouldPass(fmt.Sprintf("touch %s/os-sample-python/tests/test_1.py", tmpDir))
-					runCmdShouldPass("mkdir -p " + tmpDir + "/os-sample-python" + "/'.a b'")
-					runCmdShouldPass("mkdir -p " + tmpDir + "/os-sample-python" + "/'a b'")
-					runCmdShouldPass("touch " + tmpDir + "/os-sample-python" + "/'a b.txt'")
+					Expect(createDir(tmpDir + "/os-sample-python/tests")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/os-sample-python/tests", "test_1.py")).To(BeNil())
+					Expect(createDir(tmpDir + "/os-sample-python" + "/.a")).To(BeNil())
+					Expect(createDir(tmpDir + "/os-sample-python" + "/a")).To(BeNil())
+					Expect(createDir(tmpDir + "/os-sample-python" + "/b")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/os-sample-python", "b.txt")).To(BeNil())
 
 					// Delete during watch
-					runCmdShouldPass(fmt.Sprintf("rm -fr %s/os-sample-python/tests", tmpDir))
-					runCmdShouldPass("rm -fr " + tmpDir + "/os-sample-python/'a b.txt'")
+					Expect(os.RemoveAll(tmpDir + "/os-sample-python/tests")).To(BeNil())
+					Expect(os.RemoveAll(tmpDir + "/nodejs-ex/a")).To(BeNil())
+					Expect(os.Remove(tmpDir + "/nodejs-ex/b.txt")).To(BeNil())
+
 					runCmdShouldPass(fileModificationCmd)
 				}
 			}()
@@ -185,15 +189,17 @@ var _ = Describe("odoWatchE2e", func() {
 				startMsg := <-startSimulationCh
 				if startMsg {
 					fmt.Println("Received signal, starting file modification simulation")
+					Expect(createDir(tmpDir + "/katacoda-odo-backend/tests")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/katacoda-odo-backend/tests", "test_1.java")).To(BeNil())
+					Expect(createDir(tmpDir + "/katacoda-odo-backend/src" + "/a")).To(BeNil())
+					Expect(createDir(tmpDir + "/katacoda-odo-backend/src" + "/.a")).To(BeNil())
+					Expect(createDir(tmpDir + "/katacoda-odo-backend/src" + "/b")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/katacoda-odo-backend/src", "b.txt")).To(BeNil())
 
-					runCmdShouldPass(fmt.Sprintf("mkdir -p %s/katacoda-odo-backend/tests", tmpDir))
-					runCmdShouldPass(fmt.Sprintf("touch %s/katacoda-odo-backend/tests/test_1.java", tmpDir))
-					runCmdShouldPass("mkdir -p " + tmpDir + "/katacoda-odo-backend/src" + "/'.a b'")
-					runCmdShouldPass("mkdir -p " + tmpDir + "/katacoda-odo-backend/src" + "/'a b'")
-					runCmdShouldPass("touch " + tmpDir + "/katacoda-odo-backend/src" + "/'a b.txt'")
 					// Delete during watch
-					runCmdShouldPass(fmt.Sprintf("rm -fr %s/katacoda-odo-backend/tests", tmpDir))
-					runCmdShouldPass("rm -fr " + tmpDir + "/katacoda-odo-backend/src/'a b.txt'")
+					Expect(os.RemoveAll(tmpDir + "/katacoda-odo-backend/tests")).To(BeNil())
+					Expect(os.RemoveAll(tmpDir + "/katacoda-odo-backend/src/a")).To(BeNil())
+					Expect(os.Remove(tmpDir + "/katacoda-odo-backend/src/b.txt")).To(BeNil())
 
 					fileModificationPath := filepath.Join(
 						tmpDir,
@@ -266,15 +272,17 @@ var _ = Describe("odoWatchE2e", func() {
 				startMsg := <-startSimulationCh
 				if startMsg {
 					fmt.Println("Received signal, starting file modification simulation")
-					runCmdShouldPass("mkdir -p " + tmpDir + "/javalin-helloworld/src" + "/'.a b'")
-					runCmdShouldPass("mkdir -p " + tmpDir + "/javalin-helloworld/src" + "/'a b'")
-					runCmdShouldPass("touch " + tmpDir + "/javalin-helloworld/src" + "/'a b.txt'")
-					runCmdShouldPass(fmt.Sprintf("mkdir -p %s/javalin-helloworld/tests", tmpDir))
-					runCmdShouldPass(fmt.Sprintf("touch %s/javalin-helloworld/tests/test_1.java", tmpDir))
+					Expect(createDir(tmpDir + "/javalin-helloworld/src" + "/a")).To(BeNil())
+					Expect(createDir(tmpDir + "/javalin-helloworld/src" + "/.a")).To(BeNil())
+					Expect(createDir(tmpDir + "/javalin-helloworld/src" + "/b")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/javalin-helloworld/src", "b.txt")).To(BeNil())
+					Expect(createDir(tmpDir + "/javalin-helloworld/tests")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/javalin-helloworld/tests", "test_1.java")).To(BeNil())
 
 					// Delete during watch
-					runCmdShouldPass(fmt.Sprintf("rm -fr %s/javalin-helloworld/tests", tmpDir))
-					runCmdShouldPass("rm -fr " + tmpDir + "/javalin-helloworld/src/'a b.txt'")
+					Expect(os.RemoveAll(tmpDir + "/javalin-helloworld/tests")).To(BeNil())
+					Expect(os.RemoveAll(tmpDir + "/javalin-helloworld/src/a")).To(BeNil())
+					Expect(os.Remove(tmpDir + "/javalin-helloworld/src/b.txt")).To(BeNil())
 
 					fileModificationPath := filepath.Join(
 						tmpDir,
@@ -404,15 +412,17 @@ var _ = Describe("odoWatchE2e", func() {
 				startMsg := <-startSimulationCh
 				if startMsg {
 					fmt.Println("Received signal, starting file modification simulation")
+					Expect(createDir(tmpDir + "/binary/katacoda-odo-backend/tests")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/binary/katacoda-odo-backend/tests", "test_1.java")).To(BeNil())
+					Expect(createDir(tmpDir + "/binary/katacoda-odo-backend/src" + "/a")).To(BeNil())
+					Expect(createDir(tmpDir + "/binary/katacoda-odo-backend/src" + "/.a")).To(BeNil())
+					Expect(createDir(tmpDir + "/binary/katacoda-odo-backend/src" + "/b")).To(BeNil())
+					Expect(createFileAtPath(tmpDir+"/binary/katacoda-odo-backend/src", "b.txt")).To(BeNil())
 
-					runCmdShouldPass(fmt.Sprintf("mkdir -p %s/binary/katacoda-odo-backend/tests", tmpDir))
-					runCmdShouldPass(fmt.Sprintf("touch %s/binary/katacoda-odo-backend/tests/test_1.java", tmpDir))
-					runCmdShouldPass("mkdir -p " + tmpDir + "/binary/katacoda-odo-backend/src" + "/'.a b'")
-					runCmdShouldPass("mkdir -p " + tmpDir + "/binary/katacoda-odo-backend/src" + "/'a b'")
-					runCmdShouldPass("touch " + tmpDir + "/binary/katacoda-odo-backend/src" + "/'a b.txt'")
 					// Delete during watch
-					runCmdShouldPass(fmt.Sprintf("rm -fr %s/binary/katacoda-odo-backend/tests", tmpDir))
-					runCmdShouldPass("rm -fr " + tmpDir + "/binary/katacoda-odo-backend/src/'a b.txt'")
+					Expect(os.RemoveAll(tmpDir + "/binary/katacoda-odo-backend/tests")).To(BeNil())
+					Expect(os.RemoveAll(tmpDir + "/binary/katacoda-odo-backend/src/a")).To(BeNil())
+					Expect(os.Remove(tmpDir + "/binary/katacoda-odo-backend/src/b.txt")).To(BeNil())
 
 					fileModificationPath := filepath.Join(
 						tmpDir,

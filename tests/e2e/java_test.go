@@ -39,7 +39,7 @@ var _ = Describe("odoJavaE2e", func() {
 			// Deploy the git repo / wildfly example
 			cmpCreateLog := runCmdShouldPass("odo create wildfly javaee-git-test --git " + warGitRepo + " -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
-			buildName := runCmdShouldPass("oc get builds --output='name' | grep javaee-git-test | cut -d '/' -f 2")
+			buildName := getBuildNameUsingOc("javaee-git-test")
 			Expect(buildName).To(ContainSubstring("javaee-git-test"))
 			buildStatus := runCmdShouldPass("oc get build " + buildName)
 			Expect(buildStatus).To(ContainSubstring("Complete"))
@@ -55,8 +55,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'Insult' | wc -l | tr -d '\n'", "1", 10)
-			Expect(pingValue).To(Equal(true))
+			responsePing := retryingForOutputMatchStringOfHTTPResponse(routeURL, "Insult", 30, 1)
+			Expect(responsePing).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete javaee-git-test -f")
@@ -66,18 +66,18 @@ var _ = Describe("odoJavaE2e", func() {
 			// Deploy the git repo / wildfly example
 			cmpCreateLog := runCmdShouldPass("odo create wildfly wo-wait-javaee-git-test --git " + warGitRepo)
 			Expect(cmpCreateLog).Should(ContainSubstring("This may take few moments to be ready"))
-			buildName := runCmdShouldPass("oc get builds --output='name' | grep wo-wait-javaee-git-test | cut -d '/' -f 2")
+			buildName := getBuildNameUsingOc("wo-wait-javaee-git-test")
 			Expect(buildName).To(ContainSubstring("wo-wait-javaee-git-test"))
 
-			buildStatus := runCmdShouldPass("oc get builds | grep wo-wait-javaee-git-test")
+			buildStatus := getBuildParametersValueUsingOc("wo-wait-javaee-git-test")
 			Expect(buildStatus).To(ContainSubstring("Pending"))
 
-			dcName := runCmdShouldPass("oc get dc | grep wo-wait-javaee-git-test | cut -f 1 -d ' '")
+			dcName := getDcNameUsingOc("wo-wait-javaee-git-test")
 			// For waiting until the deployment starts
 			for {
 				time.Sleep(5 * time.Second)
-				dcStatus := runCmdShouldPass("oc get dc |grep wo-wait-javaee-git-test | cut -f 4 -d ' '")
-				if dcStatus == "1\n" {
+				dcStatus := getDcStatusValueUsingOc("wo-wait-javaee-git-test")
+				if dcStatus == "1" {
 					break
 				}
 			}
@@ -95,8 +95,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'Insult' | wc -l | tr -d '\n'", "1", 10)
-			Expect(pingValue).To(Equal(true))
+			responsePing := retryingForOutputMatchStringOfHTTPResponse(routeURL, "Insult", 30, 1)
+			Expect(responsePing).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete wo-wait-javaee-git-test -f")
@@ -105,7 +105,7 @@ var _ = Describe("odoJavaE2e", func() {
 		It("Should be able to deploy a .war file using wildfly", func() {
 			cmpCreateLog := runCmdShouldPass("odo create wildfly javaee-war-test --binary " + javaFiles + "/wildfly/ROOT.war -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
-			dcName := runCmdShouldPass("oc get dc | grep javaee-war-test| cut -f 1 -d ' '")
+			dcName := getDcNameUsingOc("javaee-war-test")
 			// Following the logs
 			runCmdShouldPass("oc logs --version=1 dc/" + dcName)
 
@@ -120,8 +120,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'Sample' | wc -l | tr -d '\n'", "2", 10)
-			Expect(pingValue).To(Equal(true))
+			responsePing := retryingForOutputMatchStringOfHTTPResponse(routeURL, "Sample", 30, 1)
+			Expect(responsePing).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete javaee-war-test -f")
@@ -133,7 +133,7 @@ var _ = Describe("odoJavaE2e", func() {
 			// Deploy the git repo / wildfly example
 			cmpCreateLog := runCmdShouldPass("odo create openjdk18 uberjar-git-test --git " + jarGitRepo + " -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
-			buildName := runCmdShouldPass("oc get builds --output='name' | grep uberjar-git-test | cut -d '/' -f 2")
+			buildName := getBuildNameUsingOc("uberjar-git-test")
 			Expect(buildName).To(ContainSubstring("uberjar-git-test"))
 			buildStatus := runCmdShouldPass("oc get build " + buildName)
 			Expect(buildStatus).To(ContainSubstring("Complete"))
@@ -149,8 +149,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'Hello World' | wc -l | tr -d '\n'", "1", 10)
-			Expect(pingValue).To(Equal(true))
+			responsePing := retryingForOutputMatchStringOfHTTPResponse(routeURL, "Hello World", 30, 1)
+			Expect(responsePing).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete uberjar-git-test -f")
@@ -162,7 +162,7 @@ var _ = Describe("odoJavaE2e", func() {
 			cmpCreateLog := runCmdShouldPass("odo create openjdk18 sb-jar-test --binary " + javaFiles + "/openjdk/sb.jar -w")
 			Expect(cmpCreateLog).ShouldNot(ContainSubstring("This may take few moments to be ready"))
 
-			dcName := runCmdShouldPass("oc get dc | grep sb-jar-test| cut -f 1 -d ' '")
+			dcName := getDcNameUsingOc("sb-jar-test")
 			Expect(dcName).To(ContainSubstring("sb-jar-test"))
 
 			cmpList := runCmdShouldPass("odo list")
@@ -176,8 +176,8 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := determineRouteURL()
 
 			// Ping said URL
-			pingValue := waitForEqualCmd("curl -s "+routeURL+" | grep 'HTTP Booster' | wc -l | tr -d '\n'", "1", 10)
-			Expect(pingValue).To(Equal(true))
+			responsePing := retryingForOutputMatchStringOfHTTPResponse(routeURL, "HTTP Booster", 30, 1)
+			Expect(responsePing).Should(BeTrue())
 
 			// Delete the component
 			runCmdShouldPass("odo delete sb-jar-test -f")

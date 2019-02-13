@@ -1,13 +1,34 @@
 package e2e
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/onsi/gomega"
 )
+
+func createDir(dirName string) error {
+	return os.MkdirAll(dirName, 0777)
+}
+
+func createFileAtPath(filePath string, fileName string) error {
+	_, err := os.Stat(filePath + "/" + fileName)
+	if os.IsNotExist(err) {
+		file, err := os.Create(filePath + "/" + fileName)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+	}
+	return nil
+}
 
 // createFileAtPath creates a file at the given path and writes the given content
 // path is the path to the required file
@@ -15,7 +36,6 @@ import (
 func createFileAtPathWithContent(path string, fileContent string) error {
 	// check if file exists
 	var _, err = os.Stat(path)
-
 	var file *os.File
 
 	// create file if not exists
@@ -39,16 +59,124 @@ func createFileAtPathWithContent(path string, fileContent string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func generateTimeBasedName(prefix string) string {
+	var t = strconv.FormatInt(time.Now().Unix(), 10)
+	return fmt.Sprintf("%s-%s", prefix, t)
 }
 
 // determineRouteURL returns the http URL where the current component exposes it's service
 // this URL can then be used in order to interact with the deployed service running in Openshift
-// keeping with the spirit of the e2e tests, this expects, odo, sed and awk to be on the PATH
 func determineRouteURL() string {
-	output := runCmdShouldPass("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
-	return strings.TrimSpace(output)
+	stdOut, stdErr, exitCode := cmdRunner("odo url list")
+	if exitCode != 0 {
+		return stdErr
+	}
+	reURL := regexp.MustCompile(`\s+http://.\S+`)
+	odoURL := reURL.FindString(stdOut)
+	return strings.TrimSpace(odoURL)
+}
+
+func replaceTextInFile(filePath string, actualString string, replaceString string) error {
+	input, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	output := bytes.Replace(input, []byte(actualString), []byte(replaceString), 1)
+	if err = ioutil.WriteFile(filePath, output, 0666); err != nil {
+		return err
+	}
+	return nil
+}
+
+func retryingForOutputMatchStringOfHTTPResponse(url, match string, retry, sleep int) bool {
+	for i := 0; i < retry; i++ {
+		resp, err := http.Get(url)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode == 200 {
+			body, _ := ioutil.ReadAll(resp.Body)
+			//str := fmt.Sprintf("%s", body)
+			if strings.Contains(string(body), match) {
+				return true
+			}
+		}
+		time.Sleep(time.Duration(sleep) * time.Second)
+	}
+	return false
+}
+
+func findLocalConfigValueOfGivenKey(key string) string {
+
+	stdOut, _, _ := cmdRunner("odo utils config view")
+	re := regexp.MustCompile(key + `.+`)
+	odoConfigKeyValue := re.FindString(stdOut)
+	if odoConfigKeyValue == "" {
+		return fmt.Sprintf("%s not found", key)
+	}
+	trimKeyValue := strings.TrimSpace(odoConfigKeyValue)
+	if strings.Compare(key, trimKeyValue) != 0 {
+		return strings.TrimSpace(strings.SplitN(trimKeyValue, " ", 2)[1])
+	}
+	return ""
+}
+
+func findGlobalConfigValueOfGivenKey(key string) string {
+	stdOut, _, _ := cmdRunner("odo utils config view --global")
+	re := regexp.MustCompile(key + `.+`)
+	odoConfigKeyValue := re.FindString(stdOut)
+	if odoConfigKeyValue == "" {
+		return fmt.Sprintf("%s not found", key)
+	}
+	trimKeyValue := strings.TrimSpace(odoConfigKeyValue)
+	if strings.Compare(key, trimKeyValue) != 0 {
+		return strings.TrimSpace(strings.SplitN(trimKeyValue, " ", 2)[1])
+	}
+	return ""
+}
+
+func getBuildNameUsingOc(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get builds --output='name'")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-\S+`)
+	buildName := re.FindString(stdOut)
+	return strings.TrimSpace(buildName)
+}
+
+func getBuildParametersValueUsingOc(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get builds")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-.+`)
+	buildParametersValue := re.FindString(stdOut)
+	return strings.TrimSpace(buildParametersValue)
+}
+
+func getDcNameUsingOc(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get dc")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-\S+ `)
+	dcName := re.FindString(stdOut)
+	return strings.TrimSpace(dcName)
+}
+
+func getDcStatusValueUsingOc(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get dc")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-\S+\s+[0-9]`)
+	dcStatusCheckString := re.FindString(stdOut)
+	return strings.TrimSpace(strings.SplitN(dcStatusCheckString, " ", 2)[1])
 }
 
 func odoCreateProject(projectName string) {
