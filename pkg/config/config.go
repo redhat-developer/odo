@@ -56,9 +56,9 @@ type ComponentSettings struct {
 	// Ignore if set to true then odoignore file should be considered
 	Ignore *bool `json:"Ignore,omitempty"`
 
-	MinCPU *string
+	MinCPU *string `json:"MinCPU,omitempty"`
 
-	MaxCPU *string
+	MaxCPU *string `json:"MaxCPU,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
@@ -306,15 +306,13 @@ func getConfiguration(info interface{}, parameter string) (interface{}, bool) {
 		imm = imm.Elem()
 	}
 	val := imm.FieldByNameFunc(caseInsensitive(parameter))
-
 	if !val.IsValid() {
+
 		return nil, false
 	}
-
 	if val.IsNil() {
 		return nil, true
 	}
-
 	// if the value is a Ptr then we need to de-ref it
 	if val.Kind() == reflect.Ptr {
 		return val.Elem().Interface(), true
@@ -368,6 +366,13 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (er
 // GetConfiguration uses reflection to get the parameter from the localconfig struct, currently
 // it only searches the componentSettings
 func (lci *LocalConfigInfo) GetConfiguration(parameter string) (interface{}, bool) {
+
+	if strings.ToLower(parameter) == "cpu" {
+		if lci.ComponentSettings.MinCPU == nil {
+			return lci.ComponentSettings.MinCPU, true
+		}
+		return *lci.ComponentSettings.MinCPU, true
+	}
 	return getConfiguration(lci.ComponentSettings, parameter)
 }
 
