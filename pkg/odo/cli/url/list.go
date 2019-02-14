@@ -11,8 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/url"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
@@ -56,24 +54,11 @@ func (o *URLListOptions) Run() (err error) {
 		return err
 	}
 
-	if len(urls) == 0 {
+	if len(urls.Items) == 0 {
 		return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
 	} else {
 		if o.outputFlag == "json" {
-			var urlList []url.Url
-			for _, u := range urls {
-				urlList = append(urlList, getMachineReadableFormat(u))
-			}
-			appDef := url.UrlList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items:    urlList,
-			}
-
-			out, err := json.Marshal(appDef)
+			out, err := json.Marshal(urls)
 			if err != nil {
 				return err
 			}
@@ -87,8 +72,8 @@ func (o *URLListOptions) Run() (err error) {
 			//create headers
 			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
-			for _, u := range urls {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u), "\t", u.Port)
+			for _, u := range urls.Items {
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.URL), "\t", u.Spec.Port)
 			}
 			tabWriterURL.Flush()
 
@@ -114,14 +99,4 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 	urlListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the form of json")
 
 	return urlListCmd
-}
-
-// getMachineReadableFormat gives machine readable URL definition
-func getMachineReadableFormat(u url.URL) url.Url {
-	return url.Url{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
-		ObjectMeta: metav1.ObjectMeta{Name: u.Name},
-		Spec:       url.UrlSpec{URL: u.URL, Port: u.Port},
-	}
-
 }

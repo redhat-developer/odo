@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"encoding/json"
@@ -78,7 +79,7 @@ func (do *DescribeOptions) Run() (err error) {
 
 func getMachineReadableFormat(componentDesc component.Description, applicationName, projectName string) component.Component {
 	var urls []string
-	for _, url := range componentDesc.URLs {
+	for _, url := range componentDesc.URLs.Items {
 		urls = append(urls, url.Name)
 	}
 

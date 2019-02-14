@@ -82,7 +82,7 @@ func (o *URLCreateOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	urlCreated := url.GetURLString(*urlRoute)
+	urlCreated := url.GetURLString(urlRoute.Spec.Protocol, urlRoute.Spec.URL)
 	log.Successf("URL created for component: %v\n\n"+
 		"%v - %v\n", o.Component(), urlRoute.Name, urlCreated)
 

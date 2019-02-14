@@ -192,7 +192,7 @@ var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *ge
 		return completions
 	}
 
-	for _, url := range urls {
+	for _, url := range urls.Items {
 		// we found the url in the list which means
 		// that the url name has been already selected by the user so no need to suggest more
 		if args.commands[url.Name] {

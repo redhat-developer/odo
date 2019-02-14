@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -82,7 +83,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 		}
 		log.Info("Component", currentComponent.ComponentName, "will be deleted.")
 
-		if len(componentDesc.URLs) != 0 {
+		if len(componentDesc.URLs.Items) != 0 {
 			fmt.Println("  Externally exposed URLs will be removed")
 		}
 

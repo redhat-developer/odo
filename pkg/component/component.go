@@ -38,7 +38,7 @@ type Description struct {
 	ComponentName      string                `json:"componentName,omitempty"`
 	ComponentImageType string                `json:"type,omitempty"`
 	Path               string                `json:"source,omitempty"`
-	URLs               []urlpkg.URL          `json:"url,omitempty"`
+	URLs               urlpkg.UrlList        `json:"url,omitempty"`
 	Env                []corev1.EnvVar       `json:"environment,omitempty"`
 	Storage            []storage.StorageInfo `json:"storage,omitempty"`
 	LinkedComponents   map[string][]string   `json:"linkedComponents,omitempty"`
