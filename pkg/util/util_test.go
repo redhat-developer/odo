@@ -765,6 +765,46 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 	}
 }
 
+func TestGetAbsGlobExps(t *testing.T) {
+	tests := []struct {
+		testName              string
+		directoryName         string
+		inputRelativeGlobExps []string
+		expectedGlobExps      []string
+	}{
+		{
+			testName:      "test case 1: with a filename",
+			directoryName: "/home/redhat/nodejs-ex/",
+			inputRelativeGlobExps: []string{
+				"example.txt",
+			},
+			expectedGlobExps: []string{
+				"/home/redhat/nodejs-ex/example.txt",
+			},
+		},
+		{
+			testName:      "test case 2: with a folder name",
+			directoryName: "/home/redhat/nodejs-ex/",
+			inputRelativeGlobExps: []string{
+				"example/",
+			},
+			expectedGlobExps: []string{
+				"/home/redhat/nodejs-ex/example",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			resultExps := GetAbsGlobExps(tt.directoryName, tt.inputRelativeGlobExps)
+
+			if !reflect.DeepEqual(resultExps, tt.expectedGlobExps) {
+				t.Errorf("expected %v, got %v", tt.expectedGlobExps, resultExps)
+			}
+		})
+	}
+}
+
 func TestGetSortedKeys(t *testing.T) {
 	tests := []struct {
 		testName string
@@ -908,6 +948,82 @@ func TestGetContainerPortsFromStrings(t *testing.T) {
 				t.Error("error was expected, but no error was returned")
 			} else if err != nil && !tt.wantErr {
 				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
+			}
+		})
+	}
+}
+
+func TestIsGlobExpMatch(t *testing.T) {
+
+	tests := []struct {
+		testName   string
+		strToMatch string
+		globExps   []string
+		want       bool
+		wantErr    bool
+	}{
+		{
+			testName:   "Test glob matches",
+			strToMatch: "/home/redhat/nodejs-ex/.git",
+			globExps:   []string{"/home/redhat/nodejs-ex/.git", "/home/redhat/nodejs-ex/tests/"},
+			want:       true,
+			wantErr:    false,
+		},
+		{
+			testName:   "Test glob does not match",
+			strToMatch: "/home/redhat/nodejs-ex/gimmt.gimmt",
+			globExps:   []string{"/home/redhat/nodejs-ex/.git/", "/home/redhat/nodejs-ex/tests/"},
+			want:       false,
+			wantErr:    false,
+		},
+		{
+			testName:   "Test glob match files",
+			strToMatch: "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:   []string{"/home/redhat/nodejs-ex/*.json", "/home/redhat/nodejs-ex/tests/"},
+			want:       true,
+			wantErr:    false,
+		},
+		{
+			testName:   "Test '**' glob matches",
+			strToMatch: "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:   []string{"/home/redhat/nodejs-ex/openshift/**/*.json"},
+			want:       true,
+			wantErr:    false,
+		},
+		{
+			testName:   "Test '!' in glob matches",
+			strToMatch: "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:   []string{"/home/redhat/nodejs-ex/!*.json", "/home/redhat/nodejs-ex/tests/"},
+			want:       false,
+			wantErr:    false,
+		},
+		{
+			testName:   "Test [ in glob matches",
+			strToMatch: "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:   []string{"/home/redhat/nodejs-ex/["},
+			want:       false,
+			wantErr:    true,
+		},
+		{
+			testName:   "Test '#' comment glob matches",
+			strToMatch: "/home/redhat/nodejs-ex/openshift/templates/example.json",
+			globExps:   []string{"#/home/redhat/nodejs-ex/openshift/**/*.json"},
+			want:       false,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			matched, err := IsGlobExpMatch(tt.strToMatch, tt.globExps)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.want != matched {
+				t.Errorf("expected %v, got %v", tt.want, matched)
 			}
 		})
 	}

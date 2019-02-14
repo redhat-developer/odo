@@ -425,9 +425,10 @@ func getS2IPaths(podEnvs []corev1.EnvVar) []string {
 // 	files is list of changed files captured during `odo watch` as well as binary file path
 // 	delFiles is the list of files identified as deleted
 // 	isForcePush indicates if the sources to be updated are due to a push in which case its a full source directory push or only push of identified sources
+// 	globExps are the glob expressions which are to be ignored during the push
 // Returns
 //	Error if any
-func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool) error {
+func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string) error {
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
@@ -483,7 +484,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	if isForcePush || len(files) > 0 {
 		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = client.CopyFile(path, pod.Name, targetPath, files)
+		err = client.CopyFile(path, pod.Name, targetPath, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")

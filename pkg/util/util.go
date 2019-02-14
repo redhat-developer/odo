@@ -3,6 +3,7 @@ package util
 import (
 	"bufio"
 	"fmt"
+	"github.com/gobwas/glob"
 	"io"
 	"math/rand"
 	"net"
@@ -379,7 +380,7 @@ func GetHostWithPort(inputURL string) (string, error) {
 
 // GetIgnoreRulesFromDirectory reads the .odoignore file, if present, and reads the rules from it
 // if the .odoignore file is not found, then .gitignore is searched for the rules
-// if both are not found, return emtpy array
+// if both are not found, return empty array
 // directory is the name of the directory to look into for either of the files
 // rules is the array of rules (in string form)
 func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
@@ -420,6 +421,18 @@ func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 	}
 
 	return rules, nil
+}
+
+// GetAbsGlobExps converts the relative glob expressions into absolute glob expressions
+// returns the absolute glob expressions
+func GetAbsGlobExps(directory string, globExps []string) []string {
+	absGlobExps := []string{}
+	for _, globExp := range globExps {
+		// for glob matching with the library
+		// the relative paths in the glob expressions need to be converted to absolute paths
+		absGlobExps = append(absGlobExps, path.Join(directory, globExp))
+	}
+	return absGlobExps
 }
 
 // GetSortedKeys retrieves the alphabetically-sorted keys of the specified map
@@ -488,4 +501,24 @@ func GetContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 		containerPorts = append(containerPorts, port)
 	}
 	return containerPorts, nil
+}
+
+// IsGlobExpMatch compiles strToMatch against each of the passed globExps
+// Parameters:
+// strToMatch : a string for matching against the rules
+// globExps : a list of glob patterns to match strToMatch with
+// Returns: true if there is any match else false the error (if any)
+func IsGlobExpMatch(strToMatch string, globExps []string) (bool, error) {
+	for _, globExp := range globExps {
+		pattern, err := glob.Compile(globExp)
+		if err != nil {
+			return false, err
+		}
+		matched := pattern.Match(strToMatch)
+		if matched {
+			glog.V(4).Infof("ignoring path %s because of glob rule %s", strToMatch, globExp)
+			return true, nil
+		}
+	}
+	return false, nil
 }

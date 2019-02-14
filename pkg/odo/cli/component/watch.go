@@ -128,7 +128,7 @@ func (wo *WatchOptions) Run() (err error) {
 			ComponentName:   wo.componentName,
 			ApplicationName: wo.Context.Application,
 			Path:            wo.watchPath,
-			FileIgnores:     wo.ignores,
+			FileIgnores:     util.GetAbsGlobExps(wo.watchPath, wo.ignores),
 			PushDiffDelay:   wo.delay,
 			StartChan:       nil,
 			ExtChan:         make(chan bool),
