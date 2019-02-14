@@ -264,7 +264,7 @@ func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, s
 	}
 
 	// finally check if we still have plan properties that have not been considered
-	if len(properties) > 0 && ui.Proceed("Provide values for non-required properties") {
+	if len(properties) > 0 && ui.Proceed("Provide values for non-required properties", stdio...) {
 		for _, prop := range properties {
 			addValueFor(prop, values, stdio...)
 		}
