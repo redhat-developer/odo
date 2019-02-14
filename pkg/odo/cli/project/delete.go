@@ -61,24 +61,23 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
 	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
-		return fmt.Errorf("Aborting deletion of project: %v", pdo.projectName)
+		currentProject, err := project.Delete(pdo.Context.Client, pdo.projectName)
+		if err != nil {
+			return err
+		}
+
+		log.Infof("Deleted project : %v", pdo.projectName)
+
+		if currentProject != "" {
+			log.Infof("%s has been set as the active project\n", currentProject)
+		} else {
+			// oc errors out as "error: you do not have rights to view project "$deleted_project"."
+			log.Infof("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
+		}
+		return
 	}
 
-	currentProject, err := project.Delete(pdo.Context.Client, pdo.projectName)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Deleted project : %v", pdo.projectName)
-
-	if currentProject != "" {
-		log.Infof("%s has been set as the active project\n", currentProject)
-	} else {
-		// oc errors out as "error: you do not have rights to view project "$deleted_project"."
-		log.Infof("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
-	}
-
-	return
+	return fmt.Errorf("Aborting deletion of project: %v", pdo.projectName)
 }
 
 // NewCmdProjectDelete creates the project delete command
