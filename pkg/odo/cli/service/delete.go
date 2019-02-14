@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"strings"
 
 	"github.com/golang/glog"
@@ -58,14 +59,7 @@ func (o *ServiceDeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service delete command
 func (o *ServiceDeleteOptions) Run() (err error) {
-	var confirmDeletion string
-	if o.serviceForceDeleteFlag {
-		confirmDeletion = "y"
-	} else {
-		log.Askf("Are you sure you want to delete %v from %v? [y/N] ", o.serviceName, o.Application)
-		_, _ = fmt.Scanln(&confirmDeletion)
-	}
-	if strings.ToLower(confirmDeletion) == "y" {
+	if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v", o.serviceName, o.Application)) {
 		err = svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
 		if err != nil {
 			return fmt.Errorf("unable to delete service %s:\n%v", o.serviceName, err)

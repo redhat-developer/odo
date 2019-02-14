@@ -2,11 +2,11 @@ package config
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -77,14 +77,9 @@ func (o *UnsetOptions) Run() (err error) {
 	}
 
 	if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
-		if !o.configForceFlag {
-			var confirmOveride string
-			log.Askf("Do you want to unset %s in the config? y/N ", o.paramName)
-			fmt.Scanln(&confirmOveride)
-			if confirmOveride != "y" {
-				fmt.Println("Aborted by the user.")
-				return nil
-			}
+		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the config", o.paramName)) {
+			fmt.Println("Aborted by the user.")
+			return nil
 		}
 		err = cfg.DeleteConfiguration(strings.ToLower(o.paramName))
 		if err != nil {

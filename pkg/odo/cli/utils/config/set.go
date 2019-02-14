@@ -2,11 +2,11 @@ package config
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -78,12 +78,9 @@ func (o *SetOptions) Run() (err error) {
 	}
 
 	if !o.configForceFlag {
-		var confirmOveride string
 		if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
 			fmt.Printf("%v is already set. Current value is %v.\n", o.paramName, value)
-			log.Askf("Do you want to override it in the config? y/N ")
-			fmt.Scanln(&confirmOveride)
-			if confirmOveride != "y" {
+			if ui.Proceed("Do you want to override it in the config") {
 				fmt.Println("Aborted by the user.")
 				return nil
 			}

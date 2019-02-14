@@ -2,12 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"strings"
-
 	"github.com/pkg/errors"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
@@ -45,7 +44,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
-	isExists, err := component.Exists(do.Context.Client, do.componentName, do.Context.Application)
+	isExists, err := component.Exists(do.Client, do.componentName, do.Application)
 	if err != nil {
 		return err
 	}
@@ -60,22 +59,14 @@ func (do *DeleteOptions) Run() (err error) {
 	glog.V(4).Infof("component delete called")
 	glog.V(4).Infof("args: %#v", do)
 
-	var confirmDeletion string
-	if do.componentForceDeleteFlag {
-		confirmDeletion = "y"
-	} else {
-		log.Askf("Are you sure you want to delete %v from %v? [y/N]: ", do.componentName, do.Context.Application)
-		fmt.Scanln(&confirmDeletion)
-	}
-
-	if strings.ToLower(confirmDeletion) == "y" {
-		err := component.Delete(do.Context.Client, do.componentName, do.Context.Application)
+	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
+		err := component.Delete(do.Client, do.componentName, do.Application)
 		if err != nil {
 			return err
 		}
-		log.Successf("Component %s from application %s has been deleted", do.componentName, do.Context.Application)
+		log.Successf("Component %s from application %s has been deleted", do.componentName, do.Application)
 
-		currentComponent, err := component.GetCurrent(do.Context.Application, do.Context.Project)
+		currentComponent, err := component.GetCurrent(do.Application, do.Project)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to get current component")
 		}

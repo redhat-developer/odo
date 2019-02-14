@@ -6,12 +6,12 @@ import (
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"strings"
 )
 
 const deleteRecommendedCommandName = "delete"
@@ -67,19 +67,14 @@ func (o *StorageDeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo storage delete command
 func (o *StorageDeleteOptions) Run() (err error) {
-	var confirmDeletion string
-	if o.storageForceDeleteFlag {
-		confirmDeletion = "y"
+	var deleteMsg string
+	if o.componentName != "" {
+		mPath := storage.GetMountPath(o.Client, o.storageName, o.componentName, o.Application)
+		deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.componentName)
 	} else {
-		if o.componentName != "" {
-			mPath := storage.GetMountPath(o.Client, o.storageName, o.componentName, o.Application)
-			log.Askf("Are you sure you want to delete the storage %v mounted to %v in %v component? [y/N]: ", o.storageName, mPath, o.componentName)
-		} else {
-			log.Askf("Are you sure you want to delete the storage %v that is not currently mounted to any component? [y/N]: ", o.storageName)
-		}
-		fmt.Scanln(&confirmDeletion)
+		deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v that is not currently mounted to any component", o.storageName)
 	}
-	if strings.ToLower(confirmDeletion) == "y" {
+	if o.storageForceDeleteFlag || ui.Proceed(deleteMsg) {
 		o.componentName, err = storage.Delete(o.Client, o.storageName, o.Application)
 		if err != nil {
 			return fmt.Errorf("failed to delete storage, cause %v", err)

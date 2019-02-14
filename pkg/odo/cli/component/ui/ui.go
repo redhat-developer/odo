@@ -163,18 +163,6 @@ func enterGitRef(defaultRef string) string {
 	return path
 }
 
-// Proceed displays a given message and asks the user if they want to proceed
-func Proceed(message string) bool {
-	var response bool
-	prompt := &survey.Confirm{
-		Message: message,
-	}
-	err := survey.AskOne(prompt, &response, survey.Required)
-	ui.HandleError(err)
-
-	return response
-}
-
 // EnterPorts allows the user to specify the ports to be used in a prompt
 func EnterPorts() []string {
 	var portsStr string

@@ -97,19 +97,6 @@ func EnterServiceNameInteractively(defaultValue, promptText string, validateName
 	return serviceName
 }
 
-// ShouldOutputNonInteractiveEquivalent asks the user if they want to output the equivalent non-interactive command line version
-// of the interactively entered options
-func ShouldOutputNonInteractiveEquivalent() bool {
-	outputCLI := false
-	confirm := &survey.Confirm{
-		Message: "Output the non-interactive version of the selected options",
-	}
-
-	err := survey.AskOne(confirm, &outputCLI, survey.Required)
-	ui.HandleError(err)
-	return outputCLI
-}
-
 // SelectClassInteractively lets the user select target service class from possible options, first filtering by categories then
 // by class name
 func SelectClassInteractively(classesByCategory map[string][]scv1beta1.ClusterServiceClass) (class scv1beta1.ClusterServiceClass, serviceType string) {
@@ -277,23 +264,9 @@ func enterServicePropertiesInteractively(svcPlan scv1beta1.ClusterServicePlan, s
 	}
 
 	// finally check if we still have plan properties that have not been considered
-	if len(properties) > 0 {
-		fillOptionalProps := false
-		confirm := &survey.Confirm{
-			Message: "Provide values for non-required properties",
-		}
-
-		if len(stdio) == 1 {
-			confirm.WithStdio(stdio[0])
-		}
-
-		err := survey.AskOne(confirm, &fillOptionalProps, survey.Required)
-		ui.HandleError(err)
-		if fillOptionalProps {
-
-			for _, prop := range properties {
-				addValueFor(prop, values, stdio...)
-			}
+	if len(properties) > 0 && ui.Proceed("Provide values for non-required properties") {
+		for _, prop := range properties {
+			addValueFor(prop, values, stdio...)
 		}
 	}
 

@@ -5,11 +5,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"strings"
 )
 
 const deleteRecommendedCommandName = "delete"
@@ -55,15 +55,7 @@ func (o *DeleteOptions) Run() (err error) {
 		return err
 	}
 
-	var confirmDeletion string
-	if o.force {
-		confirmDeletion = "y"
-	} else {
-		log.Askf("Are you sure you want to delete the application: %v from project: %v? [y/N]: ", o.appName, o.Project)
-		fmt.Scanln(&confirmDeletion)
-	}
-
-	if strings.ToLower(confirmDeletion) == "y" {
+	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.Project)) {
 		err = application.Delete(o.Client, o.appName)
 		if err != nil {
 			return err

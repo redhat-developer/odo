@@ -2,9 +2,8 @@ package project
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -27,7 +26,6 @@ var (
 
 // ProjectDeleteOptions encapsulates the options for the odo project delete command
 type ProjectDeleteOptions struct {
-
 	// name of the project
 	projectName string
 
@@ -62,15 +60,7 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
-	var confirmDeletion string
-	if pdo.projectForceDeleteFlag {
-		confirmDeletion = "y"
-	} else {
-		log.Askf("Are you sure you want to delete project %v? [y/N]: ", pdo.projectName)
-		fmt.Scanln(&confirmDeletion)
-	}
-
-	if strings.ToLower(confirmDeletion) != "y" {
+	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
 		return fmt.Errorf("Aborting deletion of project: %v", pdo.projectName)
 	}
 

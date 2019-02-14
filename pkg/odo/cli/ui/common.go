@@ -24,3 +24,21 @@ func HandleError(err error) {
 func GetValidatorFor(prop validation.Validatable) survey.Validator {
 	return survey.Validator(validation.GetValidatorFor(prop))
 }
+
+// Proceed displays a given message and asks the user if they want to proceed using the optionally specified Stdio instance (useful
+// for testing purposes)
+func Proceed(message string, stdio ...terminal.Stdio) bool {
+	var response bool
+	prompt := &survey.Confirm{
+		Message: message,
+	}
+
+	if len(stdio) == 1 {
+		prompt.WithStdio(stdio[0])
+	}
+
+	err := survey.AskOne(prompt, &response, survey.Required)
+	HandleError(err)
+
+	return response
+}

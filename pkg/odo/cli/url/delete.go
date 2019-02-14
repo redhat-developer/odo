@@ -2,9 +2,8 @@ package url
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/url"
@@ -57,15 +56,7 @@ func (o *URLDeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url delete command
 func (o *URLDeleteOptions) Run() (err error) {
-	var confirmDeletion string
-	if o.urlForceDeleteFlag {
-		confirmDeletion = "y"
-	} else {
-		log.Askf("Are you sure you want to delete the url %v? [y/N]: ", o.urlName)
-		fmt.Scanln(&confirmDeletion)
-	}
-
-	if strings.ToLower(confirmDeletion) == "y" {
+	if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
 
 		err = url.Delete(o.Client, o.urlName, o.Application)
 		if err != nil {
