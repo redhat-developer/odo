@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
@@ -84,7 +86,7 @@ func (do *DeleteOptions) Run() (err error) {
 		}
 
 	} else {
-		log.Infof("Aborting deletion of component: %v", do.componentName)
+		return fmt.Errorf("Aborting deletion of component: %v", do.componentName)
 	}
 
 	return

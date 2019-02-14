@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -62,7 +63,7 @@ func (o *DeleteOptions) Run() (err error) {
 		}
 		log.Infof("Deleted application: %s from project: %v", o.appName, o.Project)
 	} else {
-		log.Infof("Aborting deletion of application: %v", o.appName)
+		return fmt.Errorf("Aborting deletion of application: %v", o.appName)
 	}
 	return
 }
