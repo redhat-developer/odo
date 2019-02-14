@@ -13,7 +13,7 @@ var _ = Describe("odoServiceE2e", func() {
 
 	Context("odo service creation", func() {
 		It("should be able to create a service", func() {
-			runCmd("odo service create mysql-persistent -w")
+			runCmdShouldPass("odo service create mysql-persistent -w")
 			waitForCmdOut("oc get serviceinstance -o name", 1, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
@@ -29,7 +29,7 @@ var _ = Describe("odoServiceE2e", func() {
 		})
 
 		It("should be able to delete a service", func() {
-			runCmd("odo service delete mysql-persistent -f")
+			runCmdShouldPass("odo service delete mysql-persistent -f")
 			cmd := serviceInstanceStatusCmd("mysql-persistent")
 			waitForServiceStatusCmd(cmd, "Deprovisioning")
 		})
@@ -41,7 +41,7 @@ var _ = Describe("odoServiceE2e", func() {
 	} else {
 		Context("odo service create with a spring boot application", func() {
 			It("should be able to create postgresql", func() {
-				runCmd("odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6")
+				runCmdShouldPass("odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6")
 				waitForCmdOut("oc get serviceinstance -o name", 1, func(output string) bool {
 					return strings.Contains(output, "dh-postgresql-apb")
 				})
@@ -50,17 +50,17 @@ var _ = Describe("odoServiceE2e", func() {
 			It("Should be able to deploy an openjdk source application", func() {
 				importOpenJDKImage()
 
-				runCmd("odo create openjdk18 sb-app --local " + sourceExamples + "/openjdk-sb-postgresql/")
+				runCmdShouldPass("odo create openjdk18 sb-app --local " + sourceExamples + "/openjdk-sb-postgresql/")
 
 				// Push changes
-				runCmd("odo push")
+				runCmdShouldPass("odo push")
 
 				// Create a URL
-				runCmd("odo url create --port 8080")
+				runCmdShouldPass("odo url create --port 8080")
 			})
 
 			It("Should be able to link the spring boot application to the postgresql DB", func() {
-				runCmd("odo link dh-postgresql-apb -w")
+				runCmdShouldPass("odo link dh-postgresql-apb -w")
 
 				waitForCmdOut("odo service list | sed 1d", 1, func(output string) bool {
 					return strings.Contains(output, "dh-postgresql-apb") &&
@@ -77,18 +77,18 @@ var _ = Describe("odoServiceE2e", func() {
 
 			It("Should be able to delete everything", func() {
 				// Delete the component
-				runCmd("odo delete sb-app -f")
+				runCmdShouldPass("odo delete sb-app -f")
 
 				// Delete the service
-				runCmd("odo service delete dh-postgresql-apb -f")
+				runCmdShouldPass("odo service delete dh-postgresql-apb -f")
 			})
 		})
 
 		Context("odo hides a hidden service in service catalog", func() {
 			It("not show a hidden service in the catalog", func() {
-				runCmd("oc apply -f https://github.com/openshift/library/raw/master/official/sso/templates/sso72-https.json -n openshift")
-				output := runFailCmd("odo catalog search service sso72-https", 1)
-				Expect(output).To(ContainSubstring("No service matched the query: sso72-https"))
+				runCmdShouldPass("oc apply -f https://github.com/openshift/library/raw/master/official/sso/templates/sso72-https.json -n openshift")
+				outputErr := runCmdShouldFail("odo catalog search service sso72-https")
+				Expect(outputErr).To(ContainSubstring("No service matched the query: sso72-https"))
 			})
 		})
 	}

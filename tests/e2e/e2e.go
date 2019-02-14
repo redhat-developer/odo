@@ -19,36 +19,40 @@ func generateTimeBasedName(prefix string) string {
 }
 
 func getActiveElementFromCommandOutput(command string) string {
-	result := runCmd(command + " | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
+	result := runCmdShouldPass(command + " | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 	return strings.TrimSpace(result)
 }
 
-func runCmd(cmdS string) string {
+// cmdRunner runs a command
+// and returns the stdout, stderr and exitcode
+func cmdRunner(cmdS string) (string, string, int) {
 	cmd := exec.Command("/bin/sh", "-c", cmdS)
 	fmt.Fprintf(GinkgoWriter, "Running command: %s\n", cmdS)
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 
 	// wait for the command execution to complete
 	<-session.Exited
-	Expect(session.ExitCode()).To(Equal(0))
-	Expect(err).NotTo(HaveOccurred())
 
-	return string(session.Out.Contents())
+	Expect(err).NotTo(HaveOccurred())
+	return string(session.Out.Contents()), string(session.Err.Contents()), session.ExitCode()
 }
 
-// runFailCmd runs a failing command
-// and returns the stdout
-func runFailCmd(cmdS string, exitCode int) string {
-	cmd := exec.Command("/bin/sh", "-c", cmdS)
-	fmt.Fprintf(GinkgoWriter, "Running command: %s\n", cmdS)
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+// runCmdShouldPass runs a command
+// and returns stdout if passes,
+// error out otherwise
+func runCmdShouldPass(cmd string) string {
+	stdout, _, exitcode := cmdRunner(cmd)
+	Expect(exitcode).To(Equal(0))
+	return stdout
+}
 
-	// wait for the command execution to complete
-	<-session.Exited
-	Expect(session.ExitCode()).To(Equal(exitCode))
-	Expect(err).NotTo(HaveOccurred())
-
-	return string(session.Out.Contents())
+// runCmdShouldFail runs a command
+// and returns stderr if fails,
+// error out otherwise
+func runCmdShouldFail(cmd string) string {
+	_, stderr, exitcode := cmdRunner(cmd)
+	Expect(exitcode).To(Not(Equal(0)))
+	return stderr
 }
 
 // waitForCmdOut runs a command until it gets
@@ -87,11 +91,11 @@ func waitForCmdOut(cmd string, timeout int, check func(output string) bool) bool
 // this is very useful to avoid race conditions that can occur when
 // updating the component
 func waitForDCOfComponentToRolloutCompletely(componentName string) {
-	fullDCName := runCmd(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o name | tr -d '\n'", componentName))
+	fullDCName := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o name | tr -d '\n'", componentName))
 	// oc rollout status ensures that the existing DC is fully rolled out before it terminates
 	// we need this because a rolling DC could cause odo update to fail due to its use
 	// of the read/update-in-memory/write-changes pattern
-	runCmd("oc rollout status " + fullDCName)
+	runCmdShouldPass("oc rollout status " + fullDCName)
 
 	simpleDCName := strings.Replace(fullDCName, "deploymentconfig.apps.openshift.io/", "", -1)
 	// ensure that no more changes will occur to the name DC by waiting until there is only one pod running (the old one has terminated)
@@ -185,7 +189,7 @@ func cleanUpAfterProjects(projects []string) {
 		deleteProject(p)
 	}
 	// Logout of current user to ensure state
-	runCmd("oc logout")
+	runCmdShouldPass("oc logout")
 }
 
 // deletes a specified project
