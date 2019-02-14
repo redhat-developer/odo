@@ -3,6 +3,11 @@ package project
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -65,4 +70,50 @@ func NewCmdProject(name, fullName string) *cobra.Command {
 func AddProjectFlag(cmd *cobra.Command) {
 	cmd.Flags().String(genericclioptions.ProjectFlagName, "", "Project, defaults to active project")
 	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
+}
+
+// printDeleteProjectInfo prints objects affected by project deletion
+func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
+	applicationList, err := application.ListInProject(client, projectName)
+	if err != nil {
+		return errors.Wrap(err, "failed to get application list")
+	}
+	// List the applications
+	if len(applicationList) != 0 {
+		log.Info("This project contains the following applications, which will be deleted")
+		for _, app := range applicationList {
+			log.Info(" Application ", app.Name)
+
+			// List the components
+			componentList, err := component.List(client, app.Name)
+			if err != nil {
+				return errors.Wrap(err, "failed to get Component list")
+			}
+			if len(componentList) != 0 {
+				log.Info("  This application has following components that will be deleted")
+
+				for _, currentComponent := range componentList {
+					componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, app.Name, app.Project)
+					if err != nil {
+						return errors.Wrap(err, "unable to get component description")
+					}
+					log.Info("  component named ", currentComponent.ComponentName)
+
+					if len(componentDesc.URLs) != 0 {
+						log.Info("    The component has following urls that will be deleted with component")
+						for _, url := range componentDesc.URLs {
+							log.Info("     URL named ", url.Name, " with value ", url.URL)
+						}
+					}
+					if len(componentDesc.Storage) != 0 {
+						log.Info("    The component has following storages which will be deleted with the component")
+						for _, store := range componentDesc.Storage {
+							log.Info("     Storage named ", store.Name, " of size ", store.Size)
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
