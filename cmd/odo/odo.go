@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-
 	"github.com/golang/glog"
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -14,9 +12,38 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"strings"
 )
 
+const pluginSuffix = ".odo.plugin"
+
+var plugins = make(map[string]plugin, 10)
+
+type plugin interface {
+	execute(args []string) error
+}
+
+type pluginImpl struct {
+	path string
+}
+
+func (p pluginImpl) execute(args []string) error {
+	cmd := exec.Command(p.path, args...)
+	out, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(out))
+	return nil
+}
+
 func main() {
+	loadPlugins()
+
 	// create the complete command
 	root := cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName)
 	rootCmp := createCompletion(root)
@@ -62,7 +89,7 @@ func main() {
 		updateInfo := make(chan string)
 		go version.GetLatestReleaseInfo(updateInfo)
 
-		util.LogErrorAndExit(root.Execute(), "")
+		runCmdOrTryPlugin(root, args)
 		select {
 		case message := <-updateInfo:
 			fmt.Println(message)
@@ -70,8 +97,27 @@ func main() {
 			glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
 	} else {
-		util.LogErrorAndExit(root.Execute(), "")
+		runCmdOrTryPlugin(root, args)
 	}
+}
+
+func runCmdOrTryPlugin(cmd *cobra.Command, args []string) {
+	// find a command with the appropriate args
+	if _, _, err := cmd.Find(args); err != nil {
+		// no command has been found, see if we have a plugin command using the first arg as name
+		if plugin, ok := plugins[args[0]]; ok {
+			var pluginArgs []string
+			if len(args) > 1 {
+				pluginArgs = args[1:]
+			}
+
+			util.LogErrorAndExit(plugin.execute(pluginArgs), "")
+			return
+		}
+	}
+
+	// we found it, so execute the root command
+	util.LogErrorAndExit(cmd.Execute(), "")
 }
 
 func createCompletion(root *cobra.Command) complete.Command {
@@ -112,4 +158,37 @@ func createCompletion(root *cobra.Command) complete.Command {
 	rootCmp.Args = handler
 
 	return rootCmp
+}
+
+func loadPlugins() {
+	configDir, err := config.GetPluginsDir()
+	if err != nil {
+		panic(err)
+	}
+
+	err = filepath.Walk(configDir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, pluginSuffix) {
+			pluginName, err := getPluginNameFromPath(path)
+			if err != nil {
+				return err
+			}
+			plugins[pluginName] = pluginImpl{
+				path: path,
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func getPluginNameFromPath(pluginPath string) (string, error) {
+	_, file := path.Split(pluginPath)
+	index := strings.LastIndex(file, pluginSuffix)
+	if index < 0 {
+		return "", fmt.Errorf("plugin at %s doesn't follow the '<name>%s' format", pluginPath, pluginSuffix)
+	}
+
+	return file[:index], nil
 }

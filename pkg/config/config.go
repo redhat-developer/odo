@@ -108,6 +108,24 @@ type LocalConfigInfo struct {
 }
 
 func getGlobalConfigFile() (string, error) {
+	configDir, err := GetGlobalConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(configDir, configFileName), nil
+}
+
+func GetPluginsDir() (string, error) {
+	configDir, err := GetGlobalConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(configDir, "plugins"), nil
+}
+
+// GetGlobalConfigDir retrieves the odo configuration directory path
+func GetGlobalConfigDir() (string, error) {
 	if env, ok := os.LookupEnv(globalConfigEnvName); ok {
 		return env, nil
 	}
@@ -116,7 +134,19 @@ func getGlobalConfigFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(currentUser.HomeDir, ".odo", configFileName), nil
+
+	configDir := filepath.Join(currentUser.HomeDir, ".odo")
+
+	// Check whether directory present or not
+	_, err = os.Stat(filepath.Dir(configDir))
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(configDir), 0755)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return configDir, nil
 }
 
 func getLocalConfigFile() (string, error) {
