@@ -115,6 +115,7 @@ func getGlobalConfigFile() (string, error) {
 	return filepath.Join(configDir, configFileName), nil
 }
 
+// GetPluginsDir returns the global plugins directory
 func GetPluginsDir() (string, error) {
 	configDir, err := GetGlobalConfigDir()
 	if err != nil {
