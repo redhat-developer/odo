@@ -74,7 +74,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 			// oc errors out as "error: you do not have rights to view project "$deleted_project"."
 			log.Infof("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
 		}
-		return
+		return nil
 	}
 
 	return fmt.Errorf("Aborting deletion of project: %v", pdo.projectName)
