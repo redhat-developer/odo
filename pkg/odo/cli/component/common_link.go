@@ -4,14 +4,18 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/component"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/secret"
 	svc "github.com/redhat-developer/odo/pkg/service"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type commonLinkOptions struct {
+	wait             bool
 	port             string
 	secretName       string
 	isTargetAService bool
@@ -111,5 +115,33 @@ func (o *commonLinkOptions) run() (err error) {
 	}
 
 	log.Successf("%s %s has been successfully %sed from the component %s", linkType, o.suppliedName, o.operationName, o.Component())
+
+	if o.wait {
+		if err := o.waitForLinkToComplete(); err != nil {
+			return err
+		}
+	}
+
 	return
+}
+
+func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
+	labels := componentlabels.GetLabels(o.Component(), o.Application, true)
+	selectorLabels, err := util.NamespaceOpenShiftObject(labels[componentlabels.ComponentLabel], labels["app"])
+	if err != nil {
+		return err
+	}
+	podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
+
+	// first wait for the pod to be pending (meaning that the deployment is being put into effect)
+	// we need this intermediate wait because there is a change that the this point could be reached
+	// without Openshift having had the time to launch the new deployment
+	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodPending, "Waiting for component to redeploy")
+	if err != nil {
+		return err
+	}
+
+	// now wait for the pod to be running
+	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	return err
 }

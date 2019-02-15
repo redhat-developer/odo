@@ -60,7 +60,7 @@ var _ = Describe("odoServiceE2e", func() {
 			})
 
 			It("Should be able to link the spring boot application to the postgresql DB", func() {
-				runCmdShouldPass("odo link dh-postgresql-apb -w")
+				runCmdShouldPass("odo link dh-postgresql-apb -w --wait-for-target")
 
 				waitForCmdOut("odo service list | sed 1d", 1, func(output string) bool {
 					return strings.Contains(output, "dh-postgresql-apb") &&
