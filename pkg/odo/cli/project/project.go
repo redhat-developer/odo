@@ -100,13 +100,21 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 					log.Info("  component named ", currentComponent.ComponentName)
 
 					if len(componentDesc.URLs) != 0 {
-						log.Info("    The component has following urls that will be deleted with component")
+						log.Info("    This component has following urls that will be deleted with component")
 						for _, url := range componentDesc.URLs {
 							log.Info("     URL named ", url.Name, " with value ", url.URL)
 						}
 					}
+
+					if len(componentDesc.LinkedServices) != 0 {
+						log.Info("    This component has following services linked to it, which will get unlinked")
+						for _, linkedService := range componentDesc.LinkedServices {
+							log.Info("     Service named ", linkedService)
+						}
+					}
+
 					if len(componentDesc.Storage) != 0 {
-						log.Info("    The component has following storages which will be deleted with the component")
+						log.Info("    This component has following storages which will be deleted with the component")
 						for _, store := range componentDesc.Storage {
 							log.Info("     Storage named ", store.Name, " of size ", store.Size)
 						}

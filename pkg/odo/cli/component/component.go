@@ -114,7 +114,7 @@ func printDeleteComponentInfo(client *occlient.Client, componentName string, app
 	}
 
 	if len(componentDesc.Storage) != 0 {
-		log.Info("The component has following storages which will be deleted with the component")
+		log.Info("This component has following storages which will be deleted with the component")
 		for _, store := range componentDesc.Storage {
 			log.Info("  Storage", store.Name, "of size", store.Size)
 		}

@@ -103,6 +103,13 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 					log.Info("   Storage named ", store.GetName(), " of size ", store.Spec.Size)
 				}
 			}
+
+			if len(componentDesc.LinkedServices) != 0 {
+				log.Info("  This component has following services linked to it, which will get unlinked")
+				for _, linkedService := range componentDesc.LinkedServices {
+					log.Info("   Service named ", linkedService)
+				}
+			}
 		}
 	}
 	return nil
