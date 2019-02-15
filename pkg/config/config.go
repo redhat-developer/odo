@@ -108,6 +108,10 @@ type LocalConfigInfo struct {
 }
 
 func getGlobalConfigFile() (string, error) {
+	if env, ok := os.LookupEnv(globalConfigEnvName); ok {
+		return env, nil
+	}
+
 	configDir, err := GetGlobalConfigDir()
 	if err != nil {
 		return "", err
@@ -127,10 +131,6 @@ func GetPluginsDir() (string, error) {
 
 // GetGlobalConfigDir retrieves the odo configuration directory path
 func GetGlobalConfigDir() (string, error) {
-	if env, ok := os.LookupEnv(globalConfigEnvName); ok {
-		return env, nil
-	}
-
 	currentUser, err := user.Current()
 	if err != nil {
 		return "", err
