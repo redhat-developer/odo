@@ -86,6 +86,13 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 			errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
+		// check that the specified project exists
+		_, err := project.Exists(client, ns)
+		if err != nil {
+			e1 := fmt.Sprintf("You dont have permission to project '%s' or it doesnt exist. Please create or set a different project\n\t", ns)
+			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+		}
 		// If 'default' project set then check if user is trying to create or delete something other than project
 		if ns == "default" {
 			errFormat := "Current project is default. Please create or set a different project\n\t%s project create|set <project_name>"
