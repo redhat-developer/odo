@@ -65,6 +65,12 @@ func (o *ViewOptions) Run() (err error) {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 		fmt.Fprintln(w, "ComponentType", "\t", showBlankIfNil(cfg.ComponentSettings.ComponentType))
+		fmt.Fprintln(w, "ComponentName", "\t", showBlankIfNil(cfg.ComponentSettings.ComponentName))
+		fmt.Fprintln(w, "MinMemory", "\t", showBlankIfNil(cfg.ComponentSettings.MinMemory))
+		fmt.Fprintln(w, "MaxMemory", "\t", showBlankIfNil(cfg.ComponentSettings.MaxMemory))
+		fmt.Fprintln(w, "Ignore", "\t", showBlankIfNil(cfg.ComponentSettings.Ignore))
+		fmt.Fprintln(w, "MinCPU", "\t", showBlankIfNil(cfg.ComponentSettings.MinCPU))
+		fmt.Fprintln(w, "MaxCPU", "\t", showBlankIfNil(cfg.ComponentSettings.MaxCPU))
 		w.Flush()
 	}
 	return

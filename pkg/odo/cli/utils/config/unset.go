@@ -28,6 +28,14 @@ var (
 
    # Unset a configuration value in the local config
    %[1]s %[5]s
+   %[1]s %[6]s 
+   %[1]s %[7]s  
+   %[1]s %[8]s 
+   %[1]s %[9]s 
+   %[1]s %[10]s  
+   %[1]s %[11]s  
+   %[1]s %[12]s  
+   %[1]s %[13]s  
 	`)
 )
 
@@ -71,13 +79,11 @@ func (o *UnsetOptions) Run() (err error) {
 	if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
 		if !o.configForceFlag {
 			var confirmOveride string
-			if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
-				log.Askf("Do you want to unset %s in the config? y/N ", o.paramName)
-				fmt.Scanln(&confirmOveride)
-				if confirmOveride != "y" {
-					fmt.Println("Aborted by the user.")
-					return nil
-				}
+			log.Askf("Do you want to unset %s in the config? y/N ", o.paramName)
+			fmt.Scanln(&confirmOveride)
+			if confirmOveride != "y" {
+				fmt.Println("Aborted by the user.")
+				return nil
 			}
 		}
 		err = cfg.DeleteConfiguration(strings.ToLower(o.paramName))
@@ -107,10 +113,11 @@ func (o *UnsetOptions) Run() (err error) {
 func NewCmdUnset(name, fullName string) *cobra.Command {
 	o := NewUnsetOptions()
 	configurationUnsetCmd := &cobra.Command{
-		Use:     name,
-		Short:   "Unset a value in odo config file",
-		Long:    fmt.Sprintf(unsetLongDesc, config.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName, config.UpdateNotificationSetting, config.NamePrefixSetting, config.TimeoutSetting, config.ComponentType),
+		Use:   name,
+		Short: "Unset a value in odo config file",
+		Long:  fmt.Sprintf(unsetLongDesc, config.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName, config.UpdateNotificationSetting, config.NamePrefixSetting, config.TimeoutSetting, config.ComponentType,
+			config.ComponentName, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")

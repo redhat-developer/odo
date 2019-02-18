@@ -105,19 +105,69 @@ var _ = Describe("odoe2e", func() {
 			configOutput = runCmdShouldPass("odo utils config view --global |grep Timeout")
 			Expect(configOutput).To(ContainSubstring("5"))
 		})
+
 		It("should be checking to see if local config values are the same as the configured ones", func() {
-			runCmdShouldPass("odo utils config set componenttype java")
-			configOutput := runCmdShouldPass("odo utils config view|grep ComponentType")
-			Expect(configOutput).To(ContainSubstring("java"))
-			Expect(configOutput).To(ContainSubstring("ComponentType"))
+			cases := []struct {
+				paramName  string
+				paramValue string
+			}{
+				{
+					paramName:  "ComponentType",
+					paramValue: "java",
+				},
+				{
+					paramName:  "ComponentName",
+					paramValue: "odo-java",
+				},
+				{
+					paramName:  "MinCPU",
+					paramValue: "0.2",
+				},
+				{
+					paramName:  "MinMemory",
+					paramValue: "100M",
+				},
+			}
+			for _, testCase := range cases {
+				runCmdShouldPass(fmt.Sprintf("odo utils config set %s %s", testCase.paramName, testCase.paramValue))
+				configOutput := runCmdShouldPass(fmt.Sprintf("odo utils config view|grep %v", testCase.paramName))
+				Expect(configOutput).To(ContainSubstring(testCase.paramValue))
+				Expect(configOutput).To(ContainSubstring(testCase.paramName))
+			}
+
 		})
 
 		It("should allow unsetting a config locally", func() {
-			runCmdShouldPass("odo utils config set componenttype java")
-			configOutput := runCmdShouldPass("odo utils config unset -f componentType")
-			Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
-			configOutput = runCmdShouldPass("odo utils config view|grep ComponentType")
-			Expect(configOutput).NotTo(ContainSubstring("java"))
+			cases := []struct {
+				paramName  string
+				paramValue string
+			}{
+				{
+					paramName:  "ComponentType",
+					paramValue: "java",
+				},
+				{
+					paramName:  "ComponentName",
+					paramValue: "odo-java",
+				},
+				{
+					paramName:  "MinCPU",
+					paramValue: "0.2",
+				},
+				{
+					paramName:  "MinMemory",
+					paramValue: "100M",
+				},
+			}
+
+			for _, testCase := range cases {
+
+				runCmdShouldPass(fmt.Sprintf("odo utils config set %s %s", testCase.paramName, testCase.paramValue))
+				configOutput := runCmdShouldPass(fmt.Sprintf("odo utils config unset -f %s", testCase.paramName))
+				Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
+				configOutput = runCmdShouldPass(fmt.Sprintf("odo utils config view|grep %s", testCase.paramName))
+				Expect(configOutput).NotTo(ContainSubstring(testCase.paramValue))
+			}
 		})
 
 		It("should allow unsetting a config globally", func() {
