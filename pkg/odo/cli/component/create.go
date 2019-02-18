@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
+	commonui "github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"io"
 	"os"
 	"strings"
@@ -251,11 +252,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 		co.CreateArgs.Name = ui.EnterComponentName(defaultComponentName, co.Context)
 
-		if ui.Proceed("Do you wish to set advanced options") {
+		if commonui.Proceed("Do you wish to set advanced options") {
 			co.CreateArgs.Ports = ui.EnterPorts()
 			co.CreateArgs.EnvVars = ui.EnterEnvVars()
 
-			if ui.Proceed("Do you wish to set resource limits") {
+			if commonui.Proceed("Do you wish to set resource limits") {
 				memMax := ui.EnterMemory("maximum", "512Mi")
 				memMin := ui.EnterMemory("minimum", memMax)
 				cpuMax := ui.EnterCPU("maximum", "1")
@@ -274,7 +275,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
-		co.CreateArgs.Wait = ui.Proceed("Would you wish to wait until the component is fully ready after after creation")
+		co.CreateArgs.Wait = commonui.Proceed("Would you wish to wait until the component is fully ready after after creation")
 		// needed in order to avoid showing a misleading message at the end of process
 		co.wait = co.CreateArgs.Wait
 

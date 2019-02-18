@@ -2,9 +2,8 @@ package project
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -27,7 +26,6 @@ var (
 
 // ProjectDeleteOptions encapsulates the options for the odo project delete command
 type ProjectDeleteOptions struct {
-
 	// name of the project
 	projectName string
 
@@ -62,33 +60,24 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
-	var confirmDeletion string
-	if pdo.projectForceDeleteFlag {
-		confirmDeletion = "y"
-	} else {
-		log.Askf("Are you sure you want to delete project %v? [y/N]: ", pdo.projectName)
-		fmt.Scanln(&confirmDeletion)
+	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+		currentProject, err := project.Delete(pdo.Context.Client, pdo.projectName)
+		if err != nil {
+			return err
+		}
+
+		log.Infof("Deleted project : %v", pdo.projectName)
+
+		if currentProject != "" {
+			log.Infof("%s has been set as the active project\n", currentProject)
+		} else {
+			// oc errors out as "error: you do not have rights to view project "$deleted_project"."
+			log.Infof("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
+		}
+		return nil
 	}
 
-	if strings.ToLower(confirmDeletion) != "y" {
-		return fmt.Errorf("Aborting deletion of project: %v", pdo.projectName)
-	}
-
-	currentProject, err := project.Delete(pdo.Context.Client, pdo.projectName)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Deleted project : %v", pdo.projectName)
-
-	if currentProject != "" {
-		log.Infof("%s has been set as the active project\n", currentProject)
-	} else {
-		// oc errors out as "error: you do not have rights to view project "$deleted_project"."
-		log.Infof("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
-	}
-
-	return
+	return fmt.Errorf("Aborting deletion of project: %v", pdo.projectName)
 }
 
 // NewCmdProjectDelete creates the project delete command
