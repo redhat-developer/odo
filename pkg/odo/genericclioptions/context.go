@@ -93,11 +93,6 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
-		// If 'default' project set then check if user is trying to create or delete something other than project
-		if ns == "default" {
-			errFormat := "Current project is default. Please create or set a different project\n\t%s project create|set <project_name>"
-			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
-		}
 	}
 	client.Namespace = ns
 	return ns
