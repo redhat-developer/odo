@@ -78,7 +78,12 @@ func List(client *occlient.Client, componentName string, applicationName string)
 		urls = append(urls, a)
 	}
 
-	urlList := UrlList{
+	urlList := getMachineReadableFormatForList(urls)
+	return urlList, nil
+}
+
+func getMachineReadableFormatForList(urls []Url) UrlList {
+	return UrlList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
 			APIVersion: "odo.openshift.io/v1alpha1",
@@ -86,7 +91,6 @@ func List(client *occlient.Client, componentName string, applicationName string)
 		ListMeta: metav1.ListMeta{},
 		Items:    urls,
 	}
-	return urlList, nil
 }
 
 func getProtocol(route routev1.Route) string {
