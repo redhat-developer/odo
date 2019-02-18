@@ -9,9 +9,9 @@ import (
 
 var _ = Describe("odoLoginE2e", func() {
 	// user related constants
-	const loginTestUserForNoProject = "developernoproject"
-	const loginTestUserForSingleProject1 = "developersingleproject1"
-	const odoTestProjectForSingleProject1 = "testproject1"
+	const loginTestUserForNoProject = "odologinnoproject"
+	const loginTestUserForSingleProject1 = "odologinsingleproject1"
+	const odoTestProjectForSingleProject1 = "odologintestproject1"
 	const loginTestUserPassword = "developer"
 
 	// variables to be used in test
