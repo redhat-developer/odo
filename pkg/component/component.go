@@ -35,14 +35,14 @@ const componentNameMaxLen = -1
 
 // Description holds all information about component
 type Description struct {
-	ComponentName      string                `json:"componentName,omitempty"`
-	ComponentImageType string                `json:"type,omitempty"`
-	Path               string                `json:"source,omitempty"`
-	URLs               []urlpkg.URL          `json:"url,omitempty"`
-	Env                []corev1.EnvVar       `json:"environment,omitempty"`
-	Storage            []storage.StorageInfo `json:"storage,omitempty"`
-	LinkedComponents   map[string][]string   `json:"linkedComponents,omitempty"`
-	LinkedServices     []string              `json:"linkedServices,omitempty"`
+	ComponentName      string
+	ComponentImageType string
+	Path               string
+	URLs               urlpkg.UrlList
+	Env                []corev1.EnvVar
+	Storage            []storage.StorageInfo
+	LinkedComponents   map[string][]string
+	LinkedServices     []string
 }
 
 // GetComponentDir returns source repo name

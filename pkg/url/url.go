@@ -13,15 +13,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/golang/glog"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
-
-type URL struct {
-	Name     string
-	URL      string
-	Protocol string
-	Port     int
-}
 
 // Delete deletes a URL
 func Delete(client *occlient.Client, urlName string, applicationName string) error {
@@ -37,7 +31,7 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 
 // Create creates a URL
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (*URL, error) {
+func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (*Url, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, false)
 
 	serviceName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -55,18 +49,16 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create route")
 	}
-	return &URL{
-		Name:     route.Labels[urlLabels.URLLabel],
-		URL:      route.Spec.Host,
-		Protocol: getProtocol(*route),
-		Port:     route.Spec.Port.TargetPort.IntValue(),
-	}, nil
+
+	url := getMachineReadableFormat(*route)
+	return &url, nil
+
 }
 
 // List lists the URLs in an application. The results can further be narrowed
 // down if a component name is provided, which will only list URLs for the
 // given component
-func List(client *occlient.Client, componentName string, applicationName string) ([]URL, error) {
+func List(client *occlient.Client, componentName string, applicationName string) (UrlList, error) {
 
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
 
@@ -77,20 +69,28 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	glog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
 	routes, err := client.ListRoutes(labelSelector)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list route names")
+		return UrlList{}, errors.Wrap(err, "unable to list route names")
 	}
 
-	var urls []URL
+	var urls []Url
 	for _, r := range routes {
-		urls = append(urls, URL{
-			Name:     r.Labels[urlLabels.URLLabel],
-			URL:      r.Spec.Host,
-			Protocol: getProtocol(r),
-			Port:     r.Spec.Port.TargetPort.IntValue(),
-		})
+		a := getMachineReadableFormat(r)
+		urls = append(urls, a)
 	}
 
-	return urls, nil
+	urlList := getMachineReadableFormatForList(urls)
+	return urlList, nil
+}
+
+func getMachineReadableFormatForList(urls []Url) UrlList {
+	return UrlList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    urls,
+	}
 }
 
 func getProtocol(route routev1.Route) string {
@@ -102,8 +102,8 @@ func getProtocol(route routev1.Route) string {
 }
 
 // GetURLString returns a string representation of given url
-func GetURLString(url URL) string {
-	return url.Protocol + "://" + url.URL
+func GetURLString(protocol, URL string) string {
+	return protocol + "://" + URL
 }
 
 // Exists checks if the url exists in the component or not
@@ -116,7 +116,7 @@ func Exists(client *occlient.Client, urlName string, componentName string, appli
 		return false, errors.Wrap(err, "unable to list the urls")
 	}
 
-	for _, url := range urls {
+	for _, url := range urls.Items {
 		if url.Name == urlName {
 			return true, nil
 		}
@@ -184,4 +184,14 @@ func GetValidPortNumber(client *occlient.Client, portNumber int, componentName s
 	}
 
 	return portNumber, nil
+}
+
+// getMachineReadableFormat gives machine readable URL definition
+func getMachineReadableFormat(r routev1.Route) Url {
+	return Url{
+		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
+		Spec:       UrlSpec{URL: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: getProtocol(r)},
+	}
+
 }

@@ -29,7 +29,7 @@ func TestCreate(t *testing.T) {
 		name          string
 		args          args
 		returnedRoute *routev1.Route
-		want          *URL
+		want          *Url
 		wantErr       bool
 	}{
 		{
@@ -59,11 +59,18 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			want: &URL{
-				Name:     "nodejs",
-				Protocol: "http",
-				URL:      "host",
-				Port:     8080,
+			want: &Url{
+				TypeMeta: metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{
+
+					Name: "nodejs",
+				},
+				Spec: UrlSpec{
+
+					Protocol: "http",
+					URL:      "host",
+					Port:     8080,
+				},
 			},
 			wantErr: false,
 		},
@@ -94,11 +101,17 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			want: &URL{
-				Name:     "example-url",
-				Protocol: "http",
-				URL:      "host",
-				Port:     9100,
+			want: &Url{
+				TypeMeta: metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "example-url",
+				},
+				Spec: UrlSpec{
+					Protocol: "http",
+					URL:      "host",
+					Port:     9100,
+				},
 			},
 			wantErr: false,
 		},
