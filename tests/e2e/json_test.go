@@ -57,11 +57,6 @@ var _ = Describe("odojsonoutput", func() {
 			url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
 			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"%s","protocol":"http","port":8080}}]}`, url)
 			areEqual, _ := compareJSON(desired, actual)
-			if !areEqual {
-
-				fmt.Println("actual is", actual)
-				fmt.Println("desired is", desired)
-			}
 			Expect(areEqual).To(BeTrue())
 
 		})
