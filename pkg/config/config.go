@@ -341,6 +341,9 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (er
 			lci.ComponentSettings.MinMemory = &value
 		case "maxmemory":
 			lci.ComponentSettings.MaxMemory = &value
+		case "memory":
+			lci.ComponentSettings.MaxMemory = &value
+			lci.ComponentSettings.MinMemory = &value
 		case "ignore":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
@@ -367,24 +370,37 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (er
 // it only searches the componentSettings
 func (lci *LocalConfigInfo) GetConfiguration(parameter string) (interface{}, bool) {
 
-	if strings.ToLower(parameter) == "cpu" {
+	switch strings.ToLower(parameter) {
+	case "cpu":
 		if lci.ComponentSettings.MinCPU == nil {
-			return lci.ComponentSettings.MinCPU, true
+			return nil, true
 		}
 		return *lci.ComponentSettings.MinCPU, true
+	case "memory":
+		if lci.ComponentSettings.MinMemory == nil {
+			return nil, true
+		}
+		return *lci.ComponentSettings.MinMemory, true
 	}
+
 	return getConfiguration(lci.ComponentSettings, parameter)
 }
 
 // DeleteConfiguration is used to delete config from local odo config
 func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
-		if parameter == "cpu" {
+
+		switch parameter {
+		case "cpu":
 			lci.ComponentSettings.MinCPU = nil
 			lci.ComponentSettings.MaxCPU = nil
-		}
-		if err := deleteConfiguration(&lci.ComponentSettings, parameter); err != nil {
-			return err
+		case "memory":
+			lci.ComponentSettings.MinMemory = nil
+			lci.ComponentSettings.MaxMemory = nil
+		default:
+			if err := deleteConfiguration(&lci.ComponentSettings, parameter); err != nil {
+				return err
+			}
 		}
 		return writeToFile(lci.LocalConfig, lci.Filename)
 	}
@@ -674,6 +690,10 @@ const (
 	MaxMemory = "MaxMemory"
 	// MaxMemoryDescription is the name of the setting controlling the maximum memory
 	MaxMemoryDescription = "The maximum memory a component can consume"
+	// Memory is the name of the setting controlling the memory a component consumes
+	Memory = "Memory"
+	// MemoryDescription is the name of the setting controlling the min and max memory to same value
+	MemoryDescription = "The minimum and maximum Memory a component can consume"
 	// Ignore is the name of the setting controlling the min memory a component consumes
 	Ignore = "Ignore"
 	// IgnoreDescription is the name of the setting controlling the use of .odoignore file
@@ -705,6 +725,7 @@ var (
 		ComponentName: ComponentNameDescription,
 		MinMemory:     MinMemoryDescription,
 		MaxMemory:     MaxMemoryDescription,
+		Memory:        MemoryDescription,
 		Ignore:        IgnoreDescription,
 		MinCPU:        MinCPUDescription,
 		MaxCPU:        MaxCPUDescription,

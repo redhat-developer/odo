@@ -29,11 +29,12 @@ var (
    %[1]s %[5]s java
    %[1]s %[6]s test 
    %[1]s %[7]s 50M 
-   %[1]s %[8]s 500M 
-   %[1]s %[9]s false 
-   %[1]s %[10]s 0.5 
-   %[1]s %[11]s 2 
-   %[1]s %[12]s 1 
+   %[1]s %[8]s 500M
+   %[1]s %[9]s 250M
+   %[1]s %[10]s false 
+   %[1]s %[11]s 0.5 
+   %[1]s %[12]s 2 
+   %[1]s %[13]s 1 
 	`)
 )
 
@@ -117,7 +118,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Long:  fmt.Sprintf(setLongDesc, config.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
 		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName,
 			config.UpdateNotificationSetting, config.NamePrefixSetting, config.TimeoutSetting, config.ComponentType,
-			config.ComponentName, config.MinMemory, config.MaxMemory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
+			config.ComponentName, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return fmt.Errorf("please provide a parameter name and value")
