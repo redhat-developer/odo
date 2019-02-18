@@ -10,17 +10,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
-
-type StorageInfo struct {
-	Name string
-	Size string
-	// if path is empty, it indicates that the storage is not mounted in any component
-	Path string
-}
 
 // Create adds storage to given component of given application
 func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
@@ -129,13 +123,13 @@ func Delete(client *occlient.Client, name string, applicationName string) (strin
 
 // List lists all the mounted storage associated with the given component of the given
 // application and the unmounted storages in the given application
-func List(client *occlient.Client, componentName string, applicationName string) ([]StorageInfo, error) {
+func List(client *occlient.Client, componentName string, applicationName string) (StorageList, error) {
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 
 	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Deployment Config associated with component %v", componentName)
+		return StorageList{}, errors.Wrapf(err, "unable to get Deployment Config associated with component %v", componentName)
 	}
 
 	// store the storages in a map for faster searching with the key instead of list
@@ -150,11 +144,11 @@ func List(client *occlient.Client, componentName string, applicationName string)
 
 		pvcName := client.GetPVCNameFromVolumeMountName(volumeMount.Name, dc)
 		if pvcName == "" {
-			return nil, fmt.Errorf("no PVC associated with Volume Mount %v", volumeMount.Name)
+			return StorageList{}, fmt.Errorf("no PVC associated with Volume Mount %v", volumeMount.Name)
 		}
 		pvc, err := client.GetPVCFromName(pvcName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to get PVC %v", pvcName)
+			return StorageList{}, errors.Wrapf(err, "unable to get PVC %v", pvcName)
 		}
 
 		storageName := getStorageFromPVC(pvc)
@@ -163,9 +157,9 @@ func List(client *occlient.Client, componentName string, applicationName string)
 
 	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
+		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
-	var storageList []StorageInfo
+	var storage []Storage
 	for _, pvc := range pvcs {
 		pvcComponentName, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
@@ -174,43 +168,39 @@ func List(client *occlient.Client, componentName string, applicationName string)
 		// also check if the app label exists and is equal to the current application
 		if (!ok || pvcComponentName == componentName) && (okApp && pvcAppName == applicationName) {
 			if pvc.Name == "" {
-				return nil, fmt.Errorf("no PVC associated")
+				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
 			storageName := getStorageFromPVC(&pvc)
-			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storagePath := mountedStorageMap[storageName]
-			storageList = append(storageList, StorageInfo{
-				Name: storageName,
-				Size: storageSize.String(),
-				Path: storagePath,
-			})
+			storageMachineReadable := getMachineReadableFormat(pvc, mountedStorageMap[storageName])
+			storage = append(storage, storageMachineReadable)
 		}
 	}
+	storageList := getMachineReadableFormatForList(storage)
 	return storageList, nil
 }
 
 // ListMounted lists all the mounted storage associated with the given component and application
-func ListMounted(client *occlient.Client, componentName string, applicationName string) ([]StorageInfo, error) {
+func ListMounted(client *occlient.Client, componentName string, applicationName string) (StorageList, error) {
 	storageList, err := List(client, componentName, applicationName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get storage of component %v", componentName)
+		return StorageList{}, errors.Wrapf(err, "unable to get storage of component %v", componentName)
 	}
-	var storageListMounted []StorageInfo
-	for _, storage := range storageList {
-		if storage.Path != "" {
+	var storageListMounted []Storage
+	for _, storage := range storageList.Items {
+		if storage.Spec.Path != "" {
 			storageListMounted = append(storageListMounted, storage)
 		}
 	}
-	return storageListMounted, nil
+	return getMachineReadableFormatForList(storageListMounted), nil
 }
 
 // ListUnmounted lists all the unmounted storage associated with the given application
-func ListUnmounted(client *occlient.Client, applicationName string) ([]StorageInfo, error) {
+func ListUnmounted(client *occlient.Client, applicationName string) ([]Storage, error) {
 	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
-	var storageList []StorageInfo
+	var storageList []Storage
 	for _, pvc := range pvcs {
 		_, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
@@ -222,10 +212,14 @@ func ListUnmounted(client *occlient.Client, applicationName string) ([]StorageIn
 			}
 			storageName := getStorageFromPVC(&pvc)
 			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageList = append(storageList, StorageInfo{
-				Name: storageName,
-				Size: storageSize.String(),
-				Path: "",
+			storageList = append(storageList, Storage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: storageName,
+				},
+				Spec: StorageSpec{
+					Size: storageSize.String(),
+					Path: "",
+				},
 			})
 		}
 	}
@@ -308,9 +302,9 @@ func IsMounted(client *occlient.Client, storageName string, componentName string
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to list storage for component %v", componentName)
 	}
-	for _, storage := range storageList {
+	for _, storage := range storageList.Items {
 		if storage.Name == storageName {
-			if storage.Path != "" {
+			if storage.Spec.Path != "" {
 				return true, nil
 			}
 		}
@@ -321,10 +315,10 @@ func IsMounted(client *occlient.Client, storageName string, componentName string
 //GetMountPath returns mount path for given storage
 func GetMountPath(client *occlient.Client, storageName string, componentName string, applicationName string) string {
 	var mPath string
-	storageInfo, _ := List(client, componentName, applicationName)
-	for _, storage := range storageInfo {
+	storageList, _ := List(client, componentName, applicationName)
+	for _, storage := range storageList.Items {
 		if storage.Name == storageName {
-			mPath = storage.Path
+			mPath = storage.Spec.Path
 		}
 	}
 	return mPath
@@ -373,14 +367,41 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 // Gets the storageName mounted to the given path in the given component and application
 // GetStorageNameFromMountPath returns the name of the storage or the error
 func GetStorageNameFromMountPath(client *occlient.Client, path string, componentName string, applicationName string) (string, error) {
-	storages, err := List(client, componentName, applicationName)
+	storageList, err := List(client, componentName, applicationName)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to list storage for component %v", componentName)
 	}
-	for _, storage := range storages {
-		if storage.Path == path {
+	for _, storage := range storageList.Items {
+		if storage.Spec.Path == path {
 			return storage.Name, nil
 		}
 	}
 	return "", nil
+}
+
+// getMachineReadableFormatForList gives machine readable StorageList definition
+func getMachineReadableFormatForList(storage []Storage) StorageList {
+	return StorageList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    storage,
+	}
+}
+
+// getMachineReadableFormat gives machine readable Storage definition
+func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath string) Storage {
+	storageName := getStorageFromPVC(&pvc)
+	storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+	return Storage{
+		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
+		ObjectMeta: metav1.ObjectMeta{Name: storageName},
+		Spec: StorageSpec{
+			Path: storagePath,
+			Size: storageSize.String(),
+		},
+	}
+
 }

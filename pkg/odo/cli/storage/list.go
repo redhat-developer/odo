@@ -78,7 +78,7 @@ func (o *StorageListOptions) Run() (err error) {
 				if err != nil {
 					return err
 				}
-				for _, storage := range mountedStorages {
+				for _, storage := range mountedStorages.Items {
 					mounted := getMachineReadableFormat(true, storage)
 					storeList = append(storeList, mounted)
 				}
@@ -90,7 +90,7 @@ func (o *StorageListOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			for _, storage := range mountedStorages {
+			for _, storage := range mountedStorages.Items {
 				mounted := getMachineReadableFormat(true, storage)
 				storeList = append(storeList, mounted)
 
@@ -132,7 +132,7 @@ func (o *StorageListOptions) Run() (err error) {
 }
 
 // getMachineReadableFormat returns resource information in machine readable format
-func getMachineReadableFormat(mounted bool, stor storage.StorageInfo) storage.Storage {
+func getMachineReadableFormat(mounted bool, stor storage.Storage) storage.Storage {
 	return storage.Storage{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Storage",
@@ -142,8 +142,8 @@ func getMachineReadableFormat(mounted bool, stor storage.StorageInfo) storage.St
 			Name: stor.Name,
 		},
 		Spec: storage.StorageSpec{
-			Size: stor.Size,
-			Path: stor.Path,
+			Size: stor.Spec.Size,
+			Path: stor.Spec.Path,
 		},
 		Status: storage.StorageStatus{
 			Mounted: mounted,
@@ -189,9 +189,9 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 	odoutil.LogErrorAndExit(err, "could not get mounted storage list")
 
 	// iterating over all mounted storage and put in the mount storage table
-	if len(storageListMounted) > 0 {
-		for _, mStorage := range storageListMounted {
-			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Size, "\t", mStorage.Path)
+	if len(storageListMounted.Items) > 0 {
+		for _, mStorage := range storageListMounted.Items {
+			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Spec.Size, "\t", mStorage.Spec.Path)
 		}
 
 		// print all mounted storage of the given component
@@ -229,7 +229,7 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 	// iterating over all unmounted storage and put in the unmount storage table
 	if len(storageListUnmounted) > 0 {
 		for _, uStorage := range storageListUnmounted {
-			fmt.Fprintln(tabWriterUnmounted, uStorage.Name, "\t", uStorage.Size)
+			fmt.Fprintln(tabWriterUnmounted, uStorage.Name, "\t", uStorage.Spec.Size)
 		}
 
 		// print unmounted storage of all the application

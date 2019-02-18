@@ -206,12 +206,12 @@ var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *ge
 // StorageDeleteCompletionHandler provides storage name completion for storage delete
 var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	storages, err := storage.List(context.Client, context.Component(), context.Application)
+	storageList, err := storage.List(context.Client, context.Component(), context.Application)
 	if err != nil {
 		return completions
 	}
 
-	for _, storage := range storages {
+	for _, storage := range storageList.Items {
 		// we found the storage name in the list which means
 		// that the storage name has been already selected by the user so no need to suggest more
 		if args.commands[storage.Name] {
@@ -244,12 +244,12 @@ var StorageMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, co
 // StorageUnMountCompletionHandler provides storage name completion for storage unmount
 var StorageUnMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	storages, err := storage.ListMounted(context.Client, context.Component(), context.Application)
+	storageList, err := storage.ListMounted(context.Client, context.Component(), context.Application)
 	if err != nil {
 		return completions
 	}
 
-	for _, storage := range storages {
+	for _, storage := range storageList.Items {
 		// we found the storage name in the list which means
 		// that the storage name has been already selected by the user so no need to suggest more
 		if args.commands[storage.Name] {

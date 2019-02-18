@@ -40,7 +40,7 @@ type Description struct {
 	Path               string
 	URLs               urlpkg.UrlList
 	Env                []corev1.EnvVar
-	Storage            []storage.StorageInfo
+	Storage            storage.StorageList
 	LinkedComponents   map[string][]string
 	LinkedServices     []string
 }
