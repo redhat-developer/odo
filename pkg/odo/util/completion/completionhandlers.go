@@ -230,7 +230,7 @@ var StorageMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, co
 		return completions
 	}
 
-	for _, storage := range storages {
+	for _, storage := range storages.Items {
 		// we found the storage name in the list which means
 		// that the storage name has been already selected by the user so no need to suggest more
 		if args.commands[storage.Name] {

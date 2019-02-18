@@ -195,12 +195,12 @@ func ListMounted(client *occlient.Client, componentName string, applicationName 
 }
 
 // ListUnmounted lists all the unmounted storage associated with the given application
-func ListUnmounted(client *occlient.Client, applicationName string) ([]Storage, error) {
+func ListUnmounted(client *occlient.Client, applicationName string) (StorageList, error) {
 	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
+		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
-	var storageList []Storage
+	var storage []Storage
 	for _, pvc := range pvcs {
 		_, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
@@ -208,21 +208,13 @@ func ListUnmounted(client *occlient.Client, applicationName string) ([]Storage, 
 		// also check if the app label exists and is equal to the current application
 		if !ok && (okApp && pvcAppName == applicationName) {
 			if pvc.Name == "" {
-				return nil, fmt.Errorf("no PVC associated")
+				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
-			storageName := getStorageFromPVC(&pvc)
-			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageList = append(storageList, Storage{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: storageName,
-				},
-				Spec: StorageSpec{
-					Size: storageSize.String(),
-					Path: "",
-				},
-			})
+			storageMachineReadable := getMachineReadableFormat(pvc, "")
+			storage = append(storage, storageMachineReadable)
 		}
 	}
+	storageList := getMachineReadableFormatForList(storage)
 	return storageList, nil
 }
 

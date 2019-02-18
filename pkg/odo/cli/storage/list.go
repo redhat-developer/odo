@@ -100,7 +100,7 @@ func (o *StorageListOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		for _, storage := range unmountedStorages {
+		for _, storage := range unmountedStorages.Items {
 			unmounted := getMachineReadableFormat(false, storage)
 			storeList = append(storeList, unmounted)
 		}
@@ -227,8 +227,8 @@ func printUnmountedStorage(client *occlient.Client, applicationName string) {
 	odoutil.LogErrorAndExit(err, "could not get unmounted storage list")
 
 	// iterating over all unmounted storage and put in the unmount storage table
-	if len(storageListUnmounted) > 0 {
-		for _, uStorage := range storageListUnmounted {
+	if len(storageListUnmounted.Items) > 0 {
+		for _, uStorage := range storageListUnmounted.Items {
 			fmt.Fprintln(tabWriterUnmounted, uStorage.Name, "\t", uStorage.Spec.Size)
 		}
 
