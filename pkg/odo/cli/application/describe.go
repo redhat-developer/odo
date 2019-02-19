@@ -3,6 +3,7 @@ package application
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -78,16 +79,16 @@ func (o *DescribeOptions) Run() (err error) {
 		//we ignore service errors here because it's entirely possible that the service catalog has not been installed
 		serviceList, _ := service.ListWithDetailedStatus(o.Client, o.appName)
 
-		if len(componentList) == 0 && len(serviceList) == 0 {
+		if len(componentList.Items) == 0 && len(serviceList) == 0 {
 			log.Errorf("Application %s has no components or services deployed.", o.appName)
 		} else {
 			fmt.Printf("Application Name: %s has %v component(s) and %v service(s):\n--------------------------------------\n",
-				o.appName, len(componentList), len(serviceList))
-			if len(componentList) > 0 {
-				for _, currentComponent := range componentList {
-					componentDesc, err := component.GetComponentDesc(o.Client, currentComponent.ComponentName, o.appName, o.Project)
+				o.appName, len(componentList.Items), len(serviceList))
+			if len(componentList.Items) > 0 {
+				for _, currentComponent := range componentList.Items {
+					componentDesc, err := component.GetComponent(o.Client, currentComponent.Name, o.appName, o.Project)
 					util.LogErrorAndExit(err, "")
-					util.PrintComponentInfo(currentComponent.ComponentName, componentDesc)
+					util.PrintComponentInfo(o.Client, currentComponent.Name, componentDesc, o.Application)
 					fmt.Println("--------------------------------------")
 				}
 			}

@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/storage"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -76,19 +77,20 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 		return errors.Wrap(err, "failed to get Component list")
 	}
 
-	for _, currentComponent := range componentList {
-		componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, appName, projectName)
+	for _, currentComponent := range componentList.Items {
+		componentDesc, err := component.GetComponent(client, currentComponent.Name, appName, projectName)
 		if err != nil {
 			return errors.Wrap(err, "unable to get component description")
 		}
-		log.Info("Component", currentComponent.ComponentName, "will be deleted.")
+		log.Info("Component", currentComponent.Name, "will be deleted.")
 
-		if len(componentDesc.URLs.Items) != 0 {
+		if len(componentDesc.Spec.URL) != 0 {
 			fmt.Println("  Externally exposed URLs will be removed")
 		}
 
-		for _, store := range componentDesc.Storage.Items {
-			fmt.Println("  Storage", store.Name, "of size", store.Spec.Size, "will be removed")
+		for _, store := range componentDesc.Spec.Storage {
+			storo := storage.GetStorage(client, store, currentComponent.Name, appName)
+			fmt.Println("  Storage", storo.Name, "of size", storo.Spec.Size, "will be removed")
 		}
 
 	}
@@ -110,8 +112,8 @@ func ensureAppExists(client *occlient.Client, appName, project string) error {
 func getMachineReadableFormat(client *occlient.Client, appName string, projectName string, active bool) application.App {
 	componentList, _ := component.List(client, appName)
 	var compList []string
-	for _, comp := range componentList {
-		compList = append(compList, comp.ComponentName)
+	for _, component := range componentList.Items {
+		compList = append(compList, component.Name)
 	}
 	appDef := application.App{
 		TypeMeta: metav1.TypeMeta{

@@ -9,7 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/url"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	storagePkg "github.com/redhat-developer/odo/pkg/storage"
+	urlPkg "github.com/redhat-developer/odo/pkg/url"
 )
 
 // LogErrorAndExit prints the cause of the given error and exits the code with an
@@ -65,45 +67,46 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 `
 
 // PrintComponentInfo prints Component Information like path, URL & storage
-func PrintComponentInfo(currentComponentName string, componentDesc component.Description) {
-	fmt.Printf("Component Name: %v\nType: %v\n", currentComponentName, componentDesc.ComponentImageType)
+func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string) {
+	fmt.Printf("Component Name: %v\nType: %v\n", currentComponentName, componentDesc.Spec.Type)
 	// Source
-	if componentDesc.Path != "" {
-		fmt.Printf("Source: %v\n", componentDesc.Path)
+	if componentDesc.Spec.Source != "" {
+		fmt.Printf("Source: %v\n", componentDesc.Spec.Source)
 	}
 
 	// Env
-	if componentDesc.Env != nil {
+	if componentDesc.Spec.Env != nil {
 		fmt.Println("\nEnvironment variables:")
-		for _, env := range componentDesc.Env {
+		for _, env := range componentDesc.Spec.Env {
 			fmt.Printf(" - %v=%v\n", env.Name, env.Value)
 		}
 	}
 	// Storage
-	if len(componentDesc.Storage.Items) > 0 {
+	if len(componentDesc.Spec.Storage) > 0 {
 		fmt.Println("\nStorage:")
-		for _, store := range componentDesc.Storage.Items {
+		for _, storage := range componentDesc.Spec.Storage {
+			store := storagePkg.GetStorage(client, storage, currentComponentName, applicationName)
 			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
 		}
 	}
 	// URL
-	if componentDesc.URLs.Items != nil {
+	if componentDesc.Spec.URL != nil {
 		fmt.Println("\nURLs")
-		for _, componentUrl := range componentDesc.URLs.Items {
-
-			fmt.Printf(" - %v exposed via %v\n", url.GetURLString(componentUrl.Spec.Protocol, componentUrl.Spec.URL), componentUrl.Spec.Port)
+		for _, componentURL := range componentDesc.Spec.URL {
+			url := urlPkg.GetURL(client, componentURL, currentComponentName, applicationName)
+			fmt.Printf(" - %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.URL), url.Spec.Port)
 		}
 
 	}
 	// Linked services
-	if len(componentDesc.LinkedServices) > 0 {
+	if len(componentDesc.Status.LinkedServices) > 0 {
 		fmt.Print("Linked Services: ")
-		fmt.Printf("%v\n", strings.Join(componentDesc.LinkedServices, ","))
+		fmt.Printf("%v\n", strings.Join(componentDesc.Status.LinkedServices, ","))
 	}
 	// Linked components
-	if len(componentDesc.LinkedComponents) > 0 {
+	if len(componentDesc.Status.LinkedComponents) > 0 {
 		fmt.Println("Linked Components")
-		for name, ports := range componentDesc.LinkedComponents {
+		for name, ports := range componentDesc.Status.LinkedComponents {
 			if len(ports) > 0 {
 				fmt.Printf("Name: %v - Port(s): %v\n", name, strings.Join(ports, ","))
 			}

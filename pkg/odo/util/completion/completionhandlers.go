@@ -284,7 +284,6 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 // The function returns both components and services
 var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-
 	components, err := component.List(context.Client, context.Application)
 	if err != nil {
 		return completions
@@ -295,15 +294,15 @@ var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 		return completions
 	}
 
-	for _, component := range components {
+	for _, component := range components.Items {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[component.ComponentName]; ok && val {
+		if val, ok := args.commands[component.Name]; ok && val {
 			return nil
 		}
 		// we don't want to show the selected component as a target for linking, so we remove it from the suggestions
-		if component.ComponentName != context.Component() {
-			completions = append(completions, component.ComponentName)
+		if component.Name != context.Component() {
+			completions = append(completions, component.Name)
 		}
 	}
 
@@ -340,18 +339,18 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 		return completions
 	}
 
-	for _, component := range components {
+	for _, component := range components.Items {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[component.ComponentName]; ok && val {
+		if val, ok := args.commands[component.Name]; ok && val {
 			return nil
 		}
 		// we don't want to show the selected component as a target for linking, so we remove it from the suggestions
-		if component.ComponentName != context.Component() {
+		if component.Name != context.Component() {
 			// we also need to make sure that this component has been linked to the current component
 			for _, envFromSourceName := range dcOfCurrentComponent.Spec.Template.Spec.Containers[0].EnvFrom {
-				if strings.Contains(envFromSourceName.SecretRef.Name, component.ComponentName) {
-					completions = append(completions, component.ComponentName)
+				if strings.Contains(envFromSourceName.SecretRef.Name, component.Name) {
+					completions = append(completions, component.Name)
 				}
 			}
 
@@ -390,13 +389,13 @@ var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 		return completions
 	}
 
-	for _, component := range components {
+	for _, component := range components.Items {
 		// we found the component name in the list which means
 		// that the component name has been already selected by the user so no need to suggest more
-		if args.commands[component.ComponentName] {
+		if args.commands[component.Name] {
 			return nil
 		}
-		completions = append(completions, component.ComponentName)
+		completions = append(completions, component.Name)
 	}
 	return completions
 }

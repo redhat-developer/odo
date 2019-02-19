@@ -16,6 +16,21 @@ import (
 	"github.com/pkg/errors"
 )
 
+// GetStorage returns Storage defination for given Storage name
+func GetStorage(client *occlient.Client, storageName, componentName, applicationName string) Storage {
+	storages, err := List(client, componentName, applicationName)
+	if err != nil {
+		return Storage{}
+	}
+	for _, storage := range storages.Items {
+		if storage.Name == storageName {
+			return storage
+		}
+	}
+	return Storage{}
+
+}
+
 // Create adds storage to given component of given application
 func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
 

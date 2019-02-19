@@ -1,11 +1,10 @@
 package component
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-
-	"encoding/json"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
@@ -13,7 +12,6 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	"github.com/spf13/cobra"
@@ -58,60 +56,22 @@ func (do *DescribeOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
-	componentDesc, err := component.GetComponentDesc(do.Context.Client, do.componentName, do.Context.Application, do.Context.Project)
+	componentDesc, err := component.GetComponent(do.Context.Client, do.componentName, do.Context.Application, do.Context.Project)
 	if err != nil {
 		return err
 	}
 	if do.outputFlag == "json" {
-		componentDef := getMachineReadableFormat(componentDesc, do.Application, do.Project)
-		out, err := json.Marshal(componentDef)
+		out, err := json.Marshal(componentDesc)
 		if err != nil {
 			return err
 		}
 		fmt.Println(string(out))
 	} else {
 
-		odoutil.PrintComponentInfo(do.componentName, componentDesc)
+		odoutil.PrintComponentInfo(do.Context.Client, do.componentName, componentDesc, do.Context.Application)
 	}
 
 	return
-}
-
-func getMachineReadableFormat(componentDesc component.Description, applicationName, projectName string) component.Component {
-	var urls []string
-	for _, url := range componentDesc.URLs.Items {
-		urls = append(urls, url.Name)
-	}
-
-	var storage []string
-	for _, store := range componentDesc.Storage.Items {
-		storage = append(storage, store.Name)
-	}
-
-	currentComponent, err := component.GetCurrent(applicationName, projectName)
-	odoutil.LogErrorAndExit(err, "")
-
-	componentDef := component.Component{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Component",
-			APIVersion: "odo.openshift.io/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: componentDesc.ComponentName,
-		},
-		Spec: component.ComponentSpec{
-			Type:    componentDesc.ComponentImageType,
-			Source:  componentDesc.Path,
-			URL:     urls,
-			Storage: storage,
-			Env:     componentDesc.Env,
-		},
-		Status: component.ComponentStatus{
-			Active: componentDesc.ComponentName == currentComponent,
-		},
-	}
-
-	return componentDef
 }
 
 // NewCmdDescribe implements the describe odo command
