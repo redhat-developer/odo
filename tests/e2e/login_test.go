@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -65,7 +66,13 @@ var _ = Describe("odoLoginE2e", func() {
 				runCmdShouldPass(fmt.Sprintf("oc login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
 				runCmdShouldPass(fmt.Sprintf("odo project create %s", odoTestProjectForSingleProject1))
 				//make sure that project has been created
-				runCmdShouldPass(fmt.Sprintf("odo project set %s", odoTestProjectForSingleProject1))
+				waitForCmdOut(fmt.Sprintf("odo project set %s", odoTestProjectForSingleProject1), 4, true, func(output string) bool {
+					if strings.Contains(output, "Switched to project") || strings.Contains(output, "Already on project") && strings.Contains(output, odoTestProjectForSingleProject1) {
+						return true
+					}
+					return false
+				})
+				// runCmdShouldPass(fmt.Sprintf("odo project set %s", odoTestProjectForSingleProject1))
 				runCmdShouldPass("oc logout")
 
 				session = runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
