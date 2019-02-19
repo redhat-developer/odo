@@ -80,10 +80,10 @@ func PrintComponentInfo(currentComponentName string, componentDesc component.Des
 		}
 	}
 	// Storage
-	if componentDesc.Storage != nil {
+	if len(componentDesc.Storage.Items) > 0 {
 		fmt.Println("\nStorage:")
-		for _, store := range componentDesc.Storage {
-			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Size, store.Path)
+		for _, store := range componentDesc.Storage.Items {
+			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
 		}
 	}
 	// URL

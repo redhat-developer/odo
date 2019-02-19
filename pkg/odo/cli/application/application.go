@@ -87,8 +87,8 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 			fmt.Println("  Externally exposed URLs will be removed")
 		}
 
-		for _, store := range componentDesc.Storage {
-			fmt.Println("  Storage", store.Name, "of size", store.Size, "will be removed")
+		for _, store := range componentDesc.Storage.Items {
+			fmt.Println("  Storage", store.Name, "of size", store.Spec.Size, "will be removed")
 		}
 
 	}

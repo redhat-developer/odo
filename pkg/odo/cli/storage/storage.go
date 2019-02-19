@@ -57,8 +57,8 @@ func validateStoragePath(client *occlient.Client, storagePath, componentName, ap
 	if err != nil {
 		return err
 	}
-	for _, store := range storeList {
-		if store.Path == storagePath {
+	for _, store := range storeList.Items {
+		if store.Spec.Path == storagePath {
 			return errors.Errorf("there already is a storage mounted at %s", storagePath)
 		}
 	}

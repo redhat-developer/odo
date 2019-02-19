@@ -84,7 +84,7 @@ func getMachineReadableFormat(componentDesc component.Description, applicationNa
 	}
 
 	var storage []string
-	for _, store := range componentDesc.Storage {
+	for _, store := range componentDesc.Storage.Items {
 		storage = append(storage, store.Name)
 	}
 
