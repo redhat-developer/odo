@@ -99,10 +99,10 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 					}
 					log.Info("  component named ", currentComponent.ComponentName)
 
-					if len(componentDesc.URLs) != 0 {
+					if len(componentDesc.URLs.Items) != 0 {
 						log.Info("    This component has following urls that will be deleted with component")
-						for _, url := range componentDesc.URLs {
-							log.Info("     URL named ", url.Name, " with value ", url.URL)
+						for _, url := range componentDesc.URLs.Items {
+							log.Info("     URL named ", url.GetName(), " with value ", url.Spec.URL)
 						}
 					}
 
