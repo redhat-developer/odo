@@ -14,7 +14,7 @@ var _ = Describe("odoServiceE2e", func() {
 	Context("odo service creation", func() {
 		It("should be able to create a service", func() {
 			runCmdShouldPass("odo service create mysql-persistent -w")
-			waitForCmdOut("oc get serviceinstance -o name", 1, func(output string) bool {
+			waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
 			cmd := serviceInstanceStatusCmd("mysql-persistent")
@@ -22,7 +22,7 @@ var _ = Describe("odoServiceE2e", func() {
 		})
 
 		It("should be able to list the service with correct status", func() {
-			waitForCmdOut("odo service list | sed 1d", 1, func(output string) bool {
+			waitForCmdOut("odo service list | sed 1d", 1, true, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent") &&
 					strings.Contains(output, "ProvisionedAndBound")
 			})
@@ -42,7 +42,7 @@ var _ = Describe("odoServiceE2e", func() {
 		Context("odo service create with a spring boot application", func() {
 			It("should be able to create postgresql", func() {
 				runCmdShouldPass("odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6")
-				waitForCmdOut("oc get serviceinstance -o name", 1, func(output string) bool {
+				waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
 					return strings.Contains(output, "dh-postgresql-apb")
 				})
 			})
@@ -62,7 +62,7 @@ var _ = Describe("odoServiceE2e", func() {
 			It("Should be able to link the spring boot application to the postgresql DB", func() {
 				runCmdShouldPass("odo link dh-postgresql-apb -w --wait-for-target")
 
-				waitForCmdOut("odo service list | sed 1d", 1, func(output string) bool {
+				waitForCmdOut("odo service list | sed 1d", 1, true, func(output string) bool {
 					return strings.Contains(output, "dh-postgresql-apb") &&
 						strings.Contains(output, "ProvisionedAndLinked")
 				})
