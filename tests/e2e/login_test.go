@@ -60,16 +60,12 @@ var _ = Describe("odoLoginE2e", func() {
 		})
 
 		Context("Run login tests with single active project with username and password", func() {
-			AfterEach(func() {
-				cleanUpAfterProjects([]string{odoTestProjectForSingleProject1})
-			})
-
 			It("Should login successfully with username and password single project with appropriate message", func() {
 				// Initialise for test
 				runCmdShouldPass(fmt.Sprintf("oc login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
 				runCmdShouldPass(fmt.Sprintf("odo project create %s", odoTestProjectForSingleProject1))
 				//make sure that project has been created
-				runCmdShouldPass("oc project")
+				runCmdShouldPass(fmt.Sprintf("odo project set %s", odoTestProjectForSingleProject1))
 				runCmdShouldPass("oc logout")
 
 				session = runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", loginTestUserForSingleProject1, loginTestUserPassword))
@@ -77,6 +73,7 @@ var _ = Describe("odoLoginE2e", func() {
 				Expect(session).To(ContainSubstring(odoTestProjectForSingleProject1))
 				session = runCmdShouldPass("oc whoami")
 				Expect(session).To(ContainSubstring(loginTestUserForSingleProject1))
+				cleanUpAfterProjects([]string{odoTestProjectForSingleProject1})
 			})
 		})
 	})
