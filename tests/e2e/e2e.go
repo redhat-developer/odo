@@ -189,8 +189,6 @@ func cleanUpAfterProjects(projects []string) {
 	for _, p := range projects {
 		deleteProject(p)
 	}
-	// Logout of current user to ensure state
-	runCmdShouldPass("oc logout")
 }
 
 // deletes a specified project
