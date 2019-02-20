@@ -1,5 +1,9 @@
 # `odo` config file
 
+# !! OUTDATED !!
+see https://docs.google.com/document/d/1RKva9lvIR6dLmDm2tlqmp8V4nFjlrXdulOQ4FSmLkr8/
+
+
 ## Abstract
 
 When developers work on creating an application, there's 2 phases they go through. First phase is creating the application initial implementation from scratch, and then iterate development on an existing application. While the developer works on the application, he might take some decisions on how the application should behave that should be preserved over time, but that are not source code but rather specific to how the application should behave in relation to the platform where it's running or in relation to the tool used to develop it.
