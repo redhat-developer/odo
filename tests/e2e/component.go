@@ -44,7 +44,7 @@ func componentTests(componentCmdPrefix string) {
 		It("creating a component without an application should create one", func() {
 			// new project == no app
 			projectName := generateTimeBasedName("project")
-			runCmdShouldPass("odo project create " + projectName)
+			odoCreateProject(projectName)
 			Expect(runCmdShouldPass("odo app list")).To(ContainSubstring("no applications"))
 
 			const frontend = "frontend"
@@ -73,7 +73,7 @@ func componentTests(componentCmdPrefix string) {
 	Context("odo component creation", func() {
 
 		It("should create the project and application", func() {
-			runCmdShouldPass("odo project create " + projName)
+			odoCreateProject(projName)
 			runCmdShouldPass("odo app create " + appTestName)
 		})
 
