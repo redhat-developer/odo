@@ -74,7 +74,7 @@ var _ = Describe("odoLinkE2e", func() {
 		})
 
 		It("should link backend to service", func() {
-			runCmdShouldPass("odo link mysql-persistent -w --component backend")
+			runCmdShouldPass("odo link mysql-persistent --wait-for-target --component backend")
 
 			// ensure that the proper envFrom entry was created
 			envFromOutput :=

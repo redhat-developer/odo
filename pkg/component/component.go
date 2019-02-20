@@ -270,7 +270,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 		}
 
 		podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
-		_, err = client.WaitAndGetPod(podSelector)
+		_, err = client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
 		if err != nil {
 			return err
 		}
@@ -440,7 +440,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
 
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := client.WaitAndGetPod(podSelector)
+	pod, err := client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}

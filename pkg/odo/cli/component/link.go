@@ -66,7 +66,7 @@ DB_PASSWORD=secret`
 
 // LinkOptions encapsulates the options for the odo link command
 type LinkOptions struct {
-	wait bool
+	waitForTarget bool
 	*commonLinkOptions
 }
 
@@ -86,7 +86,7 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the LinkOptions based on completed values
 func (o *LinkOptions) Validate() (err error) {
-	err = o.validate(o.wait)
+	err = o.validate(o.waitForTarget)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,8 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	}
 
 	linkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to link")
-	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled, the link command will wait for the service to be provisioned")
+	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
+	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
 
 	// Add a defined annotation in order to appear in the help menu
 	linkCmd.Annotations = map[string]string{"command": "component"}

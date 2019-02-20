@@ -82,6 +82,7 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	}
 
 	unlinkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to unlink")
+	unlinkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is deleted")
 
 	// Add a defined annotation in order to appear in the help menu
 	unlinkCmd.Annotations = map[string]string{"command": "component"}
