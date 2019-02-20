@@ -184,6 +184,16 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 	}
 }
 
+func odoCreateProject(projectName string) {
+	runCmdShouldPass("odo project create " + projectName)
+	waitForCmdOut("odo project set "+projectName, 4, false, func(output string) bool {
+		if strings.Contains(output, "Already on project : "+projectName) {
+			return true
+		}
+		return false
+	})
+}
+
 // cleanUpAfterProjects cleans up projects, after deleting them
 func cleanUpAfterProjects(projects []string) {
 	for _, p := range projects {
