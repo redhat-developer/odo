@@ -1,6 +1,6 @@
 # Odo - OpenShift Do
 
-[![Build Status](https://travis-ci.org/redhat-developer/odo.svg?branch=master)](https://travis-ci.org/redhat-developer/odo) [![codecov](https://codecov.io/gh/redhat-developer/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/redhat-developer/odo)
+[![Build Status](https://travis-ci.org/redhat-developer/odo.svg?branch=master)](https://travis-ci.org/redhat-developer/odo) [![CircleCI](https://circleci.com/gh/redhat-developer/odo/tree/master.svg?style=svg)](https://circleci.com/gh/redhat-developer/odo/tree/master) [![codecov](https://codecov.io/gh/redhat-developer/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/redhat-developer/odo)
 
 ![Powered by OpenShift](/docs/img/powered_by_openshift.png)
 
