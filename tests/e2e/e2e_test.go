@@ -13,8 +13,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/redhat-developer/odo/pkg/config"
 )
 
 // TODO: A neater way to provide odo path. Currently we assume \
@@ -86,11 +84,11 @@ var _ = Describe("odoe2e", func() {
 	})
 
 	Context("odo utils config", func() {
-		It("should get blank for updatenotification by default globally as its not set", func() {
+		It("should get globally availaible default parameters", func() {
 			configOutput := runCmdShouldPass("odo utils config view --global")
-			Expect(configOutput).To(ContainSubstring(config.UpdateNotificationSetting))
-			Expect(configOutput).To(ContainSubstring(config.NamePrefixSetting))
-			Expect(configOutput).To(ContainSubstring(config.TimeoutSetting))
+			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
+			Expect(configOutput).To(ContainSubstring("NamePrefix"))
+			Expect(configOutput).To(ContainSubstring("Timeout"))
 		})
 		It("should be checking to see if timeout is shown as blank globally as its not set", func() {
 			configOutput := runCmdShouldPass("odo utils config view --global|grep Timeout")
