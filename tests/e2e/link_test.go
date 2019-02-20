@@ -16,6 +16,9 @@ var _ = Describe("odoLinkE2e", func() {
 		It("should create a new test project", func() {
 			session := runCmdShouldPass("odo project create " + projName)
 			Expect(session).To(ContainSubstring(projName))
+			waitForCmdOut("odo project set "+projName, 4, false, func(output string) bool {
+				return strings.Contains(output, "Already on project : "+projName)
+			})
 			runCmdShouldPass("odo app create " + appTestName)
 		})
 	})

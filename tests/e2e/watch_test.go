@@ -28,7 +28,7 @@ var _ = Describe("odoWatchE2e", func() {
 
 	Context("watch component created from local source or binary", func() {
 		It("should create the project and application", func() {
-			runCmdShouldPass("odo project create " + projName)
+			odoCreateProject(projName)
 			runCmdShouldPass("odo app create " + appTestName)
 			importOpenJDKImage()
 		})

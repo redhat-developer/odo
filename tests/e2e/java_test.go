@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -25,6 +26,9 @@ var _ = Describe("odoJavaE2e", func() {
 		It("should create a new java project", func() {
 			session := runCmdShouldPass("odo project create " + projName)
 			Expect(session).To(ContainSubstring(projName))
+			waitForCmdOut("odo project set "+projName, 4, false, func(output string) bool {
+				return strings.Contains(output, "Already on project : "+projName)
+			})
 		})
 	})
 
@@ -184,8 +188,7 @@ var _ = Describe("odoJavaE2e", func() {
 	// Delete the project
 	Context("java project delete", func() {
 		It("should delete java project", func() {
-			session := runCmdShouldPass("odo project delete " + projName + " -f")
-			Expect(session).To(ContainSubstring(projName))
+			deleteProject(projName)
 		})
 	})
 })
