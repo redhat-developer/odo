@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 const pluginSuffix = ".odo.plugin"
@@ -32,13 +32,7 @@ type pluginImpl struct {
 }
 
 func (p pluginImpl) execute(args []string) error {
-	cmd := exec.Command(p.path, args...)
-	out, err := cmd.Output()
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(out))
-	return nil
+	return syscall.Exec(p.path, append([]string{p.path}, args...), os.Environ())
 }
 
 func main() {
