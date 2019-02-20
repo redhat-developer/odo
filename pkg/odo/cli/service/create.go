@@ -112,6 +112,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		o.ParametersMap = ui.EnterServicePropertiesInteractively(svcPlan)
 		o.ServiceName = ui.EnterServiceNameInteractively(o.ServiceType, "How should we name your service ", o.validateServiceName)
 		o.outputCLI = commonui.Proceed("Output the non-interactive version of the selected options")
+		o.wait = commonui.Proceed("Wait for the service to be ready")
 	} else {
 		o.ServiceType = args[0]
 		// if only one arg is given, then it is considered as service name and service type both
