@@ -183,28 +183,3 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 		}
 	}
 }
-
-func odoCreateProject(projectName string) {
-	runCmdShouldPass("odo project create " + projectName)
-	waitForCmdOut("odo project set "+projectName, 4, false, func(output string) bool {
-		return strings.Contains(output, "Already on project : "+projectName)
-	})
-}
-
-// cleanUpAfterProjects cleans up projects, after deleting them
-func cleanUpAfterProjects(projects []string) {
-	for _, p := range projects {
-		deleteProject(p)
-	}
-}
-
-// deletes a specified project
-func deleteProject(project string) {
-	var waitOut bool
-	if len(project) > 0 {
-		waitOut = waitForCmdOut(fmt.Sprintf("odo project delete -f %s", project), 10, true, func(out string) bool {
-			return strings.Contains(out, fmt.Sprintf("Deleted project : %s", project))
-		})
-		Expect(waitOut).To(BeTrue())
-	}
-}
