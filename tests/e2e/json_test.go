@@ -71,7 +71,7 @@ var _ = Describe("odojsonoutput", func() {
 		})
 		// cleanup
 		It("Cleanup", func() {
-			deleteProject("json-test")
+			odoDeleteProject("json-test")
 		})
 
 	})

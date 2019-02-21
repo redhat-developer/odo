@@ -188,7 +188,7 @@ var _ = Describe("odoJavaE2e", func() {
 	// Delete the project
 	Context("java project delete", func() {
 		It("should delete java project", func() {
-			deleteProject(projName)
+			odoDeleteProject(projName)
 		})
 	})
 })

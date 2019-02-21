@@ -41,7 +41,7 @@ var _ = Describe("odoAppE2e", func() {
 			It("Should failt to create app with appropriate message", func() {
 				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", loginTestUserApplicationWithoutProject2, loginTestUserPassword))
 				odoCreateProject(odoTestProjectForApplicationWithoutProject1)
-				deleteProject(odoTestProjectForApplicationWithoutProject1)
+				odoDeleteProject(odoTestProjectForApplicationWithoutProject1)
 				session := runCmdShouldFail("odo create nodejs")
 				Expect(session).To(ContainSubstring(fmt.Sprintf("You dont have permission to project '%s' or it doesnt exist. Please create or set a different project", odoTestProjectForApplicationWithoutProject1)))
 				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
