@@ -106,17 +106,17 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 						}
 					}
 
+					if len(componentDesc.Storage.Items) != 0 {
+						log.Info("    This component has following storages which will be deleted with the component")
+						for _, store := range componentDesc.Storage.Items {
+							log.Info("     Storage named ", store.GetName(), " of size ", store.Spec.Size)
+						}
+					}
+
 					if len(componentDesc.LinkedServices) != 0 {
 						log.Info("    This component has following services linked to it, which will get unlinked")
 						for _, linkedService := range componentDesc.LinkedServices {
 							log.Info("     Service named ", linkedService)
-						}
-					}
-
-					if len(componentDesc.Storage) != 0 {
-						log.Info("    This component has following storages which will be deleted with the component")
-						for _, store := range componentDesc.Storage {
-							log.Info("     Storage named ", store.Name, " of size ", store.Size)
 						}
 					}
 				}
