@@ -684,8 +684,7 @@ var _ = Describe("odoe2e", func() {
 			cmpList := runCmdShouldPass("odo list")
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
 
-			runCmdShouldPass("odo project delete " + projName + " -f")
-			waitForDeleteCmd("odo project list", projName)
+			odoDeleteProject(projName)
 		})
 	})
 
