@@ -65,7 +65,6 @@ func odoDeleteProject(project string) {
 			return strings.Contains(out, fmt.Sprintf("Deleted project : %s", project))
 		})
 		Expect(waitOut).To(BeTrue())
-		waitForDeleteCmd("odo project list", project)
 	}
 }
 
