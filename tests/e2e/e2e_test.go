@@ -298,13 +298,32 @@ var _ = Describe("odoe2e", func() {
 				// Sleep until status tags and their annotations are created
 				time.Sleep(15 * time.Second)
 
-				runCmdShouldPass("echo -e \".git\ntests/\nREADME.md\" >> " + tmpDir + "/nodejs-ex/.odoignore")
+				if createFileAtPathWithContent(tmpDir+"/nodejs-ex/.odoignore", ".git\ntests/\nREADME.md") != nil {
+					fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
+				}
 
 				runCmdShouldPass("odo create " + curProj + "/nodejs nodejs --local " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo push")
 
 				// get the name of the pod
 				podName := runCmdShouldPass("oc get pods | grep nodejs | awk '{print $1}' | tr -d '\n'")
+
+				// verify that the views folder got pushed
+				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
+
+				// verify that the tests was not pushed
+				runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep tests")
+
+				// verify that the README.md file was not pushed
+				runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep README.md")
+			})
+
+			It("should create a component and push using the --ignore flag", func() {
+				runCmdShouldPass("odo create " + curProj + "/nodejs push-example --local " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("odo push --ignore tests/,README.md")
+
+				// get the name of the pod
+				podName := runCmdShouldPass("oc get pods | grep push-example | awk '{print $1}' | tr -d '\n'")
 
 				// verify that the views folder got pushed
 				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
