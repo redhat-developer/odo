@@ -2775,7 +2775,7 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string) error {
 	srcPath = path.Clean(srcPath)
 	destPath = path.Clean(destPath)
 
-	glog.V(4).Infof("makeTar arguements: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
+	glog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
 		//watchTar
 		for _, fileName := range files {
@@ -2840,7 +2840,7 @@ func tar(tw *taro.Writer, fileName string, destFile string) error {
 
 // recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
 func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer) error {
-	glog.V(4).Infof("recursiveTar arguements: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
+	glog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
 	filepath := path.Join(srcBase, srcFile)
 	stat, err := os.Lstat(filepath)
 	if err != nil {
