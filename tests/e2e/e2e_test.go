@@ -52,11 +52,93 @@ var _ = BeforeSuite(func() {
 var _ = Describe("odoe2e", func() {
 	projName := generateTimeBasedName("odo")
 	const appTestName = "testing"
+	const loginTestUserPassword = "developer"
 
 	tmpDir, err := ioutil.TempDir("", "odo")
 	if err != nil {
 		Fail(err.Error())
 	}
+
+	Describe("Check for failure if user tries to create or delete anything other than project, without active accessible project, with appropriate message", func() {
+		var currentUserToken string
+		Context("Knows who is currently logged in", func() {
+			It("Should save token of current user to be able to log back in", func() {
+				currentUserToken = runCmdShouldPass("oc whoami -t")
+			})
+		})
+
+		Context("Logs in an new user without active project and tries to create various objects", func() {
+			It("Login as test user without project", func() {
+				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoNoProjectAttemptsCreate", loginTestUserPassword))
+			})
+
+			It("Should fail if user tries to create anything other than project", func() {
+				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoNoProjectAttemptsCreate", loginTestUserPassword))
+				session := runCmdShouldFail("odo create nodejs")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				session = runCmdShouldFail("odo component create nodejs")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				session = runCmdShouldFail("odo application create nodejs")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				session = runCmdShouldFail("odo application create nodejs")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				session = runCmdShouldFail("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+			})
+
+			It("Should pass if user tries to create a project", func() {
+				session := runCmdShouldPass("odo project create odoNoProjectAttemptsCreateProject")
+				Expect(session).To(ContainSubstring("New project created and now using project"))
+				Expect(session).To(ContainSubstring("odoNoProjectAttemptsCreateProject"))
+				odoDeleteProject("odoNoProjectAttemptsCreateProject")
+			})
+		})
+
+		Context("Logs in as user with a project, deletes it and tries to create things", func() {
+			It("Should login as a user and setup by creating a project, and then deleting it", func() {
+				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoSingleProjectAttemptsCreate", loginTestUserPassword))
+				odoCreateProject("odoSingleProjectAttemptsCreateProject")
+				odoDeleteProject("odoSingleProjectAttemptsCreateProject")
+			})
+
+			It("Should fail if user tries to create anything other than project", func() {
+				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoNoProjectAttemptsCreate", loginTestUserPassword))
+				session := runCmdShouldFail("odo create nodejs")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				session = runCmdShouldFail("odo component create nodejs")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				session = runCmdShouldFail("odo application create nodejs")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				session = runCmdShouldFail("odo application create nodejs")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				session = runCmdShouldFail("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
+				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+			})
+
+			It("Should pass if user tries to create a project", func() {
+				session := runCmdShouldPass("odo project create odoSingleProjectAttemptsCreateProject")
+				Expect(session).To(ContainSubstring("New project created and now using project"))
+				Expect(session).To(ContainSubstring("odoSingleProjectAttemptsCreateProject"))
+				odoDeleteProject("odoSingleProjectAttemptsCreateProject")
+			})
+		})
+
+		Context("Log back in as old user", func() {
+			It("Should log back in as old user", func() {
+				runCmdShouldPass(fmt.Sprintf("oc login --token %s", currentUserToken))
+			})
+		})
+	})
 
 	Context("odo service create", func() {
 		It("should return error if the cluster has no service catalog deployed", func() {
