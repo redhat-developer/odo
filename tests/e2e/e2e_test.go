@@ -92,44 +92,43 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("Should pass if user tries to create a project", func() {
-				session := runCmdShouldPass("odo project create odoNoProjectAttemptsCreateProject")
+				session := runCmdShouldPass("odo project create odonoprojectattemptscreateproject")
 				Expect(session).To(ContainSubstring("New project created and now using project"))
-				Expect(session).To(ContainSubstring("odoNoProjectAttemptsCreateProject"))
-				odoDeleteProject("odoNoProjectAttemptsCreateProject")
+				Expect(session).To(ContainSubstring("odonoprojectattemptscreateproject"))
+				odoDeleteProject("odonoprojectattemptscreateproject")
 			})
 		})
 
 		Context("Logs in as user with a project, deletes it and tries to create things", func() {
 			It("Should login as a user and setup by creating a project, and then deleting it", func() {
 				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoSingleProjectAttemptsCreate", loginTestUserPassword))
-				odoCreateProject("odoSingleProjectAttemptsCreateProject")
-				odoDeleteProject("odoSingleProjectAttemptsCreateProject")
+				odoCreateProject("odosingleprojectattemptscreateproject")
+				odoDeleteProject("odosingleprojectattemptscreateproject")
 			})
 
 			It("Should fail if user tries to create anything other than project", func() {
-				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoNoProjectAttemptsCreate", loginTestUserPassword))
 				session := runCmdShouldFail("odo create nodejs")
-				Expect(session).To(ContainSubstring("You dont have permission to project 'odoSingleProjectAttemptsCreateProject' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("You dont have permission to project 'odosingleprojectattemptscreateproject' or it doesnt exist. Please create or set a different project"))
 				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
 				session = runCmdShouldFail("odo component create nodejs")
-				Expect(session).To(ContainSubstring("You dont have permission to project 'odoSingleProjectAttemptsCreateProject' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("You dont have permission to project 'odosingleprojectattemptscreateproject' or it doesnt exist. Please create or set a different project"))
 				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
 				session = runCmdShouldFail("odo application create nodejs")
-				Expect(session).To(ContainSubstring("You dont have permission to project 'odoSingleProjectAttemptsCreateProject' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("You dont have permission to project 'odosingleprojectattemptscreateproject' or it doesnt exist. Please create or set a different project"))
 				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
 				session = runCmdShouldFail("odo application create nodejs")
-				Expect(session).To(ContainSubstring("You dont have permission to project 'odoSingleProjectAttemptsCreateProject' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("You dont have permission to project 'odosingleprojectattemptscreateproject' or it doesnt exist. Please create or set a different project"))
 				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
 				session = runCmdShouldFail("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
-				Expect(session).To(ContainSubstring("You dont have permission to project 'odoSingleProjectAttemptsCreateProject' or it doesnt exist. Please create or set a different project"))
+				Expect(session).To(ContainSubstring("You dont have permission to project 'odosingleprojectattemptscreateproject' or it doesnt exist. Please create or set a different project"))
 				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
 			})
 
 			It("Should pass if user tries to create a project", func() {
-				session := runCmdShouldPass("odo project create odoSingleProjectAttemptsCreateProject")
+				session := runCmdShouldPass("odo project create odosingleprojectattemptscreateproject")
 				Expect(session).To(ContainSubstring("New project created and now using project"))
-				Expect(session).To(ContainSubstring("odoSingleProjectAttemptsCreateProject"))
-				odoDeleteProject("odoSingleProjectAttemptsCreateProject")
+				Expect(session).To(ContainSubstring("odosingleprojectattemptscreateproject"))
+				odoDeleteProject("odosingleprojectattemptscreateproject")
 			})
 		})
 
