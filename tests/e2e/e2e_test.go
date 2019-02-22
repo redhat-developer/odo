@@ -289,7 +289,7 @@ var _ = Describe("odoe2e", func() {
 				Expect(cmpList).To(ContainSubstring(curProj))
 			})
 
-			It("should create a named component, add a .odoignore file and then push", func() {
+			It("should create a named component, add a .odoignore file and then push the contents from the source excluding the contents in the .odoignore file", func() {
 				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
 					tmpDir + "/nodejs-ex")
 
