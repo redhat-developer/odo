@@ -18,11 +18,7 @@ import (
 )
 
 // GetURL returns URL defination for given URL name
-func GetURL(client *occlient.Client, urlName, componentName, applicationName string) Url {
-	urls, err := List(client, componentName, applicationName)
-	if err != nil {
-		return Url{}
-	}
+func GetURL(urlName string, urls UrlList) Url {
 	for _, url := range urls.Items {
 		if url.Name == urlName {
 			return url

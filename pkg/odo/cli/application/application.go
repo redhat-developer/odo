@@ -87,10 +87,11 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 		if len(componentDesc.Spec.URL) != 0 {
 			fmt.Println("  Externally exposed URLs will be removed")
 		}
-
-		for _, store := range componentDesc.Spec.Storage {
-			storo := storage.GetStorage(client, store, currentComponent.Name, appName)
-			fmt.Println("  Storage", storo.Name, "of size", storo.Spec.Size, "will be removed")
+		storages, err := storage.List(client, currentComponent.Name, appName)
+		odoutil.LogErrorAndExit(err, "")
+		for _, storageName := range componentDesc.Spec.Storage {
+			store := storage.GetStorage(storageName, storages)
+			fmt.Println("  Storage", store.Name, "of size", store.Spec.Size, "will be removed")
 		}
 
 	}

@@ -17,11 +17,7 @@ import (
 )
 
 // GetStorage returns Storage defination for given Storage name
-func GetStorage(client *occlient.Client, storageName, componentName, applicationName string) Storage {
-	storages, err := List(client, componentName, applicationName)
-	if err != nil {
-		return Storage{}
-	}
+func GetStorage(storageName string, storages StorageList) Storage {
 	for _, storage := range storages.Items {
 		if storage.Name == storageName {
 			return storage

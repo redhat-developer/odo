@@ -84,16 +84,20 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	// Storage
 	if len(componentDesc.Spec.Storage) > 0 {
 		fmt.Println("\nStorage:")
+		storages, err := storagePkg.List(client, currentComponentName, applicationName)
+		LogErrorAndExit(err, "")
 		for _, storage := range componentDesc.Spec.Storage {
-			store := storagePkg.GetStorage(client, storage, currentComponentName, applicationName)
+			store := storagePkg.GetStorage(storage, storages)
 			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
 		}
 	}
 	// URL
 	if componentDesc.Spec.URL != nil {
 		fmt.Println("\nURLs")
+		urls, err := urlPkg.List(client, currentComponentName, applicationName)
+		LogErrorAndExit(err, "")
 		for _, componentURL := range componentDesc.Spec.URL {
-			url := urlPkg.GetURL(client, componentURL, currentComponentName, applicationName)
+			url := urlPkg.GetURL(componentURL, urls)
 			fmt.Printf(" - %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.URL), url.Spec.Port)
 		}
 
