@@ -231,14 +231,22 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		selectedSourceType := ui.SelectSourceType([]occlient.CreateType{occlient.LOCAL, occlient.GIT, occlient.BINARY})
 		co.CreateArgs.SourceType = selectedSourceType
 		selectedSourcePath := ""
+		currentDirectory, err := os.Getwd()
+		if err != nil {
+			return err
+		}
 		if selectedSourceType == occlient.LOCAL {
-			currentDirectory, err := util.GetAbsPath("./")
+			selectedSourcePath = ui.EnterInputTypePath("local", currentDirectory, ".")
+			selectedSourcePath, err = util.GetAbsPath(selectedSourcePath)
 			if err != nil {
 				return err
 			}
-			selectedSourcePath = ui.EnterInputTypePath("local", currentDirectory)
 		} else if selectedSourceType == occlient.BINARY {
-			selectedSourcePath = ui.EnterInputTypePath("binary", "")
+			selectedSourcePath = ui.EnterInputTypePath("binary", currentDirectory)
+			selectedSourcePath, err = util.GetAbsPath(selectedSourcePath)
+			if err != nil {
+				return err
+			}
 		} else if selectedSourceType == occlient.GIT {
 			var selectedGitRef string
 			selectedSourcePath, selectedGitRef = ui.EnterGitInfo()
@@ -362,10 +370,7 @@ func (co *CreateOptions) createComponent(stdout io.Writer) (err error) {
 			return fmt.Errorf("component creation with args %+v as path needs to be a directory", co.CreateArgs)
 		}
 		// Create
-		if err = component.CreateFromPath(
-			co.Context.Client,
-			co.CreateArgs,
-		); err != nil {
+		if err = component.CreateFromPath(co.Context.Client, co.CreateArgs); err != nil {
 			return errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
 		}
 	case occlient.BINARY:
@@ -375,7 +380,7 @@ func (co *CreateOptions) createComponent(stdout io.Writer) (err error) {
 	default:
 		// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
 		co.CreateArgs.SourceType = occlient.LOCAL
-		dir, err := util.GetAbsPath("./")
+		dir, err := os.Getwd()
 		if err != nil {
 			return errors.Wrapf(err, "cannot create component with current path as local source path since no component source details are passed")
 		}
