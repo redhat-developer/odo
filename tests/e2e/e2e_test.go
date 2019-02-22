@@ -725,7 +725,7 @@ var _ = Describe("odoe2e", func() {
 		})
 
 		It("should delete the deployed image-specific component", func() {
-			runCmdShouldPass("odo delete testversioncmp")
+			runCmdShouldPass("odo delete testversioncmp -f")
 		})
 	})
 
