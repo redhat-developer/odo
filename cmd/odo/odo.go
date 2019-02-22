@@ -36,10 +36,11 @@ func (p pluginImpl) execute(args []string) error {
 }
 
 func main() {
-	loadPlugins()
-
 	// create the complete command
 	root := cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName)
+
+	loadPlugins(root)
+
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
 
@@ -83,7 +84,7 @@ func main() {
 		updateInfo := make(chan string)
 		go version.GetLatestReleaseInfo(updateInfo)
 
-		runCmdOrTryPlugin(root, args)
+		util.LogErrorAndExit(root.Execute(), "")
 		select {
 		case message := <-updateInfo:
 			fmt.Println(message)
@@ -91,27 +92,8 @@ func main() {
 			glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
 	} else {
-		runCmdOrTryPlugin(root, args)
+		util.LogErrorAndExit(root.Execute(), "")
 	}
-}
-
-func runCmdOrTryPlugin(cmd *cobra.Command, args []string) {
-	// find a command with the appropriate args
-	if _, _, err := cmd.Find(args); err != nil {
-		// no command has been found, see if we have a plugin command using the first arg as name
-		if plugin, ok := plugins[args[0]]; ok {
-			var pluginArgs []string
-			if len(args) > 1 {
-				pluginArgs = args[1:]
-			}
-
-			util.LogErrorAndExit(plugin.execute(pluginArgs), "")
-			return
-		}
-	}
-
-	// we found it, so execute the root command
-	util.LogErrorAndExit(cmd.Execute(), "")
 }
 
 func createCompletion(root *cobra.Command) complete.Command {
@@ -154,7 +136,7 @@ func createCompletion(root *cobra.Command) complete.Command {
 	return rootCmp
 }
 
-func loadPlugins() {
+func loadPlugins(root *cobra.Command) {
 	configDir, err := config.GetPluginsDir()
 	if err != nil {
 		panic(err)
@@ -166,9 +148,18 @@ func loadPlugins() {
 			if err != nil {
 				return err
 			}
-			plugins[pluginName] = pluginImpl{
+			plugin := pluginImpl{
 				path: path,
 			}
+			plugins[pluginName] = plugin
+			root.AddCommand(&cobra.Command{
+				Use:   pluginName,
+				Short: fmt.Sprintf("Execute %s plugin", pluginName),
+				RunE: func(cmd *cobra.Command, args []string) error {
+					return plugin.execute(args)
+				},
+				Annotations: map[string]string{"command": "plugin"},
+			})
 		}
 		return nil
 	})

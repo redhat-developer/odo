@@ -53,6 +53,9 @@ Component Commands:{{range .Commands}}{{if eq .Annotations.command "component"}}
 Other Commands:{{range .Commands}}{{if eq .Annotations.command "other"}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
 
+Plugin Commands:{{range .Commands}}{{if eq .Annotations.command "plugin"}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
+
 Utility Commands:{{range .Commands}}{{if or (eq .Annotations.command "utility") (eq .Name "help") }}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
 
