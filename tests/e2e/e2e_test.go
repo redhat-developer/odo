@@ -5,6 +5,7 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"os"
 
 	"fmt"
 	"io/ioutil"
@@ -288,7 +289,7 @@ var _ = Describe("odoe2e", func() {
 				Expect(cmpList).To(ContainSubstring(curProj))
 			})
 
-			It("should create a named component, add a .odoignore file and push", func() {
+			It("should create a named component, add a .odoignore file and then push", func() {
 				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
 					tmpDir + "/nodejs-ex")
 
@@ -298,7 +299,9 @@ var _ = Describe("odoe2e", func() {
 				// Sleep until status tags and their annotations are created
 				time.Sleep(15 * time.Second)
 
-				if createFileAtPathWithContent(tmpDir+"/nodejs-ex/.odoignore", ".git\ntests/\nREADME.md") != nil {
+				ignoreFilePath := tmpDir + "/nodejs-ex/.odoignore"
+
+				if createFileAtPathWithContent(ignoreFilePath, ".git\ntests/\nREADME.md") != nil {
 					fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
 				}
 
@@ -316,14 +319,19 @@ var _ = Describe("odoe2e", func() {
 
 				// verify that the README.md file was not pushed
 				runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep README.md")
+
+				// remove the .odoignore file
+				if os.Remove(ignoreFilePath) != nil {
+					fmt.Printf("the .odoignore file was not removed, reason %v", err.Error())
+				}
 			})
 
 			It("should create a component and push using the --ignore flag", func() {
-				runCmdShouldPass("odo create " + curProj + "/nodejs push-example --local " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("odo create " + curProj + "/nodejs push-odoignore-flag-example --local " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo push --ignore tests/,README.md")
 
 				// get the name of the pod
-				podName := runCmdShouldPass("oc get pods | grep push-example | awk '{print $1}' | tr -d '\n'")
+				podName := runCmdShouldPass("oc get pods | grep push-odoignore-flag-example | awk '{print $1}' | tr -d '\n'")
 
 				// verify that the views folder got pushed
 				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
