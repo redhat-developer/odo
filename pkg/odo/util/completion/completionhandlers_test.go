@@ -584,7 +584,7 @@ func TestServiceCompletionHandler(t *testing.T) {
 				},
 			},
 			returnedServiceClassInstances: &scv1beta1.ServiceInstanceList{},
-			output: []string{},
+			output:                        []string{},
 		},
 		{
 			name: "test case 2: one service class instance exists and name not typed",
