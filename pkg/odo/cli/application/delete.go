@@ -49,7 +49,7 @@ func (o *DeleteOptions) Validate() (err error) {
 	if !util.CheckOutputFlag(o.OutputFlag) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
-	return ensureAppExists(o.Client, o.appName, o.Project)
+	return nil
 }
 
 // Run contains the logic for the odo command

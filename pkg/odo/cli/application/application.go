@@ -26,39 +26,23 @@ const RecommendedCommandName = "app"
 
 // NewCmdApplication implements the odo application command
 func NewCmdApplication(name, fullName string) *cobra.Command {
-	create := NewCmdCreate(createRecommendedCommandName, odoutil.GetFullName(fullName, createRecommendedCommandName))
 	delete := NewCmdDelete(deleteRecommendedCommandName, odoutil.GetFullName(fullName, deleteRecommendedCommandName))
 	describe := NewCmdDescribe(describeRecommendedCommandName, odoutil.GetFullName(fullName, describeRecommendedCommandName))
-	get := NewCmdGet(getRecommendedCommandName, odoutil.GetFullName(fullName, getRecommendedCommandName))
 	list := NewCmdList(listRecommendedCommandName, odoutil.GetFullName(fullName, listRecommendedCommandName))
-	set := NewCmdSet(setRecommendedCommandName, odoutil.GetFullName(fullName, setRecommendedCommandName))
 	applicationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Perform application operations",
 		Long:  `Performs application operations related to your OpenShift project.`,
-		Example: fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s",
-			create.Example,
-			get.Example,
+		Example: fmt.Sprintf("%s\n%s\n%s",
 			delete.Example,
 			describe.Example,
-			list.Example,
-			set.Example),
+			list.Example),
 		Aliases: []string{"application"},
 		Run: func(cmd *cobra.Command, args []string) {
-			// 'odo app' is the same as 'odo app get'
-			// 'odo app <application_name>' is the same as 'odo app set <application_name>'
-			if len(args) == 1 && args[0] != getRecommendedCommandName && args[0] != setRecommendedCommandName {
-				set.Run(cmd, args)
-			} else {
-				get.Run(cmd, args)
-			}
 		},
 	}
 
-	// add flags from 'get' to application command
-	applicationCmd.Flags().AddFlagSet(get.Flags())
-
-	applicationCmd.AddCommand(create, delete, describe, get, list, set)
+	applicationCmd.AddCommand(delete, describe, list)
 
 	// Add a defined annotation in order to appear in the help menu
 	applicationCmd.Annotations = map[string]string{"command": "other"}
@@ -124,17 +108,6 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 			}
 		}
 
-	}
-	return nil
-}
-
-func ensureAppExists(client *occlient.Client, appName, project string) error {
-	exists, err := application.Exists(client, appName)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fmt.Errorf("Application %v in project %v does not exist", appName, project)
 	}
 	return nil
 }

@@ -143,17 +143,8 @@ func CleanupEnv(confFiles []*os.File, t *testing.T) {
 // It takes a confPath which is the path to the config
 func FakeOdoConfig(confPath string, needNamePrefix bool, namePrefix string) preference.PreferenceInfo {
 	odoConfig := preference.PreferenceInfo{
-		Filename: confPath,
-		Preference: preference.Preference{
-			ActiveApplications: []preference.ApplicationInfo{
-				{
-					Name:            "app-india",
-					Active:          true,
-					Project:         "prj1",
-					ActiveComponent: "comp1",
-				},
-			},
-		},
+		Filename:   confPath,
+		Preference: preference.Preference{},
 	}
 	if needNamePrefix {
 		odoConfig.OdoSettings = preference.OdoSettings{

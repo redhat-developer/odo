@@ -59,7 +59,7 @@ func (o *ListOptions) Run() (err error) {
 		if o.outputFormat == "json" {
 			var appList []application.App
 			for _, app := range apps {
-				appDef := application.GetMachineReadableFormat(o.Client, app.Name, o.Project, app.Active)
+				appDef := application.GetMachineReadableFormat(o.Client, app, o.Project)
 				appList = append(appList, appDef)
 			}
 
@@ -73,16 +73,12 @@ func (o *ListOptions) Run() (err error) {
 		} else {
 			log.Infof("The project '%v' has the following applications:", o.Project)
 			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			_, err := fmt.Fprintln(tabWriter, "ACTIVE", "\t", "NAME")
+			_, err := fmt.Fprintln(tabWriter, "NAME")
 			if err != nil {
 				return err
 			}
 			for _, app := range apps {
-				activeMark := " "
-				if app.Active {
-					activeMark = "*"
-				}
-				_, err := fmt.Fprintln(tabWriter, activeMark, "\t", app.Name)
+				_, err := fmt.Fprintln(tabWriter, app)
 				if err != nil {
 					return err
 				}

@@ -11,4 +11,6 @@ const (
 	ComponentFlagName = "component"
 	// OutputFlag is the name of the flag allowing use to specify output format
 	OutputFlagName = "output"
+	// ContextFlagName is the name of the flag allowing a user to specify the location of the component settings
+	ContextFlagName = "context"
 )

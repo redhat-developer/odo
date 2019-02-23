@@ -55,14 +55,13 @@ func (o *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("There's no active application in project: %v", o.Project)
 	}
 
-	return ensureAppExists(o.Client, o.appName, o.Project)
+	return nil
 }
 
 // Run contains the logic for the odo command
 func (o *DescribeOptions) Run() (err error) {
 	if o.outputFormat == "json" {
-		app, _ := application.GetCurrent(o.Project)
-		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project, app == o.appName)
+		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
 		out, err := json.Marshal(appDef)
 		if err != nil {
 			return err

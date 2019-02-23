@@ -18,7 +18,7 @@ var _ = Describe("odojsonoutput", func() {
 		})
 		// odo app list -o json
 		It("should be able to return empty list", func() {
-			actual := runCmdShouldPass("odo app list -o json")
+			actual := runCmdShouldPass("odo app list -o json --project json-test")
 			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[]}`
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
@@ -26,8 +26,8 @@ var _ = Describe("odojsonoutput", func() {
 		})
 		// Basic creation
 		It("Pre-Test Creation Json", func() {
-			runCmdShouldPass("odo app create myapp")
-			runCmdShouldPass("odo create nodejs nodejs --git https://github.com/openshift/nodejs-ex")
+			runCmdShouldPass("odo create nodejs nodejs --app myapp --project json-test --git https://github.com/openshift/nodejs-ex")
+			runCmdShouldPass("odo push")
 		})
 		// odo url create -o json
 		It("should be able to create url", func() {
@@ -47,7 +47,7 @@ var _ = Describe("odojsonoutput", func() {
 		})
 		// odo app describe myapp -o json
 		It("should be able to describe app", func() {
-			desired := `{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"json-test","creationTimestamp":null},"spec":{"components":["nodejs"]},"status":{"active":true}}`
+			desired := `{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"json-test","creationTimestamp":null},"spec":{"components":["nodejs"]},"status":{"active":false}}`
 			actual := runCmdShouldPass("odo app describe myapp -o json")
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
@@ -55,7 +55,7 @@ var _ = Describe("odojsonoutput", func() {
 		// odo app list -o json
 		It("should be able to list the apps", func() {
 			actual := runCmdShouldPass("odo app list -o json")
-			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"json-test","creationTimestamp":null},"spec":{"components":["nodejs"]},"status":{"active":true}}]}`
+			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"json-test","creationTimestamp":null},"spec":{"components":["nodejs"]},"status":{"active":false}}]}`
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
@@ -63,14 +63,14 @@ var _ = Describe("odojsonoutput", func() {
 		// odo describe nodejs -o json
 		It("should be able to describe component", func() {
 			actual := runCmdShouldPass("odo describe nodejs -o json")
-			desired := `{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"]},"status":{"active":true}}`
+			desired := `{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"]},"status":{"active":false}}`
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 		})
 		// odo list -o json
 		It("should be able to list components", func() {
 			actual := runCmdShouldPass("odo list -o json")
-			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"]},"status":{"active":true}}]}`
+			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex","url":["myurl"],"storage":["mystorage"]},"status":{"active":false}}]}`
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
@@ -93,14 +93,6 @@ var _ = Describe("odojsonoutput", func() {
 			Expect(areEqual).To(BeTrue())
 
 		})
-
-		// odo app delete -o json
-		It("should be able to delete app", func() {
-			runCmdShouldPass("odo app create app-deletion-test")
-			// validating that it ran with exit status 0
-			runCmdShouldPass("odo app delete app-deletion-test -o json")
-		})
-
 		// cleanup
 		It("Cleanup", func() {
 			odoDeleteProject("json-test")

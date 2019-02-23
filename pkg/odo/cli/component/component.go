@@ -43,7 +43,6 @@ func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []str
 func NewCmdComponent(name, fullName string) *cobra.Command {
 
 	componentGetCmd := NewCmdGet(GetRecommendedCommandName, odoutil.GetFullName(fullName, GetRecommendedCommandName))
-	componentSetCmd := NewCmdSet(SetRecommendedCommandName, odoutil.GetFullName(fullName, SetRecommendedCommandName))
 	createCmd := NewCmdCreate(CreateRecommendedCommandName, odoutil.GetFullName(fullName, CreateRecommendedCommandName))
 	deleteCmd := NewCmdDelete(DeleteRecommendedCommandName, odoutil.GetFullName(fullName, DeleteRecommendedCommandName))
 	describeCmd := NewCmdDescribe(DescribeRecommendedCommandName, odoutil.GetFullName(fullName, DescribeRecommendedCommandName))
@@ -59,25 +58,17 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	var componentCmd = &cobra.Command{
 		Use:   name,
 		Short: "Components of an application",
-		Example: fmt.Sprintf("%s\n%s\n\n  See sub-commands individually for more examples, e.g. %s %s -h",
-			componentGetCmd.Example,
-			componentSetCmd.Example,
+		Example: fmt.Sprintf("%s\n%s\n\n  See sub-commands individually for more examples",
 			fullName, CreateRecommendedCommandName),
-		// 'odo component' is the same as 'odo component get'
-		// 'odo component <component_name>' is the same as 'odo component set <component_name>'
+		// `odo component set/get` and `odo get/set` are respectively deprecated as per the new workflow
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) > 0 && args[0] != GetRecommendedCommandName && args[0] != SetRecommendedCommandName {
-				componentSetCmd.Run(cmd, args)
-			} else {
-				componentGetCmd.Run(cmd, args)
-			}
 		},
 	}
 
 	// add flags from 'get' to component command
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
-	componentCmd.AddCommand(componentGetCmd, componentSetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd)
+	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "component"}

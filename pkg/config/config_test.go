@@ -81,7 +81,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewLocalConfigInfo()
+			cfg, err := NewLocalConfigInfo("")
 			if err != nil {
 				t.Error(err)
 			}
@@ -175,7 +175,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewLocalConfigInfo()
+			cfg, err := NewLocalConfigInfo("")
 			if err != nil {
 				t.Error(err)
 			}
@@ -216,13 +216,13 @@ func TestLowerCaseParameterForLocalParameters(t *testing.T) {
 
 func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
 	// cleaning up old odo files if any
-	filename, err := getLocalConfigFile()
+	filename, err := getLocalConfigFile("")
 	if err != nil {
 		t.Error(err)
 	}
 	os.RemoveAll(filename)
 
-	conf, err := NewLocalConfigInfo()
+	conf, err := NewLocalConfigInfo("")
 	if err != nil {
 		t.Errorf("error while creating local config %v", err)
 	}
@@ -232,7 +232,7 @@ func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
 }
 
 func TestMetaTypePopulatedInLocalConfig(t *testing.T) {
-	ci, err := NewLocalConfigInfo()
+	ci, err := NewLocalConfigInfo("")
 
 	if err != nil {
 		t.Error(err)

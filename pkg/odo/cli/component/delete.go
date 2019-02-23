@@ -3,21 +3,19 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/golang/glog"
+	"github.com/spf13/cobra"
 
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/pkg/errors"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 
-	"github.com/golang/glog"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
 // DeleteRecommendedCommandName is the recommended delete command name
@@ -72,17 +70,6 @@ func (do *DeleteOptions) Run() (err error) {
 			return err
 		}
 		log.Successf("Component %s from application %s has been deleted", do.componentName, do.Application)
-
-		currentComponent, err := component.GetCurrent(do.Application, do.Project)
-		if err != nil {
-			return errors.Wrapf(err, "Unable to get current component")
-		}
-
-		if currentComponent == "" {
-			log.Info("No default component has been set")
-		} else {
-			log.Infof("Default component set to: %s", currentComponent)
-		}
 
 	} else {
 		return fmt.Errorf("Aborting deletion of component: %v", do.componentName)

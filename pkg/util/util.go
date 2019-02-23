@@ -155,9 +155,14 @@ func ReadFilePath(u *url.URL, os string) string {
 }
 
 // GenFileURL Converts file path on windows to /C:/path/to/file to work in URL
-func GenFileURL(location string, os string) string {
+func GenFileURL(location string, os ...string) string {
+	// param os is made variadic only for the purpose of UTs but need not be passed mandatorily
+	currOS := runtime.GOOS
+	if len(os) > 0 {
+		currOS = os[0]
+	}
 	urlPath := location
-	if os == WIN {
+	if currOS == WIN {
 		urlPath = "/" + strings.Replace(location, "\\", "/", -1)
 	}
 	return "file://" + urlPath

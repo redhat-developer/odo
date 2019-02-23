@@ -1,17 +1,17 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/pkg/errors"
+
 	"github.com/openshift/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -35,7 +35,7 @@ type ComponentSettings struct {
 	Ref *string `yaml:"Ref,omitempty"`
 
 	// Type is type of component source: git/local/binary
-	SourceType *occlient.CreateType `yaml:"SourceType,omitempty"`
+	SourceType *SrcType `yaml:"SourceType,omitempty"`
 
 	// Ports is a slice of ports to be exposed when a component is created
 	// the format of the port is "PORT/PROTOCOL" e.g. "8080/TCP"
@@ -79,28 +79,31 @@ type LocalConfigInfo struct {
 	LocalConfig `yaml:",omitempty"`
 }
 
-func getLocalConfigFile() (string, error) {
+func getLocalConfigFile(cfgDir string) (string, error) {
 	if env, ok := os.LookupEnv(localConfigEnvName); ok {
 		return env, nil
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
+	if cfgDir == "" {
+		var err error
+		cfgDir, err = os.Getwd()
+		if err != nil {
+			return "", err
+		}
 	}
 
-	return filepath.Join(wd, ".odo", configFileName), nil
+	return filepath.Join(cfgDir, ".odo", configFileName), nil
 }
 
 // New returns the localConfigInfo
 func New() (*LocalConfigInfo, error) {
-	return NewLocalConfigInfo()
+	return NewLocalConfigInfo("")
 }
 
 // NewLocalConfigInfo gets the LocalConfigInfo from local config file and creates the local config file in case it's
 // not present then it
-func NewLocalConfigInfo() (*LocalConfigInfo, error) {
-	configFile, err := getLocalConfigFile()
+func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
+	configFile, err := getLocalConfigFile(cfgDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
@@ -173,7 +176,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "project":
 			lci.componentSettings.Project = &strValue
 		case "sourcetype":
-			cmpSourceType, err := occlient.GetCreateType(strValue)
+			cmpSourceType, err := GetSrcType(strValue)
 			if err != nil {
 				return errors.Wrapf(err, "unable to set %s to %s", parameter, strValue)
 			}
@@ -291,7 +294,7 @@ func (lc *LocalConfig) GetRef() string {
 }
 
 // GetSourceType returns the source type, returns default if nil
-func (lc *LocalConfig) GetSourceType() occlient.CreateType {
+func (lc *LocalConfig) GetSourceType() SrcType {
 	if lc.componentSettings.SourceType == nil {
 		return ""
 	}
@@ -472,4 +475,32 @@ func asLocallySupportedParameter(param string) (string, bool) {
 // GetLocallySupportedParameters returns the name of the supported global parameters
 func GetLocallySupportedParameters() []string {
 	return util.GetSortedKeys(supportedLocalParameterDescriptions)
+}
+
+// SrcType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
+type SrcType string
+
+const (
+	// GIT as source of component
+	GIT SrcType = "git"
+	// LOCAL Local source path as source of component
+	LOCAL SrcType = "local"
+	// BINARY Local Binary as source of component
+	BINARY SrcType = "binary"
+	// NONE indicates there's no information about the type of source of the component
+	NONE SrcType = ""
+)
+
+// GetSrcType returns enum equivalent of passed component source type or error if unsupported type passed
+func GetSrcType(ctStr string) (SrcType, error) {
+	switch strings.ToLower(ctStr) {
+	case string(GIT):
+		return GIT, nil
+	case string(LOCAL):
+		return LOCAL, nil
+	case string(BINARY):
+		return BINARY, nil
+	default:
+		return NONE, fmt.Errorf("Unsupported component source type: %s", ctStr)
+	}
 }

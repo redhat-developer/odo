@@ -3,10 +3,14 @@ package occlient
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
+	"github.com/openshift/odo/pkg/config"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
-	"github.com/openshift/odo/pkg/util"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,8 +22,63 @@ type CommonImageMeta struct {
 	Ports     []corev1.ContainerPort
 }
 
-func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, commonImageMeta CommonImageMeta,
+// getDeploymentCondition returns the condition with the provided type.
+// Borrowed from https://github.com/openshift/origin/blob/64349ed036ed14808124c5b4d8538b3856783b54/pkg/oc/originpolymorphichelpers/deploymentconfigs/status.go
+func getDeploymentCondition(status appsv1.DeploymentConfigStatus, condType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
+	for i := range status.Conditions {
+		c := status.Conditions[i]
+		if c.Type == condType {
+			return &c
+		}
+	}
+	return nil
+}
+
+// IsDCRolledOut indicates whether the deployment config is rolled out or not
+// Borrowed from https://github.com/openshift/origin/blob/64349ed036ed14808124c5b4d8538b3856783b54/pkg/oc/originpolymorphichelpers/deploymentconfigs/status.go
+func IsDCRolledOut(config *appsv1.DeploymentConfig) bool {
+	cond := getDeploymentCondition(config.Status, appsv1.DeploymentProgressing)
+	if config.Generation <= config.Status.ObservedGeneration {
+		switch {
+		case cond != nil && cond.Reason == "NewReplicationControllerAvailable":
+			return true
+
+		case cond != nil && cond.Reason == "ProgressDeadlineExceeded":
+			return true
+
+		case cond != nil && cond.Reason == "RolloutCancelled":
+			return true
+
+		case cond != nil && cond.Reason == "DeploymentConfigPaused":
+			return true
+
+		case config.Status.UpdatedReplicas < config.Spec.Replicas:
+			return false
+
+		case config.Status.Replicas > config.Status.UpdatedReplicas:
+			return false
+
+		case config.Status.AvailableReplicas < config.Status.UpdatedReplicas:
+			return false
+		}
+	}
+	return false
+}
+
+// generateSupervisordDeploymentConfig generates dc for local and binary components
+// Parameters:
+//	commonObjectMeta: Contains annotations and labels for dc
+//	commonImageMeta: Contains details like image NS, name, tag and ports to be exposed
+//	envVar: env vars to be exposed
+//	resourceRequirements: Container cpu and memory resource requirements
+// Returns:
+//	deployment config generated using above parameters
+func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, commonImageMeta CommonImageMeta,
 	envVar []corev1.EnvVar, envFrom []corev1.EnvFromSource, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {
+
+	if commonImageMeta.Namespace == "" {
+		commonImageMeta.Namespace = "openshift"
+	}
 
 	// Generates and deploys a DeploymentConfig with an InitContainer to copy over the SupervisorD binary.
 	dc := appsv1.DeploymentConfig{
@@ -46,7 +105,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 					// The application container
 					Containers: []corev1.Container{
 						{
-							Image: builderImage,
+							Image: fmt.Sprintf("%s/%s:%s", commonImageMeta.Namespace, commonImageMeta.Name, commonImageMeta.Tag),
 							Name:  commonObjectMeta.Name,
 							Ports: commonImageMeta.Ports,
 							// Run the actual supervisord binary that has been mounted into the container
@@ -123,26 +182,81 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 	return dc
 }
 
-func fetchContainerResourceLimits(container corev1.Container) corev1.ResourceRequirements {
+// FetchContainerResourceLimits returns cpu and memory resource limits of the component container from the passed dc
+// Parameter:
+//	container: Component container
+// Returns:
+//	resource limits from passed component container
+func FetchContainerResourceLimits(container corev1.Container) corev1.ResourceRequirements {
 	return container.Resources
 }
 
-func getResourceRequirementsFromRawData(resources []util.ResourceRequirementInfo) *corev1.ResourceRequirements {
-	if len(resources) == 0 {
-		return nil
-	}
+// parseResourceQuantity takes a string representation of quantity/amount of a resource and returns kubernetes representation of it and errors if any
+// This is a wrapper around the kube client provided ParseQuantity added to in future support more units and make it more readable
+func parseResourceQuantity(resQuantity string) (resource.Quantity, error) {
+	return resource.ParseQuantity(resQuantity)
+}
+
+// GetResourceRequirementsFromCmpSettings converts the cpu and memory request info from component configuration into format usable in dc
+// Parameters:
+//	cfg: Compoennt configuration/settings
+// Returns:
+//	*corev1.ResourceRequirements: component configuration converted into format usable in dc
+func GetResourceRequirementsFromCmpSettings(cfg config.LocalConfigInfo) (*corev1.ResourceRequirements, error) {
 	var resourceRequirements corev1.ResourceRequirements
-	for _, resource := range resources {
-		if resourceRequirements.Limits == nil {
-			resourceRequirements.Limits = make(corev1.ResourceList)
+	requests := make(corev1.ResourceList)
+	limits := make(corev1.ResourceList)
+
+	cfgMinCPU := cfg.GetMinCPU()
+	cfgMaxCPU := cfg.GetMaxCPU()
+	cfgMinMemory := cfg.GetMinMemory()
+	cfgMaxMemory := cfg.GetMaxMemory()
+
+	if cfgMinCPU != "" {
+		minCPU, err := parseResourceQuantity(cfgMinCPU)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse the min cpu")
 		}
-		if resourceRequirements.Requests == nil {
-			resourceRequirements.Requests = make(corev1.ResourceList)
-		}
-		resourceRequirements.Limits[resource.ResourceType] = resource.MaxQty
-		resourceRequirements.Requests[resource.ResourceType] = resource.MinQty
+		requests[corev1.ResourceCPU] = minCPU
 	}
-	return &resourceRequirements
+
+	if cfgMaxCPU != "" {
+		maxCPU, err := parseResourceQuantity(cfgMaxCPU)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse max cpu")
+		}
+		limits[corev1.ResourceCPU] = maxCPU
+	}
+
+	if cfgMinMemory != "" {
+		minMemory, err := parseResourceQuantity(cfgMinMemory)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse min memory")
+		}
+		requests[corev1.ResourceMemory] = minMemory
+	}
+
+	if cfgMaxMemory != "" {
+		maxMemory, err := parseResourceQuantity(cfgMaxMemory)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse max memory")
+		}
+		requests[corev1.ResourceMemory] = maxMemory
+	}
+
+	if len(limits) > 0 {
+		resourceRequirements.Limits = limits
+	}
+
+	if len(requests) > 0 {
+		resourceRequirements.Requests = requests
+	}
+
+	if resourceRequirements.Limits == nil && resourceRequirements.Requests == nil {
+		return nil, nil
+	}
+
+	return &resourceRequirements, nil
 }
 
 func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image string, containerPorts []corev1.ContainerPort, envVars []corev1.EnvVar, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {
