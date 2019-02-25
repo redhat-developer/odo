@@ -83,14 +83,16 @@ func SelectSourceType(sourceTypes []occlient.CreateType) occlient.CreateType {
 }
 
 // EnterInputTypePath allows the user to specify the path on the filesystem in a prompt
-func EnterInputTypePath(inputType string, defaultPath string) string {
+func EnterInputTypePath(inputType string, currentDir string, defaultPath ...string) string {
 	var path string
 	prompt := &survey.Input{
-		Message: fmt.Sprintf("Where does the %s input for the component reside on the local file system", inputType),
+		Message: fmt.Sprintf("Location of %s component, relative to '%s'", inputType, currentDir),
 	}
-	if len(defaultPath) > 0 {
-		prompt.Default = defaultPath
+
+	if len(defaultPath) == 1 {
+		prompt.Default = defaultPath[0]
 	}
+
 	err := survey.AskOne(prompt, &path, validation.PathValidator)
 	ui.HandleError(err)
 	return path
