@@ -166,7 +166,7 @@ func (c *GlobalConfigInfo) SetConfiguration(parameter string, value string) erro
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in global odo config", parameter)
 	}
 
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s", parameter)
 	}
@@ -186,7 +186,7 @@ func (c *GlobalConfigInfo) DeleteConfiguration(parameter string) error {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in global odo config", parameter)
 	}
 
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s", parameter)
 	}
@@ -246,7 +246,7 @@ func (c *GlobalConfigInfo) SetActiveComponent(componentName string, applicationN
 		return errors.Errorf("unable to set %s componentName as active, applicationName %s in %s projectName doesn't exists", componentName, applicationName, projectName)
 	}
 
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s as active componentName", componentName)
 	}
@@ -266,7 +266,7 @@ func (c *GlobalConfigInfo) UnsetActiveComponent(project string) error {
 	}
 
 	// Write the configuration to file
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to write configuration file")
 	}
@@ -286,7 +286,7 @@ func (c *GlobalConfigInfo) UnsetActiveApplication(project string) error {
 		}
 	}
 
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrap(err, "unable to write configuration file")
 	}
@@ -345,7 +345,7 @@ func (c *GlobalConfigInfo) SetActiveApplication(application string, project stri
 		}
 	}
 
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
 	}
@@ -373,7 +373,7 @@ func (c *GlobalConfigInfo) AddApplication(application string, project string) er
 			Active:  false,
 		})
 
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set add %s application", application)
 	}
@@ -401,7 +401,7 @@ func (c *GlobalConfigInfo) DeleteApplication(application string, project string)
 
 	}
 
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", application)
 	}
@@ -417,7 +417,7 @@ func (c *GlobalConfigInfo) DeleteProject(projectName string) error {
 			c.ActiveApplications = append(c.ActiveApplications[:i], c.ActiveApplications[i+1:]...)
 		}
 	}
-	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete project from config")
 	}

@@ -129,7 +129,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (er
 
 		}
 
-		return util.WriteToFile(&lci.LocalConfig, lci.Filename)
+		return util.WriteToFile(lci.LocalConfig, lci.Filename)
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 
@@ -171,7 +171,7 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 				return err
 			}
 		}
-		return util.WriteToFile(&lci.LocalConfig, lci.Filename)
+		return util.WriteToFile(lci.LocalConfig, lci.Filename)
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 
