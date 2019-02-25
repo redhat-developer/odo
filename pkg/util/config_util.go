@@ -1,0 +1,122 @@
+package util
+
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
+)
+
+func CreateIfNotExists(configFile string) error {
+	_, err := os.Stat(filepath.Dir(configFile))
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(configFile), 0755)
+		if err != nil {
+			return errors.Wrap(err, "unable to create directory")
+		}
+	}
+	// Check whether config file is present or not
+	_, err = os.Stat(configFile)
+	if os.IsNotExist(err) {
+		file, err := os.Create(configFile)
+		if err != nil {
+			return errors.Wrap(err, "unable to create config file")
+		}
+		defer file.Close()
+	}
+
+	return nil
+}
+
+func GetFromFile(c interface{}, filename string) error {
+	configData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return errors.Wrapf(err, "unable to read file %v", filename)
+	}
+
+	err = yaml.Unmarshal(configData, c)
+	if err != nil {
+		return errors.Wrap(err, "unable to unmarshal odo config file")
+	}
+
+	return nil
+}
+
+func WriteToFile(c interface{}, filename string) error {
+	data, err := yaml.Marshal(&c)
+	if err != nil {
+		return errors.Wrap(err, "unable to marshal odo config data")
+	}
+
+	if err = CreateIfNotExists(filename); err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filename, data, 0600)
+	if err != nil {
+		return errors.Wrapf(err, "unable to write config to file %v", c)
+	}
+
+	return nil
+}
+
+// only supports flat structs
+// TODO: support deeper struct using recursion
+func GetConfiguration(info interface{}, parameter string) (interface{}, bool) {
+	imm := reflect.ValueOf(info)
+	if imm.Kind() == reflect.Ptr {
+		imm = imm.Elem()
+	}
+	val := imm.FieldByNameFunc(CaseInsensitive(parameter))
+	if !val.IsValid() {
+
+		return nil, false
+	}
+	if val.IsNil() {
+		return nil, true
+	}
+	// if the value is a Ptr then we need to de-ref it
+	if val.Kind() == reflect.Ptr {
+		return val.Elem().Interface(), true
+	}
+
+	return val.Interface(), true
+}
+
+func CaseInsensitive(parameter string) func(word string) bool {
+	return func(word string) bool {
+		return strings.EqualFold(word, parameter)
+	}
+}
+
+func DeleteConfiguration(info interface{}, parameter string) error {
+
+	imm := reflect.ValueOf(info)
+	if imm.Kind() == reflect.Ptr {
+		imm = imm.Elem()
+	}
+	val := imm.FieldByNameFunc(CaseInsensitive(parameter))
+	if !val.IsValid() {
+		return fmt.Errorf("unknown parameter :'%s' is not a parameter in odo config", parameter)
+	}
+
+	if val.CanSet() {
+		val.Set(reflect.Zero(val.Type()))
+		return nil
+	}
+	return fmt.Errorf("cannot set %s to nil", parameter)
+
+}
+
+// GetLowerCaseParameters creates a set-like map of supported parameters from the supported parameter names
+func GetLowerCaseParameters(parameters []string) map[string]bool {
+	result := make(map[string]bool, len(parameters))
+	for _, v := range parameters {
+		result[strings.ToLower(v)] = true
+	}
+	return result
+}

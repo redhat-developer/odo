@@ -46,7 +46,7 @@ func (o *ViewOptions) Validate() (err error) {
 func (o *ViewOptions) Run() (err error) {
 	if o.configGlobalFlag {
 
-		cfg, err := config.NewGlobalConfig()
+		cfg, err := preference.NewGlobalConfig()
 
 		if err != nil {
 			util.LogErrorAndExit(err, "")
@@ -58,7 +58,7 @@ func (o *ViewOptions) Run() (err error) {
 		fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(cfg.OdoSettings.Timeout))
 		w.Flush()
 	} else {
-		cfg, err := config.NewLocalConfig()
+		cfg, err := preference.NewLocalConfig()
 		if err != nil {
 			util.LogErrorAndExit(err, "")
 		}

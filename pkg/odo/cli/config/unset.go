@@ -2,8 +2,10 @@ package config
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -67,7 +69,7 @@ func (o *UnsetOptions) Run() (err error) {
 	var cfg config.Info
 
 	if o.configGlobalFlag {
-		cfg, err = config.NewGlobalConfig()
+		cfg, err = preference.NewGlobalConfig()
 	} else {
 		cfg, err = config.NewLocalConfig()
 	}

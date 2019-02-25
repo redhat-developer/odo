@@ -54,7 +54,7 @@ func main() {
 	// Call commands
 	// checking the value of updatenotification in config
 	// before proceeding with fetching the latest version
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}

@@ -3,9 +3,9 @@ package project
 import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 // ApplicationInfo holds information about one project
@@ -26,7 +26,7 @@ func GetCurrent(client *occlient.Client) string {
 func SetCurrent(client *occlient.Client, projectName string) error {
 	currentProject := GetCurrent(client)
 
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to access config file")
 	}
@@ -91,7 +91,7 @@ func Delete(client *occlient.Client, projectName string) (string, error) {
 	}
 
 	// delete from config
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to delete project from config file")
 	}

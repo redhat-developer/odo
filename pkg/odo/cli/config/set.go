@@ -2,8 +2,10 @@ package config
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -68,7 +70,7 @@ func (o *SetOptions) Run() (err error) {
 	var cfg config.Info
 
 	if o.configGlobalFlag {
-		cfg, err = config.NewGlobalConfig()
+		cfg, err = preference.NewGlobalConfig()
 	} else {
 		cfg, err = config.NewLocalConfig()
 	}
@@ -112,9 +114,9 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	configurationSetCmd := &cobra.Command{
 		Use:   name,
 		Short: "Set a value in odo config file",
-		Long:  fmt.Sprintf(setLongDesc, config.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Long:  fmt.Sprintf(setLongDesc, preference.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
 		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName,
-			config.UpdateNotificationSetting, config.NamePrefixSetting, config.TimeoutSetting, config.ComponentType,
+			preference.UpdateNotificationSetting, preference.NamePrefixSetting, preference.TimeoutSetting, config.ComponentType,
 			config.ComponentName, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
