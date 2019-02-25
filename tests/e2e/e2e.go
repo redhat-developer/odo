@@ -57,12 +57,13 @@ func runCmdShouldFail(cmd string) string {
 
 // waitForCmdOut runs a command until it gets
 // the expected output.
-// It accepts 2 arguments, cmd (command to be run)
+// It accepts 4 arguments, cmd (command to be run)
 // timeout (the time to wait for the output)
+// errOnFail (flag to set if test should fail if command fails)
 // check (function with output check logic)
 // It times out if the command doesn't fetch the
 // expected output  within the timeout period.
-func waitForCmdOut(cmd string, timeout int, check func(output string) bool) bool {
+func waitForCmdOut(cmd string, timeout int, errOnFail bool, check func(output string) bool) bool {
 
 	pingTimeout := time.After(time.Duration(timeout) * time.Minute)
 	tick := time.Tick(time.Second)
@@ -74,7 +75,7 @@ func waitForCmdOut(cmd string, timeout int, check func(output string) bool) bool
 
 		case <-tick:
 			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
-			if err != nil {
+			if err != nil && errOnFail {
 				Fail(err.Error())
 			}
 
@@ -110,7 +111,7 @@ func waitForDCOfComponentToRolloutCompletely(componentName string) {
 // expOut is the expected output
 func waitForEqualCmd(cmd string, expOut string, timeout int) bool {
 
-	return waitForCmdOut(cmd, timeout, func(output string) bool {
+	return waitForCmdOut(cmd, timeout, true, func(output string) bool {
 		return output == expOut
 	})
 }
@@ -120,7 +121,7 @@ func waitForEqualCmd(cmd string, expOut string, timeout int) bool {
 // expOut is the expected output which should not be contained in the output string
 func waitForDeleteCmd(cmd string, object string) bool {
 
-	return waitForCmdOut(cmd, 5, func(output string) bool {
+	return waitForCmdOut(cmd, 5, true, func(output string) bool {
 		return !strings.Contains(output, object)
 	})
 }
@@ -130,7 +131,7 @@ func waitForDeleteCmd(cmd string, object string) bool {
 // expOut is the expected output
 func waitForServiceStatusCmd(cmd string, status string) bool {
 
-	return waitForCmdOut(cmd, 10, func(output string) bool {
+	return waitForCmdOut(cmd, 10, true, func(output string) bool {
 		return output == status
 	})
 }
@@ -180,25 +181,5 @@ func pollNonRetCmdStdOutForString(cmdStr string, timeout time.Duration, check fu
 				return true, nil
 			}
 		}
-	}
-}
-
-// cleanUpAfterProjects cleans up projects, after deleting them
-func cleanUpAfterProjects(projects []string) {
-	for _, p := range projects {
-		deleteProject(p)
-	}
-	// Logout of current user to ensure state
-	runCmdShouldPass("oc logout")
-}
-
-// deletes a specified project
-func deleteProject(project string) {
-	var waitOut bool
-	if len(project) > 0 {
-		waitOut = waitForCmdOut(fmt.Sprintf("odo project delete -f %s", project), 10, func(out string) bool {
-			return strings.Contains(out, fmt.Sprintf("Deleted project : %s", project))
-		})
-		Expect(waitOut).To(BeTrue())
 	}
 }

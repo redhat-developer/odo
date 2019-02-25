@@ -1,8 +1,11 @@
 package e2e
 
 import (
+	"fmt"
 	"os"
 	"strings"
+
+	. "github.com/onsi/gomega"
 )
 
 // createFileAtPath creates a file at the given path and writes the given content
@@ -45,4 +48,29 @@ func createFileAtPathWithContent(path string, fileContent string) error {
 func determineRouteURL() string {
 	output := runCmdShouldPass("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
 	return strings.TrimSpace(output)
+}
+
+func odoCreateProject(projectName string) {
+	runCmdShouldPass("odo project create " + projectName)
+	waitForCmdOut("odo project set "+projectName, 4, false, func(output string) bool {
+		return strings.Contains(output, "Already on project : "+projectName)
+	})
+}
+
+// deletes a specified project
+func odoDeleteProject(project string) {
+	var waitOut bool
+	if len(project) > 0 {
+		waitOut = waitForCmdOut(fmt.Sprintf("odo project delete -f %s", project), 10, true, func(out string) bool {
+			return strings.Contains(out, fmt.Sprintf("Deleted project : %s", project))
+		})
+		Expect(waitOut).To(BeTrue())
+	}
+}
+
+// cleanUpAfterProjects cleans up projects, after deleting them
+func cleanUpAfterProjects(projects []string) {
+	for _, p := range projects {
+		odoDeleteProject(p)
+	}
 }

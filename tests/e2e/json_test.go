@@ -14,7 +14,7 @@ var _ = Describe("odojsonoutput", func() {
 	Context("odo machine readable output", func() {
 		// // Basic creation
 		It("Pre-Test Creation", func() {
-			runCmdShouldPass("odo project create json-test")
+			odoCreateProject("json-test")
 			runCmdShouldPass("odo app create myapp")
 			runCmdShouldPass("odo create nodejs nodejs --git https://github.com/openshift/nodejs-ex")
 			runCmdShouldPass("odo url create myurl")
@@ -71,7 +71,7 @@ var _ = Describe("odojsonoutput", func() {
 		})
 		// cleanup
 		It("Cleanup", func() {
-			runCmdShouldPass("odo project delete json-test -f")
+			odoDeleteProject("json-test")
 		})
 
 	})

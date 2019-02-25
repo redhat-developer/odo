@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,6 +25,9 @@ var _ = Describe("odoSourceE2e", func() {
 	Context("odo component creation", func() {
 
 		It("Should be able to deploy a python source application", func() {
+			waitForCmdOut("odo project set "+projName, 4, false, func(output string) bool {
+				return strings.Contains(output, "Already on project : "+projName)
+			})
 			runCmdShouldPass("odo create python python-app --local " + sourceExamples + "/python/")
 			cmpList := runCmdShouldPass("odo list")
 			Expect(cmpList).To(ContainSubstring("python-app"))
@@ -125,8 +129,7 @@ var _ = Describe("odoSourceE2e", func() {
 	// Delete the project
 	Context("source project delete", func() {
 		It("should delete source project", func() {
-			session := runCmdShouldPass("odo project delete " + projName + " -f")
-			Expect(session).To(ContainSubstring(projName))
+			odoDeleteProject(projName)
 		})
 	})
 })

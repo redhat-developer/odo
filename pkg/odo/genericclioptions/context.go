@@ -1,6 +1,7 @@
 package genericclioptions
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/golang/glog"
@@ -59,11 +60,17 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	return client
 }
 
-// newContext creates a new context based on the command flags, creating missing app when requested
-func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
-	client := client(command)
+// checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
+// errFormatforCommand must contain one %s
+func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
+	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
+		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
+		util.LogErrorAndExit(err, "")
+	}
+}
 
-	// resolve project
+// resolveProject resolves project
+func resolveProject(command *cobra.Command, client *occlient.Client) string {
 	var ns string
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
@@ -74,8 +81,29 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	} else {
 		// otherwise use the current project
 		ns = project.GetCurrent(client)
+		// if no current project, then check if user is trying to create or delete something other than project
+		if len(ns) <= 0 {
+			errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+		}
+		// check that the specified project exists
+		_, err := project.Exists(client, ns)
+		if err != nil {
+			e1 := fmt.Sprintf("You dont have permission to project '%s' or it doesnt exist. Please create or set a different project\n\t", ns)
+			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+		}
 	}
 	client.Namespace = ns
+	return ns
+}
+
+// newContext creates a new context based on the command flags, creating missing app when requested
+func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
+	client := client(command)
+
+	// resolve project
+	ns := resolveProject(command, client)
 
 	// resolve application
 	var app string

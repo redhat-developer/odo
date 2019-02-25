@@ -16,6 +16,9 @@ var _ = Describe("odoLinkE2e", func() {
 		It("should create a new test project", func() {
 			session := runCmdShouldPass("odo project create " + projName)
 			Expect(session).To(ContainSubstring(projName))
+			waitForCmdOut("odo project set "+projName, 4, false, func(output string) bool {
+				return strings.Contains(output, "Already on project : "+projName)
+			})
 			runCmdShouldPass("odo app create " + appTestName)
 		})
 	})
@@ -61,7 +64,7 @@ var _ = Describe("odoLinkE2e", func() {
 		It("should be able to create a service", func() {
 			runCmdShouldPass("odo service create mysql-persistent")
 
-			waitForCmdOut("oc get serviceinstance -o name", 1, func(output string) bool {
+			waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
 		})
