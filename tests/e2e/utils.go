@@ -3,6 +3,7 @@ package e2e
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	. "github.com/onsi/gomega"
@@ -73,4 +74,19 @@ func cleanUpAfterProjects(projects []string) {
 	for _, p := range projects {
 		odoDeleteProject(p)
 	}
+}
+
+// getActiveApplication returns the active application in the project
+// returns empty string if no active application is present in the project
+func getActiveApplication() string {
+	stdOut, stdErr, exitCode := cmdRunner("odo app list")
+	if exitCode != 0 {
+		return stdErr
+	}
+	if strings.Contains(strings.ToLower(stdOut), "no applications") {
+		return ""
+	}
+	reActiveApp := regexp.MustCompile(`[*]\s+\S+`)
+	odoActiveApp := strings.Split(reActiveApp.FindString(stdOut), "*")[1]
+	return strings.TrimSpace(odoActiveApp)
 }

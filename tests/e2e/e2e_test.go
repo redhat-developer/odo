@@ -5,17 +5,16 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-developer/odo/pkg/config"
+	"log"
 	"os"
+	"time"
 
 	"fmt"
 	"io/ioutil"
-	"log"
 	"regexp"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/redhat-developer/odo/pkg/config"
 )
 
 // TODO: A neater way to provide odo path. Currently we assume \
@@ -767,6 +766,38 @@ var _ = Describe("odoe2e", func() {
 			Expect(cmpList).NotTo(ContainSubstring("nodejs"))
 
 			odoDeleteProject(projName)
+		})
+
+		It("should auto switch when deleting applications", func() {
+			// create two new projects
+
+			odoCreateProject(projName + "-auto-0")
+
+			runCmdShouldPass("odo app create app-1")
+			runCmdShouldPass("odo app create app-2")
+			runCmdShouldPass("odo app create app-3")
+
+			odoCreateProject(projName + "-auto-1")
+			runCmdShouldPass("odo app create app-4")
+			runCmdShouldPass("odo app create app-5")
+
+			// delete app in some other project which is not active
+			// the current app in the active project should not switch
+			runCmdShouldPass("odo app delete --project " + projName + "-auto-0 app-1 -f")
+			Expect(getActiveApplication()).To(Equal("app-5"))
+
+			// delete in the active project
+			// the current app should switch
+			runCmdShouldPass("odo app delete -f")
+			Expect(getActiveApplication()).To(Equal("app-4"))
+
+			// deleting the last app in the active project
+			runCmdShouldPass("odo app delete -f")
+			Expect(getActiveApplication()).To(Equal(""))
+
+			// clean up
+			odoDeleteProject(projName + "-auto-0")
+			odoDeleteProject(projName + "-auto-1")
 		})
 	})
 
