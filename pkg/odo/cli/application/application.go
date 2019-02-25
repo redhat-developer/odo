@@ -94,6 +94,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 					fmt.Println(" URL ", u)
 				}
 			}
+
 			storages, err := storage.List(client, currentComponent.Name, appName)
 			odoutil.LogErrorAndExit(err, "")
 			if len(storages.Items) != 0 {
