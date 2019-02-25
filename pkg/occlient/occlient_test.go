@@ -2776,7 +2776,7 @@ func TestCreateNewProject(t *testing.T) {
 				return true, &proj, nil
 			})
 
-			err := fkclient.CreateNewProject(tt.projName)
+			err := fkclient.CreateNewProject(tt.projName, false)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("client.CreateNewProject(string) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}

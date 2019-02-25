@@ -465,7 +465,7 @@ func (c *Client) GetProjectNames() ([]string, error) {
 }
 
 // CreateNewProject creates project with given projectName
-func (c *Client) CreateNewProject(projectName string) error {
+func (c *Client) CreateNewProject(projectName string, wait bool) error {
 	projectRequest := &projectv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: projectName,
@@ -475,6 +475,28 @@ func (c *Client) CreateNewProject(projectName string) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}
+
+	if wait {
+		w, err := c.kubeClient.CoreV1().Namespaces().Watch(metav1.ListOptions{
+			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
+		})
+		if err != nil {
+			return errors.Wrapf(err, "unable to watch new project %s creation", projectName)
+		}
+		defer w.Stop()
+
+		for {
+			val, ok := <-w.ResultChan()
+			if !ok {
+				break
+			}
+			if e, ok := val.Object.(*corev1.Namespace); ok {
+				glog.V(4).Infof("Project %s now exists", e.Name)
+				return nil
+			}
+		}
+	}
+
 	return nil
 }
 
