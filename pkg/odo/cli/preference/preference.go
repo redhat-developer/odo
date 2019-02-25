@@ -26,7 +26,7 @@ func NewCmdPreference(name, fullName string) *cobra.Command {
 	preferenceCmd := &cobra.Command{
 		Use:   name,
 		Short: "Modifies preference settings",
-		Long:  fmt.Sprintf(configLongDesc, preference.FormatSupportedParameters()),
+		Long:  fmt.Sprintf(preferenceLongDesc, preference.FormatSupportedParameters()),
 		Example: fmt.Sprintf("%s\n%s\n%s",
 			preferenceViewCmd.Example,
 			preferenceSetCmd.Example,
@@ -37,6 +37,7 @@ func NewCmdPreference(name, fullName string) *cobra.Command {
 	preferenceCmd.AddCommand(preferenceViewCmd, preferenceSetCmd)
 	preferenceCmd.AddCommand(preferenceUnsetCmd)
 	preferenceCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	preferenceCmd.Annotations = map[string]string{"command": "other"}
 
 	return preferenceCmd
 }

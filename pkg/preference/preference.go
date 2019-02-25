@@ -51,30 +51,30 @@ var (
 // GlobalConfigInfo wraps the global config and provides helpers to
 // serialize it.
 type GlobalConfigInfo struct {
-	Filename     string `json:"FileName,omitempty"`
-	GlobalConfig `json:",omitempty"`
+	Filename     string `yaml:"FileName,omitempty"`
+	GlobalConfig `yaml:",omitempty"`
 }
 
 // OdoSettings holds all odo specific configurations
 type OdoSettings struct {
 	// Controls if an update notification is shown or not
-	UpdateNotification *bool `json:"UpdateNotification,omitempty"`
+	UpdateNotification *bool `yaml:"UpdateNotification,omitempty"`
 	// Holds the prefix part of generated random application name
-	NamePrefix *string `json:"NamePrefix,omitempty"`
+	NamePrefix *string `yaml:"NamePrefix,omitempty"`
 	// Timeout for openshift server connection check
-	Timeout *int `json:"Timeout,omitempty"`
+	Timeout *int `yaml:"Timeout,omitempty"`
 }
 
 // ApplicationInfo holds all important information about one application
 type ApplicationInfo struct {
 	// name of the application
-	Name string `json:"Name"`
+	Name string `yaml:"Name"`
 	// is this application active? Only one application can be active at the time
-	Active bool `json:"Active"`
+	Active bool `yaml:"Active"`
 	// name of the openshift project this application belongs to
-	Project string `json:"Project"`
+	Project string `yaml:"Project"`
 	// last active component for  this application
-	ActiveComponent string `json:"ActiveComponent"`
+	ActiveComponent string `yaml:"ActiveComponent"`
 }
 
 // GlobalConfig stores all the config related to odo, its the superset of
@@ -86,10 +86,10 @@ type GlobalConfig struct {
 	// Currently active application
 	// multiple applications can be active but each one has to be in different project
 	// there shouldn't be more active applications in one project
-	ActiveApplications []ApplicationInfo `json:"ActiveApplications"`
+	ActiveApplications []ApplicationInfo `yaml:"ActiveApplications"`
 
 	// Odo settings holds the odo specific global settings
-	OdoSettings OdoSettings `json:"Settings,omitempty"`
+	OdoSettings OdoSettings `yaml:"OdoSettings,omitempty"`
 }
 
 func getGlobalConfigFile() (string, error) {
@@ -166,7 +166,7 @@ func (c *GlobalConfigInfo) SetConfiguration(parameter string, value string) erro
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in global odo config", parameter)
 	}
 
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s", parameter)
 	}
@@ -186,7 +186,7 @@ func (c *GlobalConfigInfo) DeleteConfiguration(parameter string) error {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in global odo config", parameter)
 	}
 
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s", parameter)
 	}
@@ -246,7 +246,7 @@ func (c *GlobalConfigInfo) SetActiveComponent(componentName string, applicationN
 		return errors.Errorf("unable to set %s componentName as active, applicationName %s in %s projectName doesn't exists", componentName, applicationName, projectName)
 	}
 
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set %s as active componentName", componentName)
 	}
@@ -266,7 +266,7 @@ func (c *GlobalConfigInfo) UnsetActiveComponent(project string) error {
 	}
 
 	// Write the configuration to file
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to write configuration file")
 	}
@@ -286,7 +286,7 @@ func (c *GlobalConfigInfo) UnsetActiveApplication(project string) error {
 		}
 	}
 
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrap(err, "unable to write configuration file")
 	}
@@ -345,7 +345,7 @@ func (c *GlobalConfigInfo) SetActiveApplication(application string, project stri
 		}
 	}
 
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
 	}
@@ -373,7 +373,7 @@ func (c *GlobalConfigInfo) AddApplication(application string, project string) er
 			Active:  false,
 		})
 
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set add %s application", application)
 	}
@@ -401,7 +401,7 @@ func (c *GlobalConfigInfo) DeleteApplication(application string, project string)
 
 	}
 
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", application)
 	}
@@ -417,7 +417,7 @@ func (c *GlobalConfigInfo) DeleteProject(projectName string) error {
 			c.ActiveApplications = append(c.ActiveApplications[:i], c.ActiveApplications[i+1:]...)
 		}
 	}
-	err := util.WriteToFile(c.GlobalConfig, c.Filename)
+	err := util.WriteToFile(&c.GlobalConfig, c.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete project from config")
 	}

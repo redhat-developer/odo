@@ -1,15 +1,14 @@
-package config
+package preference
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -17,35 +16,23 @@ import (
 const unsetCommandName = "unset"
 
 var (
-	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the Odo configuration file.
+	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the Odo preference file.
 
 %[1]s
 %[2]s
 `)
 	unsetExample = ktemplates.Examples(`
-   # Unset a configuration value in the global config
-   %[1]s --global %[2]s 
-   %[1]s --global %[3]s 
-   %[1]s --global %[4]s 
-
-   # Unset a configuration value in the local config
-   %[1]s %[5]s
-   %[1]s %[6]s 
-   %[1]s %[7]s  
-   %[1]s %[8]s 
-   %[1]s %[9]s 
-   %[1]s %[10]s  
-   %[1]s %[11]s  
-   %[1]s %[12]s  
-   %[1]s %[13]s  
+   # Unset a preference value in the global preference
+   %[1]s  %[2]s 
+   %[1]s  %[3]s 
+   %[1]s  %[4]s 
 	`)
 )
 
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
-	paramName        string
-	configGlobalFlag bool
-	configForceFlag  bool
+	paramName           string
+	preferenceForceFlag bool
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
@@ -66,20 +53,15 @@ func (o *UnsetOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *UnsetOptions) Run() (err error) {
-	var cfg config.Info
 
-	if o.configGlobalFlag {
-		cfg, err = preference.NewGlobalConfig()
-	} else {
-		cfg, err = config.NewLocalConfig()
-	}
+	cfg, err := preference.New()
 
 	if err != nil {
 		return errors.Wrapf(err, "")
 	}
 
 	if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
-		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the config", o.paramName)) {
+		if !o.preferenceForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
 		}
@@ -87,34 +69,24 @@ func (o *UnsetOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-
-		// cannot use the type switch on non-interface variables so a hack
-		var intfcfg interface{} = cfg
-		switch intfcfg.(type) {
-		case *config.GlobalConfigInfo:
-			fmt.Println("Global config was successfully updated.")
-		case *config.LocalConfigInfo:
-			fmt.Println("Local config was successfully updated.")
-
-		}
+		fmt.Println("Global preference was successfully updated.")
 		return nil
 		// if its found but nil then show the error
 	} else if ok && (value == nil) {
-		return errors.New("config already unset, cannot unset a configuration which is not set")
+		return errors.New("preference already unset, cannot unset a preference which is not set")
 	}
-	return errors.New(o.paramName + " is not a valid configuration variable")
+	return errors.New(o.paramName + " is not a valid preference variable")
 
 }
 
-// NewCmdUnset implements the config unset odo command
+// NewCmdUnset implements the preference unset odo command
 func NewCmdUnset(name, fullName string) *cobra.Command {
 	o := NewUnsetOptions()
-	configurationUnsetCmd := &cobra.Command{
-		Use:   name,
-		Short: "Unset a value in odo config file",
-		Long:  fmt.Sprintf(unsetLongDesc, config.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName, config.UpdateNotificationSetting, config.NamePrefixSetting, config.TimeoutSetting, config.ComponentType,
-			config.ComponentName, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
+	preferenceUnsetCmd := &cobra.Command{
+		Use:     name,
+		Short:   "Unset a value in odo preference file",
+		Long:    fmt.Sprintf(unsetLongDesc, preference.FormatSupportedParameters()),
+		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName, preference.UpdateNotificationSetting, preference.NamePrefixSetting, preference.TimeoutSetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")
@@ -130,8 +102,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
-	configurationUnsetCmd.Flags().BoolVarP(&o.configGlobalFlag, "global", "g", false, "Use the global config file")
-	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Dont ask for confirmation, directly move forward")
+	preferenceUnsetCmd.Flags().BoolVarP(&o.preferenceForceFlag, "force", "f", false, "Dont ask for confirmation, directly move forward")
 
-	return configurationUnsetCmd
+	return preferenceUnsetCmd
 }

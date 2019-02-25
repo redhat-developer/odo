@@ -10,7 +10,7 @@ import (
 	"github.com/ghodss/yaml"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/preference"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
@@ -88,11 +88,12 @@ func SetUp(odoConfigDetails ConfigDetails, kubeConfigDetails ConfigDetails) (*os
 // Returns:
 //	file handler for the mock config file
 //	error if any
+
 func setUpConfig(testFile string, conf interface{}, configEnvName string) (*os.File, error) {
 	foundConfigType := false
 	var err error
 	var data []byte
-	if conf, ok := conf.(config.GlobalConfigInfo); ok {
+	if conf, ok := conf.(preference.GlobalConfigInfo); ok {
 		data, err = yaml.Marshal(conf.GlobalConfig)
 		foundConfigType = true
 	}
@@ -140,11 +141,11 @@ func CleanupEnv(confFiles []*os.File, t *testing.T) {
 
 // FakeOdoConfig returns mock odo config
 // It takes a confPath which is the path to the config
-func FakeOdoConfig(confPath string, needNamePrefix bool, namePrefix string) config.GlobalConfigInfo {
-	odoConfig := config.GlobalConfigInfo{
+func FakeOdoConfig(confPath string, needNamePrefix bool, namePrefix string) preference.GlobalConfigInfo {
+	odoConfig := preference.GlobalConfigInfo{
 		Filename: confPath,
-		GlobalConfig: config.GlobalConfig{
-			ActiveApplications: []config.ApplicationInfo{
+		GlobalConfig: preference.GlobalConfig{
+			ActiveApplications: []preference.ApplicationInfo{
 				{
 					Name:            "app-india",
 					Active:          true,
@@ -155,7 +156,7 @@ func FakeOdoConfig(confPath string, needNamePrefix bool, namePrefix string) conf
 		},
 	}
 	if needNamePrefix {
-		odoConfig.OdoSettings = config.OdoSettings{
+		odoConfig.OdoSettings = preference.OdoSettings{
 			NamePrefix: &namePrefix,
 		}
 	}

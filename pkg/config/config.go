@@ -27,32 +27,32 @@ type Info interface {
 type ComponentSettings struct {
 
 	// The builder image to use
-	ComponentType *string `json:"ComponentType,omitempty"`
+	ComponentType *string `yaml:"ComponentType,omitempty"`
 
-	ComponentName *string `json:"ComponentName,omitempty"`
+	ComponentName *string `yaml:"ComponentName,omitempty"`
 
-	MinMemory *string `json:"MinMemory,omitempty"`
+	MinMemory *string `yaml:"MinMemory,omitempty"`
 
-	MaxMemory *string `json:"MaxMemory,omitempty"`
+	MaxMemory *string `yaml:"MaxMemory,omitempty"`
 
 	// Ignore if set to true then odoignore file should be considered
-	Ignore *bool `json:"Ignore,omitempty"`
+	Ignore *bool `yaml:"Ignore,omitempty"`
 
-	MinCPU *string `json:"MinCPU,omitempty"`
+	MinCPU *string `yaml:"MinCPU,omitempty"`
 
-	MaxCPU *string `json:"MaxCPU,omitempty"`
+	MaxCPU *string `yaml:"MaxCPU,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
-	ComponentSettings ComponentSettings `json:"ComponentSettings,omitempty"`
+	ComponentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
 // LocalConfigInfo wraps the local config and provides helpers to
 // serialize it.
 type LocalConfigInfo struct {
-	Filename    string `json:"FileName,omitempty"`
-	LocalConfig `json:",omitempty"`
+	Filename    string `yaml:"FileName,omitempty"`
+	LocalConfig `yaml:",omitempty"`
 }
 
 func getLocalConfigFile() (string, error) {
@@ -66,6 +66,11 @@ func getLocalConfigFile() (string, error) {
 	}
 
 	return filepath.Join(wd, ".odo", configFileName), nil
+}
+
+// New returns the localConfigInfo
+func New() (*LocalConfigInfo, error) {
+	return NewLocalConfig()
 }
 
 // NewLocalConfig gets the LocalConfigInfo from local config file and creates the local config file in case it's
@@ -124,7 +129,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (er
 
 		}
 
-		return util.WriteToFile(lci.LocalConfig, lci.Filename)
+		return util.WriteToFile(&lci.LocalConfig, lci.Filename)
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 
@@ -166,7 +171,7 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 				return err
 			}
 		}
-		return util.WriteToFile(lci.LocalConfig, lci.Filename)
+		return util.WriteToFile(&lci.LocalConfig, lci.Filename)
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -18,7 +19,7 @@ var viewExample = ktemplates.Examples(`# For viewing the current local preferenc
    %[1]s
 
    For viewing the current global preference
-   %[1]s --global
+   %[1]s 
   `)
 
 // ViewOptions encapsulates the options for the command

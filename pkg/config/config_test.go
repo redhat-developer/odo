@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -247,7 +246,6 @@ func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
 	if err != nil {
 		t.Errorf("error while creating local config %v", err)
 	}
-	log.Println(conf.Filename)
 	if _, err = os.Stat(conf.Filename); !os.IsNotExist(err) {
 		t.Errorf("local odo-config.yaml shouldn't exist yet")
 	}

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -22,30 +21,24 @@ var (
 
 %[1]s`)
 	setExample = ktemplates.Examples(`
-   # Set a configuration value in the global config
-   %[1]s --global %[2]s false
-   %[1]s --global %[3]s "app"
-   %[1]s --global %[4]s 20
-
    # Set a configuration value in the local config
-   %[1]s %[5]s java
-   %[1]s %[6]s test 
-   %[1]s %[7]s 50M 
-   %[1]s %[8]s 500M
-   %[1]s %[9]s 250M
-   %[1]s %[10]s false 
-   %[1]s %[11]s 0.5 
-   %[1]s %[12]s 2 
-   %[1]s %[13]s 1 
+   %[1]s %[2]s java
+   %[1]s %[3]s test 
+   %[1]s %[4]s 50M 
+   %[1]s %[5]s 500M
+   %[1]s %[6]s 250M
+   %[1]s %[7]s false 
+   %[1]s %[8]s 0.5 
+   %[1]s %[9]s 2 
+   %[1]s %[10]s 1 
 	`)
 )
 
 // SetOptions encapsulates the options for the command
 type SetOptions struct {
-	paramName        string
-	paramValue       string
-	configGlobalFlag bool
-	configForceFlag  bool
+	paramName       string
+	paramValue      string
+	configForceFlag bool
 }
 
 // NewSetOptions creates a new SetOptions instance
@@ -67,13 +60,8 @@ func (o *SetOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *SetOptions) Run() (err error) {
-	var cfg config.Info
 
-	if o.configGlobalFlag {
-		cfg, err = preference.NewGlobalConfig()
-	} else {
-		cfg, err = config.NewLocalConfig()
-	}
+	cfg, err := config.New()
 
 	if err != nil {
 		return errors.Wrapf(err, "unable to set configuration")
@@ -82,7 +70,7 @@ func (o *SetOptions) Run() (err error) {
 	if !o.configForceFlag {
 		if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
 			fmt.Printf("%v is already set. Current value is %v.\n", o.paramName, value)
-			if ui.Proceed("Do you want to override it in the config") {
+			if !ui.Proceed("Do you want to override it in the config") {
 				fmt.Println("Aborted by the user.")
 				return nil
 			}
@@ -96,15 +84,7 @@ func (o *SetOptions) Run() (err error) {
 		return err
 	}
 
-	// cannot use the type switch on non-interface variables so a hack
-	var intfcfg interface{} = cfg
-	switch intfcfg.(type) {
-	case *config.GlobalConfigInfo:
-		fmt.Println("Global config was successfully updated.")
-	case *config.LocalConfigInfo:
-		fmt.Println("Local config was successfully updated.")
-
-	}
+	fmt.Println("Local config was successfully updated.")
 	return nil
 }
 
@@ -114,9 +94,8 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	configurationSetCmd := &cobra.Command{
 		Use:   name,
 		Short: "Set a value in odo config file",
-		Long:  fmt.Sprintf(setLongDesc, preference.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName,
-			preference.UpdateNotificationSetting, preference.NamePrefixSetting, preference.TimeoutSetting, config.ComponentType,
+		Long:  fmt.Sprintf(setLongDesc, config.FormatLocallySupportedParameters()),
+		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName, config.ComponentType,
 			config.ComponentName, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
@@ -131,7 +110,6 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	configurationSetCmd.Flags().BoolVarP(&o.configGlobalFlag, "global", "g", false, "Use the global config file")
 	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Dont ask for confirmation, directly move forward")
 	return configurationSetCmd
 }

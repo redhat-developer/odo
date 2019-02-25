@@ -3,18 +3,20 @@
 package e2e
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/redhat-developer/odo/pkg/config"
 	"log"
 	"os"
 	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"fmt"
 	"io/ioutil"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 // TODO: A neater way to provide odo path. Currently we assume \
@@ -169,13 +171,13 @@ var _ = Describe("odoe2e", func() {
 
 	Context("odo utils config", func() {
 		It("should get blank for updatenotification by default globally as its not set", func() {
-			configOutput := runCmdShouldPass("odo utils config view --global")
-			Expect(configOutput).To(ContainSubstring(config.UpdateNotificationSetting))
-			Expect(configOutput).To(ContainSubstring(config.NamePrefixSetting))
-			Expect(configOutput).To(ContainSubstring(config.TimeoutSetting))
+			configOutput := runCmdShouldPass("odo preference view")
+			Expect(configOutput).To(ContainSubstring(preference.UpdateNotificationSetting))
+			Expect(configOutput).To(ContainSubstring(preference.NamePrefixSetting))
+			Expect(configOutput).To(ContainSubstring(preference.TimeoutSetting))
 		})
 		It("should be checking to see if timeout is shown as blank globally as its not set", func() {
-			configOutput := runCmdShouldPass("odo utils config view --global|grep Timeout")
+			configOutput := runCmdShouldPass("odo preference view |grep Timeout")
 			Expect(configOutput).To(ContainSubstring(fmt.Sprintf("Timeout")))
 		})
 		It("should be checking to see if global config values are the same as the configured ones", func() {
@@ -255,7 +257,7 @@ var _ = Describe("odoe2e", func() {
 		It("should allow unsetting a config globally", func() {
 			runCmdShouldPass("odo utils config set --global timeout 5")
 			configOutput := runCmdShouldPass("odo utils config unset -f --global timeout")
-			Expect(configOutput).To(ContainSubstring("Global config was successfully updated."))
+			Expect(configOutput).To(ContainSubstring("Preference was successfully updated."))
 			configOutput = runCmdShouldPass("odo utils config view --global |grep Timeout")
 			Expect(configOutput).NotTo(ContainSubstring("5"))
 		})
