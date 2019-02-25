@@ -2732,7 +2732,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 // During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string) error {
+func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string, globExps []string) error {
 	dest := path.Join(targetPath, filepath.Base(localPath))
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
@@ -2740,7 +2740,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 		defer writer.Close()
 
 		var err error
-		err = makeTar(localPath, dest, writer, copyFiles)
+		err = makeTar(localPath, dest, writer, copyFiles, globExps)
 		if err != nil {
 			glog.Errorf("Error while creating tar: %#v", err)
 			os.Exit(1)
@@ -2768,7 +2768,7 @@ func checkFileExist(fileName string) bool {
 
 // makeTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L309
 // srcPath is ignored if files is set
-func makeTar(srcPath, destPath string, writer io.Writer, files []string) error {
+func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExps []string) error {
 	// TODO: use compression here?
 	tarWriter := taro.NewWriter(writer)
 	defer tarWriter.Close()
@@ -2788,14 +2788,14 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string) error {
 				}
 				srcFile = filepath.Join(filepath.Base(srcPath), srcFile)
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				err = recursiveTar(path.Dir(srcPath), srcFile, path.Dir(destPath), srcFile, tarWriter)
+				err = recursiveTar(path.Dir(srcPath), srcFile, path.Dir(destPath), srcFile, tarWriter, globExps)
 				if err != nil {
 					return err
 				}
 			}
 		}
 	} else {
-		return recursiveTar(path.Dir(srcPath), path.Base(srcPath), path.Dir(destPath), path.Base(destPath), tarWriter)
+		return recursiveTar(path.Dir(srcPath), path.Base(srcPath), path.Dir(destPath), path.Base(destPath), tarWriter, globExps)
 	}
 
 	return nil
@@ -2839,67 +2839,88 @@ func tar(tw *taro.Writer, fileName string, destFile string) error {
 }
 
 // recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
-func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer) error {
+func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, globExps []string) error {
 	glog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
-	filepath := path.Join(srcBase, srcFile)
-	stat, err := os.Lstat(filepath)
+	joinedPath := path.Join(srcBase, srcFile)
+	matchedPathsDir, err := filepath.Glob(joinedPath)
 	if err != nil {
 		return err
 	}
-	if stat.IsDir() {
-		files, err := ioutil.ReadDir(filepath)
+
+	matchedPaths := []string{}
+
+	// checking the files which are allowed by glob matching
+	for _, path := range matchedPathsDir {
+		matched, err := util.IsGlobExpMatch(path, globExps)
 		if err != nil {
 			return err
 		}
-		if len(files) == 0 {
-			//case empty directory
-			hdr, _ := taro.FileInfoHeader(stat, filepath)
+		if !matched {
+			matchedPaths = append(matchedPaths, path)
+		}
+	}
+
+	// adding the files for taring
+	for _, matchedPath := range matchedPaths {
+		stat, err := os.Lstat(matchedPath)
+		if err != nil {
+			return err
+		}
+		if stat.IsDir() {
+			files, err := ioutil.ReadDir(matchedPath)
+			if err != nil {
+				return err
+			}
+			if len(files) == 0 {
+				//case empty directory
+				hdr, _ := taro.FileInfoHeader(stat, matchedPath)
+				hdr.Name = destFile
+				if err := tw.WriteHeader(hdr); err != nil {
+					return err
+				}
+			}
+			for _, f := range files {
+				if err := recursiveTar(srcBase, path.Join(srcFile, f.Name()), destBase, path.Join(destFile, f.Name()), tw, globExps); err != nil {
+					return err
+				}
+			}
+			return nil
+		} else if stat.Mode()&os.ModeSymlink != 0 {
+			//case soft link
+			hdr, _ := taro.FileInfoHeader(stat, joinedPath)
+			target, err := os.Readlink(joinedPath)
+			if err != nil {
+				return err
+			}
+
+			hdr.Linkname = target
 			hdr.Name = destFile
 			if err := tw.WriteHeader(hdr); err != nil {
 				return err
 			}
-		}
-		for _, f := range files {
-			if err := recursiveTar(srcBase, path.Join(srcFile, f.Name()), destBase, path.Join(destFile, f.Name()), tw); err != nil {
+		} else {
+			//case regular file or other file type like pipe
+			hdr, err := taro.FileInfoHeader(stat, joinedPath)
+			if err != nil {
 				return err
 			}
-		}
-		return nil
-	} else if stat.Mode()&os.ModeSymlink != 0 {
-		//case soft link
-		hdr, _ := taro.FileInfoHeader(stat, filepath)
-		target, err := os.Readlink(filepath)
-		if err != nil {
-			return err
-		}
+			hdr.Name = destFile
 
-		hdr.Linkname = target
-		hdr.Name = destFile
-		if err := tw.WriteHeader(hdr); err != nil {
-			return err
-		}
-	} else {
-		//case regular file or other file type like pipe
-		hdr, err := taro.FileInfoHeader(stat, filepath)
-		if err != nil {
-			return err
-		}
-		hdr.Name = destFile
+			if err := tw.WriteHeader(hdr); err != nil {
+				return err
+			}
 
-		if err := tw.WriteHeader(hdr); err != nil {
-			return err
-		}
+			f, err := os.Open(joinedPath)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
 
-		f, err := os.Open(filepath)
-		if err != nil {
-			return err
+			if _, err := io.Copy(tw, f); err != nil {
+				return err
+			}
+			return f.Close()
 		}
-		defer f.Close()
-
-		if _, err := io.Copy(tw, f); err != nil {
-			return err
-		}
-		return f.Close()
 	}
 	return nil
 }

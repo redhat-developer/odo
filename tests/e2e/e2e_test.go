@@ -5,6 +5,7 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"os"
 
 	"fmt"
 	"io/ioutil"
@@ -288,7 +289,7 @@ var _ = Describe("odoe2e", func() {
 				Expect(cmpList).To(ContainSubstring(curProj))
 			})
 
-			It("should create a named component", func() {
+			It("should create and push the contents of a named component excluding the contents in .odoignore file", func() {
 				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
 					tmpDir + "/nodejs-ex")
 
@@ -297,8 +298,47 @@ var _ = Describe("odoe2e", func() {
 				curProj = strings.TrimSuffix(curProj, "\n")
 				// Sleep until status tags and their annotations are created
 				time.Sleep(15 * time.Second)
+
+				ignoreFilePath := tmpDir + "/nodejs-ex/.odoignore"
+
+				if createFileAtPathWithContent(ignoreFilePath, ".git\ntests/\nREADME.md") != nil {
+					fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
+				}
+
 				runCmdShouldPass("odo create " + curProj + "/nodejs nodejs --local " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo push")
+
+				// get the name of the pod
+				podName := runCmdShouldPass("oc get pods | grep nodejs | awk '{print $1}' | tr -d '\n'")
+
+				// verify that the views folder got pushed
+				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
+
+				// verify that the tests was not pushed
+				runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep tests")
+
+				// verify that the README.md file was not pushed
+				runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep README.md")
+
+				// remove the .odoignore file
+				Expect(os.Remove(ignoreFilePath)).To(BeNil())
+			})
+
+			It("should create a component and push using the --ignore flag", func() {
+				runCmdShouldPass("odo create " + curProj + "/nodejs push-odoignore-flag-example --local " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("odo push --ignore tests/,README.md")
+
+				// get the name of the pod
+				podName := runCmdShouldPass("oc get pods | grep push-odoignore-flag-example | awk '{print $1}' | tr -d '\n'")
+
+				// verify that the views folder got pushed
+				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
+
+				// verify that the tests was not pushed
+				runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep tests")
+
+				// verify that the README.md file was not pushed
+				runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep README.md")
 			})
 
 			It("should create a component with auto-generated name", func() {

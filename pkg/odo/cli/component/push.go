@@ -41,6 +41,7 @@ const PushRecommendedCommandName = "push"
 
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {
+	ignores    []string
 	local      string
 	sourceType string
 	sourcePath string
@@ -49,7 +50,7 @@ type PushOptions struct {
 
 // NewPushOptions returns new instance of PushOptions
 func NewPushOptions() *PushOptions {
-	return &PushOptions{"", "", "", &ComponentOptions{}}
+	return &PushOptions{[]string{}, "", "", "", &ComponentOptions{}}
 }
 
 // Complete completes push args
@@ -78,6 +79,14 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			return fmt.Errorf("Component %s has invalid source path %s", po.componentName, u.Scheme)
 		}
 		po.sourcePath = util.ReadFilePath(u, runtime.GOOS)
+	}
+
+	if len(po.ignores) == 0 {
+		rules, err := util.GetIgnoreRulesFromDirectory(po.sourcePath)
+		if err != nil {
+			odoutil.LogErrorAndExit(err, "")
+		}
+		po.ignores = append(po.ignores, rules...)
 	}
 
 	return
@@ -128,11 +137,11 @@ func (po *PushOptions) Run() (err error) {
 
 		if po.sourceType == "local" {
 			glog.V(4).Infof("Copying directory %s to pod", po.sourcePath)
-			err = component.PushLocal(po.Context.Client, po.componentName, po.Context.Application, po.sourcePath, os.Stdout, []string{}, []string{}, true)
+			err = component.PushLocal(po.Context.Client, po.componentName, po.Context.Application, po.sourcePath, os.Stdout, []string{}, []string{}, true, util.GetAbsGlobExps(po.sourcePath, po.ignores))
 		} else {
 			dir := filepath.Dir(po.sourcePath)
 			glog.V(4).Infof("Copying file %s to pod", po.sourcePath)
-			err = component.PushLocal(po.Context.Client, po.componentName, po.Context.Application, dir, os.Stdout, []string{po.sourcePath}, []string{}, true)
+			err = component.PushLocal(po.Context.Client, po.componentName, po.Context.Application, dir, os.Stdout, []string{po.sourcePath}, []string{}, true, util.GetAbsGlobExps(po.sourcePath, po.ignores))
 		}
 		if err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", po.componentName))
@@ -170,6 +179,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	}
 
 	pushCmd.Flags().StringVarP(&po.local, "local", "l", "", "Use given local directory as a source for component. (It must be a local component)")
+	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 
 	// Add a defined annotation in order to appear in the help menu
 	pushCmd.Annotations = map[string]string{"command": "component"}

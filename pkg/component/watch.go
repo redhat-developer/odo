@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/gobwas/glob"
 
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -31,7 +28,7 @@ type WatchParameters struct {
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string, []string, bool) error
+	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string, []string, bool, []string) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
 	StartChan chan bool
 	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
@@ -40,38 +37,13 @@ type WatchParameters struct {
 	PushDiffDelay int
 }
 
-// isGlobExpMatch compiles strToMatch against each of the passed regExps
-// Parameters:
-// directory : the component directory (for converting relative path expressions to absolute ones)
-// strToMatch : a string for matching against the rules
-// globExps : a list of regexp patterns to match strToMatch with
-// Returns: true if there is any match else false the error (if any)
-func isGlobExpMatch(directory, strToMatch string, globExps []string) (bool, error) {
-	for _, globExp := range globExps {
-		// for glob matching with the library
-		// the relative paths in the glob expressions need to be converted to absolute paths
-		absExp := path.Join(directory, globExp)
-		pattern, err := glob.Compile(absExp)
-		if err != nil {
-			return false, err
-		}
-		matched := pattern.Match(strToMatch)
-		if matched {
-			glog.V(4).Infof("ignoring path %s because of glob rule %s", strToMatch, globExp)
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 // addRecursiveWatch handles adding watches recursively for the path provided
 // and its subdirectories.  If a non-directory is specified, this call is a no-op.
 // Files matching glob pattern defined in ignores will be ignored.
 // Taken from https://github.com/openshift/origin/blob/85eb37b34f0657631592356d020cef5a58470f8e/pkg/util/fsnotification/fsnotification.go
-// directory is the name of the component source directory
 // path is the path of the file or the directory
 // ignores contains the glob rules for matching
-func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignores []string) error {
+func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string) error {
 	file, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -82,7 +54,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignore
 
 	mode := file.Mode()
 	if mode.IsRegular() {
-		matched, err := isGlobExpMatch(directory, path, ignores)
+		matched, err := util.IsGlobExpMatch(path, ignores)
 		if err != nil {
 			return errors.Wrapf(err, "unable to watcher on %s", path)
 		}
@@ -110,7 +82,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignore
 
 		if info.IsDir() {
 			// If the current directory matches any of the ignore patterns, ignore them so that their contents are also not ignored
-			matched, err := isGlobExpMatch(directory, newPath, ignores)
+			matched, err := util.IsGlobExpMatch(newPath, ignores)
 			if err != nil {
 				return errors.Wrapf(err, "unable to addRecursiveWatch on %s", newPath)
 			}
@@ -125,7 +97,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, directory, path string, ignore
 	})
 	for _, folder := range folders {
 
-		if matched, _ := isGlobExpMatch(directory, folder, ignores); matched {
+		if matched, _ := util.IsGlobExpMatch(folder, ignores); matched {
 			glog.V(4).Infof("ignoring watch for %s", folder)
 			continue
 		}
@@ -235,7 +207,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				// ignores paths because, when a directory that is ignored, is deleted,
 				// because its parent is watched, the fsnotify automatically raises an event
 				// for it.
-				matched, err := isGlobExpMatch(parameters.Path, event.Name, parameters.FileIgnores)
+				matched, err := util.IsGlobExpMatch(event.Name, parameters.FileIgnores)
 				glog.V(4).Infof("Matching %s with %s\n.matched %v, err: %v", event.Name, parameters.FileIgnores, matched, err)
 				if err != nil {
 					watchError = errors.Wrap(err, "unable to watch changes")
@@ -267,7 +239,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						deletedPaths = append(deletedPaths, relPath)
 					}
 				} else {
-					if e := addRecursiveWatch(watcher, parameters.Path, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
+					if e := addRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
 						watchError = e
 					}
 				}
@@ -281,7 +253,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 	}()
 	// adding watch on the root folder and the sub folders recursively
 	// so directory and the path in addRecursiveWatch() are the same
-	err = addRecursiveWatch(watcher, parameters.Path, parameters.Path, parameters.FileIgnores)
+	err = addRecursiveWatch(watcher, parameters.Path, parameters.FileIgnores)
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
@@ -321,11 +293,11 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false, parameters.FileIgnores)
 				} else {
 					pathDir := filepath.Dir(parameters.Path)
 					glog.V(4).Infof("Copying file %s to pod", parameters.Path)
-					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false, parameters.FileIgnores)
 				}
 				if err != nil {
 					// Intentionally not exiting on error here.
