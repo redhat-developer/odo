@@ -257,7 +257,7 @@ var _ = Describe("odoe2e", func() {
 		It("should allow unsetting a config globally", func() {
 			runCmdShouldPass("odo preference set timeout 5")
 			configOutput := runCmdShouldPass("odo preference unset -f timeout")
-			Expect(configOutput).To(ContainSubstring("Preference was successfully updated."))
+			Expect(configOutput).To(ContainSubstring("preference was successfully updated."))
 			configOutput = runCmdShouldPass("odo preference view |grep Timeout")
 			Expect(configOutput).NotTo(ContainSubstring("5"))
 		})
