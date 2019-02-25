@@ -297,7 +297,7 @@ func (c *GlobalConfigInfo) UnsetActiveApplication(project string) error {
 func (c *GlobalConfigInfo) GetActiveComponent(application string, project string) string {
 	if c.ActiveApplications != nil {
 		for _, app := range c.ActiveApplications {
-			if app.Project == project && app.Name == application && app.Active == true {
+			if app.Project == project && app.Name == application && app.Active {
 				return app.ActiveComponent
 			}
 		}
@@ -310,7 +310,7 @@ func (c *GlobalConfigInfo) GetActiveComponent(application string, project string
 func (c *GlobalConfigInfo) GetActiveApplication(project string) string {
 	if c.ActiveApplications != nil {
 		for _, app := range c.ActiveApplications {
-			if app.Project == project && app.Active == true {
+			if app.Project == project && app.Active {
 				return app.Name
 			}
 		}
