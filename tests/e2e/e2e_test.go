@@ -289,7 +289,7 @@ var _ = Describe("odoe2e", func() {
 				Expect(cmpList).To(ContainSubstring(curProj))
 			})
 
-			It("should create a named component, add a .odoignore file and then push the contents from the source excluding the contents in the .odoignore file", func() {
+			It("should create and push the contents of a named component excluding the contents in .odoignore file", func() {
 				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
 					tmpDir + "/nodejs-ex")
 
@@ -321,9 +321,7 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep README.md")
 
 				// remove the .odoignore file
-				if os.Remove(ignoreFilePath) != nil {
-					fmt.Printf("the .odoignore file was not removed, reason %v", err.Error())
-				}
+				Expect(os.Remove(ignoreFilePath)).To(BeNil())
 			})
 
 			It("should create a component and push using the --ignore flag", func() {
