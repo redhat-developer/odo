@@ -47,6 +47,10 @@ func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 
 // Validate validates the ServiceDeleteOptions based on completed values
 func (o *ServiceDeleteOptions) Validate() (err error) {
+	if len(o.Application) == 0 {
+		return fmt.Errorf("no active application in %s project", o.Project)
+	}
+
 	exists, err := svc.SvcExists(o.Client, o.serviceName, o.Application)
 	if err != nil {
 		return fmt.Errorf("unable to delete service because Service Catalog is not enabled in your cluster:\n%v", err)
