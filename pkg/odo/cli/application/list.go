@@ -3,16 +3,16 @@ package application
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"text/tabwriter"
+
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"text/tabwriter"
 )
 
 const listRecommendedCommandName = "list"
@@ -59,18 +59,11 @@ func (o *ListOptions) Run() (err error) {
 		if o.outputFormat == "json" {
 			var appList []application.App
 			for _, app := range apps {
-				appDef := getMachineReadableFormat(o.Client, app.Name, o.Project, app.Active)
+				appDef := application.GetMachineReadableFormat(o.Client, app.Name, o.Project, app.Active)
 				appList = append(appList, appDef)
 			}
 
-			appListDef := application.AppList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items:    appList,
-			}
+			appListDef := application.GetMachineReadableFormatForList(appList)
 			out, err := json.Marshal(appListDef)
 			if err != nil {
 				return err
@@ -97,7 +90,16 @@ func (o *ListOptions) Run() (err error) {
 			return tabWriter.Flush()
 		}
 	} else {
-		log.Infof("There are no applications deployed in the project '%v'.", o.Project)
+		if o.outputFormat == "json" {
+			out, err := json.Marshal(application.GetMachineReadableFormatForList([]application.App{}))
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(out))
+		} else {
+
+			log.Infof("There are no applications deployed in the project '%v'.", o.Project)
+		}
 	}
 	return
 }

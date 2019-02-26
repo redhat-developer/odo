@@ -3,6 +3,8 @@ package application
 import (
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
@@ -257,4 +259,42 @@ func Exists(client *occlient.Client, appName string) (bool, error) {
 		}
 	}
 	return false, errors.Errorf("application %v does not exist in project %v", appName, client.Namespace)
+}
+
+// GetMachineReadableFormat returns resource information in machine readable format
+func GetMachineReadableFormat(client *occlient.Client, appName string, projectName string, active bool) App {
+	componentList, _ := component.List(client, appName)
+	var compList []string
+	for _, comp := range componentList.Items {
+		compList = append(compList, comp.Name)
+	}
+	appDef := App{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "app",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      appName,
+			Namespace: projectName,
+		},
+		Spec: AppSpec{
+			Components: compList,
+		},
+		Status: AppStatus{
+			Active: active,
+		},
+	}
+	return appDef
+}
+
+// GetMachineReadableFormatForList returns application list in machine readable format
+func GetMachineReadableFormatForList(apps []App) AppList {
+	return AppList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    apps,
+	}
 }
