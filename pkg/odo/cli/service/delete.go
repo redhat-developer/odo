@@ -52,11 +52,12 @@ func (o *ServiceDeleteOptions) Validate() (err error) {
 	}
 
 	exists, err := svc.SvcExists(o.Client, o.serviceName, o.Application)
+	if !exists {
+		return fmt.Errorf("service with the name %s does not exist in the current application", o.serviceName)
+	}
+
 	if err != nil {
 		return fmt.Errorf("unable to delete service because Service Catalog is not enabled in your cluster:\n%v", err)
-	}
-	if !exists {
-		return fmt.Errorf("Service with the name %s does not exist in the current application\n", o.serviceName)
 	}
 	return
 }
