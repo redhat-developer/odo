@@ -477,7 +477,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 	}
 
 	if wait {
-		w, err := c.kubeClient.CoreV1().Namespaces().Watch(metav1.ListOptions{
+		w, err := c.projectClient.Projects().Watch(metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
 		})
 		if err != nil {
@@ -490,7 +490,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			if !ok {
 				break
 			}
-			if e, ok := val.Object.(*corev1.Namespace); ok {
+			if e, ok := val.Object.(*projectv1.Project); ok {
 				glog.V(4).Infof("Project %s now exists", e.Name)
 				return nil
 			}
