@@ -3,17 +3,12 @@ package project
 import (
 	"github.com/pkg/errors"
 
+	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-)
 
-// ApplicationInfo holds information about one project
-type ProjectInfo struct {
-	// Name of the project
-	Name string
-	// is this project active?
-	Active bool
-}
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // GetCurrent return current project
 func GetCurrent(client *occlient.Client) string {
@@ -54,24 +49,24 @@ func Delete(client *occlient.Client, projectName string) error {
 	return nil
 }
 
-func List(client *occlient.Client) ([]ProjectInfo, error) {
+func List(client *occlient.Client) (ProjectList, error) {
 	currentProject := client.GetCurrentProjectName()
 	allProjects, err := client.GetProjectNames()
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot get all the projects")
+		return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
 	}
-	var projects []ProjectInfo
+	// Get apps from project
+	var projects []Project
 	for _, project := range allProjects {
 		isActive := false
 		if project == currentProject {
 			isActive = true
 		}
-		projects = append(projects, ProjectInfo{
-			Name:   project,
-			Active: isActive,
-		})
+		apps, _ := application.ListInProject(client)
+		projects = append(projects, GetMachineReadableFormat(project, isActive, apps))
 	}
-	return projects, nil
+
+	return getMachineReadableFormatForList(projects), nil
 }
 
 // Checks whether a project with the given name exists or not
@@ -83,10 +78,42 @@ func Exists(client *occlient.Client, projectName string) (bool, error) {
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the project list")
 	}
-	for _, project := range projects {
+	for _, project := range projects.Items {
 		if project.Name == projectName {
 			return true, nil
 		}
 	}
 	return false, nil
+}
+
+func GetMachineReadableFormat(projectName string, isActive bool, apps []string) Project {
+
+	return Project{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Project",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: projectName,
+		},
+		Spec: ProjectSpec{
+			Applications: apps,
+		},
+		Status: ProjectStatus{
+
+			Active: isActive,
+		},
+	}
+}
+
+// getMachineReadableFormatForList returns application list in machine readable format
+func getMachineReadableFormatForList(projects []Project) ProjectList {
+	return ProjectList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    projects,
+	}
 }

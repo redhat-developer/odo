@@ -172,7 +172,7 @@ var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 		return completions
 	}
 
-	for _, project := range projects {
+	for _, project := range projects.Items {
 		// we found the project name in the list which means
 		// that the project name has been already selected by the user so no need to suggest more
 		if args.commands[project.Name] {

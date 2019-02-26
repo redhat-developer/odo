@@ -26,7 +26,6 @@ var (
 
 // URLListOptions encapsulates the options for the odo url list command
 type URLListOptions struct {
-	outputFlag string
 	*genericclioptions.Context
 }
 
@@ -43,7 +42,7 @@ func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the UrlListOptions based on completed values
 func (o *URLListOptions) Validate() (err error) {
-	return util.CheckOutputFlag(o.outputFlag)
+	return util.CheckOutputFlag(o.OutputFlag)
 }
 
 // Run contains the logic for the odo url list command
@@ -57,7 +56,7 @@ func (o *URLListOptions) Run() (err error) {
 	if len(urls.Items) == 0 {
 		return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
 	} else {
-		if o.outputFlag == "json" {
+		if o.OutputFlag == "json" {
 			out, err := json.Marshal(urls)
 			if err != nil {
 				return err
@@ -96,7 +95,6 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	urlListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the form of json")
-
+	genericclioptions.AddOutputFlag(urlListCmd)
 	return urlListCmd
 }
