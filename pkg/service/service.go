@@ -156,7 +156,7 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 					if err != nil {
 						glog.Warningf("Unable to unlink component %s from service", componentName)
 					} else {
-						glog.V(2).Infof("Component %s was succesfully unlinked from service", componentName)
+						glog.V(2).Infof("Component %s was successfully unlinked from service", componentName)
 					}
 				}
 			}
