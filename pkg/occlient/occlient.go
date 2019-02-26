@@ -3188,7 +3188,7 @@ func getInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
 func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
 	dc, err := c.GetDeploymentConfigFromName(dcName)
 	if err != nil {
-		return nil, errors.Wrap(err, "error occured while retrieving the dc")
+		return nil, errors.Wrap(err, "error occurred while retrieving the dc")
 	}
 
 	numContainers := len(dc.Spec.Template.Spec.Containers)
