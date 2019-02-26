@@ -274,17 +274,13 @@ func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secre
 // The first returned parameter is a bool indicating if a service with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func SvcExists(client *occlient.Client, serviceName, applicationName string) (bool, error) {
-
-	serviceList, err := List(client, applicationName)
+	s, err := client.GetServiceInstance(serviceName, applicationName)
 	if err != nil {
-		return false, errors.Wrap(err, "unable to get the service list")
+		return false, err
 	}
-	for _, service := range serviceList {
-		if service.Name == serviceName {
-			return true, nil
-		}
-	}
-	return false, nil
+
+	// make sure we did get the proper service since GetServiceInstance will return an empty one if no service instance matched
+	return s.Name == serviceName, nil
 }
 
 // GetServiceClassAndPlans returns the service class details with the associated plans

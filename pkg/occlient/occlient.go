@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	labels2 "github.com/redhat-developer/odo/pkg/application/labels"
 	"io"
 	"io/ioutil"
+	"k8s.io/kubernetes/staging/src/k8s.io/apimachinery/pkg/labels"
 	"net"
 	"os"
 	"path"
@@ -2033,6 +2035,30 @@ func (c *Client) GetServiceInstanceList(selector string) ([]scv1beta1.ServiceIns
 	}
 
 	return svcList.Items, nil
+}
+
+// GetServiceInstance returns the service instance with the specified name in the given application
+func (c *Client) GetServiceInstance(serviceName, appName string) (scv1beta1.ServiceInstance, error) {
+	// select service instance within the proper app and with the desired name
+	labelSelector := labels.Set{
+		labels2.ApplicationLabel: appName,
+	}.AsSelector().String()
+	fieldSelector := fields.Set{
+		"metadata.name": serviceName,
+	}.AsSelector().String()
+
+	// List ServiceInstance according to given selectors
+	svcList, err := c.serviceCatalogClient.ServiceInstances(c.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector, FieldSelector: fieldSelector})
+	if err != nil {
+		return scv1beta1.ServiceInstance{}, errors.Wrap(err, "unable to list ServiceInstances")
+	}
+
+	// if we don't have exactly one result, return an empty service instance
+	if len(svcList.Items) != 1 {
+		return scv1beta1.ServiceInstance{}, nil
+	}
+
+	return svcList.Items[0], nil
 }
 
 // GetBuildConfigFromName get BuildConfig by its name
