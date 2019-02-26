@@ -264,21 +264,6 @@ func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secre
 	}
 }
 
-// GetSvcByType returns the matching (by type) service or nil of there are no matches
-func GetSvcByType(client *occlient.Client, serviceType string) (*occlient.Service, error) {
-	catalogList, err := ListCatalog(client)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to list catalog")
-	}
-
-	for _, supported := range catalogList {
-		if serviceType == supported.Name {
-			return &supported, nil
-		}
-	}
-	return nil, nil
-}
-
 // SvcExists Checks whether a service with the given name exists in the current application or not
 // serviceName is the service name to perform check for
 // The first returned parameter is a bool indicating if a service with the given name already exists or not
