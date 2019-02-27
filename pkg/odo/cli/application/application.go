@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/application"
@@ -13,6 +14,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/service"
+	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/spf13/cobra"
@@ -104,14 +107,23 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 					log.Info("   Storage named ", store.GetName(), " of size ", store.Spec.Size)
 				}
 			}
+		}
+		// List services that will be removed
 
-			if len(componentDesc.LinkedServices) != 0 {
-				log.Info("  This component has following services linked to it, which will get unlinked")
-				for _, linkedService := range componentDesc.LinkedServices {
-					log.Info("   Service named ", linkedService)
-				}
+		serviceList, err := service.List(client, appName)
+		if err != nil {
+			msg := err.Error()
+			if !strings.Contains(msg, "cannot list serviceinstances.servicecatalog.k8s.io in") {
+				return errors.Wrap(err, "could not get service list")
 			}
 		}
+		if len(serviceList) != 0 {
+			log.Info("This application has following service that will be deleted")
+			for _, ser := range serviceList {
+				log.Info(" service named ", ser.Name, " of type ", ser.Type)
+			}
+		}
+
 	}
 	return nil
 }

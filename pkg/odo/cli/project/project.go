@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/application"
@@ -11,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/service"
 
 	"github.com/spf13/cobra"
 )
@@ -74,11 +76,11 @@ func AddProjectFlag(cmd *cobra.Command) {
 
 // printDeleteProjectInfo prints objects affected by project deletion
 func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
+	// Fetch and List the applications
 	applicationList, err := application.ListInProject(client, projectName)
 	if err != nil {
 		return errors.Wrap(err, "failed to get application list")
 	}
-	// List the applications
 	if len(applicationList) != 0 {
 		log.Info("This project contains the following applications, which will be deleted")
 		for _, app := range applicationList {
@@ -112,13 +114,21 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 							log.Info("     Storage named ", store.GetName(), " of size ", store.Spec.Size)
 						}
 					}
+				}
+			}
 
-					if len(componentDesc.LinkedServices) != 0 {
-						log.Info("    This component has following services linked to it, which will get unlinked")
-						for _, linkedService := range componentDesc.LinkedServices {
-							log.Info("     Service named ", linkedService)
-						}
-					}
+			// List services that will be removed
+			serviceList, err := service.List(client, app.Name)
+			if err != nil {
+				msg := err.Error()
+				if !strings.Contains(msg, "cannot list serviceinstances.servicecatalog.k8s.io in") {
+					return errors.Wrap(err, "could not get service list")
+				}
+			}
+			if len(serviceList) != 0 {
+				log.Info("  This application has following service that will be deleted")
+				for _, ser := range serviceList {
+					log.Info("   service named ", ser.Name, " of type ", ser.Type)
 				}
 			}
 		}
