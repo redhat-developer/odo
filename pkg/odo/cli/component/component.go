@@ -104,7 +104,7 @@ func printDeleteComponentInfo(client *occlient.Client, componentName string, app
 		log.Info("This component has following urls that will be deleted with component")
 		ul, err := url.List(client, componentDesc.Name, appName)
 		if err != nil {
-			errors.Wrap(err, "Could not get url list")
+			return errors.Wrap(err, "Could not get url list")
 		}
 		for _, u := range ul.Items {
 			log.Info("     URL named ", u.GetName(), " with value ", u.Spec.URL)

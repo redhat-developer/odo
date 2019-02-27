@@ -106,7 +106,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 					if len(componentDesc.Spec.URL) != 0 {
 						ul, err := url.List(client, componentDesc.Name, app.Name)
 						if err != nil {
-							errors.Wrap(err, "Could not get url list")
+							return errors.Wrap(err, "Could not get url list")
 						}
 						log.Info("    This component has following urls that will be deleted with component")
 						for _, u := range ul.Items {
