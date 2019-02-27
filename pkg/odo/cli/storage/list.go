@@ -73,8 +73,8 @@ func (o *StorageListOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			for _, component := range componentList {
-				mountedStorages, err := storage.ListMounted(o.Client, component.ComponentName, o.Application)
+			for _, component := range componentList.Items {
+				mountedStorages, err := storage.ListMounted(o.Client, component.Name, o.Application)
 				if err != nil {
 					return err
 				}
@@ -209,8 +209,8 @@ func printMountedStorageInAllComponent(client *occlient.Client, applicationName 
 	odoutil.LogErrorAndExit(err, "could not get component list")
 
 	// iterating over all the components in the given aplication and project
-	for _, component := range componentList {
-		printMountedStorageInComponent(client, component.ComponentName, applicationName)
+	for _, component := range componentList.Items {
+		printMountedStorageInComponent(client, component.Name, applicationName)
 	}
 }
 

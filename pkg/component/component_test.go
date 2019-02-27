@@ -243,7 +243,7 @@ func TestList(t *testing.T) {
 		name    string
 		dcList  appsv1.DeploymentConfigList
 		wantErr bool
-		output  []Description
+		output  ComponentList
 	}{
 		{
 			name: "Case 1: Components are returned",
@@ -251,11 +251,16 @@ func TestList(t *testing.T) {
 				Items: []appsv1.DeploymentConfig{
 					{
 						ObjectMeta: metav1.ObjectMeta{
+							Name:      "frontend-app",
+							Namespace: "test",
 							Labels: map[string]string{
 								applabels.ApplicationLabel:         "app",
 								componentlabels.ComponentLabel:     "frontend",
 								componentlabels.ComponentTypeLabel: "nodejs",
 							},
+							Annotations: map[string]string{
+								ComponentSourceTypeAnnotation: "local",
+							},
 						},
 						Spec: appsv1.DeploymentConfigSpec{
 							Template: &corev1.PodTemplateSpec{
@@ -271,11 +276,16 @@ func TestList(t *testing.T) {
 					},
 					{
 						ObjectMeta: metav1.ObjectMeta{
+							Name:      "backend-app",
+							Namespace: "test",
 							Labels: map[string]string{
 								applabels.ApplicationLabel:         "app",
 								componentlabels.ComponentLabel:     "backend",
 								componentlabels.ComponentTypeLabel: "java",
 							},
+							Annotations: map[string]string{
+								ComponentSourceTypeAnnotation: "local",
+							},
 						},
 						Spec: appsv1.DeploymentConfigSpec{
 							Template: &corev1.PodTemplateSpec{
@@ -291,10 +301,15 @@ func TestList(t *testing.T) {
 					},
 					{
 						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-otherApp",
+							Namespace: "test",
 							Labels: map[string]string{
 								applabels.ApplicationLabel:         "otherApp",
 								componentlabels.ComponentLabel:     "test",
 								componentlabels.ComponentTypeLabel: "python",
+							},
+							Annotations: map[string]string{
+								ComponentSourceTypeAnnotation: "local",
 							},
 						},
 						Spec: appsv1.DeploymentConfigSpec{
@@ -311,28 +326,67 @@ func TestList(t *testing.T) {
 					},
 				},
 			},
-			output: []Description{
-				{
-					ComponentName:      "frontend",
-					ComponentImageType: "nodejs",
+			wantErr: false,
+			output: ComponentList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.openshift.io/v1alpha1",
 				},
-				{
-					ComponentName:      "backend",
-					ComponentImageType: "java",
+				ListMeta: metav1.ListMeta{},
+				Items: []Component{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.openshift.io/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "frontend",
+						},
+						Spec: ComponentSpec{
+							Type: "nodejs",
+						},
+						Status: ComponentStatus{
+							Active:           false,
+							LinkedServices:   []string{},
+							LinkedComponents: map[string][]string{},
+						},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.openshift.io/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "backend",
+						},
+						Spec: ComponentSpec{
+							Type: "java",
+						},
+						Status: ComponentStatus{
+							Active:           false,
+							LinkedServices:   []string{},
+							LinkedComponents: map[string][]string{},
+						},
+					},
 				},
 			},
-			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client, fakeClientSet := occlient.FakeNew()
-
+			client.Namespace = "test"
 			//fake the dcs
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &tt.dcList, nil
 			})
+
+			for i := range tt.dcList.Items {
+				fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+					return true, &tt.dcList.Items[i], nil
+				})
+			}
 
 			results, err := List(client, "app")
 
@@ -353,7 +407,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		componentType      string
 		componentPath      string
 		componentPathType  occlient.CreateType
-		existingComponents []Description
+		existingComponents ComponentList
 		wantErr            bool
 		wantRE             string
 		needPrefix         bool
@@ -363,7 +417,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "nodejs",
 			componentPathType:  occlient.GIT,
 			componentPath:      "https://github.com/openshift/nodejs.git",
-			existingComponents: []Description{},
+			existingComponents: ComponentList{},
 			wantErr:            false,
 			wantRE:             "nodejs-*",
 			needPrefix:         false,
@@ -373,7 +427,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "nodejs",
 			componentPathType:  occlient.LOCAL,
 			componentPath:      "./testing",
-			existingComponents: []Description{},
+			existingComponents: ComponentList{},
 			wantErr:            false,
 			wantRE:             "testing-nodejs-*",
 			needPrefix:         true,
@@ -383,7 +437,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentType:      "wildfly",
 			componentPathType:  occlient.BINARY,
 			componentPath:      "./testing.war",
-			existingComponents: []Description{},
+			existingComponents: ComponentList{},
 			wantErr:            false,
 			wantRE:             "testing-wildfly-*",
 			needPrefix:         true,

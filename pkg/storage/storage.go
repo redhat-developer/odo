@@ -16,6 +16,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Get returns Storage defination for given Storage name
+func (storages StorageList) Get(storageName string) Storage {
+	for _, storage := range storages.Items {
+		if storage.Name == storageName {
+			return storage
+		}
+	}
+	return Storage{}
+
+}
+
 // Create adds storage to given component of given application
 func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
 

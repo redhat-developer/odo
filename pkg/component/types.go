@@ -31,5 +31,7 @@ type ComponentList struct {
 
 // ComponentStatus is Status of components
 type ComponentStatus struct {
-	Active bool `json:"active"`
+	Active           bool                `json:"active"`
+	LinkedComponents map[string][]string `json:"linkedComponents,omitempty"`
+	LinkedServices   []string            `json:"linkedServices,omitempty"`
 }

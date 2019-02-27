@@ -17,6 +17,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+// Get returns URL defination for given URL name
+func (urls UrlList) Get(urlName string) Url {
+	for _, url := range urls.Items {
+		if url.Name == urlName {
+			return url
+		}
+	}
+	return Url{}
+
+}
+
 // Delete deletes a URL
 func Delete(client *occlient.Client, urlName string, applicationName string) error {
 
@@ -80,17 +91,6 @@ func List(client *occlient.Client, componentName string, applicationName string)
 
 	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
-}
-
-func getMachineReadableFormatForList(urls []Url) UrlList {
-	return UrlList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
-		},
-		ListMeta: metav1.ListMeta{},
-		Items:    urls,
-	}
 }
 
 func getProtocol(route routev1.Route) string {
@@ -194,4 +194,15 @@ func getMachineReadableFormat(r routev1.Route) Url {
 		Spec:       UrlSpec{URL: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: getProtocol(r)},
 	}
 
+}
+
+func getMachineReadableFormatForList(urls []Url) UrlList {
+	return UrlList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    urls,
+	}
 }

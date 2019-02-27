@@ -14,7 +14,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	"github.com/pkg/errors"
@@ -57,31 +56,12 @@ func (lo *ListOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch components list")
 	}
-	if len(components) == 0 {
+	if len(components.Items) == 0 {
 		log.Errorf("There are no components deployed.")
 		return
 	}
 	if lo.outputFlag == "json" {
-		var compList []component.Component
-		for _, compo := range components {
-			componentDesc, err := component.GetComponentDesc(lo.Client, compo.ComponentName, lo.Application, lo.Project)
-			if err != nil {
-				return err
-			}
-			compoDef := getMachineReadableFormat(componentDesc, lo.Application, lo.Project)
-			compList = append(compList, compoDef)
-		}
-
-		compListDef := component.ComponentList{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "List",
-				APIVersion: "odo.openshift.io/v1alpha1",
-			},
-			ListMeta: metav1.ListMeta{},
-			Items:    compList,
-		}
-
-		out, err := json.Marshal(compListDef)
+		out, err := json.Marshal(components)
 		if err != nil {
 			return err
 		}
@@ -93,11 +73,11 @@ func (lo *ListOptions) Run() (err error) {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
 		currentComponent := lo.Context.ComponentAllowingEmpty(true)
-		for _, comp := range components {
-			if comp.ComponentName == currentComponent {
+		for _, comp := range components.Items {
+			if comp.Name == currentComponent {
 				activeMark = "*"
 			}
-			fmt.Fprintln(w, activeMark, "\t", comp.ComponentName, "\t", comp.ComponentImageType)
+			fmt.Fprintln(w, activeMark, "\t", comp.Name, "\t", comp.Spec.Type)
 			activeMark = " "
 		}
 		w.Flush()
