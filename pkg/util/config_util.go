@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// CreateIfNotExists creates the directory and the file if it doesn't exist
 func CreateIfNotExists(configFile string) error {
 	_, err := os.Stat(filepath.Dir(configFile))
 	if os.IsNotExist(err) {
@@ -33,6 +34,7 @@ func CreateIfNotExists(configFile string) error {
 	return nil
 }
 
+// GetFromFile unmarshals a struct from a odo config file
 func GetFromFile(c interface{}, filename string) error {
 	configData, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -47,6 +49,7 @@ func GetFromFile(c interface{}, filename string) error {
 	return nil
 }
 
+// WriteToFile marshals a struct to a file
 func WriteToFile(c interface{}, filename string) error {
 	data, err := yaml.Marshal(&c)
 	if err != nil {
@@ -64,6 +67,8 @@ func WriteToFile(c interface{}, filename string) error {
 	return nil
 }
 
+// GetConfiguration uses reflection to get the parameter from a struct
+// using the name in a case insensitive manner
 // only supports flat structs
 // TODO: support deeper struct using recursion
 func GetConfiguration(info interface{}, parameter string) (interface{}, bool) {
@@ -87,12 +92,15 @@ func GetConfiguration(info interface{}, parameter string) (interface{}, bool) {
 	return val.Interface(), true
 }
 
+// CaseInsensitive returns a function which compares two words
+// caseinsensitively
 func CaseInsensitive(parameter string) func(word string) bool {
 	return func(word string) bool {
 		return strings.EqualFold(word, parameter)
 	}
 }
 
+// DeleteConfiguration sets a parameter to null in a struct using reflection
 func DeleteConfiguration(info interface{}, parameter string) error {
 
 	imm := reflect.ValueOf(info)
