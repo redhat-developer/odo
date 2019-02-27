@@ -2,7 +2,8 @@ package application
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/golang/glog"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/application"
@@ -10,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/url"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -92,9 +94,13 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 
 			if len(componentDesc.Spec.URL) != 0 {
 				log.Info("  The component has following routes, which will be removed")
-				for _, u := range componentDesc.Spec.URL {
-
-					fmt.Println(" URL ", u)
+				ul, err := url.List(client, componentDesc.Name, appName)
+				if err != nil {
+					errors.Wrap(err, "Could not get url list")
+				}
+				log.Info("  This component has following urls that will be deleted with component")
+				for _, u := range ul.Items {
+					log.Info("   URL named ", u.GetName(), " with value ", u.Spec.URL)
 				}
 			}
 
@@ -109,13 +115,10 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 			}
 		}
 		// List services that will be removed
-
 		serviceList, err := service.List(client, appName)
 		if err != nil {
-			msg := err.Error()
-			if !strings.Contains(msg, "cannot list serviceinstances.servicecatalog.k8s.io in") {
-				return errors.Wrap(err, "could not get service list")
-			}
+			log.Info("No services / could not get services")
+			glog.V(4).Info(err.Error())
 		}
 		if len(serviceList) != 0 {
 			log.Info("This application has following service that will be deleted")

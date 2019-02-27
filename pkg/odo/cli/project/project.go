@@ -2,8 +2,8 @@ package project
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -13,6 +13,8 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/service"
+	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/url"
 
 	"github.com/spf13/cobra"
 )
@@ -91,26 +93,33 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to get Component list")
 			}
-			if len(componentList) != 0 {
+			if len(componentList.Items) != 0 {
 				log.Info("  This application has following components that will be deleted")
 
-				for _, currentComponent := range componentList {
-					componentDesc, err := component.GetComponentDesc(client, currentComponent.ComponentName, app.Name, app.Project)
+				for _, currentComponent := range componentList.Items {
+					componentDesc, err := component.GetComponent(client, currentComponent.Name, app.Name, app.Project)
 					if err != nil {
 						return errors.Wrap(err, "unable to get component description")
 					}
-					log.Info("  component named ", currentComponent.ComponentName)
+					log.Info("  component named ", componentDesc.Name)
 
-					if len(componentDesc.URLs.Items) != 0 {
+					if len(componentDesc.Spec.URL) != 0 {
+						ul, err := url.List(client, componentDesc.Name, app.Name)
+						if err != nil {
+							errors.Wrap(err, "Could not get url list")
+						}
 						log.Info("    This component has following urls that will be deleted with component")
-						for _, url := range componentDesc.URLs.Items {
-							log.Info("     URL named ", url.GetName(), " with value ", url.Spec.URL)
+						for _, u := range ul.Items {
+							log.Info("     URL named ", u.GetName(), " with value ", u.Spec.URL)
 						}
 					}
 
-					if len(componentDesc.Storage.Items) != 0 {
+					storages, err := storage.List(client, currentComponent.Name, app.Name)
+					odoutil.LogErrorAndExit(err, "")
+					if len(storages.Items) != 0 {
 						log.Info("    This component has following storages which will be deleted with the component")
-						for _, store := range componentDesc.Storage.Items {
+						for _, storageName := range componentDesc.Spec.Storage {
+							store := storages.Get(storageName)
 							log.Info("     Storage named ", store.GetName(), " of size ", store.Spec.Size)
 						}
 					}
@@ -120,11 +129,10 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 			// List services that will be removed
 			serviceList, err := service.List(client, app.Name)
 			if err != nil {
-				msg := err.Error()
-				if !strings.Contains(msg, "cannot list serviceinstances.servicecatalog.k8s.io in") {
-					return errors.Wrap(err, "could not get service list")
-				}
+				log.Info("No services / could not get services")
+				glog.V(4).Info(err.Error())
 			}
+
 			if len(serviceList) != 0 {
 				log.Info("  This application has following service that will be deleted")
 				for _, ser := range serviceList {
