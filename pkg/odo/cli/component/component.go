@@ -8,6 +8,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/url"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -93,28 +95,28 @@ func AddComponentFlag(cmd *cobra.Command) {
 
 // printDeleteComponentInfo will print things which will be deleted
 func printDeleteComponentInfo(client *occlient.Client, componentName string, appName string, projectName string) error {
-	componentDesc, err := component.GetComponentDesc(client, componentName, appName, projectName)
+	componentDesc, err := component.GetComponent(client, componentName, appName, projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to get component description")
 	}
 
-	if len(componentDesc.URLs.Items) != 0 {
+	if len(componentDesc.Spec.URL) != 0 {
 		log.Info("This component has following urls that will be deleted with component")
-		for _, url := range componentDesc.URLs.Items {
-			log.Info(" URL named ", url.GetName(), " with value ", url.Spec.URL)
+		ul, err := url.List(client, componentDesc.Name, appName)
+		if err != nil {
+			errors.Wrap(err, "Could not get url list")
+		}
+		for _, u := range ul.Items {
+			log.Info("     URL named ", u.GetName(), " with value ", u.Spec.URL)
 		}
 	}
 
-	if len(componentDesc.LinkedServices) != 0 {
-		log.Info("This component has following services linked to it, which will get unlinked")
-		for _, linkedService := range componentDesc.LinkedServices {
-			log.Info(" Service named ", linkedService)
-		}
-	}
-
-	if len(componentDesc.Storage.Items) != 0 {
+	storages, err := storage.List(client, componentDesc.Name, appName)
+	odoutil.LogErrorAndExit(err, "")
+	if len(storages.Items) != 0 {
 		log.Info("This component has following storages which will be deleted with the component")
-		for _, store := range componentDesc.Storage.Items {
+		for _, storageName := range componentDesc.Spec.Storage {
+			store := storages.Get(storageName)
 			log.Info("  Storage", store.GetName(), "of size", store.Spec.Size)
 		}
 	}
