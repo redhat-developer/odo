@@ -16,8 +16,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetStorage returns Storage defination for given Storage name
-func GetStorage(storageName string, storages StorageList) Storage {
+// Get returns Storage defination for given Storage name
+func (storages StorageList) Get(storageName string) Storage {
 	for _, storage := range storages.Items {
 		if storage.Name == storageName {
 			return storage

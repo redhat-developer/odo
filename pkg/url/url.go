@@ -17,8 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// GetURL returns URL defination for given URL name
-func GetURL(urlName string, urls UrlList) Url {
+// Get returns URL defination for given URL name
+func (urls UrlList) Get(urlName string) Url {
 	for _, url := range urls.Items {
 		if url.Name == urlName {
 			return url

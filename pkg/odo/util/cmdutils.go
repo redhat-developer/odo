@@ -87,7 +87,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		storages, err := storagePkg.List(client, currentComponentName, applicationName)
 		LogErrorAndExit(err, "")
 		for _, storage := range componentDesc.Spec.Storage {
-			store := storagePkg.GetStorage(storage, storages)
+			store := storages.Get(storage)
 			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
 		}
 	}
@@ -97,7 +97,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		urls, err := urlPkg.List(client, currentComponentName, applicationName)
 		LogErrorAndExit(err, "")
 		for _, componentURL := range componentDesc.Spec.URL {
-			url := urlPkg.GetURL(componentURL, urls)
+			url := urls.Get(componentURL)
 			fmt.Printf(" - %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.URL), url.Spec.Port)
 		}
 

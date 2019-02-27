@@ -90,7 +90,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 		storages, err := storage.List(client, currentComponent.Name, appName)
 		odoutil.LogErrorAndExit(err, "")
 		for _, storageName := range componentDesc.Spec.Storage {
-			store := storage.GetStorage(storageName, storages)
+			store := storages.Get(storageName)
 			fmt.Println("  Storage", store.Name, "of size", store.Spec.Size, "will be removed")
 		}
 
