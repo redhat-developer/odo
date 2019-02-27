@@ -786,12 +786,13 @@ func TestDeleteApplication(t *testing.T) {
 	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
-		name           string
-		existingConfig GlobalConfig
-		application    string
-		project        string
-		wantErr        bool
-		result         []ApplicationInfo
+		name                  string
+		existingConfig        GlobalConfig
+		application           string
+		project               string
+		wantErr               bool
+		nextActiveApplication string
+		result                []ApplicationInfo
 	}{
 		{
 			name:           "empty config",
@@ -884,9 +885,10 @@ func TestDeleteApplication(t *testing.T) {
 					},
 				},
 			},
-			application: "b",
-			project:     "test",
-			wantErr:     false,
+			application:           "b",
+			project:               "test",
+			wantErr:               false,
+			nextActiveApplication: "a",
 			result: []ApplicationInfo{
 				{
 					Name:            "a",
@@ -915,6 +917,10 @@ func TestDeleteApplication(t *testing.T) {
 			if err == nil {
 				if !reflect.DeepEqual(cfg.ActiveApplications, tt.result) {
 					t.Errorf("expected output doesn't match what was returned: \n expected:\n%#v\n returned:\n%#v\n", tt.result, cfg.ActiveApplications)
+				}
+				activeApp := cfg.GetActiveApplication(tt.project)
+				if tt.nextActiveApplication != "" && !reflect.DeepEqual(tt.nextActiveApplication, activeApp) {
+					t.Errorf("expected output doesn't match what was returned: \n expected:\n%#v\n returned:\n%#v\n", tt.nextActiveApplication, activeApp)
 				}
 			}
 

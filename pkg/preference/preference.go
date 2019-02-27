@@ -386,20 +386,34 @@ func (c *GlobalConfigInfo) DeleteApplication(application string, project string)
 		c.ActiveApplications = []ApplicationInfo{}
 	}
 
-	found := false
+	foundAt := -1
+	nextFoundAt := -1
+	isDeletedAppActive := false
 	for i, app := range c.ActiveApplications {
-		// if application exists set is as Active
+		// if application exists, save the index for deletion later and check if it is the active application
 		if app.Name == application && app.Project == project {
-			// remove current item from array
-			c.ActiveApplications = append(c.ActiveApplications[:i], c.ActiveApplications[i+1:]...)
-			found = true
+			isDeletedAppActive = app.Active
+			foundAt = i
+		}
+
+		// find the first other app in the same project
+		if app.Name != application && app.Project == project && nextFoundAt == -1 {
+			nextFoundAt = i
 		}
 	}
 
-	if !found {
+	if foundAt == -1 {
 		return fmt.Errorf("application %s doesn't exist", application)
 
 	}
+
+	// if the deleted app is the active application then set the next app in the project as active
+	if nextFoundAt != -1 && isDeletedAppActive {
+		c.ActiveApplications[nextFoundAt].Active = true
+	}
+
+	// remove current item from array with the found index of the item
+	c.ActiveApplications = append(c.ActiveApplications[:foundAt], c.ActiveApplications[foundAt+1:]...)
 
 	err := util.WriteToFile(c.GlobalConfig, c.Filename)
 	if err != nil {
