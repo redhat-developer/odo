@@ -2,12 +2,12 @@ package project
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
-
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
@@ -61,6 +61,7 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
 	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+		activeProject := project.GetCurrent(pdo.Client)
 		currentProject, err := project.Delete(pdo.Context.Client, pdo.projectName)
 		if err != nil {
 			return err
@@ -70,6 +71,16 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 
 		if currentProject != "" {
 			log.Infof("%s has been set as the active project\n", currentProject)
+
+			if activeProject == pdo.projectName {
+				newApp, err := application.SetFirstAsActive(pdo.Client, currentProject)
+				if err != nil {
+					return err
+				}
+				if newApp != "" {
+					log.Infof("%v has been set as the active app\n", newApp)
+				}
+			}
 		} else {
 			// oc errors out as "error: you do not have rights to view project "$deleted_project"."
 			log.Infof("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")

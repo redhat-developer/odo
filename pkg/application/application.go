@@ -258,3 +258,24 @@ func Exists(client *occlient.Client, appName string) (bool, error) {
 	}
 	return false, errors.Errorf("application %v does not exist in project %v", appName, client.Namespace)
 }
+
+// SetFirstAsActive sets the first app in the current project (if any) as active
+func SetFirstAsActive(client *occlient.Client, projectName string) (string, error) {
+	client.Namespace = projectName
+	// switch the active app according to the new project
+	appsInNewProject, err := ListInProject(client)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to list app in the project")
+	}
+
+	// no apps available in the project
+	if len(appsInNewProject) == 0 {
+		return "", nil
+	}
+
+	err = SetCurrent(client, appsInNewProject[0].Name)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to set app %v as the current", appsInNewProject[0].Name)
+	}
+	return appsInNewProject[0].Name, nil
+}

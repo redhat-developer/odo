@@ -2,7 +2,7 @@ package project
 
 import (
 	"fmt"
-
+	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
@@ -26,7 +26,6 @@ var (
 
 // ProjectSetOptions encapsulates the options for the odo project set command
 type ProjectSetOptions struct {
-
 	// if supplied then only print the project name
 	projectShortFlag bool
 
@@ -75,7 +74,14 @@ func (pso *ProjectSetOptions) Run() (err error) {
 		if current == pso.projectName {
 			log.Infof("Already on project : %v", pso.projectName)
 		} else {
+			newApp, err := application.SetFirstAsActive(pso.Client, pso.projectName)
+			if err != nil {
+				return err
+			}
 			log.Infof("Switched to project : %v", pso.projectName)
+			if newApp != "" {
+				log.Infof("Active app switched to : %v", newApp)
+			}
 		}
 	}
 	return
