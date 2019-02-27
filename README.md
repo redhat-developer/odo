@@ -1,28 +1,10 @@
+<img src="./docs/img/openshift.png" width="180" align="right">
+
 # Odo - OpenShift Do
 
-[![Build Status](https://travis-ci.org/redhat-developer/odo.svg?branch=master)](https://travis-ci.org/redhat-developer/odo) [![CircleCI](https://circleci.com/gh/redhat-developer/odo/tree/master.svg?style=svg)](https://circleci.com/gh/redhat-developer/odo/tree/master) [![codecov](https://codecov.io/gh/redhat-developer/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/redhat-developer/odo)
+[![Build Status](https://travis-ci.org/redhat-developer/odo.svg?branch=master)](https://travis-ci.org/redhat-developer/odo) [![codecov](https://codecov.io/gh/redhat-developer/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/redhat-developer/odo) [![CircleCI](https://circleci.com/gh/redhat-developer/odo/tree/master.svg?style=svg)](https://circleci.com/gh/redhat-developer/odo/tree/master) [![mattermost](/docs/img/mattermost.svg)](https://chat.openshift.io/developers/channels/odo)
 
-![Powered by OpenShift](/docs/img/powered_by_openshift.png)
-
-- [What is Odo?](#odo)
-- [Features](#features)
-- [Setup and Installation](#setup-and-installation)
-- [Deploying an Application using Odo](#deploying-an-application-using-odo)
-- [Additional Documentation](#additional-documentation)
-- [Community, Discussion, Contribution and Support](#community-discussion-contribution-and-support)
-- [Glossary](#glossary)
-- [CLI Structure](#cli-structure)
-
-
-## Odo
-
-OpenShift Do (Odo) is a CLI tool for developers who are writing, building, and deploying applications on OpenShift. With Odo, developers get an opinionated CLI tool that supports fast, iterative development which abstracts away Kubernetes and OpenShift concepts, thus allowing them to focus on what's most important to them: code.
-
-Odo was created to improve the developer experience with OpenShift. Existing tools such as `oc` are more operations-focused and requires a deep-understanding of Kubernetes and OpenShift concepts. Odo is designed to be simple and concise so you may focus on coding rather than how to deploy your application. Since Odo can build and deploy your code to your cluster immediately after you save you changes, you benefit from instant feedback and can thus validate your changes in real-time. Odo's syntax and design is centered around concepts already familiar to developers, such as: project, application and component.
-
-### Demo
-
-![demo](/docs/img/example.gif)
+A fast iterative tool for deploying your source code straight to OpenShift.
 
 ## Features
 
@@ -32,59 +14,77 @@ Odo was created to improve the developer experience with OpenShift. Existing too
 - Detect changes to your local code and deploy automatically with `odo watch`
 - List all available components and services from your OpenShift cluster
 
-## Setup and Installation
+## Installation
 
-Ready to get started? Follow the instructions below to set up Odo in your environment or give it a try in our [interactive tutorial](https://learn.openshift.com/introduction/developing-with-odo/):
+> The only requirement is **OpenShift 3.9.0** and above. A recommended way of testing out and using OpenShift locally is [Minishift](https://github.com/minishift/minishift).
 
-### Requirements
+<details>
+<summary> :package: :rocket: OS-independent automated install</summary>
 
-  - `minishift` or an OpenShift environment 3.9.0+. The best way to deploy a development environment for OpenShift is using [Minishift](https://github.com/minishift/minishift).
-
-### Installing Odo
-
-#### Automated installation
-
-The quickest way to install Odo is via this [bash script](./scripts/install.sh), which will automatically detect your operating system and install `odo` accordingly.
+#### The quickest way to install Odo is via this [bash script](./scripts/install.sh), which will automatically detect your operating system and install `odo` accordingly.
 
 ```sh
 curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | bash
 ```
 
-#### OS-specific installation methods
+</details>
 
-#### macOS
+<details>
+<summary> :package: :apple: MacOS</summary>
 
+#### Binary installation:
 ```sh
-# Binary installation
 sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+```
 
-# Alternative, compressed tarball installation
+#### Tarball installation:
+```sh
 sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ```
 
-#### Linux
+</details>
 
+<details>
+<summary> :package: :penguin: Linux</summary>
+
+#### Binary installation:
 ```sh
-# Binary installation
 sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+```
 
-# Alternative, compressed tarball installation
+#### Tarball installation:
+```sh
 sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ```
 
-#### Windows
+</details>
+
+<details>
+<summary> :package: :checkered_flag: Windows</summary>
+
+#### In order to correctly use Odo you must add it to your PATH environment variable
 
 1. Download the `odo-windows-amd64.exe.gz` file from the [GitHub releases page](https://github.com/redhat-developer/odo/releases).
 2. Extract the file
 3. Add the location of extracted binary to your PATH environment variable by following [this Wiki page](https://github.com/redhat-developer/odo/wiki/Setting-PATH-variable-on-Windows).
 
-#### Other Methods
+</details>
 
-For a list of other methods such as installing the latest mastery binary, or specific OS installations, visit the [installation page](/docs/installation.md).
+#### For a list of other methods such as installing the latest mastery binary, or specific OS installations, visit the [installation page](/docs/installation.md).
+
+## Purpose
+
+OpenShift Do (Odo) is a CLI tool for developers who are writing, building, and deploying applications on OpenShift. With Odo, developers get an opinionated CLI tool that supports fast, iterative development which abstracts away Kubernetes and OpenShift concepts, thus allowing them to focus on what's most important to them: code.
+
+Odo was created to improve the developer experience with OpenShift. Existing tools such as `oc` are more operations-focused and requires a deep-understanding of Kubernetes and OpenShift concepts. Odo is designed to be simple and concise so you may focus on coding rather than how to deploy your application. Since Odo can build and deploy your code to your cluster immediately after you save you changes, you benefit from instant feedback and can thus validate your changes in real-time. Odo's syntax and design is centered around concepts already familiar to developers, such as: project, application and component.
+
+## Demo
+
+[![asciicast](https://asciinema.org/a/225717.svg)](https://asciinema.org/a/225717)
 
 ## Deploying an Application using Odo
 
-Now that you have Odo installed, follow these steps to build, push, and deploy a Node.js application using Odo. Examples for other supported languages and runtimes can be found [here](https://github.com/redhat-developer/odo/blob/master/docs/examples.md).
+After you have Odo installed, follow these steps to build, push, and deploy a Node.js application using Odo. Examples for other supported languages and runtimes can be found [here](https://github.com/redhat-developer/odo/blob/master/docs/examples.md).
 
 ```sh
 
@@ -135,7 +135,9 @@ Additional documentation can be found below:
 
 ## Glossary
 
-- **Application:** Is, well, your application! It consists of multiple microservices or components, that work individually to build the entire application.
-- **Component:** Can be thought of as a microservice. Multiple components will make up an application. A component will have different attributes like storage, etc.
+**Application:** Is, well, your application! It consists of multiple microservices or components, that work individually to build the entire application.
+
+**Component:** Can be thought of as a microservice. Multiple components will make up an application. A component will have different attributes like storage, etc.
+
 Multiple component types are currently supported, like nodejs, perl, php, python, ruby, etc.
-- **Service:** A service will typically be a database or a "service" a component links / depends on. For example: MariaDB, Jenkins, MySQL. This comes from the OpenShift "Service Catalog" and must be enabled within your cluster.
+**Service:** A service will typically be a database or a "service" a component links / depends on. For example: MariaDB, Jenkins, MySQL. This comes from the OpenShift "Service Catalog" and must be enabled within your cluster.
