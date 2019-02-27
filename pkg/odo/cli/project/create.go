@@ -26,9 +26,9 @@ var (
 
 // ProjectCreateOptions encapsulates the options for the odo project create command
 type ProjectCreateOptions struct {
-
 	// name of the project
 	projectName string
+	wait        bool
 
 	// generic context options common to all commands
 	*genericclioptions.Context
@@ -53,10 +53,22 @@ func (pco *ProjectCreateOptions) Validate() (err error) {
 
 // Run runs the project create command
 func (pco *ProjectCreateOptions) Run() (err error) {
-	err = project.Create(pco.Client, pco.projectName)
-	if err != nil {
-		return err
+	if pco.wait {
+		s := log.Spinner("Waiting for project to come up")
+		err = project.Create(pco.Client, pco.projectName, true)
+		if err != nil {
+			return err
+		} else {
+			s.End(true)
+			log.Successf(`Project '%s' is ready for use`, pco.projectName)
+		}
+	} else {
+		err = project.Create(pco.Client, pco.projectName, false)
+		if err != nil {
+			return err
+		}
 	}
+
 	err = project.SetCurrent(pco.Client, pco.projectName)
 	if err != nil {
 		return err
@@ -80,5 +92,6 @@ func NewCmdProjectCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
+	projectCreateCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the project is ready")
 	return projectCreateCmd
 }

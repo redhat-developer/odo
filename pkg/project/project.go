@@ -46,8 +46,8 @@ func SetCurrent(client *occlient.Client, projectName string) error {
 	return nil
 }
 
-func Create(client *occlient.Client, projectName string) error {
-	err := client.CreateNewProject(projectName)
+func Create(client *occlient.Client, projectName string, wait bool) error {
+	err := client.CreateNewProject(projectName, wait)
 	if err != nil {
 		return errors.Wrap(err, "unable to create new project")
 	}
