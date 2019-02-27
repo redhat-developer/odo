@@ -172,11 +172,13 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 	if classPtr == nil {
 		return fmt.Errorf("service %v doesn't exist\nRun 'odo catalog list services' to see a list of supported services.\n", o.ServiceType)
 	}
+
+	// check plan
+	plans, err := o.Client.GetMatchingPlans(*classPtr)
+	if err != nil {
+		return err
+	}
 	if len(o.Plan) == 0 {
-		plans, err := o.Client.GetMatchingPlans(*classPtr)
-		if err != nil {
-			return err
-		}
 		// when the plan has not been supplied, if there is only one available plan, we select it
 		if len(plans) == 1 {
 			for k := range plans {
@@ -188,15 +190,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 		}
 	} else {
 		// when the plan has been supplied, we need to make sure it exists
-		if ok, err := o.Client.DoesPlanExist(o.Plan); !ok {
-			if err != nil {
-				return err
-			}
-
-			plans, err := o.Client.GetMatchingPlans(*classPtr)
-			if err != nil {
-				return err
-			}
+		if _, ok := plans[o.Plan]; !ok {
 			return fmt.Errorf("plan %s is invalid for service %v.\nPlease select one of: %v\n", o.Plan, o.ServiceType, strings.Join(ui.GetServicePlanNames(plans), ","))
 		}
 	}

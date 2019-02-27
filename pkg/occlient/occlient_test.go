@@ -4971,19 +4971,3 @@ func TestGetMatchingPlans(t *testing.T) {
 		}
 	})
 }
-
-func TestDoesPlanExist(t *testing.T) {
-	name := "foo"
-	client, fakeClientSet := FakeNew()
-	fakeClientSet.ServiceCatalogClientSet.PrependReactor("get", "clusterserviceplans", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-		if name != action.(ktesting.GetAction).GetName() {
-			t.Errorf("should have have attempted to get service plan '%s'", name)
-		}
-		plan := testingutil.FakeClusterServicePlan(name, 1)
-		return true, &plan, nil
-	})
-
-	if ok, _ := client.DoesPlanExist(name); !ok {
-		t.Error("test failed")
-	}
-}
