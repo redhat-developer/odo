@@ -56,20 +56,20 @@ curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | 
 
 ```sh
 # Binary installation
-sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.19/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
 
 # Alternative, compressed tarball installation
-sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.19/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ```
 
 #### Linux
 
 ```sh
 # Binary installation
-sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.19/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
 
 # Alternative, compressed tarball installation
-sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.19/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ```
 
 #### Windows
