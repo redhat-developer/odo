@@ -90,6 +90,17 @@ Using project "myproject".
 
 Now we can move on to creating our application using `odo`.
 
+
+#### Notes with regards to Service Catalog / `odo service` functionality:
+
+In order to make **full use** of all Odo functionality, it's recommended to enable [service catalog](https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html) with OpenShift.
+
+This can enabled by using `minishift` 1.30+:
+
+```sh
+$ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
+```
+
 ### 2. Create an application
 
 An application is an umbrella that will comprise all the components (microservices) you will build.
