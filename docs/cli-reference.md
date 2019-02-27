@@ -73,12 +73,22 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
             component : Search component type in catalog
             service : Search service type in catalog
     component --app --project --short : Components of application.
+        create --app --binary --cpu --env --git --local --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref --wait : Create a new component
+        delete --app --force --project : Delete an existing component
+        describe --app --output --project : Describe the given component
         get --app --project --short : Get currently active component
+        link --app --component --port --project --wait --wait-for-target : Link component to a service or component
+        list --app --output --project : List all components in the current application
+        log --app --follow --project : Retrieve the log for the given component.
+        push --app --ignore --local --project : Push source code to a component
         set --app --project : Set active component.
+        unlink --app --component --port --project --wait : Unlink component to a service or component
+        update --app --binary --git --local --project --ref : Update the source code path of a component
+        watch --app --delay --ignore --project : Watch for changes, update component on change
     create --app --binary --cpu --env --git --local --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref --wait : Create a new component
     delete --app --force --project : Delete an existing component
     describe --app --output --project : Describe the given component
-    link --app --component --port --project --wait : Link component to a service or component
+    link --app --component --port --project --wait --wait-for-target : Link component to a service or component
     list --app --output --project : List all components in the current application
     log --app --follow --project : Retrieve the log for the given component.
     login --certificate-authority --insecure-skip-tls-verify --password --token --username : Login to cluster
@@ -89,9 +99,9 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         get --short : Get the active project
         list : List all the projects
         set --short : Set the current active project
-    push --app --local --project : Push source code to a component
+    push --app --ignore --local --project : Push source code to a component
     service : Perform service catalog operations
-        create --app --parameters --plan --project : Create a new service from service catalog using the plan defined and deploy it on OpenShift.
+        create --app --parameters --plan --project --wait : Create a new service from service catalog using the plan defined and deploy it on OpenShift.
         delete --app --force --project : Delete an existing service
         list --app --project : List all services in the current application
     storage : Perform storage operations
@@ -100,7 +110,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         list --all --app --component --output --project : List storage attached to a component
         mount --app --component --path --project : mount storage to a component
         unmount --app --component --project : Unmount storage from the given path or identified by its name, from the current component
-    unlink --app --component --port --project : Unlink component to a service or component
+    unlink --app --component --port --project --wait : Unlink component to a service or component
     update --app --binary --git --local --project --ref : Update the source code path of a component
     url : Expose component to the outside world
         create --app --component --open --port --project : Create a URL for a component
@@ -108,8 +118,8 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         list --app --component --output --project : List URLs
     utils : Utilities for terminal commands and modifying Odo configurations
         config : Modifies configuration settings
-            delete --global : Delete a value in odo config file
             set --force --global : Set a value in odo config file
+            unset --force --global : Unset a value in odo config file
             view --global : View current configuration values
         terminal : Add Odo terminal support to your development environment
     version --client : Print the client version information
@@ -182,6 +192,8 @@ Catalog related operations
   odo component get
   # Set component named 'frontend' as active
   odo component set frontend
+
+  See sub-commands individually for more examples, e.g. odo component create -h
 ```
 
 
@@ -363,19 +375,17 @@ Retrieve the log for the given component.
 > Example using login
 
 ```sh
-
   # Log in interactively
   odo login
-
+  
   # Log in to the given server with the given certificate authority file
   odo login localhost:8443 --certificate-authority=/path/to/cert.crt
-
+  
   # Log in to the given server with the given credentials (basic auth)
   odo login localhost:8443 --username=myuser --password=mypass
-
+  
   # Log in to the given server with the given credentials (token)
   odo login localhost:8443 --token=xxxxxxxxxxxxxxxxxxxxxxx
-	
 ```
 
 
@@ -390,7 +400,6 @@ Login to cluster
 ```sh
   # Logout
   odo logout
-	
 ```
 
 
@@ -604,14 +613,30 @@ The URLs that are generated using this command, can be used to access the deploy
   
   # Set a configuration value in the local config
   odo utils config set ComponentType java
+  odo utils config set ComponentName test
+  odo utils config set MinMemory 50M
+  odo utils config set MaxMemory 500M
+  odo utils config set Memory 250M
+  odo utils config set Ignore false
+  odo utils config set MinCPU 0.5
+  odo utils config set MaxCPU 2
+  odo utils config set CPU 1
 
-  # Delete a configuration value in the global config
-  odo utils config delete --global UpdateNotification
-  odo utils config delete --global NamePrefix
-  odo utils config delete --global Timeout
+  # Unset a configuration value in the global config
+  odo utils config unset --global UpdateNotification
+  odo utils config unset --global NamePrefix
+  odo utils config unset --global Timeout
   
-  # Delete a configuration value in the local config
-  odo utils config delete ComponentType
+  # Unset a configuration value in the local config
+  odo utils config unset ComponentType
+  odo utils config unset ComponentName
+  odo utils config unset MinMemory
+  odo utils config unset MaxMemory
+  odo utils config unset Memory
+  odo utils config unset Ignore
+  odo utils config unset MinCPU
+  odo utils config unset MaxCPU
+  odo utils config unset CPU
 ```
 
 
