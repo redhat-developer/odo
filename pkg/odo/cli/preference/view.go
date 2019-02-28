@@ -18,7 +18,7 @@ const viewCommandName = "view"
 var viewExample = ktemplates.Examples(`# For viewing the current local preference
    %[1]s
 
-   For viewing the current global preference
+   # For viewing the current global preference
    %[1]s 
   `)
 

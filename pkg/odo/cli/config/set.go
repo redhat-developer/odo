@@ -110,6 +110,6 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Dont ask for confirmation, directly move forward")
+	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
 	return configurationSetCmd
 }

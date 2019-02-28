@@ -2,6 +2,7 @@ package preference
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -78,7 +79,7 @@ func (o *SetOptions) Run() (err error) {
 		return err
 	}
 
-	fmt.Println("Preference was successfully updated.")
+	log.Println("Preference was successfully updated.")
 	return nil
 }
 
@@ -104,6 +105,6 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	preferenceSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Dont ask for confirmation, directly move forward")
+	preferenceSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the preference directly")
 	return preferenceSetCmd
 }

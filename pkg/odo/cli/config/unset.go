@@ -29,9 +29,9 @@ var (
    %[1]s %[5]s 
    %[1]s %[6]s 
    %[1]s %[7]s  
-   %[1]s %[8]s  
-   %[1]s %[9]s  
-   %[1]s %[10]s  
+   %[1]s %[8]s 
+   %[1]s %[9]s 
+   %[1]s %[10]s
 	`)
 )
 
@@ -111,7 +111,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
-	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Dont ask for confirmation, directly move forward")
+	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
 
 	return configurationUnsetCmd
 }

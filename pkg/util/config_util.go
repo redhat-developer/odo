@@ -51,7 +51,7 @@ func GetFromFile(c interface{}, filename string) error {
 
 // WriteToFile marshals a struct to a file
 func WriteToFile(c interface{}, filename string) error {
-	data, err := yaml.Marshal(&c)
+	data, err := yaml.Marshal(c)
 	if err != nil {
 		return errors.Wrap(err, "unable to marshal odo config data")
 	}
