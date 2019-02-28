@@ -1,6 +1,7 @@
 package url
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -41,6 +42,7 @@ type URLCreateOptions struct {
 	urlPort       int
 	urlOpenFlag   bool
 	componentPort int
+	outputFlag    string
 	*genericclioptions.Context
 }
 
@@ -77,14 +79,23 @@ func (o *URLCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
 
-	log.Infof("Adding URL to component: %v", o.Component())
 	urlRoute, err := url.Create(o.Client, o.urlName, o.componentPort, o.Component(), o.Application)
 	if err != nil {
 		return err
 	}
 	urlCreated := url.GetURLString(urlRoute.Spec.Protocol, urlRoute.Spec.URL)
-	log.Successf("URL created for component: %v\n\n"+
-		"%v - %v\n", o.Component(), urlRoute.Name, urlCreated)
+
+	if o.outputFlag == "json" {
+		out, err := json.Marshal(urlRoute)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
+	} else {
+		log.Infof("Adding URL to component: %v", o.Component())
+		log.Successf("URL created for component: %v\n\n"+
+			"%v - %v\n", o.Component(), urlRoute.Name, urlCreated)
+	}
 
 	if o.urlOpenFlag {
 		err := util.OpenBrowser(urlCreated)
@@ -110,6 +121,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().BoolVar(&o.urlOpenFlag, "open", false, "open the created link with your default browser")
+	urlCreateCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the form of json")
 
 	return urlCreateCmd
 }
