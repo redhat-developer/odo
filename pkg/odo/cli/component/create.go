@@ -90,7 +90,6 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 # Create new Node.js git component while specifying a tag
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
 
-
 # Create a new Node.js component of version 6 from the 'openshift' namespace
 %[1]s openshift/nodejs:6 --local /nodejs-ex
 
