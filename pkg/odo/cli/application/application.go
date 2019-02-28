@@ -93,7 +93,6 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 			log.Info(" component named ", currentComponent.Name)
 
 			if len(componentDesc.Spec.URL) != 0 {
-				log.Info("  The component has following routes, which will be removed")
 				ul, err := url.List(client, componentDesc.Name, appName)
 				if err != nil {
 					return errors.Wrap(err, "Could not get url list")
