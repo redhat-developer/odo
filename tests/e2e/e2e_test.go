@@ -796,8 +796,12 @@ var _ = Describe("odoe2e", func() {
 			Expect(getActiveApplication()).To(Equal(""))
 
 			// clean up
-			odoDeleteProject(projName + "-auto-0")
 			odoDeleteProject(projName + "-auto-1")
+
+			// deleting the project
+			// the active app should switch to the one in the current project
+			Expect(getActiveApplication()).NotTo(Equal(""))
+			odoDeleteProject(projName + "-auto-0")
 		})
 	})
 
@@ -806,8 +810,8 @@ var _ = Describe("odoe2e", func() {
 			odoVersion := runCmdShouldPass("odo version")
 			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+\s*\(\w+\)`)
 			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
-			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+\+\w+`)
-			kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
+			reKubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+\+\w+`)
+			kubernetesVersionStringMatch := reKubernetesVersion.MatchString(odoVersion)
 			Expect(odoVersionStringMatch).Should(BeTrue())
 			Expect(kubernetesVersionStringMatch).Should(BeTrue())
 		})
