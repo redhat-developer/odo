@@ -170,14 +170,14 @@ func Errorf(format string, a ...interface{}) {
 // Error will output in an appropriate "progress" manner
 func Error(a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Fprintf(os.Stderr, " %s%s%s\n", red("✗"), suffixSpacing, fmt.Sprintln(a...))
+	fmt.Fprintf(os.Stderr, "%s%s%s%s", prefixSpacing, red("✗"), suffixSpacing, fmt.Sprintln(a...))
 }
 
 // Info will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Info(a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Printf("%s\n", bold(fmt.Sprintln(a...)))
+	fmt.Printf("%s", bold(fmt.Sprintln(a...)))
 }
 
 // Infof will simply print out information on a new (bolded) line

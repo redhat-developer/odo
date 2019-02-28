@@ -24,7 +24,7 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 		if context == "" {
 			log.Error(errors.Cause(err))
 		} else {
-			log.Errorf(fmt.Sprintf("%s\n", context), a...)
+			log.Errorf(fmt.Sprintf("%s", context), a...)
 		}
 		os.Exit(1)
 	}
