@@ -187,6 +187,11 @@ All tests can be found in the `tests/e2e` directory and can be called using func
 Requirements:
 
  - A `minishift` or OpenShift environment with Service Catalog enabled
+
+```sh
+$ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
+```
+
  - `odo` and `oc` binaries in $PATH
 
 To deploy an e2e test:
