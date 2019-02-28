@@ -56,11 +56,9 @@ func (lo *ListOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch components list")
 	}
-	if len(components.Items) == 0 {
-		log.Errorf("There are no components deployed.")
-		return
-	}
+
 	if lo.outputFlag == "json" {
+
 		out, err := json.Marshal(components)
 		if err != nil {
 			return err
@@ -68,7 +66,10 @@ func (lo *ListOptions) Run() (err error) {
 		fmt.Println(string(out))
 
 	} else {
-
+		if len(components.Items) == 0 {
+			log.Errorf("There are no components deployed.")
+			return
+		}
 		activeMark := " "
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
