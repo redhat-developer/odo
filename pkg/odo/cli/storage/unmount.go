@@ -2,6 +2,9 @@ package storage
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
@@ -11,8 +14,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"strings"
 )
 
 const unMountRecommendedCommandName = "unmount"

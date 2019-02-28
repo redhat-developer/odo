@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"

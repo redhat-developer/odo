@@ -2,10 +2,11 @@ package validation
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/util"
-	"gopkg.in/AlecAivazis/survey.v1"
 	"strconv"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/util"
+	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 // NameValidator provides a Validator view of the ValidateName function.

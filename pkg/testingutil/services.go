@@ -3,6 +3,7 @@ package testingutil
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"

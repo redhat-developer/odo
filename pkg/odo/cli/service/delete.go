@@ -2,8 +2,9 @@ package service
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/log"

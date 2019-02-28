@@ -2,8 +2,9 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"os"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"

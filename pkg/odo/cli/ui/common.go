@@ -1,11 +1,12 @@
 package ui
 
 import (
+	"os"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
-	"os"
 )
 
 // HandleError handles UI-related errors, in particular useful to gracefully handle ctrl-c interrupts gracefully

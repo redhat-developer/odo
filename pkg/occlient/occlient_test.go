@@ -3,16 +3,15 @@ package occlient
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/testingutil"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
-
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	// api resources

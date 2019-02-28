@@ -3,6 +3,9 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/mgutz/ansi"
@@ -13,8 +16,6 @@ import (
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
-	"sort"
-	"strings"
 )
 
 // Retrieve the list of existing service class categories

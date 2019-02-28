@@ -2,13 +2,14 @@ package list
 
 import (
 	"fmt"
+	"os"
+	"strings"
+	"text/tabwriter"
+
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
-	"os"
-	"strings"
-	"text/tabwriter"
 )
 
 const componentsRecommendedCommandName = "components"

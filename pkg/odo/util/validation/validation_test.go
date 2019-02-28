@@ -1,9 +1,10 @@
 package validation
 
 import (
-	"gopkg.in/AlecAivazis/survey.v1"
 	"reflect"
 	"testing"
+
+	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 func Test_validateName(t *testing.T) {

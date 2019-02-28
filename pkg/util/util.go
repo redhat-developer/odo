@@ -3,7 +3,6 @@ package util
 import (
 	"bufio"
 	"fmt"
-	"github.com/gobwas/glob"
 	"io"
 	"math/rand"
 	"net"
@@ -19,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gobwas/glob"
 
 	"github.com/pkg/errors"
 

@@ -2,6 +2,7 @@ package list
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"

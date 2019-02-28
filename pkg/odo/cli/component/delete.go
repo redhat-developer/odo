@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"

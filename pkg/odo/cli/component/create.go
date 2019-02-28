@@ -2,11 +2,12 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
-	commonui "github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
+	commonui "github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
 	"github.com/pkg/errors"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"

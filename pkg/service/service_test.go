@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/onsi/gomega/matchers"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 

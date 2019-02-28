@@ -2,13 +2,14 @@ package describe
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"strings"
 )
 
 const serviceRecommendedCommandName = "service"

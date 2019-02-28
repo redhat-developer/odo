@@ -2,10 +2,11 @@ package version
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"os"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/notify"

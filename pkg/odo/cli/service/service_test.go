@@ -1,9 +1,10 @@
 package service
 
 import (
-	"github.com/redhat-developer/odo/pkg/testingutil"
 	"sort"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/posener/complete"

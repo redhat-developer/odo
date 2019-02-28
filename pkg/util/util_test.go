@@ -2,9 +2,7 @@ package util
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
 	"net/url"
 	"os"
 	"os/user"
@@ -12,6 +10,9 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestNamespaceOpenShiftObject(t *testing.T) {

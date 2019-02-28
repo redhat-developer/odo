@@ -3,11 +3,12 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"strings"
+	"text/template"
+
 	"github.com/pkg/errors"
 	commonui "github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
-	"strings"
-	"text/template"
 
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"

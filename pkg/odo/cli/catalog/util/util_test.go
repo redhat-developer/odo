@@ -1,10 +1,11 @@
 package util
 
 import (
-	"github.com/redhat-developer/odo/pkg/catalog"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"reflect"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 func TestFilterHiddenServices(t *testing.T) {

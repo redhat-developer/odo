@@ -3,13 +3,15 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
-	"strings"
+
+	"sort"
 
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
-	"sort"
 
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"

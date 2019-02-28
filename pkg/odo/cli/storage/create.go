@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/storage"

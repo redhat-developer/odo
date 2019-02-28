@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/describe"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/list"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/search"

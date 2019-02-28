@@ -2,6 +2,7 @@ package login
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/auth"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
