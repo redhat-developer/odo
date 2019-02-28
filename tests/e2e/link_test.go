@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -64,9 +65,15 @@ var _ = Describe("odoLinkE2e", func() {
 		It("should be able to create a service", func() {
 			runCmdShouldPass("odo service create mysql-persistent")
 
+			out1 := runCmdShouldPass("oc get serviceinstance -o name")
+			fmt.Println("DEBUG1")
+			fmt.Println(out1)
 			waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
+			out2 := runCmdShouldPass("oc get serviceinstance -o name")
+			fmt.Println("DEBUG2")
+			fmt.Println(out2)
 		})
 
 		It("app describe should show the mysql service", func() {

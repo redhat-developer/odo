@@ -152,9 +152,9 @@ endif
 .PHONY: test-link-e2e
 test-link-e2e:
 ifdef TIMEOUT
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.v  -timeout $(TIMEOUT)
 else
-	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.succinct
+	go test -v github.com/redhat-developer/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.v
 endif
 
 # Run link e2e tests
