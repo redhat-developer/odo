@@ -87,7 +87,8 @@ func componentTests(componentCmdPrefix string) {
 			runCmdShouldPass(fmt.Sprintf("odo url create ref-test-%s", t))
 
 			routeURL := determineRouteURL() + "/health"
-			waitForEqualCmd("curl -s "+routeURL+" | grep 'develop' | wc -l | tr -d '\n'", "1", 10)
+			responseStringMatchStatus := matchResponseSubString(routeURL, "develop", 90, 1)
+			Expect(responseStringMatchStatus).Should(BeTrue())
 		})
 
 		It("should be able to create a component with git source", func() {
