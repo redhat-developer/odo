@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	labels2 "github.com/redhat-developer/odo/pkg/application/labels"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"io"
 	"io/ioutil"
 	"k8s.io/kubernetes/staging/src/k8s.io/apimachinery/pkg/labels"
@@ -2041,7 +2041,7 @@ func (c *Client) GetServiceInstanceList(selector string) ([]scv1beta1.ServiceIns
 func (c *Client) GetServiceInstance(serviceName, appName string) (scv1beta1.ServiceInstance, error) {
 	// select service instance within the proper app and with the desired name
 	labelSelector := labels.Set{
-		labels2.ApplicationLabel: appName,
+		applabels.ApplicationLabel: appName,
 	}.AsSelector().String()
 	fieldSelector := fields.Set{
 		"metadata.name": serviceName,
