@@ -25,11 +25,9 @@ var _ = Describe("odojsonoutput", func() {
 
 		})
 		// Basic creation
-		It("Pre-Test Creation: Creating Application", func() {
+		It("Pre-Test Creation Json", func() {
 			runCmdShouldPass("odo app create myapp")
 			runCmdShouldPass("odo create nodejs nodejs --git https://github.com/openshift/nodejs-ex")
-			runCmdShouldPass("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
-
 		})
 		// odo url create -o json
 		It("should be able to create url", func() {
@@ -39,6 +37,14 @@ var _ = Describe("odojsonoutput", func() {
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
+		})
+
+		// odo url create -o json
+		It("should be able to create storage", func() {
+			actual := runCmdShouldPass("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi -o json")
+			desired := `{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"},"status":{"mounted":true}}`
+			areEqual, _ := compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
 		})
 		// odo app describe myapp -o json
 		It("should be able to describe app", func() {

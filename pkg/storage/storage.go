@@ -28,14 +28,14 @@ func (storages StorageList) Get(storageName string) Storage {
 }
 
 // Create adds storage to given component of given application
-func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
+func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (Storage, error) {
 
 	// Namespace the component
 	// We will use name+applicationName instead of componentName+applicationName until:
 	// https://github.com/redhat-developer/odo/issues/504 is resolved.
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+		return Storage{}, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
 	labels := storagelabels.GetLabels(name, componentName, applicationName, true)
@@ -45,7 +45,7 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	// Create PVC
 	pvc, err := client.CreatePVC(generatePVCNameFromStorageName(namespacedOpenShiftObject), size, labels)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to create PVC")
+		return Storage{}, errors.Wrap(err, "unable to create PVC")
 	}
 
 	// Get DeploymentConfig for the given component
@@ -53,16 +53,17 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
+		return Storage{}, errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
 	glog.V(4).Infof("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
 
 	// Add PVC to DeploymentConfig
 	if err := client.AddPVCToDeploymentConfig(dc, pvc.Name, path); err != nil {
-		return "", errors.Wrap(err, "unable to add PVC to DeploymentConfig")
+		return Storage{}, errors.Wrap(err, "unable to add PVC to DeploymentConfig")
 	}
 
-	return dc.Name, nil
+	// getting the machine readable output format and mark status as active
+	return getMachineReadableFormat(*pvc, path, true), nil
 }
 
 // Unmount unmounts the given storage from the given component
@@ -182,7 +183,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
 			storageName := getStorageFromPVC(&pvc)
-			storageMachineReadable := getMachineReadableFormat(pvc, mountedStorageMap[storageName])
+			storageMachineReadable := getMachineReadableFormat(pvc, mountedStorageMap[storageName], true)
 			storage = append(storage, storageMachineReadable)
 		}
 	}
@@ -221,7 +222,7 @@ func ListUnmounted(client *occlient.Client, applicationName string) (StorageList
 			if pvc.Name == "" {
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
-			storageMachineReadable := getMachineReadableFormat(pvc, "")
+			storageMachineReadable := getMachineReadableFormat(pvc, "", false)
 			storage = append(storage, storageMachineReadable)
 		}
 	}
@@ -395,7 +396,7 @@ func getMachineReadableFormatForList(storage []Storage) StorageList {
 }
 
 // getMachineReadableFormat gives machine readable Storage definition
-func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath string) Storage {
+func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath string, status bool) Storage {
 	storageName := getStorageFromPVC(&pvc)
 	storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 	return Storage{
@@ -404,6 +405,9 @@ func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath stri
 		Spec: StorageSpec{
 			Path: storagePath,
 			Size: storageSize.String(),
+		},
+		Status: StorageStatus{
+			Mounted: status,
 		},
 	}
 

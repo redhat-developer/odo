@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -28,6 +29,7 @@ type StorageCreateOptions struct {
 	storageName string
 	storageSize string
 	storagePath string
+	outputFlag  string
 	*genericclioptions.Context
 }
 
@@ -55,9 +57,17 @@ func (o *StorageCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo storage create command
 func (o *StorageCreateOptions) Run() (err error) {
-	_, err = storage.Create(o.Client, o.storageName, o.storageSize, o.storagePath, o.Component(), o.Application)
+	storageResult, err := storage.Create(o.Client, o.storageName, o.storageSize, o.storagePath, o.Component(), o.Application)
 	if err == nil {
-		log.Successf("Added storage %v to %v", o.storageName, o.Component())
+		if o.outputFlag == "json" {
+			out, err := json.Marshal(storageResult)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(out))
+		} else {
+			log.Successf("Added storage %v to %v", o.storageName, o.Component())
+		}
 	}
 	return
 }
@@ -78,6 +88,7 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 
 	storageCreateCmd.Flags().StringVar(&o.storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
+	storageCreateCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the given format")
 	_ = storageCreateCmd.MarkFlagRequired("path")
 	_ = storageCreateCmd.MarkFlagRequired("size")
 
