@@ -1,7 +1,6 @@
 package url
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -68,11 +67,14 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 // Validate validates the UrlCreateOptions based on completed values
 func (o *URLCreateOptions) Validate() (err error) {
+
 	exists, err := url.Exists(o.Client, o.urlName, o.Component(), o.Application)
 	if exists {
 		return fmt.Errorf("The url %s already exists in the application: %s\n%v", o.urlName, o.Application, err)
 	}
-
+	if !util.CheckOutPutFlag(o.outputFlag) {
+		return fmt.Errorf("Given output flag %s is not supported", o.outputFlag)
+	}
 	return
 }
 
@@ -83,21 +85,17 @@ func (o *URLCreateOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	urlCreated := url.GetURLString(urlRoute.Spec.Protocol, urlRoute.Spec.URL)
 
-	if o.outputFlag == "json" {
-		out, err := json.Marshal(urlRoute)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
+	if util.CheckOutPutFlag(o.outputFlag) {
+		err := util.PrintMachineOutput(urlRoute)
+		return err
 	} else {
 		log.Successf("URL created for component: %v\n\n"+
-			"%v - %v\n", o.Component(), urlRoute.Name, urlCreated)
+			"%v - %v\n", o.Component(), urlRoute.Name, urlRoute.Spec.URL)
 	}
 
 	if o.urlOpenFlag {
-		err := util.OpenBrowser(urlCreated)
+		err := util.OpenBrowser(urlRoute.Spec.URL)
 		if err != nil {
 			return fmt.Errorf("unable to open URL within default browser:\n%v", err)
 		}

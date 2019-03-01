@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -532,4 +533,23 @@ func IsGlobExpMatch(strToMatch string, globExps []string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// CheckOutPutFlag validates given flag
+func CheckOutPutFlag(outputFlag string) bool {
+	switch outputFlag {
+	case "json":
+		return true
+	}
+	return false
+}
+
+// PrintMachineOutput prints json output
+func PrintMachineOutput(resource interface{}) error {
+	out, err := json.Marshal(resource)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(out))
+	return nil
 }
