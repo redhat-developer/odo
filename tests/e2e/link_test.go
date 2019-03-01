@@ -79,6 +79,10 @@ var _ = Describe("odoLinkE2e", func() {
 		It("app describe should show the mysql service", func() {
 			describeOutput := runCmdShouldPass("odo app describe")
 
+			out3 := runCmdShouldPass("oc get serviceinstance -o name")
+			fmt.Println("DEBUG3")
+			fmt.Println(out3)
+
 			// ensure that the output contains the service
 			Expect(describeOutput).To(ContainSubstring("mysql-persistent"))
 		})
