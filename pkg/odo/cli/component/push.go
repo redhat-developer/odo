@@ -2,7 +2,9 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	"github.com/pkg/errors"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
@@ -26,7 +28,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var pushCmdExample = `  # Push source code to the current component
+var pushCmdExample = ktemplates.Examples(`  # Push source code to the current component
 %[1]s
 
 # Push data to the current component from the original source.
@@ -34,7 +36,7 @@ var pushCmdExample = `  # Push source code to the current component
 
 # Push source code in ~/mycode to component called my-component
 %[1]s my-component --local ~/mycode
-  `
+  `)
 
 // PushRecommendedCommandName is the recommended push command name
 const PushRecommendedCommandName = "push"
