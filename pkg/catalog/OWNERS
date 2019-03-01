@@ -1,0 +1,13 @@
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
+approvers:
+- surajnarwade 
+- girishramnani 
+- metacosm
+- geoand 
+
+reviewers:
+- surajnarwade 
+- girishramnani 
+- metacosm
+- geoand 

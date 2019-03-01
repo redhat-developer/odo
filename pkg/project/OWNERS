@@ -1,0 +1,9 @@
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
+approvers:
+- mik-dass 
+- mohammedzee1000 
+
+reviewers:
+- mik-dass 
+- mohammedzee1000 

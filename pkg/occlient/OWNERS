@@ -1,0 +1,13 @@
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
+approvers:
+- kadel 
+- metacosm
+- geoand 
+- cdrage
+
+reviewers:
+- kadel 
+- metacosm
+- geoand 
+- cdrage
