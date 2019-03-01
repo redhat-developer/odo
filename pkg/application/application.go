@@ -19,6 +19,9 @@ import (
 const (
 	appPrefixMaxLen   = 12
 	appNameMaxRetries = 3
+	appAPIVersion     = "odo.openshift.io/v1alpha1"
+	appKind           = "app"
+	appList           = "List"
 )
 
 // GetDefaultAppName returns randomly generated application name with unique configurable prefix suffixed by a randomly generated string which can be used as a default name in case the user doesn't provide a name.
@@ -270,8 +273,8 @@ func GetMachineReadableFormat(client *occlient.Client, appName string, projectNa
 	}
 	appDef := App{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "app",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			Kind:       appKind,
+			APIVersion: appAPIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appName,
@@ -291,8 +294,8 @@ func GetMachineReadableFormat(client *occlient.Client, appName string, projectNa
 func GetMachineReadableFormatForList(apps []App) AppList {
 	return AppList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			Kind:       appList,
+			APIVersion: appAPIVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    apps,

@@ -106,8 +106,8 @@ func TestGetMachineReadableFormat(t *testing.T) {
 			},
 			want: App{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "app",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					Kind:       appKind,
+					APIVersion: appAPIVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "myapp",
@@ -214,8 +214,8 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 				apps: []App{
 					{
 						TypeMeta: metav1.TypeMeta{
-							Kind:       "app",
-							APIVersion: "odo.openshift.io/v1alpha1",
+							Kind:       appKind,
+							APIVersion: appAPIVersion,
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "myapp",
@@ -231,15 +231,15 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 			},
 			want: AppList{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					Kind:       appList,
+					APIVersion: appAPIVersion,
 				},
 				ListMeta: metav1.ListMeta{},
 				Items: []App{
 					{
 						TypeMeta: metav1.TypeMeta{
-							Kind:       "app",
-							APIVersion: "odo.openshift.io/v1alpha1",
+							Kind:       appKind,
+							APIVersion: appAPIVersion,
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "myapp",
