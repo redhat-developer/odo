@@ -186,10 +186,15 @@ func List(client *occlient.Client, applicationName string) ([]ServiceInfo, error
 	// Iterate through serviceInstanceList and add to service
 	for _, elem := range serviceInstanceList {
 		conditions := elem.Status.Conditions
+		var status string
 		if len(conditions) == 0 {
-			return nil, fmt.Errorf("no condition in status for %+v", elem)
+			glog.Warningf("no condition in status for %+v, marking it as Unknown", elem)
+			status = "Unknown"
+		} else {
+			status = conditions[0].Reason
 		}
-		services = append(services, ServiceInfo{Name: elem.Labels[componentlabels.ComponentLabel], Type: elem.Labels[componentlabels.ComponentTypeLabel], Status: conditions[0].Reason})
+
+		services = append(services, ServiceInfo{Name: elem.Labels[componentlabels.ComponentLabel], Type: elem.Labels[componentlabels.ComponentTypeLabel], Status: status})
 	}
 
 	return services, nil
