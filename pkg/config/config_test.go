@@ -247,6 +247,6 @@ func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
 		t.Errorf("error while creating local config %v", err)
 	}
 	if _, err = os.Stat(conf.Filename); !os.IsNotExist(err) {
-		t.Errorf("local odo-config.yaml shouldn't exist yet")
+		t.Errorf("local config.yaml shouldn't exist yet")
 	}
 }

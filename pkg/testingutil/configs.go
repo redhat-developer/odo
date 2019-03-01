@@ -93,8 +93,8 @@ func setUpConfig(testFile string, conf interface{}, configEnvName string) (*os.F
 	foundConfigType := false
 	var err error
 	var data []byte
-	if conf, ok := conf.(preference.GlobalConfigInfo); ok {
-		data, err = yaml.Marshal(conf.GlobalConfig)
+	if conf, ok := conf.(preference.PreferenceInfo); ok {
+		data, err = yaml.Marshal(conf.Preference)
 		foundConfigType = true
 	}
 	if conf, ok := conf.(clientcmdapi.Config); ok {
@@ -141,10 +141,10 @@ func CleanupEnv(confFiles []*os.File, t *testing.T) {
 
 // FakeOdoConfig returns mock odo config
 // It takes a confPath which is the path to the config
-func FakeOdoConfig(confPath string, needNamePrefix bool, namePrefix string) preference.GlobalConfigInfo {
-	odoConfig := preference.GlobalConfigInfo{
+func FakeOdoConfig(confPath string, needNamePrefix bool, namePrefix string) preference.PreferenceInfo {
+	odoConfig := preference.PreferenceInfo{
 		Filename: confPath,
-		GlobalConfig: preference.GlobalConfig{
+		Preference: preference.Preference{
 			ActiveApplications: []preference.ApplicationInfo{
 				{
 					Name:            "app-india",

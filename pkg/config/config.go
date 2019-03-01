@@ -13,7 +13,7 @@ import (
 
 const (
 	localConfigEnvName = "LOCALODOCONFIG"
-	configFileName     = "odo-config.yaml"
+	configFileName     = "config.yaml"
 )
 
 // Info is implemented by configuration managers
