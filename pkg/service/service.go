@@ -156,7 +156,7 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 					if err != nil {
 						glog.Warningf("Unable to unlink component %s from service", componentName)
 					} else {
-						glog.V(2).Infof("Component %s was succesfully unlinked from service", componentName)
+						glog.V(2).Infof("Component %s was successfully unlinked from service", componentName)
 					}
 				}
 			}
@@ -186,10 +186,15 @@ func List(client *occlient.Client, applicationName string) ([]ServiceInfo, error
 	// Iterate through serviceInstanceList and add to service
 	for _, elem := range serviceInstanceList {
 		conditions := elem.Status.Conditions
+		var status string
 		if len(conditions) == 0 {
-			return nil, fmt.Errorf("no condition in status for %+v", elem)
+			glog.Warningf("no condition in status for %+v, marking it as Unknown", elem)
+			status = "Unknown"
+		} else {
+			status = conditions[0].Reason
 		}
-		services = append(services, ServiceInfo{Name: elem.Labels[componentlabels.ComponentLabel], Type: elem.Labels[componentlabels.ComponentTypeLabel], Status: conditions[0].Reason})
+
+		services = append(services, ServiceInfo{Name: elem.Labels[componentlabels.ComponentLabel], Type: elem.Labels[componentlabels.ComponentTypeLabel], Status: status})
 	}
 
 	return services, nil
@@ -262,21 +267,6 @@ func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secre
 			break
 		}
 	}
-}
-
-// GetSvcByType returns the matching (by type) service or nil of there are no matches
-func GetSvcByType(client *occlient.Client, serviceType string) (*occlient.Service, error) {
-	catalogList, err := ListCatalog(client)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to list catalog")
-	}
-
-	for _, supported := range catalogList {
-		if serviceType == supported.Name {
-			return &supported, nil
-		}
-	}
-	return nil, nil
 }
 
 // SvcExists Checks whether a service with the given name exists in the current application or not
