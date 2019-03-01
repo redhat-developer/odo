@@ -61,13 +61,14 @@ func Test_getMachineReadableFormat(t *testing.T) {
 		t.Errorf("unable to parse size")
 	}
 	tests := []struct {
-		name        string
-		inputPVC    *corev1.PersistentVolumeClaim
-		mountedPath string
-		want        Storage
+		name         string
+		inputPVC     *corev1.PersistentVolumeClaim
+		mountedPath  string
+		activeStatus bool
+		want         Storage
 	}{
 		{
-			name: "test case 1: with a pvc",
+			name: "test case 1: with a pvc, valid path and mounted status",
 			inputPVC: &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pvc-example",
@@ -83,7 +84,8 @@ func Test_getMachineReadableFormat(t *testing.T) {
 					},
 				},
 			},
-			mountedPath: "data",
+			mountedPath:  "data",
+			activeStatus: true,
 			want: Storage{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pvc-example",
@@ -93,12 +95,48 @@ func Test_getMachineReadableFormat(t *testing.T) {
 					Path: "data",
 					Size: "100Mi",
 				},
+				Status: StorageStatus{
+					Mounted: true,
+				},
+			},
+		},
+		{
+			name: "test case 2: with a pvc, empty path and unmounted status",
+			inputPVC: &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pvc-example",
+					Labels: map[string]string{
+						storagelabels.StorageLabel: "pvc-example",
+					},
+				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: quantity,
+						},
+					},
+				},
+			},
+			mountedPath:  "",
+			activeStatus: false,
+			want: Storage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pvc-example",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
+				Spec: StorageSpec{
+					Path: "",
+					Size: "100Mi",
+				},
+				Status: StorageStatus{
+					Mounted: false,
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotStorage := getMachineReadableFormat(*tt.inputPVC, tt.mountedPath)
+			gotStorage := getMachineReadableFormat(*tt.inputPVC, tt.mountedPath, tt.activeStatus)
 			if !reflect.DeepEqual(tt.want, gotStorage) {
 				t.Errorf("the returned storage is different, expected: %v, got: %v", tt.want, gotStorage)
 			}
