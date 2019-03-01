@@ -92,7 +92,6 @@ func (o *URLCreateOptions) Run() (err error) {
 		}
 		fmt.Println(string(out))
 	} else {
-		log.Infof("Adding URL to component: %v", o.Component())
 		log.Successf("URL created for component: %v\n\n"+
 			"%v - %v\n", o.Component(), urlRoute.Name, urlCreated)
 	}

@@ -61,7 +61,7 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 		return nil, errors.Wrap(err, "unable to create route")
 	}
 
-	url := GetMachineReadableFormat(*route)
+	url := getMachineReadableFormat(*route)
 	return &url, nil
 
 }
@@ -85,7 +85,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 
 	var urls []Url
 	for _, r := range routes {
-		a := GetMachineReadableFormat(r)
+		a := getMachineReadableFormat(r)
 		urls = append(urls, a)
 	}
 
@@ -186,8 +186,8 @@ func GetValidPortNumber(client *occlient.Client, portNumber int, componentName s
 	return portNumber, nil
 }
 
-// GetMachineReadableFormat gives machine readable URL definition
-func GetMachineReadableFormat(r routev1.Route) Url {
+// getMachineReadableFormat gives machine readable URL definition
+func getMachineReadableFormat(r routev1.Route) Url {
 	return Url{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
