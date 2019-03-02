@@ -60,22 +60,29 @@ func (o *UnsetOptions) Run() (err error) {
 		return errors.Wrapf(err, "")
 	}
 
-	if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
-		if !o.preferenceForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
-			fmt.Println("Aborted by the user.")
-			return nil
+	if !o.preferenceForceFlag {
+
+		if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
+			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
+				fmt.Println("Aborted by the user.")
+				return nil
+			}
+			// if its found but nil then show the error
+		} else if ok && (value == nil) {
+			return errors.New("preference already unset, cannot unset a preference which is not set")
+			// if its not a parameter then show error
+		} else if !ok {
+			return errors.Errorf("unknown parameter :'%s' is not a parameter in the odo preference", o.paramName)
 		}
-		err = cfg.DeleteConfiguration(strings.ToLower(o.paramName))
-		if err != nil {
-			return err
-		}
-		fmt.Println("Global preference was successfully updated.")
-		return nil
-		// if its found but nil then show the error
-	} else if ok && (value == nil) {
-		return errors.New("preference already unset, cannot unset a preference which is not set")
+
 	}
-	return errors.New(o.paramName + " is not a valid preference variable")
+
+	err = cfg.DeleteConfiguration(strings.ToLower(o.paramName))
+	if err != nil {
+		return err
+	}
+	fmt.Println("Global preference was successfully updated.")
+	return nil
 
 }
 

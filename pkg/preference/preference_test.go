@@ -28,7 +28,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "Test filename is being set",
 			output: &PreferenceInfo{
-				Filename:     tempConfigFile.Name(),
+				Filename:   tempConfigFile.Name(),
 				Preference: Preference{},
 			},
 			success: true,
