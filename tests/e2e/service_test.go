@@ -72,7 +72,8 @@ var _ = Describe("odoServiceE2e", func() {
 				routeURL := determineRouteURL()
 
 				// Ping said URL
-				waitForEqualCmd("curl -s "+routeURL+" | grep 'Spring Boot' | wc -l | tr -d '\n'", "3", 2)
+				responseStringMatchStatus := matchResponseSubString(routeURL, "Spring Boot", 30, 1)
+				Expect(responseStringMatchStatus).Should(BeTrue())
 			})
 
 			It("Should be able to delete everything", func() {
