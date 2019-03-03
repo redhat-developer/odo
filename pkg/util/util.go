@@ -3,7 +3,6 @@ package util
 import (
 	"bufio"
 	"fmt"
-	"github.com/gobwas/glob"
 	"io"
 	"math/rand"
 	"net"
@@ -20,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gobwas/glob"
+
 	"github.com/pkg/errors"
 
 	"github.com/golang/glog"
@@ -32,6 +33,10 @@ var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 // 63 is the max length of a DeploymentConfig in Openshift and we also have to take into account
 // that each component also gets a volume that uses the component name suffixed with -s2idata
 const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1
+
+// This value can be provided to set a seperate directory for users 'homedir' resolution
+// note for mocking purpose ONLY
+var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
 
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
@@ -191,12 +196,18 @@ func TruncateString(str string, maxLen int) string {
 // shell expanded can also be handled here
 func GetAbsPath(path string) (string, error) {
 	// Only shell resolves `~` to home so handle it specially
+	var dir string
 	if strings.HasPrefix(path, "~") {
-		usr, err := user.Current()
-		if err != nil {
-			return path, errors.Wrapf(err, "unable to resolve %s to absolute path", path)
+		if len(customHomeDir) > 0 {
+			dir = customHomeDir
+		} else {
+			usr, err := user.Current()
+			if err != nil {
+				return path, errors.Wrapf(err, "unable to resolve %s to absolute path", path)
+			}
+			dir = usr.HomeDir
 		}
-		dir := usr.HomeDir
+
 		if len(path) > 1 {
 			path = filepath.Join(dir, path[1:])
 		} else {

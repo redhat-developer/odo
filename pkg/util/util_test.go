@@ -2,9 +2,7 @@ package util
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
 	"net/url"
 	"os"
 	"os/user"
@@ -12,6 +10,9 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestNamespaceOpenShiftObject(t *testing.T) {
@@ -507,12 +508,17 @@ func TestGetAbsPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			switch tt.path {
 			case "~":
-				usr, err := user.Current()
-				if err != nil {
-					t.Errorf("Failed to get absolute path corresponding to `~`. Error %v", err)
-					return
+				if len(customHomeDir) > 0 {
+					tt.absPath = customHomeDir
+				} else {
+					usr, err := user.Current()
+					if err != nil {
+						t.Errorf("Failed to get absolute path corresponding to `~`. Error %v", err)
+						return
+					}
+					tt.absPath = usr.HomeDir
 				}
-				tt.absPath = usr.HomeDir
+
 			case ".":
 				absPath, err := os.Getwd()
 				if err != nil {
