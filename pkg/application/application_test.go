@@ -30,7 +30,7 @@ func TestGetDefaultAppName(t *testing.T) {
 		{
 			testName:     "Case: App prefix not configured",
 			existingApps: []preference.ApplicationInfo{},
-			wantRE:       "application-*",
+			wantRE:       "app-*",
 			needPrefix:   false,
 		},
 		{
