@@ -184,6 +184,7 @@ func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error
 
   You can see the entire test function `TestGetImageStream` in [pkg/occlient/occlient_test.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient_test.go)
 
+**NOTE**: You can use environment variable CUSTOM_HOMEDIR to specify a custom home directory. It can be used in environments where a user and home directory are not resolveable.
 
 ## Integration tests
 
