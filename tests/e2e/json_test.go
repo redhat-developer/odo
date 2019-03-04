@@ -12,9 +12,20 @@ import (
 var _ = Describe("odojsonoutput", func() {
 
 	Context("odo machine readable output", func() {
-		// // Basic creation
-		It("Pre-Test Creation", func() {
+		// Basic creation
+		It("Pre-Test Creation: Creating project", func() {
 			odoCreateProject("json-test")
+		})
+		// odo app list -o json
+		It("should be able to return empty list", func() {
+			actual := runCmdShouldPass("odo app list -o json")
+			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[]}`
+			areEqual, _ := compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
+
+		})
+		// Basic creation
+		It("Pre-Test Creation: Creating Application", func() {
 			runCmdShouldPass("odo app create myapp")
 			runCmdShouldPass("odo create nodejs nodejs --git https://github.com/openshift/nodejs-ex")
 			runCmdShouldPass("odo url create myurl")

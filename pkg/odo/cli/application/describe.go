@@ -62,7 +62,7 @@ func (o *DescribeOptions) Validate() (err error) {
 func (o *DescribeOptions) Run() (err error) {
 	if o.outputFormat == "json" {
 		app, _ := application.GetCurrent(o.Project)
-		appDef := getMachineReadableFormat(o.Client, o.appName, o.Project, app == o.appName)
+		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project, app == o.appName)
 		out, err := json.Marshal(appDef)
 		if err != nil {
 			return err
