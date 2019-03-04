@@ -2,8 +2,9 @@ package preference
 
 import (
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/log"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -64,9 +65,9 @@ func (o *SetOptions) Run() (err error) {
 
 	if !o.configForceFlag {
 		if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
-			log.Printf("%v is already set. Current value is %v.\n", o.paramName, value)
+			log.Infof("%v is already set. Current value is %v.", o.paramName, value)
 			if !ui.Proceed("Do you want to override it in the config") {
-				log.Println("Aborted by the user.")
+				log.Info("Aborted by the user.")
 				return nil
 			}
 		} else if !ok {
@@ -79,7 +80,7 @@ func (o *SetOptions) Run() (err error) {
 		return err
 	}
 
-	log.Println("Preference was successfully updated.")
+	log.Info("Global preference was successfully updated.")
 	return nil
 }
 
