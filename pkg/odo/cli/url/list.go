@@ -73,7 +73,7 @@ func (o *URLListOptions) Run() (err error) {
 			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
 			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.URL), "\t", u.Spec.Port)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
 			}
 			tabWriterURL.Flush()
 

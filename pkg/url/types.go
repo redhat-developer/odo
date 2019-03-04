@@ -13,7 +13,7 @@ type Url struct {
 
 // UrlSpec is
 type UrlSpec struct {
-	URL      string `json:"path,omitempty"`
+	Host     string `json:"host,omitempty"`
 	Protocol string `json:"protocol,omitempty"`
 	Port     int    `json:"port,omitempty"`
 }

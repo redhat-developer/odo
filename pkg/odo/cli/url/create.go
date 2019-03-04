@@ -41,7 +41,6 @@ type URLCreateOptions struct {
 	urlPort       int
 	urlOpenFlag   bool
 	componentPort int
-	outputFlag    string
 	*genericclioptions.Context
 }
 
@@ -72,6 +71,10 @@ func (o *URLCreateOptions) Validate() (err error) {
 	if exists {
 		return fmt.Errorf("The url %s already exists in the application: %s\n%v", o.urlName, o.Application, err)
 	}
+
+	if !util.CheckOutputFlag(o.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	}
 	return
 }
 
@@ -83,7 +86,7 @@ func (o *URLCreateOptions) Run() (err error) {
 		return err
 	}
 
-	out, err := util.PrintMachineOutput(o.outputFlag, urlRoute)
+	out, err := util.MachineOutput(o.OutputFlag, urlRoute)
 	if err != nil {
 		return err
 	}
@@ -92,11 +95,11 @@ func (o *URLCreateOptions) Run() (err error) {
 	} else {
 
 		log.Successf("URL created for component: %v\n\n"+
-			"%v - %v\n", o.Component(), urlRoute.Name, urlRoute.Spec.URL)
+			"%v - %v\n", o.Component(), urlRoute.Name, urlRoute.Spec.Host)
 	}
 
 	if o.urlOpenFlag {
-		err := util.OpenBrowser(urlRoute.Spec.URL)
+		err := util.OpenBrowser(url.GetURLString(urlRoute.Spec.Protocol, urlRoute.Spec.Host))
 		if err != nil {
 			return fmt.Errorf("unable to open URL within default browser:\n%v", err)
 		}
@@ -119,7 +122,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().BoolVar(&o.urlOpenFlag, "open", false, "open the created link with your default browser")
-	urlCreateCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the form of json")
-
+	genericclioptions.AddOutputFlag(urlCreateCmd)
 	return urlCreateCmd
 }

@@ -98,7 +98,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		LogErrorAndExit(err, "")
 		for _, componentURL := range componentDesc.Spec.URL {
 			url := urls.Get(componentURL)
-			fmt.Printf(" - %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.URL), url.Spec.Port)
+			fmt.Printf(" - %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host), url.Spec.Port)
 		}
 
 	}

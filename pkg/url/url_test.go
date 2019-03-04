@@ -68,7 +68,7 @@ func TestCreate(t *testing.T) {
 				Spec: UrlSpec{
 
 					Protocol: "http",
-					URL:      "host",
+					Host:     "host",
 					Port:     8080,
 				},
 			},
@@ -109,7 +109,7 @@ func TestCreate(t *testing.T) {
 				},
 				Spec: UrlSpec{
 					Protocol: "http",
-					URL:      "host",
+					Host:     "host",
 					Port:     9100,
 				},
 			},
@@ -213,7 +213,7 @@ func TestExists(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name:            "correct values and URL found",
+			name:            "correct values and Host found",
 			urlName:         "nodejs",
 			componentName:   "nodejs",
 			applicationName: "app",
@@ -264,7 +264,7 @@ func TestExists(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:            "correct values and URL not found",
+			name:            "correct values and Host not found",
 			urlName:         "example",
 			componentName:   "nodejs",
 			applicationName: "app",

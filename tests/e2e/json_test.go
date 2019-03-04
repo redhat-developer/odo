@@ -35,7 +35,7 @@ var _ = Describe("odojsonoutput", func() {
 		It("should be able to create url", func() {
 			actual := runCmdShouldPass("odo url create myurl -o json")
 			url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
-			desired := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"%s","protocol":"http","port":8080}}`, url)
+			desired := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080}}`, url)
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
@@ -74,7 +74,7 @@ var _ = Describe("odojsonoutput", func() {
 		It("should be able to list url", func() {
 			actual := runCmdShouldPass("odo url list -o json")
 			url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
-			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"%s","protocol":"http","port":8080}}]}`, url)
+			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080}}]}`, url)
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
@@ -82,8 +82,9 @@ var _ = Describe("odojsonoutput", func() {
 		// odo storage list -o json
 		It("should be able to list storage", func() {
 			actual := runCmdShouldPass("odo storage list -o json")
+			fmt.Println("Actual is", actual)
 			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1aplha1","metadata":{},"items":[{"kind":"Storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"},"status":{"mounted":true}}]}`
-
+			fmt.Println("desired is", desired)
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 

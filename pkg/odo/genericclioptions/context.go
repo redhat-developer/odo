@@ -125,11 +125,15 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		util.LogErrorAndExit(err, "unable to get current application")
 	}
 
+	// resolve output flag
+	outputFlag := FlagValueIfSet(command, OutputFlagName)
+
 	// create the internal context representation based on calculated values
 	internalCxt := internalCxt{
 		Client:      client,
 		Project:     ns,
 		Application: app,
+		OutputFlag:  outputFlag,
 	}
 
 	// create a context from the internal representation
@@ -180,6 +184,7 @@ type internalCxt struct {
 	Project     string
 	Application string
 	cmp         string
+	OutputFlag  string
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with
