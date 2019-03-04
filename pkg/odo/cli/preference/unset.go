@@ -2,6 +2,7 @@ package preference
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -64,7 +65,7 @@ func (o *UnsetOptions) Run() (err error) {
 
 		if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
 			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
-				fmt.Println("Aborted by the user.")
+				log.Println("Aborted by the user.")
 				return nil
 			}
 			// if its found but nil then show the error
@@ -81,7 +82,7 @@ func (o *UnsetOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Global preference was successfully updated.")
+	log.Println("Global preference was successfully updated.")
 	return nil
 
 }

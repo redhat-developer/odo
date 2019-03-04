@@ -64,9 +64,9 @@ func (o *SetOptions) Run() (err error) {
 
 	if !o.configForceFlag {
 		if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
-			fmt.Printf("%v is already set. Current value is %v.\n", o.paramName, value)
+			log.Printf("%v is already set. Current value is %v.\n", o.paramName, value)
 			if !ui.Proceed("Do you want to override it in the config") {
-				fmt.Println("Aborted by the user.")
+				log.Println("Aborted by the user.")
 				return nil
 			}
 		} else if !ok {
