@@ -24,6 +24,10 @@ const (
 	DefaultTimeout = 1
 )
 
+// This value can be provided to set a seperate directory for users 'homedir' resolution
+// note for mocking purpose ONLY
+var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
+
 // Info is implemented by configuration managers
 type Info interface {
 	SetConfiguration(parameter string, value string) error
@@ -110,6 +114,10 @@ type LocalConfigInfo struct {
 func getGlobalConfigFile() (string, error) {
 	if env, ok := os.LookupEnv(globalConfigEnvName); ok {
 		return env, nil
+	}
+
+	if len(customHomeDir) != 0 {
+		return filepath.Join(customHomeDir, ".odo", configFileName), nil
 	}
 
 	currentUser, err := user.Current()
