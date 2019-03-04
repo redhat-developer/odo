@@ -14,6 +14,10 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
+// This value can be provided to set a seperate directory for users 'homedir' resolution
+// note for mocking purpose ONLY
+var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
+
 // ConfigDetails struct holds configuration details(odo and/or kube config)
 type ConfigDetails struct {
 	FileName      string
@@ -23,11 +27,19 @@ type ConfigDetails struct {
 
 // getConfFolder generates a mock config folder for the unit testing
 func getConfFolder() (string, error) {
-	currentUser, err := user.Current()
-	if err != nil {
-		return "", err
+	var confLocation string
+	// If custom home dir is set, skip checking for user.Current to place config
+	if len(customHomeDir) != 0 {
+		confLocation = customHomeDir
+	} else {
+		currentUser, err := user.Current()
+		if err != nil {
+			return "", err
+		}
+		confLocation = currentUser.HomeDir
 	}
-	dir, err := ioutil.TempDir(currentUser.HomeDir, ".odo")
+
+	dir, err := ioutil.TempDir(confLocation, ".odo")
 	if err != nil {
 		return "", err
 	}
