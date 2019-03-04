@@ -535,21 +535,17 @@ func IsGlobExpMatch(strToMatch string, globExps []string) (bool, error) {
 	return false, nil
 }
 
-// CheckOutPutFlag validates given flag
-func CheckOutPutFlag(outputFlag string) bool {
+// PrintMachineOutput prints json output
+func PrintMachineOutput(outputFlag string, resource interface{}) (string, error) {
+	var out []byte
+	var err error
 	switch outputFlag {
 	case "json":
-		return true
+		out, err = json.Marshal(resource)
+	case "":
+	default:
+		err = fmt.Errorf("Given output flag %s is not supported", outputFlag)
 	}
-	return false
-}
 
-// PrintMachineOutput prints json output
-func PrintMachineOutput(resource interface{}) error {
-	out, err := json.Marshal(resource)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(out))
-	return nil
+	return string(out), err
 }

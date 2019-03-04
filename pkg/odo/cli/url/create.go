@@ -72,9 +72,6 @@ func (o *URLCreateOptions) Validate() (err error) {
 	if exists {
 		return fmt.Errorf("The url %s already exists in the application: %s\n%v", o.urlName, o.Application, err)
 	}
-	if !util.CheckOutPutFlag(o.outputFlag) {
-		return fmt.Errorf("Given output flag %s is not supported", o.outputFlag)
-	}
 	return
 }
 
@@ -86,10 +83,14 @@ func (o *URLCreateOptions) Run() (err error) {
 		return err
 	}
 
-	if util.CheckOutPutFlag(o.outputFlag) {
-		err := util.PrintMachineOutput(urlRoute)
+	out, err := util.PrintMachineOutput(o.outputFlag, urlRoute)
+	if err != nil {
 		return err
+	}
+	if out != "" {
+		fmt.Println(out)
 	} else {
+
 		log.Successf("URL created for component: %v\n\n"+
 			"%v - %v\n", o.Component(), urlRoute.Name, urlRoute.Spec.URL)
 	}
