@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -21,29 +22,23 @@ var (
 %[2]s
 `)
 	unsetExample = ktemplates.Examples(`
-   # Unset a configuration value in the global config
-   %[1]s --global %[2]s 
-   %[1]s --global %[3]s 
-   %[1]s --global %[4]s 
-
    # Unset a configuration value in the local config
-   %[1]s %[5]s
+   %[1]s %[2]s
+   %[1]s %[3]s 
+   %[1]s %[4]s  
+   %[1]s %[5]s 
    %[1]s %[6]s 
    %[1]s %[7]s  
    %[1]s %[8]s 
    %[1]s %[9]s 
-   %[1]s %[10]s  
-   %[1]s %[11]s  
-   %[1]s %[12]s  
-   %[1]s %[13]s  
+   %[1]s %[10]s
 	`)
 )
 
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
-	paramName        string
-	configGlobalFlag bool
-	configForceFlag  bool
+	paramName       string
+	configForceFlag bool
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
@@ -64,13 +59,8 @@ func (o *UnsetOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *UnsetOptions) Run() (err error) {
-	var cfg config.Info
 
-	if o.configGlobalFlag {
-		cfg, err = config.NewGlobalConfig()
-	} else {
-		cfg, err = config.NewLocalConfig()
-	}
+	cfg, err := config.New()
 
 	if err != nil {
 		return errors.Wrapf(err, "")
@@ -86,15 +76,8 @@ func (o *UnsetOptions) Run() (err error) {
 			return err
 		}
 
-		// cannot use the type switch on non-interface variables so a hack
-		var intfcfg interface{} = cfg
-		switch intfcfg.(type) {
-		case *config.GlobalConfigInfo:
-			fmt.Println("Global config was successfully updated.")
-		case *config.LocalConfigInfo:
-			fmt.Println("Local config was successfully updated.")
+		fmt.Println("Local config was successfully updated.")
 
-		}
 		return nil
 		// if its found but nil then show the error
 	} else if ok && (value == nil) {
@@ -110,9 +93,9 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	configurationUnsetCmd := &cobra.Command{
 		Use:   name,
 		Short: "Unset a value in odo config file",
-		Long:  fmt.Sprintf(unsetLongDesc, config.FormatSupportedParameters(), config.FormatLocallySupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName, config.UpdateNotificationSetting, config.NamePrefixSetting, config.TimeoutSetting, config.ComponentType,
-			config.ComponentName, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
+		Long:  fmt.Sprintf(unsetLongDesc, config.FormatLocallySupportedParameters()),
+		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
+			config.ComponentType, config.ComponentName, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")
@@ -128,8 +111,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 			util.LogErrorAndExit(o.Run(), "")
 		},
 	}
-	configurationUnsetCmd.Flags().BoolVarP(&o.configGlobalFlag, "global", "g", false, "Use the global config file")
-	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Dont ask for confirmation, directly move forward")
+	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
 
 	return configurationUnsetCmd
 }

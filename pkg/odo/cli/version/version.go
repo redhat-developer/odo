@@ -2,10 +2,11 @@ package version
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"os"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/notify"
@@ -131,6 +132,6 @@ func GetLatestReleaseInfo(info chan<- string) {
 			"to update manually, or visit https://github.com/redhat-developer/odo/releases\n" +
 			"---\n" +
 			"If you wish to disable the update notifications, you can disable it by running\n" +
-			"'odo utils config set UpdateNotification false'\n"
+			"'odo config set UpdateNotification false'\n"
 	}
 }

@@ -21,8 +21,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	// api clientsets
@@ -422,10 +422,10 @@ func (c *Client) RunLogout(stdout io.Writer) error {
 func isServerUp(server string) bool {
 	// initialising the default timeout, this will be used
 	// when the value is not readable from config
-	ocRequestTimeout := config.DefaultTimeout * time.Second
+	ocRequestTimeout := preference.DefaultTimeout * time.Second
 	// checking the value of timeout in config
 	// before proceeding with default timeout
-	cfg, configReadErr := config.New()
+	cfg, configReadErr := preference.New()
 	if configReadErr != nil {
 		glog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {

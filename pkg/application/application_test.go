@@ -10,8 +10,8 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,27 +22,27 @@ import (
 func TestGetDefaultAppName(t *testing.T) {
 	tests := []struct {
 		testName     string
-		existingApps []config.ApplicationInfo
+		existingApps []preference.ApplicationInfo
 		wantRE       string
 		needPrefix   bool
 		prefix       string
 	}{
 		{
 			testName:     "Case: App prefix not configured",
-			existingApps: []config.ApplicationInfo{},
+			existingApps: []preference.ApplicationInfo{},
 			wantRE:       "app-*",
 			needPrefix:   false,
 		},
 		{
 			testName:     "Case: App prefix set to testing",
-			existingApps: []config.ApplicationInfo{},
+			existingApps: []preference.ApplicationInfo{},
 			wantRE:       "testing-*",
 			needPrefix:   true,
 			prefix:       "testing",
 		},
 		{
 			testName:     "Case: App prefix set to empty string",
-			existingApps: []config.ApplicationInfo{},
+			existingApps: []preference.ApplicationInfo{},
 			wantRE:       "application-*",
 			needPrefix:   true,
 			prefix:       "",
@@ -77,7 +77,7 @@ func TestGetDefaultAppName(t *testing.T) {
 			r, _ := regexp.Compile(tt.wantRE)
 			match := r.MatchString(name)
 			if !match {
-				fetchedConfig, _ := config.New()
+				fetchedConfig, _ := preference.New()
 				t.Errorf("randomly generated application name %s does not match regexp %s and config is %+v\nthe prefix is %s", name, tt.wantRE, fetchedConfig, *fetchedConfig.OdoSettings.NamePrefix)
 			}
 		})

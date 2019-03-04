@@ -10,8 +10,8 @@ import (
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -25,7 +25,7 @@ const (
 )
 
 // GetDefaultAppName returns randomly generated application name with unique configurable prefix suffixed by a randomly generated string which can be used as a default name in case the user doesn't provide a name.
-func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
+func GetDefaultAppName(existingApps []preference.ApplicationInfo) (string, error) {
 	var appName string
 	var existingAppNames []string
 
@@ -35,7 +35,7 @@ func GetDefaultAppName(existingApps []config.ApplicationInfo) (string, error) {
 	}
 
 	// Get the desired app name prefix from odo config
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to fetch config")
 	}
@@ -68,7 +68,7 @@ func Create(client *occlient.Client, appName string) error {
 		return fmt.Errorf("unable to create new application, %s application already exists", appName)
 	}
 
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to create new application")
 	}
@@ -81,7 +81,7 @@ func Create(client *occlient.Client, appName string) error {
 }
 
 // List all applications in current project
-func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
+func List(client *occlient.Client) ([]preference.ApplicationInfo, error) {
 	return ListInProject(client)
 }
 
@@ -89,10 +89,10 @@ func List(client *occlient.Client) ([]config.ApplicationInfo, error) {
 // Queries cluster and config file.
 // Shows also empty applications (empty applications are those that are just
 // mentioned in config file but don't have any object associated with it on cluster).
-func ListInProject(client *occlient.Client) ([]config.ApplicationInfo, error) {
-	var applications []config.ApplicationInfo
+func ListInProject(client *occlient.Client) ([]preference.ApplicationInfo, error) {
+	var applications []preference.ApplicationInfo
 
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new application")
 	}
@@ -119,7 +119,7 @@ func ListInProject(client *occlient.Client) ([]config.ApplicationInfo, error) {
 			}
 		}
 		if !found {
-			applications = append(applications, config.ApplicationInfo{
+			applications = append(applications, preference.ApplicationInfo{
 				Name: name,
 				// if this application is not in config file, it can't be active
 				Active:  false,
@@ -144,7 +144,7 @@ func Delete(client *occlient.Client, name string) error {
 	}
 
 	// delete from config
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
@@ -160,7 +160,7 @@ func Delete(client *occlient.Client, name string) error {
 // GetCurrent returns currently active application.
 // If no application is active this functions returns empty string
 func GetCurrent(projectName string) (string, error) {
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get active application")
 	}
@@ -183,7 +183,7 @@ func GetCurrentOrGetCreateSetDefault(client *occlient.Client) (string, error) {
 	// if no Application is active use default
 	if currentApp == "" {
 		// get default application name
-		defaultName, err := GetDefaultAppName([]config.ApplicationInfo{})
+		defaultName, err := GetDefaultAppName([]preference.ApplicationInfo{})
 		if err != nil {
 			return "", errors.Wrap(err, "unable to fetch/create an application to set as active")
 		}
@@ -212,7 +212,7 @@ func SetCurrent(client *occlient.Client, appName string) error {
 	}
 	glog.V(4).Infof("Setting application %s as current.\n", appName)
 
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to set current application")
 	}

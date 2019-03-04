@@ -7,11 +7,11 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -54,7 +54,7 @@ func main() {
 	// Call commands
 	// checking the value of updatenotification in config
 	// before proceeding with fetching the latest version
-	cfg, err := config.New()
+	cfg, err := preference.New()
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
