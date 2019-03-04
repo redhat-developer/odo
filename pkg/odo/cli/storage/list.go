@@ -143,10 +143,10 @@ func getMachineReadableFormat(mounted bool, stor storage.Storage) storage.Storag
 		},
 		Spec: storage.StorageSpec{
 			Size: stor.Spec.Size,
-			Path: stor.Spec.Path,
 		},
 		Status: storage.StorageStatus{
 			Mounted: mounted,
+			Path:    stor.Status.Path,
 		},
 	}
 
@@ -191,7 +191,7 @@ func printMountedStorageInComponent(client *occlient.Client, componentName strin
 	// iterating over all mounted storage and put in the mount storage table
 	if len(storageListMounted.Items) > 0 {
 		for _, mStorage := range storageListMounted.Items {
-			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Spec.Size, "\t", mStorage.Spec.Path)
+			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Spec.Size, "\t", mStorage.Status.Path)
 		}
 
 		// print all mounted storage of the given component

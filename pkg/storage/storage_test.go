@@ -92,11 +92,11 @@ func Test_getMachineReadableFormat(t *testing.T) {
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
 				Spec: StorageSpec{
-					Path: "data",
 					Size: "100Mi",
 				},
 				Status: StorageStatus{
 					Mounted: true,
+					Path:    "data",
 				},
 			},
 		},
@@ -125,11 +125,11 @@ func Test_getMachineReadableFormat(t *testing.T) {
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
 				Spec: StorageSpec{
-					Path: "",
 					Size: "100Mi",
 				},
 				Status: StorageStatus{
 					Mounted: false,
+					Path:    "",
 				},
 			},
 		},
@@ -164,7 +164,10 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "100Mi",
-						Path: "data",
+					},
+					Status: StorageStatus{
+						Path:    "data",
+						Mounted: true,
 					},
 				},
 			},
@@ -185,7 +188,10 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "100Mi",
-							Path: "data",
+						},
+						Status: StorageStatus{
+							Path:    "data",
+							Mounted: true,
 						},
 					},
 				},
@@ -204,7 +210,10 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "100Mi",
-						Path: "data",
+					},
+					Status: StorageStatus{
+						Path:    "data",
+						Mounted: true,
 					},
 				},
 				{
@@ -217,7 +226,10 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "500Mi",
-						Path: "backend",
+					},
+					Status: StorageStatus{
+						Path:    "backend",
+						Mounted: true,
 					},
 				},
 			},
@@ -238,7 +250,10 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "100Mi",
-							Path: "data",
+						},
+						Status: StorageStatus{
+							Path:    "data",
+							Mounted: true,
 						},
 					},
 					{
@@ -251,7 +266,10 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "500Mi",
-							Path: "backend",
+						},
+						Status: StorageStatus{
+							Path:    "backend",
+							Mounted: true,
 						},
 					},
 				},

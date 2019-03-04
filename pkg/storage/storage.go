@@ -199,7 +199,7 @@ func ListMounted(client *occlient.Client, componentName string, applicationName 
 	}
 	var storageListMounted []Storage
 	for _, storage := range storageList.Items {
-		if storage.Spec.Path != "" {
+		if storage.Status.Path != "" {
 			storageListMounted = append(storageListMounted, storage)
 		}
 	}
@@ -308,7 +308,7 @@ func IsMounted(client *occlient.Client, storageName string, componentName string
 	}
 	for _, storage := range storageList.Items {
 		if storage.Name == storageName {
-			if storage.Spec.Path != "" {
+			if storage.Status.Path != "" {
 				return true, nil
 			}
 		}
@@ -322,7 +322,7 @@ func GetMountPath(client *occlient.Client, storageName string, componentName str
 	storageList, _ := List(client, componentName, applicationName)
 	for _, storage := range storageList.Items {
 		if storage.Name == storageName {
-			mPath = storage.Spec.Path
+			mPath = storage.Status.Path
 		}
 	}
 	return mPath
@@ -376,7 +376,7 @@ func GetStorageNameFromMountPath(client *occlient.Client, path string, component
 		return "", errors.Wrapf(err, "unable to list storage for component %v", componentName)
 	}
 	for _, storage := range storageList.Items {
-		if storage.Spec.Path == path {
+		if storage.Status.Path == path {
 			return storage.Name, nil
 		}
 	}
@@ -396,6 +396,8 @@ func getMachineReadableFormatForList(storage []Storage) StorageList {
 }
 
 // getMachineReadableFormat gives machine readable Storage definition
+// storagePath indicates the path to which the storage is mounted to, "" if not mounted
+// status indicates the mount status of the component
 func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath string, status bool) Storage {
 	storageName := getStorageFromPVC(&pvc)
 	storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
@@ -403,11 +405,11 @@ func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath stri
 		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: storageName},
 		Spec: StorageSpec{
-			Path: storagePath,
 			Size: storageSize.String(),
 		},
 		Status: StorageStatus{
 			Mounted: status,
+			Path:    storagePath,
 		},
 	}
 

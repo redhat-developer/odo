@@ -15,8 +15,6 @@ type Storage struct {
 // StorageSpec indicates size and path of storage
 type StorageSpec struct {
 	Size string `json:"size,omitempty"`
-	// if path is empty, it indicates that the storage is not mounted in any component
-	Path string `json:"path,omitempty"`
 }
 
 // StorageList is a list of storages
@@ -29,4 +27,6 @@ type StorageList struct {
 // StorageStatus is status of storage
 type StorageStatus struct {
 	Mounted bool `json:"mounted"`
+	// if path is empty, it indicates that the storage is not mounted in any component
+	Path string `json:"path,omitempty"`
 }
