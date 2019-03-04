@@ -426,7 +426,7 @@ func (co *CreateOptions) Run() (err error) {
 	}
 
 	if !co.wait {
-		log.Info("This may take few moments to be ready")
+		log.Info("This may take a few moments to be ready")
 	}
 
 	return
