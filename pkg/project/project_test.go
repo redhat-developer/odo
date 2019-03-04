@@ -35,7 +35,7 @@ func TestDelete(t *testing.T) {
 		testingutil.ConfigDetails{
 			FileName:      "odo-test-config",
 			Config:        testingutil.FakeOdoConfig("odo-test-config", false, ""),
-			ConfigPathEnv: "ODOCONFIG",
+			ConfigPathEnv: "GLOBALODOCONFIG",
 		}, testingutil.ConfigDetails{
 			FileName:      "kube-test-config",
 			Config:        testingutil.FakeKubeClientConfig(),
