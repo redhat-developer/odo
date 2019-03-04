@@ -28,8 +28,16 @@ var _ = Describe("odojsonoutput", func() {
 		It("Pre-Test Creation: Creating Application", func() {
 			runCmdShouldPass("odo app create myapp")
 			runCmdShouldPass("odo create nodejs nodejs --git https://github.com/openshift/nodejs-ex")
-			runCmdShouldPass("odo url create myurl")
 			runCmdShouldPass("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
+
+		})
+		// odo url create -o json
+		It("should be able to create url", func() {
+			actual := runCmdShouldPass("odo url create myurl -o json")
+			url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
+			desired := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"%s","protocol":"http","port":8080}}`, url)
+			areEqual, _ := compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
 
 		})
 		// odo app describe myapp -o json
