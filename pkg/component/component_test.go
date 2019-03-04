@@ -544,3 +544,128 @@ func TestGetComponentDir(t *testing.T) {
 		})
 	}
 }
+
+func Test_getMachineReadableFormat(t *testing.T) {
+	type args struct {
+		componentName string
+		componentType string
+	}
+	tests := []struct {
+		name string
+		args args
+		want Component
+	}{
+		{
+			name: "Test: Machine Readable Output",
+			args: args{componentName: "frontend", componentType: "nodejs"},
+			want: Component{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Component",
+					APIVersion: "odo.openshift.io/v1alpha1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "frontend",
+				},
+				Spec: ComponentSpec{
+					Type: "nodejs",
+				},
+				Status: ComponentStatus{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getMachineReadableFormat(tt.args.componentName, tt.args.componentType); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getMachineReadableFormat() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getMachineReadableFormatForList(t *testing.T) {
+	type args struct {
+		components []Component
+	}
+	tests := []struct {
+		name string
+		args args
+		want ComponentList
+	}{
+		{
+			name: "Test: machine readable output for list",
+			args: args{
+				components: []Component{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.openshift.io/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "frontend",
+						},
+						Spec: ComponentSpec{
+							Type: "nodejs",
+						},
+						Status: ComponentStatus{},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.openshift.io/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "backend",
+						},
+						Spec: ComponentSpec{
+							Type: "wildfly",
+						},
+						Status: ComponentStatus{},
+					},
+				},
+			},
+			want: ComponentList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.openshift.io/v1alpha1",
+				},
+				ListMeta: metav1.ListMeta{},
+				Items: []Component{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.openshift.io/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "frontend",
+						},
+						Spec: ComponentSpec{
+							Type: "nodejs",
+						},
+						Status: ComponentStatus{},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.openshift.io/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "backend",
+						},
+						Spec: ComponentSpec{
+							Type: "wildfly",
+						},
+						Status: ComponentStatus{},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getMachineReadableFormatForList(tt.args.components); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getMachineReadableFormatForList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

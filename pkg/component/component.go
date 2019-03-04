@@ -928,7 +928,11 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 
 }
 
+// getMachineReadableFormatForList returns list of components in machine readable format
 func getMachineReadableFormatForList(components []Component) ComponentList {
+	if len(components) == 0 {
+		components = []Component{}
+	}
 	return ComponentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
