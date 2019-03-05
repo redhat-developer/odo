@@ -19,8 +19,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/spf13/cobra"
 )
 
 // RecommendedCommandName is the recommended app command name
