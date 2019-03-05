@@ -10,11 +10,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	globalConfigEnvName = "GLOBALODOCONFIG"
-	configFileName      = "config.yaml"
+	globalConfigEnvName  = "GLOBALODOCONFIG"
+	configFileName       = "config.yaml"
+	preferenceKind       = "Preference"
+	preferenceAPIVersion = "odo.openshift.io/v1alpha1"
+
 	//DefaultTimeout for openshift server connection check
 	DefaultTimeout = 1
 
@@ -79,6 +83,7 @@ type ApplicationInfo struct {
 
 // Preference stores all the preferences related to odo
 type Preference struct {
+	metav1.TypeMeta `yaml:",inline"`
 	// remember active applications and components per project
 	// when project or applications is switched we can go back to last active app/component
 
@@ -109,12 +114,22 @@ func getPreferenceFile() (string, error) {
 
 // New returns the PreferenceInfo to retain the expected behavior
 func New() (*PreferenceInfo, error) {
-	return NewPreference()
+	return NewPreferenceInfo()
 }
 
-// NewPreference gets the PreferenceInfo from preference file and creates the config file in case it's
-// not present then it
-func NewPreference() (*PreferenceInfo, error) {
+// NewPreference creates an empty Preference struct with type meta information
+func NewPreference() Preference {
+	return Preference{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       preferenceKind,
+			APIVersion: preferenceAPIVersion,
+		},
+	}
+}
+
+// NewPreferenceInfo gets the PreferenceInfo from preference file and creates the preference file in case it's
+// not present
+func NewPreferenceInfo() (*PreferenceInfo, error) {
 	configFile, err := getPreferenceFile()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
@@ -124,7 +139,7 @@ func NewPreference() (*PreferenceInfo, error) {
 		return nil, err
 	}
 	c := PreferenceInfo{
-		Preference: Preference{},
+		Preference: NewPreference(),
 	}
 	c.Filename = configFile
 	err = util.GetFromFile(&c.Preference, c.Filename)

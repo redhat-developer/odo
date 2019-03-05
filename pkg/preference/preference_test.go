@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfi, err := NewPreference()
+			cfi, err := NewPreferenceInfo()
 			switch test.success {
 			case true:
 				if err != nil {
@@ -220,7 +220,7 @@ func TestSetActiveComponent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreference()
+			cfg, err := NewPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -458,7 +458,7 @@ func TestSetActiveApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreference()
+			cfg, err := NewPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -649,7 +649,7 @@ func TestAddApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreference()
+			cfg, err := NewPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -902,7 +902,7 @@ func TestDeleteApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreference()
+			cfg, err := NewPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -970,7 +970,7 @@ func TestGetTimeout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreference()
+			cfg, err := NewPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -1114,7 +1114,7 @@ func TestDeleteProject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreference()
+			cfg, err := NewPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -1262,7 +1262,7 @@ func TestSetConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreference()
+			cfg, err := NewPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -1428,5 +1428,16 @@ func TestIsSupportedParameter(t *testing.T) {
 				t.Fail()
 			}
 		})
+	}
+}
+
+func TestMetaTypePopulatedInPreference(t *testing.T) {
+	pi, err := NewPreferenceInfo()
+
+	if err != nil {
+		t.Error(err)
+	}
+	if pi.APIVersion != preferenceAPIVersion || pi.Kind != preferenceKind {
+		t.Error("the api version and kind in preference are incorrect")
 	}
 }
