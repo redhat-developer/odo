@@ -31,3 +31,11 @@ func NewCmdUtils(name, fullName string) *cobra.Command {
 	utilsCmd.AddCommand(configurationCmd, terminalCmd)
 	return utilsCmd
 }
+
+// VisitCommands ...
+func VisitCommands(cmd *cobra.Command, f func(*cobra.Command)) {
+	f(cmd)
+	for _, child := range cmd.Commands() {
+		VisitCommands(child, f)
+	}
+}
