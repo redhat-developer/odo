@@ -7,13 +7,16 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pkg/errors"
 )
 
 const (
-	localConfigEnvName = "LOCALODOCONFIG"
-	configFileName     = "config.yaml"
+	localConfigEnvName    = "LOCALODOCONFIG"
+	configFileName        = "config.yaml"
+	localConfigKind       = "LocalConfig"
+	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
 )
 
 // Info is implemented by configuration managers
@@ -45,6 +48,7 @@ type ComponentSettings struct {
 
 // LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
+	metav1.TypeMeta   `yaml:",inline"`
 	ComponentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
@@ -70,20 +74,20 @@ func getLocalConfigFile() (string, error) {
 
 // New returns the localConfigInfo
 func New() (*LocalConfigInfo, error) {
-	return NewLocalConfig()
+	return NewLocalConfigInfo()
 }
 
-// NewLocalConfig gets the LocalConfigInfo from local config file and creates the local config file in case it's
+// NewLocalConfigInfo gets the LocalConfigInfo from local config file and creates the local config file in case it's
 // not present then it
-func NewLocalConfig() (*LocalConfigInfo, error) {
+func NewLocalConfigInfo() (*LocalConfigInfo, error) {
 	configFile, err := getLocalConfigFile()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
 	c := LocalConfigInfo{
-		LocalConfig: LocalConfig{},
+		LocalConfig: NewLocalConfig(),
+		Filename:    configFile,
 	}
-	c.Filename = configFile
 
 	// if the config file doesn't exist then we dont worry about it and return
 	if _, err = os.Stat(configFile); os.IsNotExist(err) {
@@ -94,6 +98,16 @@ func NewLocalConfig() (*LocalConfigInfo, error) {
 		return nil, err
 	}
 	return &c, nil
+}
+
+// NewLocalConfig creates an empty LocalConfig struct with typeMeta populated
+func NewLocalConfig() LocalConfig {
+	return LocalConfig{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       localConfigKind,
+			APIVersion: localConfigAPIVersion,
+		},
+	}
 }
 
 // SetConfiguration sets the common config settings like component type, min memory

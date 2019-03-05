@@ -102,7 +102,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewLocalConfig()
+			cfg, err := NewLocalConfigInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -196,7 +196,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewLocalConfig()
+			cfg, err := NewLocalConfigInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -242,11 +242,22 @@ func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
 	}
 	os.RemoveAll(filename)
 
-	conf, err := NewLocalConfig()
+	conf, err := NewLocalConfigInfo()
 	if err != nil {
 		t.Errorf("error while creating local config %v", err)
 	}
 	if _, err = os.Stat(conf.Filename); !os.IsNotExist(err) {
 		t.Errorf("local config.yaml shouldn't exist yet")
+	}
+}
+
+func TestMetaTypePopulatedInLocalConfig(t *testing.T) {
+	ci, err := NewLocalConfigInfo()
+
+	if err != nil {
+		t.Error(err)
+	}
+	if ci.APIVersion != localConfigAPIVersion || ci.Kind != localConfigKind {
+		t.Error("the api version and kind in local config are incorrect")
 	}
 }
