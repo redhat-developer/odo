@@ -2,9 +2,12 @@ package e2e
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	. "github.com/onsi/gomega"
 )
@@ -45,12 +48,17 @@ func createFileAtPathWithContent(path string, fileContent string) error {
 
 // determineRouteURL returns the http URL where the current component exposes it's service
 // this URL can then be used in order to interact with the deployed service running in Openshift
-// keeping with the spirit of the e2e tests, this expects, odo, sed and awk to be on the PATH
 func determineRouteURL() string {
-	output := runCmdShouldPass("odo url list  | sed -n '1!p' | awk 'FNR==2 { print $2 }'")
-	return strings.TrimSpace(output)
+	stdOut, stdErr, exitCode := cmdRunner("odo url list")
+	if exitCode != 0 {
+		return stdErr
+	}
+	reURL := regexp.MustCompile(`\s+http://.\S+`)
+	odoURL := reURL.FindString(stdOut)
+	return strings.TrimSpace(odoURL)
 }
 
+// creates the specified namespace
 func odoCreateProject(projectName string) {
 	runCmdShouldPass("odo project create " + projectName)
 	waitForCmdOut("odo project set "+projectName, 4, false, func(output string) bool {
@@ -89,4 +97,32 @@ func getActiveApplication() string {
 	reActiveApp := regexp.MustCompile(`[*]\s+\S+`)
 	odoActiveApp := strings.Split(reActiveApp.FindString(stdOut), "*")[1]
 	return strings.TrimSpace(odoActiveApp)
+}
+
+// This function keeps trying in a regular interval of time to find a given string
+// match for a perticular timeout period against a http response. returns true
+// if string matches and response status code is 200, returns false otherwise
+// It takes 4 arguments
+// url - HTTP(S) URL (string)
+// match - Sub string you are looking for from the response (string)
+// retry - No of retry to fing the match string (int)
+// sleep - Time interval of each try (int)
+func matchResponseSubString(url, match string, retry, sleep int) bool {
+	var i int
+	for i := 0; i < retry; i++ {
+		resp, err := http.Get(url)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode == 200 {
+			body, _ := ioutil.ReadAll(resp.Body)
+			if strings.Contains(string(body), match) {
+				return true
+			}
+		}
+		time.Sleep(time.Duration(sleep) * time.Second)
+	}
+	fmt.Printf("Could not get the match string \"%s\" in %d seconds\n", match, i)
+	return false
 }
