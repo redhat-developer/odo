@@ -29,7 +29,7 @@ func TestNew(t *testing.T) {
 			name: "Test filename is being set",
 			output: &PreferenceInfo{
 				Filename:   tempConfigFile.Name(),
-				Preference: Preference{},
+				Preference: NewPreference(),
 			},
 			success: true,
 		},
@@ -75,7 +75,7 @@ func TestSetActiveComponent(t *testing.T) {
 	}{
 		{
 			name:           "activeComponents nil",
-			existingConfig: Preference{},
+			existingConfig: NewPreference(),
 			component:      "foo",
 			project:        "bar",
 			application:    "app",
