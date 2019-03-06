@@ -69,17 +69,14 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 # A specific image version may also be specified
 %[1]s nodejs:latest
 
-# Passing memory limits
-%[1]s nodejs:latest --memory 150Mi
-%[1]s nodejs:latest --min-memory 150Mi --max-memory 300 Mi
-
-# Passing cpu limits
-%[1]s nodejs:latest --cpu 2
-%[1]s nodejs:latest --min-cpu 0.25 --max-cpu 2
-%[1]s nodejs:latest --min-cpu 200m --max-cpu 2
-
 # Create new Node.js component named 'frontend' with the source in './frontend' directory
 %[1]s nodejs frontend --local ./frontend
+
+# Create a new Node.js component of version 6 from the 'openshift' namespace
+%[1]s openshift/nodejs:6 --local /nodejs-ex
+
+# Create new Wildfly component with binary named sample.war in './downloads' directory
+%[1]s wildfly wildly --binary ./downloads/sample.war
 
 # Create new Node.js component with source from remote git repository
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
@@ -90,12 +87,6 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 # Create new Node.js git component while specifying a tag
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
 
-# Create a new Node.js component of version 6 from the 'openshift' namespace
-%[1]s openshift/nodejs:6 --local /nodejs-ex
-
-# Create new Wildfly component with binary named sample.war in './downloads' directory
-%[1]s wildfly wildly --binary ./downloads/sample.war
-
 # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
 %[1]s nodejs --port 8080,8100/tcp,9100/udp
 
@@ -104,6 +95,15 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 
 # For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
 %[1]s python --git https://github.com/openshift/django-ex.git
+
+# Passing memory limits
+%[1]s nodejs --memory 150Mi
+%[1]s nodejs --min-memory 150Mi --max-memory 300 Mi
+
+# Passing cpu limits
+%[1]s nodejs --cpu 2
+%[1]s nodejs --min-cpu 200m --max-cpu 2
+
   `)
 
 // NewCreateOptions returns new instance of CreateOptions
