@@ -533,7 +533,7 @@ func IsGlobExpMatch(strToMatch string, globExps []string) (bool, error) {
 	return false, nil
 }
 
-// CheckOutputflag return true if specified output format is supported
+// CheckOutputFlag returns true if specified output format is supported
 func CheckOutputFlag(outputFlag string) bool {
 	if outputFlag == "json" || outputFlag == "" {
 		return true

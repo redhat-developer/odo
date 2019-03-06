@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -29,7 +28,6 @@ type StorageCreateOptions struct {
 	storageName string
 	storageSize string
 	storagePath string
-	outputFlag  string
 	*genericclioptions.Context
 }
 
@@ -51,6 +49,10 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 // Validate validates the StorageCreateOptions based on completed values
 func (o *StorageCreateOptions) Validate() (err error) {
+	// check the machine readable format
+	if !util.CheckOutputFlag(o.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	}
 	// validate storage path
 	return validateStoragePath(o.Client, o.storageName, o.Component(), o.Application)
 }
@@ -58,16 +60,17 @@ func (o *StorageCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo storage create command
 func (o *StorageCreateOptions) Run() (err error) {
 	storageResult, err := storage.Create(o.Client, o.storageName, o.storageSize, o.storagePath, o.Component(), o.Application)
-	if err == nil {
-		if o.outputFlag == "json" {
-			out, err := json.Marshal(storageResult)
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(out))
-		} else {
-			log.Successf("Added storage %v to %v", o.storageName, o.Component())
-		}
+	if err != nil {
+		return err
+	}
+	out, err := util.MachineOutput(o.OutputFlag, storageResult)
+	if err != nil {
+		return err
+	}
+	if out != "" {
+		fmt.Println(out)
+	} else {
+		log.Successf("Added storage %v to %v", o.storageName, o.Component())
 	}
 	return
 }
@@ -88,13 +91,14 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 
 	storageCreateCmd.Flags().StringVar(&o.storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
-	storageCreateCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "gives output in the given format")
 	_ = storageCreateCmd.MarkFlagRequired("path")
 	_ = storageCreateCmd.MarkFlagRequired("size")
 
 	projectCmd.AddProjectFlag(storageCreateCmd)
 	appCmd.AddApplicationFlag(storageCreateCmd)
 	componentCmd.AddComponentFlag(storageCreateCmd)
+
+	genericclioptions.AddOutputFlag(storageCreateCmd)
 
 	return storageCreateCmd
 }
