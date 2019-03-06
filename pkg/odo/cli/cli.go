@@ -127,7 +127,9 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	return rootCmd
 }
 
-// reconfigureCmdWithSubcmd ...
+// reconfigureCmdWithSubcmd reconfigures each root command with a list of all subcommands and lists them
+// beside the help output
+// Adapted from: https://github.com/cppforlife/knctl/blob/612840d3c9729b1c57b20ca0450acab0d6eceeeb/pkg/knctl/cmd/knctl.go#L224
 func reconfigureCmdWithSubcmd(cmd *cobra.Command) {
 	if len(cmd.Commands()) == 0 {
 		return
@@ -148,7 +150,8 @@ func reconfigureCmdWithSubcmd(cmd *cobra.Command) {
 	cmd.Short += " (" + strings.Join(strs, ", ") + ")"
 }
 
-// ShowSubcommands ...
+// ShowSubcommands shows all available subcommands.
+// Adapted from: https://github.com/cppforlife/knctl/blob/612840d3c9729b1c57b20ca0450acab0d6eceeeb/pkg/knctl/cmd/knctl.go#L224
 func ShowSubcommands(cmd *cobra.Command, args []string) error {
 	var strs []string
 	for _, subcmd := range cmd.Commands() {
