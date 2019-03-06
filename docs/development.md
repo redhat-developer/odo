@@ -90,11 +90,23 @@ Terminology we use:
 
 ### Reviewing a pull request
 
-What to look out for when reviewing a pull request:
+#### What to look out for when reviewing a pull request:
 
   - Have tests been added?
   - Does this feature / fix work locally for me? 
   - Am I able to understand the code correctly / have comments been added to the code?
+
+#### Prow best practices
+
+  - Get used to how prow works and its commands. 
+    - Prow uses [OWNERS](https://github.com/kubernetes/community/blob/master/contributors/guide/owners.md) files to determine who can approve and lgtm a PR.
+    - List of possible bot [commands](https://prow.k8s.io/command-help)
+  - Prow has two levels of OWNERS. ***Approvers*** and ***Reviewers***
+    - **Approvers** look for holistic acceptance criteria, including dependencies with other features, forwards/backwards compatibility, API and flag definitions, etc. In essence, the high levels of design
+    - **Reviewers** look for general code quality, correctness, sane software engineering, style, etc. In essence, the quality of actual code itself.
+  - As far as possible, do not `/lgtm` a PR, until it is mergable (we need atleast 2 approving reviews and no request changes left and pre-submit tests should pass) or if you do, put it on hold with `/hold` immediately. Either of them can be cancelled as `/lgtm cancel` or `/hold cancel`. This especially applies to **draft PRs**
+  - Approvers can use `/approve` and `/approve cancel` respectively to give their approval. **Note:** approvers github approval also counts the same as `/approve`
+  - Try to not merge the PR manually unless it is an emergency (if you have the power). Get used to relying on prow's tide component for merge. This should also ensure post-submit tests (tests that run before merge) have a chance to valiate the PR.
 
 ### Test Driven Development
 
@@ -328,7 +340,7 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 ### Scripts using odo-bot
 
 | Script      | What it is doing                          | Access via                                    |
-|-------------|-------------------------------------------|-----------------------------------------------|
+| ----------- | ----------------------------------------- | --------------------------------------------- |
 | .travis.yml | Uploading binaries to GitHub release page | Personal access token `deploy-github-release` |
 
 
