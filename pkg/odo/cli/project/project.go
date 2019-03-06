@@ -110,7 +110,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 						}
 						log.Info("    This component has following urls that will be deleted with component")
 						for _, u := range ul.Items {
-							log.Info("     URL named ", u.GetName(), " with value ", u.Spec.URL)
+							log.Info("     URL named ", u.GetName(), " with host ", u.Spec.Host, " having protocol ", u.Spec.Protocol, " at port ", u.Spec.Port)
 						}
 					}
 

@@ -107,7 +107,7 @@ func printDeleteComponentInfo(client *occlient.Client, componentName string, app
 			return errors.Wrap(err, "Could not get url list")
 		}
 		for _, u := range ul.Items {
-			log.Info("     URL named ", u.GetName(), " with value ", u.Spec.URL)
+			log.Info("     URL named ", u.GetName(), " with host ", u.Spec.Host, " having protocol ", u.Spec.Protocol, " at port ", u.Spec.Port)
 		}
 	}
 
