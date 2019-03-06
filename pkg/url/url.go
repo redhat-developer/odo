@@ -191,7 +191,7 @@ func getMachineReadableFormat(r routev1.Route) Url {
 	return Url{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       UrlSpec{URL: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: getProtocol(r)},
+		Spec:       UrlSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: getProtocol(r)},
 	}
 
 }

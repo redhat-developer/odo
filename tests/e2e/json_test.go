@@ -28,8 +28,16 @@ var _ = Describe("odojsonoutput", func() {
 		It("Pre-Test Creation: Creating Application", func() {
 			runCmdShouldPass("odo app create myapp")
 			runCmdShouldPass("odo create nodejs nodejs --git https://github.com/openshift/nodejs-ex")
-			runCmdShouldPass("odo url create myurl")
 			runCmdShouldPass("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
+
+		})
+		// odo url create -o json
+		It("should be able to create url", func() {
+			actual := runCmdShouldPass("odo url create myurl -o json")
+			url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
+			desired := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080}}`, url)
+			areEqual, _ := compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
 
 		})
 		// odo app describe myapp -o json
@@ -66,7 +74,7 @@ var _ = Describe("odojsonoutput", func() {
 		It("should be able to list url", func() {
 			actual := runCmdShouldPass("odo url list -o json")
 			url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
-			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"path":"%s","protocol":"http","port":8080}}]}`, url)
+			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080}}]}`, url)
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
@@ -75,7 +83,6 @@ var _ = Describe("odojsonoutput", func() {
 		It("should be able to list storage", func() {
 			actual := runCmdShouldPass("odo storage list -o json")
 			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1aplha1","metadata":{},"items":[{"kind":"Storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"},"status":{"mounted":true}}]}`
-
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 

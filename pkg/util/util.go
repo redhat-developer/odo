@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -20,10 +21,8 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
-
-	"github.com/pkg/errors"
-
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -145,7 +144,7 @@ func ParseComponentImageName(imageName string) (string, string, string, string) 
 
 const WIN = "windows"
 
-// Reads file path form URL file:///C:/path/to/file to C:\path\to\file
+// ReadFilePath Reads file path form URL file:///C:/path/to/file to C:\path\to\file
 func ReadFilePath(u *url.URL, os string) string {
 	location := u.Path
 	if os == WIN {
@@ -155,7 +154,7 @@ func ReadFilePath(u *url.URL, os string) string {
 	return location
 }
 
-// Converts file path on windows to /C:/path/to/file to work in URL
+// GenFileURL Converts file path on windows to /C:/path/to/file to work in URL
 func GenFileURL(location string, os string) string {
 	urlPath := location
 	if os == WIN {
@@ -532,4 +531,26 @@ func IsGlobExpMatch(strToMatch string, globExps []string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// CheckOutputflag return true if specified output format is supported
+func CheckOutputFlag(outputFlag string) bool {
+	if outputFlag == "json" || outputFlag == "" {
+		return true
+	}
+	return false
+}
+
+// MachineOutput provides string output and error if any
+// In future if we support any new format, we just need to add case in following switch case
+func MachineOutput(outputFlag string, resource interface{}) (string, error) {
+	var out []byte
+	var err error
+	switch outputFlag {
+	case "json":
+		// If `-o json` is provided
+		out, err = json.Marshal(resource)
+	}
+
+	return string(out), err
 }

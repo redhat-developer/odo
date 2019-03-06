@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/golang/glog"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -11,7 +13,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1"
-	"sort"
 )
 
 // SelectComponentType lets the user to select the builder image (name only) in the prompt

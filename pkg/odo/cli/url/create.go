@@ -66,28 +66,40 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 // Validate validates the UrlCreateOptions based on completed values
 func (o *URLCreateOptions) Validate() (err error) {
+
 	exists, err := url.Exists(o.Client, o.urlName, o.Component(), o.Application)
 	if exists {
 		return fmt.Errorf("The url %s already exists in the application: %s\n%v", o.urlName, o.Application, err)
 	}
 
+	if !util.CheckOutputFlag(o.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	}
 	return
 }
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
 
-	log.Infof("Adding URL to component: %v", o.Component())
 	urlRoute, err := url.Create(o.Client, o.urlName, o.componentPort, o.Component(), o.Application)
 	if err != nil {
 		return err
 	}
-	urlCreated := url.GetURLString(urlRoute.Spec.Protocol, urlRoute.Spec.URL)
-	log.Successf("URL created for component: %v\n\n"+
-		"%v - %v\n", o.Component(), urlRoute.Name, urlCreated)
+
+	out, err := util.MachineOutput(o.OutputFlag, urlRoute)
+	if err != nil {
+		return err
+	}
+	if out != "" {
+		fmt.Println(out)
+	} else {
+
+		log.Successf("URL created for component: %v\n\n"+
+			"%v - %v\n", o.Component(), urlRoute.Name, urlRoute.Spec.Host)
+	}
 
 	if o.urlOpenFlag {
-		err := util.OpenBrowser(urlCreated)
+		err := util.OpenBrowser(url.GetURLString(urlRoute.Spec.Protocol, urlRoute.Spec.Host))
 		if err != nil {
 			return fmt.Errorf("unable to open URL within default browser:\n%v", err)
 		}
@@ -110,6 +122,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().BoolVar(&o.urlOpenFlag, "open", false, "open the created link with your default browser")
-
+	genericclioptions.AddOutputFlag(urlCreateCmd)
 	return urlCreateCmd
 }
