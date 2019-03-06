@@ -126,3 +126,24 @@ func matchResponseSubString(url, match string, retry, sleep int) bool {
 	fmt.Printf("Could not get the match string \"%s\" in %d seconds\n", match, i)
 	return false
 }
+
+// Creates a directory in the path specified. It takes one argument
+// dirNameFullpath (string) - Directory name along with the path
+func createDir(dirNameFullpath string) error {
+	return os.MkdirAll(dirNameFullpath, 0777)
+}
+
+// Creates a file in a specified path. It takes two argument
+// filePath (string) - The path where you want to create the file
+// fileName (string) - Name of the file
+func createFileAtPath(filePath string, fileName string) error {
+	_, err := os.Stat(filePath + "/" + fileName)
+	if os.IsNotExist(err) {
+		file, err := os.Create(filePath + "/" + fileName)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+	}
+	return nil
+}
