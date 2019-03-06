@@ -82,9 +82,7 @@ var _ = Describe("odojsonoutput", func() {
 		// odo storage list -o json
 		It("should be able to list storage", func() {
 			actual := runCmdShouldPass("odo storage list -o json")
-			fmt.Println("Actual is", actual)
 			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1aplha1","metadata":{},"items":[{"kind":"Storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"},"status":{"mounted":true}}]}`
-			fmt.Println("desired is", desired)
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 
