@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
@@ -121,5 +122,37 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 	)
 
+	utils.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
+
 	return rootCmd
+}
+
+// reconfigureCmdWithSubcmd ...
+func reconfigureCmdWithSubcmd(cmd *cobra.Command) {
+	if len(cmd.Commands()) == 0 {
+		return
+	}
+
+	if cmd.Args == nil {
+		cmd.Args = cobra.ArbitraryArgs
+	}
+	if cmd.RunE == nil {
+		cmd.RunE = ShowSubcommands
+	}
+
+	var strs []string
+	for _, subcmd := range cmd.Commands() {
+		strs = append(strs, strings.Split(subcmd.Use, " ")[0])
+	}
+
+	cmd.Short += " (" + strings.Join(strs, ", ") + ")"
+}
+
+// ShowSubcommands ...
+func ShowSubcommands(cmd *cobra.Command, args []string) error {
+	var strs []string
+	for _, subcmd := range cmd.Commands() {
+		strs = append(strs, subcmd.Use)
+	}
+	return fmt.Errorf("Use one of available subcommands: %s", strings.Join(strs, ", "))
 }

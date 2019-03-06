@@ -60,8 +60,8 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 
 	var logCmd = &cobra.Command{
 		Use:     fmt.Sprintf("%s [component_name]", name),
-		Short:   "Retrieve the log for the given component.",
-		Long:    `Retrieve the log for the given component.`,
+		Short:   "Retrieve the log for the given component",
+		Long:    `Retrieve the log for the given component`,
 		Example: fmt.Sprintf(logExample, fullName),
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {

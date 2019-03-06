@@ -52,7 +52,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	// componentCmd represents the component command
 	var componentCmd = &cobra.Command{
 		Use:   name,
-		Short: "Components of application.",
+		Short: "Components of an application",
 		Example: fmt.Sprintf("%s\n%s\n\n  See sub-commands individually for more examples, e.g. %s %s -h",
 			componentGetCmd.Example,
 			componentSetCmd.Example,
