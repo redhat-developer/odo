@@ -5,14 +5,14 @@ redirect_from:
   - /docs/logging.md/
 ---
 
-# Logging in Odo
+# Logging in odo
 
-[Glog](https://godoc.org/github.com/golang/glog) is used for V style logging in Odo.
+[Glog](https://godoc.org/github.com/golang/glog) is used for V style logging in odo.
 
 
 ## Working
 
-Every Odo command takes an optional flag `-v` that must be used with an integer log level in the range from 0-9. Any INFO severity log statement that is logged at a level lesser than or equal to the one passed with the command alongside `-v` flag will be logged to STDOUT.
+Every odo command takes an optional flag `-v` that must be used with an integer log level in the range from 0-9. Any INFO severity log statement that is logged at a level lesser than or equal to the one passed with the command alongside `-v` flag will be logged to STDOUT.
 
 All ERROR severity level log messages will always be logged regardless of the passed `v` level.
 

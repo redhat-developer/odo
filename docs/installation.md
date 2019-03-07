@@ -64,7 +64,7 @@ echo "deb https://dl.bintray.com/odo/odo-deb-dev stretch main" | sudo tee -a /et
 echo "deb https://dl.bintray.com/odo/odo-deb-releases stretch main" | sudo tee -a /etc/apt/sources.list
 ```
 
-Now install Odo:
+Now install odo:
 
 ```sh
 sudo apt-get update
@@ -75,7 +75,7 @@ sudo apt-get install odo
 
 Fedora / CentOS / RHEL
 
-#### Add the Odo repository to `/etc/yum.repods.d/`:
+#### Add the odo repository to `/etc/yum.repods.d/`:
 
 For latest builds:
 

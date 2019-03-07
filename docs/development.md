@@ -32,7 +32,7 @@ cd $GOPATH/src/github.com/redhat-developer/odo
 git remote add upstream 'https://github.com/redhat-developer/odo'
 ```
 
-While cloning Odo, the Windows terminal such as PowerShell or CMD may throw an error of `Filename too long`. To avoid such an error, set your Git config as so:
+While cloning odo, the Windows terminal such as PowerShell or CMD may throw an error of `Filename too long`. To avoid such an error, set your Git config as so:
 
 ```sh
 git config --system core.longpaths true
@@ -82,7 +82,7 @@ For example:
 
   ```
   # X feature added
-  X is a new feature that has been added to Odo to fix X issue
+  X is a new feature that has been added to odo to fix X issue
   ...
 
   X is used like so:
@@ -123,7 +123,7 @@ We follow Test Driven Development(TDD) workflow in our development process. You 
 
 ### Introduction
 
-Unit-tests for Odo functions are written using package [fake](https://godoc.org/k8s.io/client-go/kubernetes/fake). This allows us to create a fake client, and then mock the API calls defined under [OpenShift client-go](https://github.com/openshift/client-go) and [k8s client-go](https://godoc.org/k8s.io/client-go).
+Unit-tests for odo functions are written using package [fake](https://godoc.org/k8s.io/client-go/kubernetes/fake). This allows us to create a fake client, and then mock the API calls defined under [OpenShift client-go](https://github.com/openshift/client-go) and [k8s client-go](https://godoc.org/k8s.io/client-go).
 
 The tests are written in golang using the [pkg/testing](https://golang.org/pkg/testing/) package.
 
@@ -200,7 +200,7 @@ func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error
 
 ## Integration tests
 
-Integration tests, otherwise known as end-2-end (e2e) tests are used within Odo.
+Integration tests, otherwise known as end-2-end (e2e) tests are used within odo.
 
 All tests can be found in the `tests/e2e` directory and can be called using functions within `makefile`.
 
@@ -342,7 +342,7 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 
 ## Odo Bot
 
-[odo-bot](https://github.com/odo-bot) is the GitHub user that provides automation for certain tasks of Odo.
+[odo-bot](https://github.com/odo-bot) is the GitHub user that provides automation for certain tasks of odo.
 
 ### Scripts using odo-bot
 
@@ -353,7 +353,7 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 
 ## Licenses
 
-[wwhrd](https://github.com/frapposelli/wwhrd) is used in Odo for checking license
+[wwhrd](https://github.com/frapposelli/wwhrd) is used in odo for checking license
 compatibilities of vendored packages.
 
 Configuration for `wwhrd` is stored in
