@@ -100,7 +100,7 @@ Terminology we use:
 
   - Get used to how prow works and its commands. 
     - Prow uses [OWNERS](https://github.com/kubernetes/community/blob/master/contributors/guide/owners.md) files to determine who can approve and lgtm a PR.
-    - List of possible bot [commands](https://prow.k8s.io/command-help)
+    - List of possible bot [commands](https://deck-ci.svc.ci.openshift.org/command-help)
   - Prow has two levels of OWNERS. ***Approvers*** and ***Reviewers***
     - **Approvers** look for holistic acceptance criteria, including dependencies with other features, forwards/backwards compatibility, API and flag definitions, etc. In essence, the high levels of design
     - **Reviewers** look for general code quality, correctness, sane software engineering, style, etc. In essence, the quality of actual code itself.
