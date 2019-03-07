@@ -147,13 +147,13 @@ func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error
 
 ```
 
-1. For writing the tests, we start by initialising the fake client using the function `FakeNew()` which initialises the image clientset harnessed by 	`GetImageStreams` funtion:
+1. For writing the tests, we start by initialising the fake client using the function `FakeNew()` which initialises the image clientset harnessed by 	`GetImageStreams` function:
 
     ```go
     client, fkclientset := FakeNew()
     ```
 
-2. In the `GetImageStreams` funtions, the list of imagestreams is fetched through the API. While using fake client, this list can be emulated using a [`PrependReactor`](https://github.com/kubernetes/client-go/blob/master/testing/fake.go) interface:
+2. In the `GetImageStreams` functions, the list of imagestreams is fetched through the API. While using fake client, this list can be emulated using a [`PrependReactor`](https://github.com/kubernetes/client-go/blob/master/testing/fake.go) interface:
  
    ```go
 	fkclientset.ImageClientset.PrependReactor("list", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -184,12 +184,12 @@ func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error
     ```
 
 
-  The `List` function internally calls `NewListAction` defined in [k8s.io/client-go/testing/actions.go](https://github.com/kubernetes/client-go/blob/master/testing/actions.go).  From these functions, we see that the `resource` and `verb`to be passed into the `PrependReactor` interface are `imagestreams` and `list` respectively. 
+  The `List` function internally calls `NewListAction` defined in [k8s.io/client-go/testing/actions.go](https://github.com/kubernetes/client-go/blob/master/testing/actions.go).  From these functions, we see that the `resource` and `verb` to be passed into the `PrependReactor` interface are `imagestreams` and `list` respectively. 
 
 
   You can see the entire test function `TestGetImageStream` in [pkg/occlient/occlient_test.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient_test.go)
 
-**NOTE**: You can use environment variable CUSTOM_HOMEDIR to specify a custom home directory. It can be used in environments where a user and home directory are not resolveable.
+**NOTE**: You can use environment variable CUSTOM_HOMEDIR to specify a custom home directory. It can be used in environments where a user and home directory are not resolvable.
 
 ## Integration tests
 
@@ -229,7 +229,7 @@ https://onsi.github.io/ginkgo/#focused-specs
 ### Race conditions
 
 It is not uncommon that during the execution of the integration tests, test failures occur.
-Although it's possible that this is due to the tests themselves, more often than not this occurs due to the the actual odo code is written.
+Although it's possible that this is due to the tests themselves, more often than not this occurs due to the actual Odo code is written.
 For example, the following error has been encountered multiple times:
 
 ```
