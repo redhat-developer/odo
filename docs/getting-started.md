@@ -93,7 +93,7 @@ Now we can move on to creating our application using `odo`.
 
 #### Notes with regards to Service Catalog / `odo service` functionality:
 
-In order to make **full use** of all Odo functionality, it's recommended to enable [service catalog](https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html) with OpenShift.
+In order to make **full use** of all odo functionality, it's recommended to enable [service catalog](https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html) with OpenShift.
 
 This can enabled by using `minishift` 1.30+:
 
@@ -271,10 +271,10 @@ Below is an example of how to successfully import and use the [redhat-openjdk-18
 # Import the image into OpenShift
 oc import-image openjdk18 --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift --confirm
 
-# Tag the image so it is accessible by Odo
+# Tag the image so it is accessible by odo
 oc annotate istag/openjdk18:latest tags=builder
 ```
-After tagging the image, you may now deploy it with Odo:
+After tagging the image, you may now deploy it with odo:
 
 ```sh
 odo create openjdk18 --git https://github.com/openshift-evangelists/Wild-West-Backend

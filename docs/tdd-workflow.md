@@ -1,4 +1,4 @@
-## Test Driven Development (TDD) for ODO
+## Test Driven Development (TDD) for odo
 
 What’s TDD? In simple terms, WRITE TESTS FIRST.
 
@@ -12,7 +12,7 @@ Under TDD workflow, we write tests before writing feature code. Below is the wor
 4. Run tests
 5. Rewrite code incorporating any changes, and add new tests
 
-#### TDD process for ODO
+#### TDD process for odo
 
 1. Write tests for every feature/bug fix before implementing the code.
 	* Developer will split the assigned task into small achievable subtasks
