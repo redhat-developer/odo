@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/url"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -26,6 +27,7 @@ var (
 type URLDeleteOptions struct {
 	urlName            string
 	urlForceDeleteFlag bool
+	outputFormat       string
 	*genericclioptions.Context
 }
 
@@ -52,12 +54,22 @@ func (o *URLDeleteOptions) Validate() (err error) {
 	if !exists {
 		return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.Component())
 	}
+
+	if !util.CheckOutputFlag(o.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	}
 	return
 }
 
 // Run contains the logic for the odo url delete command
 func (o *URLDeleteOptions) Run() (err error) {
-	if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
+
+	if util.CheckOutputFlag(o.OutputFlag) {
+		err = url.Delete(o.Client, o.urlName, o.Application)
+		if err != nil {
+			return err
+		}
+	} else if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
 
 		err = url.Delete(o.Client, o.urlName, o.Application)
 		if err != nil {
@@ -84,7 +96,7 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(urlDeleteExample, fullName),
 	}
 	urlDeleteCmd.Flags().BoolVarP(&o.urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
-
+	genericclioptions.AddOutputFlag(urlDeleteCmd)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	return urlDeleteCmd
 }
