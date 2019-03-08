@@ -130,7 +130,7 @@ func (s *Status) Start(status string, debug bool) {
 // End completes the current status, ending any previous spinning and
 // marking the status as success or failure
 func (s *Status) End(success bool) {
-	if s.status == "" {
+	if s == nil || s.status == "" {
 		return
 	}
 

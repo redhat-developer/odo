@@ -54,10 +54,14 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 }
 
 // Exists returns true if the given component type is valid, false if not
-func Exists(client *occlient.Client, componentType string) (bool, error) {
+// spin indicates if the spinner should be displayed or not
+func Exists(client *occlient.Client, componentType string, spin bool) (bool, error) {
 
-	s := log.Spinner("Checking component")
-	defer s.End(false)
+	var s *log.Status
+	if spin {
+		s = log.Spinner("Checking component")
+		defer s.End(false)
+	}
 	catalogList, err := List(client)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to list catalog")
@@ -73,11 +77,15 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 }
 
 // VersionExists checks if that version exists, returns true if the given version exists, false if not
-func VersionExists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
+// spin indicates if the spinner should be displayed or not
+func VersionExists(client *occlient.Client, componentType string, componentVersion string, spin bool) (bool, error) {
 
-	// Loading status
-	s := log.Spinner("Checking component version")
-	defer s.End(false)
+	var s *log.Status
+	if spin {
+		// Loading status
+		s = log.Spinner("Checking component version")
+		defer s.End(false)
+	}
 
 	// Retrieve the catalogList
 	catalogList, err := List(client)

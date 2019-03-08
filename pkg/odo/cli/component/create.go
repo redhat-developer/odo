@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
-	"io"
-	"os"
-	"strings"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/pkg/errors"
+	"io"
+	"os"
+	"strings"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -301,14 +301,23 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.CreateArgs.EnvVars = co.componentEnvVars
 	}
 
+	if co.OutputFlag != "" {
+		co.MachineReadbleOutput = true
+	}
+
 	return
 }
 
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
+	// check the machine readable format
+	if !util.CheckOutputFlag(co.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", co.OutputFlag)
+	}
+
 	_, componentType, _, componentVersion := util.ParseComponentImageName(co.CreateArgs.ImageName)
 	// Check to see if the catalog type actually exists
-	exists, err := catalog.Exists(co.Context.Client, componentType)
+	exists, err := catalog.Exists(co.Context.Client, componentType, !co.MachineReadbleOutput)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create component of type %s", componentType)
 	}
@@ -318,7 +327,7 @@ func (co *CreateOptions) Validate() (err error) {
 	}
 
 	// Check to see if that particular version exists
-	versionExists, err := catalog.VersionExists(co.Context.Client, componentType, componentVersion)
+	versionExists, err := catalog.VersionExists(co.Context.Client, componentType, componentVersion, !co.MachineReadbleOutput)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create component of type %s of version %s", componentType, componentVersion)
 	}
@@ -345,47 +354,53 @@ func (co *CreateOptions) Validate() (err error) {
 }
 
 // createComponent creates the component
-func (co *CreateOptions) createComponent(stdout io.Writer) (err error) {
-	log.Successf("Initializing '%s' component", co.CreateArgs.Name)
+func (co *CreateOptions) createComponent(stdout io.Writer) (componentResult component.Component, err error) {
+	if !co.MachineReadbleOutput {
+		log.Successf("Initializing '%s' component", co.CreateArgs.Name)
+	}
 	switch co.CreateArgs.SourceType {
 	case occlient.GIT:
 		// Use Git
-		if err = component.CreateFromGit(
+		componentResult, err = component.CreateFromGit(
 			co.Context.Client,
 			co.CreateArgs,
-		); err != nil {
-			return errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
+		)
+		if err != nil {
+			return componentResult, errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
 		}
 		// Git is the only one using BuildConfig since we need to retrieve the git
 		if err = component.Build(co.Context.Client, co.CreateArgs.Name, co.CreateArgs.ApplicationName, co.wait, stdout); err != nil {
-			return errors.Wrapf(err, "failed to build component with args %+v", co)
+			return componentResult, errors.Wrapf(err, "failed to build component with args %+v", co)
 		}
 	case occlient.LOCAL:
 		fileInfo, err := os.Stat(co.CreateArgs.SourcePath)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get info of path %+v of component %+v", co.CreateArgs.SourcePath, co.CreateArgs)
+			return componentResult, errors.Wrapf(err, "failed to get info of path %+v of component %+v", co.CreateArgs.SourcePath, co.CreateArgs)
 		}
 		if !fileInfo.IsDir() {
-			return fmt.Errorf("component creation with args %+v as path needs to be a directory", co.CreateArgs)
+			return componentResult, fmt.Errorf("component creation with args %+v as path needs to be a directory", co.CreateArgs)
 		}
 		// Create
-		if err = component.CreateFromPath(co.Context.Client, co.CreateArgs); err != nil {
-			return errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
+		componentResult, err = component.CreateFromPath(co.Context.Client, co.CreateArgs)
+		if err != nil {
+			return componentResult, errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
 		}
 	case occlient.BINARY:
-		if err = component.CreateFromPath(co.Context.Client, co.CreateArgs); err != nil {
-			return errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
+		componentResult, err = component.CreateFromPath(co.Context.Client, co.CreateArgs)
+		if err != nil {
+			return componentResult, errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
 		}
 	default:
 		// If the user does not provide anything (local, git or binary), use the current absolute path and deploy it
 		co.CreateArgs.SourceType = occlient.LOCAL
 		dir, err := os.Getwd()
 		if err != nil {
-			return errors.Wrapf(err, "cannot create component with current path as local source path since no component source details are passed")
+			return componentResult, errors.Wrapf(err, "cannot create component with current path as local source path since no component source details are passed")
 		}
 		co.CreateArgs.SourcePath = dir
-		if err = component.CreateFromPath(co.Context.Client, co.CreateArgs); err != nil {
-			return errors.Wrapf(err, "")
+		componentResult, err = component.CreateFromPath(co.Context.Client, co.CreateArgs)
+		if err != nil {
+			return componentResult, errors.Wrapf(err, "")
 		}
 	}
 	return
@@ -396,20 +411,22 @@ func (co *CreateOptions) Run() (err error) {
 	stdout := color.Output
 	glog.V(4).Infof("Component create called with args: %#v", co.CreateArgs)
 
-	err = co.createComponent(stdout)
+	componentResult, err := co.createComponent(stdout)
 	if err != nil {
 		return err
 	}
 
-	ports, err := component.GetComponentPorts(co.Context.Client, co.CreateArgs.Name, co.Context.Application)
-	if err != nil {
-		return errors.Wrapf(err, "error getting ports for component with details %+v", co.CreateArgs)
-	}
+	if !co.MachineReadbleOutput {
+		ports, err := component.GetComponentPorts(co.Context.Client, co.CreateArgs.Name, co.Context.Application)
+		if err != nil {
+			return errors.Wrapf(err, "error getting ports for component with details %+v", co.CreateArgs)
+		}
 
-	if len(ports) > 1 {
-		log.Successf("Component '%s' was created and ports %s were opened", co.CreateArgs.Name, strings.Join(ports, ","))
-	} else if len(ports) == 1 {
-		log.Successf("Component '%s' was created and port %s was opened", co.CreateArgs.Name, ports[0])
+		if len(ports) > 1 {
+			log.Successf("Component '%s' was created and ports %s were opened", co.CreateArgs.Name, strings.Join(ports, ","))
+		} else if len(ports) == 1 {
+			log.Successf("Component '%s' was created and port %s was opened", co.CreateArgs.Name, ports[0])
+		}
 	}
 
 	// after component is successfully created, set is as active
@@ -419,14 +436,26 @@ func (co *CreateOptions) Run() (err error) {
 	if err = component.SetCurrent(co.CreateArgs.Name, co.Context.Application, co.Context.Project); err != nil {
 		return errors.Wrapf(err, "failed to set %s as current component", co.CreateArgs.Name)
 	}
-	log.Successf("Component '%s' is now set as active component", co.CreateArgs.Name)
+	componentResult.Status.Active = true
 
-	if len(co.componentGit) == 0 {
-		log.Info("To push source code to the component run 'odo push'")
-	}
+	if !co.MachineReadbleOutput {
+		log.Successf("Component '%s' is now set as active component", co.CreateArgs.Name)
 
-	if !co.wait {
-		log.Info("This may take a few moments to be ready")
+		if len(co.componentGit) == 0 {
+			log.Info("To push source code to the component run 'odo push'")
+		}
+		if !co.wait {
+			log.Info("This may take a few moments to be ready")
+		}
+	} else {
+		out, err := util.MachineOutput(co.OutputFlag, componentResult)
+		if err != nil {
+			return err
+		}
+
+		if out != "" {
+			fmt.Println(out)
+		}
 	}
 
 	return
@@ -486,6 +515,8 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "local", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
+
+	genericclioptions.AddOutputFlag(componentCreateCmd)
 
 	return componentCreateCmd
 }

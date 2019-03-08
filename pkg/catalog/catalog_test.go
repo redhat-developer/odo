@@ -68,7 +68,7 @@ func TestVersionExist(t *testing.T) {
 			})
 
 			// The function we are testing
-			doesItExist, err := VersionExists(client, tt.args.componentType, tt.args.componentVersion)
+			doesItExist, err := VersionExists(client, tt.args.componentType, tt.args.componentVersion, false)
 
 			if err != nil {
 				t.Errorf("VersionExist() errored when it shouldn't have: %s", err)

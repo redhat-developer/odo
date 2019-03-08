@@ -122,18 +122,21 @@ func validateSourceType(sourceType string) bool {
 // CreateFromGit inputPorts is the array containing the string port values
 // inputPorts is the array containing the string port values
 // envVars is the array containing the environment variables
-func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
+func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) (Component, error) {
 
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
-	// Loading spinner
-	s := log.Spinnerf("Creating component %s", params.Name)
-	defer s.End(false)
+	var s *log.Status
+	if !params.MachineReadbleOutput {
+		// Loading spinner
+		s := log.Spinnerf("Creating component %s", params.Name)
+		defer s.End(false)
+	}
 
 	// Parse componentImageType before adding to labels
 	_, imageName, imageTag, _, err := occlient.ParseImageName(params.ImageName)
 	if err != nil {
-		return errors.Wrap(err, "unable to parse image name")
+		return Component{}, errors.Wrap(err, "unable to parse image name")
 	}
 
 	// save component type as label
@@ -147,7 +150,7 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 	// Namespace the component
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(params.Name, params.ApplicationName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create namespaced name")
+		return Component{}, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
 	// Create CommonObjectMeta to be passed in
@@ -159,11 +162,11 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 
 	err = client.NewAppS2I(params, commonObjectMeta)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
+		return Component{}, errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
 
 	s.End(true)
-	return nil
+	return getMachineReadableFormat(params.Name, params.ImageName), nil
 }
 
 // GetComponentPorts provides slice of ports used by the component in the form port_no/protocol
@@ -207,17 +210,20 @@ func GetComponentLinkedSecretNames(client *occlient.Client, componentName string
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 // envVars is the array containing the environment variables
-func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
+func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) (Component, error) {
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
-	// Loading spinner
-	s := log.Spinnerf("Creating component %s", params.Name)
-	defer s.End(false)
+	var s *log.Status
+	if !params.MachineReadbleOutput {
+		// Loading spinner
+		s = log.Spinnerf("Creating component %s", params.Name)
+		defer s.End(false)
+	}
 
 	// Parse componentImageType before adding to labels
 	_, imageName, imageTag, _, err := occlient.ParseImageName(params.ImageName)
 	if err != nil {
-		return errors.Wrap(err, "unable to parse image name")
+		return Component{}, errors.Wrap(err, "unable to parse image name")
 	}
 
 	// save component type as label
@@ -232,7 +238,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	// Namespace the component
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(params.Name, params.ApplicationName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create namespaced name")
+		return Component{}, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
 	// Create CommonObjectMeta to be passed in
@@ -245,7 +251,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	// Bootstrap the deployment with SupervisorD
 	err = client.BootstrapSupervisoredS2I(params, commonObjectMeta)
 	if err != nil {
-		return err
+		return Component{}, err
 	}
 	s.End(true)
 
@@ -254,18 +260,18 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 		// use the podselector for calling WaitAndGetPod
 		selectorLabels, err := util.NamespaceOpenShiftObject(labels[componentlabels.ComponentLabel], labels["app"])
 		if err != nil {
-			return err
+			return Component{}, err
 		}
 
 		podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
 		_, err = client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
 		if err != nil {
-			return err
+			return Component{}, err
 		}
-		return nil
+		return Component{}, nil
 	}
 
-	return nil
+	return getMachineReadableFormat(params.Name, params.ImageName), nil
 }
 
 // Delete whole component

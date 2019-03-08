@@ -79,16 +79,17 @@ const (
 
 // CreateArgs is a container of attributes of component create action
 type CreateArgs struct {
-	Name            string
-	SourcePath      string
-	SourceRef       string
-	SourceType      CreateType
-	ImageName       string
-	EnvVars         []string
-	Ports           []string
-	Resources       []util.ResourceRequirementInfo
-	ApplicationName string
-	Wait            bool
+	Name                 string
+	SourcePath           string
+	SourceRef            string
+	SourceType           CreateType
+	ImageName            string
+	EnvVars              []string
+	Ports                []string
+	Resources            []util.ResourceRequirementInfo
+	ApplicationName      string
+	Wait                 bool
+	MachineReadbleOutput bool
 }
 
 const (
