@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -33,6 +34,9 @@ type ProjectDeleteOptions struct {
 	// force delete doesn't ask the user for confirmation
 	projectForceDeleteFlag bool
 
+	// json formatted output
+	outputFormat string
+
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -56,6 +60,11 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	if !isValidProject {
 		return fmt.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
 	}
+
+	if !util.CheckOutputFlag(pdo.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", pdo.OutputFlag)
+	}
+
 	return
 }
 
@@ -65,7 +74,8 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+
+	if util.CheckOutputFlag(pdo.OutputFlag) || pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
 		currentProject, err := project.Delete(pdo.Context.Client, pdo.projectName)
 		if err != nil {
 			return err
@@ -101,6 +111,6 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 	}
 
 	projectDeleteCmd.Flags().BoolVarP(&o.projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
-
+	genericclioptions.AddOutputFlag(projectDeleteCmd)
 	return projectDeleteCmd
 }
