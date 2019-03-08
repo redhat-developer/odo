@@ -63,7 +63,7 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	}
 
 	// getting the machine readable output format and mark status as active
-	return getMachineReadableFormat(*pvc, path, true), nil
+	return getMachineReadableFormat(*pvc, path), nil
 }
 
 // Unmount unmounts the given storage from the given component
@@ -183,7 +183,7 @@ func List(client *occlient.Client, componentName string, applicationName string)
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
 			storageName := getStorageFromPVC(&pvc)
-			storageMachineReadable := getMachineReadableFormat(pvc, mountedStorageMap[storageName], true)
+			storageMachineReadable := getMachineReadableFormat(pvc, mountedStorageMap[storageName])
 			storage = append(storage, storageMachineReadable)
 		}
 	}
@@ -222,7 +222,7 @@ func ListUnmounted(client *occlient.Client, applicationName string) (StorageList
 			if pvc.Name == "" {
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
-			storageMachineReadable := getMachineReadableFormat(pvc, "", false)
+			storageMachineReadable := getMachineReadableFormat(pvc, "")
 			storage = append(storage, storageMachineReadable)
 		}
 	}
@@ -397,8 +397,7 @@ func getMachineReadableFormatForList(storage []Storage) StorageList {
 
 // getMachineReadableFormat gives machine readable Storage definition
 // storagePath indicates the path to which the storage is mounted to, "" if not mounted
-// status indicates the mount status of the component
-func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath string, status bool) Storage {
+func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath string) Storage {
 	storageName := getStorageFromPVC(&pvc)
 	storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 	return Storage{
@@ -408,8 +407,7 @@ func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath stri
 			Size: storageSize.String(),
 		},
 		Status: StorageStatus{
-			Mounted: status,
-			Path:    storagePath,
+			Path: storagePath,
 		},
 	}
 

@@ -95,8 +95,7 @@ func Test_getMachineReadableFormat(t *testing.T) {
 					Size: "100Mi",
 				},
 				Status: StorageStatus{
-					Mounted: true,
-					Path:    "data",
+					Path: "data",
 				},
 			},
 		},
@@ -128,15 +127,14 @@ func Test_getMachineReadableFormat(t *testing.T) {
 					Size: "100Mi",
 				},
 				Status: StorageStatus{
-					Mounted: false,
-					Path:    "",
+					Path: "",
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotStorage := getMachineReadableFormat(*tt.inputPVC, tt.mountedPath, tt.activeStatus)
+			gotStorage := getMachineReadableFormat(*tt.inputPVC, tt.mountedPath)
 			if !reflect.DeepEqual(tt.want, gotStorage) {
 				t.Errorf("the returned storage is different, expected: %v, got: %v", tt.want, gotStorage)
 			}
@@ -166,8 +164,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						Size: "100Mi",
 					},
 					Status: StorageStatus{
-						Path:    "data",
-						Mounted: true,
+						Path: "data",
 					},
 				},
 			},
@@ -190,8 +187,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 							Size: "100Mi",
 						},
 						Status: StorageStatus{
-							Path:    "data",
-							Mounted: true,
+							Path: "data",
 						},
 					},
 				},
@@ -212,8 +208,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						Size: "100Mi",
 					},
 					Status: StorageStatus{
-						Path:    "data",
-						Mounted: true,
+						Path: "data",
 					},
 				},
 				{
@@ -228,8 +223,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						Size: "500Mi",
 					},
 					Status: StorageStatus{
-						Path:    "backend",
-						Mounted: true,
+						Path: "backend",
 					},
 				},
 			},
@@ -252,8 +246,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 							Size: "100Mi",
 						},
 						Status: StorageStatus{
-							Path:    "data",
-							Mounted: true,
+							Path: "data",
 						},
 					},
 					{
@@ -268,8 +261,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 							Size: "500Mi",
 						},
 						Status: StorageStatus{
-							Path:    "backend",
-							Mounted: true,
+							Path: "backend",
 						},
 					},
 				},

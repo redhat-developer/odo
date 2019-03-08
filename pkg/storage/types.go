@@ -26,7 +26,6 @@ type StorageList struct {
 
 // StorageStatus is status of storage
 type StorageStatus struct {
-	Mounted bool `json:"mounted"`
 	// if path is empty, it indicates that the storage is not mounted in any component
 	Path string `json:"path,omitempty"`
 }

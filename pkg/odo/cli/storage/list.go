@@ -145,8 +145,7 @@ func getMachineReadableFormat(mounted bool, stor storage.Storage) storage.Storag
 			Size: stor.Spec.Size,
 		},
 		Status: storage.StorageStatus{
-			Mounted: mounted,
-			Path:    stor.Status.Path,
+			Path: stor.Status.Path,
 		},
 	}
 
