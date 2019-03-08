@@ -68,4 +68,9 @@ spec:
         name: ${HTPASSWD_SECRET}
 EOF
 
-sleep 35
+sleep 20
+
+# Login as developer and setup project
+oc login -u developer -p $USERPASS
+oc new-project myproject
+sleep 5
