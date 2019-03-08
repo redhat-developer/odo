@@ -11,6 +11,7 @@ import (
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/util"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -30,12 +31,13 @@ var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'.
 // DeleteOptions is a container to attach complete, validate and run pattern
 type DeleteOptions struct {
 	componentForceDeleteFlag bool
+	outputFormat             string
 	*ComponentOptions
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, &ComponentOptions{}}
+	return &DeleteOptions{false, "", &ComponentOptions{}}
 }
 
 // Complete completes log args
@@ -53,6 +55,10 @@ func (do *DeleteOptions) Validate() (err error) {
 	if !isExists {
 		return fmt.Errorf("failed to delete component %s as it doesn't exist", do.componentName)
 	}
+
+	if !util.CheckOutputFlag(do.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", do.OutputFlag)
+	}
 	return
 }
 
@@ -66,7 +72,12 @@ func (do *DeleteOptions) Run() (err error) {
 		return err
 	}
 
-	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
+	if util.CheckOutputFlag(do.OutputFlag) {
+		err := component.Delete(do.Client, do.componentName, do.Application)
+		if err != nil {
+			return err
+		}
+	} else if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
 		err := component.Delete(do.Client, do.componentName, do.Application)
 		if err != nil {
 			return err
@@ -108,6 +119,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	}
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
+	genericclioptions.AddOutputFlag(componentDeleteCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
