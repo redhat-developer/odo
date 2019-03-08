@@ -81,6 +81,10 @@ generate-cli-reference:
 prepare-release: cross
 	./scripts/prepare-release.sh
 
+.PHONY: setup-openshift-ci
+setup-openshift-ci:
+	. ./openshift-ci/scripts/configure-cluster.sh
+
 .PHONY: test
 test:
 	go test -race $(PKGS)
