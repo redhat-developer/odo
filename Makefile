@@ -81,9 +81,9 @@ generate-cli-reference:
 prepare-release: cross
 	./scripts/prepare-release.sh
 
-.PHONY: configure-installer-cluster
-configure-installer-cluster:
-	. ./scripts/configure-installer-cluster.sh
+.PHONY: configure-installer-tests-cluster
+configure-installer-tests-cluster:
+	. ./scripts/configure-installer-tests-cluster.sh
 
 .PHONY: test
 test:
