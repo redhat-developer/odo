@@ -49,14 +49,27 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 // Validate validates the StorageCreateOptions based on completed values
 func (o *StorageCreateOptions) Validate() (err error) {
+	// check the machine readable format
+	if !util.CheckOutputFlag(o.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	}
 	// validate storage path
 	return validateStoragePath(o.Client, o.storageName, o.Component(), o.Application)
 }
 
 // Run contains the logic for the odo storage create command
 func (o *StorageCreateOptions) Run() (err error) {
-	_, err = storage.Create(o.Client, o.storageName, o.storageSize, o.storagePath, o.Component(), o.Application)
-	if err == nil {
+	storageResult, err := storage.Create(o.Client, o.storageName, o.storageSize, o.storagePath, o.Component(), o.Application)
+	if err != nil {
+		return err
+	}
+	out, err := util.MachineOutput(o.OutputFlag, storageResult)
+	if err != nil {
+		return err
+	}
+	if out != "" {
+		fmt.Println(out)
+	} else {
 		log.Successf("Added storage %v to %v", o.storageName, o.Component())
 	}
 	return
@@ -84,6 +97,8 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	projectCmd.AddProjectFlag(storageCreateCmd)
 	appCmd.AddApplicationFlag(storageCreateCmd)
 	componentCmd.AddComponentFlag(storageCreateCmd)
+
+	genericclioptions.AddOutputFlag(storageCreateCmd)
 
 	return storageCreateCmd
 }

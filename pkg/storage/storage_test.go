@@ -61,13 +61,14 @@ func Test_getMachineReadableFormat(t *testing.T) {
 		t.Errorf("unable to parse size")
 	}
 	tests := []struct {
-		name        string
-		inputPVC    *corev1.PersistentVolumeClaim
-		mountedPath string
-		want        Storage
+		name         string
+		inputPVC     *corev1.PersistentVolumeClaim
+		mountedPath  string
+		activeStatus bool
+		want         Storage
 	}{
 		{
-			name: "test case 1: with a pvc",
+			name: "test case 1: with a pvc, valid path and mounted status",
 			inputPVC: &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pvc-example",
@@ -83,15 +84,50 @@ func Test_getMachineReadableFormat(t *testing.T) {
 					},
 				},
 			},
-			mountedPath: "data",
+			mountedPath:  "data",
+			activeStatus: true,
 			want: Storage{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pvc-example",
 				},
 				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
 				Spec: StorageSpec{
-					Path: "data",
 					Size: "100Mi",
+				},
+				Status: StorageStatus{
+					Path: "data",
+				},
+			},
+		},
+		{
+			name: "test case 2: with a pvc, empty path and unmounted status",
+			inputPVC: &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pvc-example",
+					Labels: map[string]string{
+						storagelabels.StorageLabel: "pvc-example",
+					},
+				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: quantity,
+						},
+					},
+				},
+			},
+			mountedPath:  "",
+			activeStatus: false,
+			want: Storage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pvc-example",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
+				Spec: StorageSpec{
+					Size: "100Mi",
+				},
+				Status: StorageStatus{
+					Path: "",
 				},
 			},
 		},
@@ -126,6 +162,8 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "100Mi",
+					},
+					Status: StorageStatus{
 						Path: "data",
 					},
 				},
@@ -147,6 +185,8 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "100Mi",
+						},
+						Status: StorageStatus{
 							Path: "data",
 						},
 					},
@@ -166,6 +206,8 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "100Mi",
+					},
+					Status: StorageStatus{
 						Path: "data",
 					},
 				},
@@ -179,6 +221,8 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "500Mi",
+					},
+					Status: StorageStatus{
 						Path: "backend",
 					},
 				},
@@ -200,6 +244,8 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "100Mi",
+						},
+						Status: StorageStatus{
 							Path: "data",
 						},
 					},
@@ -213,6 +259,8 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "500Mi",
+						},
+						Status: StorageStatus{
 							Path: "backend",
 						},
 					},

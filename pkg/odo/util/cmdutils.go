@@ -88,7 +88,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		LogErrorAndExit(err, "")
 		for _, storage := range componentDesc.Spec.Storage {
 			store := storages.Get(storage)
-			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
+			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Status.Path)
 		}
 	}
 	// URL

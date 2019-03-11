@@ -28,14 +28,14 @@ func (storages StorageList) Get(storageName string) Storage {
 }
 
 // Create adds storage to given component of given application
-func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (string, error) {
+func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (Storage, error) {
 
 	// Namespace the component
 	// We will use name+applicationName instead of componentName+applicationName until:
 	// https://github.com/redhat-developer/odo/issues/504 is resolved.
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+		return Storage{}, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
 	labels := storagelabels.GetLabels(name, componentName, applicationName, true)
@@ -45,7 +45,7 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	// Create PVC
 	pvc, err := client.CreatePVC(generatePVCNameFromStorageName(namespacedOpenShiftObject), size, labels)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to create PVC")
+		return Storage{}, errors.Wrap(err, "unable to create PVC")
 	}
 
 	// Get DeploymentConfig for the given component
@@ -53,16 +53,17 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
 	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
+		return Storage{}, errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
 	glog.V(4).Infof("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
 
 	// Add PVC to DeploymentConfig
 	if err := client.AddPVCToDeploymentConfig(dc, pvc.Name, path); err != nil {
-		return "", errors.Wrap(err, "unable to add PVC to DeploymentConfig")
+		return Storage{}, errors.Wrap(err, "unable to add PVC to DeploymentConfig")
 	}
 
-	return dc.Name, nil
+	// getting the machine readable output format and mark status as active
+	return getMachineReadableFormat(*pvc, path), nil
 }
 
 // Unmount unmounts the given storage from the given component
@@ -198,7 +199,7 @@ func ListMounted(client *occlient.Client, componentName string, applicationName 
 	}
 	var storageListMounted []Storage
 	for _, storage := range storageList.Items {
-		if storage.Spec.Path != "" {
+		if storage.Status.Path != "" {
 			storageListMounted = append(storageListMounted, storage)
 		}
 	}
@@ -307,7 +308,7 @@ func IsMounted(client *occlient.Client, storageName string, componentName string
 	}
 	for _, storage := range storageList.Items {
 		if storage.Name == storageName {
-			if storage.Spec.Path != "" {
+			if storage.Status.Path != "" {
 				return true, nil
 			}
 		}
@@ -321,7 +322,7 @@ func GetMountPath(client *occlient.Client, storageName string, componentName str
 	storageList, _ := List(client, componentName, applicationName)
 	for _, storage := range storageList.Items {
 		if storage.Name == storageName {
-			mPath = storage.Spec.Path
+			mPath = storage.Status.Path
 		}
 	}
 	return mPath
@@ -375,7 +376,7 @@ func GetStorageNameFromMountPath(client *occlient.Client, path string, component
 		return "", errors.Wrapf(err, "unable to list storage for component %v", componentName)
 	}
 	for _, storage := range storageList.Items {
-		if storage.Spec.Path == path {
+		if storage.Status.Path == path {
 			return storage.Name, nil
 		}
 	}
@@ -395,6 +396,7 @@ func getMachineReadableFormatForList(storage []Storage) StorageList {
 }
 
 // getMachineReadableFormat gives machine readable Storage definition
+// storagePath indicates the path to which the storage is mounted to, "" if not mounted
 func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath string) Storage {
 	storageName := getStorageFromPVC(&pvc)
 	storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
@@ -402,8 +404,10 @@ func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath stri
 		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: storageName},
 		Spec: StorageSpec{
-			Path: storagePath,
 			Size: storageSize.String(),
+		},
+		Status: StorageStatus{
+			Path: storagePath,
 		},
 	}
 
