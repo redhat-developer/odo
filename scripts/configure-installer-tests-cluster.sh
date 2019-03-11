@@ -71,7 +71,8 @@ spec:
         name: ${HTPASSWD_SECRET}
 EOF
 
-sleep 20
+# TODO : Find better way to check application of settings on cluster
+sleep 16
 
 # Login as developer and setup project
 oc login -u developer -p $USERPASS
