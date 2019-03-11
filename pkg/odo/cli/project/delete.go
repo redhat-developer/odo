@@ -34,9 +34,6 @@ type ProjectDeleteOptions struct {
 	// force delete doesn't ask the user for confirmation
 	projectForceDeleteFlag bool
 
-	// json formatted output
-	outputFormat string
-
 	// generic context options common to all commands
 	*genericclioptions.Context
 }

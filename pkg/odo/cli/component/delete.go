@@ -31,13 +31,12 @@ var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'.
 // DeleteOptions is a container to attach complete, validate and run pattern
 type DeleteOptions struct {
 	componentForceDeleteFlag bool
-	outputFormat             string
 	*ComponentOptions
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, "", &ComponentOptions{}}
+	return &DeleteOptions{false, &ComponentOptions{}}
 }
 
 // Complete completes log args

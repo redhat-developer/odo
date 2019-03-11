@@ -27,7 +27,6 @@ var (
 type URLDeleteOptions struct {
 	urlName            string
 	urlForceDeleteFlag bool
-	outputFormat       string
 	*genericclioptions.Context
 }
 
