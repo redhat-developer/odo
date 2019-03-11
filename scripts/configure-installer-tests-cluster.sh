@@ -21,7 +21,7 @@ if [ ! -f $KUBEADMIN_PASSWORD_FILE ]; then
 fi
 
 if [ ! -f $KUBECONFIG ]; then
-    echo "Could not find kubeadm password file"
+    echo "Could not find kubeconfig file"
     exit 1
 fi
 
