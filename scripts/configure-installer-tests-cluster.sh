@@ -51,9 +51,9 @@ done
 oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD
 
 # Create secret in cluster, removing if it already exists
-oc get secret $HTPASSWD_SECRET
+oc get secret $HTPASSWD_SECRET -n openshift-config
 if [ $? -eq 0 ]; then
-    oc delete secret $HTPASSWD_SECRET
+    oc delete secret $HTPASSWD_SECRET -n openshift-config
 fi
 oc create secret generic ${HTPASSWD_SECRET} --from-file=htpasswd=${HTPASSWD_FILE} -n openshift-config
 
