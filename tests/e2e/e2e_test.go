@@ -67,7 +67,7 @@ var _ = Describe("odoe2e", func() {
 
 		Context("Logs in an new user without active project and tries to create various objects", func() {
 			It("Login as test user without project", func() {
-				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoNoProjectAttemptsCreate", loginTestUserPassword))
+				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odonoprojectattemptscreate", loginTestUserPassword))
 			})
 
 			It("Should fail if user tries to create anything other than project", func() {
