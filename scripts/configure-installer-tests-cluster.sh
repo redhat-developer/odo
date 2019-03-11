@@ -4,17 +4,13 @@
 HTPASSWD_FILE="./htpass"
 USERPASS="developer"
 HTPASSWD_SECRET="htpasswd-secret"
+# Defaults
+DEFAULT_INSTALLER_ASSETS_DIR=$(pwd)
 # Overrideable information
-AUTH_DIR=${AUTH_DIR:-"$(pwd)/auth"}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
-KUBEADMIN_PASSWORD_FILE_NAME=${KUBEADMIN_PASSWORD_FILE_NAME:-"kubeadmin-password"}
-KUBECONFIG_FILE_NAME=${KUBECONFIG_FILE_NAME:-"kubeconfig"}
-
-# CALCULATED INFORMATION
-KUBEADMIN_PASSWORD_FILE="${AUTH_DIR}/${KUBEADMIN_PASSWORD_FILE_NAME}"
-
+KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
 # Exported to current env
-export KUBECONFIG="${AUTH_DIR}/${KUBECONFIG_FILE_NAME}"
+export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
 # List of users to create
 USERS="developer odonoprojectattemptscreateproject odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
