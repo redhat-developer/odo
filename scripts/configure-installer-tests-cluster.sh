@@ -1,13 +1,20 @@
 #!/bin/bash
 # Setup to find nessasary data from cluster setup
-AUTH_DIR=${AUTH_DIR:-`pwd`}
-KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
-KUBEADMIN_PASSWORD_FILE="${AUTH_DIR}/auth/kubeadmin-password"
+## Constants
 HTPASSWD_FILE="./htpass"
 USERPASS="developer"
 HTPASSWD_SECRET="htpasswd-secret"
+# Overrideable information
+AUTH_DIR=${AUTH_DIR:-"$(pwd)/auth"}
+KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
+KUBEADMIN_PASSWORD_FILE_NAME=${KUBEADMIN_PASSWORD_FILE_NAME:-"kubeadmin-password"}
+KUBECONFIG_FILE_NAME=${KUBECONFIG_FILE_NAME:-"kubeconfig"}
 
-export KUBECONFIG="${AUTH_DIR}/auth/kubeconfig"
+# CALCULATED INFORMATION
+KUBEADMIN_PASSWORD_FILE="${AUTH_DIR}/${KUBEADMIN_PASSWORD_FILE_NAME}"
+
+# Exported to current env
+export KUBECONFIG="${AUTH_DIR}/${KUBECONFIG_FILE_NAME}"
 
 # List of users to create
 USERS="developer odonoprojectattemptscreateproject odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
