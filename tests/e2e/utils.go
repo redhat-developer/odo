@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -99,6 +100,52 @@ func getActiveApplication() string {
 	return strings.TrimSpace(odoActiveApp)
 }
 
+// returns a local config value of given key or
+// returns an empty string if value is not set
+func getConfigValue(key string) string {
+	stdOut, _, _ := cmdRunner("odo config view")
+	re := regexp.MustCompile(key + `.+`)
+	odoConfigKeyValue := re.FindString(stdOut)
+	if odoConfigKeyValue == "" {
+		return fmt.Sprintf("%s not found", key)
+	}
+	trimKeyValue := strings.TrimSpace(odoConfigKeyValue)
+	if strings.Compare(key, trimKeyValue) != 0 {
+		return strings.TrimSpace(strings.SplitN(trimKeyValue, " ", 2)[1])
+	}
+	return ""
+}
+
+// returns a global config value of given key or
+// returns an empty string if value is not set
+func getPreferenceValue(key string) string {
+	stdOut, _, _ := cmdRunner("odo preference view")
+	re := regexp.MustCompile(key + `.+`)
+	odoConfigKeyValue := re.FindString(stdOut)
+	if odoConfigKeyValue == "" {
+		return fmt.Sprintf("%s not found", key)
+	}
+	trimKeyValue := strings.TrimSpace(odoConfigKeyValue)
+	if strings.Compare(key, trimKeyValue) != 0 {
+		return strings.TrimSpace(strings.SplitN(trimKeyValue, " ", 2)[1])
+	}
+	return ""
+}
+
+// replace and save a specified text with a given text from a file
+// present in the path, returns error if unsuccessful
+func replaceTextInFile(filePath string, actualString string, replaceString string) error {
+	input, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	output := bytes.Replace(input, []byte(actualString), []byte(replaceString), 1)
+	if err = ioutil.WriteFile(filePath, output, 0666); err != nil {
+		return err
+	}
+	return nil
+}
+
 // This function keeps trying in a regular interval of time to find a given string
 // match for a perticular timeout period against a http response. returns true
 // if string matches and response status code is 200, returns false otherwise
@@ -125,4 +172,16 @@ func matchResponseSubString(url, match string, retry, sleep int) bool {
 	}
 	fmt.Printf("Could not get the match string \"%s\" in %d seconds\n", match, i)
 	return false
+}
+
+// This function executes oc command and returns pod name of a delopyed component by passing
+// component name as a argument
+func getPodNameOfComp(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get pods")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-\S+`)
+	podName := re.FindString(stdOut)
+	return strings.TrimSpace(podName)
 }

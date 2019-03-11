@@ -3,18 +3,16 @@
 package e2e
 
 import (
-	"log"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"regexp"
+	"strings"
+	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"fmt"
-	"io/ioutil"
-	"regexp"
-	"strings"
-	"testing"
 )
 
 // TODO: A neater way to provide odo path. Currently we assume \
@@ -168,24 +166,29 @@ var _ = Describe("odoe2e", func() {
 	})
 
 	Context("odo config", func() {
-		It("should get blank for updatenotification by default globally as its not set", func() {
+		It("should get the default global config keys", func() {
 			configOutput := runCmdShouldPass("odo preference view")
 			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
 			Expect(configOutput).To(ContainSubstring("NamePrefix"))
 			Expect(configOutput).To(ContainSubstring("Timeout"))
 		})
-		It("should be checking to see if timeout is shown as blank globally as its not set", func() {
-			configOutput := runCmdShouldPass("odo preference view |grep Timeout")
-			Expect(configOutput).To(ContainSubstring(fmt.Sprintf("Timeout")))
+
+		It("should be seeing global default empty config values as its not set", func() {
+			updateNotificationValue := getPreferenceValue("UpdateNotification")
+			Expect(updateNotificationValue).To(BeEmpty())
+			namePrefixValue := getPreferenceValue("NamePrefix")
+			Expect(namePrefixValue).To(BeEmpty())
+			timeoutValue := getPreferenceValue("Timeout")
+			Expect(timeoutValue).To(BeEmpty())
 		})
+
 		It("should be checking to see if global config values are the same as the configured ones", func() {
 			runCmdShouldPass("odo preference set updatenotification false")
 			runCmdShouldPass("odo preference set timeout 5")
-			configOutput := runCmdShouldPass("odo preference view |grep UpdateNotification")
-			Expect(configOutput).To(ContainSubstring("false"))
-			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
-			configOutput = runCmdShouldPass("odo preference view |grep Timeout")
-			Expect(configOutput).To(ContainSubstring("5"))
+			UpdateNotificationValue := getPreferenceValue("UpdateNotification")
+			Expect(UpdateNotificationValue).To(ContainSubstring("false"))
+			TimeoutValue := getPreferenceValue("Timeout")
+			Expect(TimeoutValue).To(ContainSubstring("5"))
 		})
 
 		It("should be checking to see if local config values are the same as the configured ones", func() {
@@ -212,11 +215,9 @@ var _ = Describe("odoe2e", func() {
 			}
 			for _, testCase := range cases {
 				runCmdShouldPass(fmt.Sprintf("odo config set %s %s", testCase.paramName, testCase.paramValue))
-				configOutput := runCmdShouldPass(fmt.Sprintf("odo config view|grep %v", testCase.paramName))
-				Expect(configOutput).To(ContainSubstring(testCase.paramValue))
-				Expect(configOutput).To(ContainSubstring(testCase.paramName))
+				Value := getConfigValue(testCase.paramName)
+				Expect(Value).To(ContainSubstring(testCase.paramValue))
 			}
-
 		})
 
 		It("should allow unsetting a config locally", func() {
@@ -243,22 +244,20 @@ var _ = Describe("odoe2e", func() {
 			}
 
 			for _, testCase := range cases {
-
 				runCmdShouldPass(fmt.Sprintf("odo config set %s %s", testCase.paramName, testCase.paramValue))
 				configOutput := runCmdShouldPass(fmt.Sprintf("odo config unset -f %s", testCase.paramName))
 				Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
-				configOutput = runCmdShouldPass(fmt.Sprintf("odo config view|grep %s", testCase.paramName))
-				Expect(configOutput).NotTo(ContainSubstring(testCase.paramValue))
+				Value := getConfigValue(testCase.paramName)
+				Expect(Value).To(BeEmpty())
 			}
 		})
 
 		It("should allow unsetting a config globally", func() {
 			runCmdShouldPass("odo preference set timeout 5")
 			runCmdShouldPass("odo preference unset -f timeout")
-			configOutput := runCmdShouldPass("odo preference view |grep Timeout")
-			Expect(configOutput).NotTo(ContainSubstring("5"))
+			timeoutValue := getPreferenceValue("Timeout")
+			Expect(timeoutValue).To(BeEmpty())
 		})
-
 	})
 
 	Context("creating component without an application", func() {
@@ -389,7 +388,7 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldPass("odo push")
 
 				// get the name of the pod
-				podName := runCmdShouldPass("oc get pods | grep nodejs | awk '{print $1}' | tr -d '\n'")
+				podName := getPodNameOfComp("nodejs")
 
 				// verify that the views folder got pushed
 				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
@@ -409,7 +408,7 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldPass("odo push --ignore tests/,README.md")
 
 				// get the name of the pod
-				podName := runCmdShouldPass("oc get pods | grep push-odoignore-flag-example | awk '{print $1}' | tr -d '\n'")
+				podName := getPodNameOfComp("push-odoignore-flag-example")
 
 				// verify that the views folder got pushed
 				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
@@ -564,31 +563,20 @@ var _ = Describe("odoe2e", func() {
 				// Switch to nodejs component
 				runCmdShouldPass("odo component set nodejs")
 
-				getRoute := getActiveElementFromCommandOutput("odo url list")
-
-				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep 'Welcome to your Node.js application on OpenShift' | wc -l | tr -d '\n'", "1", 10)
-				if curlRoute {
-					grepBeforePush := runCmdShouldPass("curl -s " + getRoute + " | grep 'Welcome to your Node.js application on OpenShift'")
-					log.Printf("Text before odo push: %s", strings.TrimSpace(grepBeforePush))
-				}
+				getRoute := determineRouteURL()
+				responseStringMatchStatus := matchResponseSubString(getRoute, "Welcome to your Node.js application on OpenShift", 30, 1)
+				Expect(responseStringMatchStatus).Should(BeTrue())
 
 				// Make changes to the html file
-				runCmdShouldPass("sed -i 's/Welcome to your Node.js application on OpenShift/Welcome to your Node.js on ODO/g' " + tmpDir + "/nodejs-ex/views/index.html")
+				replaceTextStatus := replaceTextInFile(tmpDir+"/nodejs-ex/views/index.html", "Welcome to your Node.js application on OpenShift", "Welcome to your Node.js application on ODO")
+				Expect(replaceTextStatus).To(BeNil())
 
 				// Push the changes
 				runCmdShouldPass("odo push --local " + tmpDir + "/nodejs-ex")
-			})
 
-			It("should reflect the changes pushed", func() {
-
-				getRoute := getActiveElementFromCommandOutput("odo url list")
-
-				curlRoute := waitForEqualCmd("curl -s "+getRoute+" | grep -i odo | wc -l | tr -d '\n'", "1", 10)
-				if curlRoute {
-					grepAfterPush := runCmdShouldPass("curl -s " + getRoute + " | grep -i odo")
-					log.Printf("Text after odo push: %s", strings.TrimSpace(grepAfterPush))
-					Expect(grepAfterPush).To(ContainSubstring("ODO"))
-				}
+				// Verify the changes
+				responseChangeStringStatus := matchResponseSubString(getRoute, "Welcome to your Node.js application on ODO", 30, 1)
+				Expect(responseChangeStringStatus).Should(BeTrue())
 			})
 
 			It("should be able to create the url with same name in different application", func() {
