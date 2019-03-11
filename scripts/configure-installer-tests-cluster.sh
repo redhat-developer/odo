@@ -4,9 +4,8 @@
 HTPASSWD_FILE="./htpass"
 USERPASS="developer"
 HTPASSWD_SECRET="htpasswd-secret"
-# Defaults
-DEFAULT_INSTALLER_ASSETS_DIR=$(pwd)
 # Overrideable information
+DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
 KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
 # Exported to current env
