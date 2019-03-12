@@ -514,6 +514,12 @@ var _ = Describe("odoe2e", func() {
 				// remove the .odoignore file
 				Expect(os.Remove(ignoreFilePath)).To(BeNil())
 			})
+			// should be tested after the perviour It
+			It("should be able to push the local files on second iteration successfully", func() {
+				runCmdShouldPass("odo create nodejs:8 nodejs-doublepush --local " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("odo push")
+				runCmdShouldPass("odo push")
+			})
 
 			It("should be able to push changes while showing logging", func() {
 				// Push the changes with --show-log
