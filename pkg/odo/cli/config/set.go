@@ -39,12 +39,6 @@ var (
    %[1]s %[2]s --env PORT=4000
    %[1]s %[3]s --env DB_USERNAME=postgres,DB_HOSTNAME=postgres
    %[1]s %[4]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
-   %[1]s %[5]s 500M
-   %[1]s %[6]s 250M
-   %[1]s %[7]s false 
-   %[1]s %[8]s 0.5 
-   %[1]s %[9]s 2 
-   %[1]s %[10]s 1 
 	`)
 )
 

@@ -34,7 +34,7 @@ var (
    %[1]s %[9]s 
    %[1]s %[10]s
 
-   # Set a env variable in the local config
+   # Unset a env variable in the local config
    %[1]s %[2]s --env PORT
    %[1]s %[3]s --env DB_USERNAME,DB_HOSTNAME
    %[1]s %[4]s --env KAFKA_HOST --env KAFKA_PORT
