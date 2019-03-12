@@ -47,14 +47,6 @@ func NewEnvVarListFromSlice(envList []string) (EnvVarList, error) {
 
 }
 
-// MergeEnvVarList merges the two provided envVarList
-func MergeEnvVarList(evl EnvVarList, otherEvl EnvVarList) EnvVarList {
-	for _, envVar := range otherEvl {
-		evl = append(evl, envVar)
-	}
-	return evl
-}
-
 // RemoveEnvVarsFromList removes the env variables based on the keys provided
 // and returns a new EnvVarList
 func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) EnvVarList {
