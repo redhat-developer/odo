@@ -8,6 +8,7 @@ HTPASSWD_SECRET="htpasswd-secret"
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
 KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
+SLEEP_AFTER_SECRET_CREATION=${SLEEP_AFTER_SECRET_CREATION:-18}
 # Exported to current env
 export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
@@ -71,9 +72,9 @@ spec:
 EOF
 
 # TODO : Find better way to check application of settings on cluster
-sleep 16
+sleep ${SLEEP_AFTER_SECRET_CREATION}
 
 # Login as developer and setup project
 oc login -u developer -p $USERPASS
 oc new-project myproject
-sleep 5
+sleep 4
