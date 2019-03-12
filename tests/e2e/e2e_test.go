@@ -3,16 +3,17 @@
 package e2e
 
 import (
+	"os"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"fmt"
 	"io/ioutil"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 // TODO: A neater way to provide odo path. Currently we assume \
@@ -725,7 +726,7 @@ var _ = Describe("odoe2e", func() {
 		})
 
 		It("should delete the deployed image-specific component", func() {
-			runCmdShouldPass("odo delete testversioncmp")
+			runCmdShouldPass("odo delete testversioncmp -f")
 		})
 	})
 
@@ -1152,6 +1153,54 @@ var _ = Describe("updateE2e", func() {
 			Expect(token).To(ContainSubstring(userToken))
 		})
 	})
+
+	Context("Deleting application, with component, should list affected children", func() {
+		projectName := generateTimeBasedName("project")
+		appName := generateTimeBasedName("app")
+		componentName := generateTimeBasedName("component")
+		urlName := generateTimeBasedName("url")
+
+		It("Should setup for the tests ,by creating dummy projects to test against", func() {
+			odoCreateProject(projectName)
+			runCmdShouldPass("odo app create " + appName)
+			runCmdShouldPass("odo component create nodejs " + componentName)
+			runCmdShouldPass("odo url create " + urlName)
+		})
+
+		It("Should list affected child objects", func() {
+			session := runCmdShouldPass("odo app delete -f " + appName)
+			Expect(session).To(ContainSubstring("This application has following components that will be deleted"))
+			Expect(session).To(ContainSubstring(componentName))
+			Expect(session).To(ContainSubstring(urlName))
+		})
+
+		It("Should delete project", func() {
+			odoDeleteProject(projectName)
+		})
+	})
+
+	Context("Deleting project, with application should list affected children", func() {
+		projectName := generateTimeBasedName("project")
+		appName := generateTimeBasedName("app")
+		componentName := generateTimeBasedName("component")
+		urlName := generateTimeBasedName("url")
+
+		It("Should setup for the tests ,by creating dummy projects to test against", func() {
+			odoCreateProject(projectName)
+			runCmdShouldPass("odo app create " + appName)
+			runCmdShouldPass("odo component create nodejs " + componentName)
+			runCmdShouldPass("odo url create " + urlName)
+		})
+
+		It("Should list affected child objects", func() {
+			session := runCmdShouldPass("odo project delete -f " + projectName)
+			Expect(session).To(ContainSubstring("This project contains the following applications, which will be deleted"))
+			Expect(session).To(ContainSubstring(appName))
+			Expect(session).To(ContainSubstring(componentName))
+			Expect(session).To(ContainSubstring(urlName))
+		})
+	})
+
 	Context("logout of the cluster", func() {
 		// test for odo logout
 		It("should logout the user from the cluster", func() {

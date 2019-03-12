@@ -2,15 +2,17 @@ package component
 
 import (
 	"fmt"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
-	"github.com/redhat-developer/odo/pkg/log"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/golang/glog"
@@ -59,6 +61,11 @@ func (do *DeleteOptions) Run() (err error) {
 	glog.V(4).Infof("component delete called")
 	glog.V(4).Infof("args: %#v", do)
 
+	err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
+	if err != nil {
+		return err
+	}
+
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
 		err := component.Delete(do.Client, do.componentName, do.Application)
 		if err != nil {
@@ -78,7 +85,7 @@ func (do *DeleteOptions) Run() (err error) {
 		}
 
 	} else {
-		log.Infof("Aborting deletion of component: %v", do.componentName)
+		return fmt.Errorf("Aborting deletion of component: %v", do.componentName)
 	}
 
 	return

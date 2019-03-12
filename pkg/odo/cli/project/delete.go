@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -60,6 +61,10 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
+	err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
+	if err != nil {
+		return err
+	}
 	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
 		currentProject, err := project.Delete(pdo.Context.Client, pdo.projectName)
 		if err != nil {

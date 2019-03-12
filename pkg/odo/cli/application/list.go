@@ -49,7 +49,7 @@ func (o *ListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *ListOptions) Run() (err error) {
-	apps, err := application.ListInProject(o.Client)
+	apps, err := application.List(o.Client)
 	if err != nil {
 		return fmt.Errorf("unable to get list of applications: %v", err)
 	}

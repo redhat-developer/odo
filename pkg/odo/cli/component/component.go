@@ -3,7 +3,13 @@ package component
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/url"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -85,4 +91,34 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 func AddComponentFlag(cmd *cobra.Command) {
 	cmd.Flags().String(genericclioptions.ComponentFlagName, "", "Component, defaults to active component.")
 	completion.RegisterCommandFlagHandler(cmd, "component", completion.ComponentNameCompletionHandler)
+}
+
+// printDeleteComponentInfo will print things which will be deleted
+func printDeleteComponentInfo(client *occlient.Client, componentName string, appName string, projectName string) error {
+	componentDesc, err := component.GetComponent(client, componentName, appName, projectName)
+	if err != nil {
+		return errors.Wrap(err, "unable to get component description")
+	}
+
+	if len(componentDesc.Spec.URL) != 0 {
+		log.Info("This component has following urls that will be deleted with component")
+		ul, err := url.List(client, componentDesc.Name, appName)
+		if err != nil {
+			return errors.Wrap(err, "Could not get url list")
+		}
+		for _, u := range ul.Items {
+			log.Info("     URL named ", u.GetName(), " with host ", u.Spec.Host, " having protocol ", u.Spec.Protocol, " at port ", u.Spec.Port)
+		}
+	}
+
+	storages, err := storage.List(client, componentDesc.Name, appName)
+	odoutil.LogErrorAndExit(err, "")
+	if len(storages.Items) != 0 {
+		log.Info("This component has following storages which will be deleted with the component")
+		for _, storageName := range componentDesc.Spec.Storage {
+			store := storages.Get(storageName)
+			log.Info("  Storage", store.GetName(), "of size", store.Spec.Size)
+		}
+	}
+	return nil
 }
