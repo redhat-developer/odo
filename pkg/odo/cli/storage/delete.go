@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -61,13 +62,22 @@ func (o *StorageDeleteOptions) Validate() (err error) {
 	if err != nil {
 		return fmt.Errorf("unable to get component associated with %s storage, cause %v", o.storageName, err)
 	}
-
+	if !util.CheckOutputFlag(o.OutputFlag) {
+		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	}
 	return
 }
 
 // Run contains the logic for the odo storage delete command
 func (o *StorageDeleteOptions) Run() (err error) {
 	var deleteMsg string
+	if util.CheckOutputFlag(o.OutputFlag) {
+		_, err = storage.Delete(o.Client, o.storageName, o.Application)
+		if err != nil {
+			return fmt.Errorf("failed to delete storage, cause %v", err)
+		}
+		return
+	}
 	if o.componentName != "" {
 		mPath := storage.GetMountPath(o.Client, o.storageName, o.componentName, o.Application)
 		deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.componentName)
@@ -107,6 +117,7 @@ func NewCmdStorageDelete(name, fullName string) *cobra.Command {
 
 	storageDeleteCmd.Flags().BoolVarP(&o.storageForceDeleteFlag, "force", "f", false, "Delete storage without prompting")
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
+	genericclioptions.AddOutputFlag(storageDeleteCmd)
 
 	projectCmd.AddProjectFlag(storageDeleteCmd)
 	appCmd.AddApplicationFlag(storageDeleteCmd)
