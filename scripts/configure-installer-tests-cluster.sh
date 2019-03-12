@@ -46,6 +46,10 @@ done
 # Login as admin user
 oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD
 
+# Workarounds - Note we should find better soulutions asap
+## Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
+oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
+
 # Create secret in cluster, removing if it already exists
 oc get secret $HTPASSWD_SECRET -n openshift-config &> /dev/null
 if [ $? -eq 0 ]; then
