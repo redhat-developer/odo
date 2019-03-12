@@ -9,6 +9,10 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -30,6 +34,17 @@ var (
    %[1]s %[8]s 0.5 
    %[1]s %[9]s 2 
    %[1]s %[10]s 1 
+
+   # Set a env variable in the local config
+   %[1]s %[2]s --env PORT=4000
+   %[1]s %[3]s --env DB_USERNAME=postgres,DB_HOSTNAME=postgres
+   %[1]s %[4]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
+   %[1]s %[5]s 500M
+   %[1]s %[6]s 250M
+   %[1]s %[7]s false 
+   %[1]s %[8]s 0.5 
+   %[1]s %[9]s 2 
+   %[1]s %[10]s 1 
 	`)
 )
 
@@ -38,6 +53,7 @@ type SetOptions struct {
 	paramName       string
 	paramValue      string
 	configForceFlag bool
+	envArray        []string
 }
 
 // NewSetOptions creates a new SetOptions instance
@@ -47,8 +63,11 @@ func NewSetOptions() *SetOptions {
 
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.paramName = args[0]
-	o.paramValue = args[1]
+	if o.envArray == nil {
+		o.paramName = args[0]
+		o.paramValue = args[1]
+	}
+
 	return
 }
 
@@ -64,6 +83,23 @@ func (o *SetOptions) Run() (err error) {
 
 	if err != nil {
 		return errors.Wrapf(err, "unable to set configuration")
+	}
+
+	// env variables have been provided
+	if o.envArray != nil {
+		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArray)
+		if err != nil {
+			return err
+		}
+		// keeping the old env vars as well
+		envVarList := cfg.GetEnvVars()
+		finalEvl := config.MergeEnvVarList(newEnvVarList, envVarList)
+		if err := cfg.SetEnvVars(finalEvl); err != nil {
+			return err
+		}
+
+		log.Info("Environment variables were successfully updated.")
+		return nil
 	}
 
 	if !o.configForceFlag {
@@ -94,6 +130,14 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName, config.Type,
 			config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
+			if o.envArray != nil {
+				// no args are needed
+				if len(args) > 0 {
+					return fmt.Errorf("expected 0 args")
+				}
+				return nil
+			}
+
 			if len(args) < 2 {
 				return fmt.Errorf("please provide a parameter name and value")
 			} else if len(args) > 2 {
@@ -107,5 +151,6 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		},
 	}
 	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
+	configurationSetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Set the environment variables in config")
 	return configurationSetCmd
 }

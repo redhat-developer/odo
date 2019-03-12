@@ -78,6 +78,16 @@ func GenerateRandomString(n int) string {
 	return string(b)
 }
 
+// In checks if the value is in the array
+func In(arr []string, value string) bool {
+	for _, item := range arr {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
+
 // Hyphenate applicationName and componentName
 func NamespaceOpenShiftObject(componentName string, applicationName string) (string, error) {
 

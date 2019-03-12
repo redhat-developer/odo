@@ -57,6 +57,8 @@ type ComponentSettings struct {
 	MinCPU *string `yaml:"MinCPU,omitempty"`
 
 	MaxCPU *string `yaml:"MaxCPU,omitempty"`
+
+	Envs EnvVarList `yaml:"Envs,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
@@ -216,7 +218,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 
 		}
 
-		return writeToFile(&lci.LocalConfig, lci.Filename)
+		return lci.writeToFile()
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 
@@ -254,7 +256,7 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 				return err
 			}
 		}
-		return writeToFile(&lci.LocalConfig, lci.Filename)
+		return lci.writeToFile()
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 
@@ -268,11 +270,28 @@ func (lci *LocalConfigInfo) GetComponentSettings() ComponentSettings {
 // SetComponentSettings sets the componentSettings from to the local config and writes to the file
 func (lci *LocalConfigInfo) SetComponentSettings(cs ComponentSettings) error {
 	lci.componentSettings = cs
-	return writeToFile(&lci.LocalConfig, lci.Filename)
+	return lci.writeToFile()
+}
+
+// SetEnvVars sets the env variables on the component settings
+func (lci *LocalConfigInfo) SetEnvVars(envVars EnvVarList) error {
+	lci.ComponentSettings.Envs = envVars
+	return lci.writeToFile()
+}
+
+// GetEnvVars gets the env variables from the component settings
+func (lci *LocalConfigInfo) GetEnvVars() EnvVarList {
+	if lci.ComponentSettings.Envs == nil {
+		return EnvVarList{}
+	}
+	return lci.ComponentSettings.Envs
+}
+
+func (lci *LocalConfigInfo) writeToFile() error {
+	return util.WriteToFile(&lci.LocalConfig, lci.Filename)
 }
 
 // GetType returns type of component (builder image name) in the config
-// and if absent then returns default
 func (lc *LocalConfig) GetType() string {
 	if lc.componentSettings.Type == nil {
 		return ""
