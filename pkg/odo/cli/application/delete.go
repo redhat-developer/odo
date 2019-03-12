@@ -63,7 +63,7 @@ func (o *DeleteOptions) Run() (err error) {
 		}
 		log.Infof("Deleted application: %s from project: %v", o.appName, o.Project)
 	} else {
-		return fmt.Errorf("Aborting deletion of application: %v", o.appName)
+		log.Infof("Aborting deletion of application: %v", o.appName)
 	}
 	return
 }
