@@ -156,7 +156,7 @@ func (po *PushOptions) Run() (err error) {
 			log.Errorf("Unable to push local directory:%s to component %s that uses Git repository:%s.", po.local, po.componentName, po.sourcePath)
 			os.Exit(1)
 		}
-		err := component.Build(po.Context.Client, po.componentName, po.Context.Application, true, stdout)
+		err := component.Build(po.Context.Client, po.componentName, po.Context.Application, true, stdout, true)
 		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", po.componentName))
 	}
 

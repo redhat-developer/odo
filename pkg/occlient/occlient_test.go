@@ -2657,7 +2657,7 @@ func TestWaitAndGetPod(t *testing.T) {
 			})
 
 			podSelector := fmt.Sprintf("deploymentconfig=%s", tt.podName)
-			pod, err := fkclient.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+			pod, err := fkclient.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start", true)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf(" client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)

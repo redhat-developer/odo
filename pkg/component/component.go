@@ -129,7 +129,7 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) (Compone
 	var s *log.Status
 	if !params.MachineReadbleOutput {
 		// Loading spinner
-		s := log.Spinnerf("Creating component %s", params.Name)
+		s = log.Spinnerf("Creating component %s", params.Name)
 		defer s.End(false)
 	}
 
@@ -264,11 +264,11 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) (Compon
 		}
 
 		podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
-		_, err = client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+		_, err = client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start", !params.MachineReadbleOutput)
 		if err != nil {
 			return Component{}, err
 		}
-		return Component{}, nil
+		return getMachineReadableFormat(params.Name, params.ImageName), nil
 	}
 
 	return getMachineReadableFormat(params.Name, params.ImageName), nil
@@ -435,7 +435,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
 
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	pod, err := client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start", true)
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
@@ -527,11 +527,15 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 // Build component from BuildConfig.
 // If 'wait' is true than it waits for build to successfully complete.
 // If 'wait' is false than this function won't return error even if build failed.
-func Build(client *occlient.Client, componentName string, applicationName string, wait bool, stdout io.Writer) error {
+// streamLogs indicates if the logs should be streamed or not
+func Build(client *occlient.Client, componentName string, applicationName string, wait bool, stdout io.Writer, streamLogs bool) error {
 
 	// Loading spinner
-	s := log.Spinnerf("Triggering build from git")
-	defer s.End(false)
+	var s *log.Status
+	if streamLogs {
+		s = log.Spinnerf("Triggering build from git")
+		defer s.End(false)
+	}
 
 	// Namespace the component
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -554,8 +558,12 @@ func Build(client *occlient.Client, componentName string, applicationName string
 
 	if wait {
 
-		s := log.Spinnerf("Waiting for build to finish")
-		defer s.End(false)
+		var s *log.Status
+		if streamLogs {
+			s = log.Spinnerf("Waiting for build to finish")
+			defer s.End(false)
+		}
+
 		if err := client.FollowBuildLog(buildName, stdout); err != nil {
 			return errors.Wrapf(err, "unable to follow logs for %s", buildName)
 		}
@@ -733,7 +741,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 		}
 
 		// Finally, we build!
-		err = Build(client, componentName, applicationName, true, stdout)
+		err = Build(client, componentName, applicationName, true, stdout, true)
 		if err != nil {
 			return errors.Wrapf(err, "unable to build the component %v", componentName)
 		}
@@ -777,7 +785,7 @@ func Update(client *occlient.Client, componentName string, applicationName strin
 			}
 
 			// Build it
-			err = Build(client, componentName, applicationName, true, stdout)
+			err = Build(client, componentName, applicationName, true, stdout, true)
 
 		} else if newSourceType == "local" || newSourceType == "binary" {
 

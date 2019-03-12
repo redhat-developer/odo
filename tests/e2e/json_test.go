@@ -3,6 +3,7 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"reflect"
 
 	. "github.com/onsi/ginkgo"
@@ -12,6 +13,12 @@ import (
 var _ = Describe("odojsonoutput", func() {
 
 	Context("odo machine readable output", func() {
+
+		tmpDir, err := ioutil.TempDir("", "odo")
+		if err != nil {
+			Fail(err.Error())
+		}
+
 		// Basic creation
 		It("Pre-Test Creation: Creating project", func() {
 			odoCreateProject("json-test")
@@ -27,8 +34,29 @@ var _ = Describe("odojsonoutput", func() {
 		// Basic creation
 		It("Pre-Test Creation Json", func() {
 			runCmdShouldPass("odo app create myapp")
-			runCmdShouldPass("odo create nodejs nodejs --git https://github.com/openshift/nodejs-ex")
 		})
+
+		// odo create <component-type> -o json
+		It("should be able to create component", func() {
+			//local component
+			runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
+				tmpDir + "/nodejs-ex")
+
+			actual := runCmdShouldPass("odo create " + "nodejs nodejs --local " + tmpDir + "/nodejs-ex -o json")
+			desired := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs"},"status":{"active":true}}`)
+			areEqual, _ := compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
+
+			// cleanup
+			runCmdShouldPass("odo delete -f")
+
+			// git component
+			actual = runCmdShouldPass("odo create nodejs nodejs --git https://github.com/openshift/nodejs-ex -o json")
+			desired = fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs"},"status":{"active":true}}`)
+			areEqual, _ = compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
+		})
+
 		// odo url create -o json
 		It("should be able to create url", func() {
 			actual := runCmdShouldPass("odo url create myurl -o json")

@@ -369,7 +369,7 @@ func (co *CreateOptions) createComponent(stdout io.Writer) (componentResult comp
 			return componentResult, errors.Wrapf(err, "failed to create component with args %+v", co.CreateArgs)
 		}
 		// Git is the only one using BuildConfig since we need to retrieve the git
-		if err = component.Build(co.Context.Client, co.CreateArgs.Name, co.CreateArgs.ApplicationName, co.wait, stdout); err != nil {
+		if err = component.Build(co.Context.Client, co.CreateArgs.Name, co.CreateArgs.ApplicationName, co.wait, stdout, !co.MachineReadbleOutput); err != nil {
 			return componentResult, errors.Wrapf(err, "failed to build component with args %+v", co)
 		}
 	case occlient.LOCAL:

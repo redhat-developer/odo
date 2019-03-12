@@ -1699,10 +1699,15 @@ func (c *Client) WaitAndGetDC(name string, field string, value string, timeout t
 
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 // desiredPhase cannot be PodFailed or PodUnknown
-func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
+// streamLogs indicates if the logs should be streamed or not
+func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, waitMessage string, streamLogs bool) (*corev1.Pod, error) {
 	glog.V(4).Infof("Waiting for %s pod", selector)
-	s := log.Spinner(waitMessage)
-	defer s.End(false)
+
+	var s *log.Status
+	if streamLogs {
+		s = log.Spinner(waitMessage)
+		defer s.End(false)
+	}
 
 	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
