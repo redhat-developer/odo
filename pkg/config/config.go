@@ -178,7 +178,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			if err != nil {
 				return errors.Wrapf(err, "unable to set %s to %s", parameter, strValue)
 			}
-			value = string(cmpSourceType)
+			strValue = string(cmpSourceType)
 			lci.componentSettings.SourceType = &strValue
 		case "ref":
 			lci.componentSettings.Ref = &strValue
