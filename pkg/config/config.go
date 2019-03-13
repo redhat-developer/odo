@@ -32,6 +32,22 @@ type ComponentSettings struct {
 	// The builder image to use
 	ComponentType *string `yaml:"ComponentType,omitempty"`
 
+	// Path is path to binary in current/context dir
+	Path *string `yaml:"Path,omitempty"`
+
+	// Ref is component source git ref but can be levaraged for more in future
+	Ref *string `yaml:"Ref,omitempty"`
+
+	// Type is type of component source: git/local/binary
+	SourceType *string `yaml:"SourceType,omitempty"`
+
+	// Ports is a slice of ports to be exposed when a component is created
+	Ports *string `yaml:"Ports,omitempty"`
+
+	App *string `yaml:"App,omitempty"`
+
+	Project *string `yaml:"Project,omitempty"`
+
 	ComponentName *string `yaml:"ComponentName,omitempty"`
 
 	MinMemory *string `yaml:"MinMemory,omitempty"`
@@ -153,6 +169,23 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		switch parameter {
 		case "componenttype":
 			lci.componentSettings.ComponentType = &strValue
+		case "app":
+			lci.componentSettings.App = &strValue
+		case "project":
+			lci.componentSettings.Project = &strValue
+		case "sourcetype":
+			cmpSourceType, err := util.GetCreateType(strValue)
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, strValue)
+			}
+			value = string(cmpSourceType)
+			lci.componentSettings.SourceType = &strValue
+		case "ref":
+			lci.componentSettings.Ref = &strValue
+		case "path":
+			lci.componentSettings.Path = &strValue
+		case "ports":
+			lci.componentSettings.Ports = &strValue
 		case "componentname":
 			lci.componentSettings.ComponentName = &strValue
 		case "minmemory":
@@ -226,10 +259,12 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 
 }
 
+// GetComponentSettings returns the componentSettings from local config
 func (lci *LocalConfigInfo) GetComponentSettings() ComponentSettings {
 	return lci.componentSettings
 }
 
+// SetComponentSettings sets the componentSettings from to the local config and writes to the file
 func (lci *LocalConfigInfo) SetComponentSettings(cs ComponentSettings) error {
 	lci.componentSettings = cs
 	return writeToFile(&lci.LocalConfig, lci.Filename)
@@ -242,6 +277,102 @@ func (lc *LocalConfig) GetComponentType() string {
 		return ""
 	}
 	return *lc.componentSettings.ComponentType
+}
+
+// GetPath returns the path, returns default if nil
+func (lc *LocalConfig) GetPath() string {
+	if lc.componentSettings.Path == nil {
+		return ""
+	}
+	return *lc.componentSettings.Path
+}
+
+// GetRef returns the ref, returns default if nil
+func (lc *LocalConfig) GetRef() string {
+	if lc.componentSettings.Ref == nil {
+		return ""
+	}
+	return *lc.componentSettings.Ref
+}
+
+// GetSourceType returns the source type, returns default if nil
+func (lc *LocalConfig) GetSourceType() string {
+	if lc.componentSettings.SourceType == nil {
+		return ""
+	}
+	return *lc.componentSettings.SourceType
+}
+
+// GetPorts returns the ports, returns default if nil
+func (lc *LocalConfig) GetPorts() string {
+	if lc.componentSettings.Ports == nil {
+		return ""
+	}
+	return *lc.componentSettings.Ports
+}
+
+// GetApp returns the app, returns default if nil
+func (lc *LocalConfig) GetApp() string {
+	if lc.componentSettings.App == nil {
+		return ""
+	}
+	return *lc.componentSettings.App
+}
+
+// GetProject returns the project, returns default if nil
+func (lc *LocalConfig) GetProject() string {
+	if lc.componentSettings.Project == nil {
+		return ""
+	}
+	return *lc.componentSettings.Project
+}
+
+// GetComponentName returns the ComponentName, returns default if nil
+func (lc *LocalConfig) GetComponentName() string {
+	if lc.componentSettings.ComponentName == nil {
+		return ""
+	}
+	return *lc.componentSettings.ComponentName
+}
+
+// GetMinMemory returns the MinMemory, returns default if nil
+func (lc *LocalConfig) GetMinMemory() string {
+	if lc.componentSettings.MinMemory == nil {
+		return ""
+	}
+	return *lc.componentSettings.MinMemory
+}
+
+// GetMaxMemory returns the MaxMemory, returns default if nil
+func (lc *LocalConfig) GetMaxMemory() string {
+	if lc.componentSettings.MaxMemory == nil {
+		return ""
+	}
+	return *lc.componentSettings.MaxMemory
+}
+
+// GetIgnore returns the Ignore, returns default if nil
+func (lc *LocalConfig) GetIgnore() bool {
+	if lc.componentSettings.Ignore == nil {
+		return false
+	}
+	return *lc.componentSettings.Ignore
+}
+
+// GetMinCPU returns the MinCPU, returns default if nil
+func (lc *LocalConfig) GetMinCPU() string {
+	if lc.componentSettings.MinCPU == nil {
+		return ""
+	}
+	return *lc.componentSettings.MinCPU
+}
+
+// GetMaxCPU returns the MaxCPU, returns default if nil
+func (lc *LocalConfig) GetMaxCPU() string {
+	if lc.componentSettings.MaxCPU == nil {
+		return ""
+	}
+	return *lc.componentSettings.MaxCPU
 }
 
 const (
@@ -282,12 +413,42 @@ const (
 	CPU = "CPU"
 	// CPUDescription is the name of the setting controlling the min and max CPU to same value
 	CPUDescription = "The minimum and maximum CPU a component can consume"
+	// Path indicates path to the binary within current dir or context
+	Path = "Path"
+	// SourceType indicates type of component source -- git/binary/local
+	SourceType = "SourceType"
+	// Ref indicates git ref for the component source
+	Ref = "Ref"
+	// Ports is the space separated list of user specified ports to be opened in the component
+	Ports = "Ports"
+	// App indicates application of which component is part of
+	App = "App"
+	// Project indicates project the component is part of
+	Project = "Project"
+	// ProjectDescription is the description of project component setting
+	ProjectDescription = "Project is the name of the project the component is part of"
+	// AppDescription is the description of app component setting
+	AppDescription = "App is the name of application the component needs to be part of"
+	// PortsDescription is the desctription of the ports component setting
+	PortsDescription = "Ports to be opened in the component"
+	// RefDescription is the description of ref setting
+	RefDescription = "Git ref to use for creating component from git source"
+	// SourceTypeDescription is the description of type setting
+	SourceTypeDescription = "Type of component source - git/binary/local"
+	// PathDescription is the human-readable description of path setting
+	PathDescription = "The path indicates the location of binary file or git source"
 )
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
 		ComponentType: ComponentTypeDescription,
 		ComponentName: ComponentNameDescription,
+		App:           AppDescription,
+		Project:       ProjectDescription,
+		Path:          PathDescription,
+		SourceType:    SourceTypeDescription,
+		Ref:           RefDescription,
+		Ports:         PortsDescription,
 		MinMemory:     MinMemoryDescription,
 		MaxMemory:     MaxMemoryDescription,
 		Memory:        MemoryDescription,
