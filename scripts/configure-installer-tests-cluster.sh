@@ -68,7 +68,7 @@ metadata:
   name: cluster
 spec:
   identityProviders:
-  - name: htpassidp
+  - name: htpassidp1
     challenge: true
     login: true
     mappingMethod: claim
@@ -79,10 +79,18 @@ spec:
 EOF
 
 # TODO : Find better way to check application of settings on cluster
+echo "Sleeping for ${SLEEP_AFTER_SECRET_CREATION}"
 sleep ${SLEEP_AFTER_SECRET_CREATION}
 
 # Login as developer and setup project
-oc login -u developer -p $USERPASS
+for i in {1..30}; do
+    oc login -u developer -p $USERPASS
+    if [ $? -eq 0 ]; then
+        break
+    fi
+    sleep 2
+done
+
 oc new-project myproject
 sleep 4
 
