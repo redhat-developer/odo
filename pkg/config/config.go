@@ -31,7 +31,7 @@ type Info interface {
 type ComponentSettings struct {
 
 	// The builder image to use
-	ComponentType *string `yaml:"ComponentType,omitempty"`
+	Type *string `yaml:"Type,omitempty"`
 
 	// Path is path to binary in current/context dir
 	Path *string `yaml:"Path,omitempty"`
@@ -45,11 +45,11 @@ type ComponentSettings struct {
 	// Ports is a slice of ports to be exposed when a component is created
 	Ports *[]string `yaml:"Ports,omitempty"`
 
-	App *string `yaml:"App,omitempty"`
+	Application *string `yaml:"Application,omitempty"`
 
 	Project *string `yaml:"Project,omitempty"`
 
-	ComponentName *string `yaml:"ComponentName,omitempty"`
+	Name *string `yaml:"Name,omitempty"`
 
 	MinMemory *string `yaml:"MinMemory,omitempty"`
 
@@ -69,9 +69,9 @@ type LocalConfig struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
-// ProxyLocalConfig holds all the parameter that local config does but exposes all
+// proxyLocalConfig holds all the parameter that local config does but exposes all
 // of it, used for serialization.
-type ProxyLocalConfig struct {
+type proxyLocalConfig struct {
 	metav1.TypeMeta   `yaml:",inline"`
 	ComponentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
@@ -125,7 +125,7 @@ func NewLocalConfigInfo() (*LocalConfigInfo, error) {
 }
 
 func getFromFile(lc *LocalConfig, filename string) error {
-	plc := NewProxyLocalConfig()
+	plc := newProxyLocalConfig()
 
 	err := util.GetFromFile(&plc, filename)
 	if err != nil {
@@ -137,7 +137,7 @@ func getFromFile(lc *LocalConfig, filename string) error {
 }
 
 func writeToFile(lc *LocalConfig, filename string) error {
-	plc := NewProxyLocalConfig()
+	plc := newProxyLocalConfig()
 	plc.TypeMeta = lc.TypeMeta
 	plc.ComponentSettings = lc.componentSettings
 	return util.WriteToFile(&plc, filename)
@@ -153,10 +153,10 @@ func NewLocalConfig() LocalConfig {
 	}
 }
 
-// NewProxyLocalConfig creates an empty ProxyLocalConfig struct with typeMeta populated
-func NewProxyLocalConfig() ProxyLocalConfig {
+// newProxyLocalConfig creates an empty proxyLocalConfig struct with typeMeta populated
+func newProxyLocalConfig() proxyLocalConfig {
 	lc := NewLocalConfig()
-	return ProxyLocalConfig{
+	return proxyLocalConfig{
 		TypeMeta: lc.TypeMeta,
 	}
 }
@@ -170,10 +170,10 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 	strValue, _ := value.(string)
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
-		case "componenttype":
-			lci.componentSettings.ComponentType = &strValue
-		case "app":
-			lci.componentSettings.App = &strValue
+		case "type":
+			lci.componentSettings.Type = &strValue
+		case "application":
+			lci.componentSettings.Application = &strValue
 		case "project":
 			lci.componentSettings.Project = &strValue
 		case "sourcetype":
@@ -189,8 +189,8 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "ports":
 			arrValue := value.([]string)
 			lci.componentSettings.Ports = &arrValue
-		case "componentname":
-			lci.componentSettings.ComponentName = &strValue
+		case "name":
+			lci.componentSettings.Name = &strValue
 		case "minmemory":
 			lci.componentSettings.MinMemory = &strValue
 		case "maxmemory":
@@ -273,13 +273,13 @@ func (lci *LocalConfigInfo) SetComponentSettings(cs ComponentSettings) error {
 	return writeToFile(&lci.LocalConfig, lci.Filename)
 }
 
-// GetComponentType returns type of component (builder image name) in the config
+// GetType returns type of component (builder image name) in the config
 // and if absent then returns default
-func (lc *LocalConfig) GetComponentType() string {
-	if lc.componentSettings.ComponentType == nil {
+func (lc *LocalConfig) GetType() string {
+	if lc.componentSettings.Type == nil {
 		return ""
 	}
-	return *lc.componentSettings.ComponentType
+	return *lc.componentSettings.Type
 }
 
 // GetPath returns the path, returns default if nil
@@ -314,12 +314,12 @@ func (lc *LocalConfig) GetPorts() []string {
 	return *lc.componentSettings.Ports
 }
 
-// GetApp returns the app, returns default if nil
-func (lc *LocalConfig) GetApp() string {
-	if lc.componentSettings.App == nil {
+// GetApplication returns the app, returns default if nil
+func (lc *LocalConfig) GetApplication() string {
+	if lc.componentSettings.Application == nil {
 		return ""
 	}
-	return *lc.componentSettings.App
+	return *lc.componentSettings.Application
 }
 
 // GetProject returns the project, returns default if nil
@@ -330,12 +330,12 @@ func (lc *LocalConfig) GetProject() string {
 	return *lc.componentSettings.Project
 }
 
-// GetComponentName returns the ComponentName, returns default if nil
-func (lc *LocalConfig) GetComponentName() string {
-	if lc.componentSettings.ComponentName == nil {
+// GetName returns the Name, returns default if nil
+func (lc *LocalConfig) GetName() string {
+	if lc.componentSettings.Name == nil {
 		return ""
 	}
-	return *lc.componentSettings.ComponentName
+	return *lc.componentSettings.Name
 }
 
 // GetMinMemory returns the MinMemory, returns default if nil
@@ -380,14 +380,14 @@ func (lc *LocalConfig) GetMaxCPU() string {
 
 const (
 
-	// ComponentType is the name of the setting controlling the component type i.e. builder image
-	ComponentType = "ComponentType"
-	// ComponentTypeDescription is human-readable description of the componentType setting
-	ComponentTypeDescription = "The type of component"
-	// ComponentName is the name of the setting controlling the component name
-	ComponentName = "ComponentName"
-	// ComponentNameDescription is human-readable description of the componentType setting
-	ComponentNameDescription = "The name of the component"
+	// Type is the name of the setting controlling the component type i.e. builder image
+	Type = "Type"
+	// TypeDescription is human-readable description of the componentType setting
+	TypeDescription = "The type of component"
+	// Name is the name of the setting controlling the component name
+	Name = "Name"
+	// NameDescription is human-readable description of the componentType setting
+	NameDescription = "The name of the component"
 	// MinMemory is the name of the setting controlling the min memory a component consumes
 	MinMemory = "MinMemory"
 	// MinMemoryDescription is the name of the setting controlling the minimum memory
@@ -424,14 +424,14 @@ const (
 	Ref = "Ref"
 	// Ports is the space separated list of user specified ports to be opened in the component
 	Ports = "Ports"
-	// App indicates application of which component is part of
-	App = "App"
+	// Application indicates application of which component is part of
+	Application = "Application"
 	// Project indicates project the component is part of
 	Project = "Project"
 	// ProjectDescription is the description of project component setting
 	ProjectDescription = "Project is the name of the project the component is part of"
-	// AppDescription is the description of app component setting
-	AppDescription = "App is the name of application the component needs to be part of"
+	// ApplicationDescription is the description of app component setting
+	ApplicationDescription = "Application is the name of application the component needs to be part of"
 	// PortsDescription is the desctription of the ports component setting
 	PortsDescription = "Ports to be opened in the component"
 	// RefDescription is the description of ref setting
@@ -444,21 +444,21 @@ const (
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
-		ComponentType: ComponentTypeDescription,
-		ComponentName: ComponentNameDescription,
-		App:           AppDescription,
-		Project:       ProjectDescription,
-		Path:          PathDescription,
-		SourceType:    SourceTypeDescription,
-		Ref:           RefDescription,
-		Ports:         PortsDescription,
-		MinMemory:     MinMemoryDescription,
-		MaxMemory:     MaxMemoryDescription,
-		Memory:        MemoryDescription,
-		Ignore:        IgnoreDescription,
-		MinCPU:        MinCPUDescription,
-		MaxCPU:        MaxCPUDescription,
-		CPU:           CPUDescription,
+		Type:        TypeDescription,
+		Name:        NameDescription,
+		Application: ApplicationDescription,
+		Project:     ProjectDescription,
+		Path:        PathDescription,
+		SourceType:  SourceTypeDescription,
+		Ref:         RefDescription,
+		Ports:       PortsDescription,
+		MinMemory:   MinMemoryDescription,
+		MaxMemory:   MaxMemoryDescription,
+		Memory:      MemoryDescription,
+		Ignore:      IgnoreDescription,
+		MinCPU:      MinCPUDescription,
+		MaxCPU:      MaxCPUDescription,
+		CPU:         CPUDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

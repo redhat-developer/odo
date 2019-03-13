@@ -198,11 +198,11 @@ var _ = Describe("odoe2e", func() {
 				paramValue string
 			}{
 				{
-					paramName:  "ComponentType",
+					paramName:  "Type",
 					paramValue: "java",
 				},
 				{
-					paramName:  "ComponentName",
+					paramName:  "Name",
 					paramValue: "odo-java",
 				},
 				{
@@ -227,11 +227,11 @@ var _ = Describe("odoe2e", func() {
 				paramValue string
 			}{
 				{
-					paramName:  "ComponentType",
+					paramName:  "Type",
 					paramValue: "java",
 				},
 				{
-					paramName:  "ComponentName",
+					paramName:  "Name",
 					paramValue: "odo-java",
 				},
 				{

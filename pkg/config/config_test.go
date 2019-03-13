@@ -56,12 +56,12 @@ func TestSetLocalConfiguration(t *testing.T) {
 			want: false,
 		},
 		{
-			name:      fmt.Sprintf("Case 3: %s to test", ComponentName),
-			parameter: ComponentName,
+			name:      fmt.Sprintf("Case 3: %s to test", Name),
+			parameter: Name,
 			value:     testValue,
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					ComponentName: &testValue,
+					Name: &testValue,
 				},
 			},
 			want: testValue,
@@ -154,12 +154,12 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name:      fmt.Sprintf("Case 3: unset %s", ComponentName),
-			parameter: ComponentName,
+			name:      fmt.Sprintf("Case 3: unset %s", Name),
+			parameter: Name,
 			value:     testValue,
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
-					ComponentName: &testValue,
+					Name: &testValue,
 				},
 			},
 		},
@@ -226,9 +226,9 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 }
 
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"componentname": true, "minmemory": true, "ignore": true, "project": true,
-		"app": true, "componenttype": true, "ref": true, "mincpu": true, "cpu": true, "ports": true, "maxmemory": true,
-		"maxcpu": true, "type": true, "path": true, "memory": true}
+	expected := map[string]bool{"name": true, "minmemory": true, "ignore": true, "project": true,
+		"application": true, "type": true, "ref": true, "mincpu": true, "cpu": true, "ports": true, "maxmemory": true,
+		"maxcpu": true, "sourcetype": true, "path": true, "memory": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
