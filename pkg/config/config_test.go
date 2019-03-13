@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/redhat-developer/odo/pkg/util"
@@ -38,7 +37,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 			parameter: Ignore,
 			value:     "true",
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					Ignore: &trueValue,
 				},
 			},
@@ -49,7 +48,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 			parameter: Ignore,
 			value:     "false",
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					Ignore: &falseValue,
 				},
 			},
@@ -60,7 +59,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 			parameter: ComponentName,
 			value:     testValue,
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					ComponentName: &testValue,
 				},
 			},
@@ -71,7 +70,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 			parameter: MaxCPU,
 			value:     maxCPUValue,
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					MaxCPU: &maxCPUValue,
 				},
 			},
@@ -82,7 +81,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 			parameter: MinCPU,
 			value:     minCPUValue,
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					MinCPU: &minCPUValue,
 				},
 			},
@@ -93,7 +92,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 			parameter: MinMemory,
 			value:     minMemValue,
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					MinMemory: &minMemValue,
 				},
 			},
@@ -148,7 +147,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 			parameter: Ignore,
 			value:     "true",
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					Ignore: &trueValue,
 				},
 			},
@@ -158,7 +157,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 			parameter: ComponentName,
 			value:     testValue,
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					ComponentName: &testValue,
 				},
 			},
@@ -168,7 +167,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 			parameter: MaxCPU,
 			value:     maxCPUValue,
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					MaxCPU: &maxCPUValue,
 				},
 			},
@@ -178,7 +177,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 			parameter: MinCPU,
 			value:     minCPUValue,
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					MinCPU: &minCPUValue,
 				},
 			},
@@ -188,7 +187,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 			parameter: MinMemory,
 			value:     minMemValue,
 			existingConfig: LocalConfig{
-				ComponentSettings: ComponentSettings{
+				componentSettings: ComponentSettings{
 					MinMemory: &minMemValue,
 				},
 			},
@@ -226,12 +225,24 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 }
 
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"componenttype": true, "componentname": true, "minmemory": true, "maxmemory": true,
-		"memory": true, "ignore": true, "mincpu": true, "maxcpu": true, "cpu": true}
+	expected := map[string]bool{"componentname": true, "minmemory": true, "ignore": true, "project": true,
+		"app": true, "componenttype": true, "ref": true, "mincpu": true, "cpu": true, "ports": true, "maxmemory": true,
+		"maxcpu": true, "type": true, "path": true, "memory": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
-	if !reflect.DeepEqual(expected, actual) {
+	if !boolMapEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
 	}
+}
+
+func boolMapEqual(m1, m2 map[string]bool) bool {
+	for key, value := range m1 {
+		if val2, ok := m2[key]; ok {
+			if val2 != value {
+				return false
+			}
+		}
+	}
+	return len(m1) == len(m2)
 }
 
 func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
