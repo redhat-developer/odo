@@ -40,5 +40,4 @@ You can do this by running `$ make configure-installer-tests-cluster` before run
 This script is configurable with environment variables as
 
  - CI: If this environment is set, then initial setup is skipped in favor of only configuring authentication. Use only with OpenShift CI
- - SLEEP_AFTER_SECRET_CREATION: The time to sleep after auth is configured. Default is 18 seconds
  - DEFAULT_INSTALLER_ASSETS_DIR: The location where OpenShift installer creates assets such as kube admin password and the kubeconfig file.

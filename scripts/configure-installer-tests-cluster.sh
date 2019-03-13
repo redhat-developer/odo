@@ -78,13 +78,9 @@ spec:
         name: ${HTPASSWD_SECRET}
 EOF
 
-# TODO : Find better way to check application of settings on cluster
-echo "Sleeping for ${SLEEP_AFTER_SECRET_CREATION}"
-sleep ${SLEEP_AFTER_SECRET_CREATION}
-
 # Login as developer and setup project
 for i in {1..30}; do
-    oc login -u developer -p $USERPASS
+    oc login -u developer -p $USERPASS &> /dev/null
     if [ $? -eq 0 ]; then
         break
     fi
