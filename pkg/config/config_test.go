@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/redhat-developer/odo/pkg/util"
@@ -229,20 +230,9 @@ func TestLowerCaseParameterForLocalParameters(t *testing.T) {
 		"app": true, "componenttype": true, "ref": true, "mincpu": true, "cpu": true, "ports": true, "maxmemory": true,
 		"maxcpu": true, "type": true, "path": true, "memory": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
-	if !boolMapEqual(expected, actual) {
+	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
 	}
-}
-
-func boolMapEqual(m1, m2 map[string]bool) bool {
-	for key, value := range m1 {
-		if val2, ok := m2[key]; ok {
-			if val2 != value {
-				return false
-			}
-		}
-	}
-	return len(m1) == len(m2)
 }
 
 func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {

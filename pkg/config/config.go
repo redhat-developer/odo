@@ -39,10 +39,10 @@ type ComponentSettings struct {
 	Ref *string `yaml:"Ref,omitempty"`
 
 	// Type is type of component source: git/local/binary
-	SourceType *string `yaml:"SourceType,omitempty"`
+	Type *string `yaml:"Type,omitempty"`
 
 	// Ports is a slice of ports to be exposed when a component is created
-	Ports *string `yaml:"Ports,omitempty"`
+	Ports *[]string `yaml:"Ports,omitempty"`
 
 	App *string `yaml:"App,omitempty"`
 
@@ -164,7 +164,9 @@ func NewProxyLocalConfig() ProxyLocalConfig {
 // max memory etc.
 // TODO: Use reflect to set parameters
 func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}) (err error) {
-	strValue := value.(string)
+
+	// getting the ok makes the conversion not panic in any case
+	strValue, _ := value.(string)
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "componenttype":
@@ -174,18 +176,19 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "project":
 			lci.componentSettings.Project = &strValue
 		case "sourcetype":
-			cmpSourceType, err := util.GetCreateType(strValue)
+			cmpType, err := util.GetCreateType(strValue)
 			if err != nil {
 				return errors.Wrapf(err, "unable to set %s to %s", parameter, strValue)
 			}
-			strValue = string(cmpSourceType)
-			lci.componentSettings.SourceType = &strValue
+			strValue = string(cmpType)
+			lci.componentSettings.Type = &strValue
 		case "ref":
 			lci.componentSettings.Ref = &strValue
 		case "path":
 			lci.componentSettings.Path = &strValue
 		case "ports":
-			lci.componentSettings.Ports = &strValue
+			arrValue := value.([]string)
+			lci.componentSettings.Ports = &arrValue
 		case "componentname":
 			lci.componentSettings.ComponentName = &strValue
 		case "minmemory":
@@ -295,18 +298,18 @@ func (lc *LocalConfig) GetRef() string {
 	return *lc.componentSettings.Ref
 }
 
-// GetSourceType returns the source type, returns default if nil
-func (lc *LocalConfig) GetSourceType() string {
-	if lc.componentSettings.SourceType == nil {
+// GetType returns the source type, returns default if nil
+func (lc *LocalConfig) GetType() string {
+	if lc.componentSettings.Type == nil {
 		return ""
 	}
-	return *lc.componentSettings.SourceType
+	return *lc.componentSettings.Type
 }
 
 // GetPorts returns the ports, returns default if nil
-func (lc *LocalConfig) GetPorts() string {
+func (lc *LocalConfig) GetPorts() []string {
 	if lc.componentSettings.Ports == nil {
-		return ""
+		return nil
 	}
 	return *lc.componentSettings.Ports
 }
@@ -415,8 +418,8 @@ const (
 	CPUDescription = "The minimum and maximum CPU a component can consume"
 	// Path indicates path to the binary within current dir or context
 	Path = "Path"
-	// SourceType indicates type of component source -- git/binary/local
-	SourceType = "SourceType"
+	// Type indicates type of component source -- git/binary/local
+	Type = "Type"
 	// Ref indicates git ref for the component source
 	Ref = "Ref"
 	// Ports is the space separated list of user specified ports to be opened in the component
@@ -433,8 +436,8 @@ const (
 	PortsDescription = "Ports to be opened in the component"
 	// RefDescription is the description of ref setting
 	RefDescription = "Git ref to use for creating component from git source"
-	// SourceTypeDescription is the description of type setting
-	SourceTypeDescription = "Type of component source - git/binary/local"
+	// TypeDescription is the description of type setting
+	TypeDescription = "Type of component source - git/binary/local"
 	// PathDescription is the human-readable description of path setting
 	PathDescription = "The path indicates the location of binary file or git source"
 )
@@ -446,7 +449,7 @@ var (
 		App:           AppDescription,
 		Project:       ProjectDescription,
 		Path:          PathDescription,
-		SourceType:    SourceTypeDescription,
+		Type:          TypeDescription,
 		Ref:           RefDescription,
 		Ports:         PortsDescription,
 		MinMemory:     MinMemoryDescription,
