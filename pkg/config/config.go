@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +41,7 @@ type ComponentSettings struct {
 	Ref *string `yaml:"Ref,omitempty"`
 
 	// Type is type of component source: git/local/binary
-	SourceType *util.CreateType `yaml:"SourceType,omitempty"`
+	SourceType *occlient.CreateType `yaml:"SourceType,omitempty"`
 
 	// Ports is a slice of ports to be exposed when a component is created
 	Ports *[]string `yaml:"Ports,omitempty"`
@@ -177,7 +178,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "project":
 			lci.componentSettings.Project = &strValue
 		case "sourcetype":
-			cmpSourceType, err := util.GetCreateType(strValue)
+			cmpSourceType, err := occlient.GetCreateType(strValue)
 			if err != nil {
 				return errors.Wrapf(err, "unable to set %s to %s", parameter, strValue)
 			}
@@ -299,7 +300,7 @@ func (lc *LocalConfig) GetRef() string {
 }
 
 // GetSourceType returns the source type, returns default if nil
-func (lc *LocalConfig) GetSourceType() util.CreateType {
+func (lc *LocalConfig) GetSourceType() occlient.CreateType {
 	if lc.componentSettings.SourceType == nil {
 		return ""
 	}

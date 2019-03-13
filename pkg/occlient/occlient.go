@@ -3241,3 +3241,17 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 	}
 	return err
 }
+
+// GetCreateType returns enum equivalent of passed component source type or error if unsupported type passed
+func GetCreateType(ctStr string) (CreateType, error) {
+	switch strings.ToLower(ctStr) {
+	case string(GIT):
+		return GIT, nil
+	case string(LOCAL):
+		return LOCAL, nil
+	case string(BINARY):
+		return BINARY, nil
+	default:
+		return NONE, fmt.Errorf("Unsupported component source type: %s", ctStr)
+	}
+}
