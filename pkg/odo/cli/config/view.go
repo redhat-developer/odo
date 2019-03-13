@@ -45,15 +45,16 @@ func (o *ViewOptions) Run() (err error) {
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
+	cs := cfg.GetComponentSettings()
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
-	fmt.Fprintln(w, "ComponentType", "\t", showBlankIfNil(cfg.ComponentSettings.ComponentType))
-	fmt.Fprintln(w, "ComponentName", "\t", showBlankIfNil(cfg.ComponentSettings.ComponentName))
-	fmt.Fprintln(w, "MinMemory", "\t", showBlankIfNil(cfg.ComponentSettings.MinMemory))
-	fmt.Fprintln(w, "MaxMemory", "\t", showBlankIfNil(cfg.ComponentSettings.MaxMemory))
-	fmt.Fprintln(w, "Ignore", "\t", showBlankIfNil(cfg.ComponentSettings.Ignore))
-	fmt.Fprintln(w, "MinCPU", "\t", showBlankIfNil(cfg.ComponentSettings.MinCPU))
-	fmt.Fprintln(w, "MaxCPU", "\t", showBlankIfNil(cfg.ComponentSettings.MaxCPU))
+	fmt.Fprintln(w, "ComponentType", "\t", showBlankIfNil(cs.ComponentType))
+	fmt.Fprintln(w, "ComponentName", "\t", showBlankIfNil(cs.ComponentName))
+	fmt.Fprintln(w, "MinMemory", "\t", showBlankIfNil(cs.MinMemory))
+	fmt.Fprintln(w, "MaxMemory", "\t", showBlankIfNil(cs.MaxMemory))
+	fmt.Fprintln(w, "Ignore", "\t", showBlankIfNil(cs.Ignore))
+	fmt.Fprintln(w, "MinCPU", "\t", showBlankIfNil(cs.MinCPU))
+	fmt.Fprintln(w, "MaxCPU", "\t", showBlankIfNil(cs.MaxCPU))
 	w.Flush()
 	return
 }

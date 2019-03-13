@@ -49,6 +49,13 @@ type ComponentSettings struct {
 // LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
 	metav1.TypeMeta   `yaml:",inline"`
+	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
+}
+
+// ProxyLocalConfig holds all the parameter that local config does but exposes all
+// of it, used for serialization.
+type ProxyLocalConfig struct {
+	metav1.TypeMeta   `yaml:",inline"`
 	ComponentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
@@ -93,11 +100,30 @@ func NewLocalConfigInfo() (*LocalConfigInfo, error) {
 	if _, err = os.Stat(configFile); os.IsNotExist(err) {
 		return &c, nil
 	}
-	err = util.GetFromFile(&c.LocalConfig, c.Filename)
+	err = getFromFile(&c.LocalConfig, c.Filename)
 	if err != nil {
 		return nil, err
 	}
 	return &c, nil
+}
+
+func getFromFile(lc *LocalConfig, filename string) error {
+	plc := NewProxyLocalConfig()
+
+	err := util.GetFromFile(&plc, filename)
+	if err != nil {
+		return err
+	}
+	lc.TypeMeta = plc.TypeMeta
+	lc.componentSettings = plc.ComponentSettings
+	return nil
+}
+
+func writeToFile(lc *LocalConfig, filename string) error {
+	plc := NewProxyLocalConfig()
+	plc.TypeMeta = lc.TypeMeta
+	plc.ComponentSettings = lc.componentSettings
+	return util.WriteToFile(&plc, filename)
 }
 
 // NewLocalConfig creates an empty LocalConfig struct with typeMeta populated
@@ -110,40 +136,49 @@ func NewLocalConfig() LocalConfig {
 	}
 }
 
+// NewProxyLocalConfig creates an empty ProxyLocalConfig struct with typeMeta populated
+func NewProxyLocalConfig() ProxyLocalConfig {
+	lc := NewLocalConfig()
+	return ProxyLocalConfig{
+		TypeMeta: lc.TypeMeta,
+	}
+}
+
 // SetConfiguration sets the common config settings like component type, min memory
 // max memory etc.
 // TODO: Use reflect to set parameters
-func (lci *LocalConfigInfo) SetConfiguration(parameter string, value string) (err error) {
+func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}) (err error) {
+	strValue := value.(string)
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "componenttype":
-			lci.ComponentSettings.ComponentType = &value
+			lci.componentSettings.ComponentType = &strValue
 		case "componentname":
-			lci.ComponentSettings.ComponentName = &value
+			lci.componentSettings.ComponentName = &strValue
 		case "minmemory":
-			lci.ComponentSettings.MinMemory = &value
+			lci.componentSettings.MinMemory = &strValue
 		case "maxmemory":
-			lci.ComponentSettings.MaxMemory = &value
+			lci.componentSettings.MaxMemory = &strValue
 		case "memory":
-			lci.ComponentSettings.MaxMemory = &value
-			lci.ComponentSettings.MinMemory = &value
+			lci.componentSettings.MaxMemory = &strValue
+			lci.componentSettings.MinMemory = &strValue
 		case "ignore":
-			val, err := strconv.ParseBool(strings.ToLower(value))
+			val, err := strconv.ParseBool(strings.ToLower(strValue))
 			if err != nil {
-				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, strValue)
 			}
-			lci.ComponentSettings.Ignore = &val
+			lci.componentSettings.Ignore = &val
 		case "mincpu":
-			lci.ComponentSettings.MinCPU = &value
+			lci.componentSettings.MinCPU = &strValue
 		case "maxcpu":
-			lci.ComponentSettings.MaxCPU = &value
+			lci.componentSettings.MaxCPU = &strValue
 		case "cpu":
-			lci.ComponentSettings.MinCPU = &value
-			lci.ComponentSettings.MaxCPU = &value
+			lci.componentSettings.MinCPU = &strValue
+			lci.componentSettings.MaxCPU = &strValue
 
 		}
 
-		return util.WriteToFile(&lci.LocalConfig, lci.Filename)
+		return writeToFile(&lci.LocalConfig, lci.Filename)
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 
@@ -155,18 +190,18 @@ func (lci *LocalConfigInfo) GetConfiguration(parameter string) (interface{}, boo
 
 	switch strings.ToLower(parameter) {
 	case "cpu":
-		if lci.ComponentSettings.MinCPU == nil {
+		if lci.componentSettings.MinCPU == nil {
 			return nil, true
 		}
-		return *lci.ComponentSettings.MinCPU, true
+		return *lci.componentSettings.MinCPU, true
 	case "memory":
-		if lci.ComponentSettings.MinMemory == nil {
+		if lci.componentSettings.MinMemory == nil {
 			return nil, true
 		}
-		return *lci.ComponentSettings.MinMemory, true
+		return *lci.componentSettings.MinMemory, true
 	}
 
-	return util.GetConfiguration(lci.ComponentSettings, parameter)
+	return util.GetConfiguration(lci.componentSettings, parameter)
 }
 
 // DeleteConfiguration is used to delete config from local odo config
@@ -175,29 +210,38 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 
 		switch parameter {
 		case "cpu":
-			lci.ComponentSettings.MinCPU = nil
-			lci.ComponentSettings.MaxCPU = nil
+			lci.componentSettings.MinCPU = nil
+			lci.componentSettings.MaxCPU = nil
 		case "memory":
-			lci.ComponentSettings.MinMemory = nil
-			lci.ComponentSettings.MaxMemory = nil
+			lci.componentSettings.MinMemory = nil
+			lci.componentSettings.MaxMemory = nil
 		default:
-			if err := util.DeleteConfiguration(&lci.ComponentSettings, parameter); err != nil {
+			if err := util.DeleteConfiguration(&lci.componentSettings, parameter); err != nil {
 				return err
 			}
 		}
-		return util.WriteToFile(&lci.LocalConfig, lci.Filename)
+		return writeToFile(&lci.LocalConfig, lci.Filename)
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 
 }
 
+func (lci *LocalConfigInfo) GetComponentSettings() ComponentSettings {
+	return lci.componentSettings
+}
+
+func (lci *LocalConfigInfo) SetComponentSettings(cs ComponentSettings) error {
+	lci.componentSettings = cs
+	return writeToFile(&lci.LocalConfig, lci.Filename)
+}
+
 // GetComponentType returns type of component (builder image name) in the config
 // and if absent then returns default
 func (lc *LocalConfig) GetComponentType() string {
-	if lc.ComponentSettings.ComponentType == nil {
+	if lc.componentSettings.ComponentType == nil {
 		return ""
 	}
-	return *lc.ComponentSettings.ComponentType
+	return *lc.componentSettings.ComponentType
 }
 
 const (
