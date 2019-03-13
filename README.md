@@ -141,3 +141,4 @@ Additional documentation can be found below:
 
 Multiple component types are currently supported, like nodejs, perl, php, python, ruby, etc.
 **Service:** A service will typically be a database or a "service" a component links / depends on. For example: MariaDB, Jenkins, MySQL. This comes from the OpenShift "Service Catalog" and must be enabled within your cluster.
+
