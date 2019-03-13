@@ -67,11 +67,11 @@ var _ = Describe("odoe2e", func() {
 
 		Context("Logs in an new user without active project and tries to create various objects", func() {
 			It("Login as test user without project", func() {
-				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoNoProjectAttemptsCreate", loginTestUserPassword))
+				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odonoprojectattemptscreate", loginTestUserPassword))
 			})
 
 			It("Should fail if user tries to create anything other than project", func() {
-				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoNoProjectAttemptsCreate", loginTestUserPassword))
+				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odonoprojectattemptscreate", loginTestUserPassword))
 				session := runCmdShouldFail("odo create nodejs")
 				Expect(session).To(ContainSubstring("You dont have permission to project 'default' or it doesnt exist."))
 				// The message should also give user apropriate command
@@ -100,7 +100,7 @@ var _ = Describe("odoe2e", func() {
 
 		Context("Logs in as user with a project, deletes it and tries to create various objects", func() {
 			It("Should login as a user and setup by creating a project, and then deleting it", func() {
-				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odoSingleProjectAttemptsCreate", loginTestUserPassword))
+				runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odosingleprojectattemptscreate", loginTestUserPassword))
 				odoCreateProject("odosingleprojectattemptscreateproject")
 				odoDeleteProject("odosingleprojectattemptscreateproject")
 			})

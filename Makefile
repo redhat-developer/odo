@@ -81,6 +81,10 @@ generate-cli-reference:
 prepare-release: cross
 	./scripts/prepare-release.sh
 
+.PHONY: configure-installer-tests-cluster
+configure-installer-tests-cluster:
+	. ./scripts/configure-installer-tests-cluster.sh
+
 .PHONY: test
 test:
 	go test -race $(PKGS)
