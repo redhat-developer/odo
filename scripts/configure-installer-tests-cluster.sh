@@ -12,7 +12,7 @@ KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_D
 export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
 # List of users to create
-USERS="developer odonoprojectattemptscreateproject odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
+USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
 
 # Attempt resolution of kubeadmin, only if a CI is set
 if [ -z $CI ]; then
