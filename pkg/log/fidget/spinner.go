@@ -25,16 +25,27 @@ package fidget
 import (
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 	"time"
 )
 
-// custom CLI loading spinner for kind
-var spinnerFrames = []string{
+// These are frames for the default "spinner" using unicode. These
+// are meant for macOS and Linux terminals that by default support unicode.
+var unicodeSpinnerFrames = []string{
 	"◐",
 	"◓",
 	"◑",
 	"◒",
+}
+
+// These are the spinner using ASCII. We revert to these frames
+// for Windows terminals that don't support unicode.
+var asciiSpinnerFrames = []string{
+	"<",
+	"^",
+	">",
+	"v",
 }
 
 // Spinner is a simple and efficient CLI loading spinner used by kind
@@ -53,8 +64,14 @@ type Spinner struct {
 
 // NewSpinner initializes and returns a new Spinner that will write to
 func NewSpinner(w io.Writer) *Spinner {
+
+	frames := unicodeSpinnerFrames
+	if runtime.GOOS == "windows" {
+		frames = asciiSpinnerFrames
+	}
+
 	return &Spinner{
-		frames: spinnerFrames,
+		frames: frames,
 		stop:   make(chan struct{}, 1),
 		ticker: time.NewTicker(time.Millisecond * 200),
 		mu:     &sync.Mutex{},
