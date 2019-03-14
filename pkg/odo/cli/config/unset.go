@@ -79,9 +79,8 @@ func (o *UnsetOptions) Run() (err error) {
 		fmt.Println("Local config was successfully updated.")
 
 		return nil
-	} else {
-		return errors.New("config already unset, cannot unset a configuration which is not set")
 	}
+	return errors.New("config already unset, cannot unset a configuration which is not set")
 
 }
 
