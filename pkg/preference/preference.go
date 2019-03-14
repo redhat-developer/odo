@@ -207,10 +207,9 @@ func (c *PreferenceInfo) DeleteConfiguration(parameter string) error {
 	return nil
 }
 
-// GetConfiguration gets the value of the specified parameter, it returns false in
-// case the value is not part of the struct
-func (c *PreferenceInfo) GetConfiguration(parameter string) (interface{}, bool) {
-	return util.GetConfiguration(c.OdoSettings, parameter)
+// IsSet checks if the value is set in the preference
+func (c *PreferenceInfo) IsSet(parameter string) bool {
+	return util.IsSet(c.OdoSettings, parameter)
 }
 
 // GetTimeout returns the value of Timeout from config

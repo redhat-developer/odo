@@ -21,13 +21,6 @@ const (
 	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
 )
 
-// Info is implemented by configuration managers
-type Info interface {
-	SetConfiguration(parameter string, value string) error
-	GetConfiguration(parameter string) (interface{}, bool)
-	DeleteConfiguration(parameter string) error
-}
-
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
 
@@ -223,24 +216,20 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 
 }
 
-// GetConfiguration uses reflection to get the parameter from the localconfig struct, currently
+// IsSet uses reflection to get the parameter from the localconfig struct, currently
 // it only searches the componentSettings
-func (lci *LocalConfigInfo) GetConfiguration(parameter string) (interface{}, bool) {
+func (lci *LocalConfigInfo) IsSet(parameter string) bool {
 
 	switch strings.ToLower(parameter) {
 	case "cpu":
-		if lci.componentSettings.MinCPU == nil {
-			return nil, true
-		}
-		return *lci.componentSettings.MinCPU, true
+		return (lci.componentSettings.MinCPU != nil && lci.componentSettings.MaxCPU != nil) &&
+			(*lci.componentSettings.MinCPU == *lci.componentSettings.MaxCPU)
 	case "memory":
-		if lci.componentSettings.MinMemory == nil {
-			return nil, true
-		}
-		return *lci.componentSettings.MinMemory, true
+		return (lci.componentSettings.MinMemory != nil && lci.componentSettings.MaxMemory != nil) &&
+			(*lci.componentSettings.MinMemory == *lci.componentSettings.MaxMemory)
 	}
 
-	return util.GetConfiguration(lci.componentSettings, parameter)
+	return util.IsSet(lci.componentSettings, parameter)
 }
 
 // DeleteConfiguration is used to delete config from local odo config

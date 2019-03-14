@@ -92,6 +92,30 @@ func GetConfiguration(info interface{}, parameter string) (interface{}, bool) {
 	return val.Interface(), true
 }
 
+// IsSet uses reflection to check if a parameter is set in a struct
+// using the name in a case insensitive manner
+// only supports flat structs
+// TODO: support deeper struct using recursion
+func IsSet(info interface{}, parameter string) bool {
+	imm := reflect.ValueOf(info)
+	if imm.Kind() == reflect.Ptr {
+		imm = imm.Elem()
+	}
+	val := imm.FieldByNameFunc(CaseInsensitive(parameter))
+	if !val.IsValid() || val.IsNil() {
+		return false
+	}
+	if val.IsNil() {
+		return false
+	}
+	// if the value is a Ptr then we need to de-ref it
+	if val.Kind() == reflect.Ptr {
+		return true
+	}
+
+	return true
+}
+
 // CaseInsensitive returns a function which compares two words
 // caseinsensitively
 func CaseInsensitive(parameter string) func(word string) bool {
