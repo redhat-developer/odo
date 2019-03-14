@@ -185,3 +185,51 @@ func getPodNameOfComp(compName string) string {
 	podName := re.FindString(stdOut)
 	return strings.TrimSpace(podName)
 }
+
+// This function execute oc command and returns build name of a delopyed
+// component by passing component name as a argument
+func getBuildName(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get builds --output='name'")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-\S+`)
+	buildName := re.FindString(stdOut)
+	return strings.TrimSpace(buildName)
+}
+
+// This function execute oc command and returns parameter values of a delopyed
+// component by passing component name as a argument
+func getBuildParameterValues(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get builds")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-.+`)
+	buildParametersValue := re.FindString(stdOut)
+	return strings.TrimSpace(buildParametersValue)
+}
+
+// This function execute oc command and returns dc name of a delopyed
+// component by passing component name as a argument
+func getDcName(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get dc")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-\S+ `)
+	dcName := re.FindString(stdOut)
+	return strings.TrimSpace(dcName)
+}
+
+// This function execute oc command and returns dc REVISION
+// status of a delopyed component by passing component name as a argument
+func getDcStatusValue(compName string) string {
+	stdOut, stdErr, _ := cmdRunner("oc get dc")
+	if stdErr != "" {
+		return stdErr
+	}
+	re := regexp.MustCompile(compName + `-\S+\s+[0-9]`)
+	dcStatusCheckString := re.FindString(stdOut)
+	return strings.TrimSpace(strings.SplitN(dcStatusCheckString, " ", 2)[1])
+}
