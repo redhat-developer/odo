@@ -93,6 +93,14 @@ var _ = Describe("odojsonoutput", func() {
 			Expect(areEqual).To(BeTrue())
 
 		})
+
+		// odo app delete -o json
+		It("should be able to delete app", func() {
+			runCmdShouldPass("odo app create app-deletion-test")
+			// validating that it ran with exit status 0
+			runCmdShouldPass("odo app delete app-deletion-test -o json")
+		})
+
 		// cleanup
 		It("Cleanup", func() {
 			odoDeleteProject("json-test")
