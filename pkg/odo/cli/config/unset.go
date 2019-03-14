@@ -95,7 +95,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Short: "Unset a value in odo config file",
 		Long:  fmt.Sprintf(unsetLongDesc, config.FormatLocallySupportedParameters()),
 		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
-			config.ComponentType, config.ComponentName, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
+			config.Type, config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")
