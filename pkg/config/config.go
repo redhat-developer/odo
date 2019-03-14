@@ -34,8 +34,8 @@ type ComponentSettings struct {
 	// The builder image to use
 	Type *string `yaml:"Type,omitempty"`
 
-	// Path is path to binary in current/context dir
-	Path *string `yaml:"Path,omitempty"`
+	// SourceLocation is path to binary in current/context dir
+	SourceLocation *string `yaml:"SourceLocation,omitempty"`
 
 	// Ref is component source git ref but can be levaraged for more in future
 	Ref *string `yaml:"Ref,omitempty"`
@@ -44,6 +44,7 @@ type ComponentSettings struct {
 	SourceType *occlient.CreateType `yaml:"SourceType,omitempty"`
 
 	// Ports is a slice of ports to be exposed when a component is created
+	// the format of the port is "PORT/PROTOCOL" e.g. "8080/TCP"
 	Ports *[]string `yaml:"Ports,omitempty"`
 
 	Application *string `yaml:"Application,omitempty"`
@@ -66,7 +67,7 @@ type ComponentSettings struct {
 
 // LocalConfig holds all the config relavent to a specific Component.
 type LocalConfig struct {
-	metav1.TypeMeta   `yaml:",inline"`
+	typeMeta          metav1.TypeMeta   `yaml:",inline"`
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
@@ -132,14 +133,14 @@ func getFromFile(lc *LocalConfig, filename string) error {
 	if err != nil {
 		return err
 	}
-	lc.TypeMeta = plc.TypeMeta
+	lc.typeMeta = plc.TypeMeta
 	lc.componentSettings = plc.ComponentSettings
 	return nil
 }
 
 func writeToFile(lc *LocalConfig, filename string) error {
 	plc := newProxyLocalConfig()
-	plc.TypeMeta = lc.TypeMeta
+	plc.TypeMeta = lc.typeMeta
 	plc.ComponentSettings = lc.componentSettings
 	return util.WriteToFile(&plc, filename)
 }
@@ -147,7 +148,7 @@ func writeToFile(lc *LocalConfig, filename string) error {
 // NewLocalConfig creates an empty LocalConfig struct with typeMeta populated
 func NewLocalConfig() LocalConfig {
 	return LocalConfig{
-		TypeMeta: metav1.TypeMeta{
+		typeMeta: metav1.TypeMeta{
 			Kind:       localConfigKind,
 			APIVersion: localConfigAPIVersion,
 		},
@@ -158,7 +159,7 @@ func NewLocalConfig() LocalConfig {
 func newProxyLocalConfig() proxyLocalConfig {
 	lc := NewLocalConfig()
 	return proxyLocalConfig{
-		TypeMeta: lc.TypeMeta,
+		TypeMeta: lc.typeMeta,
 	}
 }
 
@@ -185,8 +186,8 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			lci.componentSettings.SourceType = &cmpSourceType
 		case "ref":
 			lci.componentSettings.Ref = &strValue
-		case "path":
-			lci.componentSettings.Path = &strValue
+		case "sourcelocation":
+			lci.componentSettings.SourceLocation = &strValue
 		case "ports":
 			arrValue := value.([]string)
 			lci.componentSettings.Ports = &arrValue
@@ -283,12 +284,12 @@ func (lc *LocalConfig) GetType() string {
 	return *lc.componentSettings.Type
 }
 
-// GetPath returns the path, returns default if nil
-func (lc *LocalConfig) GetPath() string {
-	if lc.componentSettings.Path == nil {
+// GetSourceLocation returns the sourcelocation, returns default if nil
+func (lc *LocalConfig) GetSourceLocation() string {
+	if lc.componentSettings.SourceLocation == nil {
 		return ""
 	}
-	return *lc.componentSettings.Path
+	return *lc.componentSettings.SourceLocation
 }
 
 // GetRef returns the ref, returns default if nil
@@ -417,8 +418,8 @@ const (
 	CPU = "CPU"
 	// CPUDescription is the name of the setting controlling the min and max CPU to same value
 	CPUDescription = "The minimum and maximum CPU a component can consume"
-	// Path indicates path to the binary within current dir or context
-	Path = "Path"
+	// SourceLocation indicates path of the source e.g. location of the git repo
+	SourceLocation = "SourceLocation"
 	// SourceType indicates type of component source -- git/binary/local
 	SourceType = "SourceType"
 	// Ref indicates git ref for the component source
@@ -439,27 +440,27 @@ const (
 	RefDescription = "Git ref to use for creating component from git source"
 	// SourceTypeDescription is the description of type setting
 	SourceTypeDescription = "Type of component source - git/binary/local"
-	// PathDescription is the human-readable description of path setting
-	PathDescription = "The path indicates the location of binary file or git source"
+	// SourceLocationDescription is the human-readable description of path setting
+	SourceLocationDescription = "The path indicates the location of binary file or git source"
 )
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
-		Type:        TypeDescription,
-		Name:        NameDescription,
-		Application: ApplicationDescription,
-		Project:     ProjectDescription,
-		Path:        PathDescription,
-		SourceType:  SourceTypeDescription,
-		Ref:         RefDescription,
-		Ports:       PortsDescription,
-		MinMemory:   MinMemoryDescription,
-		MaxMemory:   MaxMemoryDescription,
-		Memory:      MemoryDescription,
-		Ignore:      IgnoreDescription,
-		MinCPU:      MinCPUDescription,
-		MaxCPU:      MaxCPUDescription,
-		CPU:         CPUDescription,
+		Type:           TypeDescription,
+		Name:           NameDescription,
+		Application:    ApplicationDescription,
+		Project:        ProjectDescription,
+		SourceLocation: SourceLocationDescription,
+		SourceType:     SourceTypeDescription,
+		Ref:            RefDescription,
+		Ports:          PortsDescription,
+		MinMemory:      MinMemoryDescription,
+		MaxMemory:      MaxMemoryDescription,
+		Memory:         MemoryDescription,
+		Ignore:         IgnoreDescription,
+		MinCPU:         MinCPUDescription,
+		MaxCPU:         MaxCPUDescription,
+		CPU:            CPUDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

@@ -228,7 +228,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
 	expected := map[string]bool{"name": true, "minmemory": true, "ignore": true, "project": true,
 		"application": true, "type": true, "ref": true, "mincpu": true, "cpu": true, "ports": true, "maxmemory": true,
-		"maxcpu": true, "sourcetype": true, "path": true, "memory": true}
+		"maxcpu": true, "sourcetype": true, "sourcelocation": true, "memory": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
@@ -258,7 +258,7 @@ func TestMetaTypePopulatedInLocalConfig(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if ci.APIVersion != localConfigAPIVersion || ci.Kind != localConfigKind {
+	if ci.typeMeta.APIVersion != localConfigAPIVersion || ci.typeMeta.Kind != localConfigKind {
 		t.Error("the api version and kind in local config are incorrect")
 	}
 }
