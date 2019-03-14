@@ -34,7 +34,8 @@ type ComponentSettings struct {
 	// The builder image to use
 	Type *string `yaml:"Type,omitempty"`
 
-	// SourceLocation is path to binary in current/context dir
+	// SourceLocation is path to binary in current/context dir, it can be the
+	// git url in case of source type being git
 	SourceLocation *string `yaml:"SourceLocation,omitempty"`
 
 	// Ref is component source git ref but can be levaraged for more in future
