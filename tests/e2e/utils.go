@@ -174,14 +174,14 @@ func matchResponseSubString(url, match string, retry, sleep int) bool {
 	return false
 }
 
-// This function executes oc command and returns pod name of a delopyed component by passing
-// component name as a argument
-func getPodNameOfComp(compName string) string {
+// This function executes oc command and returns the running pod name of a delopyed
+// component by passing component name as a argument
+func getRunningPodNameOfComp(compName string) string {
 	stdOut, stdErr, _ := cmdRunner("oc get pods")
 	if stdErr != "" {
 		return stdErr
 	}
-	re := regexp.MustCompile(compName + `-\S+`)
-	podName := re.FindString(stdOut)
+	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running`)
+	podName := re.FindStringSubmatch(stdOut)[1]
 	return strings.TrimSpace(podName)
 }

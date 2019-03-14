@@ -388,8 +388,8 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldPass("odo create " + curProj + "/nodejs nodejs --local " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo push")
 
-				// get the name of the pod
-				podName := getPodNameOfComp("nodejs")
+				// get the name of running pod
+				podName := getRunningPodNameOfComp("nodejs")
 
 				// verify that the views folder got pushed
 				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
@@ -408,8 +408,8 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldPass("odo create " + curProj + "/nodejs push-odoignore-flag-example --local " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo push --ignore tests/,README.md")
 
-				// get the name of the pod
-				podName := getPodNameOfComp("push-odoignore-flag-example")
+				// get the name of running pod
+				podName := getRunningPodNameOfComp("push-odoignore-flag-example")
 
 				// verify that the views folder got pushed
 				runCmdShouldPass("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep views")
@@ -802,7 +802,7 @@ var _ = Describe("odoe2e", func() {
 
 		It("should show server login URL", func() {
 			odoVersion := runCmdShouldPass("odo version")
-			reServerURL := regexp.MustCompile(`Server:\s*https:\/\/([0-9]+.){3}[0-9]+:8443`)
+			reServerURL := regexp.MustCompile(`Server:\s*https:\/\/(.+\.com|([0-9]+.){3}[0-9]+):[0-9]{4}`)
 			serverURLStringMatch := reServerURL.MatchString(odoVersion)
 			Expect(serverURLStringMatch).Should(BeTrue())
 		})
