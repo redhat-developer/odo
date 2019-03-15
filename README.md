@@ -1,15 +1,16 @@
 <img src="./docs/img/openshift.png" width="180" align="right">
 
-# OpenShift Do - Developer Focused CLI for OpenShift
+
+# `odo` - Developer Focused CLI for OpenShift
 
 [![Build Status](https://travis-ci.org/openshift/odo.svg?branch=master)](https://travis-ci.org/openshift/odo) [![codecov](https://codecov.io/gh/openshift/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/openshift/odo) [![CircleCI](https://circleci.com/gh/openshift/odo/tree/master.svg?style=svg)](https://circleci.com/gh/openshift/odo/tree/master) [![mattermost](/docs/img/mattermost.svg)](https://chat.openshift.io/developers/channels/odo)
 
-OpenShift Do (odo) is a fast, iterative, and opinionated CLI tool for developers who write, build, and deploy applications on OpenShift.
+`odo` (also referred to as OpenShift Do) is a fast, iterative, and opinionated CLI tool for developers who write, build, and deploy applications on OpenShift.
 
-Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. OpenShift Do abstracts away complex Kubernetes and OpenShift concepts, thus allowing developers to focus on what's most important to them: code.
+Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. `odo` abstracts away complex Kubernetes and OpenShift concepts, thus allowing developers to focus on what's most important to them: code.
 
 ## Key features
-OpenShift Do is designed to be simple and concise with the following key features:
+`odo` is designed to be simple and concise with the following key features:
 
 - Simple syntax and design centered around concepts familiar to developers, such as project, application, and component.
 - Completely client based. No server is required within the OpenShift cluster for deployment.
@@ -26,7 +27,7 @@ OpenShift Do is designed to be simple and concise with the following key feature
 <details>
 <summary> OS-independent automated install</summary>
 
-#### Use this [bash script](./scripts/install.sh) to quickly install OpenShift Do. It will automatically detect your operating system and install `odo` accordingly.
+#### Use this [bash script](./scripts/install.sh) to quickly install `odo`. It will automatically detect your operating system and install `odo` accordingly.
 
 ```sh
 curl -L https://github.com/openshift/odo/raw/master/scripts/install.sh | bash
@@ -67,7 +68,7 @@ sudo sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/o
 <details>
 <summary> Windows</summary>
 
-In order to correctly use OpenShift Do you must download it and add it to your PATH environment variable:
+In order to correctly use `odo` you must download it and add it to your PATH environment variable:
 
 1. Download the `odo-windows-amd64.exe.gz` file from the [GitHub releases page](https://github.com/openshift/odo/releases).
 2. Extract the file.
@@ -78,13 +79,13 @@ In order to correctly use OpenShift Do you must download it and add it to your P
 For a list of other methods such as installing the latest binary or specific OS installations, visit the [installation page](/docs/installation.md).
 
 ## Demonstration
-The following demonstration provides an overview of OpenShift Do:
+The following demonstration provides an overview of `odo`:
 
 [![asciicast](https://asciinema.org/a/225717.svg)](https://asciinema.org/a/225717)
 
-## Deploying an application using OpenShift Do
+## Deploying an application using `odo`
 
-After installing OpenShift Do, follow these steps to build, push, and deploy a Node.js application. Examples for other supported languages and runtimes can be found [here](https://github.com/openshift/odo/blob/master/docs/examples.md).
+After installing `odo`, follow these steps to build, push, and deploy a Node.js application. Examples for other supported languages and runtimes can be found [here](https://github.com/openshift/odo/blob/master/docs/examples.md).
 
 1. Start a local OpenShift development cluster by running minishift.
 ```sh
@@ -96,7 +97,7 @@ $ minishift start
 $ odo login -u developer -p developer
 ```
 
-3. Create an application. An application in OpenShift Do is an umbrella under which you add other components.
+3. Create an application. An application in `odo` is an umbrella under which you add other components.
 ```sh
 $ odo app create node-example-app
 ```
@@ -137,7 +138,7 @@ Additional documentation can be found below:
 
 **Chat:** We have a public channel [#odo on chat.openshift.io](https://chat.openshift.io/developers/channels/odo).
 
-**Issues:** If you have an issue with OpenShift Do, please [file it](https://github.com/openshift/odo/issues).
+**Issues:** If you have an issue with `odo`, please [file it](https://github.com/redhat-developer/odo/issues).
 
 **Contributing:** Want to become a contributor and submit your own code? Have a look at our [development guide](https://github.com/openshift/odo/blob/master/docs/development.md).
 
@@ -145,6 +146,6 @@ Additional documentation can be found below:
 
 **Application:** An application consists of multiple microservices or components that work individually to build the entire application.
 
-**Component:** A component is similar to a microservice. Multiple components make up an application. A component has different attributes like storage. OpenShift Do supports multiple component types like nodejs, perl, php, python and ruby.
+**Component:** A component is similar to a microservice. Multiple components make up an application. A component has different attributes like storage. `odo` supports multiple component types like nodejs, perl, php, python and ruby.
 
 **Service:** Typically a service is a database or a service that a component links to or depends on. For example: MariaDB, Jenkins, MySQL. This comes from the OpenShift "Service Catalog" and must be enabled within your cluster.
