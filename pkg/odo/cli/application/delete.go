@@ -54,18 +54,21 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *DeleteOptions) Run() (err error) {
+	if o.OutputFlag == "json" {
+		err = application.Delete(o.Client, o.appName)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	// Print App Information which will be deleted
 	err = printDeleteAppInfo(o.Client, o.appName, o.Project)
 	if err != nil {
 		return err
 	}
 
-	if o.OutputFlag == "json" {
-		err = application.Delete(o.Client, o.appName)
-		if err != nil {
-			return err
-		}
-	} else if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.Project)) {
+	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.Project)) {
 		err = application.Delete(o.Client, o.appName)
 		if err != nil {
 			return err
