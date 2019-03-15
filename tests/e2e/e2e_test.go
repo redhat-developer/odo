@@ -519,6 +519,7 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldPass("odo create nodejs:8 nodejs-doublepush --local " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo push")
 				runCmdShouldPass("odo push")
+				runCmdShouldPass("odo component delete nodejs-doublepush -f")
 			})
 
 			It("should be able to push changes while showing logging", func() {
