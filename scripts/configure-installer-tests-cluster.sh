@@ -89,5 +89,3 @@ done
 oc new-project myproject
 sleep 4
 
-make bin
-
