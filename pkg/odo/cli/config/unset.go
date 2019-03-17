@@ -66,7 +66,7 @@ func (o *UnsetOptions) Run() (err error) {
 		return errors.Wrapf(err, "")
 	}
 
-	if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
+	if isSet := cfg.IsSet(o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the config", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
@@ -79,11 +79,8 @@ func (o *UnsetOptions) Run() (err error) {
 		fmt.Println("Local config was successfully updated.")
 
 		return nil
-		// if its found but nil then show the error
-	} else if ok && (value == nil) {
-		return errors.New("config already unset, cannot unset a configuration which is not set")
 	}
-	return errors.New(o.paramName + " is not a valid configuration variable")
+	return errors.New("config already unset, cannot unset a configuration which is not set")
 
 }
 

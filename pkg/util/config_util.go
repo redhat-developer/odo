@@ -67,29 +67,28 @@ func WriteToFile(c interface{}, filename string) error {
 	return nil
 }
 
-// GetConfiguration uses reflection to get the parameter from a struct
+// IsSet uses reflection to check if a parameter is set in a struct
 // using the name in a case insensitive manner
 // only supports flat structs
 // TODO: support deeper struct using recursion
-func GetConfiguration(info interface{}, parameter string) (interface{}, bool) {
+func IsSet(info interface{}, parameter string) bool {
 	imm := reflect.ValueOf(info)
 	if imm.Kind() == reflect.Ptr {
 		imm = imm.Elem()
 	}
 	val := imm.FieldByNameFunc(CaseInsensitive(parameter))
-	if !val.IsValid() {
-
-		return nil, false
+	if !val.IsValid() || val.IsNil() {
+		return false
 	}
 	if val.IsNil() {
-		return nil, true
+		return false
 	}
 	// if the value is a Ptr then we need to de-ref it
 	if val.Kind() == reflect.Ptr {
-		return val.Elem().Interface(), true
+		return true
 	}
 
-	return val.Interface(), true
+	return true
 }
 
 // CaseInsensitive returns a function which compares two words

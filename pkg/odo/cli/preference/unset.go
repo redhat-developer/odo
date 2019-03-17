@@ -63,19 +63,14 @@ func (o *UnsetOptions) Run() (err error) {
 
 	if !o.preferenceForceFlag {
 
-		if value, ok := cfg.GetConfiguration(o.paramName); ok && (value != nil) {
+		if isSet := cfg.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
 				log.Infof("Aborted by the user.")
 				return nil
 			}
-			// if its found but nil then show the error
-		} else if ok && (value == nil) {
+		} else {
 			return errors.New("preference already unset, cannot unset a preference which is not set")
-			// if its not a parameter then show error
-		} else if !ok {
-			return errors.Errorf("unknown parameter :'%s' is not a parameter in the odo preference", o.paramName)
 		}
-
 	}
 
 	err = cfg.DeleteConfiguration(strings.ToLower(o.paramName))

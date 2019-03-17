@@ -18,8 +18,6 @@ func TestSetLocalConfiguration(t *testing.T) {
 	}
 	defer tempConfigFile.Close()
 	os.Setenv(localConfigEnvName, tempConfigFile.Name())
-	trueValue := true
-	falseValue := false
 	minCPUValue := "0.5"
 	maxCPUValue := "2"
 	minMemValue := "500M"
@@ -30,7 +28,6 @@ func TestSetLocalConfiguration(t *testing.T) {
 		parameter      string
 		value          string
 		existingConfig LocalConfig
-		want           interface{}
 	}{
 		// update notification
 		{
@@ -38,66 +35,48 @@ func TestSetLocalConfiguration(t *testing.T) {
 			parameter: Ignore,
 			value:     "true",
 			existingConfig: LocalConfig{
-				componentSettings: ComponentSettings{
-					Ignore: &trueValue,
-				},
+				componentSettings: ComponentSettings{},
 			},
-			want: true,
 		},
 		{
 			name:      fmt.Sprintf("Case 2: %s set true to false", Ignore),
 			parameter: Ignore,
 			value:     "false",
 			existingConfig: LocalConfig{
-				componentSettings: ComponentSettings{
-					Ignore: &falseValue,
-				},
+				componentSettings: ComponentSettings{},
 			},
-			want: false,
 		},
 		{
 			name:      fmt.Sprintf("Case 3: %s to test", Name),
 			parameter: Name,
 			value:     testValue,
 			existingConfig: LocalConfig{
-				componentSettings: ComponentSettings{
-					Name: &testValue,
-				},
+				componentSettings: ComponentSettings{},
 			},
-			want: testValue,
 		},
 		{
 			name:      fmt.Sprintf("Case 5: %s set to %s from 0", MaxCPU, maxCPUValue),
 			parameter: MaxCPU,
 			value:     maxCPUValue,
 			existingConfig: LocalConfig{
-				componentSettings: ComponentSettings{
-					MaxCPU: &maxCPUValue,
-				},
+				componentSettings: ComponentSettings{},
 			},
-			want: maxCPUValue,
 		},
 		{
 			name:      fmt.Sprintf("Case 6: %s set to %s", MinCPU, minCPUValue),
 			parameter: MinCPU,
 			value:     minCPUValue,
 			existingConfig: LocalConfig{
-				componentSettings: ComponentSettings{
-					MinCPU: &minCPUValue,
-				},
+				componentSettings: ComponentSettings{},
 			},
-			want: minCPUValue,
 		},
 		{
 			name:      fmt.Sprintf("Case 6: %s set to %s", MinMemory, minMemValue),
 			parameter: MinMemory,
 			value:     minMemValue,
 			existingConfig: LocalConfig{
-				componentSettings: ComponentSettings{
-					MinMemory: &minMemValue,
-				},
+				componentSettings: ComponentSettings{},
 			},
-			want: minMemValue,
 		},
 	}
 	for _, tt := range tests {
@@ -113,10 +92,10 @@ func TestSetLocalConfiguration(t *testing.T) {
 				t.Error(err)
 			}
 
-			idata, _ := cfg.GetConfiguration(tt.parameter)
+			isSet := cfg.IsSet(tt.parameter)
 
-			if idata != tt.want {
-				t.Errorf("the '%v' is not set to '%v' instead its '%v'", tt.parameter, tt.want, idata)
+			if !isSet {
+				t.Errorf("the '%v' is not set", tt.parameter)
 			}
 
 		})
@@ -206,8 +185,8 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			idata, ok := cfg.GetConfiguration(tt.parameter)
-			if (idata == nil) || !ok {
+			isSet := cfg.IsSet(tt.parameter)
+			if !isSet {
 				t.Errorf("the '%v' was not set", tt.parameter)
 			}
 
@@ -216,8 +195,8 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			idata, ok = cfg.GetConfiguration(tt.parameter)
-			if (idata != nil) || !ok {
+			isSet = cfg.IsSet(tt.parameter)
+			if isSet {
 				t.Errorf("the '%v' is not set to nil", tt.parameter)
 			}
 
