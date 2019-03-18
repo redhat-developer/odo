@@ -110,7 +110,8 @@ var _ = Describe("odoSourceE2e", func() {
 		})
 
 		It("Should be able to deploy a dotnet source application", func() {
-			runCmdShouldPass("odo create dotnet dotnet-app --local " + sourceExamples + "/dotnet/")
+			dotnetExampledir := "dotnet"
+			runCmdShouldPass("odo create dotnet dotnet-app --local " + sourceExamples + "/" + dotnetExampledir + "/")
 			cmpList := runCmdShouldPass("odo list")
 			Expect(cmpList).To(ContainSubstring("dotnet-app"))
 

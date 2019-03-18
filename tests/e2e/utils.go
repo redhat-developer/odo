@@ -13,6 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var openshiftVersion = os.Getenv("OPENSHIFT_VERSION")
+
 // createFileAtPath creates a file at the given path and writes the given content
 // path is the path to the required file
 // fileContent is the content to be written to the given file
