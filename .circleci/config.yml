@@ -68,24 +68,12 @@ jobs:
             echo "Configured OpenShift cluster : v3.11.0"
             echo "Switching to regular user"
             oc login -u developer -p developer
-    
-    - run: 
-        name: Main e2e test
-        command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
-            make test-main-e2e
- 
+
     - run: 
         name: Component e2e test
         command: |
             cd ${HOME}/go/src/github.com/redhat-developer/odo
             make test-cmp-e2e
-
-    - run: 
-        name: Java e2e test
-        command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
-            make test-java-e2e
 
     - run: 
         name: Source e2e test
