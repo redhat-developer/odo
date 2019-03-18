@@ -95,12 +95,6 @@ jobs:
             cd ${HOME}/go/src/github.com/redhat-developer/odo
             make test-java-e2e
 
-    - run: 
-        name: Source e2e test
-        command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
-            make test-source-e2e
-
     #    - run: 
     #        name: Service-Catalog e2e tests
     #        command: |
