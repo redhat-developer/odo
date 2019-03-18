@@ -26,9 +26,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/mattn/go-colorable"
 	"github.com/redhat-developer/odo/pkg/log/fidget"
 	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/terminal"
@@ -94,8 +96,13 @@ func (s *Status) MaybeWrapWriter(w io.Writer) io.Writer {
 }
 
 // IsTerminal returns true if the writer w is a terminal
+// This function is modified if we are running within Windows..
+// as Golang's built-in "IsTerminal" command only works on UNIX-based systems:
+// https://github.com/golang/crypto/blob/master/ssh/terminal/util.go#L5
 func IsTerminal(w io.Writer) bool {
-	if v, ok := (w).(*os.File); ok {
+	if runtime.GOOS == "windows" {
+		return true
+	} else if v, ok := (w).(*os.File); ok {
 		return terminal.IsTerminal(int(v.Fd()))
 	}
 	return false
@@ -111,7 +118,7 @@ func (s *Status) Start(status string, debug bool) {
 
 	// If we are in debug mode, don't spin!
 	if !isTerm || debug {
-		fmt.Fprintf(s.writer, prefixSpacing+"•"+suffixSpacing+"%s  ...\n", s.status)
+		fmt.Fprintf(s.writer, prefixSpacing+getSpacingString()+suffixSpacing+"%s  ...\n", s.status)
 	} else {
 		s.spinner.SetPrefix(prefixSpacing)
 		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
@@ -135,10 +142,10 @@ func (s *Status) End(success bool) {
 
 	if success {
 		green := color.New(color.FgGreen).SprintFunc()
-		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s\n", green("✓"), s.status)
+		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s\n", green(getSuccessString()), s.status)
 	} else {
 		red := color.New(color.FgRed).SprintFunc()
-		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s\n", red("✗"), s.status)
+		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s\n", red(getErrString()), s.status)
 	}
 
 	s.status = ""
@@ -147,57 +154,57 @@ func (s *Status) End(success bool) {
 // Namef will output the name of the component / application / project in a *bolded* manner
 func Namef(format string, a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Printf("%s\n", bold(fmt.Sprintf(format, a...)))
+	fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
 }
 
 // Progressf will output in an appropriate "progress" manner
 func Progressf(format string, a ...interface{}) {
-	fmt.Printf("%s%s\n", prefixSpacing, fmt.Sprintf(format, a...))
+	fmt.Fprintf(GetStdout(), " %s%s\n", prefixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Successf will output in an appropriate "progress" manner
 func Successf(format string, a ...interface{}) {
 	green := color.New(color.FgGreen).SprintFunc()
-	fmt.Printf("%s%s%s%s\n", prefixSpacing, green("✓"), suffixSpacing, fmt.Sprintf(format, a...))
+	fmt.Fprintf(GetStdout(), "%s%s%s%s\n", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Errorf will output in an appropriate "progress" manner
 func Errorf(format string, a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Fprintf(os.Stderr, " %s%s%s\n", red("✗"), suffixSpacing, fmt.Sprintf(format, a...))
+	fmt.Fprintf(GetStderr(), " %s%s%s\n", red(getErrString()), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Error will output in an appropriate "progress" manner
 func Error(a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Fprintf(os.Stderr, "%s%s%s%s", prefixSpacing, red("✗"), suffixSpacing, fmt.Sprintln(a...))
+	fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, red(getErrString()), suffixSpacing, fmt.Sprintln(a...))
 }
 
 // Info will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Info(a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Printf("%s", bold(fmt.Sprintln(a...)))
+	fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintln(a...)))
 }
 
 // Infof will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Infof(format string, a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Printf("%s\n", bold(fmt.Sprintf(format, a...)))
+	fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
 }
 
 // Askf will print out information, but in an "Ask" way (without newline)
 func Askf(format string, a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Printf("%s", bold(fmt.Sprintf(format, a...)))
+	fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintf(format, a...)))
 }
 
 // Status creates a spinner, sets the prefix then returns it.
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)
 func Spinner(status string) *Status {
-	s := NewStatus(os.Stdout)
+	s := NewStatus(GetStdout())
 	s.Start(status, IsDebug())
 	return s
 }
@@ -206,7 +213,7 @@ func Spinner(status string) *Status {
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)
 func Spinnerf(format string, a ...interface{}) *Status {
-	s := NewStatus(os.Stdout)
+	s := NewStatus(GetStdout())
 	s.Start(fmt.Sprintf(format, a...), IsDebug())
 	return s
 }
@@ -221,4 +228,54 @@ func IsDebug() bool {
 	}
 
 	return false
+}
+
+// GetStdout gets the appropriate stdout from the OS. If it's Linux, it will use
+// the go-colorable library in order to fix any and all color ASCII issues.
+// TODO: Test needs to be added once we get Windows testing available on TravisCI / CI platform.
+func GetStdout() io.Writer {
+	if runtime.GOOS == "windows" {
+		return colorable.NewColorableStdout()
+	}
+	return os.Stdout
+}
+
+// GetStderr gets the appropriate stderrfrom the OS. If it's Linux, it will use
+// the go-colorable library in order to fix any and all color ASCII issues.
+// TODO: Test needs to be added once we get Windows testing available on TravisCI / CI platform.
+func GetStderr() io.Writer {
+	if runtime.GOOS == "windows" {
+		return colorable.NewColorableStderr()
+	}
+	return os.Stderr
+}
+
+// getErrString returns a certain string based upon the OS.
+// Some Windows terminals do not support unicode and must use ASCII.
+// TODO: Test needs to be added once we get Windows testing available on TravisCI / CI platform.
+func getErrString() string {
+	if runtime.GOOS == "windows" {
+		return "X"
+	}
+	return "✗"
+}
+
+// getSuccessString returns a certain string based upon the OS.
+// Some Windows terminals do not support unicode and must use ASCII.
+// TODO: Test needs to be added once we get Windows testing available on TravisCI / CI platform.
+func getSuccessString() string {
+	if runtime.GOOS == "windows" {
+		return "V"
+	}
+	return "✓"
+}
+
+// getSpacingString returns a certain string based upon the OS.
+// Some Windows terminals do not support unicode and must use ASCII.
+// TODO: Test needs to be added once we get Windows testing available on TravisCI / CI platform.
+func getSpacingString() string {
+	if runtime.GOOS == "windows" {
+		return "-"
+	}
+	return "•"
 }

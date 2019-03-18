@@ -53,3 +53,5 @@ import:
   version: v3.11.0
   subpackages:
   - pkg/oc/cli/login
+- package: github.com/mattn/go-colorable
+  version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
