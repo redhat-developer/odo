@@ -79,7 +79,7 @@ func waitForCmdOut(cmd string, timeout int, errOnFail bool, check func(output st
 				Fail(err.Error())
 			}
 
-			if check(string(out)) {
+			if check(strings.TrimSpace(string(out))) {
 				return true
 			}
 		}
@@ -92,15 +92,17 @@ func waitForCmdOut(cmd string, timeout int, errOnFail bool, check func(output st
 // this is very useful to avoid race conditions that can occur when
 // updating the component
 func waitForDCOfComponentToRolloutCompletely(componentName string) {
-	fullDCName := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o name | tr -d '\n'", componentName))
+	fullDCName := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o name", componentName))
 	// oc rollout status ensures that the existing DC is fully rolled out before it terminates
 	// we need this because a rolling DC could cause odo update to fail due to its use
 	// of the read/update-in-memory/write-changes pattern
 	runCmdShouldPass("oc rollout status " + fullDCName)
 
 	simpleDCName := strings.Replace(fullDCName, "deploymentconfig.apps.openshift.io/", "", -1)
+	runningPodName := getRunningPodNameOfComp(componentName)
+
 	// ensure that no more changes will occur to the name DC by waiting until there is only one pod running (the old one has terminated)
-	waitForEqualCmd(fmt.Sprintf("oc get pod -o name -l deploymentconfig=%s | wc -l | tr -d '\n'", simpleDCName), "1", 2)
+	waitForEqualCmd(fmt.Sprintf("oc get pod -o name -l deploymentconfig=%s", simpleDCName), "pod/"+runningPodName, 2)
 
 	// done in order to make sure that Openshift has updated the DC with the latest events
 	time.Sleep(5 * time.Second)

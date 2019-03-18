@@ -174,7 +174,6 @@ func componentTests(componentCmdPrefix string) {
 			cmpList := runCmdShouldPass(componentCmdPrefix + " list")
 			Expect(cmpList).To(ContainSubstring("wildfly"))
 
-			runCmdShouldPass("oc get dc")
 		})
 
 		It("should update component from binary to binary", func() {
