@@ -78,13 +78,19 @@ spec:
 EOF
 
 # Login as developer and setup project
-for i in {1..30}; do
+for i in {1..40}; do
     oc login -u developer -p $USERPASS &> /dev/null
     if [ $? -eq 0 ]; then
+	OC_LOGIN_SUCCESS="true"
         break
     fi
-    sleep 2
+    sleep 3
 done
+
+if [ -z $OC_LOGIN_SUCCESS ]; then
+    echo "Failed to login as developer"
+    exit 1
+fi
 
 oc new-project myproject
 sleep 4
