@@ -60,16 +60,30 @@ func (do *DeleteOptions) Run() (err error) {
 	glog.V(4).Infof("component delete called")
 	glog.V(4).Infof("args: %#v", do)
 
+	if do.OutputFlag == "json" {
+		err = component.Delete(do.Client, do.componentName, do.Application)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
 	if err != nil {
 		return err
 	}
 
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
+
+		// Loading spinner
+		s := log.Spinnerf("Deleting component %s", do.componentName)
+		defer s.End(false)
+
 		err := component.Delete(do.Client, do.componentName, do.Application)
 		if err != nil {
 			return err
 		}
+		s.End(true)
 		log.Successf("Component %s from application %s has been deleted", do.componentName, do.Application)
 
 	} else {
@@ -96,6 +110,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	}
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
+	genericclioptions.AddOutputFlag(componentDeleteCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentDeleteCmd.Annotations = map[string]string{"command": "component"}

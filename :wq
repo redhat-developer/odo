@@ -274,10 +274,50 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 // Delete whole component
 func Delete(client *occlient.Client, componentName string, applicationName string) error {
 
+	cfg, err := preference.New()
+	if err != nil {
+		return errors.Wrapf(err, "unable to create new configuration to delete %s", componentName)
+	}
+
 	labels := componentlabels.GetLabels(componentName, applicationName, false)
 	err := client.Delete(labels)
 	if err != nil {
 		return errors.Wrapf(err, "error deleting component %s", componentName)
+	}
+
+	// Get a list of all components
+	components, err := List(client, applicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to retrieve list of components")
+	}
+
+	// First check is that we want to only update the active component if the component which is getting deleted is the
+	// active component
+	// Second check is that we want to do an update only if it is happening for the active application otherwise we need
+	// not to care for the update of the active component
+	activeComponent := cfg.GetActiveComponent(applicationName, client.Namespace)
+	activeApplication := cfg.GetActiveApplication(client.Namespace)
+	if activeComponent == componentName && activeApplication == applicationName {
+		// We will *only* set a new component if either len(components) is zero, or the
+		// current component matches the one being deleted.
+		if current := cfg.GetActiveComponent(applicationName, client.Namespace); current == componentName || len(components.Items) == 0 {
+
+			// If there's more than one component, set it to the first one..
+			if len(components.Items) > 0 {
+				err = cfg.SetActiveComponent(components.Items[0].Name, applicationName, client.Namespace)
+
+				if err != nil {
+					return errors.Wrapf(err, "unable to set current component to '%s'", componentName)
+				}
+			} else {
+				// Unset to blank
+				err = cfg.UnsetActiveComponent(client.Namespace)
+				if err != nil {
+					return errors.Wrapf(err, "error unsetting current component while deleting %s", componentName)
+				}
+			}
+		}
+
 	}
 
 	return nil
