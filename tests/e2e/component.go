@@ -87,7 +87,7 @@ func componentTests(componentCmdPrefix string) {
 			runCmdShouldPass(fmt.Sprintf("odo url create ref-test-%s", t))
 
 			routeURL := determineRouteURL() + "/health"
-			responseStringMatchStatus := matchResponseSubString(routeURL, "develop", 90, 1)
+			responseStringMatchStatus := matchResponseSubString(routeURL, "develop", 180, 1)
 			Expect(responseStringMatchStatus).Should(BeTrue())
 		})
 
