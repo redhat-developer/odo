@@ -237,6 +237,26 @@ After any modification to your shell configuration file, you will need to `sourc
 **NOTE**: The completion system will stop working if you either rename the `odo` executable or move it. You will therefore need
 to re-enable it accordingly.
 
+## Using the `.odoignore` file
+
+The `.odoignore` file in the root directory of your application will ignore a list of files/patterns. This will prevent `odo watch` from constantly reloading / redeploying certain files.
+
+For example:
+
+```ini
+.git
+*.js
+/tests
+```
+
+Will ignore `.git` files, any files with the `.js` extension and the folder `tests`.
+
+`.odoignore` allows any [regular expression / regex](https://regexr.com/), for example:
+
+```ini
+/openshift/**/*.json
+```
+
 ## OpenShift notes
 
 These are some extra installation / getting started instructions for your local OpenShift cluster.
