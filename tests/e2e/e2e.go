@@ -52,13 +52,15 @@ func runCmdShouldPass(cmd string) string {
 // errors out
 func runCmdShouldPassWithRetry(cmd string, timeout int, tickSeconds int) string {
 	pingTimeout := time.After(time.Duration(timeout) * time.Minute)
-	tick := time.Tick(time.Duration(tickSeconds) * time.Second)
+	t := time.NewTicker(time.Duration(tickSeconds) * time.Second)
+	tick := t.C
 	var stdout, stderr string
 	var exitcode int
 	stderr = "Not run even once"
 	for {
 		select {
 		case <-pingTimeout:
+			t.Stop()
 			Fail(fmt.Sprintf("Timeout out after %v minutes, Command failed with error : %s", timeout, stderr))
 		case <-tick:
 			stdout, stderr, exitcode = cmdRunner(cmd)
