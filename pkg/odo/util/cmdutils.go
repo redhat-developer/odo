@@ -6,12 +6,12 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	storagePkg "github.com/openshift/odo/pkg/storage"
 	urlPkg "github.com/openshift/odo/pkg/url"
+	"github.com/pkg/errors"
 )
 
 // LogErrorAndExit prints the cause of the given error and exits the code with an

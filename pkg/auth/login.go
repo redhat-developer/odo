@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"os"
 
-	"github.com/openshift/origin/pkg/oc/cli/login"
 	odolog "github.com/openshift/odo/pkg/log"
+	"github.com/openshift/origin/pkg/oc/cli/login"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )

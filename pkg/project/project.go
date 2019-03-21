@@ -2,10 +2,10 @@ package project
 
 import (
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/pkg/errors"
 )
 
 // ApplicationInfo holds information about one project

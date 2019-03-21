@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"

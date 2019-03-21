@@ -5,12 +5,12 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
-	"github.com/pkg/errors"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"

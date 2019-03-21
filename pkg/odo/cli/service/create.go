@@ -3,9 +3,9 @@ package service
 import (
 	"bytes"
 	"fmt"
-	"github.com/pkg/errors"
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/util/validation"
+	"github.com/pkg/errors"
 	"strings"
 	"text/template"
 

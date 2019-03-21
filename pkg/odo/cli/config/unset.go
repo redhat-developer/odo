@@ -6,9 +6,9 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 
-	"github.com/pkg/errors"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )

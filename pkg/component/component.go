@@ -12,7 +12,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/log"
@@ -21,6 +20,7 @@ import (
 	"github.com/openshift/odo/pkg/storage"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

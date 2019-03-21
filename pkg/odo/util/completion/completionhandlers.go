@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	"github.com/posener/complete"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
@@ -16,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/posener/complete"
 	"github.com/spf13/cobra"
 )
 

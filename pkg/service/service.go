@@ -13,11 +13,11 @@ import (
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 
-	"github.com/pkg/errors"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 )
 
 const provisionedAndBoundStatus = "ProvisionedAndBound"

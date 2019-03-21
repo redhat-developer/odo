@@ -6,13 +6,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 )
 
 const (

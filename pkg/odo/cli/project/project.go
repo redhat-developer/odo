@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -15,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
+	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
 )

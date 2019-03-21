@@ -6,10 +6,10 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
-	"github.com/pkg/errors"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/pkg/errors"
 
 	"net/url"
 	"os"

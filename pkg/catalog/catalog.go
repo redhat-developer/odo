@@ -6,9 +6,9 @@ import (
 
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
-	"github.com/pkg/errors"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/pkg/errors"
 )
 
 type CatalogImage struct {
