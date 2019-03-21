@@ -19,13 +19,6 @@ jobs:
       script:
         - make bin
         - make validate
-        - make test
-
-    - <<: *base-test
-      name: "Test coverage"
-      script:
-        - make bin
-        - make validate
         - make test-coverage
       after_success:
         # submit coverage.txt to codecov.io
@@ -35,37 +28,19 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "Main e2e tests"
+      name: "main,login,component e2e tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
         - travis_wait make test-main-e2e
-
-    - <<: *base-test
-      stage: test
-      name: "Login e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
         - travis_wait make test-odo-login-e2e
-
-    - <<: *base-test
-      stage: test
-      name: "Component e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
         - travis_wait make test-cmp-e2e
 
     - <<: *base-test
       stage: test
-      name: "Java e2e tests"
+      name: "java e2e tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -75,68 +50,39 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "Source e2e tests"
+      name: "source,json e2e tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
         - travis_wait make test-source-e2e
-
-    - <<: *base-test
-      stage: test
-      name: "Json e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
         - travis_wait make test-json-format-output
 
 # END Tests that are also in CircleCI
 
-    # Run component e2e tests
-    - <<: *base-test
-      stage: test
-      name: "Component sub-commands e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - travis_wait make test-cmp-sub-e2e
-
     # Run service-catalog e2e tests
     - <<: *base-test
       stage: test
-      name: "Service-Catalog e2e tests"
+      name: "service catalog, link, componnet subcommands e2e tests"
       script:
         - ./scripts/oc-cluster.sh service-catalog
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
         - make test-service-e2e
+        - make test-link-e2e
+        - travis_wait make test-cmp-sub-e2e
 
     - <<: *base-test
       stage: test
       name: "Watch e2e tests"
       script:
-        - ./scripts/oc-cluster.sh service-catalog
+        - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
         - make test-watch-e2e TIMEOUT=1200s
-
-    # Run link e2e tests
-    - <<: *base-test
-      stage: test
-      name: "Link e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh service-catalog
-        - make bin
-        - sudo cp odo /usr/bin
-        - oc login -u developer
-        - make test-link-e2e
 
     # test installation script on linux
     # - stage: test
