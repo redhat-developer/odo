@@ -651,7 +651,7 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able add storage to a component specified", func() {
-				runCmdShouldPass("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
+				runCmdShouldPassWithRetry("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php", 1, 2)
 
 				storList := runCmdShouldPass("odo storage list --component php")
 				Expect(storList).To(ContainSubstring("pv2"))
