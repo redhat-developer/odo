@@ -34,7 +34,7 @@ We'll be going over the following steps:
 A few requirements before we proceed!
 
  - A running OpenShift cluster (we recommend using [`minishift`](https://docs.openshift.org/latest/minishift/getting-started/installing.html))
- - `odo` binary ([installation guide here](/README.md#installation))
+ - `odo` binary ([installation guide here](/docs/installation.md))
 
 The quickest way to deploy a development OpenShift cluster is by using [minishift](https://docs.openshift.org/latest/minishift/index.html). Alternatively, `odo` will automatically work with any OpenShift cluster you're currently logged into.
 
