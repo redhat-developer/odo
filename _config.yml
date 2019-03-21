@@ -2,13 +2,13 @@ title: OpenShift Do
 project_name: Odo
 description: >
   OpenShift Do
-repository_url: https://github.com/redhat-developer/odo
-repository_shorthand: redhat-developer/odo
+repository_url: https://github.com/openshift/odo
+repository_shorthand: openshift/odo
 
 home_url: http://openshiftdo.org/
 
 author_name: Copyright ©2019 Red Hat, Inc.
-author_url: https://github.com/redhat-developer/odo/graphs/contributors
+author_url: https://github.com/openshift/odo/graphs/contributors
 
 license: Odo (OpenShift Do) is an Apache 2.0 project.
 copyright: Copyright ©2019 Red Hat, Inc.
