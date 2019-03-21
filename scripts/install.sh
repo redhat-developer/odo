@@ -9,7 +9,7 @@ ODO_VERSION="latest"
 # Latest released odo version
 LATEST_VERSION="v0.0.20"
 
-GITHUB_RELEASES_URL="https://github.com/redhat-developer/odo/releases/download/${LATEST_VERSION}"
+GITHUB_RELEASES_URL="https://github.com/openshift/odo/releases/download/${LATEST_VERSION}"
 BINTRAY_URL="https://dl.bintray.com/odo/odo/latest"
 
 INSTALLATION_PATH="/usr/local/bin/"
@@ -51,7 +51,7 @@ check_platform() {
 # currently not supported by this installer script.
 
 # Please visit the following URL for detailed installation steps:
-# https://github.com/redhat-developer/odo/#installation
+# https://github.com/openshift/odo/#installation
 
         "
         exit 1
@@ -225,7 +225,7 @@ verify_odo() {
 "
     else
         echo_stderr "
-# Something is wrong with odo installation, please run the installaer script again. If the issue persists, please create an issue at https://github.com/redhat-developer/odo/issues"
+# Something is wrong with odo installation, please run the installaer script again. If the issue persists, please create an issue at https://github.com/openshift/odo/issues"
         exit 1
     fi
 }

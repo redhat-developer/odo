@@ -14,7 +14,7 @@
 
 Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code. 
 
-Find more information at https://github.com/redhat-developer/odo
+Find more information at https://github.com/openshift/odo
 
 # Syntax
 
@@ -239,7 +239,7 @@ Catalog related operations
   # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
   odo create nodejs --env key=value,key1=value1
   
-  # For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
+  # For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.md
   odo create python --git https://github.com/openshift/django-ex.git
 ```
 

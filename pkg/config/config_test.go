@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/openshift/odo/pkg/util"
 )
 
 func TestSetLocalConfiguration(t *testing.T) {

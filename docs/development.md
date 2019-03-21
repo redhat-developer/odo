@@ -1,18 +1,18 @@
 # Development Guide
 
-- [Workflow](https://github.com/redhat-developer/odo/blob/master/docs/development.md#workflow)
-- [Unit Tests](https://github.com/redhat-developer/odo/blob/master/docs/development.md#unit-tests)
-- [Integration Tests](https://github.com/redhat-developer/odo/blob/master/docs/development.md#integration-tests)
-- [Dependency Management](https://github.com/redhat-developer/odo/blob/master/docs/development.md#dependency-management)
-- [Release Guide](https://github.com/redhat-developer/odo/blob/master/docs/development.md#release-guide)
-- [Odo Bot](https://github.com/redhat-developer/odo/blob/master/docs/development.md#odo-bot)
-- [Licenses](https://github.com/redhat-developer/odo/blob/master/docs/development.md#licenses)
+- [Workflow](https://github.com/openshift/odo/blob/master/docs/development.md#workflow)
+- [Unit Tests](https://github.com/openshift/odo/blob/master/docs/development.md#unit-tests)
+- [Integration Tests](https://github.com/openshift/odo/blob/master/docs/development.md#integration-tests)
+- [Dependency Management](https://github.com/openshift/odo/blob/master/docs/development.md#dependency-management)
+- [Release Guide](https://github.com/openshift/odo/blob/master/docs/development.md#release-guide)
+- [Odo Bot](https://github.com/openshift/odo/blob/master/docs/development.md#odo-bot)
+- [Licenses](https://github.com/openshift/odo/blob/master/docs/development.md#licenses)
 
 ## Workflow
 
 ### Fork the main repository
 
-1. Go to https://github.com/redhat-developer/odo
+1. Go to https://github.com/openshift/odo
 2. Click the "Fork" button (at the top right)
 
 ### Clone your fork
@@ -20,9 +20,9 @@
 The following commands assume that you have the $GOPATH environment variable properly set. We highly recommend you place odo code into $GOPATH.
 
 ```sh
-git clone https://github.com/$YOUR_GITHUB_USERNAME/odo.git $GOPATH/src/github.com/redhat-developer/odo
-cd $GOPATH/src/github.com/redhat-developer/odo
-git remote add upstream 'https://github.com/redhat-developer/odo'
+git clone https://github.com/$YOUR_GITHUB_USERNAME/odo.git $GOPATH/src/github.com/openshift/odo
+cd $GOPATH/src/github.com/openshift/odo
+git remote add upstream 'https://github.com/openshift/odo'
 ```
 
 While cloning odo, the Windows terminal such as PowerShell or CMD may throw an error of `Filename too long`. To avoid such an error, set your Git config as so:
@@ -45,7 +45,7 @@ git fetch upstream
 git rebase upstream/master
 ```
 
-**Note for maintainers**: If you have write access to the main repository at github.com/redhat-developer/odo, you should modify your git configuration so that you can't accidentally push to upstream:
+**Note for maintainers**: If you have write access to the main repository at github.com/openshift/odo, you should modify your git configuration so that you can't accidentally push to upstream:
 
 ```sh
 git remote set-url --push upstream no_push
@@ -134,7 +134,7 @@ The tests are written in golang using the [pkg/testing](https://golang.org/pkg/t
 
 Let us understand the initialisation of fake clients and therefore the creation of fake objects with an example.
 
-The function `GetImageStreams` in [pkg/occlient.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient.go) fetches imagestream objects through the API:
+The function `GetImageStreams` in [pkg/occlient.go](https://github.com/openshift/odo/blob/master/pkg/occlient/occlient.go) fetches imagestream objects through the API:
 
 ```go
 func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error) {
@@ -187,7 +187,7 @@ func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error
   The `List` function internally calls `NewListAction` defined in [k8s.io/client-go/testing/actions.go](https://github.com/kubernetes/client-go/blob/master/testing/actions.go).  From these functions, we see that the `resource` and `verb` to be passed into the `PrependReactor` interface are `imagestreams` and `list` respectively. 
 
 
-  You can see the entire test function `TestGetImageStream` in [pkg/occlient/occlient_test.go](https://github.com/redhat-developer/odo/blob/master/pkg/occlient/occlient_test.go)
+  You can see the entire test function `TestGetImageStream` in [pkg/occlient/occlient_test.go](https://github.com/openshift/odo/blob/master/pkg/occlient/occlient_test.go)
 
 **NOTE**: You can use environment variable CUSTOM_HOMEDIR to specify a custom home directory. It can be used in environments where a user and home directory are not resolvable.
 
@@ -323,7 +323,7 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 
     ```sh
     RELEASE=X.X.X
-    wget https://github.com/redhat-developer/odo/archive/v$RELEASE.tar.gz
+    wget https://github.com/openshift/odo/archive/v$RELEASE.tar.gz
     sha256sum v$RELEASE.tar.gz
     ```
 
@@ -350,7 +350,7 @@ When new git tag is created, Travis-ci deploy job automatically builds binaries 
 compatibilities of vendored packages.
 
 Configuration for `wwhrd` is stored in
-[`.wwhrd.yml`](https://github.com/redhat-developer/odo/blob/master/.wwhrd.yml).
+[`.wwhrd.yml`](https://github.com/openshift/odo/blob/master/.wwhrd.yml).
 
 The `whitelist` section is for licenses that are always allowed.
 The `blacklist` section is for licenses that are never allowed and will

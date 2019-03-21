@@ -1,6 +1,6 @@
 package genericclioptions
 
-import "github.com/redhat-developer/odo/pkg/occlient"
+import "github.com/openshift/odo/pkg/occlient"
 
 func NewFakeContext(project, application, component string, client *occlient.Client) *Context {
 	return &Context{

@@ -3,11 +3,11 @@ package storage
 import (
 	"fmt"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
-	"github.com/redhat-developer/odo/pkg/util"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/occlient"
+	storagelabels "github.com/openshift/odo/pkg/storage/labels"
+	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +32,7 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 
 	// Namespace the component
 	// We will use name+applicationName instead of componentName+applicationName until:
-	// https://github.com/redhat-developer/odo/issues/504 is resolved.
+	// https://github.com/openshift/odo/issues/504 is resolved.
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
 	if err != nil {
 		return Storage{}, errors.Wrapf(err, "unable to create namespaced name")

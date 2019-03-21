@@ -5,12 +5,12 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/openshift/odo/pkg/application"
+	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/project"
 	"github.com/spf13/cobra"
 )
 

@@ -1,8 +1,8 @@
 package util
 
 import (
-	"github.com/redhat-developer/odo/pkg/catalog"
-	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/catalog"
+	"github.com/openshift/odo/pkg/occlient"
 	"reflect"
 	"testing"
 )

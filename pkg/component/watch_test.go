@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
 // setUpF8AnalyticsComponentSrc sets up a mock analytics component source base for observing changes to source files.

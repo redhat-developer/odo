@@ -21,9 +21,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/util"
 
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
@@ -113,10 +113,10 @@ const (
 	// ComponentPortAnnotationName annotation is used on the secrets that are created for each exposed port of the component
 	ComponentPortAnnotationName = "component-port"
 
-	// EnvS2IScriptsURL is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate location of s2i scripts in this case assemble script
+	// EnvS2IScriptsURL is an env var exposed to https://github.com/openshift/odo-supervisord-image/blob/master/assemble-and-restart to indicate location of s2i scripts in this case assemble script
 	EnvS2IScriptsURL = "ODO_S2I_SCRIPTS_URL"
 
-	// EnvS2IScriptsProtocol is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate the way to access location of s2i scripts indicated by ${${EnvS2IScriptsURL}} above
+	// EnvS2IScriptsProtocol is an env var exposed to https://github.com/openshift/odo-supervisord-image/blob/master/assemble-and-restart to indicate the way to access location of s2i scripts indicated by ${${EnvS2IScriptsURL}} above
 	EnvS2IScriptsProtocol = "ODO_S2I_SCRIPTS_PROTOCOL"
 
 	// EnvS2ISrcOrBinPath is an env var exposed by s2i to indicate where the builder image expects the component source or binary to reside
@@ -146,7 +146,7 @@ const (
 	// EnvS2IBuilderImageName is the label that provides the name of builder image in component
 	EnvS2IBuilderImageName = "ODO_S2I_BUILDER_IMG"
 
-	// EnvS2IDeploymentDir is an env var exposed to https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart to indicate s2i deployment directory
+	// EnvS2IDeploymentDir is an env var exposed to https://github.com/openshift/odo-supervisord-image/blob/master/assemble-and-restart to indicate s2i deployment directory
 	EnvS2IDeploymentDir = "ODO_S2I_DEPLOYMENT_DIR"
 
 	// DefaultS2ISrcOrBinPath is the default path where S2I expects source/binary artifacts in absence of $S2ISrcOrBinLabel in builder image
@@ -934,7 +934,7 @@ func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPa
 	// The URL is a combination of protocol and the path to script details of which can be found @
 	// https://github.com/openshift/source-to-image/blob/master/docs/builder_image.md#s2i-scripts
 	// Extract them out into protocol and path separately to minimise the task in
-	// https://github.com/redhat-developer/odo-supervisord-image/blob/master/assemble-and-restart when custom handling
+	// https://github.com/openshift/odo-supervisord-image/blob/master/assemble-and-restart when custom handling
 	// for each of the protocols is added
 	s2iScriptsProtocol := ""
 	s2iScriptsPath := ""

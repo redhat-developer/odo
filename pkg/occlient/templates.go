@@ -5,7 +5,7 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
-	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/openshift/odo/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,7 +37,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, bui
 					Labels: map[string]string{
 						"deploymentconfig": commonObjectMeta.Name,
 					},
-					// https://github.com/redhat-developer/odo/pull/622#issuecomment-413410736
+					// https://github.com/openshift/odo/pull/622#issuecomment-413410736
 					Annotations: map[string]string{
 						"alpha.image.policy.openshift.io/resolve-names": "*",
 					},

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

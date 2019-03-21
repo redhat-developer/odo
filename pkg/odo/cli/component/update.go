@@ -2,23 +2,23 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 
-	pkgUtil "github.com/redhat-developer/odo/pkg/util"
+	pkgUtil "github.com/openshift/odo/pkg/util"
 
-	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/openshift/odo/pkg/log"
 
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/fatih/color"
-	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/openshift/odo/pkg/component"
 	"github.com/spf13/cobra"
 )
 

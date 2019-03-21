@@ -5,12 +5,12 @@ import (
 	"strings"
 
 	routev1 "github.com/openshift/api/route/v1"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/occlient"
+	urlLabels "github.com/openshift/odo/pkg/url/labels"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
-	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -2,10 +2,10 @@ package list
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	svc "github.com/redhat-developer/odo/pkg/service"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
 

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/ui"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )

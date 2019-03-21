@@ -9,8 +9,8 @@ import (
 
 	"github.com/ghodss/yaml"
 
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/preference"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 

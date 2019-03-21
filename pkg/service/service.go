@@ -6,18 +6,18 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"github.com/openshift/odo/pkg/odo/util/validation"
 
 	"sort"
 
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/util"
 )
 
 const provisionedAndBoundStatus = "ProvisionedAndBound"

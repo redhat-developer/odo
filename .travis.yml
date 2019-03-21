@@ -12,7 +12,7 @@ jobs:
     # YAML alias, for settings shared across the tests
     - &base-test
       stage: test
-      go_import_path: github.com/redhat-developer/odo
+      go_import_path: github.com/openshift/odo
       go: "1.11.2"
       install:
         - make goget-tools
@@ -30,6 +30,70 @@ jobs:
       after_success:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
+
+# BEGIN Tests that are also in CircleCI
+
+    - <<: *base-test
+      stage: test
+      name: "Main e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - travis_wait make test-main-e2e
+
+    - <<: *base-test
+      stage: test
+      name: "Login e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - travis_wait make test-odo-login-e2e
+
+    - <<: *base-test
+      stage: test
+      name: "Component e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - travis_wait make test-cmp-e2e
+
+    - <<: *base-test
+      stage: test
+      name: "Java e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - travis_wait make test-java-e2e
+
+    - <<: *base-test
+      stage: test
+      name: "Source e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - travis_wait make test-source-e2e
+
+    - <<: *base-test
+      stage: test
+      name: "Json e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - travis_wait make test-json-format-output
+
+# END Tests that are also in CircleCI
 
     # Run component e2e tests
     - <<: *base-test
@@ -93,7 +157,7 @@ jobs:
     - stage: deploy
       # run this stage only on master branch and on tags
       if: branch = master || tag IS present
-      go_import_path:  github.com/redhat-developer/odo
+      go_import_path:  github.com/openshift/odo
       go: "1.11.2"
       env: BUILD_DOCS=yes
       install:
@@ -128,7 +192,7 @@ jobs:
           skip_cleanup: true
           on:
             tags: true
-            repo: redhat-developer/odo
+            repo: openshift/odo
         # upload packages to bintray repositories
         - provider: script
           skip_cleanup: true

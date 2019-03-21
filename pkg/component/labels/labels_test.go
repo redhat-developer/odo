@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	applabels "github.com/openshift/odo/pkg/application/labels"
 )
 
 func TestGetLabels(t *testing.T) {

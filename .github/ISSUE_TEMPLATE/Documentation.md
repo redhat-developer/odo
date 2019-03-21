@@ -8,7 +8,7 @@ about: Report mistakes or request for documentation
 
 Welcome! - We kindly ask you to:
 
-  1. Check the documents under https://github.com/redhat-developer/odo/tree/master/docs
+  1. Check the documents under https://github.com/openshift/odo/tree/master/docs
   2. Use the chat and talk to us if you have a question/doubt rather than a documentat mistake or request.
 
 The chat room is at: https://chat.openshift.io/developers/channels/odo

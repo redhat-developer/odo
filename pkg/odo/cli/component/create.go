@@ -2,30 +2,30 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
-	commonui "github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/openshift/odo/pkg/odo/cli/component/ui"
+	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"io"
 	"os"
 	"strings"
 
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/pkg/errors"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/validation"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/application"
-	"github.com/redhat-developer/odo/pkg/catalog"
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	catalogutil "github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
-	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/openshift/odo/pkg/application"
+	"github.com/openshift/odo/pkg/catalog"
+	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/occlient"
+	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -93,7 +93,7 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
 %[1]s nodejs --env key=value,key1=value1
 
-# For more examples, visit: https://github.com/redhat-developer/odo/blob/master/docs/examples.md
+# For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.md
 %[1]s python --git https://github.com/openshift/django-ex.git
 
 # Passing memory limits

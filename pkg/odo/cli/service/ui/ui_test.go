@@ -3,8 +3,8 @@ package ui
 import (
 	"github.com/Netflix/go-expect"
 	beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
-	"github.com/redhat-developer/odo/pkg/service"
-	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/service"
+	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"

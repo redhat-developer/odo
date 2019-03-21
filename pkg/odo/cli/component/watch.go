@@ -6,19 +6,19 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/openshift/odo/pkg/log"
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/log"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
-	"github.com/redhat-developer/odo/pkg/component"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/openshift/odo/pkg/component"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
