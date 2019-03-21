@@ -237,9 +237,11 @@ After any modification to your shell configuration file, you will need to `sourc
 **NOTE**: The completion system will stop working if you either rename the `odo` executable or move it. You will therefore need
 to re-enable it accordingly.
 
-## Using the `.odoignore` file
+## Using the `.odoignore` and `.gitignore` files
 
 The `.odoignore` file in the root directory of your application will ignore a list of files/patterns. This will prevent `odo watch` from constantly reloading / redeploying certain files.
+
+If `.odoignore` does *not* exist, `.gitignore` is used instead for ignoring specific files and folders.
 
 For example:
 
