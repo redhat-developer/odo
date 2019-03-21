@@ -2,6 +2,8 @@
 
 This document outlines all the machine readable output options and examples.
 
+`jq` is used in order to "beautify" the JSON-output.
+
 `$ odo url create -o json | jq`
 
 ```json
