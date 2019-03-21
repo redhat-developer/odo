@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/redhat-developer/odo/pkg/storage"
-	"github.com/redhat-developer/odo/pkg/url"
+	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/storage"
+	"github.com/openshift/odo/pkg/url"
 
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 

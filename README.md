@@ -2,7 +2,7 @@
 
 # OpenShift Do - Developer Focused CLI for OpenShift
 
-[![Build Status](https://travis-ci.org/redhat-developer/odo.svg?branch=master)](https://travis-ci.org/redhat-developer/odo) [![codecov](https://codecov.io/gh/redhat-developer/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/redhat-developer/odo) [![CircleCI](https://circleci.com/gh/redhat-developer/odo/tree/master.svg?style=svg)](https://circleci.com/gh/redhat-developer/odo/tree/master) [![mattermost](/docs/img/mattermost.svg)](https://chat.openshift.io/developers/channels/odo)
+[![Build Status](https://travis-ci.org/openshift/odo.svg?branch=master)](https://travis-ci.org/openshift/odo) [![codecov](https://codecov.io/gh/openshift/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/openshift/odo) [![CircleCI](https://circleci.com/gh/openshift/odo/tree/master.svg?style=svg)](https://circleci.com/gh/openshift/odo/tree/master) [![mattermost](/docs/img/mattermost.svg)](https://chat.openshift.io/developers/channels/odo)
 
 OpenShift Do (odo) is a fast, iterative, and opinionated CLI tool for developers who write, build, and deploy applications on OpenShift.
 
@@ -29,7 +29,7 @@ OpenShift Do is designed to be simple and concise with the following key feature
 #### Use this [bash script](./scripts/install.sh) to quickly install OpenShift Do. It will automatically detect your operating system and install `odo` accordingly.
 
 ```sh
-curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | bash
+curl -L https://github.com/openshift/odo/raw/master/scripts/install.sh | bash
 ```
 
 </details>
@@ -39,12 +39,12 @@ curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | 
 
 #### Binary installation:
 ```sh
-sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+sudo curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
 ```
 
 #### Tarball installation:
 ```sh
-sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+sudo sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ```
 
 </details>
@@ -54,12 +54,12 @@ sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0
 
 #### Binary installation:
 ```sh
-sudo curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+sudo curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
 ```
 
 #### Tarball installation:
 ```sh
-sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0.0.20/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+sudo sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ```
 
 </details>
@@ -69,9 +69,9 @@ sudo sh -c 'curl -L https://github.com/redhat-developer/odo/releases/download/v0
 
 In order to correctly use OpenShift Do you must download it and add it to your PATH environment variable:
 
-1. Download the `odo-windows-amd64.exe.gz` file from the [GitHub releases page](https://github.com/redhat-developer/odo/releases).
+1. Download the `odo-windows-amd64.exe.gz` file from the [GitHub releases page](https://github.com/openshift/odo/releases).
 2. Extract the file.
-3. Add the location of extracted binary to your PATH environment variable by following [this Wiki page](https://github.com/redhat-developer/odo/wiki/Setting-PATH-variable-on-Windows).
+3. Add the location of extracted binary to your PATH environment variable by following [this Wiki page](https://github.com/openshift/odo/wiki/Setting-PATH-variable-on-Windows).
 
 </details>
 
@@ -84,7 +84,7 @@ The following demonstration provides an overview of OpenShift Do:
 
 ## Deploying an application using OpenShift Do
 
-After installing OpenShift Do, follow these steps to build, push, and deploy a Node.js application. Examples for other supported languages and runtimes can be found [here](https://github.com/redhat-developer/odo/blob/master/docs/examples.md).
+After installing OpenShift Do, follow these steps to build, push, and deploy a Node.js application. Examples for other supported languages and runtimes can be found [here](https://github.com/openshift/odo/blob/master/docs/examples.md).
 
 1. Start a local OpenShift development cluster by running minishift.
 ```sh
@@ -127,19 +127,19 @@ For more in-depth information and advanced use-cases such as adding storage to a
 
 Additional documentation can be found below:
 
-  - [Detailed Installation Guide](https://github.com/redhat-developer/odo/blob/master/docs/installation.md)
-  - [Getting Started Guide](https://github.com/redhat-developer/odo/blob/master/docs/getting-started.md)
-  - [Usage Examples for Other Languages and Runtimes](https://github.com/redhat-developer/odo/blob/master/docs/examples.md)
-  - [CLI Reference](https://github.com/redhat-developer/odo/blob/master/docs/cli-reference.md)
-  - [Development Guide](https://github.com/redhat-developer/odo/blob/master/docs/development.md)
+  - [Detailed Installation Guide](https://github.com/openshift/odo/blob/master/docs/installation.md)
+  - [Getting Started Guide](https://github.com/openshift/odo/blob/master/docs/getting-started.md)
+  - [Usage Examples for Other Languages and Runtimes](https://github.com/openshift/odo/blob/master/docs/examples.md)
+  - [CLI Reference](https://github.com/openshift/odo/blob/master/docs/cli-reference.md)
+  - [Development Guide](https://github.com/openshift/odo/blob/master/docs/development.md)
 
 ## Community, discussion, contribution, and support
 
 **Chat:** We have a public channel [#odo on chat.openshift.io](https://chat.openshift.io/developers/channels/odo).
 
-**Issues:** If you have an issue with OpenShift Do, please [file it](https://github.com/redhat-developer/odo/issues).
+**Issues:** If you have an issue with OpenShift Do, please [file it](https://github.com/openshift/odo/issues).
 
-**Contributing:** Want to become a contributor and submit your own code? Have a look at our [development guide](https://github.com/redhat-developer/odo/blob/master/docs/development.md).
+**Contributing:** Want to become a contributor and submit your own code? Have a look at our [development guide](https://github.com/openshift/odo/blob/master/docs/development.md).
 
 ## Glossary
 

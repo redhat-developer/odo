@@ -7,12 +7,12 @@ import (
 	"encoding/json"
 	"text/tabwriter"
 
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/log"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/log"
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 

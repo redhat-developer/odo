@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/occlient"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

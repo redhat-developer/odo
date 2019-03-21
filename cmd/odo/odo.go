@@ -7,11 +7,11 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
-	"github.com/redhat-developer/odo/pkg/odo/cli/version"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/odo/cli"
+	"github.com/openshift/odo/pkg/odo/cli/version"
+	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

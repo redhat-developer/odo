@@ -5,12 +5,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/golang/glog"
-	"github.com/redhat-developer/odo/pkg/notify"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/notify"
+	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -20,7 +20,7 @@ var (
 	VERSION = "v0.0.20"
 
 	// GITCOMMIT is hash of the commit that wil be displayed when running ./odo version
-	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/redhat-developer/odo/cmd.GITCOMMIT=$(GITCOMMIT)"
+	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/openshift/odo/cmd.GITCOMMIT=$(GITCOMMIT)"
 	// HEAD is default indicating that this was not set during build
 	GITCOMMIT = "HEAD"
 )
@@ -129,7 +129,7 @@ func GetLatestReleaseInfo(info chan<- string) {
 			"A newer version of odo (version: " + fmt.Sprint(newTag) + ") is available.\n" +
 			"Update using your package manager, or run\n" +
 			"curl " + notify.InstallScriptURL + " | sh\n" +
-			"to update manually, or visit https://github.com/redhat-developer/odo/releases\n" +
+			"to update manually, or visit https://github.com/openshift/odo/releases\n" +
 			"---\n" +
 			"If you wish to disable the update notifications, you can disable it by running\n" +
 			"'odo config set UpdateNotification false'\n"

@@ -3,8 +3,8 @@ package preference
 import (
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/preference"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"

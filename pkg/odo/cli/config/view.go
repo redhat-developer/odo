@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"text/tabwriter"
 
-	"github.com/redhat-developer/odo/pkg/config"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )

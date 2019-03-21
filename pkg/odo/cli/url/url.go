@@ -3,12 +3,12 @@ package url
 import (
 	"fmt"
 
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
-	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 

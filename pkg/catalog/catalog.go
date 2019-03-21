@@ -7,8 +7,8 @@ import (
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 )
 
 type CatalogImage struct {

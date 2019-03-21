@@ -9,7 +9,7 @@ jobs:
     machine: true
     environment:
       GOVERSION: 1.11.4
-    working_directory: ~/go/src/github.com/redhat-developer/odo
+    working_directory: ~/go/src/github.com/openshift/odo
 
     steps:
     - checkout
@@ -28,7 +28,7 @@ jobs:
         command: |
             go version
             env
-            cd $GOPATH/src/github.com/redhat-developer/odo
+            cd $GOPATH/src/github.com/openshift/odo
             make goget-tools
             make
             sudo cp odo /usr/bin
@@ -37,7 +37,7 @@ jobs:
     #        name: oc cluster up
     #        command: |
     #            pwd
-    #            cd $GOPATH/src/github.com/redhat-developer/odo
+    #            cd $GOPATH/src/github.com/openshift/odo
     #            pwd
     #            ls
     #            ./scripts/oc-cluster.sh service-catalog
@@ -72,13 +72,13 @@ jobs:
     - run: 
         name: Main e2e test
         command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
+            cd ${HOME}/go/src/github.com/openshift/odo
             make test-main-e2e
 
     - run: 
         name: Login e2e test
         command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
+            cd ${HOME}/go/src/github.com/openshift/odo
             make test-odo-login-e2e
             # login e2e test leave oc client in logged out state
             oc login -u developer -p developer
@@ -86,42 +86,42 @@ jobs:
     - run: 
         name: Component e2e test
         command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
+            cd ${HOME}/go/src/github.com/openshift/odo
             make test-cmp-e2e
 
     - run: 
         name: Java e2e test
         command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
+            cd ${HOME}/go/src/github.com/openshift/odo
             make test-java-e2e
 
     - run: 
         name: Source e2e test
         command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
+            cd ${HOME}/go/src/github.com/openshift/odo
             make test-source-e2e
 
     #    - run: 
     #        name: Service-Catalog e2e tests
     #        command: |
-    #            cd ${HOME}/go/src/github.com/redhat-developer/odo
+    #            cd ${HOME}/go/src/github.com/openshift/odo
     #            make test-service-e2e
     #
     #    - run:
     #        name: Watch e2e tests
     #        command: |
-    #            cd ${HOME}/go/src/github.com/redhat-developer/odo
+    #            cd ${HOME}/go/src/github.com/openshift/odo
     #            make test-watch-e2e TIMEOUT=1200s
     #
     #    - run:
     #        name: Link e2e tests
     #        command: |
-    #            cd ${HOME}/go/src/github.com/redhat-developer/odo
+    #            cd ${HOME}/go/src/github.com/openshift/odo
     #            make test-link-e2e
 
     - run: 
         name: JSON e2e test
         command: |
-            cd ${HOME}/go/src/github.com/redhat-developer/odo
+            cd ${HOME}/go/src/github.com/openshift/odo
             make test-json-format-output
 

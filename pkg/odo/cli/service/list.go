@@ -5,9 +5,9 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	svc "github.com/redhat-developer/odo/pkg/service"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )

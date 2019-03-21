@@ -2,9 +2,9 @@ package search
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/catalog"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/catalog"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
 

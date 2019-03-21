@@ -1,4 +1,4 @@
-package: github.com/redhat-developer/odo
+package: github.com/openshift/odo
 import:
 - package: github.com/blang/semver
   version: v3.5.1

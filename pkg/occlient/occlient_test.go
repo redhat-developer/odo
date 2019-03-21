@@ -3,7 +3,7 @@ package occlient
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/testingutil"
 	"reflect"
 	"strings"
 	"testing"
@@ -11,9 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/util"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/util"
 
 	// api resources
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"

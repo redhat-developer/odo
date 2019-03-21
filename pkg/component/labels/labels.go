@@ -1,7 +1,7 @@
 package labels
 
 import (
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	applabels "github.com/openshift/odo/pkg/application/labels"
 )
 
 // ComponentLabel is a label key used to identify the component name

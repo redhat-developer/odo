@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/application"
-	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
-	"github.com/redhat-developer/odo/pkg/odo/cli/component"
-	"github.com/redhat-developer/odo/pkg/odo/cli/config"
-	"github.com/redhat-developer/odo/pkg/odo/cli/login"
-	"github.com/redhat-developer/odo/pkg/odo/cli/logout"
-	"github.com/redhat-developer/odo/pkg/odo/cli/preference"
-	"github.com/redhat-developer/odo/pkg/odo/cli/project"
-	"github.com/redhat-developer/odo/pkg/odo/cli/service"
-	"github.com/redhat-developer/odo/pkg/odo/cli/storage"
-	"github.com/redhat-developer/odo/pkg/odo/cli/url"
-	"github.com/redhat-developer/odo/pkg/odo/cli/utils"
-	"github.com/redhat-developer/odo/pkg/odo/cli/version"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/cli/application"
+	"github.com/openshift/odo/pkg/odo/cli/catalog"
+	"github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/openshift/odo/pkg/odo/cli/config"
+	"github.com/openshift/odo/pkg/odo/cli/login"
+	"github.com/openshift/odo/pkg/odo/cli/logout"
+	"github.com/openshift/odo/pkg/odo/cli/preference"
+	"github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/openshift/odo/pkg/odo/cli/service"
+	"github.com/openshift/odo/pkg/odo/cli/storage"
+	"github.com/openshift/odo/pkg/odo/cli/url"
+	"github.com/openshift/odo/pkg/odo/cli/utils"
+	"github.com/openshift/odo/pkg/odo/cli/version"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -32,7 +32,7 @@ var (
 	odoLong = ktemplates.LongDesc(`
 Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code.
 
-Find more information at https://github.com/redhat-developer/odo`)
+Find more information at https://github.com/openshift/odo`)
 	odoExample = ktemplates.Examples(`  # Creating and deploying a Node.js project
   git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
   %[1]s create nodejs

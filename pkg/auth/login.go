@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/openshift/origin/pkg/oc/cli/login"
-	odolog "github.com/redhat-developer/odo/pkg/log"
+	odolog "github.com/openshift/odo/pkg/log"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )

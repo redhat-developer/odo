@@ -2,16 +2,16 @@ package storage
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/storage"
-	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/storage"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
-	componentCmd "github.com/redhat-developer/odo/pkg/odo/cli/component"
-	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
+	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 )
 
 const createRecommendedCommandName = "create"

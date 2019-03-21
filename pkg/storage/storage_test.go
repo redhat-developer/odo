@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/storage/labels"
-	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
+	"github.com/openshift/odo/pkg/storage/labels"
+	storagelabels "github.com/openshift/odo/pkg/storage/labels"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

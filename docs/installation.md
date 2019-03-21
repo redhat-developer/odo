@@ -9,7 +9,7 @@ List of various installation methods:
 
 Latest binaries are available on [Bintray](https://dl.bintray.com/odo/odo/latest/).
 
-Latest releases are available on [Github](https://github.com/redhat-developer/odo/releases/latest).
+Latest releases are available on [Github](https://github.com/openshift/odo/releases/latest).
 
 ## macOS
 
@@ -126,7 +126,7 @@ dnf install odo
 
 ## Windows
 
-1. Download the latest  file from Bintray ([odo.exe](https://dl.bintray.com/odo/odo/latest/windows-amd64/odo.exe)) or from the latest release page on [GitHub](https://github.com/redhat-developer/odo/releases).
+1. Download the latest  file from Bintray ([odo.exe](https://dl.bintray.com/odo/odo/latest/windows-amd64/odo.exe)) or from the latest release page on [GitHub](https://github.com/openshift/odo/releases).
 2. Extract the file
 3. Add the location of extracted binary to your GOPATH/bin directory (see below if you have yet to create a Go binary directory)
 

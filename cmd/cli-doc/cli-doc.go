@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/odo/cli"
+	"github.com/openshift/odo/pkg/odo/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"os"

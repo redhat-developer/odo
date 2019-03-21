@@ -12,7 +12,7 @@ jobs:
     # YAML alias, for settings shared across the tests
     - &base-test
       stage: test
-      go_import_path: github.com/redhat-developer/odo
+      go_import_path: github.com/openshift/odo
       go: "1.11.2"
       install:
         - make goget-tools
@@ -93,7 +93,7 @@ jobs:
     - stage: deploy
       # run this stage only on master branch and on tags
       if: branch = master || tag IS present
-      go_import_path:  github.com/redhat-developer/odo
+      go_import_path:  github.com/openshift/odo
       go: "1.11.2"
       env: BUILD_DOCS=yes
       install:
@@ -128,7 +128,7 @@ jobs:
           skip_cleanup: true
           on:
             tags: true
-            repo: redhat-developer/odo
+            repo: openshift/odo
         # upload packages to bintray repositories
         - provider: script
           skip_cleanup: true

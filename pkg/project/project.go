@@ -3,9 +3,9 @@ package project
 import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
-	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/preference"
 )
 
 // ApplicationInfo holds information about one project

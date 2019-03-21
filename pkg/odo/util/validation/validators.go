@@ -2,7 +2,7 @@ package validation
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/openshift/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"strconv"
 	"strings"
