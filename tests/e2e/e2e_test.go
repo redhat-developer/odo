@@ -126,15 +126,19 @@ var _ = Describe("odoe2e", func() {
 				})
 
 				It("Should fail if user tries to create any object, other than project", func() {
-					session := runCmdShouldFail("mkdir -p nodejs-no-perm; odo create nodejs --context ./nodejs-no-perm")
-					Expect(session).To(ContainSubstring("deploymentconfigs.apps.openshift.io is forbidden: User \"odosingleprojectattemptscreate\" cannot list deploymentconfigs.apps.openshift.io in the namespace \"odosingleprojectattemptscreateproject\": no RBAC policy matched"))
-					//Expect(session).To(ContainSubstring("or it doesnt exist"))
-					//Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
-					// Uncomment once storage commands are fixed to work with new config workflow and context
+					if strings.Contains(ci, "openshift") {
+						fmt.Println("Skipping in openshift CI")
+					} else {
+						session := runCmdShouldFail("mkdir -p nodejs-no-perm; odo create nodejs --context ./nodejs-no-perm")
+						Expect(session).To(ContainSubstring("deploymentconfigs.apps.openshift.io is forbidden: User \"odosingleprojectattemptscreate\" cannot list deploymentconfigs.apps.openshift.io in the namespace \"odosingleprojectattemptscreateproject\": no RBAC policy matched"))
+						//Expect(session).To(ContainSubstring("or it doesnt exist"))
+						//Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+						// Uncomment once storage commands are fixed to work with new config workflow and context
 						session = runCmdShouldFail("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
 						Expect(session).To(ContainSubstring("You dont have permission to project"))
 						Expect(session).To(ContainSubstring("or it doesnt exist"))
 						Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+					}
 				})
 
 				It("Should pass if user tries to create a project", func() {
@@ -283,7 +287,7 @@ var _ = Describe("odoe2e", func() {
 			runCmdShouldPass("odo create php testcmp --app e2e-xyzk --git " + testPHPGitURL)
 			runCmdShouldPass("odo push")
 
-			VerifyCmpName("testcmp", "e2e-xyzk", false)
+			VerifyCmpName("testcmp", "e2e-xyzk", true)
 
 			VerifyAppNameOfComponent("testcmp", "e2e-xyzk")
 		})
@@ -458,7 +462,7 @@ var _ = Describe("odoe2e", func() {
 				// Uncomment below after --context is added to odo list
 				//cmpList := runCmdShouldPass("odo list")
 				//Expect(cmpList).To(ContainSubstring("php"))
-				VerifyCmpName("php", appTestName, false)
+				VerifyCmpName("php", appTestName, true)
 			})
 
 			It("should get the application "+appTestName, func() {
@@ -658,7 +662,7 @@ var _ = Describe("odoe2e", func() {
 				})
 
 				It("should be able add storage to a component specified", func() {
-					runCmdShouldPass("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
+					runCmdShouldPassWithRetry("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
 
 					storList := runCmdShouldPass("odo storage list --component php")
 					Expect(storList).To(ContainSubstring("pv2"))
@@ -704,7 +708,7 @@ var _ = Describe("odoe2e", func() {
 				})
 
 				It("should be able to mount the storage to the path specified", func() {
-					runCmdShouldPass("odo storage mount pv2 --path /mnt/pv2 --component php")
+					runCmdShouldPassWithRetry("odo storage mount pv2 --path /mnt/pv2 --component php")
 
 					// Verify with deploymentconfig
 					getDc := runCmdShouldPass("oc get dc/php-" + appTestName + " -o go-template='" +

@@ -11,10 +11,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/testingutil"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 
 	// api resources
