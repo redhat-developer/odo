@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -52,13 +53,11 @@ func VerifyAppNameOfComponent(cmpName string, appName string) {
 	Expect(session).To(ContainSubstring(appName))
 }
 
-func VerifyCmpName(cmpName string, appName string, isUseAppName bool) {
-	dcName := cmpName
-	if isUseAppName {
-		dcName = fmt.Sprintf("%s-%s", cmpName, appName)
-	}
+func VerifyCmpName(cmpName string) {
+	dcName := getDcName(cmpName)
 	session := runCmdShouldPass(fmt.Sprintf("oc get dc %s -L app.kubernetes.io/component-name| awk '{print $6}'|sed -n 2p", dcName))
-	Expect(session).To(ContainSubstring(cmpName))
+	//Expect(session).To(ContainSubstring(cmpName))
+	Expect(session).To(Equal(cmpName))
 }
 
 func GetURL(contextDir string, port int) string {
@@ -126,19 +125,15 @@ var _ = Describe("odoe2e", func() {
 				})
 
 				It("Should fail if user tries to create any object, other than project", func() {
-					if strings.Contains(ci, "openshift") {
-						fmt.Println("Skipping in openshift CI")
-					} else {
-						session := runCmdShouldFail("mkdir -p nodejs-no-perm; odo create nodejs --context ./nodejs-no-perm")
-						Expect(session).To(ContainSubstring("deploymentconfigs.apps.openshift.io is forbidden: User \"odosingleprojectattemptscreate\" cannot list deploymentconfigs.apps.openshift.io in the namespace \"odosingleprojectattemptscreateproject\": no RBAC policy matched"))
-						//Expect(session).To(ContainSubstring("or it doesnt exist"))
-						//Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
-						// Uncomment once storage commands are fixed to work with new config workflow and context
+					session := runCmdShouldFail("mkdir -p nodejs-no-perm; odo create nodejs --context ./nodejs-no-perm")
+					Expect(session).To(ContainSubstring("deploymentconfigs.apps.openshift.io is forbidden: User \"odosingleprojectattemptscreate\" cannot list deploymentconfigs.apps.openshift.io in the namespace \"odosingleprojectattemptscreateproject\": no RBAC policy matched"))
+					//Expect(session).To(ContainSubstring("or it doesnt exist"))
+					//Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+					// Uncomment once storage commands are fixed to work with new config workflow and context
 						session = runCmdShouldFail("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
 						Expect(session).To(ContainSubstring("You dont have permission to project"))
 						Expect(session).To(ContainSubstring("or it doesnt exist"))
 						Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
-					}
 				})
 
 				It("Should pass if user tries to create a project", func() {
@@ -287,7 +282,7 @@ var _ = Describe("odoe2e", func() {
 			runCmdShouldPass("odo create php testcmp --app e2e-xyzk --git " + testPHPGitURL)
 			runCmdShouldPass("odo push")
 
-			VerifyCmpName("testcmp", "e2e-xyzk", true)
+			VerifyCmpName("testcmp")
 
 			VerifyAppNameOfComponent("testcmp", "e2e-xyzk")
 		})
@@ -362,7 +357,7 @@ var _ = Describe("odoe2e", func() {
 			})
 		*/
 		It("should be able to create a php component with application created", func() {
-			runCmdShouldPass("odo create php testcmp --app " + appTestName + " --git " + testPHPGitURL)
+			runCmdShouldPass("odo create php testcmp --app " + appTestName + " --project " + newProjName + " --git " + testPHPGitURL)
 			runCmdShouldPass("odo push")
 		})
 
@@ -448,7 +443,7 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should list the components within the application", func() {
-				VerifyCmpName("nodejs", appTestName, true)
+				VerifyCmpName("nodejs")
 				//cmpList := runCmdShouldPass("odo list")
 				//Expect(cmpList).To(ContainSubstring("nodejs"))
 			})
@@ -462,7 +457,8 @@ var _ = Describe("odoe2e", func() {
 				// Uncomment below after --context is added to odo list
 				//cmpList := runCmdShouldPass("odo list")
 				//Expect(cmpList).To(ContainSubstring("php"))
-				VerifyCmpName("php", appTestName, true)
+				time.Sleep(20 * time.Second)
+				VerifyCmpName("php")
 			})
 
 			It("should get the application "+appTestName, func() {
@@ -578,26 +574,26 @@ var _ = Describe("odoe2e", func() {
 
 	Describe("pushing updates", func() {
 		Context("When push is made", func() {
-			It("should push the changes", func() {
-				runCmdShouldPass("odo create nodejs --context " + tmpDir + "/nodejs-ex")
-				runCmdShouldPass("odo push --context " + tmpDir + "/nodejs-ex")
+			// It("should push the changes", func() {
+			// 	runCmdShouldPass("odo create nodejs --context " + tmpDir + "/nodejs-ex")
+			// 	runCmdShouldPass("odo push --context " + tmpDir + "/nodejs-ex")
 
-				getRoute := GetURL(tmpDir+"/nodejs-ex", 8080)
+			// 	getRoute := GetURL(tmpDir+"/nodejs-ex", 8080)
 
-				responseStringMatchStatus := matchResponseSubString(getRoute, "Welcome to your Node.js application on OpenShift", 30, 1)
-				Expect(responseStringMatchStatus).Should(BeTrue())
+			// 	responseStringMatchStatus := matchResponseSubString(getRoute, "Welcome to your Node.js application on OpenShift", 30, 1)
+			// 	Expect(responseStringMatchStatus).Should(BeTrue())
 
-				// Make changes to the html file
-				replaceTextStatus := replaceTextInFile(tmpDir+"/nodejs-ex/views/index.html", "Welcome to your Node.js application on OpenShift", "Welcome to your Node.js application on ODO")
-				Expect(replaceTextStatus).To(BeNil())
+			// 	// Make changes to the html file
+			// 	replaceTextStatus := replaceTextInFile(tmpDir+"/nodejs-ex/views/index.html", "Welcome to your Node.js application on OpenShift", "Welcome to your Node.js application on ODO")
+			// 	Expect(replaceTextStatus).To(BeNil())
 
-				// Push the changes
-				runCmdShouldPass("odo push --local " + tmpDir + "/nodejs-ex")
+			// 	// Push the changes
+			// 	runCmdShouldPass("odo push --local " + tmpDir + "/nodejs-ex")
 
-				// Verify the changes
-				responseChangeStringStatus := matchResponseSubString(getRoute, "Welcome to your Node.js application on ODO", 30, 1)
-				Expect(responseChangeStringStatus).Should(BeTrue())
-			})
+			// 	// Verify the changes
+			// 	responseChangeStringStatus := matchResponseSubString(getRoute, "Welcome to your Node.js application on ODO", 30, 1)
+			// 	Expect(responseChangeStringStatus).Should(BeTrue())
+			// })
 
 			/* Uncomment once url commands work with new workflow and context
 			It("should be able to create the url with same name in different application", func() {
@@ -662,7 +658,7 @@ var _ = Describe("odoe2e", func() {
 				})
 
 				It("should be able add storage to a component specified", func() {
-					runCmdShouldPassWithRetry("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
+					runCmdShouldPass("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
 
 					storList := runCmdShouldPass("odo storage list --component php")
 					Expect(storList).To(ContainSubstring("pv2"))
@@ -708,7 +704,7 @@ var _ = Describe("odoe2e", func() {
 				})
 
 				It("should be able to mount the storage to the path specified", func() {
-					runCmdShouldPassWithRetry("odo storage mount pv2 --path /mnt/pv2 --component php")
+					runCmdShouldPass("odo storage mount pv2 --path /mnt/pv2 --component php")
 
 					// Verify with deploymentconfig
 					getDc := runCmdShouldPass("oc get dc/php-" + appTestName + " -o go-template='" +
