@@ -42,21 +42,22 @@ func componentTests(componentCmdPrefix string) {
 	Context("odo component creation without application", func() {
 		It("creating a component without an application should create one", func() {
 			// new project == no app
-			projectName := generateTimeBasedName("project")
-			odoCreateProject(projectName)
-			Expect(runCmdShouldPass("odo app list")).To(ContainSubstring("no applications"))
+			// projectName := generateTimeBasedName("project")
+			// odoCreateProject(projectName)
+			// Expect(runCmdShouldPass("odo app list")).To(ContainSubstring("no applications"))
 
-			const frontend = "frontend"
+			componentName := generateTimeBasedName("frontend")
+
 			// create a frontend component, an app should have been created
-			runCmdShouldPass(componentCmdPrefix + " create nodejs " + frontend + " --git https://github.com/openshift/nodejs-ex")
+			runCmdShouldPass(componentCmdPrefix + " create nodejs " + componentName + " --git https://github.com/openshift/nodejs-ex")
 			runCmdShouldPass("odo push")
 			appName := runCmdShouldPass("odo app list")
 			Expect(appName).ToNot(BeEmpty())
 
 			// clean up
-			runCmdShouldPass("odo app delete " + appName + " -f")
-			runCmdShouldPass("odo project delete " + projectName + " -f")
-			waitForDeleteCmd("odo project list", projectName)
+			runCmdShouldPass("odo component delete " + componentName + " -f")
+			runCmdShouldPass("odo app delete -f")
+
 		})
 	})
 
@@ -441,6 +442,7 @@ func componentTests(componentCmdPrefix string) {
 	*/
 	Context("cleaning up", func() {
 		It("should delete the application", func() {
+
 			runCmdShouldPass("odo app delete " + appTestName + " -f")
 
 			runCmdShouldPass("odo project delete " + projName + " -f")
