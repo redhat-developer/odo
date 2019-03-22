@@ -3,6 +3,8 @@ package e2e
 import (
 	//"fmt"
 
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -23,6 +25,9 @@ var _ = Describe("odoJavaE2e", func() {
 	Context("create java project", func() {
 		It("should create a new java project", func() {
 			session := runCmdShouldPass("odo project create odo-java")
+			waitForCmdOut("oc get project", 2, true, func(output string) bool {
+				return strings.Contains(output, "odo-java")
+			})
 			Expect(session).To(ContainSubstring("odo-java"))
 			// waitForCmdOut("odo project set "+projName, 4, false, func(output string) bool {
 			// 	return strings.Contains(output, "Already on project : "+projName)

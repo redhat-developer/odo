@@ -346,6 +346,9 @@ var _ = Describe("odoe2e", func() {
 		newProjName := strings.Replace(projName, "odo", "odo2", -1)
 		It("should create a new project", func() {
 			runCmdShouldPass("oc new-project " + newProjName)
+			waitForCmdOut("oc get project", 2, true, func(output string) bool {
+				return strings.Contains(output, newProjName)
+			})
 			//session := runCmdShouldPass("odo project create " + newProjName)
 			//Expect(session).To(ContainSubstring(newProjName))
 		})
@@ -756,19 +759,20 @@ var _ = Describe("odoe2e", func() {
 				Expect(urlList).NotTo(ContainSubstring("nodejs"))
 			})
 		*/
+		/*
+			It("should delete application and component", func() {
 
-		It("should delete application and component", func() {
+				runCmdShouldPass("odo app delete " + appTestName + " -f")
 
-			runCmdShouldPass("odo app delete " + appTestName + " -f")
+				appList := runCmdShouldPass("odo app list")
+				Expect(appList).NotTo(ContainSubstring(appTestName))
 
-			appList := runCmdShouldPass("odo app list")
-			Expect(appList).NotTo(ContainSubstring(appTestName))
+				cmpList := runCmdShouldFail("odo list --app " + appTestName)
+				Expect(cmpList).To(ContainSubstring("There are no components deployed"))
 
-			cmpList := runCmdShouldFail("odo list --app " + appTestName)
-			Expect(cmpList).To(ContainSubstring("There are no components deployed"))
-
-			odoDeleteProject(projName)
-		})
+				odoDeleteProject(projName)
+			})
+		*/
 	})
 
 	Context("validate odo version cmd with other major components version", func() {
