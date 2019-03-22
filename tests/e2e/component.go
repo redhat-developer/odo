@@ -109,11 +109,18 @@ func componentTests(componentCmdPrefix string) {
 				" -o go-template='{{range .spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'",
 			)
 			Expect(getCPURequest).To(ContainSubstring("100m"))
+			runCmdShouldPass("cd cmp-git && odo component delete -f")
+			runCmdShouldPass("rm -rf cmp-git")
 		})
 
 		It("should list the component", func() {
-			cmpList := runCmdShouldPass(componentCmdPrefix + " list")
+			runCmdShouldPass("mkdir -p cmp-git")
+			runCmdShouldPass(componentCmdPrefix + " create nodejs cmp-git --git https://github.com/openshift/nodejs-ex --min-memory 100Mi --max-memory 300Mi --min-cpu 0.1 --max-cpu 2 --context cmp-git/ --app " + appTestName)
+			runCmdShouldPass("odo push --context cmp-git/")
+			cmpList := runCmdShouldPass("cd cmp-git && " + componentCmdPrefix + " list")
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
+			runCmdShouldPass("cd cmp-git && odo component delete -f")
+			runCmdShouldPass("rm -rf cmp-git")
 		})
 		/*
 			It("should be in component description", func() {

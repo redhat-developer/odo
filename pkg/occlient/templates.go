@@ -241,7 +241,7 @@ func GetResourceRequirementsFromCmpSettings(cfg config.LocalConfigInfo) (*corev1
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse max memory")
 		}
-		requests[corev1.ResourceMemory] = maxMemory
+		limits[corev1.ResourceMemory] = maxMemory
 	}
 
 	if len(limits) > 0 {
