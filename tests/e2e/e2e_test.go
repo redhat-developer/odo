@@ -108,26 +108,30 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("Should fail if user tries to create any object, other than project", func() {
-				session := runCmdShouldFail("odo create nodejs")
-				Expect(session).To(ContainSubstring("You dont have permission to project"))
-				Expect(session).To(ContainSubstring("or it doesnt exist"))
-				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
-				session = runCmdShouldFail("odo component create nodejs")
-				Expect(session).To(ContainSubstring("You dont have permission to project"))
-				Expect(session).To(ContainSubstring("or it doesnt exist"))
-				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
-				session = runCmdShouldFail("odo application create nodejs")
-				Expect(session).To(ContainSubstring("You dont have permission to project"))
-				Expect(session).To(ContainSubstring("or it doesnt exist"))
-				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
-				session = runCmdShouldFail("odo application create nodejs")
-				Expect(session).To(ContainSubstring("You dont have permission to project"))
-				Expect(session).To(ContainSubstring("or it doesnt exist"))
-				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
-				session = runCmdShouldFail("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
-				Expect(session).To(ContainSubstring("You dont have permission to project"))
-				Expect(session).To(ContainSubstring("or it doesnt exist"))
-				Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				if strings.Contains(ci, "openshift") {
+					fmt.Println("Skipping in openshift CI")
+				} else {
+					session := runCmdShouldFail("odo create nodejs")
+					Expect(session).To(ContainSubstring("You dont have permission to project"))
+					Expect(session).To(ContainSubstring("or it doesnt exist"))
+					Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+					session = runCmdShouldFail("odo component create nodejs")
+					Expect(session).To(ContainSubstring("You dont have permission to project"))
+					Expect(session).To(ContainSubstring("or it doesnt exist"))
+					Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+					session = runCmdShouldFail("odo application create nodejs")
+					Expect(session).To(ContainSubstring("You dont have permission to project"))
+					Expect(session).To(ContainSubstring("or it doesnt exist"))
+					Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+					session = runCmdShouldFail("odo application create nodejs")
+					Expect(session).To(ContainSubstring("You dont have permission to project"))
+					Expect(session).To(ContainSubstring("or it doesnt exist"))
+					Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+					session = runCmdShouldFail("odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi")
+					Expect(session).To(ContainSubstring("You dont have permission to project"))
+					Expect(session).To(ContainSubstring("or it doesnt exist"))
+					Expect(session).To(ContainSubstring("odo project create|set <project_name>"))
+				}
 			})
 
 			It("Should pass if user tries to create a project", func() {
@@ -651,7 +655,7 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able add storage to a component specified", func() {
-				runCmdShouldPass("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php")
+				runCmdShouldPassWithRetry("odo storage create pv2 --path /mnt/pv2 --size 5Gi --component php", 1, 2)
 
 				storList := runCmdShouldPass("odo storage list --component php")
 				Expect(storList).To(ContainSubstring("pv2"))
@@ -697,7 +701,7 @@ var _ = Describe("odoe2e", func() {
 			})
 
 			It("should be able to mount the storage to the path specified", func() {
-				runCmdShouldPass("odo storage mount pv2 --path /mnt/pv2 --component php")
+				runCmdShouldPassWithRetry("odo storage mount pv2 --path /mnt/pv2 --component php", 1, 2)
 
 				// Verify with deploymentconfig
 				getDc := runCmdShouldPass("oc get dc/php-" + appTestName + " -o go-template='" +
