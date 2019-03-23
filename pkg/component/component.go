@@ -24,7 +24,6 @@ import (
 	"github.com/openshift/odo/pkg/storage"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
-	pkgUtil "github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -387,7 +386,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 		); err != nil {
 			return errors.Wrapf(err, "failed to create component with args %+v", createArgs)
 		}
-		// Git is the only one using BuildConfig since we need to retrieve the git
+		// Trigger build
 		if err = Build(client, createArgs.Name, createArgs.ApplicationName, true, stdout); err != nil {
 			return errors.Wrapf(err, "failed to build component with args %+v", componentConfig)
 		}
@@ -412,7 +411,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 		createArgs.SourceType = config.LOCAL
 		dir, err := os.Getwd()
 		if err != nil {
-			return errors.Wrapf(err, "cannot create component with current path as local source path since no component source details are passed")
+			return errors.Wrap(err, "failed to create component with current directory as source for the component")
 		}
 		createArgs.SourcePath = dir
 		if err = CreateFromPath(client, createArgs); err != nil {
@@ -422,6 +421,40 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	return
 }
 
+// CheckComponentMandatoryParams checks mandatory parammeters for component
+func CheckComponentMandatoryParams(componentSettings config.ComponentSettings) error {
+	var req_fields string
+
+	if componentSettings.Name == nil {
+		req_fields = fmt.Sprintf("%s name", req_fields)
+	}
+
+	if componentSettings.Application == nil {
+		req_fields = fmt.Sprintf("%s application", req_fields)
+	}
+
+	if componentSettings.Project == nil {
+		req_fields = fmt.Sprintf("%s project name", req_fields)
+	}
+
+	if componentSettings.SourceType == nil {
+		req_fields = fmt.Sprintf("%s source type", req_fields)
+	}
+
+	if componentSettings.SourceLocation == nil {
+		req_fields = fmt.Sprintf("%s source location", req_fields)
+	}
+
+	if componentSettings.Type == nil {
+		req_fields = fmt.Sprintf("%s type", req_fields)
+	}
+
+	if len(req_fields) > 0 {
+		return fmt.Errorf("missing mandatory parameters:%s", req_fields)
+	}
+	return nil
+}
+
 // ValidateComponentCreateRequest validates request for component creation and returns errors if any
 // Parameters:
 //	componentSettings: Component settings
@@ -429,14 +462,9 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 // Returns:
 //	errors if any
 func ValidateComponentCreateRequest(client *occlient.Client, componentSettings config.ComponentSettings, isCmpExistsCheck bool) (err error) {
-	// Check manddatory fields are set
-	if componentSettings.Name == nil ||
-		componentSettings.Application == nil ||
-		componentSettings.Project == nil ||
-		componentSettings.SourceType == nil ||
-		componentSettings.SourceLocation == nil ||
-		componentSettings.Type == nil {
-		return fmt.Errorf("component name, application, project, source type, source location and component type are mandatory parameters for component creation")
+	err = CheckComponentMandatoryParams(componentSettings)
+	if err != nil {
+		return err
 	}
 
 	_, componentType, _, componentVersion := util.ParseComponentImageName(*componentSettings.Type)
@@ -466,6 +494,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 		return errors.Wrapf(err, "failed to create component of name %s", *componentSettings.Name)
 	}
 
+	// If component does not exist, create it
 	if isCmpExistsCheck {
 		exists, err = Exists(client, *componentSettings.Name, *componentSettings.Application)
 		if err != nil {
@@ -476,6 +505,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 		}
 	}
 
+	// If component is of type local, check if the source path is valid
 	if *componentSettings.SourceType == config.LOCAL {
 		srcLocInfo, err := os.Stat(*(componentSettings.SourceLocation))
 		if err != nil {
@@ -499,41 +529,12 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, context string, stdout io.Writer) (err error) {
 
-	cmpName := componentConfig.GetName()
-	cmpSrcLoc := componentConfig.GetSourceLocation()
-	cmpSrcType := componentConfig.GetSourceType()
-
-	if cmpSrcType == config.GIT {
-		if err := Update(client, componentConfig, cmpSrcLoc, stdout); err != nil {
-			return err
-		}
-		log.Successf("The component %s was updated successfully", cmpName)
-	} else if cmpSrcType == config.LOCAL {
-		cmpSrcLoc, err := pkgUtil.GetAbsPath(cmpSrcLoc)
-		if err != nil {
-			return err
-		}
-		fileInfo, err := os.Stat(cmpSrcLoc)
-		if err != nil {
-			return err
-		}
-		if !fileInfo.IsDir() {
-			return fmt.Errorf("incorrect context passed. It should be a path to the compoennt source directory")
-		}
-		if err = Update(client, componentConfig, cmpSrcLoc, stdout); err != nil {
-			return err
-		}
-		log.Successf("The component %s was updated successfully", cmpName)
-	} else if cmpSrcType == config.BINARY {
-		cmpSrcLoc, err := pkgUtil.GetAbsPath(cmpSrcLoc)
-		if err != nil {
-			return err
-		}
-		if err = Update(client, componentConfig, cmpSrcLoc, stdout); err != nil {
-			return err
-		}
-		log.Successf("The component %s was updated successfully", cmpName)
+	if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
+		return err
 	}
+
+	log.Successf("The component %s was updated successfully", componentConfig.GetName())
+
 	return
 }
 
@@ -908,10 +909,11 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 
 		// Update the image for git deployment to the BC built component image
 		updateComponentParams.ImageMeta.Name = bc.Spec.Output.To.Name
+		isDeleteSupervisordVolumes := (oldSourceType != string(config.GIT))
 
 		err = client.UpdateDCToGit(
 			updateComponentParams,
-			oldSourceType != string(config.GIT),
+			isDeleteSupervisordVolumes,
 		)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig image for %s component", componentName)
@@ -970,10 +972,11 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 
 			// Update the image for git deployment to the BC built component image
 			updateComponentParams.ImageMeta.Name = bc.Spec.Output.To.Name
+			isDeleteSupervisordVolumes := (oldSourceType != string(config.GIT))
 
 			err = client.UpdateDCToGit(
 				updateComponentParams,
-				oldSourceType != string(config.GIT),
+				isDeleteSupervisordVolumes,
 			)
 			if err != nil {
 				return errors.Wrapf(err, "unable to update DeploymentConfig image for %s component", componentName)
