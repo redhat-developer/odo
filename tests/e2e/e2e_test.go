@@ -19,6 +19,7 @@ import (
 // TODO: A neater way to provide odo path. Currently we assume \
 // odo and oc in $PATH already.
 var curProj string
+var newProjName string
 var testNamespacedImage = "https://raw.githubusercontent.com/bucharest-gold/centos7-s2i-nodejs/master/imagestreams/nodejs-centos7.json"
 var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
 
@@ -759,20 +760,20 @@ var _ = Describe("odoe2e", func() {
 				Expect(urlList).NotTo(ContainSubstring("nodejs"))
 			})
 		*/
-		/*
-			It("should delete application and component", func() {
 
-				runCmdShouldPass("odo app delete " + appTestName + " -f")
+		It("should delete application and component", func() {
 
-				appList := runCmdShouldPass("odo app list")
-				Expect(appList).NotTo(ContainSubstring(appTestName))
+			runCmdShouldPass("odo app delete " + appTestName + " -f")
 
-				cmpList := runCmdShouldFail("odo list --app " + appTestName)
-				Expect(cmpList).To(ContainSubstring("There are no components deployed"))
+			appList := runCmdShouldPass("odo app list")
+			Expect(appList).NotTo(ContainSubstring(appTestName))
 
-				odoDeleteProject(projName)
-			})
-		*/
+			//cmpList := runCmdShouldFail("odo list --app " + appTestName)
+			//Expect(cmpList).To(ContainSubstring("There are no components deployed"))
+
+			odoDeleteProject(newProjName)
+		})
+
 	})
 
 	Context("validate odo version cmd with other major components version", func() {
