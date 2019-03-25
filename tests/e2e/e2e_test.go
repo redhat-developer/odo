@@ -46,7 +46,8 @@ func TestOdo(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// Save the current project
-	curProj = runCmdShouldPass("oc project -q")
+	// commenting this out to resolve e2e tests failures on OC 4
+	// curProj = runCmdShouldPass("oc project -q")
 })
 
 func VerifyAppNameOfComponent(cmpName string, appName string) {
