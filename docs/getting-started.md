@@ -239,7 +239,7 @@ to re-enable it accordingly.
 
 ## Using the `.odoignore` and `.gitignore` files
 
-The `.odoignore` file in the root directory of your application will ignore a list of files/patterns. This will prevent `odo watch` from constantly reloading / redeploying certain files.
+The `.odoignore` file in the root directory of your application will ignore a list of files/patterns. This behaviour will apply to both `odo push` and `odo watch`.
 
 If `.odoignore` does *not* exist, `.gitignore` is used instead for ignoring specific files and folders.
 
@@ -253,7 +253,7 @@ For example:
 
 Will ignore `.git` files, any files with the `.js` extension and the folder `tests`.
 
-`.odoignore` allows any [regular expression / regex](https://regexr.com/), for example:
+`.odoignore` allows any [glob expressions](https://en.wikipedia.org/wiki/Glob_(programming)) for example:
 
 ```ini
 /openshift/**/*.json
