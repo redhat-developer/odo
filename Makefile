@@ -204,3 +204,7 @@ upload-packages:
 .PHONY: vendor-update
 vendor-update:
 	glide update --strip-vendor
+
+.PHONY: openshiftci-presubmit-e2e
+openshiftci-presubmit:
+	./scripts/openshiftci-presubmit-e2e.sh
