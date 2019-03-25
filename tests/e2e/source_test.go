@@ -50,7 +50,7 @@ var _ = Describe("odoSourceE2e", func() {
 		It("Should be able to deploy an openjdk source application", func() {
 			importOpenJDKImage()
 
-			runCmdShouldPass("odo create openjdk18 openjdk-app --project odo-source --context " + sourceExamples + "openjdk/")
+			runCmdShouldPass("odo create java openjdk-app --project odo-source --context " + sourceExamples + "openjdk/")
 			//cmpList := runCmdShouldPass("odo list")
 			//Expect(cmpList).To(ContainSubstring("openjdk-app"))
 

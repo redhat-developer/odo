@@ -94,4 +94,4 @@ fi
 
 oc new-project myproject
 sleep 4
-
+oc version

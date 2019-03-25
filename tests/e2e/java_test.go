@@ -3,6 +3,7 @@ package e2e
 import (
 	//"fmt"
 
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -66,9 +67,8 @@ var _ = Describe("odoJavaE2e", func() {
 		// })
 
 		It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
+			runCmdShouldPass("odo create wildfly wo-wait-javaee-git-test --project odo-java --ref master --git " + warGitRepo)
 			// Deploy the git repo / wildfly example
-			runCmdShouldPass("odo create wildfly wo-wait-javaee-git-test --project odo-java --git " + warGitRepo)
-
 			// buildName := getBuildName("wo-wait-javaee-git-test")
 			// Expect(buildName).To(ContainSubstring("wo-wait-javaee-git-test"))
 			// buildStatus := getBuildParameterValues("wo-wait-javaee-git-test")
@@ -134,7 +134,7 @@ var _ = Describe("odoJavaE2e", func() {
 			importOpenJDKImage()
 
 			// Deploy the git repo / wildfly example
-			runCmdShouldPass("odo create openjdk18 uberjar-git-test --project odo-java --git " + jarGitRepo)
+			runCmdShouldPass("odo create java uberjar-git-test --project odo-java --ref master --git " + jarGitRepo)
 			// buildName := getBuildName("uberjar-git-test")
 			// Expect(buildName).To(ContainSubstring("uberjar-git-test"))
 			// buildStatus := runCmdShouldPass("oc get build " + buildName)
@@ -161,7 +161,7 @@ var _ = Describe("odoJavaE2e", func() {
 		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			importOpenJDKImage()
 
-			runCmdShouldPass("odo create openjdk18 sb-jar-test --project odo-java --binary " + javaFiles + "/openjdk/sb.jar")
+			runCmdShouldPass("odo create java sb-jar-test --project odo-java --binary " + javaFiles + "/openjdk/sb.jar")
 
 			// dcName := getDcName("sb-jar-test")
 			// Expect(dcName).To(ContainSubstring("sb-jar-test"))
@@ -195,7 +195,15 @@ var _ = Describe("odoJavaE2e", func() {
 })
 
 func importOpenJDKImage() {
+	// do nothing if running on OpenShiftCI
+	// java image is already present
+	val, ok := os.LookupEnv("CI")
+	if ok && val == "openshift" {
+		return
+	}
+
 	// we need to import the openjdk image which is used for jars because it's not available by default
-	runCmdShouldPass("oc import-image openjdk18 --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.5 --confirm")
-	runCmdShouldPass("oc annotate istag/openjdk18:latest tags=builder --overwrite")
+	runCmdShouldPass("oc --request-timeout 5m import-image java --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.5 --confirm")
+	runCmdShouldPass("oc annotate istag/java:latest tags=builder --overwrite")
+
 }
