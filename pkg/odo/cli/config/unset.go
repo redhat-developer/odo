@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/redhat-developer/odo/pkg/log"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/util"

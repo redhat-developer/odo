@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // EnvVar represents an enviroment variable

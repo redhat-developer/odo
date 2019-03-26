@@ -275,16 +275,16 @@ func (lci *LocalConfigInfo) SetComponentSettings(cs ComponentSettings) error {
 
 // SetEnvVars sets the env variables on the component settings
 func (lci *LocalConfigInfo) SetEnvVars(envVars EnvVarList) error {
-	lci.ComponentSettings.Envs = envVars
+	lci.componentSettings.Envs = envVars
 	return lci.writeToFile()
 }
 
 // GetEnvVars gets the env variables from the component settings
 func (lci *LocalConfigInfo) GetEnvVars() EnvVarList {
-	if lci.ComponentSettings.Envs == nil {
+	if lci.componentSettings.Envs == nil {
 		return EnvVarList{}
 	}
-	return lci.ComponentSettings.Envs
+	return lci.componentSettings.Envs
 }
 
 func (lci *LocalConfigInfo) writeToFile() error {

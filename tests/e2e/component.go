@@ -169,7 +169,7 @@ func componentTests(componentCmdPrefix string) {
 					"https://gist.github.com/mik-dass/f95bd818ddba508ff76a386f8d984909/raw/e5bc575ac8b14ba2b23d66b5cb4873657e1a1489/sample.war")
 				runCmdShouldPass(componentCmdPrefix + " create wildfly wildfly --binary " + tmpDir + "/sample-binary-testing-1.war --memory 500Mi")
 
-				// TODO: remove this once https://github.com/redhat-developer/odo/issues/943 is implemented
+				// TODO: remove this once https://github.com/openshift/odo/issues/943 is implemented
 				time.Sleep(90 * time.Second)
 
 				// Run push
@@ -345,7 +345,7 @@ func componentTests(componentCmdPrefix string) {
 				SourceTest(appTestName, "git", wildflyURI2)
 			})
 
-			// This is expected to be removed at the time of fixing https://github.com/redhat-developer/odo/issues/1008
+			// This is expected to be removed at the time of fixing https://github.com/openshift/odo/issues/1008
 			It("should create a wildfly git component", func() {
 				runCmdShouldPass(componentCmdPrefix + " delete wildfly -f")
 				runCmdShouldPass(componentCmdPrefix + " create wildfly wildfly --git " + wildflyURI1)
