@@ -134,7 +134,7 @@ var _ = Describe("odoSourceE2e", func() {
 	// Delete the project
 	Context("source project delete", func() {
 		It("should delete source project", func() {
-			odoDeleteProject("odo-source")
+			ocDeleteProject("odo-source")
 		})
 	})
 })

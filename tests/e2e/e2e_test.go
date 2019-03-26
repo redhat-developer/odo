@@ -115,7 +115,7 @@ var _ = Describe("odoe2e", func() {
 					session := runCmdShouldPass("odo project create odonoprojectattemptscreateproject")
 					Expect(session).To(ContainSubstring("New project created and now using project"))
 					Expect(session).To(ContainSubstring("odonoprojectattemptscreateproject"))
-					odoDeleteProject("odonoprojectattemptscreateproject")
+					ocDeleteProject("odonoprojectattemptscreateproject")
 				})
 			})
 
@@ -123,7 +123,7 @@ var _ = Describe("odoe2e", func() {
 				It("Should login as a user and setup by creating a project, and then deleting it", func() {
 					runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odosingleprojectattemptscreate", loginTestUserPassword))
 					odoCreateProject("odosingleprojectattemptscreateproject")
-					odoDeleteProject("odosingleprojectattemptscreateproject")
+					ocDeleteProject("odosingleprojectattemptscreateproject")
 				})
 
 				It("Should fail if user tries to create any object, other than project", func() {
@@ -142,7 +142,7 @@ var _ = Describe("odoe2e", func() {
 					session := runCmdShouldPass("odo project create odosingleprojectattemptscreateproject")
 					Expect(session).To(ContainSubstring("New project created and now using project"))
 					Expect(session).To(ContainSubstring("odosingleprojectattemptscreateproject"))
-					odoDeleteProject("odosingleprojectattemptscreateproject")
+					ocDeleteProject("odosingleprojectattemptscreateproject")
 				})
 			})
 
@@ -772,7 +772,7 @@ var _ = Describe("odoe2e", func() {
 			//cmpList := runCmdShouldFail("odo list --app " + appTestName)
 			//Expect(cmpList).To(ContainSubstring("There are no components deployed"))
 
-			odoDeleteProject(newProjName)
+			ocDeleteProject(newProjName)
 		})
 
 	})
@@ -1164,7 +1164,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("Should delete project", func() {
-			odoDeleteProject(projectName)
+			ocDeleteProject(projectName)
 		})
 	})
 
