@@ -61,6 +61,7 @@ func (lo *ListOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch components list")
 	}
+	fmt.Println("asdfsdfsa")
 	glog.V(4).Infof("the components are %+v", components)
 
 	if lo.outputFlag == "json" {

@@ -342,6 +342,32 @@ var _ = Describe("odoe2e", func() {
 			timeoutValue := getPreferenceValue("Timeout")
 			Expect(timeoutValue).To(BeEmpty())
 		})
+
+		It("should set env variables", func() {
+			runCmdShouldPass("odo config set --env PORT=4000")
+			configValue := runCmdShouldPass("odo config view")
+			Expect(configValue).To(ContainSubstring("PORT"))
+			runCmdShouldPass("odo config set --env SECRET_KEY=R2lyaXNoIFJhbW5hbmkgaXMgdGhlIGJlc3Q=")
+			configValue = runCmdShouldPass("odo config view")
+			Expect(configValue).To(ContainSubstring("SECRET_KEY"))
+			Expect(configValue).To(ContainSubstring("R2lyaXNoIFJhbW5hbmkgaXMgdGhlIGJlc3Q="))
+			Expect(configValue).To(ContainSubstring("PORT"))
+			Expect(configValue).To(ContainSubstring("4000"))
+
+		})
+
+		It("should unset env variables", func() {
+			runCmdShouldPass("odo config set --env PORT=4000")
+			runCmdShouldPass("odo config set --env SECRET_KEY=R2lyaXNoIFJhbW5hbmkgaXMgdGhlIGJlc3Q=")
+			configValue := runCmdShouldPass("odo config view")
+			Expect(configValue).To(ContainSubstring("PORT"))
+			Expect(configValue).To(ContainSubstring("SECRET_KEY"))
+			runCmdShouldPass("odo config unset --env PORT")
+			runCmdShouldPass("odo config unset --env SECRET_KEY")
+			configValue = runCmdShouldPass("odo config view")
+			Expect(configValue).To(Not(ContainSubstring(("PORT"))))
+			Expect(configValue).To(Not(ContainSubstring(("SECRET_KEY"))))
+		})
 	})
 
 	Context("creating component without an application and url", func() {

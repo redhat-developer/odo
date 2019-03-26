@@ -14,18 +14,18 @@ type EnvVar struct {
 }
 
 // EnvVarList represents a list of environment variables
-type EnvVarList []*EnvVar
+type EnvVarList []EnvVar
 
 // NewEnvVarFromString takes a string of format "name=value" and returns an Env
 // variable struct
-func NewEnvVarFromString(envStr string) (*EnvVar, error) {
-	envList := strings.Split(envStr, "=")
+func NewEnvVarFromString(envStr string) (EnvVar, error) {
+	envList := strings.SplitN(envStr, "=", 2)
 	// if there is not = in the string
 	if len(envList) < 2 {
-		return nil, errors.New("invalid environment variable format")
+		return EnvVar{}, errors.New("invalid environment variable format")
 	}
 
-	return &EnvVar{
+	return EnvVar{
 		Name:  strings.TrimSpace(envList[0]),
 		Value: strings.TrimSpace(envList[1]),
 	}, nil

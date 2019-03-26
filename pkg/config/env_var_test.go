@@ -8,24 +8,24 @@ import (
 func TestNewEnvVarFromString(t *testing.T) {
 	cases := []struct {
 		envStr   string
-		expected *EnvVar
+		expected EnvVar
 		wantErr  bool
 	}{
 		{
 			envStr: "foo=bar",
-			expected: &EnvVar{
+			expected: EnvVar{
 				Name:  "foo",
 				Value: "bar",
 			},
 		},
 		{
 			envStr:   "foo",
-			expected: nil,
+			expected: EnvVar{},
 			wantErr:  true,
 		},
 		{
 			envStr: " foo=bar ",
-			expected: &EnvVar{
+			expected: EnvVar{
 				Name:  "foo",
 				Value: "bar",
 			},
@@ -36,7 +36,8 @@ func TestNewEnvVarFromString(t *testing.T) {
 		envVar, err := NewEnvVarFromString(testCase.envStr)
 		// expected an error
 		if testCase.wantErr {
-			if envVar != nil || err == nil {
+			emptyEnvVar := EnvVar{}
+			if envVar != emptyEnvVar || err == nil {
 				t.Errorf("expected error for %s", testCase.envStr)
 			}
 		} else {
@@ -59,7 +60,7 @@ func TestNewEnvVarListFromSlice(t *testing.T) {
 		{
 			envList: []string{"foo=bar"},
 			expected: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
@@ -73,7 +74,7 @@ func TestNewEnvVarListFromSlice(t *testing.T) {
 		{
 			envList: []string{" foo=bar "},
 			expected: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
@@ -83,11 +84,11 @@ func TestNewEnvVarListFromSlice(t *testing.T) {
 			envList: []string{"foo=bar", "fizz=buzz"},
 
 			expected: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
-				&EnvVar{
+				EnvVar{
 					Name:  "fizz",
 					Value: "buzz",
 				},
@@ -98,6 +99,15 @@ func TestNewEnvVarListFromSlice(t *testing.T) {
 
 			expected: nil,
 			wantErr:  true,
+		},
+		{
+			envList: []string{"foo=bar="},
+			expected: EnvVarList{
+				EnvVar{
+					Name:  "foo",
+					Value: "bar=",
+				},
+			},
 		},
 	}
 
@@ -128,17 +138,17 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 	}{
 		{
 			envVarList: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
-				&EnvVar{
+				EnvVar{
 					Name:  "fizz",
 					Value: "buzz",
 				},
 			},
 			expected: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
@@ -147,11 +157,11 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 		},
 		{
 			envVarList: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
-				&EnvVar{
+				EnvVar{
 					Name:  "fizz",
 					Value: "buzz",
 				},
@@ -161,21 +171,21 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 		},
 		{
 			envVarList: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
-				&EnvVar{
+				EnvVar{
 					Name:  "fizz",
 					Value: "buzz",
 				},
 			},
 			expected: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
-				&EnvVar{
+				EnvVar{
 					Name:  "fizz",
 					Value: "buzz",
 				},
@@ -183,11 +193,11 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 		},
 		{
 			envVarList: EnvVarList{
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
-				&EnvVar{
+				EnvVar{
 					Name:  "foo",
 					Value: "bar",
 				},
