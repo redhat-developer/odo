@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
+	odoconfig "github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -46,11 +47,19 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
+	configExists, err := odoconfig.LocalConfigExists("")
+	if err != nil {
+		return err
+	}
+	if !configExists {
+		return fmt.Errorf("the current directory does not represent an odo component")
+	}
 	return odoutil.CheckOutputFlag(lo.outputFlag)
 }
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run() (err error) {
+
 	components, err := component.List(lo.Client, lo.Application)
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch components list")

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -58,6 +59,20 @@ func componentTests(componentCmdPrefix string) {
 			runCmdShouldPass("odo component delete " + componentName + " -f")
 			runCmdShouldPass("odo app delete -f")
 
+		})
+	})
+
+	Context("Regression : listing component outside of component directory should fail", func() {
+		It("creates a component from local context, tries to list components from outside and fails", func() {
+			componentName := generateTimeBasedName("nodejs-ex")
+			dirName := generateTimeBasedName("context_dir")
+			runCmdShouldPass(fmt.Sprint("mkdir ", dirName))
+			runCmdShouldPass(componentCmdPrefix + " create nodejs " + componentName + " --git https://github.com/openshift/nodejs-ex --context " + dirName)
+			session := runCmdShouldFail("odo component list")
+			Expect(session).To(ContainSubstring("doesn't represent"))
+			// clean up
+			runCmdShouldPass("odo component delete " + componentName + " -f")
+			os.RemoveAll(dirName)
 		})
 	})
 

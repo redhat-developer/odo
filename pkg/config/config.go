@@ -95,6 +95,20 @@ func getLocalConfigFile(cfgDir string) (string, error) {
 	return filepath.Join(cfgDir, ".odo", configFileName), nil
 }
 
+// LocalConfigExists checks if a config file exists.
+// If not it returns false
+func LocalConfigExists(cfgDir string) (bool, error) {
+	localConfig, err := getLocalConfigFile(cfgDir)
+	if err != nil {
+		return false, err
+	}
+	_, err = os.Stat(localConfig)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, nil
+}
+
 // New returns the localConfigInfo
 func New() (*LocalConfigInfo, error) {
 	return NewLocalConfigInfo("")
