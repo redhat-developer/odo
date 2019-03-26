@@ -345,7 +345,7 @@ var _ = Describe("odoe2e", func() {
 	*/
 
 	Context("should list applications in other project", func() {
-		newProjName := strings.Replace(projName, "odo", "odo2", -1)
+		newProjName = strings.Replace(projName, "odo", "odo2", -1)
 		It("should create a new project", func() {
 			runCmdShouldPass("oc new-project " + newProjName)
 			waitForCmdOut("oc get project", 2, true, func(output string) bool {
