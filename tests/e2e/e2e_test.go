@@ -421,6 +421,13 @@ var _ = Describe("odoe2e", func() {
 				Expect(os.Remove(ignoreFilePath)).To(BeNil())
 			})
 
+			It("should be able to push changes while showing logging", func() {
+				// Push the changes with --show-log
+				getLogging := runCmdShouldPass("odo push --show-log --context " + tmpDir + "/nodejs-ex")
+
+				Expect(getLogging).To(ContainSubstring("Building component"))
+			})
+
 			It("should create a component and push using the --ignore flag", func() {
 				// runCmdShouldPass("odo create " + curProj + "/nodejs push-odoignore-flag-example --context " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo create nodejs push-odoignore-flag-example --context " + tmpDir + "/nodejs-ex")

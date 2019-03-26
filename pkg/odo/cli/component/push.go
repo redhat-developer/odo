@@ -49,6 +49,7 @@ type PushOptions struct {
 	componentContext string
 	*genericclioptions.Context
 	client *occlient.Client
+	show   bool
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -56,6 +57,7 @@ func NewPushOptions() *PushOptions {
 	return &PushOptions{
 		ignores:     []string{},
 		localConfig: &config.LocalConfigInfo{},
+		show:        false,
 	}
 }
 
@@ -186,6 +188,7 @@ func (po *PushOptions) Run() (err error) {
 				[]string{},
 				true,
 				util.GetAbsGlobExps(po.sourcePath, po.ignores),
+				po.show,
 			)
 		} else {
 			dir := filepath.Dir(po.sourcePath)
@@ -200,6 +203,7 @@ func (po *PushOptions) Run() (err error) {
 				[]string{},
 				true,
 				util.GetAbsGlobExps(po.sourcePath, po.ignores),
+				po.show,
 			)
 		}
 		if err != nil {
@@ -213,6 +217,7 @@ func (po *PushOptions) Run() (err error) {
 			appName,
 			true,
 			stdout,
+			po.show,
 		)
 		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
 	}
@@ -238,6 +243,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	}
 
 	pushCmd.Flags().StringVarP(&po.componentContext, "context", "c", "", "Use given context directory as a source for component settings")
+	pushCmd.Flags().BoolVar(&po.show, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 
 	// Add a defined annotation in order to appear in the help menu

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
@@ -387,7 +386,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 			return errors.Wrapf(err, "failed to create component with args %+v", createArgs)
 		}
 		// Trigger build
-		if err = Build(client, createArgs.Name, createArgs.ApplicationName, true, stdout); err != nil {
+		if err = Build(client, createArgs.Name, createArgs.ApplicationName, true, stdout, false); err != nil {
 			return errors.Wrapf(err, "failed to build component with args %+v", componentConfig)
 		}
 	case config.LOCAL:
@@ -550,9 +549,10 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 // 	delFiles is the list of files identified as deleted
 // 	isForcePush indicates if the sources to be updated are due to a push in which case its a full source directory push or only push of identified sources
 // 	globExps are the glob expressions which are to be ignored during the push
+//	show determines whether or not to show the log (passed in by po.show argument within /cmd)
 // Returns
 //	Error if any
-func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string) error {
+func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
@@ -616,21 +616,28 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	s.End(true)
 
-	s = log.Spinner("Building component")
+	if show {
+		s = log.SpinnerNoSpin("Building component")
+	} else {
+		s = log.Spinner("Building component")
+	}
 
 	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
 	pipeReader, pipeWriter := io.Pipe()
 	var cmdOutput string
+
+	// This Go routine will automatically pipe the output from ExecCMDInContainer to
+	// our logger.
 	go func() {
-		yellowFprintln := color.New(color.FgYellow).FprintlnFunc()
 		scanner := bufio.NewScanner(pipeReader)
 		for scanner.Scan() {
 			line := scanner.Text()
-			// color.Output is temporarily used as there is a error when passing in color.Output from cmd/create.go and casting to io.writer in windows
-			// TODO: Fix this in the future, more upstream in the code at cmd/create.go rather than within this function.
-			// If we are in debug mode, we should show the output
-			if log.IsDebug() {
-				yellowFprintln(color.Output, line)
+
+			if log.IsDebug() || show {
+				_, err := fmt.Fprintln(out, line)
+				if err != nil {
+					log.Errorf("Unable to print to stdout: %v", err)
+				}
 			}
 
 			cmdOutput += fmt.Sprintln(line)
@@ -657,9 +664,11 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 // Build component from BuildConfig.
 // If 'wait' is true than it waits for build to successfully complete.
 // If 'wait' is false than this function won't return error even if build failed.
-func Build(client *occlient.Client, componentName string, applicationName string, wait bool, stdout io.Writer) error {
+// 'show' will determine whether or not the log will be shown to the user (while building)
+func Build(client *occlient.Client, componentName string, applicationName string, wait bool, stdout io.Writer, show bool) error {
 
 	// Loading spinner
+	// No loading spinner if we're showing the logging output
 	s := log.Spinnerf("Triggering build from git")
 	defer s.End(false)
 
@@ -678,13 +687,18 @@ func Build(client *occlient.Client, componentName string, applicationName string
 	// Retrieve the Build Log and write to buffer if debug is disabled, else we we output to stdout / debug.
 
 	var b bytes.Buffer
-	if !log.IsDebug() {
+	if !log.IsDebug() && !show {
 		stdout = bufio.NewWriter(&b)
 	}
 
 	if wait {
 
-		s := log.Spinnerf("Waiting for build to finish")
+		if show {
+			s = log.SpinnerNoSpin("Waiting for build to finish")
+		} else {
+			s = log.Spinner("Waiting for build to finish")
+		}
+
 		defer s.End(false)
 		if err := client.FollowBuildLog(buildName, stdout); err != nil {
 			return errors.Wrapf(err, "unable to follow logs for %s", buildName)
@@ -920,7 +934,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		}
 
 		// Finally, we build!
-		err = Build(client, componentName, applicationName, true, stdout)
+		err = Build(client, componentName, applicationName, true, stdout, false)
 		if err != nil {
 			return errors.Wrapf(err, "unable to build the component %v", componentName)
 		}
@@ -983,7 +997,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 			}
 
 			// Build it
-			err = Build(client, componentName, applicationName, true, stdout)
+			err = Build(client, componentName, applicationName, true, stdout, false)
 
 		} else if newSourceType == "local" || newSourceType == "binary" {
 
