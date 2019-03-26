@@ -140,13 +140,6 @@ func getFromFile(lc *LocalConfig, filename string) error {
 	return nil
 }
 
-func writeToFile(lc *LocalConfig, filename string) error {
-	plc := newProxyLocalConfig()
-	plc.TypeMeta = lc.typeMeta
-	plc.ComponentSettings = lc.componentSettings
-	return util.WriteToFile(&plc, filename)
-}
-
 // NewLocalConfig creates an empty LocalConfig struct with typeMeta populated
 func NewLocalConfig() LocalConfig {
 	return LocalConfig{
@@ -288,7 +281,10 @@ func (lci *LocalConfigInfo) GetEnvVars() EnvVarList {
 }
 
 func (lci *LocalConfigInfo) writeToFile() error {
-	return util.WriteToFile(&lci.LocalConfig, lci.Filename)
+	plc := newProxyLocalConfig()
+	plc.TypeMeta = lci.typeMeta
+	plc.ComponentSettings = lci.componentSettings
+	return util.WriteToFile(&plc, lci.Filename)
 }
 
 // GetType returns type of component (builder image name) in the config
