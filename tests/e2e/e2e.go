@@ -95,6 +95,7 @@ func waitForCmdOut(cmd string, timeout int, errOnFail bool, check func(output st
 		case <-tick:
 			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
 			if err != nil && errOnFail {
+				fmt.Fprintf(GinkgoWriter, "Command (%s) output: %s\n", cmd, out)
 				Fail(err.Error())
 			}
 
