@@ -5,13 +5,16 @@ import (
 	"os"
 
 	"github.com/golang/glog"
+	"github.com/spf13/cobra"
+
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/project"
-	"github.com/spf13/cobra"
+	pkgUtil "github.com/openshift/odo/pkg/util"
 )
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
@@ -79,15 +82,27 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 		util.LogErrorAndExit(err, "")
 		ns = projectFlag
 	} else {
-		// otherwise use the current project
-		ns = project.GetCurrent(client)
-		// if no current project, then check if user is trying to create or delete something other than project
-		if len(ns) <= 0 {
-			errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
-			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+		// Get details from config file
+		fileName := FlagValueIfSet(command, ContextFlagName)
+		if fileName != "" {
+			fileAbs, err := pkgUtil.GetAbsPath(fileName)
+			util.LogErrorAndExit(err, "")
+			fileName = fileAbs
 		}
+		lci, err := config.NewLocalConfigInfo(fileName)
+		util.LogErrorAndExit(err, "could not get component settings from config file")
+
+		ns = lci.GetProject()
+		if ns == "" {
+			ns = project.GetCurrent(client)
+			if len(ns) <= 0 {
+				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
+				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+			}
+		}
+
 		// check that the specified project exists
-		_, err := project.Exists(client, ns)
+		_, err = project.Exists(client, ns)
 		if err != nil {
 			e1 := fmt.Sprintf("You dont have permission to project '%s' or it doesnt exist. Please create or set a different project\n\t", ns)
 			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
@@ -105,24 +120,32 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	// resolve project
 	ns := resolveProject(command, client)
 
+	// Get details from config file
+	fileName := FlagValueIfSet(command, ContextFlagName)
+	if fileName != "" {
+		fAbs, err := pkgUtil.GetAbsPath(fileName)
+		util.LogErrorAndExit(err, "")
+		fileName = fAbs
+	}
+	lci, err := config.NewLocalConfigInfo(fileName)
+	util.LogErrorAndExit(err, "could not get component settings from config file")
+
 	// resolve application
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
-		// if we specified an application via flag, check that it exists and use it
-		_, err := application.Exists(client, appFlag)
-		util.LogErrorAndExit(err, "")
 		app = appFlag
 	} else {
-		var err error
-		if !createAppIfNeeded {
-			// otherwise get the current app (which might not exist)
-			app, err = application.GetCurrent(ns)
-		} else {
-			// if we asked an app to be created if missing, get the existing one or creating one if needed
-			app, err = application.GetCurrentOrGetCreateSetDefault(client)
+		app = lci.GetApplication()
+		if app == "" {
+			if createAppIfNeeded {
+				var err error
+				app, err = application.GetDefaultAppName()
+				if err != nil {
+					util.LogErrorAndExit(err, "failed to generate a random app name")
+				}
+			}
 		}
-		util.LogErrorAndExit(err, "unable to get current application")
 	}
 
 	// resolve output flag
@@ -146,9 +169,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {
 		// retrieve the current component if it exists if we didn't set the component flag
-		var err error
-		cmp, err = component.GetCurrent(app, ns)
-		util.LogErrorAndExit(err, "could not get current component")
+		cmp = lci.GetName()
 	} else {
 		// if flag is set, check that the specified component exists
 		context.checkComponentExistsOrFail(cmpFlag)

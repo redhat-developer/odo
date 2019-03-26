@@ -15,12 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/fatih/color"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -52,6 +51,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
@@ -63,18 +63,9 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-// CreateType is an enum to indicate the type of source of component -- local source/binary or git for the generation of app/component names
-type CreateType string
-
-const (
-	// GIT as source of component
-	GIT CreateType = "git"
-	// LOCAL Local source path as source of component
-	LOCAL CreateType = "local"
-	// BINARY Local Binary as source of component
-	BINARY CreateType = "binary"
-	// NONE indicates there's no information about the type of source of the component
-	NONE CreateType = ""
+var (
+	DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR string = "deploymentconfigs.apps.openshift.io \"%s\" not found"
+	DEPLOYMENT_CONFIG_NOT_FOUND           error  = fmt.Errorf("Requested deployment config does not exist")
 )
 
 // CreateArgs is a container of attributes of component create action
@@ -82,11 +73,11 @@ type CreateArgs struct {
 	Name            string
 	SourcePath      string
 	SourceRef       string
-	SourceType      CreateType
+	SourceType      config.SrcType
 	ImageName       string
 	EnvVars         []string
 	Ports           []string
-	Resources       []util.ResourceRequirementInfo
+	Resources       *corev1.ResourceRequirements
 	ApplicationName string
 	Wait            bool
 }
@@ -173,6 +164,22 @@ type S2IPaths struct {
 	WorkingDir          string
 	SrcBackupPath       string
 	BuilderImgName      string
+}
+
+// UpdateComponentParams serves the purpose of holding the arguements to a component update request
+type UpdateComponentParams struct {
+	// CommonObjectMeta is the object meta containing the labels and annotations expected for the new deployment
+	CommonObjectMeta metav1.ObjectMeta
+	// ResourceLimits are the cpu and memory constraints to be applied on to the component
+	ResourceLimits corev1.ResourceRequirements
+	// EnvVars to be exposed
+	EnvVars []corev1.EnvVar
+	// ExistingDC is the dc of the existing component that is requested for an update
+	ExistingDC *appsv1.DeploymentConfig
+	// DcRollOutWaitCond holds the logic to wait for dc with requested updates to be applied
+	DcRollOutWaitCond dcRollOutWait
+	// ImageMeta describes the image to be used in dc(builder image for local/binary and built component image for git deployments)
+	ImageMeta CommonImageMeta
 }
 
 // S2IDeploymentsDir is a set of possible S2I labels that provides S2I deployments directory
@@ -821,7 +828,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	}
 
 	// Generate and create the DeploymentConfig
-	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars, getResourceRequirementsFromRawData(params.Resources))
+	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars, params.Resources)
 	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
@@ -1109,7 +1116,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		},
 	)
 
-	if params.SourceType == LOCAL {
+	if params.SourceType == config.LOCAL {
 		inputEnvs = uniqueAppendOrOverwriteEnvVars(
 			inputEnvs,
 			corev1.EnvVar{
@@ -1122,11 +1129,10 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	// Generate the DeploymentConfig that will be used.
 	dc := generateSupervisordDeploymentConfig(
 		commonObjectMeta,
-		params.ImageName,
 		commonImageMeta,
 		inputEnvs,
 		[]corev1.EnvFromSource{},
-		getResourceRequirementsFromRawData(params.Resources),
+		params.Resources,
 	)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
@@ -1261,7 +1267,8 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annota
 }
 
 // Define a function that is meant to update a DC in place
-type dcStructUpdater func(dc *appsv1.DeploymentConfig) error
+type dcStructUpdater func(dc *appsv1.DeploymentConfig, existingDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container) error
+type dcRollOutWait func(*appsv1.DeploymentConfig) bool
 
 // PatchCurrentDC "patches" the current DeploymentConfig with a new one
 // however... we make sure that configurations such as:
@@ -1271,25 +1278,10 @@ type dcStructUpdater func(dc *appsv1.DeploymentConfig) error
 // if prePatchDCHandler is specified (meaning not nil), then it's applied
 // as the last action before the actual call to the Kubernetes API thus giving us the chance
 // to perform arbitrary updates to a DC before it's finalized for patching
-func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater) error {
-
-	// Retrieve the current DC
-	currentDC, err := c.GetDeploymentConfigFromName(name)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
-	}
-
-	// Find the container (don't want to use .Spec.Containers[0] in case the user has modified the DC...)
-	// in order to retrieve what the volumes are
-	foundCurrentDCContainer, err := findContainer(currentDC.Spec.Template.Spec.Containers, name)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to find current DeploymentConfig container %s", name)
-	}
-
-	copyVolumesAndVolumeMounts(dc, currentDC, foundCurrentDCContainer)
+func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, waitCond dcRollOutWait, currentDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container) error {
 
 	if prePatchDCHandler != nil {
-		err := prePatchDCHandler(&dc)
+		err := prePatchDCHandler(&dc, currentDC, existingCmpContainer)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to correctly update dc %s using the specified prePatch handler", name)
 		}
@@ -1307,14 +1299,14 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatc
 	// Update the current one that's deployed with the new Spec.
 	// despite the "patch" function name, we use update since `.Patch` requires
 	// use to define each and every object we must change. Updating makes it easier.
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(currentDC)
+	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(currentDC)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
 	}
 
 	// Watch / wait for deploymentconfig to update annotations
 	// importing "component" results in an import loop, so we do *not* use the constants here.
-	_, err = c.WaitAndGetDC(name, "app.kubernetes.io/component-source-type", dc.ObjectMeta.Annotations["app.kubernetes.io/component-source-type"], ocUpdateTimeout)
+	_, err = c.WaitAndGetDC(name, ocUpdateTimeout, waitCond)
 	if err != nil {
 		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", name)
 	}
@@ -1356,39 +1348,51 @@ func copyVolumesAndVolumeMounts(dc appsv1.DeploymentConfig, currentDC *appsv1.De
 
 // UpdateDCToGit replaces / updates the current DeplomentConfig with the appropriate
 // generated image from BuildConfig as well as the correct DeploymentConfig triggers for Git.
-func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName string) error {
+func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVolumes bool) (err error) {
+
+	// Find the container (don't want to use .Spec.Containers[0] in case the user has modified the DC...)
+	existingCmpContainer, err := FindContainer(ucp.ExistingDC.Spec.Template.Spec.Containers, ucp.CommonObjectMeta.Name)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to find container %s", ucp.CommonObjectMeta.Name)
+	}
 
 	// Fail if blank
-	if imageName == "" {
+	if ucp.ImageMeta.Name == "" {
 		return errors.New("UpdateDCToGit imageName cannot be blank")
 	}
 
-	// Retrieve the current DC in order to obtain what the current inputPorts are..
-	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name)
+	dc := generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
+
+	if isDeleteSupervisordVolumes {
+		// Patch the current DC
+		err = c.PatchCurrentDC(
+			ucp.CommonObjectMeta.Name,
+			dc,
+			removeTracesOfSupervisordFromDC,
+			ucp.DcRollOutWaitCond,
+			ucp.ExistingDC,
+			existingCmpContainer,
+		)
+	} else {
+		err = c.PatchCurrentDC(
+			ucp.CommonObjectMeta.Name,
+			dc,
+			nil,
+			ucp.DcRollOutWaitCond,
+			ucp.ExistingDC,
+			existingCmpContainer,
+		)
+	}
 	if err != nil {
-		return errors.Wrapf(err, "unable to get DeploymentConfig %s", commonObjectMeta.Name)
+		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", ucp.CommonObjectMeta.Name)
 	}
 
-	// Find the container (don't want to use .Spec.Containers[0] in case the user has modified the DC...)
-	foundCurrentDCContainer, err := findContainer(currentDC.Spec.Template.Spec.Containers, commonObjectMeta.Name)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to find container %s", commonObjectMeta.Name)
-	}
-
-	// Generate the new DeploymentConfig
-	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
-	dc := generateGitDeploymentConfig(commonObjectMeta, imageName, foundCurrentDCContainer.Ports, foundCurrentDCContainer.Env, &resourceLimits)
-
-	// Patch the current DC
-	err = c.PatchCurrentDC(commonObjectMeta.Name, dc, removeTracesOfSupervisordFromDC)
-	if err != nil {
-		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", commonObjectMeta.Name)
-	}
-
-	// Cleanup after the supervisor
-	err = c.DeletePVC(getAppRootVolumeName(commonObjectMeta.Name))
-	if err != nil {
-		return errors.Wrapf(err, "unable to delete S2I data PVC from %s", commonObjectMeta.Name)
+	if isDeleteSupervisordVolumes {
+		// Cleanup after the supervisor
+		err = c.DeletePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name))
+		if err != nil {
+			return errors.Wrapf(err, "unable to delete S2I data PVC from %s", ucp.CommonObjectMeta.Name)
+		}
 	}
 
 	return nil
@@ -1401,44 +1405,22 @@ func (c *Client) UpdateDCToGit(commonObjectMeta metav1.ObjectMeta, imageName str
 //	isToLocal: bool used to indicate if component is to be updated to local in which case a source backup dir will be injected into compoennt env
 // Returns:
 //	errors if any or nil
-func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, componentImageType string, isToLocal bool) error {
-
-	// Parse the image
-	imageNS, imageName, imageTag, _, err := ParseImageName(componentImageType)
+func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool, isCreatePVC bool) error {
+	existingCmpContainer, err := FindContainer(ucp.ExistingDC.Spec.Template.Spec.Containers, ucp.CommonObjectMeta.Name)
 	if err != nil {
-		return errors.Wrap(err, "unable to parse image name for DeploymentConfig update")
+		return errors.Wrapf(err, "Unable to find container %s", ucp.CommonObjectMeta.Name)
 	}
 
 	// Retrieve the namespace of the corresponding component image
-	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
+	imageStream, err := c.GetImageStream(ucp.ImageMeta.Namespace, ucp.ImageMeta.Name, ucp.ImageMeta.Tag)
 	if err != nil {
 		return errors.Wrap(err, "unable to get image stream for CreateBuildConfig")
 	}
-	imageNS = imageStream.ObjectMeta.Namespace
+	ucp.ImageMeta.Namespace = imageStream.ObjectMeta.Namespace
 
-	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
+	imageStreamImage, err := c.GetImageStreamImage(imageStream, ucp.ImageMeta.Tag)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
-	}
-
-	// Retrieve the current DC in order to obtain what the current inputPorts are..
-	currentDC, err := c.GetDeploymentConfigFromName(commonObjectMeta.Name)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get DeploymentConfig %s", commonObjectMeta.Name)
-	}
-
-	// Find the container (don't want to use .Spec.Containers[0] in case the user has modified the DC...)
-	foundCurrentDCContainer, err := findContainer(currentDC.Spec.Template.Spec.Containers, commonObjectMeta.Name)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to find container %s", commonObjectMeta.Name)
-	}
-
-	// Gather the common image data into one struct
-	commonImageMeta := CommonImageMeta{
-		Name:      imageName,
-		Tag:       imageTag,
-		Namespace: imageNS,
-		Ports:     foundCurrentDCContainer.Ports,
 	}
 
 	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(imageStreamImage)
@@ -1448,7 +1430,7 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 
 	// Append s2i related parameters extracted above to env
 	inputEnvs := uniqueAppendOrOverwriteEnvVars(
-		foundCurrentDCContainer.Env,
+		ucp.EnvVars,
 		corev1.EnvVar{
 			Name:  EnvS2IScriptsURL,
 			Value: s2iPaths.ScriptsPath,
@@ -1492,32 +1474,39 @@ func (c *Client) UpdateDCToSupervisor(commonObjectMeta metav1.ObjectMeta, compon
 	}
 
 	// Generate the SupervisorD Config
-	resourceLimits := fetchContainerResourceLimits(foundCurrentDCContainer)
 	dc := generateSupervisordDeploymentConfig(
-		commonObjectMeta,
-		componentImageType,
-		commonImageMeta,
+		ucp.CommonObjectMeta,
+		ucp.ImageMeta,
 		inputEnvs,
 		[]corev1.EnvFromSource{},
-		&resourceLimits,
+		&ucp.ResourceLimits,
 	)
 
 	// Add the appropriate bootstrap volumes for SupervisorD
-	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
-	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
-	addBootstrapVolume(&dc, commonObjectMeta.Name)
-	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
+	addBootstrapVolumeCopyInitContainer(&dc, ucp.CommonObjectMeta.Name)
+	addBootstrapSupervisordInitContainer(&dc, ucp.CommonObjectMeta.Name)
+	addBootstrapVolume(&dc, ucp.CommonObjectMeta.Name)
+	addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
 
-	// Patch the current DC with the new one
-	err = c.PatchCurrentDC(commonObjectMeta.Name, dc, nil)
-	if err != nil {
-		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", commonObjectMeta.Name)
+	if isCreatePVC {
+		// Setup PVC
+		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create PVC for %s", ucp.CommonObjectMeta.Name)
+		}
 	}
 
-	// Setup PVC
-	_, err = c.CreatePVC(getAppRootVolumeName(commonObjectMeta.Name), "1Gi", commonObjectMeta.Labels)
+	// Patch the current DC with the new one
+	err = c.PatchCurrentDC(
+		ucp.CommonObjectMeta.Name,
+		dc,
+		nil,
+		ucp.DcRollOutWaitCond,
+		ucp.ExistingDC,
+		existingCmpContainer,
+	)
 	if err != nil {
-		return errors.Wrapf(err, "unable to create PVC for %s", commonObjectMeta.Name)
+		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", ucp.CommonObjectMeta.Name)
 	}
 
 	return nil
@@ -1572,13 +1561,16 @@ func (c *Client) SetupForSupervisor(dcName string, annotations map[string]string
 
 // removeTracesOfSupervisordFromDC takes a DeploymentConfig and removes any traces of the supervisord from it
 // so it removes things like supervisord volumes, volumes mounts and init containers
-func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
+func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig, currentDC *appsv1.DeploymentConfig, foundCurrentDCContainer corev1.Container) error {
 	dcName := dc.Name
+
+	copyVolumesAndVolumeMounts(*dc, currentDC, foundCurrentDCContainer)
 
 	found := removeVolumeFromDC(getAppRootVolumeName(dcName), dc)
 	if !found {
 		return errors.New("unable to find volume in dc with name: " + dcName)
 	}
+
 	found = removeVolumeMountFromDC(getAppRootVolumeName(dcName), dc)
 	if !found {
 		return errors.New("unable to find volume mount in dc with name: " + dcName)
@@ -1653,9 +1645,13 @@ func (c *Client) WaitForBuildToFinish(buildName string) error {
 }
 
 // WaitAndGetDC block and waits until the DeploymentConfig has updated it's annotation
-// It will *wait* until "value" is expected within the DeploymentConfig.
-func (c *Client) WaitAndGetDC(name string, field string, value string, timeout time.Duration) (*appsv1.DeploymentConfig, error) {
-	glog.V(4).Infof("Waiting for DeploymentConfig %s annotation '%s' to update to '%s'", name, field, value)
+// Parameters:
+//	name: Name of DC
+//	timeout: Interval of time.Duration to wait for before timing out waiting for its rollout
+//	waitCond: Function indicating when to consider dc rolled out
+// Returns:
+//	Updated DC and errors if any
+func (c *Client) WaitAndGetDC(name string, timeout time.Duration, waitCond func(*appsv1.DeploymentConfig) bool) (*appsv1.DeploymentConfig, error) {
 
 	w, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
@@ -1683,11 +1679,8 @@ func (c *Client) WaitAndGetDC(name string, field string, value string, timeout t
 			}
 			if e, ok := val.Object.(*appsv1.DeploymentConfig); ok {
 
-				glog.V(4).Infof("Current annotation: %s=%s", field, e.Annotations[field])
-
 				// If the annotation has been updated, let's exit
-				if e.Annotations[field] == value {
-					glog.V(4).Infof("DeploymentConfig %s annotation %s has been updated to %s", name, field, e.Annotations[field])
+				if waitCond(e) {
 					return e, nil
 				}
 
@@ -2643,9 +2636,17 @@ func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) 
 // GetDeploymentConfigsFromSelector returns an array of Deployment Config
 // resources which match the given selector
 func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.DeploymentConfig, error) {
-	dcList, err := c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
+	var dcList *appsv1.DeploymentConfigList
+	var err error
+	if selector != "" {
+		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
+			LabelSelector: selector,
+		})
+	} else {
+		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
+			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
+		})
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
 	}
@@ -2670,10 +2671,13 @@ func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentCon
 	glog.V(4).Infof("Getting DeploymentConfig: %s", name)
 	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
+		if !strings.Contains(err.Error(), fmt.Sprintf(DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR, name)) {
+			return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
+		} else {
+			return nil, DEPLOYMENT_CONFIG_NOT_FOUND
+		}
 	}
 	return deploymentConfig, nil
-
 }
 
 // GetPVCsFromSelector returns the PVCs based on the given selector
@@ -3157,11 +3161,11 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	return bc, nil
 }
 
-// findContainer finds the container
-func findContainer(containers []corev1.Container, name string) (corev1.Container, error) {
+// FindContainer finds the container
+func FindContainer(containers []corev1.Container, name string) (corev1.Container, error) {
 
 	if name == "" {
-		return corev1.Container{}, errors.New("Invalid parameter for findContainer, unable to find a blank container")
+		return corev1.Container{}, errors.New("Invalid parameter for FindContainer, unable to find a blank container")
 	}
 
 	for _, container := range containers {
@@ -3240,18 +3244,4 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 		return err
 	}
 	return err
-}
-
-// GetCreateType returns enum equivalent of passed component source type or error if unsupported type passed
-func GetCreateType(ctStr string) (CreateType, error) {
-	switch strings.ToLower(ctStr) {
-	case string(GIT):
-		return GIT, nil
-	case string(LOCAL):
-		return LOCAL, nil
-	case string(BINARY):
-		return BINARY, nil
-	default:
-		return NONE, fmt.Errorf("Unsupported component source type: %s", ctStr)
-	}
 }

@@ -150,10 +150,10 @@ var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *ge
 	}
 
 	for _, app := range applications {
-		if args.commands[app.Name] {
+		if args.commands[app] {
 			return nil
 		}
-		completions = append(completions, app.Name)
+		completions = append(completions, app)
 	}
 	return
 }

@@ -37,13 +37,16 @@ func cmdRunner(cmdS string) (string, string, int) {
 	return string(session.Out.Contents()), string(session.Err.Contents()), session.ExitCode()
 }
 
-// runCmdShouldPass runs a command
-// and returns stdout if passes,
-// error out otherwise
 func runCmdShouldPass(cmd string) string {
 	stdout, _, exitcode := cmdRunner(cmd)
 	Expect(exitcode).To(Equal(0))
-	return stdout
+	return strings.TrimSpace(stdout)
+}
+
+func runCmdShouldFail(cmd string) string {
+	_, stderr, exitcode := cmdRunner(cmd)
+	Expect(exitcode).To(Not(Equal(0)))
+	return strings.TrimSpace(stderr)
 }
 
 // runCmdShouldPassWithRetry runs a command
@@ -69,15 +72,6 @@ func runCmdShouldPassWithRetry(cmd string, timeout int, tickSeconds int) string 
 			}
 		}
 	}
-}
-
-// runCmdShouldFail runs a command
-// and returns stderr if fails,
-// error out otherwise
-func runCmdShouldFail(cmd string) string {
-	_, stderr, exitcode := cmdRunner(cmd)
-	Expect(exitcode).To(Not(Equal(0)))
-	return stderr
 }
 
 // waitForCmdOut runs a command until it gets

@@ -1,11 +1,14 @@
 package component
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
-
-	"encoding/json"
 	"text/tabwriter"
+
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -15,10 +18,6 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-
-	"github.com/pkg/errors"
-
-	"github.com/spf13/cobra"
 )
 
 // ListRecommendedCommandName is the recommended watch command name
@@ -56,6 +55,7 @@ func (lo *ListOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch components list")
 	}
+	glog.V(4).Infof("the components are %+v", components)
 
 	if lo.outputFlag == "json" {
 

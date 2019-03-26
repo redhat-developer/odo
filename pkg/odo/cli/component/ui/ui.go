@@ -5,14 +5,15 @@ import (
 	"sort"
 
 	"github.com/golang/glog"
+	"gopkg.in/AlecAivazis/survey.v1"
+
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/util"
-	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 // SelectComponentType lets the user to select the builder image (name only) in the prompt
@@ -59,8 +60,8 @@ func getTagCandidates(options []catalog.CatalogImage, selectedComponentType stri
 	return []string{}
 }
 
-// SelectSourceType lets the user select a specific occlient.CreateType in a prompty
-func SelectSourceType(sourceTypes []occlient.CreateType) occlient.CreateType {
+// SelectSourceType lets the user select a specific config.SrcType in a prompty
+func SelectSourceType(sourceTypes []config.SrcType) config.SrcType {
 	options := make([]string, len(sourceTypes))
 	for i, sourceType := range sourceTypes {
 		options[i] = fmt.Sprint(sourceType)
@@ -80,7 +81,7 @@ func SelectSourceType(sourceTypes []occlient.CreateType) occlient.CreateType {
 		}
 	}
 	glog.V(4).Infof("Selected source type %s was not part of the source type options", selectedSourceType)
-	return occlient.NONE
+	return config.NONE
 }
 
 // EnterInputTypePath allows the user to specify the path on the filesystem in a prompt
@@ -135,6 +136,18 @@ func EnterComponentName(defaultName string, context *genericclioptions.Context) 
 	err := survey.AskOne(prompt, &path, createComponentNameValidator(context))
 	ui.HandleError(err)
 	return path
+}
+
+// EnterOpenshiftName allows the user to specify the app name in a prompt
+func EnterOpenshiftName(defaultName string, message string, context *genericclioptions.Context) string {
+	var name string
+	prompt := &survey.Input{
+		Message: message,
+		Default: defaultName,
+	}
+	err := survey.AskOne(prompt, &name, validation.NameValidator)
+	ui.HandleError(err)
+	return name
 }
 
 // EnterGitInfo will display two prompts, one of the URL of the project and one of the ref

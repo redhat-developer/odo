@@ -21,31 +21,27 @@ import (
 
 func TestGetDefaultAppName(t *testing.T) {
 	tests := []struct {
-		testName     string
-		existingApps []preference.ApplicationInfo
-		wantRE       string
-		needPrefix   bool
-		prefix       string
+		testName   string
+		wantRE     string
+		needPrefix bool
+		prefix     string
 	}{
 		{
-			testName:     "Case: App prefix not configured",
-			existingApps: []preference.ApplicationInfo{},
-			wantRE:       "app-*",
-			needPrefix:   false,
+			testName:   "Case: App prefix not configured",
+			wantRE:     "app-*",
+			needPrefix: false,
 		},
 		{
-			testName:     "Case: App prefix set to testing",
-			existingApps: []preference.ApplicationInfo{},
-			wantRE:       "testing-*",
-			needPrefix:   true,
-			prefix:       "testing",
+			testName:   "Case: App prefix set to testing",
+			wantRE:     "testing-*",
+			needPrefix: true,
+			prefix:     "testing",
 		},
 		{
-			testName:     "Case: App prefix set to empty string",
-			existingApps: []preference.ApplicationInfo{},
-			wantRE:       "application-*",
-			needPrefix:   true,
-			prefix:       "",
+			testName:   "Case: App prefix set to empty string",
+			wantRE:     "application-*",
+			needPrefix: true,
+			prefix:     "",
 		},
 	}
 
@@ -69,7 +65,7 @@ func TestGetDefaultAppName(t *testing.T) {
 				t.Errorf("failed setting up the test env. Error: %v", err)
 			}
 
-			name, err := GetDefaultAppName(tt.existingApps)
+			name, err := GetDefaultAppName()
 			if err != nil {
 				t.Errorf("failed to setup mock environment. Error: %v", err)
 			}
@@ -115,9 +111,6 @@ func TestGetMachineReadableFormat(t *testing.T) {
 				},
 				Spec: AppSpec{
 					Components: []string{"frontend"},
-				},
-				Status: AppStatus{
-					Active: true,
 				},
 			},
 		},
@@ -192,7 +185,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 					return true, &dcList.Items[i], nil
 				})
 			}
-			if got := GetMachineReadableFormat(client, tt.args.appName, tt.args.projectName, tt.args.active); !reflect.DeepEqual(got, tt.want) {
+			if got := GetMachineReadableFormat(client, tt.args.appName, tt.args.projectName); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetMachineReadableFormat() = %v,\n want %v", got, tt.want)
 			}
 		})

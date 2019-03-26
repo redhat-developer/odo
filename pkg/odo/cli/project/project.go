@@ -79,17 +79,17 @@ func AddProjectFlag(cmd *cobra.Command) {
 // printDeleteProjectInfo prints objects affected by project deletion
 func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 	// Fetch and List the applications
-	applicationList, err := application.ListInProject(client, projectName)
+	applicationList, err := application.ListInProject(client)
 	if err != nil {
 		return errors.Wrap(err, "failed to get application list")
 	}
 	if len(applicationList) != 0 {
 		log.Info("This project contains the following applications, which will be deleted")
 		for _, app := range applicationList {
-			log.Info(" Application ", app.Name)
+			log.Info(" Application ", app)
 
 			// List the components
-			componentList, err := component.List(client, app.Name)
+			componentList, err := component.List(client, app)
 			if err != nil {
 				return errors.Wrap(err, "failed to get Component list")
 			}
@@ -97,14 +97,14 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 				log.Info("  This application has following components that will be deleted")
 
 				for _, currentComponent := range componentList.Items {
-					componentDesc, err := component.GetComponent(client, currentComponent.Name, app.Name, app.Project)
+					componentDesc, err := component.GetComponent(client, currentComponent.Name, app, projectName)
 					if err != nil {
 						return errors.Wrap(err, "unable to get component description")
 					}
 					log.Info("  component named ", componentDesc.Name)
 
 					if len(componentDesc.Spec.URL) != 0 {
-						ul, err := url.List(client, componentDesc.Name, app.Name)
+						ul, err := url.List(client, componentDesc.Name, app)
 						if err != nil {
 							return errors.Wrap(err, "Could not get url list")
 						}
@@ -114,7 +114,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 						}
 					}
 
-					storages, err := storage.List(client, currentComponent.Name, app.Name)
+					storages, err := storage.List(client, currentComponent.Name, app)
 					odoutil.LogErrorAndExit(err, "")
 					if len(storages.Items) != 0 {
 						log.Info("    This component has following storages which will be deleted with the component")
@@ -127,7 +127,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 			}
 
 			// List services that will be removed
-			serviceList, err := service.List(client, app.Name)
+			serviceList, err := service.List(client, app)
 			if err != nil {
 				log.Info("No services / could not get services")
 				glog.V(4).Info(err.Error())
