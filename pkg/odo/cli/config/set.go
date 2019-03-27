@@ -34,9 +34,7 @@ var (
    %[1]s %[10]s 1 
 
    # Set a env variable in the local config
-   %[1]s %[2]s --env PORT=4000
-   %[1]s %[3]s --env DB_USERNAME=postgres,DB_HOSTNAME=postgres
-   %[1]s %[4]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
+   %[1]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
 	`)
 )
 
