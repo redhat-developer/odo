@@ -11,8 +11,6 @@ This document walks you through the development and deployment of a Node.js appl
     ```console
     $ minishift start
     ```
-
-    Import from Git Session 1 - Group Design
     2. Log into the OpenShift cluster:
     ```sh
     $ odo login -u developer -p developer
@@ -45,11 +43,11 @@ $ odo app create nodeapp
 
     3. Push the initial source code to the component:
     ```sh
-$ odo push
+    $ odo push
     ```
     Your component is now deployed to OpenShift
 
-4. Access the component as follows:
+5. Access the component as follows:
 
     1. Create an OpenShift route:
 
