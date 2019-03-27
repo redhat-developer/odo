@@ -362,7 +362,7 @@ var _ = Describe("odoe2e", func() {
 			})
 		*/
 		It("should be able to create a php component with application created", func() {
-			runCmdShouldPass("odo create php testcmp --app " + appTestName + " --project " + newProjName + " --git " + testPHPGitURL)
+			runCmdShouldPass("odo create php testcmp --app " + appTestName + " --project " + newProjName + " --ref master --git " + testPHPGitURL)
 			runCmdShouldPass("odo push")
 		})
 

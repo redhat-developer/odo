@@ -50,7 +50,7 @@ func componentTests(componentCmdPrefix string) {
 			componentName := generateTimeBasedName("frontend")
 
 			// create a frontend component, an app should have been created
-			runCmdShouldPass(componentCmdPrefix + " create nodejs " + componentName + " --git https://github.com/openshift/nodejs-ex")
+			runCmdShouldPass(componentCmdPrefix + " create nodejs " + componentName + " --ref master --git https://github.com/openshift/nodejs-ex")
 			runCmdShouldPass("odo push")
 			appName := runCmdShouldPass("odo app list")
 			Expect(appName).ToNot(BeEmpty())
