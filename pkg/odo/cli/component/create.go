@@ -356,6 +356,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
+	if config.LocalConfigFileExists(co.componentContext) {
+		return errors.New("this directory already contains a component")
+	}
+
 	return component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, false)
 }
 

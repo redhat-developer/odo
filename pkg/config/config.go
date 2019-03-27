@@ -147,9 +147,8 @@ func LocalConfigFileExists(cfgDir string) bool {
 	if err != nil {
 		return false
 	}
-
 	_, err = os.Stat(configFile)
-	return os.IsExist(err)
+	return !os.IsNotExist(err)
 }
 
 func getFromFile(lc *LocalConfig, filename string) error {
