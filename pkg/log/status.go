@@ -200,7 +200,7 @@ func Askf(format string, a ...interface{}) {
 	fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintf(format, a...)))
 }
 
-// Status creates a spinner, sets the prefix then returns it.
+// Spinner creates a spinner, sets the prefix then returns it.
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)
 func Spinner(status string) *Status {
@@ -209,12 +209,20 @@ func Spinner(status string) *Status {
 	return s
 }
 
-// Statusf creates a spinner, sets the prefix then returns it.
+// Spinnerf creates a spinner, sets the prefix then returns it.
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)
+// for situations where spinning isn't viable (debug)
 func Spinnerf(format string, a ...interface{}) *Status {
 	s := NewStatus(GetStdout())
 	s.Start(fmt.Sprintf(format, a...), IsDebug())
+	return s
+}
+
+// SpinnerNoSpin is the same as the "Spinner" function but forces no spinning
+func SpinnerNoSpin(status string) *Status {
+	s := NewStatus(os.Stdout)
+	s.Start(status, true)
 	return s
 }
 
