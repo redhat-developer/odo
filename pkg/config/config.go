@@ -140,6 +140,18 @@ func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 	return &c, nil
 }
 
+// LocalConfigFileExists checks if the local config file exists or not. an error while getting the
+// file name is also considered as file not existing
+func LocalConfigFileExists(cfgDir string) bool {
+	configFile, err := getLocalConfigFile(cfgDir)
+	if err != nil {
+		return false
+	}
+
+	_, err = os.Stat(configFile)
+	return os.IsExist(err)
+}
+
 func getFromFile(lc *LocalConfig, filename string) error {
 	plc := newProxyLocalConfig()
 
