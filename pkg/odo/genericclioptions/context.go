@@ -89,7 +89,7 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 			util.LogErrorAndExit(err, "")
 			fileName = fileAbs
 		}
-		lci, err := config.NewLocalConfigInfo(fileName)
+		lci, err := config.NewLocalConfigInfo(fileName, false)
 		util.LogErrorAndExit(err, "could not get component settings from config file")
 
 		ns = lci.GetProject()
@@ -127,7 +127,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		util.LogErrorAndExit(err, "")
 		fileName = fAbs
 	}
-	lci, err := config.NewLocalConfigInfo(fileName)
+	lci, err := config.NewLocalConfigInfo(fileName, false)
 	util.LogErrorAndExit(err, "could not get component settings from config file")
 
 	// resolve application

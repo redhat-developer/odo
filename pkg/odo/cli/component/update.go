@@ -63,7 +63,7 @@ func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return errors.Wrapf(err, "failed to update component")
 	}
 
-	uo.cmpConfig, err = config.NewLocalConfigInfo(uo.cmpCfgContext)
+	uo.cmpConfig, err = config.NewLocalConfigInfo(uo.cmpCfgContext, false)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update component")
 	}

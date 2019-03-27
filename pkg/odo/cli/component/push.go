@@ -63,7 +63,7 @@ func NewPushOptions() *PushOptions {
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.client = genericclioptions.Client(cmd)
 
-	conf, err := config.NewLocalConfigInfo(po.componentContext)
+	conf, err := config.NewLocalConfigInfo(po.componentContext, false)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch component config")
 	}

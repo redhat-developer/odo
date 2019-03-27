@@ -47,13 +47,9 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	configExists, err := odoconfig.LocalConfigExists("")
+	_, err := odoconfig.NewLocalConfigInfo("", true)
 	if err != nil {
 		return err
-	}
-	if !configExists {
-
-		return fmt.Errorf("the current directory does not represent an odo component.\nMaybe use 'odo create' to create component here or switch to directory with a component")
 	}
 	return odoutil.CheckOutputFlag(lo.outputFlag)
 }
