@@ -52,7 +52,8 @@ func (lo *ListOptions) Validate() (err error) {
 		return err
 	}
 	if !configExists {
-		return fmt.Errorf("the current directory does not represent an odo component")
+
+		return fmt.Errorf("the current directory does not represent an odo component.\nMaybe use 'odo create' to create component here or switch to directory with a component")
 	}
 	return odoutil.CheckOutputFlag(lo.outputFlag)
 }
