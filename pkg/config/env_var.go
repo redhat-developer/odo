@@ -23,7 +23,7 @@ func (evl EnvVarList) Merge(other EnvVarList) EnvVarList {
 	var dedupNewEvl EnvVarList
 	newEvl := append(evl, other...)
 	uniqueMap := make(map[string]string)
-	// last value will be kept in case o
+	// last value will be kept in case of duplicate env vars
 	for _, envVar := range newEvl {
 		uniqueMap[envVar.Name] = envVar.Value
 	}
