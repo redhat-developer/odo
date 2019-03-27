@@ -64,17 +64,13 @@ func componentTests(componentCmdPrefix string) {
 
 	Context("Regression : listing component outside of component directory should fail", func() {
 		It("creates a component from local context, tries to list components from outside and fails", func() {
-			componentName := generateTimeBasedName("nodejs-ex")
 			dirName := generateTimeBasedName("context_dir")
-			runCmdShouldPass(fmt.Sprint("mkdir ", dirName))
-			runCmdShouldPass(componentCmdPrefix + " create nodejs " + componentName + " --git https://github.com/openshift/nodejs-ex --context " + dirName)
 			// simulate .odo not being present
 			runCmdShouldPass("mv .odo .odo_tmp")
 			session := runCmdShouldFail("odo component list")
 			Expect(session).To(ContainSubstring("the current directory does not represent an odo component"))
 			// clean up
 			runCmdShouldPass("mv .odo_tmp .odo")
-			runCmdShouldPass("odo component delete " + componentName + " -f")
 			os.RemoveAll(dirName)
 		})
 	})
