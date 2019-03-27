@@ -84,8 +84,8 @@ func (o *SetOptions) Run() (err error) {
 			return err
 		}
 		// keeping the old env vars as well
-		envVarList := cfg.GetEnvVars()
-		newEnvVarList = append(newEnvVarList, envVarList...)
+		presentEnvVarList := cfg.GetEnvVars()
+		newEnvVarList = presentEnvVarList.Merge(newEnvVarList)
 		if err := cfg.SetEnvVars(newEnvVarList); err != nil {
 			return err
 		}

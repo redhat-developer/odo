@@ -16,6 +16,29 @@ type EnvVar struct {
 // EnvVarList represents a list of environment variables
 type EnvVarList []EnvVar
 
+// Merge merges the other EnvVarlist with keeping last value for duplicate EnvVars
+// and returns a new EnvVarList
+func (evl EnvVarList) Merge(other EnvVarList) EnvVarList {
+
+	var dedupNewEvl EnvVarList
+	newEvl := append(evl, other...)
+	uniqueMap := make(map[string]string)
+	// last value will be kept in case o
+	for _, envVar := range newEvl {
+		uniqueMap[envVar.Name] = envVar.Value
+	}
+
+	for key, value := range uniqueMap {
+		dedupNewEvl = append(dedupNewEvl, EnvVar{
+			Name:  key,
+			Value: value,
+		})
+	}
+
+	return dedupNewEvl
+
+}
+
 // NewEnvVarFromString takes a string of format "name=value" and returns an Env
 // variable struct
 func NewEnvVarFromString(envStr string) (EnvVar, error) {
