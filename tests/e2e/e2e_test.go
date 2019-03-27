@@ -227,14 +227,48 @@ var _ = Describe("odoe2e", func() {
 					paramValue: "0.2",
 				},
 				{
+					paramName:  "MaxCPU",
+					paramValue: "2",
+				},
+				{
 					paramName:  "MinMemory",
 					paramValue: "100M",
+				},
+				{
+					paramName:  "MaxMemory",
+					paramValue: "500M",
+				},
+				{
+					paramName:  "Ports",
+					paramValue: "8080/TCP,45/UDP",
+				},
+				{
+					paramName:  "Application",
+					paramValue: "odotestapp",
+				},
+				{
+					paramName:  "Project",
+					paramValue: "odotestproject",
+				},
+				{
+					paramName:  "SourceType",
+					paramValue: "git",
+				},
+				{
+					paramName:  "Ref",
+					paramValue: "develop",
+				},
+				{
+					paramName:  "SourceLocation",
+					paramValue: "https://github.com/sclorg/nodejs-ex",
 				},
 			}
 			for _, testCase := range cases {
 				runCmdShouldPass(fmt.Sprintf("odo config set %s %s -f", testCase.paramName, testCase.paramValue))
 				Value := getConfigValue(testCase.paramName)
 				Expect(Value).To(ContainSubstring(testCase.paramValue))
+				// cleanup
+				runCmdShouldPass(fmt.Sprintf("odo config unset %s -f", testCase.paramName))
 			}
 		})
 
@@ -256,8 +290,40 @@ var _ = Describe("odoe2e", func() {
 					paramValue: "0.2",
 				},
 				{
+					paramName:  "MaxCPU",
+					paramValue: "2",
+				},
+				{
 					paramName:  "MinMemory",
 					paramValue: "100M",
+				},
+				{
+					paramName:  "MaxMemory",
+					paramValue: "500M",
+				},
+				{
+					paramName:  "Ports",
+					paramValue: "8080/TCP,45/UDP",
+				},
+				{
+					paramName:  "Application",
+					paramValue: "odotestapp",
+				},
+				{
+					paramName:  "Project",
+					paramValue: "odotestproject",
+				},
+				{
+					paramName:  "SourceType",
+					paramValue: "git",
+				},
+				{
+					paramName:  "Ref",
+					paramValue: "develop",
+				},
+				{
+					paramName:  "SourceLocation",
+					paramValue: "https://github.com/sclorg/nodejs-ex",
 				},
 			}
 
@@ -278,14 +344,15 @@ var _ = Describe("odoe2e", func() {
 		})
 	})
 
-	Context("creating component without an application", func() {
+	Context("creating component without an application and url", func() {
 		It("should create the component in default application", func() {
 			runCmdShouldPass("odo login --username developer --password developer")
 			runCmdShouldPass("odo create php testcmp --app e2e-xyzk --git " + testPHPGitURL)
+			runCmdShouldPass("odo config set Ports 8080/TCP")
 			runCmdShouldPass("odo push")
-
+			stdOut := runCmdShouldPass("odo url create")
+			Expect(stdOut).To(ContainSubstring("8080"))
 			VerifyCmpName("testcmp")
-
 			VerifyAppNameOfComponent("testcmp", "e2e-xyzk")
 		})
 		// Uncommment after fixing the component delete once it has been modified to work with

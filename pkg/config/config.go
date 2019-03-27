@@ -189,7 +189,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "sourcelocation":
 			lci.componentSettings.SourceLocation = &strValue
 		case "ports":
-			arrValue := value.([]string)
+			arrValue := strings.Split(strValue, ",")
 			lci.componentSettings.Ports = &arrValue
 		case "name":
 			lci.componentSettings.Name = &strValue

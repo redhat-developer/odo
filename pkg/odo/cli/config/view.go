@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/config"
@@ -49,6 +50,12 @@ func (o *ViewOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 	fmt.Fprintln(w, "Type", "\t", showBlankIfNil(cs.Type))
+	fmt.Fprintln(w, "Application", "\t", showBlankIfNil(cs.Application))
+	fmt.Fprintln(w, "Project", "\t", showBlankIfNil(cs.Project))
+	fmt.Fprintln(w, "SourceType", "\t", showBlankIfNil(cs.SourceType))
+	fmt.Fprintln(w, "Ref", "\t", showBlankIfNil(cs.Ref))
+	fmt.Fprintln(w, "SourceLocation", "\t", showBlankIfNil(cs.SourceLocation))
+	fmt.Fprintln(w, "Ports", "\t", formatArray(cs.Ports))
 	fmt.Fprintln(w, "Name", "\t", showBlankIfNil(cs.Name))
 	fmt.Fprintln(w, "MinMemory", "\t", showBlankIfNil(cs.MinMemory))
 	fmt.Fprintln(w, "MaxMemory", "\t", showBlankIfNil(cs.MaxMemory))
@@ -73,6 +80,15 @@ func showBlankIfNil(intf interface{}) interface{} {
 	}
 
 	return intf
+}
+func formatArray(arr *[]string) string {
+	if arr == nil {
+		return ""
+	}
+	if len(*arr) == 0 {
+		return ""
+	}
+	return strings.Join(*arr, ",")
 }
 
 // NewCmdView implements the config view odo command
