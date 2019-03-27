@@ -98,7 +98,7 @@ func printDeleteComponentInfo(client *occlient.Client, componentName string, app
 			return errors.Wrap(err, "Could not get url list")
 		}
 		for _, u := range ul.Items {
-			log.Info("     URL named ", u.GetName(), " with host ", u.Spec.Host, " having protocol ", u.Spec.Protocol, " at port ", u.Spec.Port)
+			log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
 		}
 	}
 
@@ -108,7 +108,7 @@ func printDeleteComponentInfo(client *occlient.Client, componentName string, app
 		log.Info("This component has following storages which will be deleted with the component")
 		for _, storageName := range componentDesc.Spec.Storage {
 			store := storages.Get(storageName)
-			log.Info("  Storage", store.GetName(), "of size", store.Spec.Size)
+			log.Info("Storage", store.GetName(), "of size", store.Spec.Size)
 		}
 	}
 	return nil

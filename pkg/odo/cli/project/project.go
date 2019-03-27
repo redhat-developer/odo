@@ -86,7 +86,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 	if len(applicationList) != 0 {
 		log.Info("This project contains the following applications, which will be deleted")
 		for _, app := range applicationList {
-			log.Info(" Application ", app)
+			log.Info("Application", app)
 
 			// List the components
 			componentList, err := component.List(client, app)
@@ -94,33 +94,33 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 				return errors.Wrap(err, "failed to get Component list")
 			}
 			if len(componentList.Items) != 0 {
-				log.Info("  This application has following components that will be deleted")
+				log.Info("This application has following components that will be deleted")
 
 				for _, currentComponent := range componentList.Items {
 					componentDesc, err := component.GetComponent(client, currentComponent.Name, app, projectName)
 					if err != nil {
 						return errors.Wrap(err, "unable to get component description")
 					}
-					log.Info("  component named ", componentDesc.Name)
+					log.Info("component named", componentDesc.Name)
 
 					if len(componentDesc.Spec.URL) != 0 {
 						ul, err := url.List(client, componentDesc.Name, app)
 						if err != nil {
 							return errors.Wrap(err, "Could not get url list")
 						}
-						log.Info("    This component has following urls that will be deleted with component")
+						log.Info("This component has following urls that will be deleted with component")
 						for _, u := range ul.Items {
-							log.Info("     URL named ", u.GetName(), " with host ", u.Spec.Host, " having protocol ", u.Spec.Protocol, " at port ", u.Spec.Port)
+							log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
 						}
 					}
 
 					storages, err := storage.List(client, currentComponent.Name, app)
 					odoutil.LogErrorAndExit(err, "")
 					if len(storages.Items) != 0 {
-						log.Info("    This component has following storages which will be deleted with the component")
+						log.Info("This component has following storages which will be deleted with the component")
 						for _, storageName := range componentDesc.Spec.Storage {
 							store := storages.Get(storageName)
-							log.Info("     Storage named ", store.GetName(), " of size ", store.Spec.Size)
+							log.Info("Storage named", store.GetName(), "of size", store.Spec.Size)
 						}
 					}
 				}
@@ -134,9 +134,9 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 			}
 
 			if len(serviceList) != 0 {
-				log.Info("  This application has following service that will be deleted")
+				log.Info("This application has following service that will be deleted")
 				for _, ser := range serviceList {
-					log.Info("   service named ", ser.Name, " of type ", ser.Type)
+					log.Info("service named", ser.Name, "of type", ser.Type)
 				}
 			}
 		}
