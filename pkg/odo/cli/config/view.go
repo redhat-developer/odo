@@ -9,7 +9,8 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -40,6 +41,12 @@ func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the ViewOptions based on completed values
 func (o *ViewOptions) Validate() (err error) {
+	if len(o.componentContext) > 0 {
+		o.componentContext, err = util.GetAbsPath(o.componentContext)
+		if err != nil {
+			return errors.Wrapf(err, "please provide the context relative to your current directory")
+		}
+	}
 	return
 }
 
@@ -47,7 +54,7 @@ func (o *ViewOptions) Validate() (err error) {
 func (o *ViewOptions) Run() (err error) {
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return err
 	}
 	cs := cfg.GetComponentSettings()
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
@@ -122,5 +129,8 @@ func NewCmdView(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	configurationViewCmd.Flags().StringVar(&o.componentContext, "context", "", "Use context to indicate the path where the component settings need to be saved and this directory should contain component source for local and binary components")
+
 	return configurationViewCmd
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -135,13 +134,12 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 			}
 
 		}, Run: func(cmd *cobra.Command, args []string) {
-			util.LogErrorAndExit(o.Complete(name, cmd, args), "")
-			util.LogErrorAndExit(o.Validate(), "")
-			util.LogErrorAndExit(o.Run(), "")
+			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
 	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Unset the environment variables in config")
+	configurationUnsetCmd.Flags().StringVar(&o.componentContext, "context", "", "Use given context directory as a source for component settings")
 
 	return configurationUnsetCmd
 }
