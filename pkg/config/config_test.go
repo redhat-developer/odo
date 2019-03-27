@@ -22,6 +22,7 @@ func TestSetLocalConfiguration(t *testing.T) {
 	maxCPUValue := "2"
 	minMemValue := "500M"
 	testValue := "test"
+	ports := "8080/TCP,45/UDP"
 
 	tests := []struct {
 		name           string
@@ -74,6 +75,14 @@ func TestSetLocalConfiguration(t *testing.T) {
 			name:      fmt.Sprintf("Case 6: %s set to %s", MinMemory, minMemValue),
 			parameter: MinMemory,
 			value:     minMemValue,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 7: %s set to %s", Ports, ports),
+			parameter: Ports,
+			value:     ports,
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{},
 			},
