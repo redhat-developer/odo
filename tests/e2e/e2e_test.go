@@ -344,14 +344,15 @@ var _ = Describe("odoe2e", func() {
 		})
 	})
 
-	Context("creating component without an application", func() {
+	Context("creating component without an application and url", func() {
 		It("should create the component in default application", func() {
 			runCmdShouldPass("odo login --username developer --password developer")
 			runCmdShouldPass("odo create php testcmp --app e2e-xyzk --git " + testPHPGitURL)
+			runCmdShouldPass("odo config set Ports 8080/TCP")
 			runCmdShouldPass("odo push")
-
+			stdOut := runCmdShouldPass("odo url create")
+			Expect(stdOut).To(ContainSubstring("8080"))
 			VerifyCmpName("testcmp")
-
 			VerifyAppNameOfComponent("testcmp", "e2e-xyzk")
 		})
 		// Uncommment after fixing the component delete once it has been modified to work with
