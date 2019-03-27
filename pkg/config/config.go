@@ -95,28 +95,14 @@ func getLocalConfigFile(cfgDir string) (string, error) {
 	return filepath.Join(cfgDir, ".odo", configFileName), nil
 }
 
-// LocalConfigExists checks if a config file exists.
-// If not it returns false
-func LocalConfigExists(cfgDir string) (bool, error) {
-	localConfig, err := getLocalConfigFile(cfgDir)
-	if err != nil {
-		return false, err
-	}
-	_, err = os.Stat(localConfig)
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return true, nil
-}
-
 // New returns the localConfigInfo
 func New() (*LocalConfigInfo, error) {
-	return NewLocalConfigInfo("")
+	return NewLocalConfigInfo("", false)
 }
 
 // NewLocalConfigInfo gets the LocalConfigInfo from local config file and creates the local config file in case it's
 // not present then it
-func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
+func NewLocalConfigInfo(cfgDir string, errorNoLocalConfig bool) (*LocalConfigInfo, error) {
 	configFile, err := getLocalConfigFile(cfgDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
@@ -128,6 +114,9 @@ func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 
 	// if the config file doesn't exist then we dont worry about it and return
 	if _, err = os.Stat(configFile); os.IsNotExist(err) {
+		if errorNoLocalConfig {
+			return nil, fmt.Errorf("the current directory does not represent an odo component.\nMaybe use 'odo create' to create component here or switch to directory with a component")
+		}
 		return &c, nil
 	}
 	err = getFromFile(&c.LocalConfig, c.Filename)
