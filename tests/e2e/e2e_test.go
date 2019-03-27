@@ -267,6 +267,8 @@ var _ = Describe("odoe2e", func() {
 				runCmdShouldPass(fmt.Sprintf("odo config set %s %s -f", testCase.paramName, testCase.paramValue))
 				Value := getConfigValue(testCase.paramName)
 				Expect(Value).To(ContainSubstring(testCase.paramValue))
+				// cleanup
+				runCmdShouldPass(fmt.Sprintf("odo config unset %s -f", testCase.paramName))
 			}
 		})
 
@@ -288,8 +290,40 @@ var _ = Describe("odoe2e", func() {
 					paramValue: "0.2",
 				},
 				{
+					paramName:  "MaxCPU",
+					paramValue: "2",
+				},
+				{
 					paramName:  "MinMemory",
 					paramValue: "100M",
+				},
+				{
+					paramName:  "MaxMemory",
+					paramValue: "500M",
+				},
+				{
+					paramName:  "Ports",
+					paramValue: "8080/TCP,45/UDP",
+				},
+				{
+					paramName:  "Application",
+					paramValue: "odotestapp",
+				},
+				{
+					paramName:  "Project",
+					paramValue: "odotestproject",
+				},
+				{
+					paramName:  "SourceType",
+					paramValue: "git",
+				},
+				{
+					paramName:  "Ref",
+					paramValue: "develop",
+				},
+				{
+					paramName:  "SourceLocation",
+					paramValue: "https://github.com/sclorg/nodejs-ex",
 				},
 			}
 
