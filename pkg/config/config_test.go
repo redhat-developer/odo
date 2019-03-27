@@ -21,8 +21,15 @@ func TestSetLocalConfiguration(t *testing.T) {
 	minCPUValue := "0.5"
 	maxCPUValue := "2"
 	minMemValue := "500M"
+	maxMemValue := "1000M"
 	testValue := "test"
-	ports := "8080/TCP,45/UDP"
+	portsValue := "8080/TCP,45/UDP"
+	typeValue := "nodejs"
+	applicationValue := "odotestapp"
+	projectValue := "odotestproject"
+	sourceTypeValue := "git"
+	sourceLocationValue := "https://github.com/sclorg/nodejs-ex"
+	refValue := "develop"
 
 	tests := []struct {
 		name           string
@@ -80,9 +87,65 @@ func TestSetLocalConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name:      fmt.Sprintf("Case 7: %s set to %s", Ports, ports),
+			name:      fmt.Sprintf("Case 7: %s set to %s", MaxMemory, maxCPUValue),
+			parameter: MaxMemory,
+			value:     maxMemValue,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 8: %s set to %s", Ports, portsValue),
 			parameter: Ports,
-			value:     ports,
+			value:     portsValue,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 9: %s set to %s", Type, typeValue),
+			parameter: Type,
+			value:     typeValue,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 10: %s set to %s", Application, applicationValue),
+			parameter: Application,
+			value:     applicationValue,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 11: %s set to %s", Project, projectValue),
+			parameter: Project,
+			value:     projectValue,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 12: %s set to %s", SourceType, sourceTypeValue),
+			parameter: SourceType,
+			value:     sourceTypeValue,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 12: %s set to %s", SourceLocation, sourceLocationValue),
+			parameter: SourceLocation,
+			value:     sourceLocationValue,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 13: %s set to %s", Ref, refValue),
+			parameter: Ref,
+			value:     refValue,
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{},
 			},
