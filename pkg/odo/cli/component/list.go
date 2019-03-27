@@ -47,7 +47,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	_, err := odoconfig.NewLocalConfigInfo("", true)
+	_, err = odoconfig.NewLocalConfigInfo("", true)
 	if err != nil {
 		return err
 	}
