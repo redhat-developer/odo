@@ -12,9 +12,9 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/project"
-	"github.com/openshift/odo/pkg/util"
+	pkgUtil "github.com/openshift/odo/pkg/util"
 )
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
@@ -48,7 +48,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	case 0:
 		var err error
 		skipConnectionCheck, err = command.Flags().GetBool(SkipConnectionCheckFlagName)
-		odoutil.LogErrorAndExit(err, "")
+		util.LogErrorAndExit(err, "")
 	case 1:
 		skipConnectionCheck = shouldSkipConnectionCheck[0]
 	default:
@@ -58,7 +58,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	}
 
 	client, err := occlient.New(skipConnectionCheck)
-	odoutil.LogErrorAndExit(err, "")
+	util.LogErrorAndExit(err, "")
 
 	return client
 }
@@ -68,30 +68,101 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
 		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
-		odoutil.LogErrorAndExit(err, "")
+		util.LogErrorAndExit(err, "")
 	}
 }
 
+// getFirstChildOfCommand gets the first child command of the root command of command
+func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
+	// If command does not have a parent no point checking
+	if command.HasParent() {
+		// Get the root command and set current command and its parent
+		r := command.Root()
+		p := command.Parent()
+		c := command
+		for {
+			// if parent is root, then we have our first child in c
+			if p == r {
+				return c
+			}
+			// Traverse backwards making current command as the parent and parent as the grandparent
+			c = p
+			p = c.Parent()
+		}
+	}
+	return nil
+}
+
+func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
+
+	// Get details from config file
+	configFileName := FlagValueIfSet(command, ContextFlagName)
+	if configFileName != "" {
+		fAbs, err := pkgUtil.GetAbsPath(configFileName)
+		util.LogErrorAndExit(err, "")
+		configFileName = fAbs
+	}
+	lci, err := config.NewLocalConfigInfo(configFileName)
+	// if we could not create local config for some reason, return it
+	if err != nil {
+		return nil, err
+	}
+
+	// Now we need to ensure that local config exists and not allow specific commands
+	// if that is the case This block contains cases where the non existence of local
+	// config is ignored
+	// Only if command has parent as if it is just root command then cobra handles it
+	if command.HasParent() {
+		// Gather nessasary info
+		p := command.Parent()
+		r := command.Root()
+		pfs := FlagValueIfSet(command, ProjectFlagName)
+		afs := FlagValueIfSet(command, ApplicationFlagName)
+		// Find the first child of the command. As some groups are allowed even with non existent config
+		fcc := getFirstChildOfCommand(command)
+		// This should not happen but just to be safe
+		if fcc == nil {
+			return nil, fmt.Errorf("Unable to get first child of command")
+		}
+		// Case 1 : if command is create operation just allow it
+		if command.Name() == "create" && (p.Name() == "component" || p.Name() == r.Name()) {
+			return lci, nil
+		}
+		// Case 2 : Check if fcc is project. If so, skip validation of context
+		if fcc.Name() == "project" {
+			return lci, nil
+		}
+		// Case 3 : Check if specific flags are set for specific first child commands
+		if fcc.Name() == "app" && len(pfs) > 0 {
+			return lci, nil
+		}
+		if fcc.Name() == "component" && len(pfs) > 0 && len(afs) > 0 {
+			return lci, nil
+		}
+	} else {
+		return lci, nil
+	}
+	// * Ignore error block ends
+
+	// If file does not exist at this point, raise an error
+	if !lci.ConfigFileExists() {
+		return nil, fmt.Errorf("the current directory does not represent an odo component.\nMaybe use 'odo create' to create component here or switch to directory with a component")
+	}
+	// else simply return the local config info
+	return lci, nil
+}
+
 // resolveProject resolves project
-func resolveProject(command *cobra.Command, client *occlient.Client) string {
+func resolveProject(command *cobra.Command, client *occlient.Client, lci *config.LocalConfigInfo) string {
 	var ns string
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
+	var err error
 	if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
 		_, err := project.Exists(client, projectFlag)
-		odoutil.LogErrorAndExit(err, "")
+		util.LogErrorAndExit(err, "")
 		ns = projectFlag
 	} else {
-		// Get details from config file
-		fileName := FlagValueIfSet(command, ContextFlagName)
-		if fileName != "" {
-			fileAbs, err := util.GetAbsPath(fileName)
-			odoutil.LogErrorAndExit(err, "")
-			fileName = fileAbs
-		}
-		lci, err := config.NewLocalConfigInfo(fileName, false)
-		odoutil.LogErrorAndExit(err, "could not get component settings from config file")
-
 		ns = lci.GetProject()
 		if ns == "" {
 			ns = project.GetCurrent(client)
@@ -113,24 +184,8 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 	return ns
 }
 
-// newContext creates a new context based on the command flags, creating missing app when requested
-func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
-	client := client(command)
-
-	// resolve project
-	ns := resolveProject(command, client)
-
-	// Get details from config file
-	fileName := FlagValueIfSet(command, ContextFlagName)
-	if fileName != "" {
-		fAbs, err := util.GetAbsPath(fileName)
-		odoutil.LogErrorAndExit(err, "")
-		fileName = fAbs
-	}
-	lci, err := config.NewLocalConfigInfo(fileName, false)
-	odoutil.LogErrorAndExit(err, "could not get component settings from config file")
-
-	// resolve application
+// resolveApp resolves the app
+func resolveApp(command *cobra.Command, createAppIfNeeded bool, lci *config.LocalConfigInfo) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -142,11 +197,52 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 				var err error
 				app, err = application.GetDefaultAppName()
 				if err != nil {
-					odoutil.LogErrorAndExit(err, "failed to generate a random app name")
+					util.LogErrorAndExit(err, "failed to generate a random app name")
 				}
 			}
 		}
 	}
+	return app
+}
+
+// resolveComponent resolves component
+func resolveComponent(command *cobra.Command, lci *config.LocalConfigInfo, context *Context) string {
+	var cmp string
+	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
+	if len(cmpFlag) == 0 {
+		// retrieve the current component if it exists if we didn't set the component flag
+		cmp = lci.GetName()
+	} else {
+		// if flag is set, check that the specified component exists
+		context.checkComponentExistsOrFail(cmpFlag)
+		cmp = cmpFlag
+	}
+	return cmp
+}
+
+// newContext creates a new context based on the command flags, creating missing app when requested
+func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
+	client := client(command)
+
+	// Get details from config file
+	configFileName := FlagValueIfSet(command, ContextFlagName)
+	if configFileName != "" {
+		fAbs, err := pkgUtil.GetAbsPath(configFileName)
+		util.LogErrorAndExit(err, "")
+		configFileName = fAbs
+	}
+
+	// Check for valid config
+	lci, err := getValidConfig(command)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+
+	// resolve project
+	ns := resolveProject(command, client, lci)
+
+	// resolve application
+	app := resolveApp(command, createAppIfNeeded, lci)
 
 	// resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -164,20 +260,8 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		internalCxt: internalCxt,
 	}
 
-	// resolve component
-	var cmp string
-	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
-	if len(cmpFlag) == 0 {
-		// retrieve the current component if it exists if we didn't set the component flag
-		cmp = lci.GetName()
-	} else {
-		// if flag is set, check that the specified component exists
-		context.checkComponentExistsOrFail(cmpFlag)
-		cmp = cmpFlag
-	}
-
 	// once the component is resolved, add it to the context
-	context.cmp = cmp
+	context.cmp = resolveComponent(command, lci, context)
 
 	return context
 }
@@ -244,7 +328,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
 func (o *Context) checkComponentExistsOrFail(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
-	odoutil.LogErrorAndExit(err, "")
+	util.LogErrorAndExit(err, "")
 	if !exists {
 		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
 		os.Exit(1)
@@ -256,17 +340,4 @@ func ignoreButLog(err error) {
 	if err != nil {
 		glog.V(4).Infof("Ignoring error as it usually means flag wasn't set: %v", err)
 	}
-}
-
-// ApplyIgnore will take the current ignores []string and either ignore it (if .odoignore is used)
-// or find the .gitignore file in the directory and use that instead.
-func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
-	if len(*ignores) == 0 {
-		rules, err := util.GetIgnoreRulesFromDirectory(sourcePath)
-		if err != nil {
-			odoutil.LogErrorAndExit(err, "")
-		}
-		*ignores = append(*ignores, rules...)
-	}
-	return nil
 }

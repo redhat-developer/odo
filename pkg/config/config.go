@@ -2,13 +2,11 @@ package config
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/util"
@@ -79,8 +77,9 @@ type proxyLocalConfig struct {
 // LocalConfigInfo wraps the local config and provides helpers to
 // serialize it.
 type LocalConfigInfo struct {
-	Filename    string `yaml:"FileName,omitempty"`
-	LocalConfig `yaml:",omitempty"`
+	Filename         string `yaml:"FileName,omitempty"`
+	LocalConfig      `yaml:",omitempty"`
+	configFileExists bool
 }
 
 func getLocalConfigFile(cfgDir string) (string, error) {
@@ -101,26 +100,25 @@ func getLocalConfigFile(cfgDir string) (string, error) {
 
 // New returns the localConfigInfo
 func New() (*LocalConfigInfo, error) {
-	return NewLocalConfigInfo("", false)
+	return NewLocalConfigInfo("")
 }
 
 // NewLocalConfigInfo gets the LocalConfigInfo from local config file and creates the local config file in case it's
 // not present then it
-func NewLocalConfigInfo(cfgDir string, errorNoLocalConfig bool) (*LocalConfigInfo, error) {
+func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 	configFile, err := getLocalConfigFile(cfgDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
 	c := LocalConfigInfo{
-		LocalConfig: NewLocalConfig(),
-		Filename:    configFile,
+		LocalConfig:      NewLocalConfig(),
+		Filename:         configFile,
+		configFileExists: true,
 	}
 
 	// if the config file doesn't exist then we dont worry about it and return
 	if _, err = os.Stat(configFile); os.IsNotExist(err) {
-		if errorNoLocalConfig {
-			return nil, fmt.Errorf("the current directory does not represent an odo component.\nMaybe use 'odo create' to create component here or switch to directory with a component")
-		}
+		c.configFileExists = false
 		return &c, nil
 	}
 	err = getFromFile(&c.LocalConfig, c.Filename)
@@ -233,6 +231,11 @@ func (lci *LocalConfigInfo) IsSet(parameter string) bool {
 	}
 
 	return util.IsSet(lci.componentSettings, parameter)
+}
+
+// ConfigFileExists if a config file exists or not
+func (lci *LocalConfigInfo) ConfigFileExists() bool {
+	return lci.configFileExists
 }
 
 // DeleteConfiguration is used to delete config from local odo config
@@ -523,35 +526,4 @@ func GetSrcType(ctStr string) (SrcType, error) {
 	default:
 		return NONE, fmt.Errorf("Unsupported component source type: %s", ctStr)
 	}
-}
-
-// GetOSSourcePath corrects the current sourcePath depending on local or binary configuration,
-// if Git has been passed, we simply return the source location from LocalConfig
-// this will get the correct source path whether on Windows, macOS or Linux.
-func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
-
-	sourceType := lci.GetSourceType()
-	sourceLocation := lci.GetSourceLocation()
-
-	if sourceLocation == "" {
-		return "", fmt.Errorf("Blank source location provided")
-	}
-
-	if sourceType == GIT {
-		glog.V(4).Info("Git source type detected, not correcting SourcePath location")
-		return sourceLocation, nil
-	}
-
-	// Validation check if the user passes in a URL despite us being LOCAL or BINARY
-	u, err := url.Parse(sourceLocation)
-	if err != nil || (u.Scheme == "https" || u.Scheme == "http") {
-		return "", fmt.Errorf("URL: %s passed even though source type is: %s", sourceLocation, sourceType)
-	}
-
-	// Always piped to "fromslash" so it's correct for the OS..
-	// after retrieving the sourceLocation we will covert it to the
-	// correct source path depending on the OS.
-	sourceOSPath := filepath.FromSlash(lci.GetSourceLocation())
-
-	return sourceOSPath, nil
 }
