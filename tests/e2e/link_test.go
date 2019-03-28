@@ -21,7 +21,6 @@ var _ = Describe("odoLinkE2e", func() {
 			waitForCmdOut("odo project set "+projName, 4, false, func(output string) bool {
 				return strings.Contains(output, "Already on project : "+projName)
 			})
-			runCmdShouldPass("odo app create " + appTestName)
 		})
 	})
 
@@ -29,7 +28,9 @@ var _ = Describe("odoLinkE2e", func() {
 
 		It("create a frontend and backend application", func() {
 			runCmdShouldPass("odo create nodejs frontend")
+			runCmdShouldPass("odo push")
 			runCmdShouldPass("odo create python backend")
+			runCmdShouldPass("odo push")
 
 			cmpList := runCmdShouldPass("odo list")
 			Expect(cmpList).To(ContainSubstring("frontend"))
