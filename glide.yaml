@@ -26,9 +26,9 @@ import:
   repo:    https://github.com/openshift/kubernetes-api.git
   version: origin-3.11-kubernetes-1.11.1
 - package: github.com/onsi/gomega
-  version: v1.3.0
+  version: v1.5.0
 - package: github.com/onsi/ginkgo
-  version: v1.4.0
+  version: v1.8.0
 - package: github.com/kubernetes-incubator/service-catalog
   version: v0.1.31
 - package: github.com/satori/go.uuid
@@ -44,7 +44,7 @@ import:
 - package: github.com/Netflix/go-expect
   version: master
 - package: github.com/stretchr/testify
-  version: v1.2.2
+  version: v1.3.0
 - package: github.com/posener/complete
   version: v1.1.2
 - package: github.com/gobwas/glob

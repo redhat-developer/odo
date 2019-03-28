@@ -1,5 +1,5 @@
-hash: 6622a97829592723ea2ae941c3f3de57b32ec4439bb1109fc059bc893552b23a
-updated: 2019-01-17T12:55:58.278901676-05:00
+hash: 9609a0d65ff7c6c3e7c5a70aa1f46aaffe4229aa698db538ea82d8f2de88e6a9
+updated: 2019-03-28T15:05:18.897257+01:00
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -30,7 +30,7 @@ imports:
   - digestset
   - reference
 - name: github.com/docker/docker
-  version: fcdab531a6d9b133eaa3f2a3f6c11fd02a97de75
+  version: da810a85109d7bd7ccd8f2d622556cbcfc00386b
   repo: https://github.com/openshift/moby-moby.git
   subpackages:
   - api/types
@@ -108,7 +108,7 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/google/btree
-  version: 4030bb1f1f0c35b30ca7009e9ebd06849dd45306
+  version: 20236160a414454a9c64b6c8829381c6f4bddcaa
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/googleapis/gnostic
@@ -131,6 +131,13 @@ imports:
   - simplelru
 - name: github.com/hinshun/vt10x
   version: d55458df857cfff952e4bf72ce1b567c5a4e141c
+- name: github.com/hpcloud/tail
+  version: a1dbeea552b7c8df4b542c66073e393de198a800
+  subpackages:
+  - ratelimiter
+  - util
+  - watch
+  - winfile
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/inconshreveable/mousetrap
@@ -140,7 +147,7 @@ imports:
 - name: github.com/kballard/go-shellquote
   version: 95032a82bc518f77982ea72343cc1ade730072f0
 - name: github.com/kr/pty
-  version: db8e3cd836b82e82e0a9c8edc6896967dd31374f
+  version: 521317be5ebc228a0f0ede099fa2a0b5ece22e49
 - name: github.com/kubernetes-incubator/service-catalog
   version: 9d82b390b96d565e9301fdfe4ac822311e765a3c
   subpackages:
@@ -167,7 +174,7 @@ imports:
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: 3fb116b820352b7f0c281308a4d6250c22d94e27
+  version: c2a7a6ca930a4cd0bc33a3f298eb71960732a3a7
 - name: github.com/mattn/go-runewidth
   version: 703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211
 - name: github.com/matttproud/golang_protobuf_extensions
@@ -187,7 +194,7 @@ imports:
 - name: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - name: github.com/onsi/ginkgo
-  version: 9eda700730cba42af70d53180f9dcce9266bc2bc
+  version: eea6ad008b96acdaa524f5b409513bf062b500ad
   subpackages:
   - config
   - internal/codelocation
@@ -207,7 +214,7 @@ imports:
   - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: 003f63b7f4cff3fc95357005358af2de0f5fe152
+  version: 90e289841c1ed79b7a598a7cd9959750cb5e89e2
   subpackages:
   - format
   - gbytes
@@ -230,7 +237,7 @@ imports:
   - specs-go
   - specs-go/v1
 - name: github.com/openshift/api
-  version: 5ad8479f64f1b60ee9c62ce8ef1fe6638838725e
+  version: 8741ff068a473be041d7bafb4502c12e4f10aab5
   subpackages:
   - apps/v1
   - authorization/v1
@@ -406,7 +413,7 @@ imports:
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/stretchr/testify
-  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
+  version: ffdc059bfe9ce6a4e144ba849dbedead332c6053
   subpackages:
   - assert
   - require
@@ -427,6 +434,7 @@ imports:
   - http2/hpack
   - idna
   - lex/httplex
+  - websocket
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
@@ -466,6 +474,8 @@ imports:
   subpackages:
   - core
   - terminal
+- name: gopkg.in/fsnotify/fsnotify.v1
+  version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/square/go-jose.v2
@@ -474,6 +484,8 @@ imports:
   - cipher
   - json
   - jwt
+- name: gopkg.in/tomb.v1
+  version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
   version: 670d4cfef0544295bc27a114dbac37980d83185a
 - name: k8s.io/api
@@ -512,12 +524,12 @@ imports:
   - storage/v1alpha1
   - storage/v1beta1
 - name: k8s.io/apiextensions-apiserver
-  version: 7dbb63fb7dacd49193fb013af5bea8ec7a047cdd
+  version: 45cb0b8537cf79d23914721e0bf41a3479769b22
   repo: https://github.com/openshift/kubernetes-apiextensions-apiserver.git
   subpackages:
   - pkg/features
 - name: k8s.io/apimachinery
-  version: 0b908666f6c964370af24212f499d77109c65937
+  version: 5f1ab6ad9104144e43c7e477938fd278ade27eb2
   repo: https://github.com/openshift/kubernetes-apimachinery.git
   subpackages:
   - pkg/api/equality
@@ -574,7 +586,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 10f1ab2357d4fc15527540fd7d7953ba8e6c98e3
+  version: 996cefeb14170756dc1626dde64fcfb63c8edb24
   repo: https://github.com/openshift/kubernetes-apiserver.git
   subpackages:
   - pkg/apis/audit
@@ -587,7 +599,7 @@ imports:
   - pkg/features
   - pkg/util/feature
 - name: k8s.io/client-go
-  version: b28cdde46f9c296b8ecde9c0bed0d215b6cda59d
+  version: 7eaf7133bcfa11e19ebbbc76ff53e2cb32524683
   repo: https://github.com/openshift/kubernetes-client-go.git
   subpackages:
   - discovery
@@ -698,12 +710,12 @@ imports:
   - util/jsonpath
   - util/retry
 - name: k8s.io/kube-openapi
-  version: 8a9b82f00b3a86eac24681da3f9fe6c34c01cea2
+  version: 91cfa479c814065e420cee7ed227db0f63a5854e
   subpackages:
   - pkg/util/proto
   - pkg/util/proto/validation
 - name: k8s.io/kubernetes
-  version: 22b8c511baaf712194dee3eb9c6d8e96d282d3a5
+  version: d8b46d72a413981e6ea99605dcef3b8ca3f2223f
   repo: https://github.com/openshift/kubernetes.git
   subpackages:
   - pkg/api/events

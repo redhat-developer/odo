@@ -322,7 +322,11 @@ func (b *glusterfsMounter) setUpAtInternal(dir string) error {
 		}
 
 	}
+
+	//Add backup-volfile-servers and auto_unmount options.
 	options = append(options, "backup-volfile-servers="+dstrings.Join(addrlist[:], ":"))
+	options = append(options, "auto_unmount")
+
 	mountOptions := volutil.JoinMountOptions(b.mountOptions, options)
 
 	// with `backup-volfile-servers` mount option in place, it is not required to
@@ -717,6 +721,7 @@ func (p *glusterfsVolumeProvisioner) Provision(selectedNode *v1.Node, allowedTop
 	if len(pv.Spec.AccessModes) == 0 {
 		pv.Spec.AccessModes = p.plugin.GetAccessModes()
 	}
+
 	pv.Spec.MountOptions = p.options.MountOptions
 
 	gidStr := strconv.FormatInt(int64(gid), 10)
@@ -726,7 +731,6 @@ func (p *glusterfsVolumeProvisioner) Provision(selectedNode *v1.Node, allowedTop
 		volutil.VolumeDynamicallyCreatedByKey: heketiAnn,
 		glusterTypeAnn:                        "file",
 		"Description":                         glusterDescAnn,
-		v1.MountOptionAnnotation:              "auto_unmount",
 		heketiVolIDAnn:                        volID,
 	}
 
@@ -789,11 +793,11 @@ func (p *glusterfsVolumeProvisioner) CreateVolume(gid int) (r *v1.GlusterfsVolum
 		return nil, 0, "", fmt.Errorf("failed to get cluster nodes for volume %s: %v", volume, err)
 	}
 
-	// The 'endpointname' is created in form of 'glusterfs-dynamic-<claimname>'.
+	// The 'endpointname' is created in form of 'glusterfs-dynamic-<PVC UID>'.
 	// createEndpointService() checks for this 'endpoint' existence in PVC's namespace and
-	// If not found, it create an endpoint and service using the IPs we dynamically picked at time
+	// if not found, it create an endpoint and service using the IPs we dynamically picked at time
 	// of volume creation.
-	epServiceName := dynamicEpSvcPrefix + p.options.PVC.Name
+	epServiceName := dynamicEpSvcPrefix + string(p.options.PVC.UID)
 	epNamespace := p.options.PVC.Namespace
 	endpoint, service, err := p.createEndpointService(epNamespace, epServiceName, dynamicHostIps, p.options.PVC.Name)
 	if err != nil {
