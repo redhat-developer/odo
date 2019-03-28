@@ -18,6 +18,7 @@ const viewCommandName = "view"
 
 var viewExample = ktemplates.Examples(`# For viewing the current local configuration
    %[1]s
+   
   `)
 
 // ViewOptions encapsulates the options for the command
@@ -48,6 +49,21 @@ func (o *ViewOptions) Run() (err error) {
 	}
 	cs := cfg.GetComponentSettings()
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
+	envVarList := cfg.GetEnvVars()
+	if len(envVarList) != 0 {
+		fmt.Fprintln(w, "ENVIRONMENT VARIABLES")
+		fmt.Fprintln(w, "------------------------------------------------")
+		fmt.Fprintln(w, "NAME", "\t", "VALUE")
+		for _, envVar := range envVarList {
+			fmt.Fprintln(w, envVar.Name, "\t", envVar.Value)
+		}
+
+		fmt.Fprintln(w)
+
+	}
+	fmt.Fprintln(w, "COMPONENT SETTINGS")
+	fmt.Fprintln(w, "------------------------------------------------")
+
 	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 	fmt.Fprintln(w, "Type", "\t", showBlankIfNil(cs.Type))
 	fmt.Fprintln(w, "Application", "\t", showBlankIfNil(cs.Application))

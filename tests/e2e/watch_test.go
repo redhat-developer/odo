@@ -32,7 +32,7 @@ var _ = Describe("odoWatchE2e", func() {
 				runCmdShouldPass("git clone " + nodejsURI + " " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo create nodejs nodejs-watch --local " + tmpDir + "/nodejs-ex --min-memory 400Mi --max-memory 700Mi")
 				runCmdShouldPass("odo push -v 4")
-				// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+				// Test multiple push so as to avoid regressions like: https://github.com/openshift/odo/issues/1054
 				runCmdShouldPass("odo push -v 4")
 				runCmdShouldPass("odo url create --port 8080")
 
@@ -106,7 +106,7 @@ var _ = Describe("odoWatchE2e", func() {
 				runCmdShouldPass("git clone " + pythonURI + " " + tmpDir + "/os-sample-python")
 				runCmdShouldPass("odo create python python-watch --local " + tmpDir + "/os-sample-python --memory 400Mi")
 				runCmdShouldPass("odo push -v 4")
-				// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+				// Test multiple push so as to avoid regressions like: https://github.com/openshift/odo/issues/1054
 				runCmdShouldPass("odo push -v 4")
 				runCmdShouldPass("odo url create")
 
@@ -171,7 +171,7 @@ var _ = Describe("odoWatchE2e", func() {
 				runCmdShouldPass("git clone " + wildflyURI + " " + tmpDir + "/katacoda-odo-backend")
 				runCmdShouldPass("odo create wildfly wildfly-watch --local " + tmpDir + "/katacoda-odo-backend --min-memory 400Mi --max-memory 700Mi")
 				runCmdShouldPass("odo push -v 4")
-				// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+				// Test multiple push so as to avoid regressions like: https://github.com/openshift/odo/issues/1054
 				runCmdShouldPass("odo push -v 4")
 				runCmdShouldPass("odo url create --port 8080")
 
@@ -252,7 +252,7 @@ var _ = Describe("odoWatchE2e", func() {
 				runCmdShouldPass("git clone " + openjdkURI + " " + tmpDir + "/javalin-helloworld")
 				runCmdShouldPass("odo create openjdk18 openjdk-watch --local " + tmpDir + "/javalin-helloworld --min-memory 400Mi --max-memory 700Mi")
 				runCmdShouldPass("odo push -v 4")
-				// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+				// Test multiple push so as to avoid regressions like: https://github.com/openshift/odo/issues/1054
 				runCmdShouldPass("odo push -v 4")
 				runCmdShouldPass("odo url create --port 8080")
 
@@ -328,7 +328,7 @@ var _ = Describe("odoWatchE2e", func() {
 				runCmdShouldPass("mvn package -f " + tmpDir + "/binary/javalin-helloworld")
 				runCmdShouldPass("odo create openjdk18 openjdk-watch-binary --binary " + tmpDir + "/binary/javalin-helloworld/target/javalin-hello-world-0.1-SNAPSHOT.jar --min-memory 400Mi --max-memory 700Mi")
 				runCmdShouldPass("odo push -v 4")
-				// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+				// Test multiple push so as to avoid regressions like: https://github.com/openshift/odo/issues/1054
 				runCmdShouldPass("odo push -v 4")
 				runCmdShouldPass("odo url create --port 8080")
 
@@ -390,7 +390,7 @@ var _ = Describe("odoWatchE2e", func() {
 				runCmdShouldPass("mvn package -f " + tmpDir + "/binary/katacoda-odo-backend")
 				runCmdShouldPass("odo create wildfly wildfly-watch-binary --binary " + tmpDir + "/binary/katacoda-odo-backend/target/ROOT.war --min-memory 400Mi --max-memory 700Mi")
 				runCmdShouldPass("odo push -v 4")
-				// Test multiple push so as to avoid regressions like: https://github.com/redhat-developer/odo/issues/1054
+				// Test multiple push so as to avoid regressions like: https://github.com/openshift/odo/issues/1054
 				runCmdShouldPass("odo push -v 4")
 				runCmdShouldPass("odo url create --port 8080")
 

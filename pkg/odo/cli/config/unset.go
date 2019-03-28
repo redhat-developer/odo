@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 
 	"github.com/openshift/odo/pkg/config"
@@ -32,6 +33,9 @@ var (
    %[1]s %[8]s 
    %[1]s %[9]s 
    %[1]s %[10]s
+
+   # Unset a env variable in the local config
+    %[1]s --env KAFKA_HOST --env KAFKA_PORT
 	`)
 )
 
@@ -39,6 +43,7 @@ var (
 type UnsetOptions struct {
 	paramName       string
 	configForceFlag bool
+	envArray        []string
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
@@ -48,7 +53,9 @@ func NewUnsetOptions() *UnsetOptions {
 
 // Complete completes UnsetOptions after they've been created
 func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.paramName = args[0]
+	if o.envArray == nil {
+		o.paramName = args[0]
+	}
 	return
 }
 
@@ -64,6 +71,18 @@ func (o *UnsetOptions) Run() (err error) {
 
 	if err != nil {
 		return errors.Wrapf(err, "")
+	}
+	// env variables have been provided
+	if o.envArray != nil {
+
+		envList := cfg.GetEnvVars()
+		newEnvList := config.RemoveEnvVarsFromList(envList, o.envArray)
+		if err := cfg.SetEnvVars(newEnvList); err != nil {
+			return err
+		}
+
+		log.Info("Environment variables were successfully updated.")
+		return nil
 	}
 
 	if isSet := cfg.IsSet(o.paramName); isSet {
@@ -94,6 +113,14 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
 			config.Type, config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
+			if o.envArray != nil {
+				// no args are needed
+				if len(args) > 0 {
+					return fmt.Errorf("expected 0 args")
+				}
+				return nil
+			}
+
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")
 			} else if len(args) > 1 {
@@ -109,6 +136,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		},
 	}
 	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
+	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Unset the environment variables in config")
 
 	return configurationUnsetCmd
 }
