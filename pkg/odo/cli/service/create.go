@@ -88,6 +88,11 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		if err != nil {
 			return fmt.Errorf("unable to retrieve service classes: %v", err)
 		}
+
+		if len(classesByCategory) == 0 {
+			return fmt.Errorf("no available service classes")
+		}
+
 		class, o.ServiceType = ui.SelectClassInteractively(classesByCategory)
 
 		plans, err := client.GetMatchingPlans(class)
