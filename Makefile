@@ -10,11 +10,11 @@ default: bin
 
 .PHONY: debug
 debug:
-	go build ${DEBUG_BUILD_FLAGS} -o odo cmd/odo/odo.go
+	go build ${DEBUG_BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: bin
 bin:
-	go build ${BUILD_FLAGS} -o odo cmd/odo/odo.go
+	go build ${BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: install
 install:
