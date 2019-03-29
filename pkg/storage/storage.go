@@ -2,18 +2,18 @@ package storage
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/log"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/occlient"
 	storagelabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/openshift/odo/pkg/util"
-
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // Get returns Storage defination for given Storage name
@@ -28,14 +28,14 @@ func (storages StorageList) Get(storageName string) Storage {
 }
 
 // Create adds storage to given component of given application
-func Create(client *occlient.Client, name string, size string, path string, componentName string, applicationName string) (Storage, error) {
+func Create(client *occlient.Client, name string, size string, componentName string, applicationName string) (*corev1.PersistentVolumeClaim, error) {
 
 	// Namespace the component
 	// We will use name+applicationName instead of componentName+applicationName until:
 	// https://github.com/openshift/odo/issues/504 is resolved.
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(name, applicationName)
 	if err != nil {
-		return Storage{}, errors.Wrapf(err, "unable to create namespaced name")
+		return nil, errors.Wrapf(err, "unable to create namespaced name")
 	}
 
 	labels := storagelabels.GetLabels(name, componentName, applicationName, true)
@@ -45,25 +45,9 @@ func Create(client *occlient.Client, name string, size string, path string, comp
 	// Create PVC
 	pvc, err := client.CreatePVC(generatePVCNameFromStorageName(namespacedOpenShiftObject), size, labels)
 	if err != nil {
-		return Storage{}, errors.Wrap(err, "unable to create PVC")
+		return nil, errors.Wrap(err, "unable to create PVC")
 	}
-
-	// Get DeploymentConfig for the given component
-	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
-	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := client.GetOneDeploymentConfigFromSelector(componentSelector)
-	if err != nil {
-		return Storage{}, errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
-	}
-	glog.V(4).Infof("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
-
-	// Add PVC to DeploymentConfig
-	if err := client.AddPVCToDeploymentConfig(dc, pvc.Name, path); err != nil {
-		return Storage{}, errors.Wrap(err, "unable to add PVC to DeploymentConfig")
-	}
-
-	// getting the machine readable output format and mark status as active
-	return getMachineReadableFormat(*pvc, path), nil
+	return pvc, nil
 }
 
 // Unmount unmounts the given storage from the given component
@@ -106,35 +90,23 @@ func Unmount(client *occlient.Client, storageName string, componentName string, 
 
 // Delete removes storage from the given application.
 // Delete returns the component name, if it is mounted to a component, or "" and the error, if any
-func Delete(client *occlient.Client, name string, applicationName string) (string, error) {
-	// unmount the storage from the component if mounted
-	componentName, err := GetComponentNameFromStorageName(client, name)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to find component name and app name")
-	}
-	if componentName != "" {
-		err := Unmount(client, name, componentName, applicationName, false)
-		if err != nil {
-			return "", errors.Wrapf(err, "unable to unmount storage %v", name)
-		}
-	}
-
+func Delete(client *occlient.Client, name string) error {
 	pvcName, err := getPVCNameFromStorageName(client, name)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to get PVC for storage %v", name)
+		return errors.Wrapf(err, "unable to get PVC for storage %v", name)
 	}
 
 	// delete the associated PVC with the component
 	err = client.DeletePVC(pvcName)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to delete PVC %v", pvcName)
+		return errors.Wrapf(err, "unable to delete PVC %v", pvcName)
 	}
 
-	return componentName, nil
+	return nil
 }
 
 // List lists all the mounted storage associated with the given component of the given
-// application and the unmounted storages in the given application
+// application and the unmounted storage in the given application
 func List(client *occlient.Client, componentName string, applicationName string) (StorageList, error) {
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -144,7 +116,19 @@ func List(client *occlient.Client, componentName string, applicationName string)
 		return StorageList{}, errors.Wrapf(err, "unable to get Deployment Config associated with component %v", componentName)
 	}
 
-	// store the storages in a map for faster searching with the key instead of list
+	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
+	if err != nil {
+		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
+	}
+
+	pvcMap := make(map[string]*corev1.PersistentVolumeClaim)
+	// store in map for faster searching
+	for _, pvc := range pvcs {
+		readPVC := pvc
+		pvcMap[pvc.Name] = &readPVC
+	}
+
+	// store the storage in a map for faster searching with the key instead of list
 	mountedStorageMap := make(map[string]string)
 	volumeMounts := client.GetVolumeMountsFromDC(dc)
 	for _, volumeMount := range volumeMounts {
@@ -158,19 +142,21 @@ func List(client *occlient.Client, componentName string, applicationName string)
 		if pvcName == "" {
 			return StorageList{}, fmt.Errorf("no PVC associated with Volume Mount %v", volumeMount.Name)
 		}
-		pvc, err := client.GetPVCFromName(pvcName)
-		if err != nil {
-			return StorageList{}, errors.Wrapf(err, "unable to get PVC %v", pvcName)
+
+		pvc, ok := pvcMap[pvcName]
+		if !ok {
+			// since the pvc doesn't exist, it might be a supervisorD volume
+			// if true, continue
+			if client.IsAppSupervisorDVolume(volumeMount.Name, dc.Name) {
+				continue
+			}
+			return StorageList{}, fmt.Errorf("unable to get PVC %v", pvcName)
 		}
 
 		storageName := getStorageFromPVC(pvc)
 		mountedStorageMap[storageName] = volumeMount.MountPath
 	}
 
-	pvcs, err := client.GetPVCsFromSelector(storagelabels.StorageLabel)
-	if err != nil {
-		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
-	}
 	var storage []Storage
 	for _, pvc := range pvcs {
 		pvcComponentName, ok := pvc.Labels[componentlabels.ComponentLabel]
@@ -183,11 +169,15 @@ func List(client *occlient.Client, componentName string, applicationName string)
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
 			storageName := getStorageFromPVC(&pvc)
-			storageMachineReadable := getMachineReadableFormat(pvc, mountedStorageMap[storageName])
+			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
+				storageSize.String(),
+				mountedStorageMap[storageName],
+			)
 			storage = append(storage, storageMachineReadable)
 		}
 	}
-	storageList := getMachineReadableFormatForList(storage)
+	storageList := GetMachineReadableFormatForList(storage)
 	return storageList, nil
 }
 
@@ -203,7 +193,7 @@ func ListMounted(client *occlient.Client, componentName string, applicationName 
 			storageListMounted = append(storageListMounted, storage)
 		}
 	}
-	return getMachineReadableFormatForList(storageListMounted), nil
+	return GetMachineReadableFormatForList(storageListMounted), nil
 }
 
 // ListUnmounted lists all the unmounted storage associated with the given application
@@ -222,11 +212,15 @@ func ListUnmounted(client *occlient.Client, applicationName string) (StorageList
 			if pvc.Name == "" {
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
-			storageMachineReadable := getMachineReadableFormat(pvc, "")
+			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
+				storageSize.String(),
+				"",
+			)
 			storage = append(storage, storageMachineReadable)
 		}
 	}
-	storageList := getMachineReadableFormatForList(storage)
+	storageList := GetMachineReadableFormatForList(storage)
 	return storageList, nil
 }
 
@@ -316,18 +310,6 @@ func IsMounted(client *occlient.Client, storageName string, componentName string
 	return false, nil
 }
 
-//GetMountPath returns mount path for given storage
-func GetMountPath(client *occlient.Client, storageName string, componentName string, applicationName string) string {
-	var mPath string
-	storageList, _ := List(client, componentName, applicationName)
-	for _, storage := range storageList.Items {
-		if storage.Name == storageName {
-			mPath = storage.Status.Path
-		}
-	}
-	return mPath
-}
-
 // Mount mounts the given storage to the given component
 func Mount(client *occlient.Client, path string, storageName string, componentName string, applicationName string) error {
 	storageComponent, err := GetComponentNameFromStorageName(client, storageName)
@@ -383,8 +365,76 @@ func GetStorageNameFromMountPath(client *occlient.Client, path string, component
 	return "", nil
 }
 
-// getMachineReadableFormatForList gives machine readable StorageList definition
-func getMachineReadableFormatForList(storage []Storage) StorageList {
+// Push creates/deletes the required storage during `odo push`
+// storageList are the storage mentioned in the config
+// isComponentExists indicates if the component exists or not, if not, we don't run the list operation
+// returns the storage for mounting and unMounting from the DC
+// StorageToBeMounted describes the storage to be mounted
+// StorageToBeMounted : storagePath is the key of the map, the generatedPVC is the value of the map
+// StorageToBeUnMounted describes the storage to be unmounted
+// StorageToBeUnMounted : path is the key of the map,storageName is the value of the map
+func Push(client *occlient.Client, storageList StorageList, componentName, applicationName string, isComponentExits bool) (map[string]*corev1.PersistentVolumeClaim, map[string]string, error) {
+	// list all the storage in the cluster
+	storageClusterList := StorageList{}
+	var err error
+	if isComponentExits {
+		storageClusterList, err = ListMounted(client, componentName, applicationName)
+
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	storageClusterNames := make(map[string]Storage)
+	for _, storage := range storageClusterList.Items {
+		storageClusterNames[storage.Name] = storage
+	}
+
+	// list all the storage in the config
+	storageConfigNames := make(map[string]Storage)
+	for _, storage := range storageList.Items {
+		storageConfigNames[storage.Name] = storage
+	}
+
+	storageToBeMounted := make(map[string]*corev1.PersistentVolumeClaim)
+	storageToBeUnMounted := make(map[string]string)
+
+	// find storage to delete
+	for _, storage := range storageClusterList.Items {
+		val, ok := storageConfigNames[storage.Name]
+		if !ok {
+			// delete the pvc
+			err = Delete(client, storage.Name)
+			if err != nil {
+				return nil, nil, err
+			}
+			log.Successf("Deleted storage %v from %v", storage.Name, componentName)
+			storageToBeUnMounted[storage.Status.Path] = storage.Name
+			continue
+		} else if storage.Name == val.Name {
+			if val.Spec.Size != storage.Spec.Size || val.Status.Path != storage.Status.Path {
+				return nil, nil, errors.Errorf("config mismatch for storage with the same name %s", storage.Name)
+			}
+		}
+	}
+
+	// find storage to create
+	for _, storage := range storageList.Items {
+		_, ok := storageClusterNames[storage.Name]
+		if !ok {
+			createdPVC, err := Create(client, storage.Name, storage.Spec.Size, componentName, applicationName)
+			if err != nil {
+				return nil, nil, err
+			}
+			log.Successf("Added storage %v to %v", storage.Name, componentName)
+			storageToBeMounted[storage.Status.Path] = createdPVC
+		}
+	}
+
+	return storageToBeMounted, storageToBeUnMounted, err
+}
+
+// GetMachineReadableFormatForList gives machine readable StorageList definition
+func GetMachineReadableFormatForList(storage []Storage) StorageList {
 	return StorageList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
@@ -395,20 +445,17 @@ func getMachineReadableFormatForList(storage []Storage) StorageList {
 	}
 }
 
-// getMachineReadableFormat gives machine readable Storage definition
+// GetMachineReadableFormat gives machine readable Storage definition
 // storagePath indicates the path to which the storage is mounted to, "" if not mounted
-func getMachineReadableFormat(pvc corev1.PersistentVolumeClaim, storagePath string) Storage {
-	storageName := getStorageFromPVC(&pvc)
-	storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+func GetMachineReadableFormat(storageName, storageSize, storagePath string) Storage {
 	return Storage{
 		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: storageName},
 		Spec: StorageSpec{
-			Size: storageSize.String(),
+			Size: storageSize,
 		},
 		Status: StorageStatus{
 			Path: storagePath,
 		},
 	}
-
 }

@@ -2,7 +2,6 @@ package storage
 
 import (
 	"fmt"
-
 	"github.com/openshift/odo/pkg/occlient"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/storage"
@@ -24,25 +23,25 @@ func NewCmdStorage(name, fullName string) *cobra.Command {
 	storageCreateCmd := NewCmdStorageCreate(createRecommendedCommandName, odoutil.GetFullName(fullName, createRecommendedCommandName))
 	storageDeleteCmd := NewCmdStorageDelete(deleteRecommendedCommandName, odoutil.GetFullName(fullName, deleteRecommendedCommandName))
 	storageListCmd := NewCmdStorageList(listRecommendedCommandName, odoutil.GetFullName(fullName, listRecommendedCommandName))
-	storageMountCmd := NewCmdStorageMount(mountRecommendedCommandName, odoutil.GetFullName(fullName, mountRecommendedCommandName))
-	storageUnMountCmd := NewCmdStorageUnMount(unMountRecommendedCommandName, odoutil.GetFullName(fullName, unMountRecommendedCommandName))
+	//storageMountCmd := NewCmdStorageMount(mountRecommendedCommandName, odoutil.GetFullName(fullName, mountRecommendedCommandName))
+	//storageUnMountCmd := NewCmdStorageUnMount(unMountRecommendedCommandName, odoutil.GetFullName(fullName, unMountRecommendedCommandName))
 
 	var storageCmd = &cobra.Command{
 		Use:   name,
 		Short: storageShortDesc,
 		Long:  storageLongDesc,
-		Example: fmt.Sprintf("%s\n%s\n%s\n%s",
+		Example: fmt.Sprintf("%s\n%s\n%s",
 			storageCreateCmd.Example,
 			storageDeleteCmd.Example,
-			storageUnMountCmd.Example,
+			//storageUnMountCmd.Example,
 			storageListCmd.Example),
 	}
 
 	storageCmd.AddCommand(storageCreateCmd)
 	storageCmd.AddCommand(storageDeleteCmd)
-	storageCmd.AddCommand(storageUnMountCmd)
+	//storageCmd.AddCommand(storageUnMountCmd)
 	storageCmd.AddCommand(storageListCmd)
-	storageCmd.AddCommand(storageMountCmd)
+	//storageCmd.AddCommand(storageMountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	storageCmd.Annotations = map[string]string{"command": "other"}

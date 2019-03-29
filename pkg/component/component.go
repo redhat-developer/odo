@@ -356,12 +356,20 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	appName := componentConfig.GetApplication()
 	envVarsList := componentConfig.GetEnvVars()
 
+	// create and get the storage to be created/mounted during the component creation
+	storageList := getStorageFromConfig(&componentConfig)
+	storageToBeCreated, _, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
+	if err != nil {
+		return err
+	}
+
 	log.Successf("Initializing '%s' component", cmpName)
 	createArgs := occlient.CreateArgs{
-		Name:            cmpName,
-		ImageName:       cmpType,
-		ApplicationName: appName,
-		EnvVars:         envVarsList.ToStringSlice(),
+		Name:               cmpName,
+		ImageName:          cmpType,
+		ApplicationName:    appName,
+		EnvVars:            envVarsList.ToStringSlice(),
+		StorageToBeCreated: storageToBeCreated,
 	}
 	createArgs.SourceType = cmpSrcType
 	createArgs.SourcePath = componentConfig.GetSourceLocation()
@@ -897,6 +905,13 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 	cmpPorts := componentSettings.GetPorts()
 	envVarsList := componentSettings.GetEnvVars()
 
+	// retrieve the list of storages to create/mount and unmount
+	storageList := getStorageFromConfig(&componentSettings)
+	storageToMount, storageToUnMount, err := storage.Push(client, storageList, componentSettings.GetName(), componentSettings.GetApplication(), true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get storage to mount and unmount")
+	}
+
 	// Retrieve the old source type
 	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName)
 	if err != nil {
@@ -976,12 +991,13 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		return err
 	}
 	updateComponentParams := occlient.UpdateComponentParams{
-		CommonObjectMeta:  commonObjectMeta,
-		ImageMeta:         commonImageMeta,
-		ResourceLimits:    resourceLimits,
-		EnvVars:           evl,
-		DcRollOutWaitCond: occlient.IsDCRolledOut,
-		ExistingDC:        currentDC,
+		CommonObjectMeta:     commonObjectMeta,
+		ImageMeta:            commonImageMeta,
+		ResourceLimits:       resourceLimits,
+		DcRollOutWaitCond:    occlient.IsDCRolledOut,
+		ExistingDC:           currentDC,
+		StorageToBeMounted:   storageToMount,
+		StorageToBeUnMounted: storageToUnMount,
 	}
 	// STEP 2. Determine what the new source is going to be
 
@@ -1274,4 +1290,14 @@ func isEmpty(name string) (bool, error) {
 		return true, nil
 	}
 	return false, err // Either not empty or error, suits both cases
+}
+
+// getStorageFromConfig gets all the storage from the config
+// returns a list of storage in storage struct format
+func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageList {
+	storageList := storage.StorageList{}
+	for _, storageVar := range localConfig.GetStorage() {
+		storageList.Items = append(storageList.Items, storage.GetMachineReadableFormat(storageVar.Name, storageVar.Size, storageVar.Path))
+	}
+	return storageList
 }

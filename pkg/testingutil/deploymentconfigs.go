@@ -2,6 +2,7 @@ package testingutil
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/util"
 
 	v1 "github.com/openshift/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -154,4 +155,70 @@ func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 			dc3,
 		},
 	}
+}
+
+// mountedStorage is the map of the storage to be mounted
+// key is the path for the mount, value is the pvc
+func OneFakeDeploymentConfigWithMounts(componentName, componentType, applicationName string, mountedStorage map[string]*corev1.PersistentVolumeClaim) *v1.DeploymentConfig {
+	c := getContainer(componentName, applicationName, []corev1.ContainerPort{
+		{
+			Name:          fmt.Sprintf("%v-%v-p1", componentName, applicationName),
+			ContainerPort: 8080,
+			Protocol:      corev1.ProtocolTCP,
+		},
+		{
+			Name:          fmt.Sprintf("%v-%v-p2", componentName, applicationName),
+			ContainerPort: 9090,
+			Protocol:      corev1.ProtocolUDP,
+		},
+	}, nil)
+
+	dc := getDeploymentConfig("myproject", componentName, componentType, applicationName, []corev1.Container{c})
+
+	supervisorDPVC := FakePVC(getAppRootVolumeName(dc.Name), "1Gi", nil)
+
+	for path, pvc := range mountedStorage {
+		volumeName := generateVolumeNameFromPVC(pvc.Name)
+		dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, corev1.Volume{
+			Name: volumeName,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvc.Name,
+				},
+			},
+		})
+		dc.Spec.Template.Spec.Containers[0].VolumeMounts = append(dc.Spec.Template.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+			Name:      volumeName,
+			MountPath: path,
+		})
+	}
+
+	// now append the supervisorD volume
+	dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, corev1.Volume{
+		Name: getAppRootVolumeName(dc.Name),
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: supervisorDPVC.Name,
+			},
+		},
+	})
+
+	// now append the supervisorD volume mount
+	dc.Spec.Template.Spec.Containers[0].VolumeMounts = append(dc.Spec.Template.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+		Name:      getAppRootVolumeName(dc.Name),
+		MountPath: "/opt/app-root",
+		SubPath:   "app-root",
+	})
+
+	return &dc
+}
+
+// generateVolumeNameFromPVC generates a random volume name based on the name
+// of the given PVC
+func generateVolumeNameFromPVC(pvc string) string {
+	return fmt.Sprintf("%v-%v-volume", pvc, util.GenerateRandomString(5))
+}
+
+func getAppRootVolumeName(dcName string) string {
+	return fmt.Sprintf("%s-s2idata", dcName)
 }

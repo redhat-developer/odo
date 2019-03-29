@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
@@ -9,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -30,7 +30,8 @@ var (
 type StorageDeleteOptions struct {
 	storageName            string
 	storageForceDeleteFlag bool
-	componentName          string
+	componentContext       string
+	localConfig            *config.LocalConfigInfo
 	*genericclioptions.Context
 }
 
@@ -42,24 +43,20 @@ func NewStorageDeleteOptions() *StorageDeleteOptions {
 // Complete completes StorageDeleteOptions after they've been created
 func (o *StorageDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
+	o.localConfig, err = config.NewLocalConfigInfo(o.componentContext)
+	if err != nil {
+		return err
+	}
+	o.Context = genericclioptions.NewContext(cmd)
 	o.storageName = args[0]
 	return
 }
 
 // Validate validates the StorageDeleteOptions based on completed values
 func (o *StorageDeleteOptions) Validate() (err error) {
-	exists, err := storage.Exists(o.Client, o.storageName, o.Application)
-
-	if err != nil {
-		return
-	}
+	exists := o.localConfig.StorageExists(o.storageName)
 	if !exists {
 		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.Application, err)
-	}
-
-	o.componentName, err = storage.GetComponentNameFromStorageName(o.Client, o.storageName)
-	if err != nil {
-		return fmt.Errorf("unable to get component associated with %s storage, cause %v", o.storageName, err)
 	}
 
 	return
@@ -68,22 +65,18 @@ func (o *StorageDeleteOptions) Validate() (err error) {
 // Run contains the logic for the odo storage delete command
 func (o *StorageDeleteOptions) Run() (err error) {
 	var deleteMsg string
-	if o.componentName != "" {
-		mPath := storage.GetMountPath(o.Client, o.storageName, o.componentName, o.Application)
-		deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.componentName)
-	} else {
-		deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v that is not currently mounted to any component", o.storageName)
-	}
+
+	mPath := o.localConfig.GetMountPath(o.storageName)
+
+	deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.localConfig.GetName())
+
 	if o.storageForceDeleteFlag || ui.Proceed(deleteMsg) {
-		o.componentName, err = storage.Delete(o.Client, o.storageName, o.Application)
+		err = o.localConfig.StorageDelete(o.storageName)
 		if err != nil {
 			return fmt.Errorf("failed to delete storage, cause %v", err)
 		}
-		if o.componentName != "" {
-			log.Infof("Deleted storage %v from %v", o.storageName, o.componentName)
-		} else {
-			log.Infof("Deleted storage %v", o.storageName)
-		}
+
+		log.Infof("Deleted storage %v from %v", o.storageName, o.localConfig.GetName())
 	} else {
 		return fmt.Errorf("aborting deletion of storage: %v", o.storageName)
 	}
@@ -111,6 +104,9 @@ func NewCmdStorageDelete(name, fullName string) *cobra.Command {
 	projectCmd.AddProjectFlag(storageDeleteCmd)
 	appCmd.AddApplicationFlag(storageDeleteCmd)
 	componentCmd.AddComponentFlag(storageDeleteCmd)
+
+	genericclioptions.AddContextFlag(storageDeleteCmd, &o.componentContext)
+	completion.RegisterCommandFlagHandler(storageDeleteCmd, "context", completion.FileCompletionHandler)
 
 	return storageDeleteCmd
 }

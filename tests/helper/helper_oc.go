@@ -271,3 +271,21 @@ func (oc *OcRunner) ServiceInstanceStatus(serviceInstanceName string) string {
 		"-o", "go-template='{{ (index .status.conditions 0).reason}}'")
 	return strings.TrimSpace(serviceinstance)
 }
+
+// GetVolumeMountName returns the name of the volume
+func (oc *OcRunner) GetVolumeMountName(dcName string) string {
+	volumeName := CmdShouldPass(oc.path, "get", dcName, "-o", "go-template='"+
+		"{{range .spec.template.spec.containers}}"+
+		"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
+
+	return strings.TrimSpace(volumeName)
+}
+
+// GetVolumeMountPath returns the path of the volume mount
+func (oc *OcRunner) GetVolumeMountPath(dcName string) string {
+	volumePaths := CmdShouldPass(oc.path, "get", dcName, "-o", "go-template='"+
+		"{{range .spec.template.spec.containers}}"+
+		"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
+
+	return strings.TrimSpace(volumePaths)
+}

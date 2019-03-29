@@ -123,6 +123,11 @@ test-java-e2e:
 test-source-e2e:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoSourceE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
+# Run storage e2e tests
+.PHONY: test-storage-e2e
+test-storage-e2e:
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoStorageE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+
 # Run service catalog e2e tests
 .PHONY: test-service-e2e
 test-service-e2e:

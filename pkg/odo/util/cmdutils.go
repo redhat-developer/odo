@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/config"
 	"os"
 	"strings"
 	"unicode"
@@ -10,7 +11,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	storagePkg "github.com/openshift/odo/pkg/storage"
 	urlPkg "github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -46,6 +46,10 @@ func CheckOutputFlag(outputFlag string) error {
 
 // PrintComponentInfo prints Component Information like path, URL & storage
 func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string) {
+	localConfig, err := config.New()
+	if err != nil {
+		LogErrorAndExit(err, "")
+	}
 	fmt.Printf("Component Name: %v\nType: %v\n", currentComponentName, componentDesc.Spec.Type)
 	// Source
 	if componentDesc.Spec.Source != "" {
@@ -62,11 +66,10 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	// Storage
 	if len(componentDesc.Spec.Storage) > 0 {
 		fmt.Println("\nStorage:")
-		storages, err := storagePkg.List(client, currentComponentName, applicationName)
+		storages, err := localConfig.StorageList()
 		LogErrorAndExit(err, "")
-		for _, storage := range componentDesc.Spec.Storage {
-			store := storages.Get(storage)
-			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Status.Path)
+		for _, store := range storages {
+			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Size, store.Path)
 		}
 	}
 	// URL

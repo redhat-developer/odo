@@ -279,7 +279,7 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
 	expected := map[string]bool{"name": true, "minmemory": true, "ignore": true, "project": true,
 		"application": true, "type": true, "ref": true, "mincpu": true, "cpu": true, "ports": true, "maxmemory": true,
-		"maxcpu": true, "sourcetype": true, "sourcelocation": true, "memory": true, "url": true}
+		"maxcpu": true, "sourcetype": true, "sourcelocation": true, "memory": true, "storage": true, "url": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)

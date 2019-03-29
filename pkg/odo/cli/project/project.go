@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/config"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/application"
@@ -12,7 +13,6 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/service"
-	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
@@ -78,6 +78,10 @@ func AddProjectFlag(cmd *cobra.Command) {
 
 // printDeleteProjectInfo prints objects affected by project deletion
 func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
+	localConfig, err := config.New()
+	if err != nil {
+		return errors.Wrapf(err, "unable to get the local config")
+	}
 	// Fetch and List the applications
 	applicationList, err := application.ListInProject(client)
 	if err != nil {
@@ -114,13 +118,12 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 						}
 					}
 
-					storages, err := storage.List(client, currentComponent.Name, app)
+					storages, err := localConfig.StorageList()
 					odoutil.LogErrorAndExit(err, "")
-					if len(storages.Items) != 0 {
+					if len(storages) != 0 {
 						log.Info("This component has following storages which will be deleted with the component")
-						for _, storageName := range componentDesc.Spec.Storage {
-							store := storages.Get(storageName)
-							log.Info("Storage named", store.GetName(), "of size", store.Spec.Size)
+						for _, store := range storages {
+							log.Info("Storage named", store.Name, "of size", store.Size)
 						}
 					}
 				}

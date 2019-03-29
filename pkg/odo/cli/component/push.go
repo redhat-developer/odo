@@ -257,7 +257,6 @@ func (po *PushOptions) Run() (err error) {
 	}
 
 	log.Successf("Changes successfully pushed to component: %v", cmpName)
-
 	return
 }
 
