@@ -35,6 +35,14 @@ func Chdir(dir string) {
 	Expect(err).ShouldNot(HaveOccurred())
 }
 
+// Getwd retruns current working dir
+func Getwd() string {
+	dir, err := os.Getwd()
+	Expect(err).NotTo(HaveOccurred())
+	fmt.Fprintf(GinkgoWriter, "Current working dir: %s\n", dir)
+	return dir
+}
+
 // CopyExample copies an example from tests/e2e/examples/<exampleName> into targetDir
 func CopyExample(exampleName string, targetDir string) {
 	// filename of this file

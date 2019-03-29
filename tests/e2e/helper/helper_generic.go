@@ -2,7 +2,12 @@ package helper
 
 import (
 	"math/rand"
+	"time"
 )
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+}
 
 func randString(n int) string {
 	const letterBytes = "abcdefghijklmnopqrstuvwxyz"

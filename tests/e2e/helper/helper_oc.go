@@ -29,7 +29,7 @@ func OcDeleteProject(project string) {
 
 // OcCurrentProject get currently active project in oc
 // returns empty string if there no active project, or no access to the project
-func OcCurrentProject() string {
+func OcGetCurrentProject() string {
 	stdout, _, exitCode := cmdRunner("oc project -q")
 	if exitCode == 0 {
 		return stdout
