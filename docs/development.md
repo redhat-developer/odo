@@ -92,13 +92,13 @@ Terminology we use:
 
 #### The Pull Request review process
 
-1. The author submits a PR
-2. The @openshift-ci-robot automatically suggests an approver and requests 2 reviews from reviewers based on OWNERS files
-3. Reviewer goes and does the review.  
-    Once reviewer is ok with the changes he posts `/lgtm` as a comment to the PR. This will apply the lgtm label.
-4. Approver goes and does the review.  
-    Once the review is done and the approver accepts the changes and posts `/approve` as a comment to the PR. This will apply approve label.
-5. Once PR has lgtm and approve labels and required tests are passing bot will automatically merge PR.
+- The author submits a PR
+- The @openshift-ci-robot automatically suggests an approver and requests 2 reviews from reviewers based on OWNERS files
+- Reviewer goes and does the review.  
+  Once reviewer is ok with the changes he posts `/lgtm` as a comment to the PR. This will apply the lgtm label.
+- Approver goes and does the review.  
+  Once the review is done and the approver accepts the changes and posts `/approve` as a comment to the PR. This will apply approve label.
+- Once PR has lgtm and approve labels and required tests are passing bot will automatically merge PR.
 
 
 #### What to look out for when reviewing a pull request:
