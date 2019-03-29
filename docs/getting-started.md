@@ -4,39 +4,45 @@ This document walks you through the development and deployment of a Node.js appl
 
 ## Developing and deploying an application to an OpenShift cluster
 1. [Install the `odo` binary](/docs/installation.md).
-2. Log into an OpenShift cluster. OpenShift Do automatically works with any OpenShift cluster you are currently logged into. If you lack a local development cluster, we recommend using [Minishift](https://docs.openshift.org/latest/minishift/getting-started/installing.html), the quickest and easiest way to deploy a development OpenShift cluster.
+2. Log into an OpenShift cluster.
 
-    If you use Minishift:
-    1. Run Minishift:
-    ```console
-    $ minishift start
-    ```
-    2. Log into the OpenShift cluster:
-    ```sh
-    $ odo login -u developer -p developer
-    ```
+    * If you lack a local development cluster, we recommend using [Minishift](https://docs.openshift.org/latest/minishift/getting-started/installing.html) to deploy a development OpenShift cluster.
 
-     **Note:** In order to make full use of odo functionality, it is recommended to enable the OpenShift [service catalog](https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html). Use `minishift` 1.30 or latest to enable this:
-    ```sh
-    $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
-    ```
+        1. Run Minishift:
+        ```sh
+        $ minishift start
+        ```
+        2. Log into the OpenShift cluster:
+        ```sh
+        $ odo login -u developer -p developer
+        ```
 
-3. An application is an umbrella that comprises all the components (microservices) you build.
+        **Note:** In order to make full use of odo functionality, it is recommended to enable the OpenShift [service catalog](https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html). Use `minishift` 1.30 or latest to enable this:
+        ```sh
+        $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
+        ```
+
+  * If you do not use Minishift, Odo automatically works with any OpenShift cluster you are currently logged into. To log into the OpenShift cluster run:
+  ```sh
+  $ odo login -u developer -p developer
+  ```
+
+3. An application is an umbrella that comprises of all the components (microservices) you build.
 Create an application:
-```console
+```sh
 $ odo app create nodeapp
 ```
 
 4. Create a component as follows:
 
     1. Download the sample application and change directory to the location of the application:
-    ```console
+    ```sh
     $ git clone https://github.com/openshift/nodejs-ex
     $ cd nodejs-ex
     ```
 
     2. Add a component of the type nodejs to the application:
-    ```console
+    ```sh
     $ odo create nodejs
     ```
     **Note:** By default, the latest image is used. You can also explicitly supply an image version by using `odo create openshift/nodejs:8`.
@@ -47,37 +53,33 @@ $ odo app create nodeapp
     ```
     Your component is now deployed to OpenShift
 
-5. Access the component as follows:
+5. To access the component, create an OpenShift route and view your deployed application using the generated URL:
 
-    1. Create an OpenShift route:
+```sh
+$ odo url create --open
+```
+6. Edit your code and push the changes to the component:
 
-    ```console
-    $ odo url create
-     ```
-    2. Use the URL `nodejs-ex-nodejs-nnjf-nodeapp-myproject.192.168.42.90.nip.io` in the browser to view your deployed application.
-
-6. Edit your code and push the changes to the component
-
-    1. Edit one of the layout files within the Node.JS directory.
+    1. Edit one of the layout files within the Node.js directory.
     ```sh
     $ vim views/index.html
     ```
     2. Push the changes:
-    ```console
+    ```sh
     $ odo push
     ```
     3. Refresh your application in the browser to see the changes.
 
-    After each change, you can update your component using: `odo push nodejs`.
+    After each change, you can update your component using: `odo push`.
 
 
 
 ## Other key odo features
 ### Adding storage to the component
 
-OpenShift Do enables you to persist data between restarts by making it easy to add storage to your component as follows:
+Odo enables you to persist data between restarts by making it easy to add storage to your component as follows:
 
-```console
+```sh
 $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi
 ```
 
@@ -122,28 +124,28 @@ The `.odoignore` file allows any [glob expressions](https://en.wikipedia.org/wik
 
 ### Using Service Catalog with odo
 
-If you use `minishift` you need to use minishift version 1.22 or above.
+If you use Minishift you require version 1.22 or above.
 
 In order to use the Service Catalog it must be enabled within your OpenShift cluster.
 
- 1. Start an OpenShift cluster, version 3.10.0 and above
+ 1. Start an OpenShift cluster, version 3.10 and above
  2. Enable the Service Catalog:
  ```sh
   MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker"
  ```
 
 3. After you enable or start `minishift` use:
- * `odo catalog list services` to list the services
-  * `odo service <verb> <servicename>` to list service catalog related operations
+    * `odo catalog list services` to list the services
+    * `odo service <verb> <servicename>` to list service catalog related operations
 
-### Adding a Custom Builder
+### Adding a custom builder
 
-OpenShift enables you to add a [custom image](https://docs.openshift.com/container-platform/3.7/creating_images/custom.html) to bridge the gap in the creation of custom images. A custom builder image usually includes the base image of [openshift/origin-custom-docker-builder](https://hub.docker.com/r/openshift/origin-custom-docker-builder/).
+OpenShift enables you to add a [custom image](https://docs.openshift.com/container-platform/3.7/creating_images/custom.html) to bridge the gap between the creation of custom images. A custom builder image usually includes the base image of [openshift/origin-custom-docker-builder](https://hub.docker.com/r/openshift/origin-custom-docker-builder/).
 
 The following example demonstrates the successful import and use of [redhat-openjdk-18](registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift) image:
 
 **Prerequisites:**
-oc binary is [installed](https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli) and present on the `$PATH`
+`oc` binary is [installed](https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli) and present on the `$PATH`
 
 **Procedure:**
 
