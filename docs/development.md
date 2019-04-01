@@ -90,12 +90,23 @@ Terminology we use:
 
 ### Reviewing a pull request
 
+#### The Pull Request review process
+
+- The author submits a PR
+- The @openshift-ci-robot automatically suggests an approver and requests 2 reviews from reviewers based on OWNERS files
+- Reviewer goes and does the review.  
+  Once reviewer is ok with the changes he posts `/lgtm` as a comment to the PR. This will apply the lgtm label.
+- Approver goes and does the review.  
+  Once the review is done and the approver accepts the changes and posts `/approve` as a comment to the PR. This will apply approve label.
+- Once PR has lgtm and approve labels and required tests are passing bot will automatically merge PR.
+
+
 #### What to look out for when reviewing a pull request:
 
   - Have tests been added?
   - Does this feature / fix work locally for me? 
   - Am I able to understand the code correctly / have comments been added to the code?
-
+  
 #### Prow best practices
 
   - Get used to how prow works and its commands. 
@@ -105,7 +116,7 @@ Terminology we use:
     - **Approvers** look for holistic acceptance criteria, including dependencies with other features, forwards/backwards compatibility, API and flag definitions, etc. In essence, the high levels of design
     - **Reviewers** look for general code quality, correctness, sane software engineering, style, etc. In essence, the quality of actual code itself.
   - As far as possible, do not `/lgtm` a PR, until it is mergable (we need atleast 2 approving reviews and no request changes left and pre-submit tests should pass) or if you do, put it on hold with `/hold` immediately. Either of them can be cancelled as `/lgtm cancel` or `/hold cancel`. This especially applies to **draft PRs**
-  - Approvers can use `/approve` and `/approve cancel` respectively to give their approval. **Note:** approvers github approval also counts the same as `/approve`
+  - Approvers can use `/approve` and `/approve cancel` respectively to give their approval. 
   - Try to not merge the PR manually unless it is an emergency (if you have the power). Get used to relying on prow's tide component for merge. This should also ensure post-submit tests (tests that run before merge) have a chance to valiate the PR.
 
 ### Test Driven Development
@@ -144,7 +155,6 @@ func (c *Client) GetImageStreams(namespace string) ([]imagev1.ImageStream, error
         }
         return imageStreamList.Items, nil
 }
-
 ```
 
 1. For writing the tests, we start by initialising the fake client using the function `FakeNew()` which initialises the image clientset harnessed by 	`GetImageStreams` function:
