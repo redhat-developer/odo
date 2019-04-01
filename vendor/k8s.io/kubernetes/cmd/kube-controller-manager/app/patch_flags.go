@@ -68,22 +68,15 @@ func applyOpenShiftConfigKubeDefaultProjectSelector(controllerManagerOptions *op
 }
 
 func applyOpenShiftConfigControllerArgs(controllerManagerOptions *options.KubeControllerManagerOptions, openshiftConfig map[string]interface{}) error {
-	var controllerArgs interface{}
 	kubeMasterConfig, ok := openshiftConfig["kubernetesMasterConfig"]
 	if !ok {
-		controllerArgs, ok = openshiftConfig["extendedArguments"]
-		if !ok || controllerArgs == nil {
-			return nil
-		}
-	} else {
-		castKubeMasterConfig := kubeMasterConfig.(map[string]interface{})
-		controllerArgs, ok = castKubeMasterConfig["controllerArguments"]
-		if !ok || controllerArgs == nil {
-			controllerArgs, ok = openshiftConfig["extendedArguments"]
-			if !ok || controllerArgs == nil {
-				return nil
-			}
-		}
+		return nil
+	}
+
+	castKubeMasterConfig := kubeMasterConfig.(map[string]interface{})
+	controllerArgs, ok := castKubeMasterConfig["controllerArguments"]
+	if !ok || controllerArgs == nil {
+		return nil
 	}
 
 	args := map[string][]string{}

@@ -32,14 +32,19 @@ var _ = Describe("TestRunner", func() {
 			"coverpkg":         strAddr(""),
 			"cover":            boolAddr(false),
 			"blockprofilerate": intAddr(100),
+			"vet":              strAddr("off"),
+			"mod":              strAddr("vendor"),
 		}
 		tr := testrunner.New(testsuite.TestSuite{}, 1, false, 0, opts, []string{})
 
 		args := tr.BuildArgs(".")
+		// Remove the "-i" argument; This is discarded in Golang 1.10+.
+		if args[2] == "-i" {
+			args = append(args[0:2], args[3:]...)
+		}
 		Ω(args).Should(Equal([]string{
 			"test",
 			"-c",
-			"-i",
 			"-o",
 			".",
 			"",
@@ -47,6 +52,8 @@ var _ = Describe("TestRunner", func() {
 			"-asmflags=a",
 			"-pkgdir=b",
 			"-gcflags=c",
+			"-vet=off",
+			"-mod=vendor",
 		}))
 	})
 })

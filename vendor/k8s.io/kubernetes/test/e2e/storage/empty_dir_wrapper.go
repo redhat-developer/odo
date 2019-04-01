@@ -76,22 +76,10 @@ var _ = utils.SIGDescribe("EmptyDir wrapper volumes", func() {
 			framework.Failf("unable to create test secret %s: %v", secret.Name, err)
 		}
 
-		configMapVolumeName := "configmap-volume"
-		configMapVolumeMountPath := "/etc/configmap-volume"
-
-		configMap := &v1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: f.Namespace.Name,
-				Name:      name,
-			},
-			BinaryData: map[string][]byte{
-				"data-1": []byte("value-1\n"),
-			},
-		}
-
-		if configMap, err = f.ClientSet.CoreV1().ConfigMaps(f.Namespace.Name).Create(configMap); err != nil {
-			framework.Failf("unable to create test configMap %s: %v", configMap.Name, err)
-		}
+		gitVolumeName := "git-volume"
+		gitVolumeMountPath := "/etc/git-volume"
+		gitURL, gitRepo, gitCleanup := createGitServer(f)
+		defer gitCleanup()
 
 		pod := &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -108,12 +96,11 @@ var _ = utils.SIGDescribe("EmptyDir wrapper volumes", func() {
 						},
 					},
 					{
-						Name: configMapVolumeName,
+						Name: gitVolumeName,
 						VolumeSource: v1.VolumeSource{
-							ConfigMap: &v1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{
-									Name: name,
-								},
+							GitRepo: &v1.GitRepoVolumeSource{
+								Repository: gitURL,
+								Directory:  gitRepo,
 							},
 						},
 					},
@@ -129,8 +116,8 @@ var _ = utils.SIGDescribe("EmptyDir wrapper volumes", func() {
 								ReadOnly:  true,
 							},
 							{
-								Name:      configMapVolumeName,
-								MountPath: configMapVolumeMountPath,
+								Name:      gitVolumeName,
+								MountPath: gitVolumeMountPath,
 							},
 						},
 					},
@@ -144,13 +131,9 @@ var _ = utils.SIGDescribe("EmptyDir wrapper volumes", func() {
 			if err := f.ClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secret.Name, nil); err != nil {
 				framework.Failf("unable to delete secret %v: %v", secret.Name, err)
 			}
-			By("Cleaning up the configmap")
-			if err := f.ClientSet.CoreV1().ConfigMaps(f.Namespace.Name).Delete(configMap.Name, nil); err != nil {
-				framework.Failf("unable to delete configmap %v: %v", configMap.Name, err)
-			}
-			By("Cleaning up the pod")
+			By("Cleaning up the git vol pod")
 			if err = f.ClientSet.CoreV1().Pods(f.Namespace.Name).Delete(pod.Name, metav1.NewDeleteOptions(0)); err != nil {
-				framework.Failf("unable to delete pod %v: %v", pod.Name, err)
+				framework.Failf("unable to delete git vol pod %v: %v", pod.Name, err)
 			}
 		}()
 	})

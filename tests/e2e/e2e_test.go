@@ -44,11 +44,11 @@ func TestOdo(t *testing.T) {
 	RunSpecs(t, "odo test suite")
 }
 
-var _ = BeforeSuite(func() {
-	// Save the current project
-	// commenting this out to resolve e2e tests failures on OC 4
-	// curProj = runCmdShouldPass("oc project -q")
-})
+//var _ = BeforeSuite(func() {
+// Save the current project
+// commenting this out to resolve e2e tests failures on OC 4
+// curProj = runCmdShouldPass("oc project -q")
+//})
 
 func VerifyAppNameOfComponent(cmpName string, appName string) {
 	session := runCmdShouldPass(fmt.Sprintf("oc get dc %s-%s --template={{.metadata.labels.'app'}}", cmpName, appName))

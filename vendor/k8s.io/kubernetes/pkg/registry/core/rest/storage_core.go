@@ -235,7 +235,7 @@ func (c LegacyRESTStorageProvider) NewLegacyRESTStorage(restOptionsGetter generi
 	if serviceAccountStorage.Token != nil {
 		restStorageMap["serviceaccounts/token"] = serviceAccountStorage.Token
 	}
-	apiGroupInfo.VersionedResourcesStorageMap["v1"] = restStorageMap
+	apiGroupInfo.VersionedResourcesStorageMap["v1"] = patchStorage(restStorageMap)
 
 	return restStorage, apiGroupInfo, nil
 }
