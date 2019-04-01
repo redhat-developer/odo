@@ -69,6 +69,8 @@ func componentTests(componentCmdPrefix string) {
 			runCmdShouldPass("mv .odo .odo_tmp")
 			session := runCmdShouldFail("odo component list")
 			Expect(session).To(ContainSubstring("the current directory does not represent an odo component"))
+			session = runCmdShouldFail("odo app list")
+			Expect(session).To(ContainSubstring("the current directory does not represent an odo component"))
 			// clean up
 			runCmdShouldPass("mv .odo_tmp .odo")
 			os.RemoveAll(dirName)
