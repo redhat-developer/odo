@@ -43,14 +43,14 @@ func componentTests(componentCmdPrefix string) {
 	Context("odo component creation without application", func() {
 		It("creating a component without an application should create one", func() {
 			// new project == no app
-			// projectName := generateTimeBasedName("project")
-			// odoCreateProject(projectName)
-			// Expect(runCmdShouldPass("odo app list")).To(ContainSubstring("no applications"))
+			projectName := generateTimeBasedName("project")
+			odoCreateProject(projectName)
+			//Expect(runCmdShouldPass("odo app list")).To(ContainSubstring("no applications"))
 
 			componentName := generateTimeBasedName("frontend")
 
 			// create a frontend component, an app should have been created
-			runCmdShouldPass(componentCmdPrefix + " create nodejs " + componentName + " --git https://github.com/openshift/nodejs-ex")
+			runCmdShouldPass(componentCmdPrefix + " create nodejs --project " + projectName + " " + componentName + " --ref master --git https://github.com/openshift/nodejs-ex")
 			runCmdShouldPass("odo push")
 			appName := runCmdShouldPass("odo app list")
 			Expect(appName).ToNot(BeEmpty())

@@ -115,7 +115,7 @@ var _ = Describe("odoe2e", func() {
 					session := runCmdShouldPass("odo project create odonoprojectattemptscreateproject")
 					Expect(session).To(ContainSubstring("New project created and now using project"))
 					Expect(session).To(ContainSubstring("odonoprojectattemptscreateproject"))
-					odoDeleteProject("odonoprojectattemptscreateproject")
+					ocDeleteProject("odonoprojectattemptscreateproject")
 				})
 			})
 
@@ -123,7 +123,7 @@ var _ = Describe("odoe2e", func() {
 				It("Should login as a user and setup by creating a project, and then deleting it", func() {
 					runCmdShouldPass(fmt.Sprintf("odo login -u %s -p %s", "odosingleprojectattemptscreate", loginTestUserPassword))
 					odoCreateProject("odosingleprojectattemptscreateproject")
-					odoDeleteProject("odosingleprojectattemptscreateproject")
+					ocDeleteProject("odosingleprojectattemptscreateproject")
 				})
 
 				It("Should fail if user tries to create any object, other than project", func() {
@@ -142,7 +142,7 @@ var _ = Describe("odoe2e", func() {
 					session := runCmdShouldPass("odo project create odosingleprojectattemptscreateproject")
 					Expect(session).To(ContainSubstring("New project created and now using project"))
 					Expect(session).To(ContainSubstring("odosingleprojectattemptscreateproject"))
-					odoDeleteProject("odosingleprojectattemptscreateproject")
+					ocDeleteProject("odosingleprojectattemptscreateproject")
 				})
 			})
 
@@ -438,7 +438,7 @@ var _ = Describe("odoe2e", func() {
 	*/
 
 	Context("should list applications in other project", func() {
-		newProjName := strings.Replace(projName, "odo", "odo2", -1)
+		newProjName = strings.Replace(projName, "odo", "odo2", -1)
 		It("should create a new project", func() {
 			runCmdShouldPass("oc new-project " + newProjName)
 			waitForCmdOut("oc get project", 2, true, func(output string) bool {
@@ -455,7 +455,7 @@ var _ = Describe("odoe2e", func() {
 			})
 		*/
 		It("should be able to create a php component with application created", func() {
-			runCmdShouldPass("odo create php testcmp --app " + appTestName + " --project " + newProjName + " --git " + testPHPGitURL)
+			runCmdShouldPass("odo create php testcmp --app " + appTestName + " --project " + newProjName + " --ref master --git " + testPHPGitURL)
 			runCmdShouldPass("odo push")
 		})
 
@@ -872,7 +872,7 @@ var _ = Describe("odoe2e", func() {
 			//cmpList := runCmdShouldFail("odo list --app " + appTestName)
 			//Expect(cmpList).To(ContainSubstring("There are no components deployed"))
 
-			odoDeleteProject(newProjName)
+			ocDeleteProject(newProjName)
 		})
 
 	})
@@ -1264,7 +1264,7 @@ var _ = Describe("updateE2e", func() {
 		})
 
 		It("Should delete project", func() {
-			odoDeleteProject(projectName)
+			ocDeleteProject(projectName)
 		})
 	})
 

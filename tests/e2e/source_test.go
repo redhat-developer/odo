@@ -44,13 +44,13 @@ var _ = Describe("odoSourceE2e", func() {
 			//Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
-			runCmdShouldPass("odo app delete python-app -f")
+			runCmdShouldPass("odo app delete python-app --project odo-source -f")
 		})
 
 		It("Should be able to deploy an openjdk source application", func() {
 			importOpenJDKImage()
 
-			runCmdShouldPass("odo create openjdk18 openjdk-app --project odo-source --context " + sourceExamples + "openjdk/")
+			runCmdShouldPass("odo create java openjdk-app --project odo-source --context " + sourceExamples + "openjdk/")
 			//cmpList := runCmdShouldPass("odo list")
 			//Expect(cmpList).To(ContainSubstring("openjdk-app"))
 
@@ -66,7 +66,7 @@ var _ = Describe("odoSourceE2e", func() {
 			//Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
-			runCmdShouldPass("odo app delete openjdk-app -f")
+			runCmdShouldPass("odo app delete openjdk-app --project odo-source -f")
 		})
 
 		It("Should be able to deploy a wildfly source application", func() {
@@ -86,7 +86,7 @@ var _ = Describe("odoSourceE2e", func() {
 			//Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
-			runCmdShouldPass("odo app delete wildfly-app -f")
+			runCmdShouldPass("odo app delete wildfly-app --project odo-source  -f")
 		})
 
 		It("Should be able to deploy a nodejs source application", func() {
@@ -106,7 +106,7 @@ var _ = Describe("odoSourceE2e", func() {
 			//Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
-			runCmdShouldPass("odo app delete nodejs-app -f")
+			runCmdShouldPass("odo app delete nodejs-app --project odo-source  -f")
 		})
 
 		It("Should be able to deploy a dotnet source application", func() {
@@ -126,7 +126,7 @@ var _ = Describe("odoSourceE2e", func() {
 			//Expect(responseStringMatchStatus).Should(BeTrue())
 
 			// Delete the component
-			runCmdShouldPass("odo app delete dotnet-app -f")
+			runCmdShouldPass("odo app delete dotnet-app --project odo-source -f")
 		})
 
 	})
@@ -134,7 +134,7 @@ var _ = Describe("odoSourceE2e", func() {
 	// Delete the project
 	Context("source project delete", func() {
 		It("should delete source project", func() {
-			odoDeleteProject("odo-source")
+			ocDeleteProject("odo-source")
 		})
 	})
 })

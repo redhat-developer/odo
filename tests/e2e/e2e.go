@@ -34,7 +34,14 @@ func cmdRunner(cmdS string) (string, string, int) {
 	<-session.Exited
 
 	Expect(err).NotTo(HaveOccurred())
-	return string(session.Out.Contents()), string(session.Err.Contents()), session.ExitCode()
+
+	stdout := string(session.Out.Contents())
+	stderr := string(session.Err.Contents())
+	exitCode := session.ExitCode()
+
+	fmt.Fprintf(GinkgoWriter, "Result: \n stdout: %s\n stderr:%s \n exitcode: %d \n", stdout, stderr, exitCode)
+
+	return stdout, stderr, exitCode
 }
 
 func runCmdShouldPass(cmd string) string {
@@ -95,6 +102,7 @@ func waitForCmdOut(cmd string, timeout int, errOnFail bool, check func(output st
 		case <-tick:
 			out, err := exec.Command("/bin/sh", "-c", cmd).Output()
 			if err != nil && errOnFail {
+				fmt.Fprintf(GinkgoWriter, "Command (%s) output: %s\n", cmd, out)
 				Fail(err.Error())
 			}
 

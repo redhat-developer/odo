@@ -99,7 +99,7 @@ const (
 	supervisordVolumeName = "odo-supervisord-shared-data"
 
 	// waitForPodTimeOut controls how long we should wait for a pod before giving up
-	waitForPodTimeOut = 120 * time.Second
+	waitForPodTimeOut = 240 * time.Second
 
 	// ComponentPortAnnotationName annotation is used on the secrets that are created for each exposed port of the component
 	ComponentPortAnnotationName = "component-port"

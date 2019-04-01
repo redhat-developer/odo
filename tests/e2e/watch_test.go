@@ -250,7 +250,7 @@ var _ = Describe("odoWatchE2e", func() {
 
 			It("watch openjdk component created from local source", func() {
 				runCmdShouldPass("git clone " + openjdkURI + " " + tmpDir + "/javalin-helloworld")
-				runCmdShouldPass("odo create openjdk18 openjdk-watch --local " + tmpDir + "/javalin-helloworld --min-memory 400Mi --max-memory 700Mi")
+				runCmdShouldPass("odo create java openjdk-watch --local " + tmpDir + "/javalin-helloworld --min-memory 400Mi --max-memory 700Mi")
 				runCmdShouldPass("odo push -v 4")
 				// Test multiple push so as to avoid regressions like: https://github.com/openshift/odo/issues/1054
 				runCmdShouldPass("odo push -v 4")
@@ -326,7 +326,7 @@ var _ = Describe("odoWatchE2e", func() {
 			It("watch openjdk component created from local binary", func() {
 				runCmdShouldPass("git clone " + openjdkURI + " " + tmpDir + "/binary/javalin-helloworld")
 				runCmdShouldPass("mvn package -f " + tmpDir + "/binary/javalin-helloworld")
-				runCmdShouldPass("odo create openjdk18 openjdk-watch-binary --binary " + tmpDir + "/binary/javalin-helloworld/target/javalin-hello-world-0.1-SNAPSHOT.jar --min-memory 400Mi --max-memory 700Mi")
+				runCmdShouldPass("odo create java openjdk-watch-binary --binary " + tmpDir + "/binary/javalin-helloworld/target/javalin-hello-world-0.1-SNAPSHOT.jar --min-memory 400Mi --max-memory 700Mi")
 				runCmdShouldPass("odo push -v 4")
 				// Test multiple push so as to avoid regressions like: https://github.com/openshift/odo/issues/1054
 				runCmdShouldPass("odo push -v 4")

@@ -49,7 +49,7 @@ var _ = Describe("odoServiceE2e", func() {
 				It("Should be able to deploy an openjdk source application", func() {
 					importOpenJDKImage()
 
-					runCmdShouldPass("odo create openjdk18 sb-app --local " + sourceExamples + "/openjdk-sb-postgresql/")
+					runCmdShouldPass("odo create java sb-app --local " + sourceExamples + "/openjdk-sb-postgresql/")
 
 					// Push changes
 					runCmdShouldPass("odo push")
