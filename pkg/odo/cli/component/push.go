@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/project"
@@ -61,7 +60,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	po.options.Client = genericclioptions.Client(cmd)
 
 	// Retrieve configuration configuration as well as SourcePath
-	conf, err := utils.RetrieveLocalConfigInfo(po.options.ComponentContext)
+	conf, err := genericclioptions.RetrieveLocalConfigInfo(po.options.ComponentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve config information")
 	}
@@ -72,7 +71,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	po.options.SourceType = conf.LocalConfig.GetSourceType()
 
 	// Apply ignore information
-	err = utils.ApplyIgnore(&po.ignores, po.options.SourcePath)
+	err = genericclioptions.ApplyIgnore(&po.ignores, po.options.SourcePath)
 	if err != nil {
 		return errors.Wrap(err, "unable to apply ignore information")
 	}

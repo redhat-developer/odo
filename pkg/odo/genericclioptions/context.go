@@ -2,9 +2,12 @@ package genericclioptions
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"runtime"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/application"
@@ -12,9 +15,9 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/project"
-	pkgUtil "github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
@@ -48,7 +51,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	case 0:
 		var err error
 		skipConnectionCheck, err = command.Flags().GetBool(SkipConnectionCheckFlagName)
-		util.LogErrorAndExit(err, "")
+		odoutil.LogErrorAndExit(err, "")
 	case 1:
 		skipConnectionCheck = shouldSkipConnectionCheck[0]
 	default:
@@ -58,7 +61,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 	}
 
 	client, err := occlient.New(skipConnectionCheck)
-	util.LogErrorAndExit(err, "")
+	odoutil.LogErrorAndExit(err, "")
 
 	return client
 }
@@ -68,7 +71,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
 		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
-		util.LogErrorAndExit(err, "")
+		odoutil.LogErrorAndExit(err, "")
 	}
 }
 
@@ -79,18 +82,18 @@ func resolveProject(command *cobra.Command, client *occlient.Client) string {
 	if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
 		_, err := project.Exists(client, projectFlag)
-		util.LogErrorAndExit(err, "")
+		odoutil.LogErrorAndExit(err, "")
 		ns = projectFlag
 	} else {
 		// Get details from config file
 		fileName := FlagValueIfSet(command, ContextFlagName)
 		if fileName != "" {
-			fileAbs, err := pkgUtil.GetAbsPath(fileName)
-			util.LogErrorAndExit(err, "")
+			fileAbs, err := util.GetAbsPath(fileName)
+			odoutil.LogErrorAndExit(err, "")
 			fileName = fileAbs
 		}
 		lci, err := config.NewLocalConfigInfo(fileName, false)
-		util.LogErrorAndExit(err, "could not get component settings from config file")
+		odoutil.LogErrorAndExit(err, "could not get component settings from config file")
 
 		ns = lci.GetProject()
 		if ns == "" {
@@ -123,12 +126,12 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	// Get details from config file
 	fileName := FlagValueIfSet(command, ContextFlagName)
 	if fileName != "" {
-		fAbs, err := pkgUtil.GetAbsPath(fileName)
-		util.LogErrorAndExit(err, "")
+		fAbs, err := util.GetAbsPath(fileName)
+		odoutil.LogErrorAndExit(err, "")
 		fileName = fAbs
 	}
 	lci, err := config.NewLocalConfigInfo(fileName, false)
-	util.LogErrorAndExit(err, "could not get component settings from config file")
+	odoutil.LogErrorAndExit(err, "could not get component settings from config file")
 
 	// resolve application
 	var app string
@@ -142,7 +145,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 				var err error
 				app, err = application.GetDefaultAppName()
 				if err != nil {
-					util.LogErrorAndExit(err, "failed to generate a random app name")
+					odoutil.LogErrorAndExit(err, "failed to generate a random app name")
 				}
 			}
 		}
@@ -244,7 +247,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
 func (o *Context) checkComponentExistsOrFail(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
-	util.LogErrorAndExit(err, "")
+	odoutil.LogErrorAndExit(err, "")
 	if !exists {
 		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
 		os.Exit(1)
@@ -256,4 +259,64 @@ func ignoreButLog(err error) {
 	if err != nil {
 		glog.V(4).Infof("Ignoring error as it usually means flag wasn't set: %v", err)
 	}
+}
+
+// LocalConfigInfo is a struct that will contain the LocalConfig as well as SourcePath
+// the reasoning behind SourcePath is due to the fact that we must correct what the path is
+// on different platforms (Linux, Windows, etc.) as well as get the absolute path of the component.
+type LocalConfigInfo struct {
+	LocalConfig *config.LocalConfigInfo
+	SourcePath  string
+}
+
+// RetrieveLocalConfigInfo retrieves the local configuration
+func RetrieveLocalConfigInfo(componentContext string) (configInfo LocalConfigInfo, err error) {
+
+	conf, err := config.NewLocalConfigInfo(componentContext, false)
+	if err != nil {
+		return LocalConfigInfo{}, errors.Wrap(err, "failed to fetch component config")
+	}
+
+	sourcePath, err := correctSourcePath(conf)
+	if err != nil {
+		return LocalConfigInfo{}, errors.Wrap(err, "unable to validate source path")
+	}
+
+	return LocalConfigInfo{
+		LocalConfig: conf,
+		SourcePath:  sourcePath}, nil
+}
+
+// correctSourcePath corrects the current sourcePath depending on local or binary configuration
+func correctSourcePath(localConfig *config.LocalConfigInfo) (path string, err error) {
+
+	cmpName := localConfig.GetName()
+	sourceType := localConfig.GetSourceType()
+	sourcePath := localConfig.GetSourceLocation()
+
+	if sourceType == config.BINARY || sourceType == config.LOCAL {
+		u, err := url.Parse(sourcePath)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to parse source %s from component %s", sourcePath, cmpName)
+		}
+
+		if u.Scheme != "" && u.Scheme != "file" {
+			return "", fmt.Errorf("Component %s has invalid source path %s", cmpName, u.Scheme)
+		}
+		return util.ReadFilePath(u, runtime.GOOS), nil
+	}
+	return sourcePath, nil
+}
+
+// ApplyIgnore will take the current ignores []string and either ignore it (if .odoignore is used)
+// or find the .gitignore file in the directory and use that instead.
+func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
+	if len(*ignores) == 0 {
+		rules, err := util.GetIgnoreRulesFromDirectory(sourcePath)
+		if err != nil {
+			odoutil.LogErrorAndExit(err, "")
+		}
+		*ignores = append(*ignores, rules...)
+	}
+	return nil
 }

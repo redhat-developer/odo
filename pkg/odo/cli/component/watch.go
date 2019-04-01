@@ -6,7 +6,6 @@ import (
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -51,7 +50,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	wo.options.Client = genericclioptions.Client(cmd)
 
 	// Retrieve configuration configuration as well as SourcePath
-	conf, err := utils.RetrieveLocalConfigInfo(wo.options.ComponentContext)
+	conf, err := genericclioptions.RetrieveLocalConfigInfo(wo.options.ComponentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve config information")
 	}
@@ -62,7 +61,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	wo.options.SourceType = conf.LocalConfig.GetSourceType()
 
 	// Apply ignore information
-	err = utils.ApplyIgnore(&wo.ignores, wo.options.SourcePath)
+	err = genericclioptions.ApplyIgnore(&wo.ignores, wo.options.SourcePath)
 	if err != nil {
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
