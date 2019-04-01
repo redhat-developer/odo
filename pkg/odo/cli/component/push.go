@@ -64,8 +64,7 @@ func NewPushOptions() *PushOptions {
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.client = genericclioptions.Client(cmd)
 
-	// Retrieve configuration
-	conf, err := config.NewLocalConfigInfo(po.componentContext, false)
+	conf, err := config.NewLocalConfigInfo(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
