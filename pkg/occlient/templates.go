@@ -105,7 +105,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 					// The application container
 					Containers: []corev1.Container{
 						{
-							Image: fmt.Sprintf("%s/%s:%s", commonImageMeta.Namespace, commonImageMeta.Name, commonImageMeta.Tag),
+							Image: " ",
 							Name:  commonObjectMeta.Name,
 							Ports: commonImageMeta.Ports,
 							// Run the actual supervisord binary that has been mounted into the container
