@@ -516,10 +516,10 @@ var _ = Describe("odoe2e", func() {
 			})
 			// should be tested after the perviour It
 			It("should be able to push the local files on second iteration successfully", func() {
-				runCmdShouldPass("odo create nodejs:8 nodejs-doublepush --local " + tmpDir + "/nodejs-ex")
-				runCmdShouldPass("odo push")
-				runCmdShouldPass("odo push")
-				runCmdShouldPass("odo component delete nodejs-doublepush -f")
+				runCmdShouldPass("odo create nodejs:8 nodejs-doublepush --app testapp --context " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("odo push --context " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("odo push --context " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("odo component delete --app testapp nodejs-doublepush -f")
 			})
 
 			It("should be able to push changes while showing logging", func() {
