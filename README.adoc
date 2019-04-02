@@ -2,7 +2,6 @@
 
 = OpenShift Do - Developer-focused CLI for OpenShift
 image:./docs/img/openshift.png[180,role="related thumb right"]
-
 :icons:
 :toc: macro
 :toc-title:
