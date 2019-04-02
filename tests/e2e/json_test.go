@@ -45,6 +45,14 @@ var _ = Describe("odojsonoutput", func() {
 			areEqual, _ := compareJSON(desired, actual)
 			Expect(areEqual).To(BeTrue())
 		})
+		// odo project list -o json
+		It("should be able to list the projects", func() {
+			actual := runCmdShouldPass("odo project list -o json")
+			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"json-test","creationTimestamp":null},"spec":{"apps":["myapp"]},"status":{"active":true}},{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myproject","creationTimestamp":null},"spec":{"apps":["myapp"]},"status":{"active":false}}]}`
+			areEqual, _ := compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
+
+		})
 		// odo app describe myapp -o json
 		It("should be able to describe app", func() {
 			desired := `{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"json-test","creationTimestamp":null},"spec":{"components":["nodejs"]},"status":{"active":false}}`

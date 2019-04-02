@@ -1,6 +1,7 @@
 package project
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -50,20 +51,28 @@ func (plo *ProjectListOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-
-	if len(projects) == 0 {
-		return fmt.Errorf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
-	}
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "ACTIVE", "\t", "NAME")
-	for _, project := range projects {
-		activeMark := " "
-		if project.Active {
-			activeMark = "*"
+	if plo.OutputFlag == "json" {
+		out, err := json.Marshal(projects)
+		if err != nil {
+			return err
 		}
-		fmt.Fprintln(w, activeMark, "\t", project.Name)
+		fmt.Println(string(out))
+	} else {
+
+		if len(projects.Items) == 0 {
+			return fmt.Errorf("You are not a member of any projects. You can request a project to be created using the `odo project create <project_name>` command")
+		}
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(w, "ACTIVE", "\t", "NAME")
+		for _, project := range projects.Items {
+			activeMark := " "
+			if project.Status.Active {
+				activeMark = "*"
+			}
+			fmt.Fprintln(w, activeMark, "\t", project.Name)
+		}
+		w.Flush()
 	}
-	w.Flush()
 	return
 }
 
@@ -80,5 +89,6 @@ func NewCmdProjectList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	genericclioptions.AddOutputFlag(projectListCmd)
 	return projectListCmd
 }
