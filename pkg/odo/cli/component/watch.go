@@ -35,7 +35,7 @@ type WatchOptions struct {
 	ignores []string
 	delay   int
 
-	options component.ComponentOptions
+	options genericclioptions.ComponentOptions
 
 	*genericclioptions.Context
 }

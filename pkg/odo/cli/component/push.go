@@ -42,7 +42,7 @@ type PushOptions struct {
 	ignores []string
 	show    bool
 
-	options component.ComponentOptions
+	options genericclioptions.ComponentOptions
 
 	*genericclioptions.Context
 }
