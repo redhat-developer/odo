@@ -1,7 +1,5 @@
 [id="readme"]
-
-= OpenShift Do - Developer-focused CLI for OpenShift
-image:./docs/img/openshift.png[180,role="related thumb right"]
+= odo - Developer-focused CLI for OpenShift image:/docs/img/openshift.png[float="right",align="center"]
 :icons:
 :toc: macro
 :toc-title:
