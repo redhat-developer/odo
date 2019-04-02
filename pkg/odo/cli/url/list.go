@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/url"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -30,7 +31,6 @@ var (
 type URLListOptions struct {
 	localConfigInfo  *config.LocalConfigInfo
 	componentContext string
-	outputFlag       string
 	*genericclioptions.Context
 }
 
@@ -43,6 +43,9 @@ func NewURLListOptions() *URLListOptions {
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "failed intiating local config")
+	}
 	return
 }
 
@@ -63,6 +66,7 @@ func (o *URLListOptions) Run() (err error) {
 
 	if len(urls.Items) == 0 && len(localUrls) == 0 {
 		return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
+
 	} else {
 		if o.OutputFlag == "json" {
 			out, err := json.Marshal(urls)
@@ -72,6 +76,7 @@ func (o *URLListOptions) Run() (err error) {
 			fmt.Println(string(out))
 
 		} else {
+
 			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
 
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -116,5 +121,6 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 	genericclioptions.AddOutputFlag(urlListCmd)
 	genericclioptions.AddContextFlag(urlListCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(urlListCmd, "context", completion.FileCompletionHandler)
+
 	return urlListCmd
 }
