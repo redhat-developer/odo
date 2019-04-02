@@ -1,0 +1,206 @@
+[id="readme"]
+
+= OpenShift Do - Developer-focused CLI for OpenShift
+image:./docs/img/openshift.png[180,role="related thumb right"]
+
+:icons:
+:toc: macro
+:toc-title:
+:toclevels: 1
+
+toc::[]
+
+https://travis-ci.org/openshift/odo[image:https://travis-ci.org/openshift/odo.svg?branch=master[Build
+Status]]
+https://codecov.io/gh/openshift/odo[image:https://codecov.io/gh/openshift/odo/branch/master/graph/badge.svg[codecov]]
+https://circleci.com/gh/openshift/odo/tree/master[image:https://circleci.com/gh/openshift/odo/tree/master.svg?style=svg[CircleCI]]
+https://chat.openshift.io/developers/channels/odo[image:/docs/img/mattermost.svg[mattermost]]
+
+
+[[overview]]
+== Overview
+
+OpenShift Do (`odo`) is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
+
+Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. `odo` abstracts away complex Kubernetes and OpenShift concepts, thus allowing developers to focus on what is most important to them: code.
+
+[[key-features]]
+== Key features
+
+`odo` is designed to be simple and concise with the following key features:
+
+* Simple syntax and design centered around concepts familiar to developers, such as project, application, and component.
+* Completely client based. No server is required within the OpenShift cluster for deployment.
+* Supports multiple languages and frameworks such as Node.js, Java, Ruby, Perl, PHP, and Python.
+* Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real-time.
+* Lists all available components and services from the OpenShift cluster.
+
+[[installing-odo]]
+== Installing `odo`
+
+*Prerequisites:*
+
+* OpenShift 3.9.0 and above is required.
+* We recommend using https://github.com/minishift/minishift[Minishift].
+
+*Procedure:*
+
+=== OS-independent automated installation
+
+Use this link:./scripts/install.sh[bash script] to quickly install `odo`. It will automatically detect your operating system and install `odo` accordingly.
+
+[source,sh]
+----
+curl -L https://github.com/openshift/odo/raw/master/scripts/install.sh | bash
+----
+
+=== macOS
+
+*Binary installation:*
+
+[source,sh]
+----
+sudo curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+----
+
+*Tarball installation:*
+
+[source,sh]
+----
+sudo sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+----
+
+=== Linux
+
+*Binary installation:*
+
+[source,sh]
+----
+sudo curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+----
+
+*Tarball installation:*
+
+[source,sh]
+----
+sudo sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+----
+
+=== Windows
+
+In order to correctly use `odo` you must download it and add it
+to your PATH environment variable:
+
+. Download the `odo-windows-amd64.exe.gz` file from the
+https://github.com/openshift/odo/releases[GitHub releases page].
+. Extract the file.
+. Add the location of extracted binary to your PATH environment
+variable by following the steps listed in this https://github.com/openshift/odo/wiki/Setting-PATH-variable-on-Windows[Wiki page].
+
+For a list of other methods such as installing the latest binary or specific OS installations, visit the link:/docs/installation.md[installation page].
+
+[[demonstration]]
+== Demonstration
+
+The following demonstration provides an overview of `odo`:
+
+https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicast]]
+
+[[deploying-an-application]]
+== Deploying an application using `odo`
+
+After installing `odo`, follow these steps to build, push, and
+deploy a Node.js application. Examples for other supported languages and runtimes can be found https://github.com/openshift/odo/blob/master/docs/examples.md[here].
+
+. Start a local OpenShift development cluster by running minishift.
++
+[source,sh]
+----
+$ minishift start
+----
+. Log into the OpenShift cluster.
++
+[source,sh]
+----
+$ odo login -u developer -p developer
+----
+. Create an application. An application in `odo` is an umbrella
+under which you add other components.
++
+[source,sh]
+----
+$ odo app create node-example-app
+----
+. Download the Node.js sample code and change directory to the
+location of the sample code.
++
+[source,sh]
+----
+$ git clone https://github.com/openshift/nodejs-ex
+$ cd nodejs-ex
+----
+. Add a component of type `nodejs` to your application.
++
+[source,sh]
+----
+$ odo create nodejs
+----
+. Deploy your application.
++
+[source,sh]
+----
+$ odo push
+----
+. Create a URL to access the application and visit it to test it.
++
+[source,sh]
+----
+$ odo url create
+$ curl nodejs-myproject.192.168.42.147.nip.io
+----
+
+For more in-depth information and advanced use-cases such as adding
+storage to a component or linking components, see the
+https://learn.openshift.com/introduction/developing-with-odo/[interactive tutorial] or the link:/docs/getting-started.md[getting started guide].
+
+[[additional-documentation]]
+== Additional documentation
+
+Additional documentation can be found below:
+
+* https://github.com/openshift/odo/blob/master/docs/installation.md[Detailed
+Installation Guide]
+* https://github.com/openshift/odo/blob/master/docs/getting-started.md[Getting
+Started Guide]
+* https://github.com/openshift/odo/blob/master/docs/examples.md[Usage
+Examples for Other Languages and Runtimes]
+* https://github.com/openshift/odo/blob/master/docs/cli-reference.md[CLI
+Reference]
+* https://github.com/openshift/odo/blob/master/docs/development.md[Development
+Guide]
+
+[[contributing]]
+== Community, discussion, contribution, and support
+
+*Chat:* We have a public channel
+https://chat.openshift.io/developers/channels/odo[#odo on
+chat.openshift.io].
+
+*Issues:* If you have an issue with `odo`, please
+https://github.com/openshift/odo/issues[file it].
+
+*Contributing:* Want to become a contributor and submit your own code?
+Have a look at our
+https://github.com/openshift/odo/blob/master/docs/development.md[development guide].
+
+[[glossary]]
+== Glossary
+
+*Application:* An application consists of multiple microservices or components that work individually to build the entire application.
+
+*Component:* A component is similar to a microservice. Multiple
+components make up an application. A component has different attributes like storage. `odo` supports multiple component types like nodejs, perl, php, python, and ruby.
+
+*Service:* Typically a service is a database or a service that a
+component links to or depends on. For example: MariaDB, Jenkins, MySQL.
+This comes from the OpenShift Service Catalog and must be enabled within your cluster.
