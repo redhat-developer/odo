@@ -20,7 +20,7 @@ OpenShift Do is designed to be simple and concise with the following key feature
 ## Installation
 
 **Prerequisites:**
-* OpenShift 3.9.0 and above is required.
+* OpenShift 3.10.0 and above is required.
 * We recommend using [Minishift](https://github.com/minishift/minishift).
 
 <details>
