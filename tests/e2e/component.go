@@ -3,12 +3,14 @@ package e2e
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/tests/e2e/helper"
 )
 
 // SourceTest checks the component-source-type and the source url in the annotation of the bc and dc
@@ -473,5 +475,229 @@ func componentTests(componentCmdPrefix string) {
 			runCmdShouldPass("odo project delete " + projName + " -f")
 			waitForDeleteCmd("odo project list", projName)
 		})
+	})
+
+	var _ = Context("when component is in the current directory", func() {
+
+		//new clean project and context for each test
+		var project string
+		var context string
+
+		//  current directory and project (before eny test is run) so it can restored  after all testing is done
+		var originalDir string
+		var originalProject string
+
+		// Setup up state for each test spec
+		// create new project (not set as active) and new context directory for each test spec
+		// This is before every spec (It)
+		var _ = BeforeEach(func() {
+			project = helper.OcCreateRandProject()
+			context = helper.CreateNewContext()
+		})
+
+		// Clean up after the test
+		// This is run after every Spec (It)
+		var _ = AfterEach(func() {
+			helper.OcDeleteProject(project)
+			helper.DeleteDir(context)
+		})
+
+		// we will be testing components that are created from the current directory
+		// switch to the clean context dir before each test
+		var _ = JustBeforeEach(func() {
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+
+		// go back to original directory after each test
+		var _ = JustAfterEach(func() {
+			helper.Chdir(originalDir)
+		})
+
+		var _ = Context("when --context is not used", func() {
+			var _ = Context("when project from KUBECONFIG is used", func() {
+				// Set active project for each test spec
+				var _ = JustBeforeEach(func() {
+					helper.OcSwitchProject(project)
+				})
+				// go back to original project after each test
+				var _ = JustAfterEach(func() {
+					helper.OcSwitchProject(originalProject)
+				})
+
+				It("create local nodejs component and push source and code separately", func() {
+					appName := "nodejs-push-test"
+					cmpName := "nodejs"
+					helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName)
+					//TODO: verify that config was properly created
+
+					// component doesn't exist yet so attempt to only push source should fail
+					helper.CmdShouldFail("odo push --source")
+
+					// Push only config and see that the component is created but wothout any source copied
+					helper.CmdShouldPass("odo push --config")
+					helper.VerifyCmpExists(cmpName, appName)
+
+					// Push only source and see that the component is updated with source code
+					helper.CmdShouldPass("odo push --source")
+					helper.VerifyCmpExists(cmpName, appName)
+					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
+						cmpName,
+						appName,
+						"ls -lai /tmp/src/package.json",
+						func(cmdOp string, err error) bool {
+							if err != nil {
+								return false
+							}
+							return true
+						},
+					)
+					Expect(remoteCmdExecPass).To(Equal(true))
+				})
+			})
+
+			It("create local nodejs component and push source and code at once", func() {
+				appName := "nodejs-push-test"
+				cmpName := "nodejs-push-atonce"
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+				helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName)
+
+				// Push only config and see that the component is created but wothout any source copied
+				helper.CmdShouldPass("odo push")
+				helper.VerifyCmpExists(cmpName, appName)
+				// No source code yet
+				remoteCmdExecFail := helper.CheckCmdOpInRemoteCmpPod(
+					cmpName,
+					appName,
+					"ls -lai /tmp/src/package.json",
+					func(cmdOp string, err error) bool {
+						if err != nil {
+							return false
+						}
+						return true
+					},
+				)
+				Expect(remoteCmdExecFail).To(Equal(false))
+
+				// Push only source and see that the component is updated with source code
+				helper.CmdShouldPass("odo push --source")
+				helper.VerifyCmpExists(cmpName, appName)
+				remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
+					cmpName,
+					appName,
+					"ls -lai /tmp/src/package.json",
+					func(cmdOp string, err error) bool {
+						if err != nil {
+							return false
+						}
+						return true
+					},
+				)
+				Expect(remoteCmdExecPass).To(Equal(true))
+			})
+		})
+
+	})
+
+	var _ = Context("when component is not in the current directory", func() {
+
+		//new clean project and context for each test
+		var project string
+		var context string
+
+		//  current directory and project (before eny test is run) so it can restored  after all testing is done
+		var originalProject string
+
+		// Setup up state for each test spec
+		// create new project (not set as active) and new context directory for each test spec
+		// This is before every spec (It)
+		var _ = BeforeEach(func() {
+			project = helper.OcCreateRandProject()
+			context = helper.CreateNewContext()
+		})
+
+		// Clean up after the test
+		// This is run after every Spec (It)
+		var _ = AfterEach(func() {
+			helper.OcDeleteProject(project)
+			helper.DeleteDir(context)
+		})
+
+		var _ = Context("when --context is used", func() {
+			var _ = Context("when project from KUBECONFIG is used", func() {
+				// Set active project for each test spec
+				var _ = JustBeforeEach(func() {
+					helper.OcSwitchProject(project)
+				})
+				// go back to original project after each test
+				var _ = JustAfterEach(func() {
+					helper.OcSwitchProject(originalProject)
+				})
+
+				It("create local nodejs component and push source and code separately", func() {
+					appName := "nodejs-push-context-test"
+					cmpName := "nodejs"
+					helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --context " + context + " --app " + appName)
+					//TODO: verify that config was properly created
+
+					// component doesn't exist yet so attempt to only push source should fail
+					helper.CmdShouldFail("odo push --source --context " + context)
+
+					// Push only config and see that the component is created but wothout any source copied
+					helper.CmdShouldPass("odo push --config --context " + context)
+					helper.VerifyCmpExists(cmpName, appName)
+
+					// Push only source and see that the component is updated with source code
+					helper.CmdShouldPass("odo push --source --context " + context)
+					helper.VerifyCmpExists(cmpName, appName)
+					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
+						cmpName,
+						appName,
+						"ls -lai /tmp/src/package.json",
+						func(cmdOp string, err error) bool {
+							if err != nil {
+								return false
+							}
+							return true
+						},
+					)
+					Expect(remoteCmdExecPass).To(Equal(true))
+				})
+			})
+
+			It("create local nodejs component and push source and code at once", func() {
+				appName := "nodejs-push-context-test"
+				cmpName := "nodejs-push-atonce"
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+				helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --context " + context)
+
+				// Push only config and see that the component is created but wothout any source copied
+				helper.CmdShouldPass("odo push --context " + context)
+				helper.VerifyCmpExists(cmpName, appName)
+
+				// Push only source and see that the component is updated with source code
+				helper.CmdShouldPass("odo push --source")
+				helper.VerifyCmpExists(cmpName, appName)
+				remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
+					cmpName,
+					appName,
+					"ls -lai /tmp/src/package.json",
+					func(cmdOp string, err error) bool {
+						if err != nil {
+							return false
+						}
+						return true
+					},
+				)
+				Expect(remoteCmdExecPass).To(Equal(true))
+			})
+		})
+
 	})
 }
