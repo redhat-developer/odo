@@ -1,6 +1,8 @@
++++
+<img align="right" role="right" width="180" src="/docs/img/openshift.png?raw=true"/>
++++
 [id="readme"]
-= odo - Developer-focused CLI for OpenShift image:/docs/img/openshift.png[float="right",align="center"]
-:icons:
+= odo - Developer-focused CLI for OpenShift
 :toc: macro
 :toc-title:
 :toclevels: 1
