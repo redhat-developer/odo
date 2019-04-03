@@ -232,8 +232,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(po, cmd, args)
 		},
 	}
-
-	pushCmd.Flags().StringVarP(&po.componentContext, "context", "c", "", "Use given context directory as a source for component settings")
+	genericclioptions.AddContextFlag(pushCmd, &po.componentContext)
 	pushCmd.Flags().BoolVar(&po.show, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 
