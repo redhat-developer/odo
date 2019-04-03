@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/project"
@@ -42,7 +43,11 @@ type PushOptions struct {
 	ignores []string
 	show    bool
 
-	options genericclioptions.ComponentOptions
+	sourceType       config.SrcType
+	sourcePath       string
+	componentContext string
+	client           *occlient.Client
+	localConfig      *config.LocalConfigInfo
 
 	*genericclioptions.Context
 }
@@ -57,21 +62,26 @@ func NewPushOptions() *PushOptions {
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.options.Client = genericclioptions.Client(cmd)
+	po.client = genericclioptions.Client(cmd)
 
-	// Retrieve configuration configuration as well as SourcePath
-	conf, err := genericclioptions.RetrieveLocalConfigInfo(po.options.ComponentContext)
+	// Retrieve configuration
+	conf, err := config.NewLocalConfigInfo(po.componentContext, false)
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve config information")
+		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
 
 	// Set the necessary values within WatchOptions
-	po.options.LocalConfig = conf.LocalConfig
-	po.options.SourcePath = conf.SourcePath
-	po.options.SourceType = conf.LocalConfig.GetSourceType()
+	po.localConfig = conf
+	po.sourceType = conf.LocalConfig.GetSourceType()
+
+	// Get SourceLocation here...
+	po.sourcePath, err = config.CorrectSourcePath(po.localConfig)
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve absolute path to source location")
+	}
 
 	// Apply ignore information
-	err = genericclioptions.ApplyIgnore(&po.ignores, po.options.SourcePath)
+	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
 	if err != nil {
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
@@ -83,22 +93,22 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
-	return component.ValidateComponentCreateRequest(po.Context.Client, po.options.LocalConfig.GetComponentSettings(), false)
+	return component.ValidateComponentCreateRequest(po.Context.Client, po.localConfig.GetComponentSettings(), false)
 }
 
 func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
-	cmpName := po.options.LocalConfig.GetName()
-	prjName := po.options.LocalConfig.GetProject()
-	appName := po.options.LocalConfig.GetApplication()
-	cmpType := po.options.LocalConfig.GetType()
+	cmpName := po.localConfig.GetName()
+	prjName := po.localConfig.GetProject()
+	appName := po.localConfig.GetApplication()
+	cmpType := po.localConfig.GetType()
 
-	isPrjExists, err := project.Exists(po.options.Client, prjName)
+	isPrjExists, err := project.Exists(po.client, prjName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
 	}
 	if !isPrjExists {
 		log.Successf("Creating project %s", prjName)
-		err = project.Create(po.options.Client, prjName, true)
+		err = project.Create(po.client, prjName, true)
 		if err != nil {
 			log.Errorf("Failed creating project %s", prjName)
 			return errors.Wrapf(
@@ -109,9 +119,9 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 		}
 		log.Successf("Successfully created project %s", prjName)
 	}
-	po.options.Client.Namespace = prjName
+	po.client.Namespace = prjName
 
-	isCmpExists, err := component.Exists(po.options.Client, cmpName, appName)
+	isCmpExists, err := component.Exists(po.client, cmpName, appName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
 	}
@@ -119,7 +129,7 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 	if !isCmpExists {
 		log.Successf("Creating %s component with name %s", cmpType, cmpName)
 		// Classic case of component creation
-		if err = component.CreateComponent(po.options.Client, *po.options.LocalConfig, po.options.ComponentContext, stdout); err != nil {
+		if err = component.CreateComponent(po.client, *po.localConfig, po.componentContext, stdout); err != nil {
 			log.Errorf(
 				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
 				cmpName,
@@ -131,7 +141,7 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 	} else {
 		log.Successf("Applying component settings to component: %v", cmpName)
 		// Apply config
-		err = component.ApplyConfig(po.options.Client, *po.options.LocalConfig, po.options.ComponentContext, stdout)
+		err = component.ApplyConfig(po.client, *po.localConfig, po.componentContext, stdout)
 		if err != nil {
 			log.Errorf("Failed to update config to component deployed. Error %+v", err)
 			os.Exit(1)
@@ -145,46 +155,46 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 func (po *PushOptions) Run() (err error) {
 	stdout := color.Output
 
-	cmpName := po.options.LocalConfig.GetName()
-	appName := po.options.LocalConfig.GetApplication()
+	cmpName := po.localConfig.GetName()
+	appName := po.localConfig.GetApplication()
 
 	err = po.createCmpIfNotExistsAndApplyCmpConfig(stdout)
 	if err != nil {
 		return
 	}
 
-	log.Successf("Pushing changes to component: %v of type %s", cmpName, po.options.SourceType)
+	log.Successf("Pushing changes to component: %v of type %s", cmpName, po.sourceType)
 
-	switch po.options.SourceType {
+	switch po.sourceType {
 	case config.LOCAL, config.BINARY:
 
-		if po.options.SourceType == config.LOCAL {
-			glog.V(4).Infof("Copying directory %s to pod", po.options.SourcePath)
+		if po.sourceType == config.LOCAL {
+			glog.V(4).Infof("Copying directory %s to pod", po.sourcePath)
 			err = component.PushLocal(
-				po.options.Client,
+				po.client,
 				cmpName,
 				appName,
-				po.options.LocalConfig.GetSourceLocation(),
+				po.localConfig.GetSourceLocation(),
 				os.Stdout,
 				[]string{},
 				[]string{},
 				true,
-				util.GetAbsGlobExps(po.options.SourcePath, po.ignores),
+				util.GetAbsGlobExps(po.sourcePath, po.ignores),
 				po.show,
 			)
 		} else {
-			dir := filepath.Dir(po.options.SourcePath)
-			glog.V(4).Infof("Copying file %s to pod", po.options.SourcePath)
+			dir := filepath.Dir(po.sourcePath)
+			glog.V(4).Infof("Copying file %s to pod", po.sourcePath)
 			err = component.PushLocal(
-				po.options.Client,
+				po.client,
 				cmpName,
 				appName,
 				dir,
 				os.Stdout,
-				[]string{po.options.SourcePath},
+				[]string{po.sourcePath},
 				[]string{},
 				true,
-				util.GetAbsGlobExps(po.options.SourcePath, po.ignores),
+				util.GetAbsGlobExps(po.sourcePath, po.ignores),
 				po.show,
 			)
 		}
@@ -194,7 +204,7 @@ func (po *PushOptions) Run() (err error) {
 
 	case "git":
 		err := component.Build(
-			po.options.Client,
+			po.client,
 			cmpName,
 			appName,
 			true,
@@ -224,7 +234,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		},
 	}
 
-	pushCmd.Flags().StringVarP(&po.options.ComponentContext, "context", "c", "", "Use given context directory as a source for component settings")
+	pushCmd.Flags().StringVarP(&po.componentContext, "context", "c", "", "Use given context directory as a source for component settings")
 	pushCmd.Flags().BoolVar(&po.show, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 

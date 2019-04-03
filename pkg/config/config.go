@@ -2,11 +2,14 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/util"
@@ -521,4 +524,40 @@ func GetSrcType(ctStr string) (SrcType, error) {
 	default:
 		return NONE, fmt.Errorf("Unsupported component source type: %s", ctStr)
 	}
+}
+
+// correctSourcePath corrects the current sourcePath depending on local or binary configuration
+func CorrectSourcePath(localConfig *LocalConfigInfo) (path string, err error) {
+
+	cmpName := localConfig.GetName()
+	sourceType := localConfig.GetSourceType()
+	sourceLocation := localConfig.GetSourceLocation()
+
+	// We use "ToSlash" here to make sure that deliminators are in a slash format
+	if sourceLocation == "" {
+		return "", fmt.Errorf("Blank source location provided")
+	}
+
+	sourcePath := filepath.ToSlash(localConfig.GetSourceLocation())
+
+	if sourceType == BINARY || sourceType == LOCAL {
+		u, err := url.Parse(sourcePath)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to parse source %s from component %s", sourcePath, cmpName)
+		}
+
+		// See https://github.com/golang/go/issues/13276
+		// url/parse is unable to parse Windows file paths.. so here we detect if there is one character in the Scheme
+		// Ex. C or Z drive, etc.. as well as check to see if we're on Windows.
+		// else
+		// we check the schema normally (on Linux / macOS)
+		if len(u.Scheme) == 1 && runtime.GOOS == "windows" {
+			glog.V(4).Info("We're using Windows here and unfortunately net/url doesn't support parsing.. we're going to skip this")
+		} else if u.Scheme != "" && u.Scheme != "file" {
+			return "", fmt.Errorf("Component %s has invalid source path %s", cmpName, u.Scheme)
+		}
+
+		return util.ReadFilePath(u, runtime.GOOS), nil
+	}
+	return "", fmt.Errorf("SourceType for correcting a SourcePath must be binary or local")
 }

@@ -313,3 +313,128 @@ func TestMetaTypePopulatedInLocalConfig(t *testing.T) {
 		t.Error("the api version and kind in local config are incorrect")
 	}
 }
+
+func TestCorrectSourcePath(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(localConfigEnvName, tempConfigFile.Name())
+
+	binarySourceType := BINARY
+	localSourceType := LOCAL
+	gitSourceType := GIT
+
+	tests := []struct {
+		name           string
+		parameter      string
+		value          string
+		wantErr        bool
+		existingConfig LocalConfig
+	}{
+		{
+			name:      "Case 1: Valid location (even though it shows c:/)",
+			parameter: SourceLocation,
+			value:     "file://c:/foo/bar",
+			wantErr:   false,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					SourceType: &binarySourceType,
+				},
+			},
+		},
+		{
+			name:      "Case 2: Error if passing in blank",
+			parameter: SourceLocation,
+			value:     "",
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					SourceType: &localSourceType,
+				},
+			},
+		},
+		{
+			name:      "Case 3: Error if we're passing in git source type...",
+			parameter: SourceLocation,
+			value:     "",
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					SourceType: &gitSourceType,
+				},
+			},
+		},
+		{
+			name:      "Case 4: Error if passing in just a url but using local",
+			parameter: SourceLocation,
+			value:     "https://redhat.com",
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					SourceType: &localSourceType,
+				},
+			},
+		},
+		{
+			name:      "Case 5: Valid path",
+			parameter: SourceLocation,
+			value:     "/var/foo/bar",
+			wantErr:   false,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					SourceType: &localSourceType,
+				},
+			},
+		},
+		{
+			name:      "Case 6: Error if URL escapes were passed in..",
+			parameter: SourceLocation,
+			value:     "%a",
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					SourceType: &localSourceType,
+				},
+			},
+		},
+		{
+			name:      "Case 7: Valid binary path",
+			parameter: SourceLocation,
+			value:     "/var/foo/bar",
+			wantErr:   false,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+					SourceType: &binarySourceType,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := NewLocalConfigInfo("", false)
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.LocalConfig = tt.existingConfig
+
+			err = cfg.SetConfiguration(tt.parameter, tt.value)
+			if err != nil {
+				t.Error(err)
+			}
+			isSet := cfg.IsSet(tt.parameter)
+			if !isSet {
+				t.Errorf("the '%v' was not set", tt.parameter)
+			}
+
+			_, err = CorrectSourcePath(cfg)
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error for %s source path", tt.value)
+			} else if !tt.wantErr && err != nil {
+				t.Error(err)
+			}
+
+		})
+	}
+}

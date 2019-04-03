@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -35,7 +37,11 @@ type WatchOptions struct {
 	ignores []string
 	delay   int
 
-	options genericclioptions.ComponentOptions
+	sourceType       config.SrcType
+	sourcePath       string
+	componentContext string
+	client           *occlient.Client
+	localConfig      *config.LocalConfigInfo
 
 	*genericclioptions.Context
 }
@@ -47,21 +53,26 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.options.Client = genericclioptions.Client(cmd)
+	wo.client = genericclioptions.Client(cmd)
 
-	// Retrieve configuration configuration as well as SourcePath
-	conf, err := genericclioptions.RetrieveLocalConfigInfo(wo.options.ComponentContext)
+	// Retrieve configuration
+	conf, err := config.NewLocalConfigInfo(wo.componentContext, false)
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve config information")
+		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
 
 	// Set the necessary values within WatchOptions
-	wo.options.LocalConfig = conf.LocalConfig
-	wo.options.SourcePath = conf.SourcePath
-	wo.options.SourceType = conf.LocalConfig.GetSourceType()
+	wo.localConfig = conf
+	wo.sourceType = conf.LocalConfig.GetSourceType()
+
+	// Get SourceLocation here...
+	wo.sourcePath, err = config.CorrectSourcePath(wo.localConfig)
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve absolute path to source location")
+	}
 
 	// Apply ignore information
-	err = genericclioptions.ApplyIgnore(&wo.ignores, wo.options.SourcePath)
+	err = genericclioptions.ApplyIgnore(&wo.ignores, wo.sourcePath)
 	if err != nil {
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
@@ -75,15 +86,15 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 func (wo *WatchOptions) Validate() (err error) {
 
 	// Validate component path existence and accessibility permissions for odo
-	if _, err := os.Stat(wo.options.SourcePath); err != nil {
-		return errors.Wrapf(err, "Cannot watch %s", wo.options.SourcePath)
+	if _, err := os.Stat(wo.sourcePath); err != nil {
+		return errors.Wrapf(err, "Cannot watch %s", wo.sourcePath)
 	}
 
 	// Validate source of component is either local source or binary path until git watch is supported
-	if wo.options.SourceType != "binary" && wo.options.SourceType != "local" {
+	if wo.sourceType != "binary" && wo.sourceType != "local" {
 		return fmt.Errorf("Watch is supported by binary and local components only and source type of component %s is %s",
-			wo.options.LocalConfig.GetName(),
-			wo.options.SourceType)
+			wo.localConfig.GetName(),
+			wo.sourceType)
 	}
 
 	// Delay interval cannot be -ve
@@ -104,10 +115,10 @@ func (wo *WatchOptions) Run() (err error) {
 		wo.Context.Client,
 		os.Stdout,
 		component.WatchParameters{
-			ComponentName:   wo.options.LocalConfig.GetName(),
+			ComponentName:   wo.localConfig.GetName(),
 			ApplicationName: wo.Context.Application,
-			Path:            wo.options.SourcePath,
-			FileIgnores:     util.GetAbsGlobExps(wo.options.SourcePath, wo.ignores),
+			Path:            wo.sourcePath,
+			FileIgnores:     util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
 			PushDiffDelay:   wo.delay,
 			StartChan:       nil,
 			ExtChan:         make(chan bool),
@@ -115,7 +126,7 @@ func (wo *WatchOptions) Run() (err error) {
 		},
 	)
 	if err != nil {
-		return errors.Wrapf(err, "Error while trying to watch %s", wo.options.SourcePath)
+		return errors.Wrapf(err, "Error while trying to watch %s", wo.sourcePath)
 	}
 	return
 }
@@ -137,7 +148,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 
 	watchCmd.Flags().StringSliceVar(&wo.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	watchCmd.Flags().IntVar(&wo.delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
-	watchCmd.Flags().StringVarP(&wo.options.ComponentContext, "context", "c", "", "Use given context directory as a source for component settings")
+	watchCmd.Flags().StringVarP(&wo.componentContext, "context", "c", "", "Use given context directory as a source for component settings")
 
 	// Add a defined annotation in order to appear in the help menu
 	watchCmd.Annotations = map[string]string{"command": "component"}
