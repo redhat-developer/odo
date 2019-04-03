@@ -13,29 +13,29 @@ to deploy a development OpenShift cluster.
 +
 .. Run Minishift:
 +
-[source,sh]
+[source,bash]
 ----
 $ minishift start
 ----
 .. Log into the OpenShift cluster:
 +
-[source,sh]
+[source,bash]
 ----
 $ odo login -u developer -p developer
 ----
 +
-*Note:* In order to make full use of `odo` functionality, it is recommended to enable the OpenShift https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html[service catalog]. Use `minishift` 1.30 or latest to enable this: `sh   $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"`
+NOTE: In order to make full use of `odo` functionality, it is recommended to enable the OpenShift https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html[service catalog]. Use `minishift` 1.30 or latest to enable this: `sh   $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"`
 
 * If you do not use Minishift, `odo` automatically works with any OpenShift cluster you are currently logged into. To log into the OpenShift cluster run:
 +
-[source,sh]
+[source,bash]
 ----
 $ odo login -u developer -p developer
 ----
 
 . An application is an umbrella that comprises of all the components (microservices) you build. Create an application:
 +
-[source,sh]
+[source,bash]
 ----
 $ odo app create nodeapp
 ----
@@ -44,14 +44,14 @@ $ odo app create nodeapp
 
 .. Download the sample application and change directory to the location of the application:
 +
-[source,sh]
+[source,bash]
 ----
 $ git clone https://github.com/openshift/nodejs-ex
 $ cd nodejs-ex
 ----
 .. Add a component of the type nodejs to the application:
 +
-[source,sh]
+[source,bash]
 ----
 $ odo create nodejs
 ----
@@ -59,7 +59,7 @@ $ odo create nodejs
 *Note:* By default, the latest image is used. You can also explicitly supply an image version by using `odo create openshift/nodejs:8`.
 .. Push the initial source code to the component:
 +
-[source,sh]
+[source,bash]
 ----
 $ odo push
 ----
@@ -68,7 +68,7 @@ Your component is now deployed to OpenShift.
 . To access the component, create an OpenShift route and view your
 deployed application using the generated URL:
 +
-[source,sh]
+[source,bash]
 ----
 $ odo url create --open
 ----
@@ -76,13 +76,13 @@ $ odo url create --open
 .  Edit your code and push the changes to the component:
 ..  Edit one of the layout files within the Node.js directory.
 +
-[source,sh]
+[source,bash]
 ----
 $ vim views/index.html
 ----
 ..  Push the changes:
 +
-[source,sh]
+[source,bash]
 ----
 $ odo push
 ----
@@ -95,8 +95,8 @@ After each change, you can update your component using: `odo push`.
 === Adding storage to the component
 
 `odo` enables you to persist data between restarts by making it easy to add storage to your component as follows:
-+
-[source,sh]
+
+[source,bash]
 ----
 $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi
 ----
@@ -129,8 +129,8 @@ The `.odoignore` file in the root directory of your application is used to ignor
 If the `.odoignore` file does _not_ exist, the `.gitignore` file is used instead for ignoring specific files and folders.
 
 For example, to ignore `.git` files, any files with the `.js` extension, and the folder `tests` add the following to either the `.odoignore` or the `.gitignore` file:
-+
-[source,sh]
+
+[source,bash]
 ----
 .git
 *.js
@@ -138,8 +138,8 @@ For example, to ignore `.git` files, any files with the `.js` extension, and the
 ----
 
 The `.odoignore` file allows any [glob expressions](https://en.wikipedia.org/wiki/Glob_(programming) to be used, for example you can use the following:
-+
-[source,sh]
+
+[source,bash]
 ----
 /openshift/**/*.json
 ----
@@ -154,7 +154,7 @@ OpenShift cluster.
 . Start an OpenShift cluster, version 3.10 and above.
 . Enable the Service Catalog:
 +
-[source,sh]
+[source,bash]
 ----
  MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker"
 ----
@@ -178,19 +178,19 @@ The following example demonstrates the successful import and use of the link:reg
 
 . Import the image into OpenShift:
 +
-[source,sh]
+[source,bash]
 ----
 oc import-image openjdk18 --from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift --confirm
 ----
 . Tag the image to make it accessible to `odo`:
 +
-[source,sh]
+[source,bash]
 ----
 oc annotate istag/openjdk18:latest tags=builder
 ----
 . Deploy it with `odo`:
 +
-[source,sh]
+[source,bash]
 ----
 odo create openjdk18 --git https://github.com/openshift-evangelists/Wild-West-Backend
 ----
