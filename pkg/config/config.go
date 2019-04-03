@@ -526,7 +526,8 @@ func GetSrcType(ctStr string) (SrcType, error) {
 	}
 }
 
-// correctSourcePath corrects the current sourcePath depending on local or binary configuration
+// CorrectSourcePath corrects the current sourcePath depending on local or binary configuration
+// this will get the correct source path whether on Windows, macOS or Linux.
 func CorrectSourcePath(localConfig *LocalConfigInfo) (path string, err error) {
 
 	cmpName := localConfig.GetName()

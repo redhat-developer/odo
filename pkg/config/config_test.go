@@ -314,6 +314,7 @@ func TestMetaTypePopulatedInLocalConfig(t *testing.T) {
 	}
 }
 
+// TODO: Write Windows tests for below
 func TestCorrectSourcePath(t *testing.T) {
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
