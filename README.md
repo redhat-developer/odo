@@ -93,12 +93,12 @@ $ minishift start
 
 2. Log into the OpenShift cluster.
 ```sh
-$ odo login -u developer -p developer`
+$ odo login -u developer -p developer
 ```
 
 3. Create an application. An application in OpenShift Do is an umbrella under which you add other components.
 ```sh
-$ odo app create node-example-app`
+$ odo app create node-example-app
 ```
 
 4. Download the Node.js sample code and change directory to the location of the sample code.
