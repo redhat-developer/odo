@@ -279,6 +279,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Annotations = map[string]string{"command": "component"}
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)
+	completion.RegisterCommandFlagHandler(pushCmd, "context", completion.FileCompletionHandler)
 
 	return pushCmd
 }
