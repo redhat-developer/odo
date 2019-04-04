@@ -9,5 +9,9 @@ func AddOutputFlag(cmd *cobra.Command) {
 
 // AddContextFlag adds `context` flag to given cobra command
 func AddContextFlag(cmd *cobra.Command, setValueTo *string) {
-	cmd.Flags().StringVar(setValueTo, "context", "", "Use context to indicate the path where the component settings need to be saved and this directory should contain component source for local and binary components")
+	if setValueTo != nil {
+		cmd.Flags().StringVar(setValueTo, "context", "", "Use context to indicate the path where the component settings need to be saved and this directory should contain component source for local and binary components")
+	} else {
+		cmd.Flags().String("context", "", "Use context to indicate the path where the component settings need to be saved and this directory should contain component source for local and binary components")
+	}
 }
