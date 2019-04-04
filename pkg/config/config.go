@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -531,11 +530,6 @@ func GetSrcType(ctStr string) (SrcType, error) {
 // this will get the correct source path whether on Windows, macOS or Linux.
 func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 
-	// TODO:
-	// Always piped to "fromslash" so it's correct for the OS..
-	//
-
-	cmpName := lci.GetName()
 	sourceType := lci.GetSourceType()
 	sourceLocation := lci.GetSourceLocation()
 
@@ -543,33 +537,21 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 		return "", fmt.Errorf("Blank source location provided")
 	}
 
-	// If we are passing in a GIT source type, we make no changes.
-	// if it's binary or local, we will correct the source path.
 	if sourceType == GIT {
 		glog.V(4).Info("Git source type detected, not correcting SourcePath location")
 		return sourceLocation, nil
-	} else if sourceType == BINARY || sourceType == LOCAL {
-
-		// We use "ToSlash" here to make sure that deliminators are in a slash format
-		sourcePath := filepath.ToSlash(lci.GetSourceLocation())
-		u, err := url.Parse(sourcePath)
-		if err != nil {
-			return "", errors.Wrapf(err, "unable to parse source %s from component %s", sourcePath, cmpName)
-		}
-
-		if len(u.Scheme) == 1 && runtime.GOOS == "windows" {
-			// See https://github.com/golang/go/issues/13276
-			// url/parse is unable to parse Windows file paths.. so here we detect if there is one character in the Scheme
-			// Ex. C or Z drive, etc.. as well as check to see if we're on Windows.
-			// else
-			// we check the schema normally (on Linux / macOS)
-			glog.V(4).Info("We're using Windows here and unfortunately net/url doesn't support parsing.. we're going to skip this")
-		} else if u.Scheme != "" && u.Scheme != "file" {
-			return "", fmt.Errorf("Component %s has invalid source path %s", cmpName, u.Scheme)
-		}
-
-		return sourcePath, nil
-
 	}
-	return "", fmt.Errorf("SourceType for correcting a SourcePath must be binary or local")
+
+	// Validation check if the user passes in a URL despite us being LOCAL or BINARY
+	u, err := url.Parse(sourceLocation)
+	if err != nil || (u.Scheme == "https" || u.Scheme == "http") {
+		return "", fmt.Errorf("URL: %s passed even though source type is: %s", sourceLocation, sourceType)
+	}
+
+	// Always piped to "fromslash" so it's correct for the OS..
+	// after retrieving the sourceLocation we will covert it to the
+	// correct source path depending on the OS.
+	sourceOSPath := filepath.FromSlash(lci.GetSourceLocation())
+
+	return sourceOSPath, nil
 }
