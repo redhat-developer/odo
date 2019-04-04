@@ -531,6 +531,10 @@ func GetSrcType(ctStr string) (SrcType, error) {
 // this will get the correct source path whether on Windows, macOS or Linux.
 func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 
+	// TODO:
+	// Always piped to "fromslash" so it's correct for the OS..
+	//
+
 	cmpName := lci.GetName()
 	sourceType := lci.GetSourceType()
 	sourceLocation := lci.GetSourceLocation()
