@@ -7,8 +7,7 @@ This document walks you through the development and deployment of a Node.js appl
 . link:/docs/installation.md[Install the `odo` binary].
 . Log into an OpenShift cluster:
 
-* If you lack a local development cluster, we recommend using
-https://docs.openshift.org/latest/minishift/getting-started/installing.html[Minishift]
+* If you lack a local development cluster, we recommend using link:https://docs.openshift.org/latest/minishift/getting-started/installing.html[Minishift]
 to deploy a development OpenShift cluster.
 +
 .. Run Minishift:
@@ -24,7 +23,14 @@ $ minishift start
 $ odo login -u developer -p developer
 ----
 +
-NOTE: In order to make full use of `odo` functionality, it is recommended to enable the OpenShift https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html[service catalog]. Use `minishift` 1.30 or latest to enable this: `sh   $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"`
+[NOTE]
+====
+In order to make full use of `odo` functionality, it is recommended to enable the OpenShift link:https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html[service catalog]. Use `minishift` 1.30 or latest to enable this:
+[source,bash]
+----
+$ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
+----
+====
 
 * If you do not use Minishift, `odo` automatically works with any OpenShift cluster you are currently logged into. To log into the OpenShift cluster run:
 +
@@ -137,7 +143,7 @@ For example, to ignore `.git` files, any files with the `.js` extension, and the
 /tests
 ----
 
-The `.odoignore` file allows any [glob expressions](https://en.wikipedia.org/wiki/Glob_(programming) to be used, for example you can use the following:
+The `.odoignore` file allows any link:https://en.wikipedia.org/wiki/Glob_(programming)[glob expressions] to be used, for example you can use the following:
 
 [source,bash]
 ----
@@ -166,13 +172,12 @@ OpenShift cluster.
 
 === Adding a custom builder
 
-OpenShift enables you to add a https://docs.openshift.com/container-platform/3.7/creating_images/custom.html[custom image] to bridge the gap between the creation of custom images. A custom
-builder image usually includes the base image of https://hub.docker.com/r/openshift/origin-custom-docker-builder/[openshift/origin-custom-docker-builder].
+OpenShift enables you to add a link:https://docs.openshift.com/container-platform/3.7/creating_images/custom.html[custom image] to bridge the gap between the creation of custom images. A custom builder image usually includes the base image of link:https://hub.docker.com/r/openshift/origin-custom-docker-builder/[openshift/origin-custom-docker-builder].
 
-The following example demonstrates the successful import and use of the link:registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift[redhat-openjdk-18]image:
+The following example demonstrates the successful import and use of the link:registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift[redhat-openjdk-18] image:
 
 .Prerequisites:
-`oc` binary is https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli[installed] and present on the `$PATH`.
+`oc` binary is link:https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli[installed] and present on the `$PATH`.
 
 .Procedure:
 
