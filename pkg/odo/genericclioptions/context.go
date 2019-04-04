@@ -17,15 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 )
 
-// ComponentOptions are generic options that are used between commands such as watch and push
-type ComponentOptions struct {
-	SourceType       config.SrcType
-	SourcePath       string
-	LocalConfig      *config.LocalConfigInfo
-	ComponentContext string
-	Client           *occlient.Client
-}
-
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewContext(command *cobra.Command) *Context {
 	return newContext(command, false)
