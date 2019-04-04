@@ -2,9 +2,9 @@
 
 This document provides information on the installation of `odo` on various operating systems and the location of the binaries and the releases.
 
-* The latest `odo` binaries are available on https://dl.bintray.com/odo/odo/latest/[Bintray].
+* The latest `odo` binaries are available on link:https://dl.bintray.com/odo/odo/latest/[Bintray].
 * The latest `odo` releases are available on
-https://github.com/openshift/odo/releases/latest[Github].
+link:https://github.com/openshift/odo/releases/latest[Github].
 
 == Installing `odo`
 
@@ -117,10 +117,9 @@ enabled=1
 
 === Windows
 
-. Download the latest file from the Bintray
-(https://dl.bintray.com/odo/odo/latest/windows-amd64/odo.exe[odo.exe])
+. Download the latest file from the Bintray link:https://dl.bintray.com/odo/odo/latest/windows-amd64/odo.exe[odo.exe]
 or from the latest release page on
-https://github.com/openshift/odo/releases[GitHub].
+link:https://github.com/openshift/odo/releases[GitHub].
 . Extract the file and add the location of extracted binary to your
 `GOPATH/bin` directory (see below to create a Go binary directory)
 
