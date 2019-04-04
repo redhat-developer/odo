@@ -529,11 +529,11 @@ func GetSrcType(ctStr string) (SrcType, error) {
 // GetOSSourcePath corrects the current sourcePath depending on local or binary configuration,
 // if Git has been passed, we simply return the source location from LocalConfig
 // this will get the correct source path whether on Windows, macOS or Linux.
-func GetOSSourcePath(localConfig *LocalConfigInfo) (path string, err error) {
+func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 
-	cmpName := localConfig.GetName()
-	sourceType := localConfig.GetSourceType()
-	sourceLocation := localConfig.GetSourceLocation()
+	cmpName := lci.GetName()
+	sourceType := lci.GetSourceType()
+	sourceLocation := lci.GetSourceLocation()
 
 	if sourceLocation == "" {
 		return "", fmt.Errorf("Blank source location provided")
@@ -547,7 +547,7 @@ func GetOSSourcePath(localConfig *LocalConfigInfo) (path string, err error) {
 	} else if sourceType == BINARY || sourceType == LOCAL {
 
 		// We use "ToSlash" here to make sure that deliminators are in a slash format
-		sourcePath := filepath.ToSlash(localConfig.GetSourceLocation())
+		sourcePath := filepath.ToSlash(lci.GetSourceLocation())
 		u, err := url.Parse(sourcePath)
 		if err != nil {
 			return "", errors.Wrapf(err, "unable to parse source %s from component %s", sourcePath, cmpName)
