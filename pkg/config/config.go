@@ -526,10 +526,10 @@ func GetSrcType(ctStr string) (SrcType, error) {
 	}
 }
 
-// CorrectSourcePath corrects the current sourcePath depending on local or binary configuration,
+// GetOSSourcePath corrects the current sourcePath depending on local or binary configuration,
 // if Git has been passed, we simply return the source location from LocalConfig
 // this will get the correct source path whether on Windows, macOS or Linux.
-func CorrectSourcePath(localConfig *LocalConfigInfo) (path string, err error) {
+func GetOSSourcePath(localConfig *LocalConfigInfo) (path string, err error) {
 
 	cmpName := localConfig.GetName()
 	sourceType := localConfig.GetSourceType()
@@ -564,7 +564,7 @@ func CorrectSourcePath(localConfig *LocalConfigInfo) (path string, err error) {
 			return "", fmt.Errorf("Component %s has invalid source path %s", cmpName, u.Scheme)
 		}
 
-		return util.ReadFilePath(u, runtime.GOOS), nil
+		return sourcePath, nil
 
 	}
 	return "", fmt.Errorf("SourceType for correcting a SourcePath must be binary or local")

@@ -315,7 +315,7 @@ func TestMetaTypePopulatedInLocalConfig(t *testing.T) {
 }
 
 // TODO: Write Windows tests for below
-func TestCorrectSourcePath(t *testing.T) {
+func TestGetOSSourcePath(t *testing.T) {
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
@@ -429,7 +429,7 @@ func TestCorrectSourcePath(t *testing.T) {
 				t.Errorf("the '%v' was not set", tt.parameter)
 			}
 
-			_, err = CorrectSourcePath(cfg)
+			_, err = GetOSSourcePath(cfg)
 			if tt.wantErr && err == nil {
 				t.Errorf("expected error for %s source path", tt.value)
 			} else if !tt.wantErr && err != nil {

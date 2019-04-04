@@ -75,7 +75,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	po.sourceType = conf.LocalConfig.GetSourceType()
 
 	// Get SourceLocation here...
-	po.sourcePath, err = config.CorrectSourcePath(po.localConfig)
+	po.sourcePath, err = config.GetOSSourcePath(po.localConfig)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve absolute path to source location")
 	}
