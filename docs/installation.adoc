@@ -1,10 +1,8 @@
 = Installation Guide
 
-This document provides information on the installation of `odo` on various operating systems and the location of the binaries and the
-releases.
+This document provides information on the installation of `odo` on various operating systems and the location of the binaries and the releases.
 
-* The latest `odo` binaries are available on
-https://dl.bintray.com/odo/odo/latest/[Bintray].
+* The latest `odo` binaries are available on https://dl.bintray.com/odo/odo/latest/[Bintray].
 * The latest `odo` releases are available on
 https://github.com/openshift/odo/releases/latest[Github].
 
@@ -57,7 +55,7 @@ echo "deb https://dl.bintray.com/odo/odo-deb-dev stretch main" | sudo tee -a /et
 ----
 echo "deb https://dl.bintray.com/odo/odo-deb-releases stretch main" | sudo tee -a /etc/apt/sources.list
 ----
-. Install odo:
+. Install `odo`:
 +
 [source,sh]
 ----
@@ -70,7 +68,7 @@ sudo apt-get install odo
 . Access the `odo` repository:
 
 * From the latest builds:
-.. Download the odo repository to `/etc/yum.repods.d/` using:
+.. Download the `odo` repository to `/etc/yum.repods.d/` using:
 +
 [source,sh]
 ----
@@ -88,7 +86,7 @@ repo_gpgcheck=0
 enabled=1
 ....
 * From the latest release:
-.. Download the odo repository to `/etc/yum.repods.d/` using:
+.. Download the `odo` repository to `/etc/yum.repods.d/` using:
 +
 [source,sh]
 ----
@@ -105,7 +103,7 @@ gpgcheck=0
 repo_gpgcheck=0
 enabled=1
 ....
-. Install Odo:
+. Install `odo`:
 * For CentOS or RHEL use `yum install odo`.
 * For Fedora use `dnf install odo`.
 
@@ -120,9 +118,7 @@ https://github.com/openshift/odo/releases[GitHub].
 
 ==== Setting a PATH variable for Windows 7/8
 
-The following example demonstrates how to set up a path variable. Your
-binaries can be located in any location but for the purpose of this
-example we will use `C:\go-bin` as the location.
+The following example demonstrates how to set up a path variable. Your binaries can be located in any location but for the purpose of this example we will use `C:\go-bin` as the location.
 
 . Create a folder at `C:\go-bin`.
 . Right click on *Start* and click on *Control Panel*.
@@ -131,7 +127,7 @@ example we will use `C:\go-bin` as the location.
 and click the *Environment Variables* button at the bottom.
 . Select *Path* from the *Variable* section and click *Edit*.
 . Click *New* and type `C:\go-bin` into the field or click *Browse*
-and select the directory and click *OK*.
+and select the directory, and click *OK*.
 
 ==== Setting a PATH variable for Windows 10
 
