@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/util"
@@ -15,6 +16,17 @@ type EnvVar struct {
 
 // EnvVarList represents a list of environment variables
 type EnvVarList []EnvVar
+
+// ToStringSlice converts the EnvVarList into a slice of env var of kind
+// "key=value"
+func (evl EnvVarList) ToStringSlice() []string {
+	var envSlice []string
+	for _, envVar := range evl {
+		envSlice = append(envSlice, fmt.Sprintf("%s=%s", envVar.Name, envVar.Value))
+	}
+
+	return envSlice
+}
 
 // Merge merges the other EnvVarlist with keeping last value for duplicate EnvVars
 // and returns a new EnvVarList

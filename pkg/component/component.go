@@ -354,12 +354,14 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	cmpPorts := componentConfig.GetPorts()
 	cmpSrcRef := componentConfig.GetRef()
 	appName := componentConfig.GetApplication()
+	envVarsList := componentConfig.GetEnvVars()
 
 	log.Successf("Initializing '%s' component", cmpName)
 	createArgs := occlient.CreateArgs{
 		Name:            cmpName,
 		ImageName:       cmpType,
 		ApplicationName: appName,
+		EnvVars:         envVarsList.ToStringSlice(),
 	}
 	createArgs.SourceType = cmpSrcType
 	createArgs.SourcePath = componentConfig.GetSourceLocation()
@@ -814,6 +816,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 	newSourceRef := componentSettings.GetRef()
 	componentImageType := componentSettings.GetType()
 	cmpPorts := componentSettings.GetPorts()
+	envVarsList := componentSettings.GetEnvVars()
 
 	// Retrieve the old source type
 	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName)
@@ -849,11 +852,6 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		Name:        namespacedOpenShiftObject,
 		Labels:      labels,
 		Annotations: annotations,
-	}
-
-	envVars, err := client.GetEnvVarsFromDC(namespacedOpenShiftObject)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get env vars of %s component", componentName)
 	}
 
 	// Retrieve the current DC in order to obtain what the current inputPorts are..
@@ -892,11 +890,17 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		resourceLimits = *resLts
 	}
 
+	// we choose the env variables in the config over the one present in the DC
+	// so the local config is reflected on the cluster
+	evl, err := occlient.GetInputEnvVarsFromStrings(envVarsList.ToStringSlice())
+	if err != nil {
+		return err
+	}
 	updateComponentParams := occlient.UpdateComponentParams{
 		CommonObjectMeta:  commonObjectMeta,
 		ImageMeta:         commonImageMeta,
 		ResourceLimits:    resourceLimits,
-		EnvVars:           envVars,
+		EnvVars:           evl,
 		DcRollOutWaitCond: occlient.IsDCRolledOut,
 		ExistingDC:        currentDC,
 	}
@@ -913,7 +917,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 
 		// CreateBuildConfig here!
 		glog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
-		bc, err := client.CreateBuildConfig(commonObjectMeta, componentImageType, newSource, newSourceRef, envVars)
+		bc, err := client.CreateBuildConfig(commonObjectMeta, componentImageType, newSource, newSourceRef, evl)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
 		}
