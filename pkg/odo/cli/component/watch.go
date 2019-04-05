@@ -56,7 +56,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	wo.client = genericclioptions.Client(cmd)
 
 	// Retrieve configuration
-	conf, err := config.NewLocalConfigInfo(wo.componentContext, false)
+	conf, err := config.NewLocalConfigInfo(wo.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}

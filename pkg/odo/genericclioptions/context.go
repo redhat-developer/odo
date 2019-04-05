@@ -341,3 +341,16 @@ func ignoreButLog(err error) {
 		glog.V(4).Infof("Ignoring error as it usually means flag wasn't set: %v", err)
 	}
 }
+
+// ApplyIgnore will take the current ignores []string and either ignore it (if .odoignore is used)
+// or find the .gitignore file in the directory and use that instead.
+func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
+	if len(*ignores) == 0 {
+		rules, err := pkgUtil.GetIgnoreRulesFromDirectory(sourcePath)
+		if err != nil {
+			util.LogErrorAndExit(err, "")
+		}
+		*ignores = append(*ignores, rules...)
+	}
+	return nil
+}

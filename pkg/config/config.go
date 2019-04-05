@@ -2,11 +2,13 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/util"
@@ -526,4 +528,35 @@ func GetSrcType(ctStr string) (SrcType, error) {
 	default:
 		return NONE, fmt.Errorf("Unsupported component source type: %s", ctStr)
 	}
+}
+
+// GetOSSourcePath corrects the current sourcePath depending on local or binary configuration,
+// if Git has been passed, we simply return the source location from LocalConfig
+// this will get the correct source path whether on Windows, macOS or Linux.
+func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
+
+	sourceType := lci.GetSourceType()
+	sourceLocation := lci.GetSourceLocation()
+
+	if sourceLocation == "" {
+		return "", fmt.Errorf("Blank source location provided")
+	}
+
+	if sourceType == GIT {
+		glog.V(4).Info("Git source type detected, not correcting SourcePath location")
+		return sourceLocation, nil
+	}
+
+	// Validation check if the user passes in a URL despite us being LOCAL or BINARY
+	u, err := url.Parse(sourceLocation)
+	if err != nil || (u.Scheme == "https" || u.Scheme == "http") {
+		return "", fmt.Errorf("URL: %s passed even though source type is: %s", sourceLocation, sourceType)
+	}
+
+	// Always piped to "fromslash" so it's correct for the OS..
+	// after retrieving the sourceLocation we will covert it to the
+	// correct source path depending on the OS.
+	sourceOSPath := filepath.FromSlash(lci.GetSourceLocation())
+
+	return sourceOSPath, nil
 }
