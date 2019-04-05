@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
 )
@@ -12,7 +12,7 @@ const RecommendedCommandName = "utils"
 
 // NewCmdUtils implements the utils odo command
 func NewCmdUtils(name, fullName string) *cobra.Command {
-	terminalCmd := NewCmdTerminal(terminalCommandName, util.GetFullName(fullName, terminalCommandName))
+	terminalCmd := NewCmdTerminal(terminalCommandName, odoutil.GetFullName(fullName, terminalCommandName))
 	utilsCmd := &cobra.Command{
 		Use:   name,
 		Short: "Utilities for terminal commands and modifying Odo configurations",
@@ -22,7 +22,7 @@ func NewCmdUtils(name, fullName string) *cobra.Command {
 	}
 
 	utilsCmd.Annotations = map[string]string{"command": "utility"}
-	utilsCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	utilsCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	utilsCmd.AddCommand(terminalCmd)
 	return utilsCmd
