@@ -4,7 +4,7 @@
 
 [![Build Status](https://travis-ci.org/openshift/odo.svg?branch=master)](https://travis-ci.org/openshift/odo) [![codecov](https://codecov.io/gh/openshift/odo/branch/master/graph/badge.svg)](https://codecov.io/gh/openshift/odo) [![CircleCI](https://circleci.com/gh/openshift/odo/tree/master.svg?style=svg)](https://circleci.com/gh/openshift/odo/tree/master) [![mattermost](/docs/img/mattermost.svg)](https://chat.openshift.io/developers/channels/odo)
 
-OpenShift Do (odo) is a fast, iterative, and opinionated CLI tool for developers who write, build, and deploy applications on OpenShift.
+OpenShift Do (odo) is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
 
 Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. OpenShift Do abstracts away complex Kubernetes and OpenShift concepts, thus allowing developers to focus on what's most important to them: code.
 
