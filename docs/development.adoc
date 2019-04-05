@@ -75,9 +75,9 @@ It also ensures that post-submit tests (tests that run before merge) valiate the
 
 We follow the Test Driven Development(TDD) workflow in our development process. You can read more about it link:/docs/tdd-workflow.md[here].
 
-== Unit Tests
+== Unit tests
 
-Unit-tests for `odo` functions are written using package
+Unit tests for `odo` functions are written using package
 https://godoc.org/k8s.io/client-go/kubernetes/fake[fake]. This allows us to create a fake client, and then mock the API calls defined under link:https://github.com/openshift/client-go[OpenShift client-go] and link:https://godoc.org/k8s.io/client-go[k8s client-go].
 
 The tests are written in golang using the https://golang.org/pkg/testing/[pkg/testing] package.
@@ -149,8 +149,6 @@ link:https://github.com/openshift/odo/blob/master/pkg/occlient/occlient_test.go[
 . In the case where functions fetch or create new objects through the APIs, add a https://godoc.org/k8s.io/client-go/testing#Fake.AddReactor[reactor] interface returning fake objects.
 . Verify the objects returned.
 
-
-
 == Integration tests
 
 Integration tests, otherwise known as end-2-end (e2e) tests are used within `odo`.
@@ -211,13 +209,13 @@ The reason this happens is because the _read DeploymentConfig_ or _update DC in 
 
 Thus it is recommended to avoid the read/update-in-memory-/push-update actions as much as possible. One remedy is to use the `Patch` operation, for more information see the link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/[`Resource Operations`] section. Another remedy would be to retry the operation when the optimistic concurrency error is encountered.
 
-== Dependency Management
+== Dependency management
 
 `odo` uses `glide` to manage dependencies. `glide` is not strictly required for building `odo` but it is required when managing dependencies under the `vendor/` directory.
 
 If you want to make changes to dependencies please make sure that `glide` is installed and is in your `$PATH`.
 
-=== Installing glide
+=== Installing `glide`
 
 . Download `glide`:
 +
@@ -246,7 +244,7 @@ glide --version
 . Set new package version in `glide.yaml` file.
 . Run `glide update --strip-vendor` to update dependencies
 
-== Release Guide
+== Release guide
 
 === Releasing a new version
 
@@ -301,7 +299,7 @@ in https://github.com/kadel/homebrew-odo[`kadel/homebrew-odo`].
 . Confirm the binaries are available in the GitHub release page.
 . Create a PR and update the file `build/VERSION` with the  latest version number.
 
-== `odo` Bot
+== `odo` bot
 
 https://github.com/odo-bot[odo-bot] is the GitHub user that provides automation for certain tasks in `odo`.
 
