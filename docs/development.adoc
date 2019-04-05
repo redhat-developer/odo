@@ -1,5 +1,9 @@
 = Development Guide
+:toc: macro
+:toc-title:
+:toclevels: 1
 
+ toc::[]
 
 == Submitting a pull request(PR)
 
@@ -7,18 +11,18 @@
 
 . Clone your fork:
 +
-NOTE: The following commands assume that you have the $GOPATH environment variable properly set. We highly recommend you place odo code into the $GOPATH.
+NOTE: The following commands assume that you have the $GOPATH environment variable properly set. We highly recommend you place `odo` code into the $GOPATH.
 +
-[source,sh]
+[source,bash]
 ----
 git clone https://github.com/<YOUR_GITHUB_USERNAME>/odo.git $GOPATH/src/github.com/openshift/odo
 cd $GOPATH/src/github.com/openshift/odo
 git remote add upstream 'https://github.com/openshift/odo'
 ----
 +
-When cloning odo, the Windows terminal such as PowerShell or CMD may throw a *Filename too long* error. To avoid such an error, set your Git configuration as follows:
+When cloning `odo`, the Windows terminal such as PowerShell or CMD may throw a *Filename too long* error. To avoid such an error, set your Git configuration as follows:
 +
-[source,sh]
+[source,bash]
 ----
 git config --system core.longpaths true
 ----
@@ -42,7 +46,7 @@ A PR must include:
 +
 NOTE: If you are a maintainer and have write access to the `odo` repository, modify your git configuration so that you do not accidentally push to upstream:
 +
-[source,sh]
+[source,bash]
 ----
 git remote set-url --push upstream no_push
 ----
@@ -56,7 +60,7 @@ git remote set-url --push upstream no_push
 * Approvers can use `/approve` and `/approve cancel` to approve or hold their approval respectively.
 
 === About Prow
-odo uses the link:https://github.com/kubernetes/test-infra/tree/master/prow[Prow] infrastucture for CI testing.
+`odo` uses the link:https://github.com/kubernetes/test-infra/tree/master/prow[Prow] infrastucture for CI testing.
 * It uses link:https://github.com/kubernetes/community/blob/master/contributors/guide/owners.md[OWNERS] files to determine who can approve and lgtm a PR.
 * Prow has two levels of OWNERS, *Approvers* and *Reviewers*
 ** *Approvers* look for holistic acceptance criteria, including
@@ -73,7 +77,7 @@ We follow the Test Driven Development(TDD) workflow in our development process. 
 
 == Unit Tests
 
-Unit-tests for odo functions are written using package
+Unit-tests for `odo` functions are written using package
 https://godoc.org/k8s.io/client-go/kubernetes/fake[fake]. This allows us to create a fake client, and then mock the API calls defined under link:https://github.com/openshift/client-go[OpenShift client-go] and link:https://godoc.org/k8s.io/client-go[k8s client-go].
 
 The tests are written in golang using the https://golang.org/pkg/testing/[pkg/testing] package.
@@ -149,7 +153,7 @@ link:https://github.com/openshift/odo/blob/master/pkg/occlient/occlient_test.go[
 
 == Integration tests
 
-Integration tests, otherwise known as end-2-end (e2e) tests are used within odo.
+Integration tests, otherwise known as end-2-end (e2e) tests are used within `odo`.
 
 All tests can be found in the `tests/e2e` directory and can be called using functions within `makefile`.
 
@@ -157,7 +161,7 @@ All tests can be found in the `tests/e2e` directory and can be called using func
 
 * A `minishift` or OpenShift environment with Service Catalog enabled:
 +
-[source,sh]
+[source,bash]
 ----
 $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
 ----
@@ -170,25 +174,25 @@ To deploy an e2e test:
 
 
 * For the entire suite use:
-[source,sh]
+[source,bash]
 ----
 make test-e2e
 ----
 
 * For the main tests use:
-[source,sh]
+[source,bash]
 ----
 make test-main-e2e
 ----
 
 * For the component tests use:
-[source,sh]
+[source,bash]
 ----
 make test-cmp-e2e
 ----
 
 * For the service catalog tests use:
-[source,sh]
+[source,bash]
 ----
 make test-service-e2e
 ----
@@ -209,7 +213,7 @@ Thus it is recommended to avoid the read/update-in-memory-/push-update actions a
 
 == Dependency Management
 
-odo uses `glide` to manage dependencies. `glide` is not strictly required for building odo but it is required when managing dependencies under the `vendor/` directory.
+`odo` uses `glide` to manage dependencies. `glide` is not strictly required for building `odo` but it is required when managing dependencies under the `vendor/` directory.
 
 If you want to make changes to dependencies please make sure that `glide` is installed and is in your `$PATH`.
 
@@ -217,14 +221,14 @@ If you want to make changes to dependencies please make sure that `glide` is ins
 
 . Download `glide`:
 +
-[source,sh]
+[source,bash]
 ----
 go get -u github.com/Masterminds/glide
 ----
 
 . Check that `glide` is working
 +
-[source,sh]
+[source,bash]
 ----
 glide --version
 ----
@@ -262,14 +266,14 @@ There is a helper script link:/scripts/bump-version.sh[scripts/bump-version.sh] 
 
 * Updates the CLI reference documentation in the `docs/cli-reference.md` file:
 +
-[source,sh]
+[source,bash]
 ----
 make generate-cli-reference
 ----
 .  Merge the above PR.
 .  Once the PR is merged create and push the new git tag for the version.
 +
-[source,sh]
+[source,bash]
 ----
 git tag v0.0.1
 git push upstream v0.0.1
@@ -284,7 +288,7 @@ NOTE: Do not upload any binaries for the release. When the new tag is created, T
 .. Download the current
 release `.tar.gz` file and retrieve the `sha256` value.
 +
-[source,sh]
+[source,bash]
 ----
 RELEASE=X.X.X
 wget https://github.com/openshift/odo/archive/v$RELEASE.tar.gz
@@ -297,16 +301,16 @@ in https://github.com/kadel/homebrew-odo[`kadel/homebrew-odo`].
 . Confirm the binaries are available in the GitHub release page.
 . Create a PR and update the file `build/VERSION` with the  latest version number.
 
-== Odo Bot
+== `odo` Bot
 
-https://github.com/odo-bot[odo-bot] is the GitHub user that provides automation for certain tasks in odo.
+https://github.com/odo-bot[odo-bot] is the GitHub user that provides automation for certain tasks in `odo`.
 
 It uses the `.travis.yml` script to upload binaries to the GitHub release page using the *deploy-github-release*
 personal access token.
 
 == Licenses
 
-odo uses link:https://github.com/frapposelli/wwhrd[wwhrd] to  check license compatibility of vendor packages. The configuration for `wwhrd` is stored in link:https://github.com/openshift/odo/blob/master/wwhrd.yml[`.wwhrd.yml`].
+`odo` uses link:https://github.com/frapposelli/wwhrd[wwhrd] to  check license compatibility of vendor packages. The configuration for `wwhrd` is stored in link:https://github.com/openshift/odo/blob/master/wwhrd.yml[`.wwhrd.yml`].
 
 The `whitelist` section is for licenses that are always allowed. The `blacklist` section is for licenses that are never allowed and will always fail a build. Any licenses that are not explicitly mentioned come under the `exceptions` secion and need to be explicitly allowed by adding the import path to the exceptions.
 
