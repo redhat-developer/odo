@@ -23,6 +23,8 @@ var viewExample = ktemplates.Examples(`# For viewing the current local configura
 
 // ViewOptions encapsulates the options for the command
 type ViewOptions struct {
+	contextDir string
+	context    *genericclioptions.Context
 }
 
 // NewViewOptions creates a new ViewOptions instance
@@ -32,6 +34,7 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.context = genericclioptions.NewContext(cmd)
 	return
 }
 
@@ -42,8 +45,7 @@ func (o *ViewOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *ViewOptions) Run() (err error) {
-
-	cfg, err := config.New()
+	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}

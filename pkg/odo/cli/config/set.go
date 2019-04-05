@@ -43,6 +43,8 @@ type SetOptions struct {
 	paramName       string
 	paramValue      string
 	configForceFlag bool
+	contextDir      string
+	context         *genericclioptions.Context
 	envArray        []string
 }
 
@@ -57,7 +59,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
-
+	o.context = genericclioptions.NewContext(cmd)
 	return
 }
 
@@ -69,7 +71,7 @@ func (o *SetOptions) Validate() (err error) {
 // Run contains the logic for the command
 func (o *SetOptions) Run() (err error) {
 
-	cfg, err := config.New()
+	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 
 	if err != nil {
 		return errors.Wrapf(err, "unable to set configuration")
