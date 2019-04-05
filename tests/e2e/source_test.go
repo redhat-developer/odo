@@ -135,6 +135,8 @@ var _ = Describe("odoSourceE2e", func() {
 	Context("source project delete", func() {
 		It("should delete source project", func() {
 			ocDeleteProject("odo-source")
+			runCmdShouldPass("rm -rf .odo")
+
 		})
 	})
 })

@@ -90,10 +90,11 @@ var _ = Describe("odoJavaE2e", func() {
 			// Expect(cmpList).To(ContainSubstring("wo-wait-javaee-git-test"))
 
 			// Push changes
-			runCmdShouldPass("odo push")
+			//runCmdShouldPass("odo push")
 
 			// Create a URL
-			runCmdShouldPass("odo url create")
+			runCmdShouldPass("odo url create gitrepo --port 8080")
+			runCmdShouldPass("odo push")
 			routeURL := determineRouteURL()
 
 			// Ping said URL
@@ -116,10 +117,11 @@ var _ = Describe("odoJavaE2e", func() {
 			// Expect(cmpList).To(ContainSubstring("javaee-war-test"))
 
 			// Push changes
-			runCmdShouldPass("odo push")
+			//runCmdShouldPass("odo push")
 
 			// Create a URL
-			runCmdShouldPass("odo url create")
+			runCmdShouldPass("odo url create warfile --port 8080")
+			runCmdShouldPass("odo push")
 			routeURL := determineRouteURL()
 
 			// Ping said URL
@@ -144,10 +146,11 @@ var _ = Describe("odoJavaE2e", func() {
 			// Expect(cmpList).To(ContainSubstring("uberjar-git-test"))
 
 			// Push changes
-			runCmdShouldPass("odo push")
+			//runCmdShouldPass("odo push")
 
 			// Create a URL
-			runCmdShouldPass("odo url create --port 8080")
+			runCmdShouldPass("odo url create uberjar --port 8080")
+			runCmdShouldPass("odo push")
 			routeURL := determineRouteURL()
 
 			// Ping said URL
@@ -170,10 +173,11 @@ var _ = Describe("odoJavaE2e", func() {
 			// Expect(cmpList).To(ContainSubstring("sb-jar-test"))
 
 			// Push changes
-			runCmdShouldPass("odo push")
+			//runCmdShouldPass("odo push")
 
 			// Create a URL
-			runCmdShouldPass("odo url create --port 8080")
+			runCmdShouldPass("odo url create uberjaropenjdk --port 8080")
+			runCmdShouldPass("odo push")
 			routeURL := determineRouteURL()
 
 			// Ping said URL
@@ -190,7 +194,10 @@ var _ = Describe("odoJavaE2e", func() {
 	Context("java project delete", func() {
 		It("should delete java project", func() {
 			ocDeleteProject("odo-java")
+			runCmdShouldPass("rm -rf .odo/")
+
 		})
+
 	})
 })
 

@@ -61,7 +61,7 @@ func determineRouteURL() string {
 
 // creates the specified namespace
 func odoCreateProject(projectName string) {
-	runCmdShouldPass("odo project create " + projectName)
+	runCmdShouldPass("odo project create -w " + projectName)
 	waitForCmdOut("odo project list", 2, true, func(output string) bool {
 		return strings.Contains(output, projectName)
 	})
