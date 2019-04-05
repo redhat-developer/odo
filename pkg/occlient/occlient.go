@@ -1268,7 +1268,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annota
 
 // Define a function that is meant to update a DC in place
 type dcStructUpdater func(dc *appsv1.DeploymentConfig, existingDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container) error
-type dcRollOutWait func(*appsv1.DeploymentConfig) bool
+type dcRollOutWait func(*appsv1.DeploymentConfig, int64) bool
 
 // PatchCurrentDC "patches" the current DeploymentConfig with a new one
 // however... we make sure that configurations such as:
@@ -1304,9 +1304,14 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatc
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
 	}
 
+	// We use the currentDC + 1 for the next revision.. We do NOT use the updated DC (see above code)
+	// as the "Update" function will not update the Status.LatestVersion quick enough... so we wait until
+	// the current revision + 1 is available.
+	desiredRevision := currentDC.Status.LatestVersion + 1
+
 	// Watch / wait for deploymentconfig to update annotations
 	// importing "component" results in an import loop, so we do *not* use the constants here.
-	_, err = c.WaitAndGetDC(name, ocUpdateTimeout, waitCond)
+	_, err = c.WaitAndGetDC(name, desiredRevision, ocUpdateTimeout, waitCond)
 	if err != nil {
 		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", name)
 	}
@@ -1406,6 +1411,7 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 // Returns:
 //	errors if any or nil
 func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool, isCreatePVC bool) error {
+
 	existingCmpContainer, err := FindContainer(ucp.ExistingDC.Spec.Template.Spec.Containers, ucp.CommonObjectMeta.Name)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to find container %s", ucp.CommonObjectMeta.Name)
@@ -1651,7 +1657,7 @@ func (c *Client) WaitForBuildToFinish(buildName string) error {
 //	waitCond: Function indicating when to consider dc rolled out
 // Returns:
 //	Updated DC and errors if any
-func (c *Client) WaitAndGetDC(name string, timeout time.Duration, waitCond func(*appsv1.DeploymentConfig) bool) (*appsv1.DeploymentConfig, error) {
+func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.Duration, waitCond func(*appsv1.DeploymentConfig, int64) bool) (*appsv1.DeploymentConfig, error) {
 
 	w, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
@@ -1680,7 +1686,7 @@ func (c *Client) WaitAndGetDC(name string, timeout time.Duration, waitCond func(
 			if e, ok := val.Object.(*appsv1.DeploymentConfig); ok {
 
 				// If the annotation has been updated, let's exit
-				if waitCond(e) {
+				if waitCond(e, desiredRevision) {
 					return e, nil
 				}
 

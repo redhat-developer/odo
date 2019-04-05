@@ -521,6 +521,18 @@ var _ = Describe("odoe2e", func() {
 				Expect(getLogging).To(ContainSubstring("Building component"))
 			})
 
+			It("should be able to spam odo push without anything breaking", func() {
+				// Iteration 1
+				runCmdShouldPass("odo push --show-log --context " + tmpDir + "/nodejs-ex")
+
+				// Iteration 2
+				runCmdShouldPass("odo push --show-log --context " + tmpDir + "/nodejs-ex")
+
+				// Iteration 3
+				runCmdShouldPass("odo push --show-log --context " + tmpDir + "/nodejs-ex")
+
+			})
+
 			It("should create a component and push using the --ignore flag", func() {
 				// runCmdShouldPass("odo create " + curProj + "/nodejs push-odoignore-flag-example --context " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo create nodejs push-odoignore-flag-example --context " + tmpDir + "/nodejs-ex")
