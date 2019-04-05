@@ -2,9 +2,9 @@
 
 This document provides information on the installation of `odo` on various operating systems and the location of the binaries and the releases.
 
-* The latest `odo` binaries are available on https://dl.bintray.com/odo/odo/latest/[Bintray].
+* The latest `odo` binaries are available on link:https://dl.bintray.com/odo/odo/latest/[Bintray].
 * The latest `odo` releases are available on
-https://github.com/openshift/odo/releases/latest[Github].
+link:https://github.com/openshift/odo/releases/latest[Github].
 
 == Installing `odo`
 
@@ -12,7 +12,7 @@ https://github.com/openshift/odo/releases/latest[Github].
 
 . Access the repository using the Homebrew Tap as follows:
 +
-[source,sh]
+[source,bash]
 ----
 brew tap kadel/odo
 ----
@@ -21,13 +21,13 @@ brew tap kadel/odo
 
 * For the latest Master build use:
 +
-[source,sh]
+[source,bash]
 ----
 brew install kadel/odo/odo --HEAD
 ----
 * For the latest released version use:
 +
-[source,sh]
+[source,bash]
 ----
 brew install kadel/odo/odo
 ----
@@ -36,7 +36,7 @@ brew install kadel/odo/odo
 
 . Add the GPG key from the Bintray used to sign repositories:
 +
-[source,sh]
+[source,bash]
 ----
 curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
 ----
@@ -45,19 +45,19 @@ curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt
 
 * For the latest Master builds use:
 +
-[source,sh]
+[source,bash]
 ----
 echo "deb https://dl.bintray.com/odo/odo-deb-dev stretch main" | sudo tee -a /etc/apt/sources.list
 ----
 * For the latest signed releases use:
 +
-[source,sh]
+[source,bash]
 ----
 echo "deb https://dl.bintray.com/odo/odo-deb-releases stretch main" | sudo tee -a /etc/apt/sources.list
 ----
 . Install `odo`:
 +
-[source,sh]
+[source,bash]
 ----
 sudo apt-get update
 sudo apt-get install odo
@@ -70,7 +70,7 @@ sudo apt-get install odo
 * From the latest builds:
 .. Download the `odo` repository to `/etc/yum.repods.d/` using:
 +
-[source,sh]
+[source,bash]
 ----
 sudo curl -L https://bintray.com/odo/odo-rpm-dev/rpm -o /etc/yum.repos.d/bintray-odo-odo-rpm-dev.repo
 ----
@@ -88,7 +88,7 @@ enabled=1
 * From the latest release:
 .. Download the `odo` repository to `/etc/yum.repods.d/` using:
 +
-[source,sh]
+[source,bash]
 ----
 sudo curl -L https://bintray.com/odo/odo-rpm-releases/rpm -o /etc/yum.repos.d/bintray-odo-odo-rpm-releases.repo
 ----
@@ -104,15 +104,22 @@ repo_gpgcheck=0
 enabled=1
 ....
 . Install `odo`:
-* For CentOS or RHEL use `yum install odo`.
-* For Fedora use `dnf install odo`.
+* For CentOS or RHEL use:
++
+----
+ yum install odo
+----
+* For Fedora use:
++
+----
+ dnf install odo
+----
 
 === Windows
 
-. Download the latest file from the Bintray
-(https://dl.bintray.com/odo/odo/latest/windows-amd64/odo.exe[odo.exe])
+. Download the latest file from the Bintray link:https://dl.bintray.com/odo/odo/latest/windows-amd64/odo.exe[odo.exe]
 or from the latest release page on
-https://github.com/openshift/odo/releases[GitHub].
+link:https://github.com/openshift/odo/releases[GitHub].
 . Extract the file and add the location of extracted binary to your
 `GOPATH/bin` directory (see below to create a Go binary directory)
 
@@ -126,8 +133,7 @@ The following example demonstrates how to set up a path variable. Your binaries 
 . From the menu on the left, select the *Advanced systems settings*
 and click the *Environment Variables* button at the bottom.
 . Select *Path* from the *Variable* section and click *Edit*.
-. Click *New* and type `C:\go-bin` into the field or click *Browse*
-and select the directory and click *OK*.
+. Click *New* and type `C:\go-bin` into the field or click *Browse* and select the directory, and click *OK*.
 
 ==== Setting a PATH variable for Windows 10
 
