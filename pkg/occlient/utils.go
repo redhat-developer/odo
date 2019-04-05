@@ -34,7 +34,6 @@ func getDeploymentCondition(status appsv1.DeploymentConfigStatus, condType appsv
 func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool {
 
 	latestRevision := config.Status.LatestVersion
-	glog.V(4).Infof("Current revision %s, we want: %s", latestRevision, desiredRevision)
 
 	if latestRevision == 0 {
 		switch {
