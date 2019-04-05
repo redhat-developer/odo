@@ -6,9 +6,11 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -26,6 +28,9 @@ var (
 
 // URLListOptions encapsulates the options for the odo url list command
 type URLListOptions struct {
+	localConfigInfo  *config.LocalConfigInfo
+	componentContext string
+	outputFlag       string
 	*genericclioptions.Context
 }
 
@@ -37,6 +42,7 @@ func NewURLListOptions() *URLListOptions {
 // Complete completes UrlListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
+	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext, false)
 	return
 }
 
@@ -53,7 +59,9 @@ func (o *URLListOptions) Run() (err error) {
 		return err
 	}
 
-	if len(urls.Items) == 0 {
+	localUrls := o.localConfigInfo.GetUrl()
+
+	if len(urls.Items) == 0 && len(localUrls) == 0 {
 		return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
 	} else {
 		if o.OutputFlag == "json" {
@@ -71,9 +79,19 @@ func (o *URLListOptions) Run() (err error) {
 			//create headers
 			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
-			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
+			for _, i := range localUrls {
+				var present bool
+				for _, u := range urls.Items {
+					if i.Name == u.Name {
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
+						present = true
+					}
+				}
+				if !present {
+					fmt.Fprintln(tabWriterURL, i.Name, "\t", "<not created on cluster>", "\t", i.Port)
+				}
 			}
+
 			tabWriterURL.Flush()
 
 		}
@@ -96,5 +114,7 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddOutputFlag(urlListCmd)
+	urlListCmd.Flags().StringVar(&o.componentContext, "context", "", "Use context to indicate the path where the component settings need to be saved and this directory should contain component source for local and binary components")
+	completion.RegisterCommandFlagHandler(urlListCmd, "context", completion.FileCompletionHandler)
 	return urlListCmd
 }
