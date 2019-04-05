@@ -26,7 +26,7 @@ func cmdRunner(cmdS string) (string, string, int) {
 	stderr := string(session.Err.Contents())
 	exitCode := session.ExitCode()
 
-	fmt.Fprintf(GinkgoWriter, "Result: \n stdout: %s\n stderr:%s \n exitcode: %d \n", stdout, stderr, exitCode)
+	//fmt.Fprintf(GinkgoWriter, "Result: \n stdout: %s\n stderr:%s \n exitcode: %d \n", stdout, stderr, exitCode)
 
 	return stdout, stderr, exitCode
 }
