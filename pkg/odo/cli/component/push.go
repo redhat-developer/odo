@@ -65,7 +65,6 @@ func NewPushOptions() *PushOptions {
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.Context.Client = genericclioptions.Client(cmd)
 	po.resolveSrcAndConfigFlags()
 
 	conf, err := config.NewLocalConfigInfo(po.componentContext)

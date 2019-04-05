@@ -36,9 +36,6 @@ func OcSwitchProject(project string) {
 func OcDeleteProject(project string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", project)
 	CmdShouldPass(fmt.Sprintf("oc delete project %s --now", project))
-	waitForCmdOut("oc get projects", CmdWaitTimeOut, true, func(output string) bool {
-		return !strings.Contains(output, project)
-	})
 }
 
 // OcCurrentProject get currently active project in oc
