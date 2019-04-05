@@ -4356,7 +4356,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 	}
 }
 
-func Test_getInputEnvVarsFromStrings(t *testing.T) {
+func Test_GetInputEnvVarsFromStrings(t *testing.T) {
 	tests := []struct {
 		name          string
 		envVars       []string
@@ -4437,7 +4437,7 @@ func Test_getInputEnvVarsFromStrings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			envVars, err := getInputEnvVarsFromStrings(tt.envVars)
+			envVars, err := GetInputEnvVarsFromStrings(tt.envVars)
 
 			if err == nil && !tt.wantErr {
 				if !reflect.DeepEqual(tt.wantedEnvVars, envVars) {

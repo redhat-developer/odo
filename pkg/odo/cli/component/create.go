@@ -345,6 +345,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	co.componentSettings.Project = &(co.Context.Project)
+	envs, err := config.NewEnvVarListFromSlice(co.componentEnvVars)
+	if err != nil {
+		return
+	}
+	co.componentSettings.Envs = envs
 
 	return
 }

@@ -802,7 +802,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 		}
 	}
 
-	inputEnvVars, err := getInputEnvVarsFromStrings(params.EnvVars)
+	inputEnvVars, err := GetInputEnvVarsFromStrings(params.EnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "error adding environment variables to the container")
 	}
@@ -1055,7 +1055,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		}
 	}
 
-	inputEnvs, err := getInputEnvVarsFromStrings(params.EnvVars)
+	inputEnvs, err := GetInputEnvVarsFromStrings(params.EnvVars)
 	if err != nil {
 		return errors.Wrapf(err, "error adding environment variables to the container")
 	}
@@ -3177,9 +3177,9 @@ func FindContainer(containers []corev1.Container, name string) (corev1.Container
 	return corev1.Container{}, errors.New("Unable to find container")
 }
 
-// getInputEnvVarsFromStrings generates corev1.EnvVar values from the array of string key=value pairs
+// GetInputEnvVarsFromStrings generates corev1.EnvVar values from the array of string key=value pairs
 // envVars is the array containing the key=value pairs
-func getInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
+func GetInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
 	var inputEnvVars []corev1.EnvVar
 	var keys = make(map[string]int)
 	for _, env := range envVars {
