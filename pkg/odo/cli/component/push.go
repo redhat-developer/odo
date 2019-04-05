@@ -3,10 +3,8 @@ package component
 import (
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
@@ -42,22 +40,23 @@ const PushRecommendedCommandName = "push"
 
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {
-	ignores          []string
+	ignores []string
+	show    bool
+
 	sourceType       config.SrcType
 	sourcePath       string
-	localConfig      *config.LocalConfigInfo
 	componentContext string
+	client           *occlient.Client
+	localConfig      *config.LocalConfigInfo
+
 	*genericclioptions.Context
-	client *occlient.Client
-	show   bool
 }
 
 // NewPushOptions returns new instance of PushOptions
+// with "default" values for certain values, for example, show is "false"
 func NewPushOptions() *PushOptions {
 	return &PushOptions{
-		ignores:     []string{},
-		localConfig: &config.LocalConfigInfo{},
-		show:        false,
+		show: false,
 	}
 }
 
@@ -65,36 +64,29 @@ func NewPushOptions() *PushOptions {
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.client = genericclioptions.Client(cmd)
 
+	// Retrieve configuration
 	conf, err := config.NewLocalConfigInfo(po.componentContext, false)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch component config")
+		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
+
+	// Set the necessary values within WatchOptions
 	po.localConfig = conf
+	po.sourceType = conf.LocalConfig.GetSourceType()
 
-	po.sourceType = po.localConfig.GetSourceType()
-	po.sourcePath = po.localConfig.GetSourceLocation()
-
-	cmpName := po.localConfig.GetName()
-
-	if po.sourceType == config.BINARY || po.sourceType == config.LOCAL {
-		u, err := url.Parse(po.sourcePath)
-		if err != nil {
-			return errors.Wrapf(err, "unable to parse source %s from component %s", po.sourcePath, cmpName)
-		}
-
-		if u.Scheme != "" && u.Scheme != "file" {
-			return fmt.Errorf("Component %s has invalid source path %s", cmpName, u.Scheme)
-		}
-		po.sourcePath = util.ReadFilePath(u, runtime.GOOS)
+	// Get SourceLocation here...
+	po.sourcePath, err = conf.GetOSSourcePath()
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve absolute path to source location")
 	}
 
-	if len(po.ignores) == 0 {
-		rules, err := util.GetIgnoreRulesFromDirectory(po.sourcePath)
-		if err != nil {
-			odoutil.LogErrorAndExit(err, "")
-		}
-		po.ignores = append(po.ignores, rules...)
+	// Apply ignore information
+	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to apply ignore information")
 	}
+
+	// Set the correct context
 	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	return
 }
