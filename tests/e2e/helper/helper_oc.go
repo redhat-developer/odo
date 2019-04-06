@@ -27,9 +27,6 @@ func OcCreateRandProject() string {
 // OcSwitchProject switch to the project
 func OcSwitchProject(project string) {
 	CmdShouldPass(fmt.Sprintf("oc project %s ", project))
-	waitForCmdOut("oc project -q", CmdWaitTimeOut, true, func(output string) bool {
-		return (strings.Compare(strings.TrimSpace(output), project) == 0)
-	})
 }
 
 // DeleteProject deletes a specified project

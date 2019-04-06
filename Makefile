@@ -113,7 +113,7 @@ test-cmp-e2e:
 ifdef TIMEOUT
 	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.succinct -timeout 15m
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.succinct
 endif
 
 # Run component subcommands e2e tests
@@ -122,7 +122,7 @@ test-cmp-sub-e2e:
 ifdef TIMEOUT
 	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.succinct -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.succinct -timeout 15m
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.succinct
 endif
 
 # Run java e2e tests

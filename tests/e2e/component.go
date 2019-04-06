@@ -568,23 +568,6 @@ func componentTests(componentCmdPrefix string) {
 					// Push only config and see that the component is created but wothout any source copied
 					helper.CmdShouldPass("odo push")
 					helper.VerifyCmpExists(cmpName, appName)
-					// No source code yet
-					remoteCmdExecFail := helper.CheckCmdOpInRemoteCmpPod(
-						cmpName,
-						appName,
-						"ls -lai /tmp/src/package.json",
-						func(cmdOp string, err error) bool {
-							if err != nil {
-								return false
-							}
-							return true
-						},
-					)
-					Expect(remoteCmdExecFail).To(Equal(false))
-
-					// Push only source and see that the component is updated with source code
-					helper.CmdShouldPass("odo push --source")
-					helper.VerifyCmpExists(cmpName, appName)
 					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
 						cmpName,
 						appName,
@@ -642,12 +625,8 @@ func componentTests(componentCmdPrefix string) {
 
 					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --context " + context)
 
-					// Push only config and see that the component is created but wothout any source copied
+					// Push both config and source
 					helper.CmdShouldPass("odo push --context " + context)
-					helper.VerifyCmpExists(cmpName, appName)
-
-					// Push only source and see that the component is updated with source code
-					helper.CmdShouldPass("odo push --source")
 					helper.VerifyCmpExists(cmpName, appName)
 					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
 						cmpName,
