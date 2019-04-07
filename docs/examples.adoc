@@ -1,7 +1,7 @@
 Examples
 --------
 
-Odo is compatible with any language or runtime listed within OpenShift’s catalog of component types. In order to access the component over the web, you can create a URL using `odo url create`.
+`odo` is compatible with any language or run time listed within the OpenShift catalog of component types. In order to access the component over the web, you can create a URL using `odo url create`.
 
 This can be found by using `odo catalog list components`.
 
@@ -22,13 +22,12 @@ ruby        openshift     2.0,2.2,2.3,2.4,latest
 wildfly     openshift     10.0,10.1,8.1,9.0,latest
 ----
 
-Examples from Git repos
-~~~~~~~~~~~~~~~~~~~~~~~
+Examples from Git repositories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 httpd
 ^^^^^
-
-Build and serve static content via httpd on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/httpd-container/blob/master/2.4/root/usr/share/container-scripts/httpd/README.md.
+This example helps build and serve static content via httpd on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/sclorg/httpd-container/blob/master/2.4/root/usr/share/container-scripts/httpd/README.md[here].
 
 [source,sh]
 ----
@@ -37,8 +36,7 @@ Build and serve static content via httpd on CentOS 7. For more information about
 
 java
 ^^^^
-
-Build and run fat JAR Java applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/fabric8io-images/s2i/blob/master/README.md.
+This example helps build and run fat JAR Java applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/fabric8io-images/s2i/blob/master/README.md[here].
 
 [source,sh]
 ----
@@ -47,8 +45,7 @@ Build and run fat JAR Java applications on CentOS 7. For more information about 
 
 nodejs
 ^^^^^^
-
-Build and run Node.js applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-nodejs-container/blob/master/8/README.md.
+Build and run Node.js applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/sclorg/s2i-nodejs-container/blob/master/8/README.md[here].
 
 [source,sh]
 ----
@@ -58,7 +55,7 @@ Build and run Node.js applications on CentOS 7. For more information about using
 perl
 ^^^^
 
-Build and run Perl applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-perl-container/blob/master/5.26/README.md.
+This example helps build and run Perl applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/sclorg/s2i-perl-container/blob/master/5.26/README.md[here].
 
 [source,sh]
 ----
@@ -68,7 +65,7 @@ Build and run Perl applications on CentOS 7. For more information about using th
 php
 ^^^
 
-Build and run PHP applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-php-container/blob/master/7.1/README.md.
+This example helps build and run PHP applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/sclorg/s2i-php-container/blob/master/7.1/README.md[here].
 
 [source,sh]
 ----
@@ -78,7 +75,7 @@ Build and run PHP applications on CentOS 7. For more information about using thi
 python
 ^^^^^^
 
-Build and run Python applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-python-container/blob/master/3.6/README.md.
+This example helps build and run Python applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/sclorg/s2i-python-container/blob/master/3.6/README.md[here].
 
 [source,sh]
 ----
@@ -88,7 +85,7 @@ Build and run Python applications on CentOS 7. For more information about using 
 ruby
 ^^^^
 
-Build and run Ruby applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-ruby-container/blob/master/2.5/README.md.
+This example helps build and run Ruby applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/sclorg/s2i-ruby-container/blob/master/2.5/README.md[here].
 
 [source,sh]
 ----
@@ -98,7 +95,7 @@ Build and run Ruby applications on CentOS 7. For more information about using th
 wildfly
 ^^^^^^^
 
-Build and run WildFly applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/openshift-s2i/s2i-wildfly/blob/master/README.md.
+This example helps build and run WildFly applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/openshift-s2i/s2i-wildfly/blob/master/README.md[here].
 
 [source,sh]
 ----
@@ -125,7 +122,7 @@ Java can be used to deploy binary artifact, for example:
 wildfly
 ^^^^^^^
 
-WildFly can deploy a binary application.
+WildFly can be used to deploy a binary application as follows:
 
 [source,sh]
 ----

@@ -24,4 +24,4 @@ Creating a validator
 Validators are defined as follows:
 `type Validator func(interface{}) error`. Therefore, providing new validators is as easy as providing a function taking an `interface{}` as parameter and returning a non-nil error if validation failed for any reason. If the value is deemed valid, the function then returns `nil`.
 
-Note: if a plugin system is developed for `odo`, new validators could be a provided via plugins.
+NOTE: if a plugin system is developed for `odo`, new validators could be a provided via plugins.
