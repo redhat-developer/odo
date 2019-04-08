@@ -12,32 +12,25 @@
       <div id="hero">
         <div class="inner">
           <div class="left">
-                  <img class="hero-logo" src="img/logo.png" style="" title="">
+            <img class="hero-logo" src="img/logo.png" style="" title="">
           </div>
           <div class="right">
-            <h2>
-            OpenShift Do
-            </h2>
+            <h2>odo</h2>
             <p><a class="button" href="{{ site.baseurl }}{{ site.docs_index }}">Get Started</a> <a class="button white" href="{{ site.repository_url }}" target="_blank">GitHub</a></p>
           </div>
         </div>
         <div class="features">
           <section>
             <h3>Deploy with one command</h3>
-            <p>Odo (OpenShift Do..) is a CLI tool that opens up continuous development for OpenShift.
-            </p>
+            <p><code>odo</code> is a command-line tool that brings continuous development to OpenShift.</p>
           </section>
           <section>
-            <h3>Get up and running faster</h3>
-            <p>
-            No need to use OpenShift yaml files, create and and deploy your applications instantly.
-            </p>
+            <h3>Get started faster</h3>
+            <p>No need to use OpenShift YAML files. Create and deploy your applications instantly.</p>
           </section>
           <section>
             <h3>Multiple frameworks</h3>
-            <p>
-            Ruby, Java, .NET, Node.js, Perl and Python readily available.
-            </p>
+            <p>Ruby, Java, .NET, Node.js, Perl, and Python are readily available.</p>
           </section>
         </div>
       </div>
@@ -47,20 +40,21 @@
     </header>
     <main>
       <section>
-        <h2>Take your application source code and let OpenShift take care of the rest.</h2>
-        <p>Odo utilizes <a href="https://github.com/openshift/source-to-image">Source-to-Image</a> to create reproducible Docker images from source code. Odo handles the complex task of building, pushing and deploying your source code. </p>
-        <p><strong>Want to get started? Follow the instructions below or our <a href="https://www.katacoda.com/mjelen/courses/introduction/developing-with-odo">Katacoda tutorial</a>:</strong></p>
-            <pre><code class="bash"># Download the latest release!
-# Or from GitHub https://github.com/redhat-developer/odo/releases
+        <h2>Take application source code and let OpenShift do the rest</h2>
+        <p>The <code>odo</code> tool uses <a href="https://github.com/openshift/source-to-image">Source-to-Image</a> to create reproducible container images from source code. <code>odo</code> handles the complex task of building, pushing, and deploying your source code.</p>
+        <p><strong>Want to get started? Follow the instructions below or our Katacoda tutorial: <a href="https://www.katacoda.com/mjelen/courses/introduction/developing-with-odo">Developing with <code>odo</code></a>.</strong></p>
+        <pre><code class="bash"># Download the latest release from GitHub:
+# https://github.com/redhat-developer/odo/releases
+# Or run:
 $ curl -L https://github.com/redhat-developer/odo/raw/master/scripts/install.sh | bash
 
 # Start your local development environment
 $ minishift start
 
-# Download the Node.JS example directory
-$ git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
+# Download the Node.js example directory
+$ git clone https://github.com/openshift/nodejs-ex &amp;&amp; cd nodejs-ex
 
-# Now let's deploy your application!
+# Now, let's deploy your application!
 $ odo create nodejs
 
 # Push your source code to the application
@@ -68,16 +62,14 @@ $ odo push
 
 # Last, we'll create a way to access the application
 $ odo url create
-nodejs - nodejs-myproject.192.168.42.147.nip.io
+  nodejs - nodejs-myproject.192.168.42.147.nip.io
 
-# Test it / visit the URL
+# Test it with curl, or visit the URL
 $ curl nodejs-myproject.192.168.42.147.nip.io</code></pre>
       </section>
       <section>
         <h2>Demo</h2>
-        <a href="https://asciinema.org/a/55u0cNbqEa1NBekgOu8xmeW1d" target="_blank">
-          <img style="width:100%" src="https://asciinema.org/a/55u0cNbqEa1NBekgOu8xmeW1d.svg" />
-        </a>
+        <script id="asciicast-55u0cNbqEa1NBekgOu8xmeW1d" src="https://asciinema.org/a/55u0cNbqEa1NBekgOu8xmeW1d.js" async></script>
       </section>
     </main>
     <footer>
