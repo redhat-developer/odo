@@ -206,5 +206,9 @@ vendor-update:
 	glide update --strip-vendor
 
 .PHONY: openshiftci-presubmit-e2e
-openshiftci-presubmit:
+openshiftci-presubmit-e2e:
 	./scripts/openshiftci-presubmit-e2e.sh
+
+.PHONY: openshiftci-presubmit-unittests
+openshiftci-presubmit-unittests:
+	./scripts/openshiftci-presubmit-unittests.sh
