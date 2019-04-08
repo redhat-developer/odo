@@ -264,6 +264,7 @@ var _ = Describe("odoe2e", func() {
 				},
 			}
 			for _, testCase := range cases {
+				runCmdShouldPass("odo create nodejs")
 				runCmdShouldPass(fmt.Sprintf("odo config set %s %s -f", testCase.paramName, testCase.paramValue))
 				Value := getConfigValue(testCase.paramName)
 				Expect(Value).To(ContainSubstring(testCase.paramValue))

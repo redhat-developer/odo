@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 
@@ -43,6 +45,8 @@ var (
 type UnsetOptions struct {
 	paramName       string
 	configForceFlag bool
+	contextDir      string
+	context         *genericclioptions.Context
 	envArray        []string
 }
 
@@ -56,6 +60,7 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if o.envArray == nil {
 		o.paramName = args[0]
 	}
+	o.context = genericclioptions.NewContext(cmd)
 	return
 }
 
@@ -67,7 +72,7 @@ func (o *UnsetOptions) Validate() (err error) {
 // Run contains the logic for the command
 func (o *UnsetOptions) Run() (err error) {
 
-	cfg, err := config.New()
+	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 
 	if err != nil {
 		return errors.Wrapf(err, "")

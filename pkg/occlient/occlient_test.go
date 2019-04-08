@@ -4143,7 +4143,7 @@ func TestDeleteEnvVars(t *testing.T) {
 }
 
 func fakeComponentSettings(cmpName string, appName string, projectName string, srcType config.SrcType, cmpType string, t *testing.T) config.LocalConfigInfo {
-	lci, err := config.NewLocalConfigInfo("", false)
+	lci, err := config.NewLocalConfigInfo("")
 	if err != nil {
 		t.Errorf("failed to init fake component configuration")
 		return *lci

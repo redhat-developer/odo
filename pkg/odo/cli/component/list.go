@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
-	odoconfig "github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -47,10 +46,6 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	_, err = odoconfig.NewLocalConfigInfo("", true)
-	if err != nil {
-		return err
-	}
 	return odoutil.CheckOutputFlag(lo.outputFlag)
 }
 

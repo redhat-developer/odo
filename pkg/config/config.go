@@ -79,8 +79,9 @@ type proxyLocalConfig struct {
 // LocalConfigInfo wraps the local config and provides helpers to
 // serialize it.
 type LocalConfigInfo struct {
-	Filename    string `yaml:"FileName,omitempty"`
-	LocalConfig `yaml:",omitempty"`
+	Filename         string `yaml:"FileName,omitempty"`
+	LocalConfig      `yaml:",omitempty"`
+	configFileExists bool
 }
 
 func getLocalConfigFile(cfgDir string) (string, error) {
@@ -101,26 +102,25 @@ func getLocalConfigFile(cfgDir string) (string, error) {
 
 // New returns the localConfigInfo
 func New() (*LocalConfigInfo, error) {
-	return NewLocalConfigInfo("", false)
+	return NewLocalConfigInfo("")
 }
 
 // NewLocalConfigInfo gets the LocalConfigInfo from local config file and creates the local config file in case it's
 // not present then it
-func NewLocalConfigInfo(cfgDir string, errorNoLocalConfig bool) (*LocalConfigInfo, error) {
+func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 	configFile, err := getLocalConfigFile(cfgDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
 	c := LocalConfigInfo{
-		LocalConfig: NewLocalConfig(),
-		Filename:    configFile,
+		LocalConfig:      NewLocalConfig(),
+		Filename:         configFile,
+		configFileExists: true,
 	}
 
 	// if the config file doesn't exist then we dont worry about it and return
 	if _, err = os.Stat(configFile); os.IsNotExist(err) {
-		if errorNoLocalConfig {
-			return nil, fmt.Errorf("the current directory does not represent an odo component.\nMaybe use 'odo create' to create component here or switch to directory with a component")
-		}
+		c.configFileExists = false
 		return &c, nil
 	}
 	err = getFromFile(&c.LocalConfig, c.Filename)
@@ -233,6 +233,11 @@ func (lci *LocalConfigInfo) IsSet(parameter string) bool {
 	}
 
 	return util.IsSet(lci.componentSettings, parameter)
+}
+
+// ConfigFileExists if a config file exists or not
+func (lci *LocalConfigInfo) ConfigFileExists() bool {
+	return lci.configFileExists
 }
 
 // DeleteConfiguration is used to delete config from local odo config

@@ -231,7 +231,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.interactive = true
 	}
 
-	co.localConfigInfo, err = config.NewLocalConfigInfo(co.componentContext, false)
+	co.localConfigInfo, err = config.NewLocalConfigInfo(co.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
