@@ -33,6 +33,10 @@ var _ = Describe("odojsonoutput", func() {
 		It("should be able to create url", func() {
 			runCmdShouldPass("odo url create myurl --port 8080")
 			runCmdShouldPass("odo push")
+			routeURL := determineRouteURL()
+			// Ping said URL
+			responsePing := matchResponseSubString(routeURL, "application on OpenShift", 90, 1)
+			Expect(responsePing).Should(BeTrue())
 			// actual := runCmdShouldPass("odo url create myurl -o json")
 			//	url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
 			//	desired := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080}}`, url)
