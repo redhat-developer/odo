@@ -38,3 +38,11 @@ func CmdShouldPass(cmd string) string {
 	Expect(exitcode).To(Equal(0))
 	return strings.TrimSpace(stdout)
 }
+
+// CmdShouldFail command needs to return non 0 as en exit code
+// returns just stderr
+func CmdShouldFail(cmd string) string {
+	_, stderr, exitcode := cmdRunner(cmd)
+	Expect(exitcode).NotTo(Equal(0))
+	return strings.TrimSpace(stderr)
+}

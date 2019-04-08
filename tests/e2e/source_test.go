@@ -17,7 +17,7 @@ var _ = Describe("odoSourceE2e", func() {
 	// Create a separate project for source
 	Context("create source project", func() {
 		It("should create a new source project", func() {
-			session := runCmdShouldPass("odo project create odo-source")
+			session := runCmdShouldPass("odo project create odo-source -w")
 			Expect(session).To(ContainSubstring("odo-source"))
 		})
 	})

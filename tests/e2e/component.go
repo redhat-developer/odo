@@ -3,12 +3,14 @@ package e2e
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/tests/e2e/helper"
 )
 
 // SourceTest checks the component-source-type and the source url in the annotation of the bc and dc
@@ -474,4 +476,166 @@ func componentTests(componentCmdPrefix string) {
 			waitForDeleteCmd("odo project list", projName)
 		})
 	})
+
+	Context("Test odo push with --source and --config flags", func() {
+		//new clean project and context for each test
+		var project string
+		var context string
+
+		//  current directory and project (before eny test is run) so it can restored  after all testing is done
+		var originalDir string
+
+		// Setup up state for each test spec
+		// create new project (not set as active) and new context directory for each test spec
+		// This is before every spec (It)
+		BeforeEach(func() {
+			project = helper.OcCreateRandProject()
+			context = helper.CreateNewContext()
+		})
+
+		// Clean up after the test
+		// This is run after every Spec (It)
+		AfterEach(func() {
+			helper.OcDeleteProject(project)
+			helper.DeleteDir(context)
+		})
+
+		Context("when project flag(--project) is used", func() {
+
+			Context("when using current directory", func() {
+				// we will be testing components that are created from the current directory
+				// switch to the clean context dir before each test
+				JustBeforeEach(func() {
+					originalDir = helper.Getwd()
+					helper.Chdir(context)
+				})
+
+				// go back to original directory after each test
+				JustAfterEach(func() {
+					helper.Chdir(originalDir)
+				})
+
+				It("create local nodejs component and push source and code separately", func() {
+					appName := "nodejs-push-test"
+					cmpName := "nodejs"
+					helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --project " + project)
+
+					// component doesn't exist yet so attempt to only push source should fail
+					helper.CmdShouldFail("odo push --source")
+
+					// Push only config and see that the component is created but wothout any source copied
+					helper.CmdShouldPass("odo push --config")
+					helper.VerifyCmpExists(cmpName, appName, project)
+
+					// Push only source and see that the component is updated with source code
+					helper.CmdShouldPass("odo push --source")
+					helper.VerifyCmpExists(cmpName, appName, project)
+					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
+						cmpName,
+						appName,
+						project,
+						"ls -lai /tmp/src/package.json",
+						func(cmdOp string, err error) bool {
+							if err != nil {
+								return false
+							}
+							return true
+						},
+					)
+					Expect(remoteCmdExecPass).To(Equal(true))
+				})
+
+				It("create local nodejs component and push source and code at once", func() {
+					appName := "nodejs-push-test"
+					cmpName := "nodejs-push-atonce"
+					helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --project " + project)
+
+					// Push only config and see that the component is created but wothout any source copied
+					helper.CmdShouldPass("odo push")
+					helper.VerifyCmpExists(cmpName, appName, project)
+					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
+						cmpName,
+						appName,
+						project,
+						"ls -lai /tmp/src/package.json",
+						func(cmdOp string, err error) bool {
+							if err != nil {
+								return false
+							}
+							return true
+						},
+					)
+					Expect(remoteCmdExecPass).To(Equal(true))
+				})
+			})
+
+			Context("when --context is used", func() {
+				// don't need to switch to any dir here, as this test should use --context flag
+
+				It("create local nodejs component and push source and code separately", func() {
+					appName := "nodejs-push-context-test"
+					cmpName := "nodejs"
+					helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --context " + context + " --app " + appName + " --project " + project)
+					//TODO: verify that config was properly created
+
+					// component doesn't exist yet so attempt to only push source should fail
+					helper.CmdShouldFail("odo push --source --context " + context)
+
+					// Push only config and see that the component is created but wothout any source copied
+					helper.CmdShouldPass("odo push --config --context " + context)
+					helper.VerifyCmpExists(cmpName, appName, project)
+
+					// Push only source and see that the component is updated with source code
+					helper.CmdShouldPass("odo push --source --context " + context)
+					helper.VerifyCmpExists(cmpName, appName, project)
+					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
+						cmpName,
+						appName,
+						project,
+						"ls -lai /tmp/src/package.json",
+						func(cmdOp string, err error) bool {
+							if err != nil {
+								return false
+							}
+							return true
+						},
+					)
+					Expect(remoteCmdExecPass).To(Equal(true))
+				})
+
+				It("create local nodejs component and push source and code at once", func() {
+					appName := "nodejs-push-context-test"
+					cmpName := "nodejs-push-atonce"
+					helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --context " + context + " --project " + project)
+
+					// Push both config and source
+					helper.CmdShouldPass("odo push --context " + context)
+					helper.VerifyCmpExists(cmpName, appName, project)
+					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
+						cmpName,
+						appName,
+						project,
+						"ls -lai /tmp/src/package.json",
+						func(cmdOp string, err error) bool {
+							if err != nil {
+								return false
+							}
+							return true
+						},
+					)
+					Expect(remoteCmdExecPass).To(Equal(true))
+				})
+			})
+
+		})
+	})
+
 }
