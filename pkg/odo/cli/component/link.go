@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
@@ -66,7 +67,8 @@ DB_PASSWORD=secret`
 
 // LinkOptions encapsulates the options for the odo link command
 type LinkOptions struct {
-	waitForTarget bool
+	waitForTarget    bool
+	componentContext string
 	*commonLinkOptions
 }
 
@@ -140,6 +142,8 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	appCmd.AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
+	//Adding context flag
+	genericclioptions.AddContextFlag(linkCmd, &o.componentContext)
 
 	completion.RegisterCommandHandler(linkCmd, completion.LinkCompletionHandler)
 
