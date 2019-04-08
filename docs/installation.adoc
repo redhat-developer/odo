@@ -6,7 +6,7 @@ This document provides information on the installation of `odo` on various opera
 * The latest `odo` releases are available on
 link:https://github.com/openshift/odo/releases/latest[Github].
 
-== Installing OpenShift Do
+== Installing `odo`
 
 === macOS
 
