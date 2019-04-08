@@ -28,12 +28,13 @@ var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'.
 // DeleteOptions is a container to attach complete, validate and run pattern
 type DeleteOptions struct {
 	componentForceDeleteFlag bool
+	componentContext         string
 	*ComponentOptions
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, &ComponentOptions{}}
+	return &DeleteOptions{false, "", &ComponentOptions{}}
 }
 
 // Complete completes log args
@@ -100,6 +101,8 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
+	//Adding `--context` flag
+	genericclioptions.AddContextFlag(componentDeleteCmd, &do.componentContext)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentDeleteCmd)
