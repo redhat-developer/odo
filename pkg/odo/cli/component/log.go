@@ -2,8 +2,9 @@ package component
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"os"
+
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -25,13 +26,14 @@ var logExample = ktemplates.Examples(`  # Get the logs for the nodejs component
 
 // LogOptions contains log options
 type LogOptions struct {
-	logFollow bool
+	logFollow        bool
+	componentContext string
 	*ComponentOptions
 }
 
 // NewLogOptions returns new instance of LogOptions
 func NewLogOptions() *LogOptions {
-	return &LogOptions{false, &ComponentOptions{}}
+	return &LogOptions{false, "", &ComponentOptions{}}
 }
 
 // Complete completes log args
@@ -75,6 +77,8 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 	logCmd.Annotations = map[string]string{"command": "component"}
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
+	// Adding `--context` flag
+	genericclioptions.AddContextFlag(logCmd, &o.componentContext)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(logCmd)
