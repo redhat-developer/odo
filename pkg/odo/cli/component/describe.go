@@ -26,13 +26,14 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
-	outputFlag string
+	outputFlag       string
+	componentContext string
 	*ComponentOptions
 }
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{"", &ComponentOptions{}}
+	return &DescribeOptions{"", "", &ComponentOptions{}}
 }
 
 // Complete completes describe args
@@ -94,6 +95,8 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
 	describeCmd.Flags().StringVarP(&do.outputFlag, "output", "o", "", "output in json format")
+	// Adding --context flag
+	genericclioptions.AddContextFlag(describeCmd, &do.componentContext)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(describeCmd)
