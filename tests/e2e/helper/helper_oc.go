@@ -46,10 +46,10 @@ func OcGetCurrentProject() string {
 }
 
 // CheckCmdOpInRemoteCmpPod runs the provided command on remote component pod and returns the return value of command output handler function passed to it
-func CheckCmdOpInRemoteCmpPod(cmpName string, appName string, cmd string, checkOp func(cmdOp string, err error) bool) bool {
+func CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prjName string, cmd string, checkOp func(cmdOp string, err error) bool) bool {
 	cmpDCName := fmt.Sprintf("%s-%s", cmpName, appName)
-	podName := CmdShouldPass(fmt.Sprintf("oc get pods --selector=\"deploymentconfig=%s\" -o jsonpath='{.items[0].metadata.name}'", cmpDCName))
-	remoteCmpPodExecCmdStr := fmt.Sprintf("oc exec %s -c %s -- %s;exit", podName, cmpDCName, cmd)
+	podName := CmdShouldPass(fmt.Sprintf("oc get pods --namespace %s --selector=\"deploymentconfig=%s\" -o jsonpath='{.items[0].metadata.name}'", prjName, cmpDCName))
+	remoteCmpPodExecCmdStr := fmt.Sprintf("oc exec %s --namespace %s -c %s -- %s;exit", podName, prjName, cmpDCName, cmd)
 	stdout, stderr, exitcode := cmdRunner(remoteCmpPodExecCmdStr)
 	if exitcode != 0 || stderr != "" {
 		return checkOp(stdout, fmt.Errorf("cmd %s failed with error %s on pod %s", cmd, stderr, podName))
@@ -58,9 +58,9 @@ func CheckCmdOpInRemoteCmpPod(cmpName string, appName string, cmd string, checkO
 }
 
 // VerifyCmpExists verifies if component was created successfully
-func VerifyCmpExists(cmpName string, appName string) {
+func VerifyCmpExists(cmpName string, appName string, prjName string) {
 	cmpDCName := fmt.Sprintf("%s-%s", cmpName, appName)
-	CmdShouldPass(fmt.Sprintf("oc get dc %s", cmpDCName))
+	CmdShouldPass(fmt.Sprintf("oc get dc %s --namespace %s", cmpDCName, prjName))
 }
 
 // waitForCmdOut runs a command until it gets

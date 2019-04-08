@@ -484,7 +484,6 @@ func componentTests(componentCmdPrefix string) {
 
 		//  current directory and project (before eny test is run) so it can restored  after all testing is done
 		var originalDir string
-		var originalProject string
 
 		// Setup up state for each test spec
 		// create new project (not set as active) and new context directory for each test spec
@@ -501,17 +500,7 @@ func componentTests(componentCmdPrefix string) {
 			helper.DeleteDir(context)
 		})
 
-		Context("when project from KUBECONFIG is used", func() {
-			// we will switching project to new one for each test
-			JustBeforeEach(func() {
-				originalProject = helper.OcGetCurrentProject()
-				helper.OcSwitchProject(project)
-			})
-
-			// go back to original project after each test
-			JustAfterEach(func() {
-				helper.OcSwitchProject(originalProject)
-			})
+		Context("when project flag(--project) is used", func() {
 
 			Context("when using current directory", func() {
 				// we will be testing components that are created from the current directory
@@ -538,14 +527,15 @@ func componentTests(componentCmdPrefix string) {
 
 					// Push only config and see that the component is created but wothout any source copied
 					helper.CmdShouldPass("odo push --config")
-					helper.VerifyCmpExists(cmpName, appName)
+					helper.VerifyCmpExists(cmpName, appName, project)
 
 					// Push only source and see that the component is updated with source code
 					helper.CmdShouldPass("odo push --source")
-					helper.VerifyCmpExists(cmpName, appName)
+					helper.VerifyCmpExists(cmpName, appName, project)
 					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
 						cmpName,
 						appName,
+						project,
 						"ls -lai /tmp/src/package.json",
 						func(cmdOp string, err error) bool {
 							if err != nil {
@@ -566,10 +556,11 @@ func componentTests(componentCmdPrefix string) {
 
 					// Push only config and see that the component is created but wothout any source copied
 					helper.CmdShouldPass("odo push")
-					helper.VerifyCmpExists(cmpName, appName)
+					helper.VerifyCmpExists(cmpName, appName, project)
 					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
 						cmpName,
 						appName,
+						project,
 						"ls -lai /tmp/src/package.json",
 						func(cmdOp string, err error) bool {
 							if err != nil {
@@ -598,14 +589,15 @@ func componentTests(componentCmdPrefix string) {
 
 					// Push only config and see that the component is created but wothout any source copied
 					helper.CmdShouldPass("odo push --config --context " + context)
-					helper.VerifyCmpExists(cmpName, appName)
+					helper.VerifyCmpExists(cmpName, appName, project)
 
 					// Push only source and see that the component is updated with source code
 					helper.CmdShouldPass("odo push --source --context " + context)
-					helper.VerifyCmpExists(cmpName, appName)
+					helper.VerifyCmpExists(cmpName, appName, project)
 					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
 						cmpName,
 						appName,
+						project,
 						"ls -lai /tmp/src/package.json",
 						func(cmdOp string, err error) bool {
 							if err != nil {
@@ -626,10 +618,11 @@ func componentTests(componentCmdPrefix string) {
 
 					// Push both config and source
 					helper.CmdShouldPass("odo push --context " + context)
-					helper.VerifyCmpExists(cmpName, appName)
+					helper.VerifyCmpExists(cmpName, appName, project)
 					remoteCmdExecPass := helper.CheckCmdOpInRemoteCmpPod(
 						cmpName,
 						appName,
+						project,
 						"ls -lai /tmp/src/package.json",
 						func(cmdOp string, err error) bool {
 							if err != nil {
