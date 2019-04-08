@@ -23,6 +23,7 @@ var getExample = ktemplates.Examples(`  # Get the currently active component
 type GetOptions struct {
 	componentShortFlag bool
 	componentName      string
+	componentContext   string
 	*genericclioptions.Context
 }
 
@@ -75,6 +76,8 @@ func NewCmdGet(name, fullName string) *cobra.Command {
 	}
 
 	componentGetCmd.Flags().BoolVarP(&o.componentShortFlag, "short", "q", false, "If true, display only the component name")
+	// add --context flag
+	genericclioptions.AddContextFlag(componentGetCmd, &o.componentContext)
 
 	//Adding `--project` flag
 	project.AddProjectFlag(componentGetCmd)
