@@ -22,11 +22,7 @@ $ odo login -u developer -p developer
 +
 [NOTE]
 ====
-In order to make full use of `odo` functionality, it is recommended to enable the OpenShift link:https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html[service catalog]. Use `minishift` 1.30 or latest to enable this:
-
-----
-$ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
-----
+In order to make full use of `odo` functionality, it is recommended to enable the OpenShift link:https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html[service catalog]. See <<Using Service Catalog with `odo`,using service catalog>> section for more details.
 ====
 
 * If you do not use Minishift, `odo` automatically works with any OpenShift cluster you are currently logged into. To log into the OpenShift cluster run:
