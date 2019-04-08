@@ -3,7 +3,7 @@
 :toc-title:
 :toclevels: 1
 
-  toc::[]
+toc::[]
 
 == Submitting a pull request(PR)
 
@@ -292,7 +292,7 @@ in https://github.com/kadel/homebrew-odo[`kadel/homebrew-odo`].
 . Confirm the binaries are available in the GitHub release page.
 . Create a PR and update the file `build/VERSION` with the  latest version number.
 
-== `odo` bot
+== odo-bot
 
 https://github.com/odo-bot[odo-bot] is the GitHub user that provides automation for certain tasks in `odo`.
 
