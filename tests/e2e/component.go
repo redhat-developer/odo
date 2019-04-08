@@ -531,8 +531,7 @@ func componentTests(componentCmdPrefix string) {
 					cmpName := "nodejs"
 					helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName)
-					//TODO: verify that config was properly created
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --project " + project)
 
 					// component doesn't exist yet so attempt to only push source should fail
 					helper.CmdShouldFail("odo push --source")
@@ -563,7 +562,7 @@ func componentTests(componentCmdPrefix string) {
 					cmpName := "nodejs-push-atonce"
 					helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName)
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --project " + project)
 
 					// Push only config and see that the component is created but wothout any source copied
 					helper.CmdShouldPass("odo push")
@@ -591,7 +590,7 @@ func componentTests(componentCmdPrefix string) {
 					cmpName := "nodejs"
 					helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --context " + context + " --app " + appName)
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --context " + context + " --app " + appName + " --project " + project)
 					//TODO: verify that config was properly created
 
 					// component doesn't exist yet so attempt to only push source should fail
@@ -623,7 +622,7 @@ func componentTests(componentCmdPrefix string) {
 					cmpName := "nodejs-push-atonce"
 					helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --context " + context)
+					helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --context " + context + " --project " + project)
 
 					// Push both config and source
 					helper.CmdShouldPass("odo push --context " + context)
