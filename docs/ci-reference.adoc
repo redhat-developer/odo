@@ -1,8 +1,8 @@
 = ci-reference
 
-== How to run integration test job in Travis CI
+== Running integration test job in Travis CI
 
-For default oc, use the configuration in .travis.yaml. For example:
+For default oc, use the configuration in `.travis.yaml`. For example:
 
 [source,sh]
 ----
@@ -18,8 +18,7 @@ For default oc, use the configuration in .travis.yaml. For example:
         - make test-main-e2e
 ----
 
-If the need presents itself to run odo integration tests against a specific version of Openshift, use env variable
-`OPENSHIFT_CLIENT_BINARY_URL` to pass the https://github.com/openshift/origin/releases[released] oc client URL in `.travis.yaml`. For oc v3.10.0, use the configuration:
+If you need to run `odo` integration tests against a specific version of Openshift, use env variable `OPENSHIFT_CLIENT_BINARY_URL` to pass the https://github.com/openshift/origin/releases[released] oc client URL in `.travis.yaml`. For oc v3.10.0, use the configuration:
 
 [source,sh]
 ----
@@ -35,15 +34,13 @@ If the need presents itself to run odo integration tests against a specific vers
         - make test-main-e2e
 ----
 
-== How to run integtration tests on Prow
+== Running integration tests on Prow
 
+Prow is the Kubernetes or OpenShift way of managing workflow, including tests. To get tests, you need to raise PR to `openshift/release` repository setting up appropriate ci operator config and job files. Reference for the same is available in the repository.
 
-Prow is the Kubernetes / OpenShift way of managing workflow including tests. To get tests on there, you need to raise PR to openshift/release repository setting up appropriate ci operator config and job files.
-Reference for same is available there itself.
+Note that prow gives you a bare bones cluster, so we need to pre-configure the same so that the cluster is in state expected such as auth being configured and so on.
 
-However note that prow gives you a bare bones cluster, so we need to preconfigure the same so that the cluster is in state expected such as auth being configured and so on.
+You can do this by running `$ make configure-installer-tests-cluster` before running actual tests. This script is configurable with environment variables as:
 
-You can do this by running `$ make configure-installer-tests-cluster` before running actual tests. This script is configurable with environment variables as
-
-* CI: If this environment is set, then initial setup is skipped in favor of only configuring authentication. Use only with OpenShift CI
-* DEFAULT_INSTALLER_ASSETS_DIR: The location where OpenShift installer creates assets such as kube admin password and the kubeconfig file.
+* `CI`: If this environment is set, then initial setup is skipped in favor of only configuring authentication. Use this only with OpenShift CI.
+* `DEFAULT_INSTALLER_ASSETS_DIR`: The location where OpenShift installer creates assets such as kube admin password and the kubeconfig file.

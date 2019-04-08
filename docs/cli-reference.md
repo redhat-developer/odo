@@ -7,12 +7,12 @@
   git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
   odo create nodejs
   odo push
-  
+
   # Accessing your Node.js component
   odo url create
-``` 
+```
 
-Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code. 
+Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a fast and automated matter. Odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code.
 
 Find more information at https://github.com/openshift/odo
 
@@ -138,7 +138,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
   odo app describe webapp
   # List all applications in the current project
   odo app list
-  
+
   # List all applications in the specified project
   odo app list --project myproject
   # Set an application as active
@@ -201,54 +201,54 @@ Catalog related operations
 ```sh
   # Create new Node.js component with the source in current directory.
   odo create nodejs
-  
+
   # A specific image version may also be specified
   odo create nodejs:latest
-  
+
   # Passing memory limits
   odo create nodejs:latest --memory 150Mi
   odo create nodejs:latest --min-memory 150Mi --max-memory 300 Mi
-  
+
   # Passing cpu limits
   odo create nodejs:latest --cpu 2
   odo create nodejs:latest --min-cpu 0.25 --max-cpu 2
   odo create nodejs:latest --min-cpu 200m --max-cpu 2
-  
+
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --local ./frontend
-  
+
   # Create new Node.js component with source from remote git repository
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
-  
+
   # Create new Node.js git component while specifying a branch, tag or commit ref
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
-  
+
   # Create new Node.js git component while specifying a tag
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
-  
-  
+
+
   # Create a new Node.js component of version 6 from the 'openshift' namespace
   odo create openshift/nodejs:6 --local /nodejs-ex
-  
+
   # Create new Wildfly component with binary named sample.war in './downloads' directory
   odo create wildfly wildly --binary ./downloads/sample.war
-  
+
   # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
   odo create nodejs --port 8080,8100/tcp,9100/udp
-  
+
   # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
   odo create nodejs --env key=value,key1=value1
-  
+
   # For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.md
   odo create python --git https://github.com/openshift/django-ex.git
 ```
 
 
-Create a new component to deploy on OpenShift. 
+Create a new component to deploy on OpenShift.
 
-If a component name is not provided, it'll be auto-generated. 
+If a component name is not provided, it'll be auto-generated.
 
-By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest wil be chosen as the version. 
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest wil be chosen as the version.
 
 A full list of component types that can be deployed is available using: 'odo catalog list'
 
@@ -289,16 +289,16 @@ Describe the given component.
 ```sh
   # Link the current component to the 'my-postgresql' service
   odo link my-postgresql
-  
+
   # Link component 'nodejs' to the 'my-postgresql' service
   odo link my-postgresql --component nodejs
-  
+
   # Link current component to the 'backend' component (backend must have a single exposed port)
   odo link backend
-  
+
   # Link component 'nodejs' to the 'backend' component
   odo link backend --component nodejs
-  
+
   # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed)
   odo link backend --port 8080
 ```
@@ -307,7 +307,7 @@ Describe the given component.
 Link component to a service or component
 
 If the source component is not provided, the current active component is assumed.
-In both use cases, link adds the appropriate secret to the environment of the source component. 
+In both use cases, link adds the appropriate secret to the environment of the source component.
 The source component can then consume the entries of the secret as environment variables.
 
 For example:
@@ -370,13 +370,13 @@ Retrieve the log for the given component.
 ```sh
   # Log in interactively
   odo login
-  
+
   # Log in to the given server with the given certificate authority file
   odo login localhost:8443 --certificate-authority=/path/to/cert.crt
-  
+
   # Log in to the given server with the given credentials (basic auth)
   odo login localhost:8443 --username=myuser --password=mypass
-  
+
   # Log in to the given server with the given credentials (token)
   odo login localhost:8443 --token=xxxxxxxxxxxxxxxxxxxxxxx
 ```
@@ -439,7 +439,7 @@ odo push
 
 # Push source code in ~/mycode to component called my-component
 odo push my-component --local ~/mycode
-  
+
 ```
 
 
@@ -476,18 +476,18 @@ Perform service catalog operations
   odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi
   # Delete storage mystorage from the currently active component
   odo storage delete mystorage
-  
+
   # Delete storage mystorage from component 'mongodb'
   odo storage delete mystorage --component mongodb
   # Unmount storage 'dbstorage' from current component
   odo storage unmount dbstorage
-  
+
   # Unmount storage 'database' from component 'mongodb'
   odo storage unmount database --component mongodb
-  
+
   # Unmount storage mounted to path '/data' from current component
   odo storage unmount /data
-  
+
   # Unmount storage mounted to path '/data' from component 'mongodb'
   odo storage unmount /data --component mongodb
   # List all storage attached or mounted to the current component and
@@ -507,22 +507,22 @@ Perform storage operations
 ```sh
   # Unlink the 'my-postgresql' service from the current component
   odo unlink my-postgresql
-  
+
   # Unlink the 'my-postgresql' service  from the 'nodejs' component
   odo unlink my-postgresql --component nodejs
-  
+
   # Unlink the 'backend' component from the current component (backend must have a single exposed port)
   odo unlink backend
-  
+
   # Unlink the 'backend' service  from the 'nodejs' component
   odo unlink backend --component nodejs
-  
+
   # Unlink the backend's 8080 port from the current component
   odo unlink backend --port 8080
 ```
 
 
-Unlink component or service from a component. 
+Unlink component or service from a component.
 For this command to be successful, the service or component needs to have been linked prior to the invocation using 'odo link'
 
 ## update
@@ -534,16 +534,16 @@ For this command to be successful, the service or component needs to have been l
 ```sh
   # Change the source code path of a currently active component to local (use the current directory as a source)
   odo update --local
-  
+
   # Change the source code path of the frontend component to local with source in ./frontend directory
   odo update frontend --local ./frontend
-  
+
   # Change the source code path of a currently active component to git
   odo update --git https://github.com/openshift/nodejs-ex.git
-  
+
   # Change the source code path of the component named node-ex to git
   odo update node-ex --git https://github.com/openshift/nodejs-ex.git
-  
+
   # Change the source code path of the component named wildfly to a binary named sample.war in ./downloads directory
   odo update wildfly --binary ./downloads/sample.war
 ```
@@ -560,13 +560,13 @@ Update the source code path of a component
 ```sh
   # Create a URL for the current component with a specific port
   odo url create --port 8080
-  
+
   # Create a URL with a specific name and port
   odo url create example --port 8080
-  
+
   # Create a URL with a specific name by automatic detection of port (only for components which expose only one service port)
   odo url create example
-  
+
   # Create a URL with a specific name and port for component frontend
   odo url create example --port 8080 --component frontend
   # Delete a URL to a component
@@ -576,7 +576,7 @@ Update the source code path of a component
 ```
 
 
-Expose component to the outside world. 
+Expose component to the outside world.
 
 The URLs that are generated using this command, can be used to access the deployed components from outside the cluster.
 
@@ -589,13 +589,13 @@ The URLs that are generated using this command, can be used to access the deploy
 ```sh
   # Bash terminal PS1 support
   source <(odo utils terminal bash)
-  
+
   # Zsh terminal PS1 support
   source <(odo utils terminal zsh)
 
   # For viewing the current local configuration
   odo utils config view
-  
+
   For viewing the current global configuration
   odo utils config view --global
 
@@ -603,7 +603,7 @@ The URLs that are generated using this command, can be used to access the deploy
   odo utils config set --global UpdateNotification false
   odo utils config set --global NamePrefix "app"
   odo utils config set --global Timeout 20
-  
+
   # Set a configuration value in the local config
   odo utils config set ComponentType java
   odo utils config set ComponentName test
@@ -619,7 +619,7 @@ The URLs that are generated using this command, can be used to access the deploy
   odo utils config unset --global UpdateNotification
   odo utils config unset --global NamePrefix
   odo utils config unset --global Timeout
-  
+
   # Unset a configuration value in the local config
   odo utils config unset ComponentType
   odo utils config unset ComponentName
@@ -658,12 +658,10 @@ Print the client version information
 ```sh
   # Watch for changes in directory for current component
   odo watch
-  
+
   # Watch for changes in directory for component called frontend
   odo watch frontend
 ```
 
 
 Watch for changes, update component on change.
-
-
