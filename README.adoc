@@ -48,41 +48,36 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 
 Use this link:./scripts/install.sh[bash script] to quickly install `odo`. It will automatically detect your operating system and install `odo` accordingly.
 
-[source,bash]
 ----
-curl -L https://github.com/openshift/odo/raw/master/scripts/install.sh | bash
+$ curl -L https://github.com/openshift/odo/raw/master/scripts/install.sh | bash
 ----
 
 === macOS
 
 *Binary installation:*
 
-[source,bash]
 ----
-sudo curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+# curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
 ----
 
 *Tarball installation:*
 
-[source,bash]
 ----
-sudo sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+# sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ----
 
 === Linux
 
 *Binary installation:*
 
-[source,bash]
 ----
-sudo curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64 -o /usr/local/bin/odo && sudo chmod +x /usr/local/bin/odo
+# curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
 ----
 
 *Tarball installation:*
 
-[source,bash]
 ----
-sudo sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+# sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ----
 
 === Windows
@@ -113,46 +108,39 @@ deploy a Node.js application. Examples for other supported languages and runtime
 
 . Start a local OpenShift development cluster by running minishift.
 +
-[source,bash]
 ----
 $ minishift start
 ----
 . Log into the OpenShift cluster.
 +
-[source,bash]
 ----
 $ odo login -u developer -p developer
 ----
 . Create an application. An application in `odo` is an umbrella
 under which you add other components.
 +
-[source,bash]
 ----
 $ odo app create node-example-app
 ----
 . Download the Node.js sample code and change directory to the
 location of the sample code.
 +
-[source,bash]
 ----
 $ git clone https://github.com/openshift/nodejs-ex
 $ cd nodejs-ex
 ----
 . Add a component of type `nodejs` to your application.
 +
-[source,bash]
 ----
 $ odo create nodejs
 ----
 . Deploy your application.
 +
-[source,bash]
 ----
 $ odo push
 ----
 . Create a URL to access the application and visit it to test it.
 +
-[source,bash]
 ----
 $ odo url create
 $ curl nodejs-myproject.192.168.42.147.nip.io
