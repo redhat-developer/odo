@@ -2,7 +2,7 @@
 <img align="right" role="right" width="180" src="/docs/img/openshift.png?raw=true"/>
 +++
 [id="readme"]
-= odo - Developer-focused CLI for OpenShift
+= OpenShift Do - Developer-focused CLI for OpenShift
 :toc: macro
 :toc-title:
 :toclevels: 1
@@ -35,7 +35,7 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 * Lists all available components and services from the OpenShift cluster.
 
 [[installing-odo]]
-== Installing `odo`
+== Installing OpenShift Do
 
 *Prerequisites:*
 
@@ -101,7 +101,7 @@ The following demonstration provides an overview of `odo`:
 https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicast]]
 
 [[deploying-an-application]]
-== Deploying an application using `odo`
+== Deploying an application using OpenShift Do
 
 After installing `odo`, follow these steps to build, push, and
 deploy a Node.js application. Examples for other supported languages and runtimes can be found link:https://github.com/openshift/odo/blob/master/docs/examples.md[here].
