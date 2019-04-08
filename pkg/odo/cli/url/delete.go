@@ -40,7 +40,7 @@ func NewURLDeleteOptions() *URLDeleteOptions {
 func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	o.urlName = args[0]
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext, false)
+	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	return
 
 }

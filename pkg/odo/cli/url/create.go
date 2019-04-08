@@ -65,7 +65,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 	} else {
 		o.urlName = args[0]
 	}
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext, false)
+	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 
 	return
 }

@@ -42,7 +42,7 @@ func NewURLListOptions() *URLListOptions {
 // Complete completes UrlListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext, false)
+	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	return
 }
 
