@@ -5,5 +5,10 @@ set -e
 # show commands
 set -x
 
-export CUSTOM_HOMEDIR="/tmp/artifacts"
+export ARTIFACTS_DIR=/tmp/artifacts
+export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
+
 make test
+
+make cross
+cp -r dist $ARTIFACTS_DIR
