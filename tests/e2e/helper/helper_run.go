@@ -26,7 +26,7 @@ func cmdRunner(cmdS string) (string, string, int) {
 	stderr := string(session.Err.Contents())
 	exitCode := session.ExitCode()
 
-	//fmt.Fprintf(GinkgoWriter, "Result: \n stdout: %s\n stderr:%s \n exitcode: %d \n", stdout, stderr, exitCode)
+	fmt.Fprintf(GinkgoWriter, "Result: \n stdout: %s\n stderr:%s \n exitcode: %d \n", stdout, stderr, exitCode)
 
 	return stdout, stderr, exitCode
 }
@@ -39,7 +39,7 @@ func CmdShouldPass(cmd string) string {
 	return strings.TrimSpace(stdout)
 }
 
-// CmdShouldFail command needs to retrun non 0 as en exit code
+// CmdShouldFail command needs to return non 0 as en exit code
 // returns just stderr
 func CmdShouldFail(cmd string) string {
 	_, stderr, exitcode := cmdRunner(cmd)

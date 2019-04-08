@@ -167,7 +167,7 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 			log.Errorf("Failed to update config to component deployed. Error %+v", err)
 			os.Exit(1)
 		}
-		log.Successf("Successfully created component with name: %v", cmpName)
+		log.Successf("Successfully updated component with name: %v", cmpName)
 	}
 	return nil
 }
