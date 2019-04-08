@@ -153,6 +153,8 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	watchCmd.Annotations = map[string]string{"command": "component"}
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+	// Adding context flag
+	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)
 
 	//Adding `--application` flag
 	appCmd.AddApplicationFlag(watchCmd)
