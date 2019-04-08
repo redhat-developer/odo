@@ -76,7 +76,7 @@ $ odo push
 
 After each change, you can update your component using: `odo push`.
 
-== Other key OpenShift Do features
+== Other key `odo` features
 
 === Adding storage to the component
 
@@ -129,7 +129,7 @@ The `.odoignore` file allows any link:https://en.wikipedia.org/wiki/Glob_(progra
 /openshift/**/*.json
 ----
 
-=== Using Service Catalog with OpenShift Do
+=== Using Service Catalog with `odo`
 
 If you use Minishift, you require version 1.22 or above.
 
