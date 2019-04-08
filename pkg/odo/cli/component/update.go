@@ -162,8 +162,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(uo, cmd, args)
 		},
 	}
-
-	updateCmd.Flags().StringVarP(&uo.cmpCfgContext, "context", "c", ".", "Use context to specify the location of a component config file if not already in the component source directory")
+	genericclioptions.AddContextFlag(updateCmd, &uo.cmpCfgContext)
 	updateCmd.Flags().StringVarP(&uo.git, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&uo.local, "local", "l", "", "Use local directory as a source for component.")
 	updateCmd.Flags().StringVarP(&uo.ref, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")

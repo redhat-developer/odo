@@ -29,7 +29,8 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
-	outputFlag string
+	outputFlag       string
+	componentContext string
 	*genericclioptions.Context
 }
 
@@ -103,7 +104,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	}
 	// Add a defined annotation in order to appear in the help menu
 	componentListCmd.Annotations = map[string]string{"command": "component"}
-
+	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
 	componentListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
 
 	//Adding `--project` flag

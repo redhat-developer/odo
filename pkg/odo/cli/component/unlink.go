@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -39,6 +40,7 @@ For this command to be successful, the service or component needs to have been l
 
 // UnlinkOptions encapsulates the options for the odo link command
 type UnlinkOptions struct {
+	componentContext string
 	*commonLinkOptions
 }
 
@@ -93,6 +95,8 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	appCmd.AddApplicationFlag(unlinkCmd)
 	//Adding `--component` flag
 	AddComponentFlag(unlinkCmd)
+	// Adding context flag
+	genericclioptions.AddContextFlag(unlinkCmd, &o.componentContext)
 
 	completion.RegisterCommandHandler(unlinkCmd, completion.UnlinkCompletionHandler)
 
