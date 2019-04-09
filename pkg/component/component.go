@@ -526,7 +526,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 //	appName: Name of application of which the component is a part
 //	componentName: Name of the component which is being patched with config
 //	componentConfig: Component configuration
-//  cmpExist: true if components exists in the cluster
+//  	cmpExist: true if components exists in the cluster
 // Returns:
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, stdout io.Writer, cmpExist bool) (err error) {
