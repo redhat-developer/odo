@@ -3674,7 +3674,7 @@ func TestPatchCurrentDC(t *testing.T) {
 			if err != nil {
 				t.Errorf("client.PatchCurrentDC() unexpected error attempting to fetch component container. error %v", err)
 			}
-			err = fakeClient.PatchCurrentDC(tt.args.name, tt.args.dcPatch, tt.args.prePatchDCHandler, func(*appsv1.DeploymentConfig) bool {
+			err = fakeClient.PatchCurrentDC(tt.args.name, tt.args.dcPatch, tt.args.prePatchDCHandler, func(*appsv1.DeploymentConfig, int64) bool {
 				return true
 			}, &(tt.args.dcBefore), existingContainer)
 
@@ -3730,7 +3730,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				resourceLimits:             corev1.ResourceRequirements{},
 				envVars:                    []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 				isDeleteSupervisordVolumes: false,
-				dcRollOutWaitCond: func(*appsv1.DeploymentConfig) bool {
+				dcRollOutWaitCond: func(*appsv1.DeploymentConfig, int64) bool {
 					return true
 				},
 			},
@@ -3750,7 +3750,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				resourceLimits:             corev1.ResourceRequirements{},
 				envVars:                    []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 				isDeleteSupervisordVolumes: false,
-				dcRollOutWaitCond: func(*appsv1.DeploymentConfig) bool {
+				dcRollOutWaitCond: func(*appsv1.DeploymentConfig, int64) bool {
 					return true
 				},
 			},
@@ -3770,7 +3770,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				resourceLimits:             corev1.ResourceRequirements{},
 				envVars:                    []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 				isDeleteSupervisordVolumes: false,
-				dcRollOutWaitCond: func(*appsv1.DeploymentConfig) bool {
+				dcRollOutWaitCond: func(*appsv1.DeploymentConfig, int64) bool {
 					return true
 				},
 			},
@@ -3790,7 +3790,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				resourceLimits:             corev1.ResourceRequirements{},
 				envVars:                    []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 				isDeleteSupervisordVolumes: false,
-				dcRollOutWaitCond: func(*appsv1.DeploymentConfig) bool {
+				dcRollOutWaitCond: func(*appsv1.DeploymentConfig, int64) bool {
 					return true
 				},
 			},
@@ -4277,7 +4277,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 					ResourceLimits: corev1.ResourceRequirements{},
 					EnvVars:        tt.args.envVars,
 					ExistingDC:     &(tt.args.dc),
-					DcRollOutWaitCond: func(e *appsv1.DeploymentConfig) bool {
+					DcRollOutWaitCond: func(e *appsv1.DeploymentConfig, i int64) bool {
 						return true
 					},
 				},
@@ -4861,7 +4861,7 @@ func TestWaitAndGetDC(t *testing.T) {
 				return true, fkWatch, nil
 			})
 			// Run function WaitAndGetDC
-			_, err := fakeClient.WaitAndGetDC(tt.args.name, tt.args.timeout, func(*appsv1.DeploymentConfig) bool {
+			_, err := fakeClient.WaitAndGetDC(tt.args.name, 0, tt.args.timeout, func(*appsv1.DeploymentConfig, int64) bool {
 				return !tt.wantErr
 			})
 			// Error checking WaitAndGetDC
