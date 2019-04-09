@@ -64,7 +64,7 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	gox -osarch="darwin/amd64 linux/amd64 linux/arm windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS) ./cmd/odo/
+	gox -osarch="darwin/amd64 linux/amd64 windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS) ./cmd/odo/
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
