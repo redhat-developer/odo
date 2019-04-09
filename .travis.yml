@@ -64,7 +64,7 @@ jobs:
     # Run service-catalog e2e tests
     - <<: *base-test
       stage: test
-      name: "service catalog, link, componnet subcommands e2e tests"
+      name: "service catalog, link, component subcommands e2e tests"
       script:
         - ./scripts/oc-cluster.sh service-catalog
         - make bin
