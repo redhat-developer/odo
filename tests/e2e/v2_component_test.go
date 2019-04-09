@@ -50,8 +50,8 @@ var _ = Describe("Component Tests", func() {
 			helper.Chdir(originalDir)
 		})
 
-		var _ = FContext("when --project flag is used", func() {
-			FIt("create local nodejs component twice and fail", func() {
+		var _ = Context("when --project flag is used", func() {
+			It("create local nodejs component twice and fail", func() {
 
 				helper.CopyExample(filepath.Join("source", "nodejs"), context)
 				fmt.Println("Context", context)
