@@ -2,10 +2,8 @@ package project
 
 import (
 	"github.com/openshift/odo/pkg/application"
-	"github.com/pkg/errors"
-
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/pkg/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,9 +33,6 @@ func Create(client *occlient.Client, projectName string, wait bool) error {
 
 // Delete deletes the project with name projectName and returns errors if any
 func Delete(client *occlient.Client, projectName string) error {
-	// Loading spinner
-	s := log.Spinnerf("Deleting project %s", projectName)
-	defer s.End(false)
 
 	// Delete the requested project
 	err := client.DeleteProject(projectName)
@@ -45,7 +40,6 @@ func Delete(client *occlient.Client, projectName string) error {
 		return errors.Wrap(err, "unable to delete project")
 	}
 
-	s.End(true)
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/spf13/cobra"
 
@@ -56,20 +57,36 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	if !isValidProject {
 		return fmt.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
 	}
+	util.CheckOutputFlag(pdo.OutputFlag)
 	return
 }
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
+
+	if pdo.OutputFlag == "json" {
+		err := project.Delete(pdo.Context.Client, pdo.projectName)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
 	if err != nil {
 		return err
 	}
 	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+		// Loading spinner
+		s := log.Spinnerf("Deleting project %s", pdo.projectName)
+		defer s.End(false)
+
 		err := project.Delete(pdo.Context.Client, pdo.projectName)
 		if err != nil {
 			return err
 		}
+
+		s.End(true)
 
 		log.Infof("Deleted project : %v", pdo.projectName)
 		return nil
@@ -94,6 +111,6 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 	}
 
 	projectDeleteCmd.Flags().BoolVarP(&o.projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
-
+	genericclioptions.AddOutputFlag(projectDeleteCmd)
 	return projectDeleteCmd
 }
