@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -54,8 +53,6 @@ var _ = Describe("Component Tests", func() {
 			It("create local nodejs component twice and fail", func() {
 
 				helper.CopyExample(filepath.Join("source", "nodejs"), context)
-				fmt.Println("Context", context)
-
 				helper.CmdShouldPass("odo component create nodejs --project " + project + " --env key=value,key1=value1")
 				output := helper.CmdShouldFail("odo component create nodejs --project " + project + " --env key=value,key1=value1")
 				Expect(output).To(ContainSubstring("this directory already contains a component"))
