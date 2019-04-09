@@ -83,39 +83,52 @@ var _ = Describe("Example of a clean test", func() {
 
 		})
 
-		var _ = Context("when --context is used", func() {
-			var _ = Context("when project from KUBECONFIG is used", func() {
-				// Set active project for each test spec
-				var _ = JustBeforeEach(func() {
-					helper.OcSwitchProject(project)
-				})
-				// go back to original project after each test
-				var _ = JustAfterEach(func() {
-					helper.OcSwitchProject(originalProject)
-				})
+	})
 
-				It("create local nodejs component and push code", func() {
-					helper.CopyExample(filepath.Join("source", "nodejs"), context)
+	var _ = Context("when --context is used", func() {
 
-					helper.CmdShouldPass("odo component create nodejs nodejs --context " + context)
-					//TODO: verify that config was properly created
-					helper.CmdShouldPass("odo push")
-					//TODO: verify resources on cluster
-				})
-
-			})
-
-			var _ = Context("when --project flag is used", func() {
-				It("create local nodejs component and push code", func() {
-					helper.CopyExample(filepath.Join("source", "nodejs"), context)
-
-					helper.CmdShouldPass("odo component create nodejs nodejs --project " + project + " --context " + context)
-					//TODO: verify that config was properly created
-					helper.CmdShouldPass("odo push")
-					//TODO: verify resources on cluster
-				})
-			})
+		// we will be testing components that are created from the current directory
+		// switch to the clean context dir before each test
+		var _ = JustBeforeEach(func() {
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
 		})
 
+		// go back to original directory after each test
+		var _ = JustAfterEach(func() {
+			helper.Chdir(originalDir)
+		})
+
+		var _ = Context("when project from KUBECONFIG is used", func() {
+			// Set active project for each test spec
+			var _ = JustBeforeEach(func() {
+				helper.OcSwitchProject(project)
+			})
+			// go back to original project after each test
+			var _ = JustAfterEach(func() {
+				helper.OcSwitchProject(originalProject)
+			})
+
+			It("create local nodejs component and push code", func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+				helper.CmdShouldPass("odo component create nodejs nodejs --context " + context)
+				//TODO: verify that config was properly created
+				helper.CmdShouldPass("odo push")
+				//TODO: verify resources on cluster
+			})
+
+		})
+
+		var _ = Context("when --project flag is used", func() {
+			It("create local nodejs component and push code", func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+				helper.CmdShouldPass("odo component create nodejs nodejs --project " + project + " --context " + context)
+				//TODO: verify that config was properly created
+				helper.CmdShouldPass("odo push")
+				//TODO: verify resources on cluster
+			})
+		})
 	})
 })
