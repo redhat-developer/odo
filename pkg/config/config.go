@@ -281,17 +281,13 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 func (lci *LocalConfigInfo) DeleteUrl(parameter string) error {
 	for i, url := range *lci.componentSettings.Url {
 		if url.Name == parameter {
-			po := remove(*lci.componentSettings.Url, i)
-			lci.componentSettings.Url = &po
+			s := *lci.componentSettings.Url
+			s = append(s[:i], s[i+1:]...)
+			lci.componentSettings.Url = &s
 		}
 	}
 	return lci.writeToFile()
 
-}
-
-// remove will remove URL entry from list of ConfigURL
-func remove(s []ConfigUrl, i int) []ConfigUrl {
-	return append(s[:i], s[i+1:]...)
 }
 
 // GetComponentSettings returns the componentSettings from local config
