@@ -115,6 +115,14 @@ var _ = Describe("odojsonoutput", func() {
 			Expect(areEqual).To(BeTrue())
 
 		})
+
+		// odo project delete -o json
+		It("should be able to delete project", func() {
+			runCmdShouldPass("odo project create project-deletion-test")
+			// validating that it ran with exit status 0
+			runCmdShouldPass("odo project delete project-deletion-test -o json")
+		})
+
 		// cleanup
 		It("Cleanup", func() {
 			ocDeleteProject("json-test")
