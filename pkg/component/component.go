@@ -544,12 +544,7 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 		return err
 	}
 	// URL deletion part
-	urlList, err := urlpkg.List(client, componentConfig.GetName(), componentConfig.GetApplication())
-	if err != nil {
-		return err
-	}
-	localUrlList := componentConfig.GetUrl()
-	err = applyConfigDeleteUrl(client, urlList, localUrlList, componentConfig.GetApplication())
+	err = applyConfigDeleteUrl(client, componentConfig)
 	if err != nil {
 		return err
 	}
@@ -559,10 +554,15 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 }
 
 // ApplyConfigDeleteUrl applies url config deletion onto component
-func applyConfigDeleteUrl(client *occlient.Client, urlList urlpkg.UrlList, localUrlList []config.ConfigUrl, application string) (err error) {
+func applyConfigDeleteUrl(client *occlient.Client, componentConfig config.LocalConfigInfo) (err error) {
+	urlList, err := urlpkg.List(client, componentConfig.GetName(), componentConfig.GetApplication())
+	if err != nil {
+		return err
+	}
+	localUrlList := componentConfig.GetUrl()
 	for _, u := range urlList.Items {
 		if !checkIfUrlPresentInConfig(localUrlList, u.Name) {
-			err = urlpkg.Delete(client, u.Name, application)
+			err = urlpkg.Delete(client, u.Name, componentConfig.GetApplication())
 			if err != nil {
 				return err
 			}
