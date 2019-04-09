@@ -5,7 +5,7 @@ import (
 	//. "github.com/onsi/gomega"
 )
 
-var _ = Describe("odoLinkE2e", func() {
+var _ = Describe("Old_odoLinkE2e", func() {
 	// Uncomment when link commands are made to use config file and context flag
 	/*
 		projName := generateTimeBasedName("odolnk")
