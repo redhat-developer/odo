@@ -95,7 +95,7 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(urlDeleteExample, fullName),
 	}
 	urlDeleteCmd.Flags().BoolVarP(&o.urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
-
+	genericclioptions.AddContextFlag(urlDeleteCmd, &o.componentContext)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)
 	return urlDeleteCmd

@@ -112,8 +112,8 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	_ = urlCreateCmd.MarkFlagRequired("port")
-	urlCreateCmd.Flags().StringVar(&o.componentContext, "context", "", "Use context to indicate the path where the component settings need to be saved and this directory should contain component source for local and binary components")
 	genericclioptions.AddOutputFlag(urlCreateCmd)
+	genericclioptions.AddContextFlag(urlCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 	return urlCreateCmd
 }

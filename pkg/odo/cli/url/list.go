@@ -93,7 +93,7 @@ func (o *URLListOptions) Run() (err error) {
 			}
 
 			tabWriterURL.Flush()
-
+			fmt.Println("\nUse `odo push` to create url on cluster")
 		}
 	}
 
@@ -114,7 +114,7 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddOutputFlag(urlListCmd)
-	urlListCmd.Flags().StringVar(&o.componentContext, "context", "", "Use context to indicate the path where the component settings need to be saved and this directory should contain component source for local and binary components")
+	genericclioptions.AddContextFlag(urlListCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(urlListCmd, "context", completion.FileCompletionHandler)
 	return urlListCmd
 }

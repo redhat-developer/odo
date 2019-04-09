@@ -558,6 +558,7 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 	return
 }
 
+// ApplyConfigDeleteUrl applies url config deletion onto component
 func applyConfigDeleteUrl(client *occlient.Client, urlList urlpkg.UrlList, localUrlList []config.ConfigUrl, application string) (err error) {
 	for _, u := range urlList.Items {
 		if !checkIfUrlPresentInConfig(localUrlList, u.Name) {
@@ -565,6 +566,7 @@ func applyConfigDeleteUrl(client *occlient.Client, urlList urlpkg.UrlList, local
 			if err != nil {
 				return err
 			}
+			log.Successf("Successfully deleted URL %v", u.Name)
 		}
 	}
 	return nil
@@ -579,7 +581,7 @@ func checkIfUrlPresentInConfig(localUrl []config.ConfigUrl, url string) bool {
 	return false
 }
 
-// ApplyConfigUrl applies url config onto component
+// ApplyConfigCreateUrl applies url config onto component
 func ApplyConfigCreateUrl(client *occlient.Client, componentConfig config.LocalConfigInfo) error {
 
 	urls := componentConfig.GetUrl()
@@ -590,7 +592,7 @@ func ApplyConfigCreateUrl(client *occlient.Client, componentConfig config.LocalC
 			return fmt.Errorf("failed check URL Exist")
 		}
 		if exist {
-			log.Errorf("URL %v already exist", urlo.Name)
+			log.Successf("URL %v already exist", urlo.Name)
 		} else {
 			host, err := urlpkg.Create(client, urlo.Name, urlo.Port, componentConfig.GetName(), componentConfig.GetApplication())
 			if err != nil {
