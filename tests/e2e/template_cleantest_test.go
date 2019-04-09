@@ -87,18 +87,6 @@ var _ = Describe("Example of a clean test", func() {
 
 	var _ = Context("when --context is used", func() {
 
-		// we will be testing components that are created from the current directory
-		// switch to the clean context dir before each test
-		var _ = JustBeforeEach(func() {
-			originalDir = helper.Getwd()
-			helper.Chdir(context)
-		})
-
-		// go back to original directory after each test
-		var _ = JustAfterEach(func() {
-			helper.Chdir(originalDir)
-		})
-
 		var _ = Context("when project from KUBECONFIG is used", func() {
 			// Set active project for each test spec
 			var _ = JustBeforeEach(func() {
