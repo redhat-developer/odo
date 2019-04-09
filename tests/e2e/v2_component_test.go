@@ -32,8 +32,8 @@ var _ = Describe("Component Tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		// helper.OcDeleteProject(project)
-		// helper.DeleteDir(context)
+		helper.OcDeleteProject(project)
+		helper.DeleteDir(context)
 	})
 
 	var _ = Context("when component is in the current directory", func() {
