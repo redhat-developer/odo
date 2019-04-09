@@ -1,0 +1,58 @@
+= Test Driven Development (TDD) for `odo`
+
+
+What’s TDD? In simple terms, _Write tests first_.
+
+== TDD Workflow
+
+Under TDD workflow, we write tests before writing feature code. Below is the workflow that is generally followed:
+
+. Add a test.
+. Run all tests and see if the new test fails.
+. Write the code.
+. Run tests.
+. Rewrite code incorporating any changes and add new tests.
+
+== TDD process for `odo`
+
+. Write tests for every feature or bug fix before implementing the code.
+* Developer splits the assigned task into small achievable sub-tasks
+* Each sub-task requires unit tests to be written before feature
+implementation
+* Open work-in-progress [WIP] PR with the tests written
+. The tests should cover both positive and negative scenarios:
+* It would be good to have all permutations and combinations covered _as much as possible_ to help cover the boundary cases
+* There is always scope to add more tests, they could be added once the feature has been fully implemented
+. Write feature code and run tests:
+* Feature code should be pushed to the same WIP test PR
+* Feature code should be pushed only after pushing the unit tests
+* After the feature code is pushed, the test should pass
+. Review process:
+* Ensure that the PR with code changes is accompanied by unit tests
+* Travis checks will be the point of determination
+
+== FAQs
+
+. Will TDD slow down our development process?
++
+Initially it might feel that way, but over time, it brings advantages to the development process by reducing bugs, improving test coverage, and the development time spent fixing regression bugs.
+// 2.  What if we don’t know what our code function will finally look like?
++
+TDD is just a recommendation. Nothing stops you  from writing your code
+before your tests (locally, of course!).
+. Writing tests based on a new feature is easier.
++
+Writing tests beforehand (under TDD) helps identify the design limitations and corner cases in advance. Writing tests post development often limits us to cover positive cases. TDD will help us move away from that mindset.
+. Can we follow the same process for big features too?
++
+Tasks involving big features should be split into numerous simple and achievable sub-tasks, and each of those sub-tasks should have test coverage.
+. Should tests always be written first?
++
+That is the point. In order to follow TDD process, we need to look at feature development from a testing perspective. It will help us cover wider scenarios, beyond positive cases. Tests will also serve as a good validator during the coding process.
+
+== Learning resources
+
+If you have not tried TDD before, here are a few resources to get started:
+
+* https://github.com/quii/learn-go-with-tests
+* https://cacoo.com/blog/test-driven-development-in-go/
