@@ -23,14 +23,14 @@ func CmdRunner(program string, args ...string) *gexec.Session {
 	return session
 }
 
-func CmdShouldPass(program string, args ...string) *gexec.Session {
+func CmdShouldPass(program string, args ...string) string {
 	session := CmdRunner(program, args...)
 	Eventually(session).Should(gexec.Exit(0))
-	return session
+	return string(session.Wait().Out.Contents())
 }
 
-func CmdShouldFail(program string, args ...string) *gexec.Session {
+func CmdShouldFail(program string, args ...string) string {
 	session := CmdRunner(program, args...)
 	Consistently(session).ShouldNot(gexec.Exit(0))
-	return session
+	return string(session.Wait().Out.Contents())
 }

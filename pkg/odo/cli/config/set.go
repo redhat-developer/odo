@@ -92,6 +92,8 @@ func (o *SetOptions) Run() (err error) {
 		}
 
 		log.Info("Environment variables were successfully updated.")
+		log.Info("Run `odo push --config` command to apply changes to the cluster.")
+
 		return nil
 	}
 
@@ -109,7 +111,9 @@ func (o *SetOptions) Run() (err error) {
 		return err
 	}
 
-	fmt.Println("Local config was successfully updated.")
+	log.Info("Local config was successfully updated.")
+	log.Info("Run `odo push --config` command to apply changes to the cluster.")
+
 	return nil
 }
 

@@ -82,7 +82,7 @@ func (oc *OcRunner) GetFirstURL(component string, app string, project string) st
 }
 
 // GetComponentRoute run command to get the Routes in yaml format for given component
-func (oc *OcRunner) GetComponentRoutes(component string, app string, project string) *gexec.Session {
+func (oc *OcRunner) GetComponentRoutes(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "route",
 		"-n", project,
 		"-l", "app.kubernetes.io/component-name="+component,
@@ -91,11 +91,11 @@ func (oc *OcRunner) GetComponentRoutes(component string, app string, project str
 
 	Eventually(session).Should(gexec.Exit(0))
 
-	return session
+	return string(session.Wait().Out.Contents())
 }
 
 // GetComponentDC run command to get the DeploymentConfig in yaml format for given component
-func (oc *OcRunner) GetComponentDC(component string, app string, project string) *gexec.Session {
+func (oc *OcRunner) GetComponentDC(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "dc",
 		"-n", project,
 		"-l", "app.kubernetes.io/component-name="+component,
@@ -104,5 +104,5 @@ func (oc *OcRunner) GetComponentDC(component string, app string, project string)
 
 	Eventually(session).Should(gexec.Exit(0))
 
-	return session
+	return string(session.Wait().Out.Contents())
 }
