@@ -329,12 +329,82 @@ var _ = Describe("odoe2e", func() {
 			}
 
 			for _, testCase := range cases {
-				runCmdShouldPass(fmt.Sprintf("odo config set %s %s", testCase.paramName, testCase.paramValue))
+				runCmdShouldPass(fmt.Sprintf("odo config set -f %s %s", testCase.paramName, testCase.paramValue))
 				configOutput := runCmdShouldPass(fmt.Sprintf("odo config unset -f %s", testCase.paramName))
 				Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
 				Value := getConfigValue(testCase.paramName)
 				Expect(Value).To(BeEmpty())
 			}
+		})
+
+		It("should allow setting and unsetting a config locally with context", func() {
+			cases := []struct {
+				paramName  string
+				paramValue string
+			}{
+				{
+					paramName:  "Type",
+					paramValue: "java",
+				},
+				{
+					paramName:  "Name",
+					paramValue: "odo-java",
+				},
+				{
+					paramName:  "MinCPU",
+					paramValue: "0.2",
+				},
+				{
+					paramName:  "MaxCPU",
+					paramValue: "2",
+				},
+				{
+					paramName:  "MinMemory",
+					paramValue: "100M",
+				},
+				{
+					paramName:  "MaxMemory",
+					paramValue: "500M",
+				},
+				{
+					paramName:  "Ports",
+					paramValue: "8080/TCP,45/UDP",
+				},
+				{
+					paramName:  "Application",
+					paramValue: "odotestapp",
+				},
+				{
+					paramName:  "Project",
+					paramValue: "odotestproject",
+				},
+				{
+					paramName:  "SourceType",
+					paramValue: "git",
+				},
+				{
+					paramName:  "Ref",
+					paramValue: "develop",
+				},
+				{
+					paramName:  "SourceLocation",
+					paramValue: "https://github.com/sclorg/nodejs-ex",
+				},
+			}
+			folderName := "odoconfigtest"
+			runCmdShouldPass("mkdir -p " + folderName)
+			runCmdShouldPass("odo create nodejs --context " + folderName)
+
+			for _, testCase := range cases {
+
+				runCmdShouldPass(fmt.Sprintf("odo config set -f --context %s %s %s", folderName, testCase.paramName, testCase.paramValue))
+				configOutput := runCmdShouldPass(fmt.Sprintf("odo config unset -f --context %s %s", folderName, testCase.paramName))
+				Expect(configOutput).To(ContainSubstring("Local config was successfully updated."))
+				Value := getConfigValueWithContext(testCase.paramName, folderName)
+				Expect(Value).To(BeEmpty())
+			}
+			runCmdShouldPass("rm -rf " + folderName)
+
 		})
 
 		It("should allow unsetting a config globally", func() {

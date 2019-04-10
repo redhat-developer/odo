@@ -55,6 +55,7 @@ func NewSetOptions() *SetOptions {
 
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+
 	if o.envArray == nil {
 		o.paramName = args[0]
 		o.paramValue = args[1]
@@ -144,5 +145,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	}
 	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
 	configurationSetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Set the environment variables in config")
+	genericclioptions.AddContextFlag(configurationSetCmd, &o.contextDir)
+
 	return configurationSetCmd
 }

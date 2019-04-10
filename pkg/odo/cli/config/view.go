@@ -9,7 +9,6 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -47,7 +46,7 @@ func (o *ViewOptions) Validate() (err error) {
 func (o *ViewOptions) Run() (err error) {
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return err
 	}
 	cs := cfg.GetComponentSettings()
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
@@ -122,5 +121,8 @@ func NewCmdView(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	genericclioptions.AddContextFlag(configurationViewCmd, &o.contextDir)
+
 	return configurationViewCmd
 }

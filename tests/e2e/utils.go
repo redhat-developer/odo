@@ -97,7 +97,17 @@ func getActiveApplication() string {
 // returns a local config value of given key or
 // returns an empty string if value is not set
 func getConfigValue(key string) string {
-	stdOut, _, _ := cmdRunner("odo config view")
+	return getConfigValueWithContext(key, "")
+}
+
+// returns a local config value of given key and contextdir or
+// returns an empty string if value is not set
+func getConfigValueWithContext(key string, context string) string {
+	command := "odo config view"
+	if context != "" {
+		command = fmt.Sprintf("%s --context %s", command, context)
+	}
+	stdOut, _, _ := cmdRunner(command)
 	re := regexp.MustCompile(key + `.+`)
 	odoConfigKeyValue := re.FindString(stdOut)
 	if odoConfigKeyValue == "" {
