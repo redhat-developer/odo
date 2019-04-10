@@ -56,7 +56,6 @@ var _ = Describe("odoLinkE2e", func() {
 
 				helper.CmdShouldPass("odo create java sb-app --app jdklinktest")
 				//TODO: verify that config was properly created
-				helper.CmdShouldPass("cat .odo/config.yaml")
 				helper.CmdShouldPass("odo push")
 
 				helper.CmdShouldPass("odo service create dh-postgresql-apb --app jdklinktest --plan dev -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6")
