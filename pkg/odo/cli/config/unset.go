@@ -139,7 +139,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	}
 	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
 	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Unset the environment variables in config")
-	configurationUnsetCmd.Flags().StringVar(&o.componentContext, "context", "", "Use given context directory as a source for component settings")
+	genericclioptions.AddContextFlag(configurationUnsetCmd, &o.contextDir)
 
 	return configurationUnsetCmd
 }
