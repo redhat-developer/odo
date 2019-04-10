@@ -64,17 +64,16 @@ func (o *URLListOptions) Run() (err error) {
 
 	localUrls := o.localConfigInfo.GetUrl()
 
-	if len(urls.Items) == 0 && len(localUrls) == 0 {
-		return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
-
+	if o.OutputFlag == "json" {
+		out, err := json.Marshal(urls)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
 	} else {
-		if o.OutputFlag == "json" {
-			out, err := json.Marshal(urls)
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(out))
 
+		if len(urls.Items) == 0 && len(localUrls) == 0 {
+			return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
 		} else {
 
 			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
@@ -100,8 +99,8 @@ func (o *URLListOptions) Run() (err error) {
 			tabWriterURL.Flush()
 			fmt.Println("\nUse `odo push` to create url on cluster")
 		}
-	}
 
+	}
 	return
 }
 
