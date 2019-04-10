@@ -144,6 +144,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		},
 	}
 	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
+	configurationSetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Set the environment variables in config")
 	genericclioptions.AddContextFlag(configurationSetCmd, &o.contextDir)
 
 	return configurationSetCmd
