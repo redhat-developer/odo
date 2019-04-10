@@ -3,9 +3,12 @@ package url
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/url"
+	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -37,10 +40,11 @@ var (
 
 // URLCreateOptions encapsulates the options for the odo url create command
 type URLCreateOptions struct {
-	urlName       string
-	urlPort       int
-	urlOpenFlag   bool
-	componentPort int
+	localConfigInfo  *config.LocalConfigInfo
+	componentContext string
+	urlName          string
+	urlPort          int
+	componentPort    int
 	*genericclioptions.Context
 }
 
@@ -61,15 +65,19 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 	} else {
 		o.urlName = args[0]
 	}
+	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+
 	return
 }
 
 // Validate validates the UrlCreateOptions based on completed values
 func (o *URLCreateOptions) Validate() (err error) {
 
-	exists, err := url.Exists(o.Client, o.urlName, o.Component(), o.Application)
-	if exists {
-		return fmt.Errorf("The url %s already exists in the application: %s\n%v", o.urlName, o.Application, err)
+	// Check if exist
+	for _, localUrl := range o.localConfigInfo.GetUrl() {
+		if o.urlName == localUrl.Name {
+			return fmt.Errorf("the url %s already exists in the application: %s", o.urlName, o.Application)
+		}
 	}
 
 	if !util.CheckOutputFlag(o.OutputFlag) {
@@ -80,30 +88,12 @@ func (o *URLCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
-
-	urlRoute, err := url.Create(o.Client, o.urlName, o.componentPort, o.Component(), o.Application)
+	err = o.localConfigInfo.SetConfiguration("url", config.ConfigUrl{Name: o.urlName, Port: o.urlPort})
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
-
-	out, err := util.MachineOutput(o.OutputFlag, urlRoute)
-	if err != nil {
-		return err
-	}
-	if out != "" {
-		fmt.Println(out)
-	} else {
-
-		log.Successf("URL created for component: %v\n\n"+
-			"%v - %v\n", o.Component(), urlRoute.Name, urlRoute.Spec.Host)
-	}
-
-	if o.urlOpenFlag {
-		err := util.OpenBrowser(url.GetURLString(urlRoute.Spec.Protocol, urlRoute.Spec.Host))
-		if err != nil {
-			return fmt.Errorf("unable to open URL within default browser:\n%v", err)
-		}
-	}
+	log.Successf("URL created for component: %v\n", o.Component())
+	fmt.Println("To create URL on the OpenShift cluster, please run `odo push`")
 	return
 }
 
@@ -121,7 +111,9 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		},
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
-	urlCreateCmd.Flags().BoolVar(&o.urlOpenFlag, "open", false, "open the created link with your default browser")
+	_ = urlCreateCmd.MarkFlagRequired("port")
 	genericclioptions.AddOutputFlag(urlCreateCmd)
+	genericclioptions.AddContextFlag(urlCreateCmd, &o.componentContext)
+	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 	return urlCreateCmd
 }

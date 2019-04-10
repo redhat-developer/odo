@@ -67,7 +67,8 @@ func GetURL(contextDir string, port int) string {
 	currDir := runCmdShouldPass("pwd")
 	currDir = strings.TrimSpace(currDir)
 	runCmdShouldPass("cd " + contextDir)
-	runCmdShouldPass(fmt.Sprintf("odo url create --port %d", port))
+	runCmdShouldPass(fmt.Sprintf("odo url create  --port %d", port))
+	runCmdShouldPass("odo push")
 	url = determineRouteURL()
 	runCmdShouldPass("cd " + currDir)
 	return url
@@ -446,11 +447,13 @@ var _ = Describe("odoe2e", func() {
 			runCmdShouldPass("odo login --username developer --password developer")
 			runCmdShouldPass("odo create php testcmp --app e2e-xyzk --git " + testPHPGitURL)
 			runCmdShouldPass("odo config set Ports 8080/TCP")
+			runCmdShouldPass("odo url create myurl --port 8080")
 			runCmdShouldPass("odo push")
-			stdOut := runCmdShouldPass("odo url create")
-			Expect(stdOut).To(ContainSubstring("8080"))
+			// stdOut := runCmdShouldPass("odo url create --port 8080")
+			// Expect(stdOut).To(ContainSubstring("8080"))
 			VerifyCmpName("testcmp")
 			VerifyAppNameOfComponent("testcmp", "e2e-xyzk")
+			runCmdShouldPass("odo url delete myurl -f")
 		})
 		// Uncommment after fixing the component delete once it has been modified to work with
 		/*

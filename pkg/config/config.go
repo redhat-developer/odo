@@ -61,6 +61,16 @@ type ComponentSettings struct {
 	MaxCPU *string `yaml:"MaxCPU,omitempty"`
 
 	Envs EnvVarList `yaml:"Envs,omitempty"`
+
+	Url *[]ConfigUrl `yaml:"Url,omitempty"`
+}
+
+// ConfigUrl holds URL related information
+type ConfigUrl struct {
+	// Name of the URL
+	Name string `yaml:"Name,omitempty"`
+	// Port number for the url of the component, required in case of components which expose more than one service port
+	Port int `yaml:"Port,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.
@@ -164,7 +174,6 @@ func newProxyLocalConfig() proxyLocalConfig {
 // max memory etc.
 // TODO: Use reflect to set parameters
 func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}) (err error) {
-
 	// getting the second arg makes sure that this never panics
 	strValue, _ := value.(string)
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
@@ -210,7 +219,13 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "cpu":
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
-
+		case "url":
+			urlValue := value.(ConfigUrl)
+			if lci.componentSettings.Url != nil {
+				*lci.componentSettings.Url = append(*lci.componentSettings.Url, urlValue)
+			} else {
+				lci.componentSettings.Url = &[]ConfigUrl{urlValue}
+			}
 		}
 
 		return lci.writeToFile()
@@ -259,6 +274,19 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 		return lci.writeToFile()
 	}
 	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
+
+}
+
+// DeleteUrl is used to delete config from local odo config
+func (lci *LocalConfigInfo) DeleteUrl(parameter string) error {
+	for i, url := range *lci.componentSettings.Url {
+		if url.Name == parameter {
+			s := *lci.componentSettings.Url
+			s = append(s[:i], s[i+1:]...)
+			lci.componentSettings.Url = &s
+		}
+	}
+	return lci.writeToFile()
 
 }
 
@@ -398,6 +426,14 @@ func (lc *LocalConfig) GetMaxCPU() string {
 	return *lc.componentSettings.MaxCPU
 }
 
+// GetUrl returns the ConfigUrl, returns default if nil
+func (lc *LocalConfig) GetUrl() []ConfigUrl {
+	if lc.componentSettings.Url == nil {
+		return []ConfigUrl{}
+	}
+	return *lc.componentSettings.Url
+}
+
 const (
 
 	// Type is the name of the setting controlling the component type i.e. builder image
@@ -460,6 +496,10 @@ const (
 	SourceTypeDescription = "Type of component source - git/binary/local"
 	// SourceLocationDescription is the human-readable description of path setting
 	SourceLocationDescription = "The path indicates the location of binary file or git source"
+	// Url
+	Url = "Url"
+	// UrlDescription is the description of URL
+	UrlDescription = "Url to access the compoent"
 )
 
 var (
@@ -479,6 +519,7 @@ var (
 		MinCPU:         MinCPUDescription,
 		MaxCPU:         MaxCPUDescription,
 		CPU:            CPUDescription,
+		Url:            UrlDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

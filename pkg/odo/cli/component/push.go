@@ -159,16 +159,15 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 			os.Exit(1)
 		}
 		log.Successf("Successfully created component %s", cmpName)
-	} else {
-		log.Successf("Applying component settings to component: %v", cmpName)
-		// Apply config
-		err = component.ApplyConfig(po.Context.Client, *po.localConfig, po.componentContext, stdout)
-		if err != nil {
-			log.Errorf("Failed to update config to component deployed. Error %+v", err)
-			os.Exit(1)
-		}
-		log.Successf("Successfully updated component with name: %v", cmpName)
 	}
+
+	// Apply config
+	err = component.ApplyConfig(po.Context.Client, *po.localConfig, stdout, isCmpExists)
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
+	}
+	log.Successf("Successfully updated component with name: %v", cmpName)
+
 	return nil
 }
 

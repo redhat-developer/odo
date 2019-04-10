@@ -29,13 +29,19 @@ var _ = Describe("odojsonoutput", func() {
 			runCmdShouldPass("odo create nodejs nodejs --app myapp --project json-test --git https://github.com/openshift/nodejs-ex")
 			runCmdShouldPass("odo push")
 		})
-		// odo url create -o json
+		// odo url create
 		It("should be able to create url", func() {
-			actual := runCmdShouldPass("odo url create myurl -o json")
-			url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
-			desired := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080}}`, url)
-			areEqual, _ := compareJSON(desired, actual)
-			Expect(areEqual).To(BeTrue())
+			runCmdShouldPass("odo url create myurl --port 8080")
+			runCmdShouldPass("odo push")
+			routeURL := determineRouteURL()
+			// Ping said URL
+			responsePing := matchResponseSubString(routeURL, "application on OpenShift", 90, 1)
+			Expect(responsePing).Should(BeTrue())
+			// actual := runCmdShouldPass("odo url create myurl -o json")
+			//	url := runCmdShouldPass("oc get routes myurl-myapp -o jsonpath={.spec.host}")
+			//	desired := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080}}`, url)
+			//	areEqual, _ := compareJSON(desired, actual)
+			//	Expect(areEqual).To(BeTrue())
 		})
 
 		// odo storage create -o json
@@ -104,6 +110,7 @@ var _ = Describe("odojsonoutput", func() {
 		// cleanup
 		It("Cleanup", func() {
 			ocDeleteProject("json-test")
+			runCmdShouldPass("rm -rf .odo")
 		})
 
 	})

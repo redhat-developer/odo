@@ -526,17 +526,85 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 //	appName: Name of application of which the component is a part
 //	componentName: Name of the component which is being patched with config
 //	componentConfig: Component configuration
+//  	cmpExist: true if components exists in the cluster
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, context string, stdout io.Writer) (err error) {
+func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, stdout io.Writer, cmpExist bool) (err error) {
+	log.Successf("Applying component settings to component: %v", componentConfig.GetName())
+	// if component exist then only call the update function
+	if cmpExist {
 
-	if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
+		if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
+			return err
+		}
+	}
+	// URL creation part
+	err = ApplyConfigCreateUrl(client, componentConfig)
+	if err != nil {
 		return err
 	}
-
+	// URL deletion part
+	err = applyConfigDeleteUrl(client, componentConfig)
+	if err != nil {
+		return err
+	}
 	log.Successf("The component %s was updated successfully", componentConfig.GetName())
 
 	return
+}
+
+// ApplyConfigDeleteUrl applies url config deletion onto component
+func applyConfigDeleteUrl(client *occlient.Client, componentConfig config.LocalConfigInfo) (err error) {
+	urlList, err := urlpkg.List(client, componentConfig.GetName(), componentConfig.GetApplication())
+	if err != nil {
+		return err
+	}
+	localUrlList := componentConfig.GetUrl()
+	for _, u := range urlList.Items {
+		if !checkIfUrlPresentInConfig(localUrlList, u.Name) {
+			err = urlpkg.Delete(client, u.Name, componentConfig.GetApplication())
+			if err != nil {
+				return err
+			}
+			log.Successf("Successfully deleted URL %v", u.Name)
+		}
+	}
+	return nil
+}
+
+func checkIfUrlPresentInConfig(localUrl []config.ConfigUrl, url string) bool {
+	for _, u := range localUrl {
+		if u.Name == url {
+			return true
+		}
+	}
+	return false
+}
+
+// ApplyConfigCreateUrl applies url config onto component
+func ApplyConfigCreateUrl(client *occlient.Client, componentConfig config.LocalConfigInfo) error {
+
+	urls := componentConfig.GetUrl()
+	for _, urlo := range urls {
+		log.Successf("Checking URL %v", urlo.Name)
+		exist, err := urlpkg.Exists(client, urlo.Name, componentConfig.GetName(), componentConfig.GetApplication())
+		if err != nil {
+			return fmt.Errorf("failed check URL Exist")
+		}
+		if exist {
+			log.Successf("URL %v already exist", urlo.Name)
+		} else {
+			host, err := urlpkg.Create(client, urlo.Name, urlo.Port, componentConfig.GetName(), componentConfig.GetApplication())
+			if err != nil {
+				return err
+			}
+			log.Successf("Successfully created URL for component: %v", componentConfig.GetName())
+			log.Successf("%v", host)
+		}
+	}
+
+	return nil
+
 }
 
 // PushLocal push local code to the cluster and trigger build there.
