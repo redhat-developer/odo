@@ -39,7 +39,7 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 
 *Prerequisites:*
 
-* OpenShift 3.9.0 and above is required.
+* OpenShift 3.10.0 and above is required.
 * We recommend using link:https://github.com/minishift/minishift[Minishift].
 
 *Procedure:*
