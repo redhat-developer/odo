@@ -1,10 +1,13 @@
 PROJECT := github.com/openshift/odo
 GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
-PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor)
+PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests )
 COMMON_FLAGS := -X $(PROJECT)/pkg/odo/cli/version.GITCOMMIT=$(GITCOMMIT)
 BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
 DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
+
+# Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
+SLOW_SPEC_THRESHOLD := 120
 
 default: bin
 
@@ -187,6 +190,11 @@ ifdef TIMEOUT
 else
 	go test -v github.com/openshift/odo/tests/e2e -ginkgo.succinct
 endif
+
+# Run e2e test scenarios
+.PHONY: test-e2e-scenarios
+test-e2e-scenarios:
+	go test -v github.com/openshift/odo/tests/e2escenarios -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.succinct
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
