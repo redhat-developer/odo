@@ -51,7 +51,7 @@ var _ = Describe("odoServiceE2e", func() {
 			runCmdShouldPass("oc login -u system:admin")
 			runCmdShouldPass("oc get pods -n openshift-automation-service-broker")
 			runCmdShouldPass("oc get clusterservicebroker")
-			runCmdShouldPass("oc describe servicebroker openshift-automation-service-broker")
+			runCmdShouldPass("oc describe clusterservicebroker openshift-automation-service-broker")
 			runCmdShouldPass("oc login -u developer")
 			runCmdShouldPass("oc get clusterserviceclasses")
 
