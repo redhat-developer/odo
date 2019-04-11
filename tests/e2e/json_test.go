@@ -40,7 +40,7 @@ var _ = Describe("odojsonoutput", func() {
 		// odo url create
 		It("should be able to create url", func() {
 			runCmdShouldPass("odo url create myurl --port 8080")
-			runCmdShouldPass("odo push")
+			runCmdShouldPass("odo push -v 4")
 			routeURL := determineRouteURL()
 			// Ping said URL
 			responsePing := matchResponseSubString(routeURL, "application on OpenShift", 90, 1)
