@@ -29,6 +29,14 @@ var _ = Describe("odojsonoutput", func() {
 			runCmdShouldPass("odo create nodejs nodejs --app myapp --project json-test --git https://github.com/openshift/nodejs-ex")
 			runCmdShouldPass("odo push")
 		})
+		// odo url list -o json
+		It("should be able to list empty url list", func() {
+			actual := runCmdShouldPass("odo url list -o json")
+			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":null}`
+			areEqual, _ := compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
+
+		})
 		// odo url create
 		It("should be able to create url", func() {
 			runCmdShouldPass("odo url create myurl --port 8080")
