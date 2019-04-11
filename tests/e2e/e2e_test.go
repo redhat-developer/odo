@@ -84,6 +84,12 @@ var _ = Describe("odoe2e", func() {
 		Fail(err.Error())
 	}
 
+	// Clean up after the test
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		os.RemoveAll(".odo")
+	})
+
 	/*
 		Describe("Check for failure if user tries to create or delete anything other than project, without active accessible project, with appropriate message", func() {
 			var currentUserToken string
