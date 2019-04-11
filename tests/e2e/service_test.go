@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -41,77 +40,53 @@ var _ = Describe("odoServiceE2e", func() {
 		helper.DeleteDir(context)
 	})
 
-	Context("odo service creation", func() {
-		It("should be able to create, list and delete a service", func() {
-			runCmdShouldPass("odo service create mysql-persistent -w")
+	Context("odo service create with a spring boot application", func() {
+		It("should be able to create postgresql and link it with springboot", func() {
+			importOpenJDKImage()
+			helper.CopyExample("source/openjdk-sb-postgresql", context)
+
+			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
+			runCmdShouldPass("odo create java sb-app")
+
+			runCmdShouldPass("odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6")
 			waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
-				return strings.Contains(output, "mysql-persistent")
+				return strings.Contains(output, "dh-postgresql-apb")
 			})
-			cmd := serviceInstanceStatusCmd("mysql-persistent")
-			waitForServiceStatusCmd(cmd, "ProvisionedSuccessfully")
+
+			// Create a URL
+			runCmdShouldPass("odo url create --port 8080")
+
+			// push removes link, this is why link needs to be run alaways after the push https://github.com/openshift/odo/issues/1596
+			runCmdShouldPass("odo push")
+
+			runCmdShouldPass("odo link dh-postgresql-apb -w --wait-for-target")
 
 			waitForCmdOut("odo service list | sed 1d", 1, true, func(output string) bool {
-				return strings.Contains(output, "mysql-persistent") &&
-					strings.Contains(output, "ProvisionedAndBound")
+				return strings.Contains(output, "dh-postgresql-apb") &&
+					strings.Contains(output, "ProvisionedAndLinked")
 			})
 
-			runCmdShouldPass("odo service delete mysql-persistent -f")
-			cmd = serviceInstanceStatusCmd("mysql-persistent")
-			waitForServiceStatusCmd(cmd, "Deprovisioning")
+			routeURL := determineRouteURL()
+
+			// Ping said URL
+			responseStringMatchStatus := matchResponseSubString(routeURL, "Spring Boot", 30, 1)
+			Expect(responseStringMatchStatus).Should(BeTrue())
+
+			// Delete the component
+			runCmdShouldPass("odo delete sb-app -f")
+
+			// Delete the service
+			runCmdShouldPass("odo service delete dh-postgresql-apb -f")
 		})
 	})
 
-	//we only execute the rest of the tests if the RUN_ALL_SERVICE_TESTS env var is set to 'true'
-	if strings.ToUpper(os.Getenv("RUN_ALL_SERVICE_TESTS")) != "TRUE" {
-		fmt.Println("To run all service catalog tests make sure the 'RUN_ALL_SERVICE' is set to true")
-	} else {
-		Context("odo service create with a spring boot application", func() {
-			It("should be able to create postgresql and link it with springboot", func() {
-				importOpenJDKImage()
-				helper.CopyExample("source/openjdk-sb-postgresql", context)
-
-				runCmdShouldPass("odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6")
-				waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
-					return strings.Contains(output, "dh-postgresql-apb")
-				})
-
-				runCmdShouldPass("odo create java sb-app")
-
-				// Push changes
-				runCmdShouldPass("odo push")
-
-				// Create a URL
-				runCmdShouldPass("odo url create --port 8080")
-
-				runCmdShouldPass("odo link dh-postgresql-apb -w --wait-for-target")
-
-				waitForCmdOut("odo service list | sed 1d", 1, true, func(output string) bool {
-					return strings.Contains(output, "dh-postgresql-apb") &&
-						strings.Contains(output, "ProvisionedAndLinked")
-				})
-
-				routeURL := determineRouteURL()
-
-				// Ping said URL
-				responseStringMatchStatus := matchResponseSubString(routeURL, "Spring Boot", 30, 1)
-				Expect(responseStringMatchStatus).Should(BeTrue())
-
-				// Delete the component
-				runCmdShouldPass("odo delete sb-app -f")
-
-				// Delete the service
-				runCmdShouldPass("odo service delete dh-postgresql-apb -f")
-			})
+	Context("odo hides a hidden service in service catalog", func() {
+		It("not show a hidden service in the catalog", func() {
+			runCmdShouldPass("oc apply -f https://github.com/openshift/library/raw/master/official/sso/templates/sso72-https.json -n openshift")
+			outputErr := runCmdShouldFail("odo catalog search service sso72-https")
+			Expect(outputErr).To(ContainSubstring("No service matched the query: sso72-https"))
 		})
-
-		Context("odo hides a hidden service in service catalog", func() {
-			It("not show a hidden service in the catalog", func() {
-				runCmdShouldPass("oc apply -f https://github.com/openshift/library/raw/master/official/sso/templates/sso72-https.json -n openshift")
-				outputErr := runCmdShouldFail("odo catalog search service sso72-https")
-				Expect(outputErr).To(ContainSubstring("No service matched the query: sso72-https"))
-			})
-		})
-	}
+	})
 
 })
 
