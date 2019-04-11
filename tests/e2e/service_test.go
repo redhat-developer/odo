@@ -49,6 +49,8 @@ var _ = Describe("odoServiceE2e", func() {
 			runCmdShouldPass("odo create java sb-app")
 
 			runCmdShouldPass("oc get clusterserviceclasses")
+			runCmdShouldPass("oc get pods -n openshift-automation-service-broker")
+			runCmdShouldPass("oc login -u system:admin;  oc get clusterservicebroker;  oc login -u developer")
 
 			runCmdShouldPass("odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6")
 			waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
