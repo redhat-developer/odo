@@ -419,3 +419,7 @@ func addBootstrapVolumeMount(dc *appsv1.DeploymentConfig, dcName string) {
 		})
 	}
 }
+
+func getComponentContainer(dc *appsv1.DeploymentConfig) corev1.Container {
+	return dc.Spec.Template.Spec.Containers[0]
+}
