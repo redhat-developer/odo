@@ -1267,7 +1267,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annota
 }
 
 // Define a function that is meant to update a DC in place
-type dcStructUpdater func(dc *appsv1.DeploymentConfig, existingDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container) error
+type dcStructUpdater func(dc *appsv1.DeploymentConfig) error
 type dcRollOutWait func(*appsv1.DeploymentConfig, int64) bool
 
 // PatchCurrentDC "patches" the current DeploymentConfig with a new one
@@ -1280,8 +1280,11 @@ type dcRollOutWait func(*appsv1.DeploymentConfig, int64) bool
 // to perform arbitrary updates to a DC before it's finalized for patching
 func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, waitCond dcRollOutWait, currentDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container) error {
 
+	// copy the any remaining volumes and volume mounts
+	copyVolumesAndVolumeMounts(dc, currentDC, existingCmpContainer)
+
 	if prePatchDCHandler != nil {
-		err := prePatchDCHandler(&dc, currentDC, existingCmpContainer)
+		err := prePatchDCHandler(&dc)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to correctly update dc %s using the specified prePatch handler", name)
 		}
@@ -1326,27 +1329,46 @@ func copyVolumesAndVolumeMounts(dc appsv1.DeploymentConfig, currentDC *appsv1.De
 	for index, container := range dc.Spec.Template.Spec.Containers {
 		// Find the container
 		if container.Name == matchingContainer.Name {
+
+			// create a map of volume mount names for faster searching later
+			dcVolumeMountsMap := make(map[string]bool)
+			for _, volumeMount := range container.VolumeMounts {
+				dcVolumeMountsMap[volumeMount.Name] = true
+			}
+
 			// Loop through all the volumes
 			for _, volume := range matchingContainer.VolumeMounts {
 				// If it's the supervisord volume, ignore it.
 				if volume.Name == supervisordVolumeName {
 					continue
 				} else {
-					dc.Spec.Template.Spec.Containers[index].VolumeMounts = append(dc.Spec.Template.Spec.Containers[index].VolumeMounts, volume)
+					// check if we are appending the same volume mount again or not
+					if _, ok := dcVolumeMountsMap[volume.Name]; !ok {
+						dc.Spec.Template.Spec.Containers[index].VolumeMounts = append(dc.Spec.Template.Spec.Containers[index].VolumeMounts, volume)
+					}
 				}
-
-				// Break out since we've succeeded in updating the container we were looking for
-				break
 			}
+
+			// Break out since we've succeeded in updating the container we were looking for
+			break
 		}
 	}
+
+	// create a map of volume names for faster searching later
+	dcVolumeMap := make(map[string]bool)
+	for _, volume := range dc.Spec.Template.Spec.Volumes {
+		dcVolumeMap[volume.Name] = true
+	}
+
 	// Now the same with Volumes, again, ignoring the supervisord volume.
 	for _, volume := range currentDC.Spec.Template.Spec.Volumes {
 		if volume.Name == supervisordVolumeName {
 			continue
 		} else {
-			dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, volume)
-			break
+			// check if we are appending the same volume again or not
+			if _, ok := dcVolumeMap[volume.Name]; !ok {
+				dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, volume)
+			}
 		}
 	}
 }
@@ -1567,10 +1589,8 @@ func (c *Client) SetupForSupervisor(dcName string, annotations map[string]string
 
 // removeTracesOfSupervisordFromDC takes a DeploymentConfig and removes any traces of the supervisord from it
 // so it removes things like supervisord volumes, volumes mounts and init containers
-func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig, currentDC *appsv1.DeploymentConfig, foundCurrentDCContainer corev1.Container) error {
+func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
 	dcName := dc.Name
-
-	copyVolumesAndVolumeMounts(*dc, currentDC, foundCurrentDCContainer)
 
 	found := removeVolumeFromDC(getAppRootVolumeName(dcName), dc)
 	if !found {
