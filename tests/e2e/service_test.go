@@ -80,13 +80,15 @@ var _ = Describe("odoServiceE2e", func() {
 		})
 	})
 
-	Context("odo hides a hidden service in service catalog", func() {
-		It("not show a hidden service in the catalog", func() {
-			runCmdShouldPass("oc apply -f https://github.com/openshift/library/raw/master/official/sso/templates/sso72-https.json -n openshift")
-			outputErr := runCmdShouldFail("odo catalog search service sso72-https")
-			Expect(outputErr).To(ContainSubstring("No service matched the query: sso72-https"))
-		})
-	})
+	// TODO: auth issue, we need to find a proper way how to test it without requiring cluster admin privileges
+
+	// Context("odo hides a hidden service in service catalog", func() {
+	// 	It("not show a hidden service in the catalog", func() {
+	// 		runCmdShouldPass("oc apply -f https://github.com/openshift/library/raw/master/official/sso/templates/sso72-https.json -n openshift")
+	// 		outputErr := runCmdShouldFail("odo catalog search service sso72-https")
+	// 		Expect(outputErr).To(ContainSubstring("No service matched the query: sso72-https"))
+	// 	})
+	// })
 
 })
 
