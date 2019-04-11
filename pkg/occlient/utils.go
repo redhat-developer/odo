@@ -47,8 +47,9 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 		}
 	}
 
-	if desiredRevision > 0 && latestRevision != desiredRevision {
-		glog.V(4).Infof("desired revision (%d) is different from the running revision (%d)", desiredRevision, latestRevision)
+	// We use `<` due to OpenShift at times (in rare cases) updating the DeploymentConfig multiple times via ImageTrigger
+	if desiredRevision > 0 && latestRevision < desiredRevision {
+		glog.V(4).Infof("Desired revision (%d) is different from the running revision (%d)", desiredRevision, latestRevision)
 		return false
 	}
 
