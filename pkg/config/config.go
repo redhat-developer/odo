@@ -574,7 +574,10 @@ func GetSrcType(ctStr string) (SrcType, error) {
 // GetOSSourcePath corrects the current sourcePath depending on local or binary configuration,
 // if Git has been passed, we simply return the source location from LocalConfig
 // this will get the correct source path whether on Windows, macOS or Linux.
-func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
+//
+// This function also takes in the current working directory + context directory in order
+// to correctly retrieve WHERE the source is located..
+func (lci *LocalConfigInfo) GetOSSourcePath(componentContext string) (path string, err error) {
 
 	sourceType := lci.GetSourceType()
 	sourceLocation := lci.GetSourceLocation()
@@ -597,7 +600,10 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 	// Always piped to "fromslash" so it's correct for the OS..
 	// after retrieving the sourceLocation we will covert it to the
 	// correct source path depending on the OS.
-	sourceOSPath := filepath.FromSlash(lci.GetSourceLocation())
+
+	absPath, err := util.GetAbsPath(filepath.Join(componentContext, lci.GetSourceLocation()))
+
+	sourceOSPath := filepath.FromSlash(absPath)
 
 	return sourceOSPath, nil
 }

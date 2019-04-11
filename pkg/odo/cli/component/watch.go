@@ -66,7 +66,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	wo.sourceType = conf.LocalConfig.GetSourceType()
 
 	// Get SourceLocation here...
-	wo.sourcePath, err = conf.GetOSSourcePath()
+	wo.sourcePath, err = conf.GetOSSourcePath(wo.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve absolute path to source location")
 	}
