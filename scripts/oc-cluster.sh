@@ -36,10 +36,10 @@ while true; do
         oc cluster up
     fi
     if [ "$?" -eq 0 ]; then
-	./scripts/travis-check-pods.sh
-	if [ "$?" -eq 0 ]; then
-            break
-        fi
+        ./scripts/travis-check-pods.sh $1
+        if [ "$?" -eq 0 ]; then
+                break
+            fi
     fi
     echo "Retrying oc cluster up after failure"
     oc cluster down
