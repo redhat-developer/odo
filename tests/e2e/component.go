@@ -43,7 +43,7 @@ func componentTests(componentCmdPrefix string) {
 		}
 	*/
 
-	FContext("Component tests", func() {
+	Context("Component tests", func() {
 
 		// Clean up after the test
 		// This is run after every Spec (It)
