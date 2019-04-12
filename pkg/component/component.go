@@ -35,6 +35,7 @@ const ComponentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
+const SupervisorS2ISetupScript = "/var/lib/supervisord/bin/s2i-setup"
 
 // GetComponentDir returns source repo name
 // Parameters:
@@ -207,6 +208,61 @@ func GetComponentLinkedSecretNames(client *occlient.Client, componentName string
 	return secretNames, nil
 }
 
+// SetupS2ISrcPaths runs the Supervisor setup script to setup all the required paths
+// Parameters:
+//	client: Instance of occlient
+//	podName: Name of pod
+//	out: Instance of io.Writer to which logs will be written if required
+// Returns:
+//	errors if any
+func SetupS2ISrcPaths(client *occlient.Client, appName string, cmpName string, out io.Writer) error {
+
+	selectorLabels, err := util.NamespaceOpenShiftObject(cmpName, appName)
+	if err != nil {
+		return err
+	}
+
+	podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
+
+	pod, err := client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	if err != nil {
+		return err
+	}
+
+	var cmdOutput string
+	reader, writer := io.Pipe()
+	// This Go routine will automatically pipe the output from ExecCMDInContainer to
+	// our logger.
+	go func() {
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if log.IsDebug() {
+				_, err := fmt.Fprintln(out, line)
+				if err != nil {
+					log.Errorf("Unable to print to stdout: %v", err)
+				}
+			}
+
+			cmdOutput += fmt.Sprintln(line)
+		}
+	}()
+
+	err = client.ExecCMDInContainer(pod.Name,
+		// We will use the assemble-and-restart script located within the supervisord container we've created
+		[]string{SupervisorS2ISetupScript},
+		writer, writer, nil, false)
+
+	if err != nil {
+		// If we fail, log the output
+		log.Errorf("Unable to setup source directories\n%v", err)
+		return errors.Wrap(err, "unable to setup source directories")
+	}
+
+	return nil
+}
+
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 // envVars is the array containing the environment variables
@@ -362,6 +418,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 		ImageName:       cmpType,
 		ApplicationName: appName,
 		EnvVars:         envVarsList.ToStringSlice(),
+		Wait:            true,
 	}
 	createArgs.SourceType = cmpSrcType
 	createArgs.SourcePath = componentConfig.GetSourceLocation()
@@ -695,7 +752,6 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
 	pipeReader, pipeWriter := io.Pipe()
 	var cmdOutput string
-
 	// This Go routine will automatically pipe the output from ExecCMDInContainer to
 	// our logger.
 	go func() {

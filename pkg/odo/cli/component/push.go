@@ -167,6 +167,12 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
+
+	// Setup component source paths
+	err = component.SetupS2ISrcPaths(po.Context.Client, po.localConfig.GetApplication(), po.localConfig.GetName(), os.Stdout)
+	if err != nil {
+		return errors.Wrap(err, "failed to setup source paths on the component")
+	}
 	log.Successf("Successfully updated component with name: %v", cmpName)
 
 	return nil

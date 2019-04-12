@@ -538,6 +538,16 @@ func componentTests(componentCmdPrefix string) {
 						// Push only config and see that the component is created but wothout any source copied
 						helper.CmdShouldPass("odo push --config")
 						helper.VerifyCmpExists(cmpName, appName, project)
+						// Verify that the autostart=false
+						helper.CheckCmdOpInRemoteCmpPod(
+							cmpName,
+							appName,
+							project,
+							"cat /var/lib/supervisord/conf/supervisor.conf",
+							func(cmdOp string, err error) bool {
+								return strings.Contains(cmdOp, "autostart=false")
+							},
+						)
 
 						// Push only source and see that the component is updated with source code
 						helper.CmdShouldPass("odo push --source")
@@ -555,6 +565,16 @@ func componentTests(componentCmdPrefix string) {
 							},
 						)
 						Expect(remoteCmdExecPass).To(Equal(true))
+						// Verify that the autostart=true
+						helper.CheckCmdOpInRemoteCmpPod(
+							cmpName,
+							appName,
+							project,
+							"cat /var/lib/supervisord/conf/supervisor.conf",
+							func(cmdOp string, err error) bool {
+								return strings.Contains(cmdOp, "autostart=true")
+							},
+						)
 					})
 
 					It("create local nodejs component and push source and code at once", func() {
