@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/url"
 	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/cli/version"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -86,7 +85,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
-	rootCmd.PersistentFlags().Bool(genericclioptions.SkipConnectionCheckFlagName, false, "Skip cluster check")
+	//rootCmd.PersistentFlags().Bool(genericclioptions.SkipConnectionCheckFlagName, false, "Skip cluster check")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.CommandLine.Set("logtostderr", "true")
 
