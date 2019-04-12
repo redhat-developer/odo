@@ -58,7 +58,7 @@ func client(command *cobra.Command, shouldSkipConnectionCheck ...bool) *occlient
 		log.Errorf("client function only accepts one optional argument, was given: %v", shouldSkipConnectionCheck)
 		os.Exit(1)
 	}
-
+	skipConnectionCheck = true
 	client, err := occlient.New(skipConnectionCheck)
 	util.LogErrorAndExit(err, "")
 
