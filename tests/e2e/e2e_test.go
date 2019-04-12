@@ -90,6 +90,12 @@ var _ = Describe("odoe2e", func() {
 		os.RemoveAll(".odo")
 	})
 
+	// Clean up before the test
+	// This is run after every Spec (It)
+	var _ = BeforeEach(func() {
+		os.RemoveAll(".odo")
+	})
+
 	/*
 		Describe("Check for failure if user tries to create or delete anything other than project, without active accessible project, with appropriate message", func() {
 			var currentUserToken string
@@ -334,7 +340,7 @@ var _ = Describe("odoe2e", func() {
 					paramValue: "https://github.com/sclorg/nodejs-ex",
 				},
 			}
-
+			runCmdShouldPass("odo create nodejs")
 			for _, testCase := range cases {
 				runCmdShouldPass(fmt.Sprintf("odo config set -f %s %s", testCase.paramName, testCase.paramValue))
 				configOutput := runCmdShouldPass(fmt.Sprintf("odo config unset -f %s", testCase.paramName))
@@ -422,6 +428,7 @@ var _ = Describe("odoe2e", func() {
 		})
 
 		It("should set env variables", func() {
+			runCmdShouldPass("odo create nodejs")
 			runCmdShouldPass("odo config set --env PORT=4000 --env PORT=1234")
 			configValue := getConfigValue("PORT")
 			Expect(configValue).To(ContainSubstring("1234"))
@@ -434,6 +441,7 @@ var _ = Describe("odoe2e", func() {
 		})
 
 		It("should unset env variables", func() {
+			runCmdShouldPass("odo create nodejs")
 			runCmdShouldPass("odo config set --env PORT=4000")
 			runCmdShouldPass("odo config set --env SECRET_KEY=R2lyaXNoIFJhbW5hbmkgaXMgdGhlIGJlc3Q=")
 			configValue := getConfigValue("SECRET_KEY")
@@ -956,15 +964,16 @@ var _ = Describe("odoe2e", func() {
 
 		It("should delete application and component", func() {
 
-			runCmdShouldPass("odo app delete " + appTestName + " -f")
+			runCmdShouldPass("odo create nodejs")
+			runCmdShouldPass("odo app delete -f")
 
-			appList := runCmdShouldPass("odo app list")
-			Expect(appList).NotTo(ContainSubstring(appTestName))
+			// appList := runCmdShouldPass("odo app list")
+			// Expect(appList).NotTo(ContainSubstring(appTestName))
 
 			//cmpList := runCmdShouldFail("odo list --app " + appTestName)
 			//Expect(cmpList).To(ContainSubstring("There are no components deployed"))
 
-			ocDeleteProject(newProjName)
+			// ocDeleteProject(newProjName)
 		})
 
 	})

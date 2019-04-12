@@ -22,6 +22,12 @@ var _ = Describe("odoJavaE2e", func() {
 		os.RemoveAll(".odo")
 	})
 
+	// Clean up before the test
+	// This is run after every Spec (It)
+	var _ = BeforeEach(func() {
+		os.RemoveAll(".odo")
+	})
+
 	// contains a minimal javaee app
 	const warGitRepo = "https://github.com/lordofthejars/book-insultapp"
 

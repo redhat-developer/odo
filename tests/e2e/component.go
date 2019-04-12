@@ -77,7 +77,6 @@ func componentTests(componentCmdPrefix string) {
 			It("creates a component from local context, tries to list components from outside and fails", func() {
 				dirName := generateTimeBasedName("context_dir")
 				// simulate .odo not being present
-				runCmdShouldPass("mv .odo .odo_tmp")
 				session := runCmdShouldFail("odo component list")
 				Expect(session).To(ContainSubstring("the current directory does not represent an odo component"))
 				session = runCmdShouldFail("odo app list")
@@ -85,7 +84,6 @@ func componentTests(componentCmdPrefix string) {
 				session = runCmdShouldFail("odo config view")
 				Expect(session).To(ContainSubstring("the current directory does not represent an odo component"))
 				// clean up
-				runCmdShouldPass("mv .odo_tmp .odo")
 				os.RemoveAll(dirName)
 			})
 		})
