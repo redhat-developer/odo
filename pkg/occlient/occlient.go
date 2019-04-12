@@ -1456,6 +1456,8 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 
+	cmpContainer := ucp.ExistingDC.Spec.Template.Spec.Containers[0]
+
 	// Append s2i related parameters extracted above to env
 	inputEnvs := uniqueAppendOrOverwriteEnvVars(
 		ucp.EnvVars,
@@ -1506,7 +1508,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		ucp.CommonObjectMeta,
 		ucp.ImageMeta,
 		inputEnvs,
-		[]corev1.EnvFromSource{},
+		cmpContainer.EnvFrom,
 		&ucp.ResourceLimits,
 	)
 
