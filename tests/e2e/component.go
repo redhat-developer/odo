@@ -104,7 +104,7 @@ func componentTests(componentCmdPrefix string) {
 			It("should create the component from the branch ref when provided", func() {
 				runCmdShouldPass(fmt.Sprintf(componentCmdPrefix+" create ruby ref-test-%s --git https://github.com/girishramnani/ruby-ex.git --ref develop", t))
 				runCmdShouldPass("odo push")
-				runCmdShouldPass(fmt.Sprintf("odo url create ref-test-%s", t))
+				runCmdShouldPass(fmt.Sprintf("odo url create ref-test-%s --port 8080", t))
 
 				routeURL := determineRouteURL() + "/health"
 				responseStringMatchStatus := matchResponseSubString(routeURL, "develop", 180, 1)
