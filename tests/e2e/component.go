@@ -161,6 +161,7 @@ func componentTests(componentCmdPrefix string) {
 				})
 			*/
 			It("should list the components in the catalog", func() {
+				runCmdShouldPass("odo create nodejs")
 				getProj := runCmdShouldPass("odo catalog list components")
 				Expect(getProj).To(ContainSubstring("wildfly"))
 				Expect(getProj).To(ContainSubstring("ruby"))
