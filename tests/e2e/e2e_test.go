@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -58,8 +59,7 @@ func VerifyAppNameOfComponent(cmpName string, appName string) {
 func VerifyCmpName(cmpName string) {
 	dcName := getDcName(cmpName)
 	session := runCmdShouldPass(fmt.Sprintf("oc get dc %s -L app.kubernetes.io/component-name| awk '{print $6}'|sed -n 2p", dcName))
-	//Expect(session).To(ContainSubstring(cmpName))
-	Expect(session).To(Equal(cmpName))
+	Expect(session).To(ContainSubstring(cmpName))
 }
 
 func GetURL(contextDir string, port int) string {
@@ -600,16 +600,30 @@ var _ = Describe("odoe2e", func() {
 
 				// remove the .odoignore file
 				Expect(os.Remove(ignoreFilePath)).To(BeNil())
+
+				runCmdShouldPass("rm -rf " + filepath.Join(tmpDir, "nodejs-ex"))
 			})
 
 			It("should be able to push changes while showing logging", func() {
+				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
+					tmpDir + "/nodejs-ex")
+
+				runCmdShouldPass("odo create nodejs nodejs --context " + tmpDir + "/nodejs-ex")
+
 				// Push the changes with --show-log
 				getLogging := runCmdShouldPass("odo push --show-log --context " + tmpDir + "/nodejs-ex")
 
 				Expect(getLogging).To(ContainSubstring("Building component"))
+				runCmdShouldPass("rm -rf " + filepath.Join(tmpDir, "nodejs-ex"))
 			})
 
 			It("should be able to spam odo push without anything breaking", func() {
+
+				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
+					tmpDir + "/nodejs-ex")
+
+				runCmdShouldPass("odo create nodejs nodejs --context " + tmpDir + "/nodejs-ex")
+
 				// Iteration 1
 				runCmdShouldPass("odo push --show-log --context " + tmpDir + "/nodejs-ex")
 
@@ -618,10 +632,14 @@ var _ = Describe("odoe2e", func() {
 
 				// Iteration 3
 				runCmdShouldPass("odo push --show-log --context " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("rm -rf " + filepath.Join(tmpDir, "nodejs-ex"))
 
 			})
 
 			It("should create a component and push using the --ignore flag", func() {
+				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
+					tmpDir + "/nodejs-ex")
+
 				// runCmdShouldPass("odo create " + curProj + "/nodejs push-odoignore-flag-example --context " + tmpDir + "/nodejs-ex")
 				runCmdShouldPass("odo create nodejs push-odoignore-flag-example --context " + tmpDir + "/nodejs-ex")
 				// runCmdShouldPass("odo push --ignore tests/,README.md")
@@ -639,16 +657,29 @@ var _ = Describe("odoe2e", func() {
 					// verify that the README.md file was not pushed
 					runCmdShouldFail("oc exec " + podName + " -- ls -lai /opt/app-root/src | grep README.md")
 				*/
+				runCmdShouldPass("rm -rf " + filepath.Join(tmpDir, "nodejs-ex"))
+
 			})
 
 			It("should create a component with auto-generated name", func() {
 				// runCmdShouldPass("odo create " + curProj + "/nodejs --context " + tmpDir + "/nodejs-ex --app " + appTestName)
+				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
+					tmpDir + "/nodejs-ex")
+
 				runCmdShouldPass("odo create nodejs --context " + tmpDir + "/nodejs-ex --app " + appTestName)
 				runCmdShouldPass("odo push --context " + tmpDir + "/nodejs-ex")
+				runCmdShouldPass("rm -rf " + filepath.Join(tmpDir, "nodejs-ex"))
 			})
 
 			It("should list the components within the application", func() {
+				runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
+					tmpDir + "/nodejs-ex")
+
+				runCmdShouldPass("odo create nodejs --context " + tmpDir + "/nodejs-ex --app " + appTestName)
+				runCmdShouldPass("odo push --context " + tmpDir + "/nodejs-ex")
+
 				VerifyCmpName("nodejs")
+				runCmdShouldPass("rm -rf " + filepath.Join(tmpDir, "nodejs-ex"))
 				//cmpList := runCmdShouldPass("odo list")
 				//Expect(cmpList).To(ContainSubstring("nodejs"))
 			})
