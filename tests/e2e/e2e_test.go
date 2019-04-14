@@ -276,8 +276,8 @@ var _ = Describe("odoe2e", func() {
 					paramValue: "https://github.com/sclorg/nodejs-ex",
 				},
 			}
+			runCmdShouldPass("odo create nodejs")
 			for _, testCase := range cases {
-				runCmdShouldPass("odo create nodejs")
 				runCmdShouldPass(fmt.Sprintf("odo config set %s %s -f", testCase.paramName, testCase.paramValue))
 				Value := getConfigValue(testCase.paramName)
 				Expect(Value).To(ContainSubstring(testCase.paramValue))
@@ -972,12 +972,20 @@ var _ = Describe("odoe2e", func() {
 	*/
 	Context("deploying a component with a specific image name", func() {
 		It("should deploy the component", func() {
+			runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
+				tmpDir + "/nodejs-ex")
 			runCmdShouldPass("odo create nodejs:latest testversioncmp --context " + tmpDir + "/nodejs-ex")
 			runCmdShouldPass("odo push --context " + tmpDir + "/nodejs-ex")
+			runCmdShouldPass("rm -rf " + filepath.Join(tmpDir, "nodejs-ex"))
 		})
 
 		It("should delete the deployed image-specific component", func() {
-			runCmdShouldPass("odo delete testversioncmp -f")
+			runCmdShouldPass("git clone https://github.com/openshift/nodejs-ex " +
+				tmpDir + "/nodejs-ex")
+			runCmdShouldPass("odo create nodejs:latest testversioncmp --context " + tmpDir + "/nodejs-ex")
+			runCmdShouldPass("odo push --context " + tmpDir + "/nodejs-ex")
+			runCmdShouldPass("odo delete -f --context " + tmpDir + "/nodejs-ex")
+			runCmdShouldPass("rm -rf " + filepath.Join(tmpDir, "nodejs-ex"))
 		})
 	})
 

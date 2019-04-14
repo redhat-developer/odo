@@ -476,15 +476,16 @@ func componentTests(componentCmdPrefix string) {
 				})
 			})
 		*/
-		Context("cleaning up", func() {
-			It("should delete the application", func() {
+		// we dont need to clean up
+		// Context("cleaning up", func() {
+		// 	FIt("should delete the application", func() {
+		// 		runCmdShouldPass("odo create nodejs")
+		// 		runCmdShouldPass("odo app delete " + appTestName + " -f")
 
-				runCmdShouldPass("odo app delete " + appTestName + " -f")
-
-				runCmdShouldPass("odo project delete " + projName + " -f")
-				waitForDeleteCmd("odo project list", projName)
-			})
-		})
+		// 		runCmdShouldPass("odo project delete " + projName + " -f")
+		// 		waitForDeleteCmd("odo project list", projName)
+		// 	})
+		// })
 
 		Context("Test odo push with --source and --config flags", func() {
 			//new clean project and context for each test
