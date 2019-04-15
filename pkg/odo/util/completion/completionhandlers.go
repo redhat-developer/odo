@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
@@ -167,7 +166,7 @@ var FileCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 // ProjectNameCompletionHandler provides project name completion
 var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	projects, err := project.List(context.Client)
+	projects, err := context.Client.GetProjectNames()
 	if err != nil {
 		return completions
 	}
