@@ -1,9 +1,9 @@
 package project
 
 import (
+	"github.com/openshift/odo/pkg/application"
 	"github.com/pkg/errors"
 
-	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 
@@ -49,7 +49,7 @@ func Delete(client *occlient.Client, projectName string) error {
 	return nil
 }
 
-func List(client *occlient.Client) (ProjectList, error) {
+func DescribeProjects(client *occlient.Client) (ProjectList, error) {
 	currentProject := client.GetCurrentProjectName()
 	allProjects, err := client.GetProjectNames()
 	if err != nil {
@@ -74,12 +74,12 @@ func List(client *occlient.Client) (ProjectList, error) {
 // The first returned parameter is a bool indicating if a project with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(client *occlient.Client, projectName string) (bool, error) {
-	projects, err := List(client)
+	projects, err := client.GetProjectNames()
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the project list")
 	}
-	for _, project := range projects.Items {
-		if project.Name == projectName {
+	for _, project := range projects {
+		if project == projectName {
 			return true, nil
 		}
 	}
