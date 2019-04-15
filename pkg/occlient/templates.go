@@ -323,11 +323,15 @@ func generateBuildConfig(commonObjectMeta metav1.ObjectMeta, gitURL, gitRef, ima
 // dc is the deployment config to be updated
 // dcName is the name of the deployment config
 func addBootstrapVolumeCopyInitContainer(dc *appsv1.DeploymentConfig, dcName string) {
+	addSysAdminContext := corev1.SecurityContext{
+		Capabilities: &corev1.Capabilities{Add: []corev1.Capability{"SYS_ADMIN"}},
+	}
 	dc.Spec.Template.Spec.InitContainers = append(dc.Spec.Template.Spec.InitContainers,
 		corev1.Container{
 			Name: "copy-files-to-volume",
 			// Using custom image from bootstrapperImage variable for the initial initContainer
-			Image: dc.Spec.Template.Spec.Containers[0].Image,
+			Image:           dc.Spec.Template.Spec.Containers[0].Image,
+			SecurityContext: &addSysAdminContext,
 			Command: []string{
 				"sh",
 				"-c"},
