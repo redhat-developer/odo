@@ -61,6 +61,8 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
+
+	pdo.Context.Client.Namespace = pdo.projectName
 	err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
 	if err != nil {
 		return err
