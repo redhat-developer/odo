@@ -75,6 +75,7 @@ var _ = Describe("odoLinkE2e", func() {
 				})
 
 				routeURL := determineRouteURL()
+				runCmdShouldPass("curl -L " + routeURL)
 				// Ping said URL
 				responseStringMatchStatus := matchResponseSubString(routeURL, "Spring Boot", 30, 1)
 				Expect(responseStringMatchStatus).Should(BeTrue())
