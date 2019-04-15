@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 
 	"github.com/openshift/odo/tests/e2escenarios/helper"
 )
@@ -60,7 +59,7 @@ var _ = Describe("Core beta flow", func() {
 		TestBasicCreateConfigPush := func(extraArgs ...string) {
 			createSession := helper.CmdShouldPass(odo, append([]string{"component", "create", "java", "mycomponent", "--app", "myapp"}, extraArgs...)...)
 			// output of the commands should point user to running "odo push"
-			Eventually(createSession).Should(gbytes.Say("odo push"))
+			Expect(createSession).Should(ContainSubstring("odo push"))
 			configFile := filepath.Join(context, ".odo", "config.yaml")
 			Expect(configFile).To(BeARegularFile())
 			helper.FileShouldContainSubstring(configFile, "Name: mycomponent")
@@ -74,33 +73,33 @@ var _ = Describe("Core beta flow", func() {
 			configSession := helper.CmdShouldPass(odo, append([]string{"config", "set", "--env", "FOO=bar"}, extraArgs...)...)
 			// output of the commands should point user to running "odo push"
 			// currently failing
-			Eventually(configSession).Should(gbytes.Say("odo push"))
+			Expect(configSession).Should(ContainSubstring("odo push"))
 			helper.FileShouldContainSubstring(configFile, "Name: FOO")
 			helper.FileShouldContainSubstring(configFile, "Value: bar")
 
 			urlCreateSession := helper.CmdShouldPass(odo, append([]string{"url", "create", "--port", "8080"}, extraArgs...)...)
 			// output of the commands should point user to running "odo push"
-			Eventually(urlCreateSession).Should(gbytes.Say("odo push"))
+			Eventually(urlCreateSession).Should(ContainSubstring("odo push"))
 			helper.FileShouldContainSubstring(configFile, "Url:")
 			helper.FileShouldContainSubstring(configFile, "Port: 8080")
 
 			helper.CmdShouldPass(odo, append([]string{"push"}, extraArgs...)...)
 
 			dcSession := oc.GetComponentDC("mycomponent", "myapp", project)
-			Eventually(dcSession).Should(gbytes.Say("app.kubernetes.io/component-name: mycomponent"))
-			Eventually(dcSession).Should(gbytes.Say("app.kubernetes.io/component-source-type: local"))
-			Eventually(dcSession).Should(gbytes.Say("app.kubernetes.io/component-type: java"))
-			Eventually(dcSession).Should(gbytes.Say("app.kubernetes.io/name: myapp"))
-			Eventually(dcSession).Should(gbytes.Say("name: mycomponent-myapp"))
+
+			Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/component-name: mycomponent"))
+			Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/component-source-type: local"))
+			Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/component-type: java"))
+			Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/name: myapp"))
+			Expect(dcSession).Should(ContainSubstring("name: mycomponent-myapp"))
 			// DC should have env variable
-			// currently failing
-			Eventually(dcSession).Should(gbytes.Say("name: FOO"))
-			Eventually(dcSession).Should(gbytes.Say("value: bar"))
+			Expect(dcSession).Should(ContainSubstring("name: FOO"))
+			Expect(dcSession).Should(ContainSubstring("value: bar"))
 
 			routeSession := oc.GetComponentRoutes("mycomponent", "myapp", project)
 			// check that route is pointing gto right port and component
-			Eventually(routeSession).Should(gbytes.Say("targetPort: 8080"))
-			Eventually(routeSession).Should(gbytes.Say("name: mycomponent-myapp"))
+			Expect(routeSession).Should(ContainSubstring("targetPort: 8080"))
+			Expect(routeSession).Should(ContainSubstring("name: mycomponent-myapp"))
 			url := oc.GetFirstURL("mycomponent", "myapp", project)
 
 			helper.HttpWaitFor("http://"+url, "Hello World from Javalin!", 10, 5)
