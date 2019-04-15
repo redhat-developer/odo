@@ -146,7 +146,7 @@ NOTE: You can use environment variable `CUSTOM_HOMEDIR` to specify a custom home
 
 === Integration tests
 
-Integration tests, otherwise known as end-2-end (e2e) tests are used within `odo`. All tests can be found in the `tests/e2e` directory and can be called using functions within `makefile`.
+Integration tests are used within `odo`. All tests can be found in the `tests/` directory and can be called using functions within `makefile`. Also test directory comprises `e2e` scenario and a clean `test template` for reference.
 
 .Prerequisites:
 
@@ -160,17 +160,17 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 
 .Procedure:
 
-To deploy an e2e test:
+To deploy an integration test:
 
 
-* For the entire suite use:
+* For the entire integration suite use:
 ----
 $ make test-e2e
 ----
 
-* For the main tests use:
+* For the generic tests use:
 ----
-$ make test-main-e2e
+$ make test-generic
 ----
 
 * For the component tests use:
@@ -181,6 +181,11 @@ $ make test-cmp-e2e
 * For the service catalog tests use:
 ----
 $ make test-service-e2e
+----
+
+* For the e2e scenario test use:
+----
+$ make test-e2e-scenarios
 ----
 
 You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
