@@ -95,6 +95,7 @@ if [ -z $OC_LOGIN_SUCCESS ]; then
 fi
 
 oc whoami
+oc status
 oc new-project myproject
 sleep 4
 oc version
