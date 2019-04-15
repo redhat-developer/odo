@@ -1,4 +1,6 @@
 #!/bin/bash
+
+set -x
 # Setup to find nessasary data from cluster setup
 ## Constants
 HTPASSWD_FILE="./htpass"
@@ -92,6 +94,7 @@ if [ -z $OC_LOGIN_SUCCESS ]; then
     exit 1
 fi
 
+oc whoami
 oc new-project myproject
 sleep 4
 oc version
