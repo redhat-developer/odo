@@ -7,7 +7,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
-	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -16,6 +15,9 @@ import (
 	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 )
+
+// DefaultAppName is the default name of the application when an application name is not provided
+const DefaultAppName = "app"
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewContext(command *cobra.Command) *Context {
@@ -194,11 +196,7 @@ func resolveApp(command *cobra.Command, createAppIfNeeded bool, lci *config.Loca
 		app = lci.GetApplication()
 		if app == "" {
 			if createAppIfNeeded {
-				var err error
-				app, err = application.GetDefaultAppName()
-				if err != nil {
-					util.LogErrorAndExit(err, "failed to generate a random app name")
-				}
+				return DefaultAppName
 			}
 		}
 	}

@@ -1,9 +1,7 @@
 package application
 
 import (
-	"os"
 	"reflect"
-	"regexp"
 	"testing"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -11,74 +9,11 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
-
-func TestGetDefaultAppName(t *testing.T) {
-	tests := []struct {
-		testName   string
-		wantRE     string
-		needPrefix bool
-		prefix     string
-	}{
-		{
-			testName:   "Case: App prefix not configured",
-			wantRE:     "app-*",
-			needPrefix: false,
-		},
-		{
-			testName:   "Case: App prefix set to testing",
-			wantRE:     "testing-*",
-			needPrefix: true,
-			prefix:     "testing",
-		},
-		{
-			testName:   "Case: App prefix set to empty string",
-			wantRE:     "application-*",
-			needPrefix: true,
-			prefix:     "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Log("Running test: ", tt.testName)
-		t.Run(tt.testName, func(t *testing.T) {
-
-			odoConfigFile, kubeConfigFile, err := testingutil.SetUp(
-				testingutil.ConfigDetails{
-					FileName:      "odo-test-config",
-					Config:        testingutil.FakeOdoConfig("odo-test-config", tt.needPrefix, tt.prefix),
-					ConfigPathEnv: "GLOBALODOCONFIG",
-				}, testingutil.ConfigDetails{
-					FileName:      "kube-test-config",
-					Config:        testingutil.FakeKubeClientConfig(),
-					ConfigPathEnv: "KUBECONFIG",
-				},
-			)
-			defer testingutil.CleanupEnv([]*os.File{odoConfigFile, kubeConfigFile}, t)
-			if err != nil {
-				t.Errorf("failed setting up the test env. Error: %v", err)
-			}
-
-			name, err := GetDefaultAppName()
-			if err != nil {
-				t.Errorf("failed to setup mock environment. Error: %v", err)
-			}
-
-			r, _ := regexp.Compile(tt.wantRE)
-			match := r.MatchString(name)
-			if !match {
-				fetchedConfig, _ := preference.New()
-				t.Errorf("randomly generated application name %s does not match regexp %s and config is %+v\nthe prefix is %s", name, tt.wantRE, fetchedConfig, *fetchedConfig.OdoSettings.NamePrefix)
-			}
-		})
-	}
-}
 
 func TestGetMachineReadableFormat(t *testing.T) {
 	type args struct {
