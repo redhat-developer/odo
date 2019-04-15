@@ -90,6 +90,27 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// Set the correct context
 	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+
+	// check if project exist
+	prjName := po.localConfig.GetProject()
+	isPrjExists, err := project.Exists(po.Context.Client, prjName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
+	}
+	if !isPrjExists {
+		log.Successf("Creating project %s", prjName)
+		err = project.Create(po.Context.Client, prjName, true)
+		if err != nil {
+			log.Errorf("Failed creating project %s", prjName)
+			return errors.Wrapf(
+				err,
+				"project %s does not exist. Failed creating it.Please try after creating project using `odo project create <project_name>`",
+				prjName,
+			)
+		}
+		log.Successf("Successfully created project %s", prjName)
+	}
+	po.Context.Client.Namespace = prjName
 	return
 }
 
@@ -119,28 +140,8 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 	}
 
 	cmpName := po.localConfig.GetName()
-	prjName := po.localConfig.GetProject()
 	appName := po.localConfig.GetApplication()
 	cmpType := po.localConfig.GetType()
-
-	isPrjExists, err := project.Exists(po.Context.Client, prjName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
-	}
-	if !isPrjExists {
-		log.Successf("Creating project %s", prjName)
-		err = project.Create(po.Context.Client, prjName, true)
-		if err != nil {
-			log.Errorf("Failed creating project %s", prjName)
-			return errors.Wrapf(
-				err,
-				"project %s does not exist. Failed creating it.Please try after creating project using `odo project create <project_name>`",
-				prjName,
-			)
-		}
-		log.Successf("Successfully created project %s", prjName)
-	}
-	po.Context.Client.Namespace = prjName
 
 	isCmpExists, err := component.Exists(po.Context.Client, cmpName, appName)
 	if err != nil {

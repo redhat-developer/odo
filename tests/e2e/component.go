@@ -650,4 +650,16 @@ func componentTests(componentCmdPrefix string) {
 
 	})
 
+	Context("Creating Component even in new project", func() {
+
+		It("should create component", func() {
+			runCmdShouldPass("mkdir -p cmp-git")
+			runCmdShouldPass(componentCmdPrefix + " create nodejs cmp-git --git https://github.com/openshift/nodejs-ex --project testproject  --context cmp-git/ --app " + appTestName)
+			runCmdShouldPass("odo push --context cmp-git/ -v4")
+			runCmdShouldPass("rm -rf cmp-git")
+
+		})
+
+	})
+
 }
