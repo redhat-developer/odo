@@ -75,3 +75,24 @@ while true; do
 done
 
 echo "Registry and router pods are okay"
+
+if [ "$1" = "service-catalog" ]; then
+    echo "Waiting for template-service-broker"
+
+    while true; do
+        status=$(oc get clusterservicebroker template-service-broker -o jsonpath='{.status.conditions[0].status}')
+        if [ "$status" == "True" ]; then
+            break
+        fi
+        sleep 5
+    done
+    
+    echo "Waiting for openshift-automation-service-broker"
+    while true; do
+        status=$(oc get clusterservicebroker openshift-automation-service-broker -o jsonpath='{.status.conditions[0].status}')
+        if [ "$status" == "True" ]; then
+            break
+        fi
+        sleep 5
+    done
+fi
