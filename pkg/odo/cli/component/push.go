@@ -79,7 +79,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	glog.V(4).Infof("SourceLocation: %s", po.localConfig.GetSourceLocation())
 
 	// Get SourceLocation here...
-	po.sourcePath, err = conf.GetOSSourcePath(po.componentContext)
+	po.sourcePath, err = conf.GetOSSourcePath()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve absolute path to source location")
 	}
@@ -196,7 +196,7 @@ func (po *PushOptions) Run() (err error) {
 	log.Successf("Pushing changes to component: %v of type %s", cmpName, po.sourceType)
 
 	// Get SourceLocation here...
-	po.sourcePath, err = po.localConfig.GetOSSourcePath(po.componentContext)
+	po.sourcePath, err = po.localConfig.GetOSSourcePath()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve OS source path to source location")
 	}
