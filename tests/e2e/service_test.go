@@ -48,12 +48,6 @@ var _ = Describe("odoServiceE2e", func() {
 			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
 			runCmdShouldPass("odo create java sb-app")
 
-			runCmdShouldPass("oc login -u system:admin")
-			runCmdShouldPass("oc get pods -n openshift-automation-service-broker")
-			runCmdShouldPass("oc get clusterservicebroker")
-			runCmdShouldPass("oc login -u developer")
-			runCmdShouldPass("oc get clusterserviceclasses")
-
 			runCmdShouldPass("odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret -p postgresql_database=my_data -p postgresql_version=9.6")
 			waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
 				return strings.Contains(output, "dh-postgresql-apb")
