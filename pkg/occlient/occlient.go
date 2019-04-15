@@ -83,7 +83,7 @@ type CreateArgs struct {
 }
 
 const (
-	ocUpdateTimeout    = 120 * time.Second
+	ocUpdateTimeout    = 5 * time.Minute
 	OpenShiftNameSpace = "openshift"
 
 	// The length of the string to be generated for names of resources
