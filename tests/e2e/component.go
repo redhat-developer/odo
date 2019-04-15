@@ -66,6 +66,10 @@ func componentTests(componentCmdPrefix string) {
 				appName := runCmdShouldPass("odo app list")
 				Expect(appName).ToNot(BeEmpty())
 
+				// checking if application name is set to "app"
+				applicationName := getConfigValue("Application")
+				Expect(applicationName).To(Equal("app"))
+
 				// clean up
 				runCmdShouldPass("odo component delete " + componentName + " -f")
 				runCmdShouldPass("odo app delete -f")

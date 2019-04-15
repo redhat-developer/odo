@@ -6,10 +6,7 @@ import (
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -21,35 +18,6 @@ const (
 	appKind           = "app"
 	appList           = "List"
 )
-
-// GetDefaultAppName returns randomly generated application name with unique configurable prefix suffixed by a randomly generated string which can be used as a default name in case the user doesn't provide a name.
-func GetDefaultAppName() (string, error) {
-	var appName string
-
-	// Get the desired app name prefix from odo config
-	cfg, err := preference.New()
-	if err != nil {
-		return "", errors.Wrap(err, "unable to fetch config")
-	}
-
-	// If there's no prefix in config file or it is equal to $DIR, use safe default which is the name of current directory
-	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == "" {
-		prefix, err := component.GetComponentDir("", config.NONE)
-		if err != nil {
-			return "", errors.Wrap(err, "unable to generate random app name")
-		}
-		appName, err = util.GetRandomName(prefix, appPrefixMaxLen, []string{}, appNameMaxRetries)
-		if err != nil {
-			return "", errors.Wrap(err, "unable to generate random app name")
-		}
-	} else {
-		appName, err = util.GetRandomName(*cfg.OdoSettings.NamePrefix, appPrefixMaxLen, []string{}, appNameMaxRetries)
-	}
-	if err != nil {
-		return "", errors.Wrap(err, "unable to generate random app name")
-	}
-	return util.GetDNS1123Name(appName), nil
-}
 
 // List all applications in current project
 func List(client *occlient.Client) ([]string, error) {
