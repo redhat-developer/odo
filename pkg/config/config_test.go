@@ -429,7 +429,7 @@ func TestGetOSSourcePath(t *testing.T) {
 				t.Errorf("the '%v' was not set", tt.parameter)
 			}
 
-			_, err = cfg.GetOSSourcePath("")
+			_, err = cfg.GetOSSourcePath()
 			if tt.wantErr && err == nil {
 				t.Errorf("expected error for %s source path", tt.value)
 			} else if !tt.wantErr && err != nil {
