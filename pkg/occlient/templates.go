@@ -209,10 +209,6 @@ func GetResourceRequirementsFromCmpSettings(cfg config.LocalConfigInfo) (*corev1
 		resourceRequirements.Requests = requests
 	}
 
-	if resourceRequirements.Limits == nil && resourceRequirements.Requests == nil {
-		return nil, nil
-	}
-
 	return &resourceRequirements, nil
 }
 
