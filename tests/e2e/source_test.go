@@ -4,6 +4,8 @@ import (
 	//"fmt"
 	//"strings"
 
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -13,6 +15,12 @@ const sourceExamples = "examples/source/"
 var _ = Describe("odoSourceE2e", func() {
 	//const t = "source"
 	//var projName = fmt.Sprintf("odo-%s", t)
+
+	// Clean up after the test
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		os.RemoveAll(".odo")
+	})
 
 	// Create a separate project for source
 	Context("create source project", func() {

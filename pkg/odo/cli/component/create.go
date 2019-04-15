@@ -235,6 +235,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
+
+	// check to see if config file exists or not, if it does that
+	// means we shouldn't allow the user to override the current component
+	if co.localConfigInfo.ConfigFileExists() {
+		return errors.New("this directory already contains a component")
+	}
+
 	co.componentSettings = co.localConfigInfo.GetComponentSettings()
 
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
