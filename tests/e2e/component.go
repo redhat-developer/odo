@@ -95,7 +95,7 @@ func componentTests(componentCmdPrefix string) {
 		Context("Regression: adding and removing limits should reflect on DC", func() {
 			It("should reflect the memory constraint in DC when updated in config", func() {
 				resourcePath := ".items[0].spec.template.spec.containers[0].resources"
-				runCmdShouldPass("odo create java --git https://github.com/spring-projects/spring-petclinic.git --port 8080 --port 8088")
+				runCmdShouldPass("odo create nodejs --git https://github.com/openshift/nodejs-ex --port 8080")
 				runCmdShouldPass("odo config set memory 2Gi")
 				runCmdShouldPass("odo push")
 				componentName := getConfigValue("Name")
