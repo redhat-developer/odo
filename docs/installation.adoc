@@ -68,7 +68,7 @@ $ echo "deb https://dl.bintray.com/odo/odo-deb-releases stretch main" | sudo tee
 ----
 .. Verify the content of the file and ensure that you see the following:
 +
-....
+----
 # cat /etc/yum.repos.d/bintray-odo-odo-rpm-dev.repo
 [bintraybintray-odo-odo-rpm-dev]
 name=bintray-odo-odo-rpm-dev
@@ -76,7 +76,8 @@ baseurl=https://dl.bintray.com/odo/odo-rpm-dev
 gpgcheck=0
 repo_gpgcheck=0
 enabled=1
-....
+----
+
 * From the latest release:
 .. Download the `odo` repository to `/etc/yum.repods.d/` using:
 +
@@ -85,7 +86,7 @@ enabled=1
 ----
 .. Verify the content of the file and ensure that you see the following:
 +
-....
+----
 # cat /etc/yum.repos.d/bintray-odo-odo-rpm-releases.repo
 [bintraybintray-odo-odo-rpm-releases]
 name=bintray-odo-odo-rpm-releases
@@ -93,7 +94,8 @@ baseurl=https://dl.bintray.com/odo/odo-rpm-releases
 gpgcheck=0
 repo_gpgcheck=0
 enabled=1
-....
+----
+
 . Install `odo`:
 * For CentOS or RHEL use:
 +

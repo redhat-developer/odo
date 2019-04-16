@@ -13,10 +13,11 @@ toc::[]
 +
 NOTE: The following commands assume that you have the `$GOPATH` environment variable properly set. We highly recommend you place `odo` code into the $GOPATH.
 +
+
 ----
 $ git clone https://github.com/<YOUR_GITHUB_USERNAME>/odo.git $GOPATH/src/github.com/openshift/odo
-cd $GOPATH/src/github.com/openshift/odo
-git remote add upstream 'https://github.com/openshift/odo'
+$ cd $GOPATH/src/github.com/openshift/odo
+$ git remote add upstream 'https://github.com/openshift/odo'
 ----
 +
 When cloning `odo`, the Windows terminal such as PowerShell or CMD may throw a *Filename too long* error. To avoid such an error, set your Git configuration as follows:
@@ -36,9 +37,9 @@ A PR must include:
 
 === PR review process
 
- . Once you submit a PR,the @openshift-ci-robot automatically requests 2 reviews from reviewers and suggests an approver based on `OWNERS` files.
+. Once you submit a PR, the @openshift-ci-robot automatically requests two reviews from reviewers and suggests an approver based on `OWNERS` files.
 . After a reviewer is satisfied with the changes he adds `/lgtm` (looks good to me) as a comment to the PR. This applies the *lgtm* label.
-. The Approver then reviews the PR and if satified, adds
+. The approver then reviews the PR and if satisfied, adds
 `/approve` as a comment to the PR. This applies the *approve* label.
 * After the PR has *lgtm* and *approve* labels and the required tests pass, the bot automatically merges the PR.
 +
@@ -50,7 +51,7 @@ $ git remote set-url --push upstream no_push
 
 === What to look out for when reviewing a pull request:
 
- * Have tests been added?
+* Have tests been added?
 * Does the feature or fix work locally?
 * Is the code understandable, have comments been added to the code?
 * A PR should pass all the pre-submit tests, all request changes must be resolved, and needs at least two approving reviews. If you apply the `/lgtm` label before it meets this criteria, put it on hold with the `/hold` label immediately. You can use `/lgtm cancel` to cancel your `/lgtm` and use `/hold cancel` once you are ready to approve it. This especially applies to draft PRs.
