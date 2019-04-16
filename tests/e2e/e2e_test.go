@@ -1012,7 +1012,7 @@ var _ = Describe("odoe2e", func() {
 			//cmpList := runCmdShouldFail("odo list --app " + appTestName)
 			//Expect(cmpList).To(ContainSubstring("There are no components deployed"))
 
-			// ocDeleteProject(newProjName)
+			ocDeleteProject(newProjName)
 		})
 
 	})
