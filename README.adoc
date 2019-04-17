@@ -114,7 +114,7 @@ $ minishift start
 . Log into the OpenShift cluster.
 +
 ----
-$ odo login --username developer --password developer
+$ odo login -u developer -p developer
 ----
 . Create an application. An application in `odo` is an umbrella
 under which you add other components.

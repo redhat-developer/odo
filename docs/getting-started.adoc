@@ -18,7 +18,7 @@ $ minishift start
 .. Log into the OpenShift cluster:
 +
 ----
-$ odo login --username developer --password developer
+$ odo login -u developer -p developer
 ----
 +
 [NOTE]
@@ -29,7 +29,7 @@ In order to make full use of `odo` functionality, it is recommended to enable th
 * If you do not use Minishift, `odo` automatically works with any OpenShift cluster you are currently logged into. To log into the OpenShift cluster run:
 +
 ----
-$ odo login --username developer --password developer
+$ odo login -u developer -p developer
 ----
 
 . An application is an umbrella that comprises of all the components (microservices) you build. Create a component as follows:
