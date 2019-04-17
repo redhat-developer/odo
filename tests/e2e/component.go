@@ -77,7 +77,7 @@ func componentTests(componentCmdPrefix string) {
 			})
 		})
 
-		Context("Regression : listing component outside of component directory should fail", func() {
+		Context("Regression: listing component outside of component directory should fail", func() {
 			It("creates a component from local context, tries to list components from outside and fails", func() {
 				dirName := generateTimeBasedName("context_dir")
 				// simulate .odo not being present
@@ -89,6 +89,27 @@ func componentTests(componentCmdPrefix string) {
 				Expect(session).To(ContainSubstring("the current directory does not represent an odo component"))
 				// clean up
 				os.RemoveAll(dirName)
+			})
+		})
+
+		Context("Regression: adding and removing limits should reflect on DC", func() {
+			It("should reflect the memory constraint in DC when updated in config", func() {
+				resourcePath := ".items[0].spec.template.spec.containers[0].resources"
+				runCmdShouldPass("odo create nodejs --git https://github.com/openshift/nodejs-ex --port 8080")
+				runCmdShouldPass("odo config set memory 2Gi")
+				runCmdShouldPass("odo push")
+				componentName := getConfigValue("Name")
+				maxMemory := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o jsonpath='{%s.limits.memory}'", componentName, resourcePath))
+				Expect(maxMemory).To(Equal("2Gi"))
+				minMemory := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o jsonpath='{%s.requests.memory}'", componentName, resourcePath))
+				Expect(minMemory).To(Equal("2Gi"))
+				runCmdShouldPass("odo config unset -f memory")
+				runCmdShouldPass("odo push --config")
+				maxMemory = runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o jsonpath='{%s.limits.memory}'", componentName, resourcePath))
+				Expect(maxMemory).To(BeEmpty())
+				minMemory = runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o jsonpath='{%s.requests.memory}'", componentName, resourcePath))
+				Expect(minMemory).To(BeEmpty())
+				runCmdShouldPass("odo component delete -f")
 			})
 		})
 
