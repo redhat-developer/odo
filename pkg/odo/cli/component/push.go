@@ -76,11 +76,15 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	po.localConfig = conf
 	po.sourceType = conf.LocalConfig.GetSourceType()
 
+	glog.V(4).Infof("SourceLocation: %s", po.localConfig.GetSourceLocation())
+
 	// Get SourceLocation here...
 	po.sourcePath, err = conf.GetOSSourcePath()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve absolute path to source location")
 	}
+
+	glog.V(4).Infof("Source Path: %s", po.sourcePath)
 
 	// Apply ignore information
 	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
@@ -191,44 +195,56 @@ func (po *PushOptions) Run() (err error) {
 
 	log.Successf("Pushing changes to component: %v of type %s", cmpName, po.sourceType)
 
-	switch po.sourceType {
-	case config.LOCAL, config.BINARY:
+	// Get SourceLocation here...
+	po.sourcePath, err = po.localConfig.GetOSSourcePath()
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve OS source path to source location")
+	}
 
-		if po.sourceType == config.LOCAL {
-			glog.V(4).Infof("Copying directory %s to pod", po.sourcePath)
-			err = component.PushLocal(
-				po.Context.Client,
-				cmpName,
-				appName,
-				po.localConfig.GetSourceLocation(),
-				os.Stdout,
-				[]string{},
-				[]string{},
-				true,
-				util.GetAbsGlobExps(po.sourcePath, po.ignores),
-				po.show,
-			)
-		} else {
-			dir := filepath.Dir(po.sourcePath)
-			glog.V(4).Infof("Copying file %s to pod", po.sourcePath)
-			err = component.PushLocal(
-				po.Context.Client,
-				cmpName,
-				appName,
-				dir,
-				os.Stdout,
-				[]string{po.sourcePath},
-				[]string{},
-				true,
-				util.GetAbsGlobExps(po.sourcePath, po.ignores),
-				po.show,
-			)
-		}
+	switch po.sourceType {
+	case config.LOCAL:
+		glog.V(4).Infof("Copying directory %s to pod", po.sourcePath)
+		err = component.PushLocal(
+			po.Context.Client,
+			cmpName,
+			appName,
+			po.sourcePath,
+			os.Stdout,
+			[]string{},
+			[]string{},
+			true,
+			util.GetAbsGlobExps(po.sourcePath, po.ignores),
+			po.show,
+		)
+
 		if err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
 		}
 
-	case "git":
+	case config.BINARY:
+
+		// We will pass in the directory, NOT filepath since this is a binary..
+		binaryDirectory := filepath.Dir(po.sourcePath)
+
+		glog.V(4).Infof("Copying binary file %s to pod", po.sourcePath)
+		err = component.PushLocal(
+			po.Context.Client,
+			cmpName,
+			appName,
+			binaryDirectory,
+			os.Stdout,
+			[]string{po.sourcePath},
+			[]string{},
+			true,
+			util.GetAbsGlobExps(po.sourcePath, po.ignores),
+			po.show,
+		)
+
+		if err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
+		}
+
+	case config.GIT:
 		err := component.Build(
 			po.Context.Client,
 			cmpName,

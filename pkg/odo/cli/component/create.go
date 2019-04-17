@@ -3,8 +3,10 @@ package component
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -49,6 +51,10 @@ type CreateOptions struct {
 
 // CreateRecommendedCommandName is the recommended watch command name
 const CreateRecommendedCommandName = "create"
+
+// LocalDirectoryDefaultLocation is the default location of where --local files should always be..
+// since the application will always be in the same directory as `.odo`, we will always set this as: ./
+const LocalDirectoryDefaultLocation = "./"
 
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component to be deployed on OpenShift.
 
@@ -107,52 +113,58 @@ func NewCreateOptions() *CreateOptions {
 	return &CreateOptions{}
 }
 
-func (co *CreateOptions) setCmpSourceAttrs() (err error) {
+func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 
-	componentCnt := 0
-	cmpSrcType := config.LOCAL
-	co.componentSettings.SourceType = &cmpSrcType
+	// Set the correct application context
 	co.componentSettings.Application = &(co.Context.Application)
 
+	// By default we set the source as LOCAL (if --local, --binary or --git isn't passed)
+	componentSourceType := config.LOCAL
+
+	// If --local, --binary or --git is passed, let's set the correct source type.
 	if len(co.componentBinary) != 0 {
-		cPath, err := util.GetAbsPath(co.componentBinary)
+		componentSourceType = config.BINARY
+	} else if len(co.componentGit) != 0 {
+		componentSourceType = config.GIT
+	}
+	co.componentSettings.SourceType = &componentSourceType
+
+	// Here we set the correct source path for each type
+	switch componentSourceType {
+
+	// --binary
+	case config.BINARY:
+		cPath, err := filepath.EvalSymlinks(co.componentBinary)
+		glog.V(0).Infof("%s", cPath)
 		if err != nil {
 			return err
 		}
 		co.componentSettings.SourceLocation = &cPath
-		cmpSrcType = config.BINARY
-		co.componentSettings.SourceType = &cmpSrcType
-		componentCnt++
-	} else if len(co.componentGit) != 0 {
+
+	// --git
+	case config.GIT:
 		co.componentSettings.SourceLocation = &(co.componentGit)
-		cmpSrcType = config.GIT
-		co.componentSettings.SourceType = &cmpSrcType
-		componentCnt++
-	} else {
-		componentCnt++
-		if len(co.componentContext) > 0 {
-			co.componentContext, err = util.GetAbsPath(co.componentContext)
-			if err != nil {
-				return errors.Wrapf(err, "please provide the context relative to your current directory")
-			}
-			co.componentSettings.SourceLocation = &co.componentContext
-		} else {
-			currDir, err := os.Getwd()
-			if err != nil {
-				return errors.Wrap(err, "failed to set component source location. Please pass a valid path")
-			}
-			co.componentSettings.SourceLocation = &currDir
-		}
-	}
+		componentSourceType = config.GIT
+		co.componentSettings.SourceType = &componentSourceType
 
-	if componentCnt > 1 {
+	// --local / default
+	case config.LOCAL:
+
+		directory := LocalDirectoryDefaultLocation
+		co.componentSettings.SourceLocation = &directory
+
+	// Error out by default if no type of sources were passed..
+	default:
 		return fmt.Errorf("The source can be either --binary or --local or --git")
+
 	}
 
+	// Set the Git reference if passed
 	if len(co.componentGitRef) != 0 {
 		co.componentSettings.Ref = &(co.componentGitRef)
 	}
 
+	// Error out if reference is passed but no --git flag passed
 	if len(co.componentGit) == 0 && len(co.componentGitRef) != 0 {
 		return fmt.Errorf("The --ref flag is only valid for --git flag")
 	}
@@ -160,7 +172,7 @@ func (co *CreateOptions) setCmpSourceAttrs() (err error) {
 	return
 }
 
-func (co *CreateOptions) setCmpName(args []string) (err error) {
+func (co *CreateOptions) setComponentName(args []string) (err error) {
 	componentImageName, componentType, _, _ := util.ParseComponentImageName(args[0])
 	co.componentSettings.Type = &componentImageName
 
@@ -246,6 +258,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
+	// Below code is for INTERACTIVE mode
 	if co.interactive {
 		client := co.Client
 
@@ -336,12 +349,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 			}
 		}
+		// Above code is for INTERACTIVE mode
 	} else {
-		err = co.setCmpSourceAttrs()
+		// Else if NOT using interactive / UI
+		err = co.setComponentSourceAttributes()
 		if err != nil {
 			return err
 		}
-		err = co.setCmpName(args)
+		err = co.setComponentName(args)
 		if err != nil {
 			return err
 		}

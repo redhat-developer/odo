@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -411,11 +410,11 @@ func GetHostWithPort(inputURL string) (string, error) {
 func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 	rules := []string{".git"}
 	// checking for presence of .odoignore file
-	pathIgnore := path.Join(directory, ".odoignore")
+	pathIgnore := filepath.Join(directory, ".odoignore")
 	if _, err := os.Stat(pathIgnore); os.IsNotExist(err) || err != nil {
 		// .odoignore doesn't exist
 		// checking presence of .gitignore file
-		pathIgnore = path.Join(directory, ".gitignore")
+		pathIgnore = filepath.Join(directory, ".gitignore")
 		if _, err := os.Stat(pathIgnore); os.IsNotExist(err) || err != nil {
 			// both doesn't exist, return empty array
 			return rules, nil
@@ -455,7 +454,7 @@ func GetAbsGlobExps(directory string, globExps []string) []string {
 	for _, globExp := range globExps {
 		// for glob matching with the library
 		// the relative paths in the glob expressions need to be converted to absolute paths
-		absGlobExps = append(absGlobExps, path.Join(directory, globExp))
+		absGlobExps = append(absGlobExps, filepath.Join(directory, globExp))
 	}
 	return absGlobExps
 }

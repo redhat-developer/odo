@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -2781,7 +2780,8 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
 func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string, globExps []string) error {
-	dest := path.Join(targetPath, filepath.Base(localPath))
+	dest := filepath.Join(targetPath, filepath.Base(localPath))
+	glog.V(4).Infof("CopyFile arugments: localPath %s, dest %s, copyFiles %s, globalExps %s", localPath, dest, copyFiles, globExps)
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
 	go func() {
@@ -2820,8 +2820,8 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 	// TODO: use compression here?
 	tarWriter := taro.NewWriter(writer)
 	defer tarWriter.Close()
-	srcPath = path.Clean(srcPath)
-	destPath = path.Clean(destPath)
+	srcPath = filepath.Clean(srcPath)
+	destPath = filepath.Clean(destPath)
 
 	glog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
@@ -2836,14 +2836,14 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 				}
 				srcFile = filepath.Join(filepath.Base(srcPath), srcFile)
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				err = recursiveTar(path.Dir(srcPath), srcFile, path.Dir(destPath), srcFile, tarWriter, globExps)
+				err = recursiveTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), srcFile, tarWriter, globExps)
 				if err != nil {
 					return err
 				}
 			}
 		}
 	} else {
-		return recursiveTar(path.Dir(srcPath), path.Base(srcPath), path.Dir(destPath), path.Base(destPath), tarWriter, globExps)
+		return recursiveTar(filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), filepath.Base(destPath), tarWriter, globExps)
 	}
 
 	return nil
@@ -2889,7 +2889,7 @@ func tar(tw *taro.Writer, fileName string, destFile string) error {
 // recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
 func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, globExps []string) error {
 	glog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
-	joinedPath := path.Join(srcBase, srcFile)
+	joinedPath := filepath.Join(srcBase, srcFile)
 	matchedPathsDir, err := filepath.Glob(joinedPath)
 	if err != nil {
 		return err
@@ -2928,7 +2928,7 @@ func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, 
 				}
 			}
 			for _, f := range files {
-				if err := recursiveTar(srcBase, path.Join(srcFile, f.Name()), destBase, path.Join(destFile, f.Name()), tw, globExps); err != nil {
+				if err := recursiveTar(srcBase, filepath.Join(srcFile, f.Name()), destBase, filepath.Join(destFile, f.Name()), tw, globExps); err != nil {
 					return err
 				}
 			}
