@@ -31,6 +31,7 @@ var _ = Describe("Component Tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
+		helper.AfterFailed()
 		helper.OcDeleteProject(project)
 		helper.DeleteDir(context)
 	})

@@ -38,6 +38,7 @@ var _ = Describe("Core beta flow", func() {
 	})
 
 	AfterEach(func() {
+		oc.AfterFailed()
 		oc.DeleteProject(project)
 		helper.DeleteDir(context)
 	})

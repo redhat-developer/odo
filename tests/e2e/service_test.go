@@ -34,6 +34,7 @@ var _ = Describe("odoServiceE2e", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
+		helper.AfterFailed()
 		helper.Chdir(originalDir)
 		helper.OcSwitchProject(originalProject)
 		helper.OcDeleteProject(project)

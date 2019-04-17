@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/tests/e2e/helper"
 )
 
 const javaFiles = "examples/binary/java/"
@@ -19,6 +20,7 @@ var _ = Describe("odoJavaE2e", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
+		helper.AfterFailed()
 		os.RemoveAll(".odo")
 	})
 

@@ -48,6 +48,7 @@ func componentTests(componentCmdPrefix string) {
 		// Clean up after the test
 		// This is run after every Spec (It)
 		var _ = AfterEach(func() {
+			helper.AfterFailed()
 			os.RemoveAll(".odo")
 		})
 

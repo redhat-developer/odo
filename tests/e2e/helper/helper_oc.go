@@ -93,5 +93,17 @@ func waitForCmdOut(cmd string, timeout time.Duration, errOnFail bool, check func
 			}
 		}
 	}
+}
 
+// AfterFailed runs certain oc commands like "oc get pod",
+// "oc get dc" and "oc get dc -o yaml" to analyze failure cause
+func AfterFailed() {
+	if CurrentGinkgoTestDescription().Failed {
+		getPod := CmdShouldPass("oc get pods")
+		fmt.Fprintln(GinkgoWriter, getPod)
+		getDc := CmdShouldPass("oc get dc")
+		fmt.Fprintln(GinkgoWriter, getDc)
+		getDcYaml := CmdShouldPass("oc get dc -o yaml")
+		fmt.Fprintln(GinkgoWriter, getDcYaml)
+	}
 }

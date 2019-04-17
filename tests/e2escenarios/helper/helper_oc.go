@@ -106,3 +106,21 @@ func (oc *OcRunner) GetComponentDC(component string, app string, project string)
 
 	return string(session.Wait().Out.Contents())
 }
+
+// AfterFailed runs certain oc commands like "oc get pod",
+// "oc get dc" and "oc get dc -o yaml" to analyze failure cause
+func (oc *OcRunner) AfterFailed() {
+	if CurrentGinkgoTestDescription().Failed {
+		getPod := CmdRunner(oc.path, "get", "pod")
+		Eventually(getPod).Should(gexec.Exit(0))
+		fmt.Fprintln(GinkgoWriter, string(getPod.Wait().Out.Contents()))
+
+		getDc := CmdRunner(oc.path, "get", "dc")
+		Eventually(getDc).Should(gexec.Exit(0))
+		fmt.Fprintln(GinkgoWriter, string(getDc.Wait().Out.Contents()))
+
+		getDcYaml := CmdRunner(oc.path, "get", "dc", "-o", "yaml")
+		Eventually(getDcYaml).Should(gexec.Exit(0))
+		fmt.Fprintln(GinkgoWriter, string(getDcYaml.Wait().Out.Contents()))
+	}
+}

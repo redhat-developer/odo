@@ -7,9 +7,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/tests/e2e/helper"
 )
 
 var _ = Describe("odojsonoutput", func() {
+
+	var _ = AfterEach(func() {
+		helper.AfterFailed()
+	})
 
 	Context("odo machine readable output", func() {
 		// Basic creation
