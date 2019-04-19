@@ -232,7 +232,7 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Image: image,
+							Image: " ",
 							Name:  commonObjectMeta.Name,
 							Ports: containerPorts,
 							Env:   envVars,

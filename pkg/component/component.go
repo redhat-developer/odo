@@ -748,6 +748,12 @@ func Build(client *occlient.Client, componentName string, applicationName string
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
+	// get DC before the Build is triggered
+	dc, err := client.GetDeploymentConfigFromName(namespacedOpenShiftObject)
+	if err != nil {
+		return errors.Wrapf(err, "unable get DC %s", namespacedOpenShiftObject)
+	}
+
 	buildName, err := client.StartBuild(namespacedOpenShiftObject)
 	if err != nil {
 		return errors.Wrapf(err, "unable to rebuild %s", componentName)
@@ -776,6 +782,23 @@ func Build(client *occlient.Client, componentName string, applicationName string
 
 		if err := client.WaitForBuildToFinish(buildName); err != nil {
 			return errors.Wrapf(err, "unable to build %s, error: %s", buildName, b.String())
+		}
+
+		s.End(true)
+
+		// After build wait also for DC to roll out
+		if show {
+			s = log.SpinnerNoSpin("Waiting for component to start")
+		} else {
+			s = log.Spinner("Waiting for component to start")
+		}
+
+		desiredRevision := dc.Status.LatestVersion + 1
+
+		_, err := client.WaitAndGetDC(dc.ObjectMeta.Name, desiredRevision, occlient.OcUpdateTimeout, occlient.IsDCRolledOut)
+		if err != nil {
+			s.End(false)
+			return errors.Wrap(err, "error while waiting for DC to roll out")
 		}
 		s.End(true)
 	}
@@ -1069,7 +1092,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 			}
 
 			// Build it
-			err = Build(client, componentName, applicationName, true, stdout, false)
+			//err = Build(client, componentName, applicationName, true, stdout, false)
 
 		} else if newSourceType == "local" || newSourceType == "binary" {
 

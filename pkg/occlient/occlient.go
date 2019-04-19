@@ -82,7 +82,7 @@ type CreateArgs struct {
 }
 
 const (
-	ocUpdateTimeout    = 5 * time.Minute
+	OcUpdateTimeout    = 5 * time.Minute
 	OpenShiftNameSpace = "openshift"
 
 	// The length of the string to be generated for names of resources
@@ -1309,11 +1309,13 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatc
 	// We use the currentDC + 1 for the next revision.. We do NOT use the updated DC (see above code)
 	// as the "Update" function will not update the Status.LatestVersion quick enough... so we wait until
 	// the current revision + 1 is available.
+	//desiredRevision := currentDC.Status.LatestVersion + 1
+
 	desiredRevision := currentDC.Status.LatestVersion + 1
 
 	// Watch / wait for deploymentconfig to update annotations
 	// importing "component" results in an import loop, so we do *not* use the constants here.
-	_, err = c.WaitAndGetDC(name, desiredRevision, ocUpdateTimeout, waitCond)
+	_, err = c.WaitAndGetDC(name, desiredRevision, OcUpdateTimeout, waitCond)
 	if err != nil {
 		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", name)
 	}
@@ -1636,7 +1638,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
 	}
-	glog.V(4).Infof("Build %s for BuildConfig %s triggered.", name, result.Name)
+	glog.V(4).Infof("Build %s for BuildConfig %s triggered.", result.Name, name)
 
 	return result.Name, nil
 }

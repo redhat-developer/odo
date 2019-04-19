@@ -3825,9 +3825,14 @@ func TestUpdateDCToGit(t *testing.T) {
 					return true, nil, fmt.Errorf("got different dc")
 				}
 
-				// Check that the new patch actually has the new "image"
-				if !tt.wantErr == (dc.Spec.Template.Spec.Containers[0].Image != tt.args.newImage) {
-					return true, nil, fmt.Errorf("got %s image, suppose to get %s", dc.Spec.Template.Spec.Containers[0].Image, tt.args.newImage)
+				// Check that the new patch actually has the new "image" in triggers
+				for _, trigger := range dc.Spec.Triggers {
+					if trigger.Type == appsv1.DeploymentTriggerOnImageChange {
+						if !tt.wantErr == (trigger.ImageChangeParams.From.Name != tt.args.newImage) {
+							return true, nil, fmt.Errorf("got %s image, suppose to get %s", dc.Spec.Template.Spec.Containers[0].Image, tt.args.newImage)
+						}
+						break
+					}
 				}
 
 				return true, nil, nil
