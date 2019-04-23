@@ -142,8 +142,8 @@ $ odo push
 . Create a URL to access the application and visit it to test it.
 +
 ----
-$ odo url create
-$ curl nodejs-myproject.192.168.42.147.nip.io
+$ odo url create --port <application port>
+$ curl <generated URL>
 ----
 
 For more in-depth information and advanced use-cases such as adding storage to a component or linking components, see the

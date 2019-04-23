@@ -47,6 +47,7 @@ $ odo create nodejs
 ----
 +
 NOTE: By default, the latest image is used. You can also explicitly supply an image version by using `odo create openshift/nodejs:8`.
+
 .. Push the initial source code to the component:
 +
 ----
@@ -159,10 +160,19 @@ In order to use the Service Catalog it must be enabled within your OpenShift clu
 $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker"
 ----
 
-. After you enable or start `minishift` use:
+. After you enable or start `minishift`:
 
-* `odo catalog list services` to list the services
-* `odo service <verb> <servicename>` to list service catalog related operations
+* To list the services, use:
++
+----
+$ odo catalog list services
+----
+
+* To list service catalog related operations, use:
++
+----
+$ odo service <verb> <servicename>
+----
 
 === Adding a custom builder
 
