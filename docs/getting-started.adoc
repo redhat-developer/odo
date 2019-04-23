@@ -54,19 +54,19 @@ $ odo push
 ----
 +
 Your component is now deployed to OpenShift.
-. This creates the URL and adds an entry in the local configuration file:
+. Create a URL and add an entry in the local configuration file as follows:
 +
 ----
 $ odo url create --port 8080
 ----
 +
-. Push the changes which will create a URL on cluster:
+. Push the changes. This creates a URL on the cluster.
 +
 ----
 $ odo push
 ----
 +
-. List the URLs to check the desired URL for component.
+. List the URLs to check the desired URL for the component.
 +
 ----
 $ odo url list
