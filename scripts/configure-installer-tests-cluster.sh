@@ -2,6 +2,8 @@
 set -x
 # Setup to find nessasary data from cluster setup
 ## Constants
+set -ex
+
 HTPASSWD_FILE="./htpass"
 USERPASS="developer"
 HTPASSWD_SECRET="htpasswd-secret"
@@ -110,7 +112,10 @@ if [ $OC_STABLE_LOGIN == "false" ]; then
     exit 1
 fi
 
+oc whoami
+
 # Setup project
+=======
 oc new-project myproject
 sleep 4
 oc version
