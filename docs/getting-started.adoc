@@ -54,13 +54,29 @@ $ odo push
 ----
 +
 Your component is now deployed to OpenShift.
-. To access the component, create an OpenShift route and view your
-deployed application using the generated URL:
+. To access the component, create an URL:
 +
 ----
-$ odo url create --open
+$ odo url create --port 8080
 ----
-
++
+. Previous command will make entry in config file, to create URL on cluster:
++
+---
+$ odo push
+---
++
+. List the URL to check desired URL for component.
++
+---
+$ odo url list
+---
++
+. Curl the URL to check the view your deployed application using the generated URL.
+---
+$ curl <URL>
+---
++
 .  Edit your code and push the changes to the component:
 ..  Edit one of the layout files within the Node.js directory.
 +
