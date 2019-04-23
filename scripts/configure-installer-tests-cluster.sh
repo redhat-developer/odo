@@ -85,7 +85,7 @@ EOF
 # Login as developer and check for stable server
 for i in {1..40}; do
     # Try logging in as developer
-    oc login -u developer -p $USERPASS &> /dev/null
+    oc login -u developer -p $USERPASS
     if [ $? -eq 0 ]; then
         # If login succeeds, assume success
 	    OC_STABLE_LOGIN="true"
@@ -115,7 +115,7 @@ fi
 oc whoami
 
 # Setup project
-=======
 oc new-project myproject
+oc status
 sleep 4
 oc version
