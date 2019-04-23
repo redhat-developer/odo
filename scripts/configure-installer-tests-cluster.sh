@@ -2,7 +2,7 @@
 set -x
 # Setup to find nessasary data from cluster setup
 ## Constants
-set -ex
+set -x
 
 HTPASSWD_FILE="./htpass"
 USERPASS="developer"
