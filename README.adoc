@@ -57,13 +57,13 @@ $ curl -L https://github.com/openshift/odo/raw/master/scripts/install.sh | bash
 *Binary installation:*
 
 ----
-# curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
+# curl -L https://github.com/openshift/odo/releases/download/v1.0.0-beta1/odo-darwin-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
 ----
 
 *Tarball installation:*
 
 ----
-# sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+# sh -c 'curl -L https://github.com/openshift/odo/releases/download/v1.0.0-beta1/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ----
 
 === Linux
@@ -71,13 +71,13 @@ $ curl -L https://github.com/openshift/odo/raw/master/scripts/install.sh | bash
 *Binary installation:*
 
 ----
-# curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
+# curl -L https://github.com/openshift/odo/releases/download/v1.0.0-beta1/odo-linux-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
 ----
 
 *Tarball installation:*
 
 ----
-# sh -c 'curl -L https://github.com/openshift/odo/releases/download/v0.0.20/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+# sh -c 'curl -L https://github.com/openshift/odo/releases/download/v1.0.0-beta1/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
 ----
 
 === Windows

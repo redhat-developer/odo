@@ -20,103 +20,105 @@ Find more information at https://github.com/openshift/odo
 
 #### List of Commands
 
-|          NAME           |                           DESCRIPTION                            |
-|-------------------------|------------------------------------------------------------------|
-| [app](#app)             | Perform application operations                                   |
-| [catalog](#catalog)     | Catalog related operations                                       |
-| [component](#component) | Components of application.                                       |
-| [create](#create)       | Create a new component                                           |
-| [delete](#delete)       | Delete an existing component                                     |
-| [describe](#describe)   | Describe the given component                                     |
-| [link](#link)           | Link component to a service or component                         |
-| [list](#list)           | List all components in the current application                   |
-| [log](#log)             | Retrieve the log for the given component.                        |
-| [login](#login)         | Login to cluster                                                 |
-| [logout](#logout)       | Log out of the current OpenShift session                         |
-| [project](#project)     | Perform project operations                                       |
-| [push](#push)           | Push source code to a component                                  |
-| [service](#service)     | Perform service catalog operations                               |
-| [storage](#storage)     | Perform storage operations                                       |
-| [unlink](#unlink)       | Unlink component to a service or component                       |
-| [update](#update)       | Update the source code path of a component                       |
-| [url](#url)             | Expose component to the outside world                            |
-| [utils](#utils)         | Utilities for terminal commands and modifying Odo configurations |
-| [version](#version)     | Print the client version information                             |
-| [watch](#watch)         | Watch for changes, update component on change                    |
+|           NAME            |                                                DESCRIPTION                                                 |
+|---------------------------|------------------------------------------------------------------------------------------------------------|
+| [app](#app)               | Perform application operations (delete, describe, list)                                                    |
+| [catalog](#catalog)       | Catalog related operations (describe, list, search)                                                        |
+| [component](#component)   | Components of an application (create, delete, describe, get, link, list, log, push, unlink, update, watch) |
+| [config](#config)         | Modifies configuration settings (set, unset, view)                                                         |
+| [create](#create)         | Create a new component                                                                                     |
+| [delete](#delete)         | Delete an existing component                                                                               |
+| [describe](#describe)     | Describe the given component                                                                               |
+| [link](#link)             | Link component to a service or component                                                                   |
+| [list](#list)             | List all components in the current application                                                             |
+| [log](#log)               | Retrieve the log for the given component                                                                   |
+| [login](#login)           | Login to cluster                                                                                           |
+| [logout](#logout)         | Log out of the current OpenShift session                                                                   |
+| [preference](#preference) | Modifies preference settings (set, unset, view)                                                            |
+| [project](#project)       | Perform project operations (create, delete, get, list, set)                                                |
+| [push](#push)             | Push source code to a component                                                                            |
+| [service](#service)       | Perform service catalog operations (create, delete, list)                                                  |
+| [storage](#storage)       | Perform storage operations (create, delete, list, mount, unmount)                                          |
+| [unlink](#unlink)         | Unlink component to a service or component                                                                 |
+| [update](#update)         | Update the source code path of a component                                                                 |
+| [url](#url)               | Expose component to the outside world (create, delete, list)                                               |
+| [utils](#utils)           | Utilities for terminal commands and modifying Odo configurations (terminal)                                |
+| [version](#version)       | Print the client version information                                                                       |
+| [watch](#watch)           | Watch for changes, update component on change                                                              |
 
 
 #### CLI Structure
 
 ```sh
-odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : Odo (OpenShift Do)
-    app --project --short : Perform application operations
-        create --project : Create an application
-        delete --force --project : Delete the given application
+odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : Odo (OpenShift Do) (app, catalog, component, config, create, delete, describe, link, list, log, login, logout, preference, project, push, service, storage, unlink, update, url, utils, version, watch)
+    app : Perform application operations (delete, describe, list)
+        delete --force --output --project : Delete the given application
         describe --output --project : Describe the given application
-        get --project --short : Get the active application
         list --output --project : List all applications in the current project
-        set --project : Set application as active
-    catalog : Catalog related operations
-        describe : Describe catalog item
+    catalog : Catalog related operations (describe, list, search)
+        describe : Describe catalog item (service)
             service : Describe a service
-        list : List all available component & service types.
+        list : List all available component & service types. (components, services)
             components : List all components available.
             services : Lists all available services
-        search : Search available component & service types.
+        search : Search available component & service types. (component, service)
             component : Search component type in catalog
             service : Search service type in catalog
-    component --app --project --short : Components of application.
-        create --app --binary --cpu --env --git --local --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref --wait : Create a new component
-        delete --app --force --project : Delete an existing component
-        describe --app --output --project : Describe the given component
-        get --app --project --short : Get currently active component
-        link --app --component --port --project --wait --wait-for-target : Link component to a service or component
-        list --app --output --project : List all components in the current application
-        log --app --follow --project : Retrieve the log for the given component.
-        push --app --ignore --local --project : Push source code to a component
-        set --app --project : Set active component.
-        unlink --app --component --port --project --wait : Unlink component to a service or component
-        update --app --binary --git --local --project --ref : Update the source code path of a component
-        watch --app --delay --ignore --project : Watch for changes, update component on change
-    create --app --binary --cpu --env --git --local --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref --wait : Create a new component
-    delete --app --force --project : Delete an existing component
-    describe --app --output --project : Describe the given component
-    link --app --component --port --project --wait --wait-for-target : Link component to a service or component
-    list --app --output --project : List all components in the current application
-    log --app --follow --project : Retrieve the log for the given component.
+    component --app --context --project --short : Components of an application (create, delete, describe, get, link, list, log, push, unlink, update, watch)
+        create --app --binary --context --cpu --env --git --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref : Create a new component
+        delete --app --context --force --project : Delete an existing component
+        describe --app --context --output --project : Describe the given component
+        get --app --context --project --short : Get currently active component
+        link --app --component --context --port --project --wait --wait-for-target : Link component to a service or component
+        list --app --context --output --project : List all components in the current application
+        log --app --context --follow --project : Retrieve the log for the given component
+        push --config --context --ignore --show-log --source : Push source code to a component
+        unlink --app --component --context --port --project --wait : Unlink component to a service or component
+        update --app --context --git --local --project --ref : Update the source code path of a component
+        watch --app --context --delay --ignore --project : Watch for changes, update component on change
+    config : Modifies configuration settings (set, unset, view)
+        set --context --env --force : Set a value in odo config file
+        unset --context --env --force : Unset a value in odo config file
+        view --context : View current configuration values
+    create --app --binary --context --cpu --env --git --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref : Create a new component
+    delete --app --context --force --project : Delete an existing component
+    describe --app --context --output --project : Describe the given component
+    link --app --component --context --port --project --wait --wait-for-target : Link component to a service or component
+    list --app --context --output --project : List all components in the current application
+    log --app --context --follow --project : Retrieve the log for the given component
     login --certificate-authority --insecure-skip-tls-verify --password --token --username : Login to cluster
     logout : Log out of the current OpenShift session
-    project --short : Perform project operations
-        create : Create a new project
+    preference : Modifies preference settings (set, unset, view)
+        set --force : Set a value in odo config file
+        unset --force : Unset a value in odo preference file
+        view : View current preference values
+    project --short : Perform project operations (create, delete, get, list, set)
+        create --wait : Create a new project
         delete --force : Delete a project
         get --short : Get the active project
-        list : List all the projects
+        list --output : List all the projects
         set --short : Set the current active project
-    push --app --ignore --local --project : Push source code to a component
-    service : Perform service catalog operations
+    push --config --context --ignore --show-log --source : Push source code to a component
+    service : Perform service catalog operations (create, delete, list)
         create --app --parameters --plan --project --wait : Create a new service from service catalog using the plan defined and deploy it on OpenShift.
         delete --app --force --project : Delete an existing service
         list --app --project : List all services in the current application
-    storage : Perform storage operations
-        create --app --component --path --project --size : Create storage and mount to a component
+    storage : Perform storage operations (create, delete, list, mount, unmount)
+        create --app --component --output --path --project --size : Create storage and mount to a component
         delete --app --component --force --project : Delete storage from component
         list --all --app --component --output --project : List storage attached to a component
         mount --app --component --path --project : mount storage to a component
         unmount --app --component --project : Unmount storage from the given path or identified by its name, from the current component
-    unlink --app --component --port --project --wait : Unlink component to a service or component
-    update --app --binary --git --local --project --ref : Update the source code path of a component
-    url : Expose component to the outside world
-        create --app --component --open --port --project : Create a URL for a component
-        delete --app --component --force --project : Delete a URL
-        list --app --component --output --project : List URLs
-    utils : Utilities for terminal commands and modifying Odo configurations
-        config : Modifies configuration settings
-            set --force --global : Set a value in odo config file
-            unset --force --global : Unset a value in odo config file
-            view --global : View current configuration values
+    unlink --app --component --context --port --project --wait : Unlink component to a service or component
+    update --app --context --git --local --project --ref : Update the source code path of a component
+    url : Expose component to the outside world (create, delete, list)
+        create --app --component --context --output --port --project : Create a URL for a component
+        delete --app --component --context --force --project : Delete a URL
+        list --app --component --context --output --project : List URLs
+    utils : Utilities for terminal commands and modifying Odo configurations (terminal)
         terminal : Add Odo terminal support to your development environment
     version --client : Print the client version information
-    watch --app --delay --ignore --project : Watch for changes, update component on change
+    watch --app --context --delay --ignore --project : Watch for changes, update component on change
 
 ```
 
@@ -127,11 +129,6 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
 > Example using app
 
 ```sh
-  # Create an application
-  odo app create myapp
-  odo app create
-  # Get the currently active application
-  odo app get
   # Delete the application
   odo app delete myapp
   # Describe 'webapp' application,
@@ -141,8 +138,6 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
   
   # List all applications in the specified project
   odo app list --project myproject
-  # Set an application as active
-  odo app set myapp
 ```
 
 
@@ -181,15 +176,76 @@ Catalog related operations
 > Example using component
 
 ```sh
-  # Get the currently active component
-  odo component get
-  # Set component named 'frontend' as active
-  odo component set frontend
+odo component
+create
 
-  See sub-commands individually for more examples, e.g. odo component create -h
+  See sub-commands individually for more examples
 ```
 
 
+
+
+## config
+
+`config`
+
+> Example using config
+
+```sh
+
+  # For viewing the current local configuration
+  odo config view
+
+  # Set a configuration value in the local config
+  odo config set Type java
+  odo config set Name test
+  odo config set MinMemory 50M
+  odo config set MaxMemory 500M
+  odo config set Memory 250M
+  odo config set Ignore false
+  odo config set MinCPU 0.5
+  odo config set MaxCPU 2
+  odo config set CPU 1
+  
+  # Set a env variable in the local config
+  odo config set --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
+
+  # Unset a configuration value in the local config
+  odo config unset Type
+  odo config unset Name
+  odo config unset MinMemory
+  odo config unset MaxMemory
+  odo config unset Memory
+  odo config unset Ignore
+  odo config unset MinCPU
+  odo config unset MaxCPU
+  odo config unset CPU
+  
+  # Unset a env variable in the local config
+  odo config unset --env KAFKA_HOST --env KAFKA_PORT
+```
+
+
+Modifies Odo specific configuration settings within the config file. 
+
+
+Available Local Parameters:
+Application - Application is the name of application the component needs to be part of
+CPU - The minimum and maximum CPU a component can consume
+Ignore - Consider the .odoignore file for push and watch
+MaxCPU - The maximum cpu a component can consume
+MaxMemory - The maximum memory a component can consume
+Memory - The minimum and maximum Memory a component can consume
+MinCPU - The minimum cpu a component can consume
+MinMemory - The minimum memory a component is provided
+Name - The name of the component
+Ports - Ports to be opened in the component
+Project - Project is the name of the project the component is part of
+Ref - Git ref to use for creating component from git source
+SourceLocation - The path indicates the location of binary file or git source
+SourceType - Type of component source - git/binary/local
+Type - The type of component
+Url - Url to access the compoent
 
 
 ## create
@@ -205,17 +261,14 @@ Catalog related operations
   # A specific image version may also be specified
   odo create nodejs:latest
   
-  # Passing memory limits
-  odo create nodejs:latest --memory 150Mi
-  odo create nodejs:latest --min-memory 150Mi --max-memory 300 Mi
-  
-  # Passing cpu limits
-  odo create nodejs:latest --cpu 2
-  odo create nodejs:latest --min-cpu 0.25 --max-cpu 2
-  odo create nodejs:latest --min-cpu 200m --max-cpu 2
-  
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
-  odo create nodejs frontend --local ./frontend
+  odo create nodejs frontend --context ./frontend
+  
+  # Create a new Node.js component of version 6 from the 'openshift' namespace
+  odo create openshift/nodejs:6 --context /nodejs-ex
+  
+  # Create new Wildfly component with binary named sample.war in './downloads' directory
+  odo create wildfly wildly --binary ./downloads/sample.war
   
   # Create new Node.js component with source from remote git repository
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
@@ -226,13 +279,6 @@ Catalog related operations
   # Create new Node.js git component while specifying a tag
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
   
-  
-  # Create a new Node.js component of version 6 from the 'openshift' namespace
-  odo create openshift/nodejs:6 --local /nodejs-ex
-  
-  # Create new Wildfly component with binary named sample.war in './downloads' directory
-  odo create wildfly wildly --binary ./downloads/sample.war
-  
   # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
   odo create nodejs --port 8080,8100/tcp,9100/udp
   
@@ -241,14 +287,22 @@ Catalog related operations
   
   # For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.md
   odo create python --git https://github.com/openshift/django-ex.git
+  
+  # Passing memory limits
+  odo create nodejs --memory 150Mi
+  odo create nodejs --min-memory 150Mi --max-memory 300 Mi
+  
+  # Passing cpu limits
+  odo create nodejs --cpu 2
+  odo create nodejs --min-cpu 200m --max-cpu 2
 ```
 
 
-Create a new component to deploy on OpenShift. 
+Create a configuration describing a component to be deployed on OpenShift. 
 
 If a component name is not provided, it'll be auto-generated. 
 
-By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest wil be chosen as the version. 
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest will be chosen as the version. 
 
 A full list of component types that can be deployed is available using: 'odo catalog list'
 
@@ -359,7 +413,7 @@ List all components in the current application.
 ```
 
 
-Retrieve the log for the given component.
+Retrieve the log for the given component
 
 ## login
 
@@ -398,6 +452,41 @@ Login to cluster
 
 Log out of the current OpenShift session
 
+## preference
+
+`preference`
+
+> Example using preference
+
+```sh
+
+  # For viewing the current local preference
+  odo preference view
+  
+  # For viewing the current global preference
+  odo preference view
+
+  # Set a preference value in the global preference
+  odo preference set UpdateNotification false
+  odo preference set NamePrefix "app"
+  odo preference set Timeout 20
+
+  # Unset a preference value in the global preference
+  odo preference unset  UpdateNotification
+  odo preference unset  NamePrefix
+  odo preference unset  Timeout
+```
+
+
+Modifies Odo specific configuration settings within the global preference file. 
+
+
+Available Parameters:
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
+Timeout - Timeout (in seconds) for OpenShift server connection check
+UpdateNotification - Controls if an update notification is shown or not (true or false)
+
+
 ## project
 
 `project [options]`
@@ -432,14 +521,13 @@ Perform project operations
 
 ```sh
   # Push source code to the current component
-odo push
-
-# Push data to the current component from the original source.
-odo push
-
-# Push source code in ~/mycode to component called my-component
-odo push my-component --local ~/mycode
+  odo push
   
+  # Push data to the current component from the original source.
+  odo push
+  
+  # Push source code in ~/mycode to component called my-component
+  odo push my-component --context ~/mycode
 ```
 
 
@@ -593,43 +681,6 @@ The URLs that are generated using this command, can be used to access the deploy
   # Zsh terminal PS1 support
   source <(odo utils terminal zsh)
 
-  # For viewing the current local configuration
-  odo utils config view
-  
-  For viewing the current global configuration
-  odo utils config view --global
-
-  # Set a configuration value in the global config
-  odo utils config set --global UpdateNotification false
-  odo utils config set --global NamePrefix "app"
-  odo utils config set --global Timeout 20
-  
-  # Set a configuration value in the local config
-  odo utils config set ComponentType java
-  odo utils config set ComponentName test
-  odo utils config set MinMemory 50M
-  odo utils config set MaxMemory 500M
-  odo utils config set Memory 250M
-  odo utils config set Ignore false
-  odo utils config set MinCPU 0.5
-  odo utils config set MaxCPU 2
-  odo utils config set CPU 1
-
-  # Unset a configuration value in the global config
-  odo utils config unset --global UpdateNotification
-  odo utils config unset --global NamePrefix
-  odo utils config unset --global Timeout
-  
-  # Unset a configuration value in the local config
-  odo utils config unset ComponentType
-  odo utils config unset ComponentName
-  odo utils config unset MinMemory
-  odo utils config unset MaxMemory
-  odo utils config unset Memory
-  odo utils config unset Ignore
-  odo utils config unset MinCPU
-  odo utils config unset MaxCPU
-  odo utils config unset CPU
 ```
 
 
