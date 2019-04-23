@@ -58,9 +58,9 @@ done
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
 
 # Create secret in cluster, removing if it already exists
-oc get secret $HTPASSWD_SECRET -n openshift-config &> /dev/null
+oc get secret $HTPASSWD_SECRET -n openshift-config
 if [ $? -eq 0 ]; then
-    oc delete secret $HTPASSWD_SECRET -n openshift-config &> /dev/null
+    oc delete secret $HTPASSWD_SECRET -n openshift-config 
 fi
 oc create secret generic ${HTPASSWD_SECRET} --from-file=htpasswd=${HTPASSWD_FILE} -n openshift-config
 
