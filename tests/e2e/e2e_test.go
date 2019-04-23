@@ -1020,7 +1020,7 @@ var _ = Describe("odoe2e", func() {
 	Context("validate odo version cmd with other major components version", func() {
 		It("should show the version of odo major components", func() {
 			odoVersion := runCmdShouldPass("odo version")
-			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+\s*\(\w+\)`)
+			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`)
 			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
 			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+\+\w+`)
 			kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
