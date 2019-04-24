@@ -154,4 +154,4 @@ jobs:
             branch: master
       after_success:
         # Synchronize the documentation
-        - bash scripts/sync-docs.sh
+        # - bash scripts/sync-docs.sh
