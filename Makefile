@@ -96,105 +96,105 @@ test:
 .PHONY: test-main-e2e
 test-main-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.v
 endif
 
 # Run json outout tests
 .PHONY: test-json-format-output
 test-json-format-output:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.v
 endif
 
 # Run component e2e tests
 .PHONY: test-cmp-e2e
 test-cmp-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v
 endif
 
 # Run component subcommands e2e tests
 .PHONY: test-cmp-sub-e2e
 test-cmp-sub-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.v
 endif
 
 # Run java e2e tests
 .PHONY: test-java-e2e
 test-java-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.v
 endif
 
 # Run source e2e tests
 .PHONY: test-source-e2e
 test-source-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.v
 endif
 
 # Run service catalog e2e tests
 .PHONY: test-service-e2e
 test-service-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.v
 endif
 
 # Run link e2e tests
 .PHONY: test-link-e2e
 test-link-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.v
 endif
 
 # Run link e2e tests
 .PHONY: test-watch-e2e
 test-watch-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.v
 endif
 
 # Run login e2e tests
 .PHONY: test-odo-login-e2e
 test-odo-login-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.v
 endif
 
 # Run all e2e tests
 .PHONY: test-e2e
 test-e2e:
 ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e -ginkgo.succinct -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/e2e -ginkgo.v -timeout $(TIMEOUT)
 else
-	go test -v github.com/openshift/odo/tests/e2e -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2e -ginkgo.v
 endif
 
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios
 test-e2e-scenarios:
-	go test -v github.com/openshift/odo/tests/e2escenarios -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.succinct
+	go test -v github.com/openshift/odo/tests/e2escenarios -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
