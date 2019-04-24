@@ -16,6 +16,15 @@ var _ = Describe("odojsonoutput", func() {
 		It("Pre-Test Creation: Creating project", func() {
 			odoCreateProject("json-test")
 		})
+		// odo project create newprojectjson -o json
+		It("should be able to create project and show output in json format", func() {
+			actual := runCmdShouldPass("odo project create newprojectjson -o json")
+			desired := `{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"newprojectjson","creationTimestamp":null},"spec":{"apps":null},"status":{"active":false}}`
+			areEqual, _ := compareJSON(desired, actual)
+			Expect(areEqual).To(BeTrue())
+
+		})
+
 		// odo app list -o json
 		It("should be able to return empty list", func() {
 			actual := runCmdShouldPass("odo app list -o json --project json-test")
