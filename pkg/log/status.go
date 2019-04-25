@@ -162,6 +162,12 @@ func Progressf(format string, a ...interface{}) {
 	fmt.Fprintf(GetStdout(), " %s%s\n", prefixSpacing, fmt.Sprintf(format, a...))
 }
 
+// Success will output in an appropriate "success" manner
+func Success(a ...interface{}) {
+	green := color.New(color.FgGreen).SprintFunc()
+	fmt.Fprintf(GetStdout(), "%s%s%s%s", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintln(a...))
+}
+
 // Successf will output in an appropriate "progress" manner
 func Successf(format string, a ...interface{}) {
 	green := color.New(color.FgGreen).SprintFunc()
