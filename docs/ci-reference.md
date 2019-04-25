@@ -30,7 +30,7 @@ If the need presents itself to run odo integration tests against a specific vers
         - make test-main-e2e
 ```
 
-# How to run integtration tests on Prow
+# How to run integration tests on Prow
 
 Prow is the Kubernetes / OpenShift way of managing workflow including tests. To get tests on there, you need to raise PR to openshift/release repository setting up appropriate ci operator config and job files. Reference for same is available there itself.
 

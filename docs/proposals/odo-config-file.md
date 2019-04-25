@@ -57,7 +57,7 @@ $HOME/.odo/odo-config
 
 #### User explicit configuration
 
-Often times a user wants to use different configuration values than the provided in the configuration file. We need to provide a way to allow a developer to specify this new values he want to use. For that, the user needs to explicitly provide the values as CLI arguments to the speficic `odo` command.
+Often times a user wants to use different configuration values than the provided in the configuration file. We need to provide a way to allow a developer to specify this new values he want to use. For that, the user needs to explicitly provide the values as CLI arguments to the specific `odo` command.
 
 An example of this would be:
 
@@ -121,7 +121,7 @@ For some specific values, there will be the possibility to set them globally, as
 
 ### Developer friendly flags
 
-One of the goals of `odo` is to be easy to use for developers. This forces to translate some configuration possible in the underlying technology (OpenShift/Kubernetes) into a friendlier name that developers could easily understand. An example of this would be the amount of memory a component needs. In OpenShift, this is reflected by limits.memory and requests.memory, and dependening how you set these values influence the QoS of the deployment. In `odo` these should be simplified to `memory`, `min-memory` and `max-memory`. These are terms that any developer will most likely understand without looking at the documentation.
+One of the goals of `odo` is to be easy to use for developers. This forces to translate some configuration possible in the underlying technology (OpenShift/Kubernetes) into a friendlier name that developers could easily understand. An example of this would be the amount of memory a component needs. In OpenShift, this is reflected by limits.memory and requests.memory, and depending how you set these values influence the QoS of the deployment. In `odo` these should be simplified to `memory`, `min-memory` and `max-memory`. These are terms that any developer will most likely understand without looking at the documentation.
 
 * When `memory` is set, memory requests and limits in k8s parlance and both have the same value.
 * `min-memory` should be memory requests in k8s parlance.
@@ -193,7 +193,7 @@ odo utils config add odoignore .odo --local   # Adds a value to odoignore list l
 odo utils config add odoignore .odo --global  # Adds a value to odoignore list global config
 ```
 
-As can be seen, when a scope is ommited, the value will be applied to the local configuration store.
+As can be seen, when a scope is omitted, the value will be applied to the local configuration store.
 
 The verbs that add configuration are:
 
