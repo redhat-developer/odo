@@ -1,0 +1,4 @@
+This directory contains the "Odo" site.
+
+Use `./serve.sh` to access locally and `./build.sh` to build locally to the `_site` folder.
+

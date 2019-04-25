@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+  {% include head.html %}
+
+  <!-- CSS -->
+  <link href="{{ site.baseurl }}/css/default.css" rel="stylesheet" type="text/css">
+  <link href="{{ site.baseurl }}/css/pilcrow.css" rel="stylesheet" type="text/css">
+
+<body>
+
+  <header>
+    <a class="logo" href="/">
+      <img class="parcel" src="{{ site.baseurl }}/img/logo.png" height="30"alt="">
+    </a>
+    <div class="links">
+      <a href="{{ site.baseurl}}{{ site.docs_index }}">Documentation</a> <a href="{{ site.repository_url }}" target="_blank">GitHub</a>
+    </div>
+  </header>
+
+  <div class="content">
+    <nav>
+      <h3>Documentation</h3>
+      <ul>
+        {% for item in site.data.menu.items %}
+          {% if page.url == item[1] %}
+            <li><a class="active" href="{{ item[1] | prepend: site.baseurl }}">{{ item[0] }}</a></li>
+          {% else %}
+            <li><a href="{{ item[1] | prepend: site.baseurl }}">{{ item[0] }}</a></li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+      <h3>Advanced</h3>
+      <ul>
+        {% for item in site.data.menu.advanced %}
+          {% if page.url == item[1] %}
+            <li><a class="active" href="{{ item[1] | prepend: site.baseurl }}">{{ item[0] }}</a></li>
+          {% else %}
+            <li><a href="{{ item[1] | prepend: site.baseurl }}">{{ item[0] }}</a></li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+      <h3>Development</h3>
+      <ul>
+        {% for item in site.data.menu.development %}
+          {% if page.url == item[1] %}
+            <li><a class="active" href="{{ item[1] | prepend: site.baseurl }}">{{ item[0] }}</a></li>
+          {% else %}
+            <li><a href="{{ item[1] | prepend: site.baseurl }}">{{ item[0] }}</a></li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </nav>
+
+
+    <main>
+
+    {{ content }}
+
+    </main>
+  </div>
+</body>
+
+</html>
