@@ -295,11 +295,11 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false, parameters.FileIgnores, false)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 				} else {
 					pathDir := filepath.Dir(parameters.Path)
 					glog.V(4).Infof("Copying file %s to pod", parameters.Path)
-					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, false)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 				}
 				if err != nil {
 					// Intentionally not exiting on error here.
