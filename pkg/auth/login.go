@@ -2,10 +2,8 @@ package auth
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 
-	"github.com/fatih/color"
 	odolog "github.com/openshift/odo/pkg/log"
 	"github.com/openshift/origin/pkg/oc/cli/login"
 	"k8s.io/client-go/tools/clientcmd"
@@ -52,13 +50,11 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 
 	// 2. Gather information and connect
 	// We set the color to "yellow" to distinguish between odo and oc output
-	color.Set(color.FgYellow)
 	if err := a.GatherInfo(); err != nil {
 		// Make sure we newline between the "Connecting" and error-out messages
 		odolog.Info("")
 		return err
 	}
-	color.Unset()
 
 	// 3. Output the information in a correct format
 	// In order to interpret the error message and manipulate the output of `oc`
