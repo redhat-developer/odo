@@ -530,7 +530,9 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 // Returns:
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, stdout io.Writer, cmpExist bool) (err error) {
-	log.Successf("Applying component settings to component: %v", componentConfig.GetName())
+	s := log.Spinnerf("Applying component settings to component: %v", componentConfig.GetName())
+	defer s.End(false)
+
 	// if component exist then only call the update function
 	if cmpExist {
 
@@ -548,8 +550,8 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 	if err != nil {
 		return err
 	}
-	log.Successf("The component %s was updated successfully", componentConfig.GetName())
 
+	s.End(true)
 	return
 }
 
