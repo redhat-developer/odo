@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -135,7 +134,6 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 	// --binary
 	case config.BINARY:
 		cPath, err := filepath.EvalSymlinks(co.componentBinary)
-		glog.V(0).Infof("%s", cPath)
 		if err != nil {
 			return err
 		}
