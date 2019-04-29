@@ -1,13 +1,11 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
 
 approvers:
-- syamgk 
 - kadel 
 - amitkrout 
 - cdrage
 
 reviewers:
-- syamgk 
 - kadel 
 - amitkrout 
 - cdrage
