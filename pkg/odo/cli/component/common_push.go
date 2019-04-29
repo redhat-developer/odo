@@ -35,8 +35,8 @@ type commonPushOptions struct {
 	*genericclioptions.Context
 }
 
-// NewCommonPushOptions instantiates a commonPushOptions object
-func NewCommonPushOptions() *commonPushOptions {
+// newCommonPushOptions instantiates a commonPushOptions object
+func newCommonPushOptions() *commonPushOptions {
 	return &commonPushOptions{
 		show: false,
 	}
@@ -51,15 +51,25 @@ func (cpo *commonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 
 	cmpName := cpo.localConfig.GetName()
 	appName := cpo.localConfig.GetApplication()
-	cmpType := cpo.localConfig.GetType()
 
+	// First off, we check to see if the component exists. This is ran each time we do `odo push`
+	s := log.Spinner("Checking component")
+	defer s.End(false)
 	isCmpExists, err := component.Exists(cpo.Context.Client, cmpName, appName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
 	}
+	s.End(true)
 
+	// Output the "new" section (applying changes)
+	log.Info("\nConfiguration changes")
+
+	// If the component does not exist, we will create it for the first time.
 	if !isCmpExists {
-		log.Successf("Creating %s component with name %s", cmpType, cmpName)
+
+		s = log.Spinner("Creating component")
+		defer s.End(false)
+
 		// Classic case of component creation
 		if err = component.CreateComponent(cpo.Context.Client, *cpo.localConfig, cpo.componentContext, stdout); err != nil {
 			log.Errorf(
@@ -69,7 +79,8 @@ func (cpo *commonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 			)
 			os.Exit(1)
 		}
-		log.Successf("Successfully created component %s", cmpName)
+
+		s.End(true)
 	}
 
 	// Apply config
@@ -77,14 +88,14 @@ func (cpo *commonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
-	log.Successf("Successfully updated component with name: %v", cmpName)
 
 	return nil
 }
 
-// Push pushes changes as per set options
-func (cpo *commonPushOptions) Push() (err error) {
+// push pushes changes as per set options
+func (cpo *commonPushOptions) push() (err error) {
 	stdout := color.Output
+
 	cmpName := cpo.localConfig.GetName()
 	appName := cpo.localConfig.GetApplication()
 
@@ -98,7 +109,7 @@ func (cpo *commonPushOptions) Push() (err error) {
 		return nil
 	}
 
-	log.Successf("Pushing changes to component: %v of type %s", cmpName, cpo.sourceType)
+	log.Infof("\nPushing to component %s of type %s", cmpName, cpo.sourceType)
 
 	// Get SourceLocation here...
 	cpo.sourcePath, err = cpo.localConfig.GetOSSourcePath()
@@ -149,19 +160,12 @@ func (cpo *commonPushOptions) Push() (err error) {
 			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
 		}
 
-	case config.GIT:
-		err := component.Build(
-			cpo.Context.Client,
-			cmpName,
-			appName,
-			true,
-			stdout,
-			cpo.show,
-		)
+		// we don't need a case for building git components
+		// the build happens before deployment
+
 		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
 	}
 
-	log.Successf("Changes successfully pushed to component: %v", cmpName)
-
+	log.Success("Changes successfully pushed to component")
 	return
 }
