@@ -272,7 +272,7 @@ ____________________
   odo create openshift/nodejs:6 --local /nodejs-ex
 
   # Create new Wildfly component with binary named sample.war in './downloads' directory
-  odo create wildfly wildly --binary ./downloads/sample.war
+  odo create wildfly wildfly --binary ./downloads/sample.war
 
   # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
   odo create nodejs --port 8080,8100/tcp,9100/udp
