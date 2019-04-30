@@ -984,9 +984,19 @@ func uniqueAppendOrOverwriteEnvVars(existingEnvs []corev1.EnvVar, envVars ...cor
 		mapExistingEnvs[newEnvVar.Name] = newEnvVar
 	}
 
-	// Convert map to slice
-	for _, envVar := range mapExistingEnvs {
-		retVal = append(retVal, envVar)
+	// append the values to the final slice
+	// don't loop because we need them in order
+	for _, envVar := range existingEnvs {
+		if val, ok := mapExistingEnvs[envVar.Name]; ok {
+			retVal = append(retVal, val)
+			delete(mapExistingEnvs, envVar.Name)
+		}
+	}
+
+	for _, newEnvVar := range envVars {
+		if val, ok := mapExistingEnvs[newEnvVar.Name]; ok {
+			retVal = append(retVal, val)
+		}
 	}
 
 	return retVal
