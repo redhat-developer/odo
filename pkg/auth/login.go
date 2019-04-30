@@ -2,11 +2,13 @@ package auth
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 
 	"github.com/fatih/color"
 	odolog "github.com/openshift/odo/pkg/log"
 	"github.com/openshift/origin/pkg/oc/cli/login"
+	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )
@@ -47,7 +49,7 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 	}
 
 	// 1. Say we're connecting
-	odolog.Info("Connecting to the OpenShift cluster\n")
+	odolog.Info("Connecting to the OpenShift cluster")
 
 	// 2. Gather information and connect
 	// We set the color to "yellow" to distinguish between odo and oc output
@@ -56,6 +58,23 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 		// Make sure we newline between the "Connecting" and error-out messages
 		odolog.Info("")
 		color.Unset()
+
+		// Handle the error messages here. This is copied over from:
+		// https://github.com/openshift/origin/blob/master/pkg/oc/cli/login/login.go#L60
+		// as unauthorization errors are handled MANUALLY by oc.
+		if kapierrors.IsUnauthorized(err) {
+			fmt.Fprintln(odolog.GetStdout(), "Login failed (401 Unauthorized)")
+			fmt.Fprintln(odolog.GetStdout(), "Verify you have provided correct credentials.")
+
+			if err, isStatusErr := err.(*kapierrors.StatusError); isStatusErr {
+				if details := err.Status().Details; details != nil {
+					for _, cause := range details.Causes {
+						fmt.Fprintln(odolog.GetStdout(), cause.Message)
+					}
+				}
+			}
+		}
+
 		return err
 	}
 	color.Unset()
