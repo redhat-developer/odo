@@ -77,7 +77,7 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 %[1]s openshift/nodejs:6 --context /nodejs-ex
 
 # Create new Wildfly component with binary named sample.war in './downloads' directory
-%[1]s wildfly wildly --binary ./downloads/sample.war
+%[1]s wildfly wildfly --binary ./downloads/sample.war
 
 # Create new Node.js component with source from remote git repository
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
