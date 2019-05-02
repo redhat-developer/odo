@@ -257,7 +257,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	context := &Context{
 		internalCxt: internalCxt,
 	}
-
 	// once the component is resolved, add it to the context
 	context.cmp = resolveComponent(command, lci, context)
 
