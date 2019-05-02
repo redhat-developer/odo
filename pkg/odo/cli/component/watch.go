@@ -107,6 +107,15 @@ func (wo *WatchOptions) Validate() (err error) {
 		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	}
 
+	cmpName := wo.localConfig.GetName()
+	appName := wo.localConfig.GetApplication()
+	exists, err := component.Exists(wo.Client, cmpName, appName)
+	if err != nil {
+		return
+	}
+	if !exists {
+		return fmt.Errorf("component does not exist. Please use `odo push` to create you component")
+	}
 	return
 }
 
