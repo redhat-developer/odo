@@ -114,7 +114,7 @@ func (wo *WatchOptions) Validate() (err error) {
 		return
 	}
 	if !exists {
-		return fmt.Errorf("Component does not exist. Please use `odo push` to create you component")
+		return fmt.Errorf("component does not exist. Please use `odo push` to create you component")
 	}
 	return
 }

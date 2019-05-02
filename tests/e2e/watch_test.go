@@ -516,7 +516,7 @@ var _ = Describe("odoWatchE2e", func() {
 					helper.CopyExample(filepath.Join("source", "nodejs"), context)
 					helper.CmdShouldPass("odo component create nodejs --project " + project)
 					output := helper.CmdShouldFail("odo watch")
-					Expect(output).To(ContainSubstring("Component does not exist. Please use `odo push` to create you component"))
+					Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create you component"))
 				})
 
 			})

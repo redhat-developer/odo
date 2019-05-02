@@ -55,7 +55,7 @@ var _ = Describe("Component Tests", func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), context)
 				helper.CmdShouldPass("odo component create nodejs --project " + project + " --env key=value,key1=value1")
 				output := helper.CmdShouldFail("odo component create nodejs --project " + project + " --env key=value,key1=value1")
-				Expect(output).To(ContainSubstring("This directory already contains a component"))
+				Expect(output).To(ContainSubstring("this directory already contains a component"))
 			})
 
 		})
