@@ -44,9 +44,9 @@ func TestCreate(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nodejs-app",
 					Labels: map[string]string{
-						"app.kubernetes.io/name":           "app",
-						"app.kubernetes.io/component-name": "nodejs",
-						"app.kubernetes.io/url-name":       "nodejs",
+						"app.kubernetes.io/part-of":  "app",
+						"app.kubernetes.io/name":     "nodejs",
+						"app.kubernetes.io/url-name": "nodejs",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -74,9 +74,9 @@ func TestCreate(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "example-url-app",
 					Labels: map[string]string{
-						"app.kubernetes.io/name":           "app",
-						"app.kubernetes.io/component-name": "nodejs",
-						"app.kubernetes.io/url-name":       "example-url",
+						"app.kubernetes.io/part-of":  "app",
+						"app.kubernetes.io/name":     "nodejs",
+						"app.kubernetes.io/url-name": "example-url",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -237,7 +237,7 @@ func TestExists(t *testing.T) {
 				},
 			},
 			wantBool:      true,
-			labelSelector: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			labelSelector: "app.kubernetes.io/name=nodejs,app.kubernetes.io/part-of=app",
 			wantErr:       false,
 		},
 		{
@@ -288,7 +288,7 @@ func TestExists(t *testing.T) {
 				},
 			},
 			wantBool:      false,
-			labelSelector: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			labelSelector: "app.kubernetes.io/name=nodejs,app.kubernetes.io/part-of=app",
 			wantErr:       false,
 		},
 	}
@@ -337,14 +337,14 @@ func TestGetComponentServicePortNumbers(t *testing.T) {
 				componentName:   "nodejs",
 				applicationName: "app",
 			},
-			selectors: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			selectors: "app.kubernetes.io/name=nodejs,app.kubernetes.io/part-of=app",
 			returnedServices: corev1.ServiceList{
 				Items: []corev1.Service{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app.kubernetes.io/name":           "app",
-								"app.kubernetes.io/component-name": "nodejs",
+								"app.kubernetes.io/part-of": "app",
+								"app.kubernetes.io/name":    "nodejs",
 							},
 						},
 						Spec: corev1.ServiceSpec{
@@ -366,14 +366,14 @@ func TestGetComponentServicePortNumbers(t *testing.T) {
 				componentName:   "nodejs",
 				applicationName: "app",
 			},
-			selectors: "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app",
+			selectors: "app.kubernetes.io/name=nodejs,app.kubernetes.io/part-of=app",
 			returnedServices: corev1.ServiceList{
 				Items: []corev1.Service{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app.kubernetes.io/name":           "app",
-								"app.kubernetes.io/component-name": "nodejs",
+								"app.kubernetes.io/part-of": "app",
+								"app.kubernetes.io/name":    "nodejs",
 							},
 						},
 						Spec: corev1.ServiceSpec{
@@ -449,8 +449,8 @@ func TestGetValidPortNumber(t *testing.T) {
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app.kubernetes.io/name":           "app",
-								"app.kubernetes.io/component-name": "nodejs",
+								"app.kubernetes.io/part-of": "app",
+								"app.kubernetes.io/name":    "nodejs",
 							},
 						},
 						Spec: corev1.ServiceSpec{
@@ -478,8 +478,8 @@ func TestGetValidPortNumber(t *testing.T) {
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app.kubernetes.io/name":           "app",
-								"app.kubernetes.io/component-name": "nodejs",
+								"app.kubernetes.io/part-of": "app",
+								"app.kubernetes.io/name":    "nodejs",
 							},
 						},
 						Spec: corev1.ServiceSpec{
@@ -510,8 +510,8 @@ func TestGetValidPortNumber(t *testing.T) {
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app.kubernetes.io/name":           "app",
-								"app.kubernetes.io/component-name": "nodejs",
+								"app.kubernetes.io/part-of": "app",
+								"app.kubernetes.io/name":    "nodejs",
 							},
 						},
 						Spec: corev1.ServiceSpec{
@@ -541,8 +541,8 @@ func TestGetValidPortNumber(t *testing.T) {
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app.kubernetes.io/name":           "app",
-								"app.kubernetes.io/component-name": "nodejs",
+								"app.kubernetes.io/part-of": "app",
+								"app.kubernetes.io/name":    "nodejs",
 							},
 						},
 						Spec: corev1.ServiceSpec{
@@ -573,8 +573,8 @@ func TestGetValidPortNumber(t *testing.T) {
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app.kubernetes.io/name":           "app",
-								"app.kubernetes.io/component-name": "nodejs",
+								"app.kubernetes.io/part-of": "app",
+								"app.kubernetes.io/name":    "nodejs",
 							},
 						},
 						Spec: corev1.ServiceSpec{
