@@ -10,6 +10,29 @@ import (
 )
 
 var _ = Describe("odoWatchE2e", func() {
+
+	var project string
+	var context string
+
+	//  current directory and project (before eny test is run) so it can restored  after all testing is done
+	var originalDir string
+	// var originalProject string
+
+	// Setup up state for each test spec
+	// create new project (not set as active) and new context directory for each test spec
+	// This is before every spec (It)
+	var _ = BeforeEach(func() {
+		project = helper.OcCreateRandProject()
+		context = helper.CreateNewContext()
+	})
+
+	// Clean up after the test
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		helper.OcDeleteProject(project)
+		helper.DeleteDir(context)
+	})
+
 	// Uncomment once watch command is made to use component configuration and context flag
 	/*
 		const appTestName = "testing"
@@ -470,56 +493,30 @@ var _ = Describe("odoWatchE2e", func() {
 	//
 	//
 
-	// following command will tests in Describe section below in parallel (in 2 nodes)
-	// ginkgo -nodes=2 -focus="Example of a clean test" slowSpecThreshold=120 -randomizeAllSpecs  tests/e2e/
-	var _ = Describe("Better watch Tests", func() {
-		//new clean project and context for each test
-		var project string
-		var context string
+	//new clean project and context for each test
+	var _ = Context("when component is in the current directory", func() {
 
-		//  current directory and project (before eny test is run) so it can restored  after all testing is done
-		var originalDir string
-		// var originalProject string
-
-		// Setup up state for each test spec
-		// create new project (not set as active) and new context directory for each test spec
-		// This is before every spec (It)
-		var _ = BeforeEach(func() {
-			project = helper.OcCreateRandProject()
-			context = helper.CreateNewContext()
+		// we will be testing components that are created from the current directory
+		// switch to the clean context dir before each test
+		var _ = JustBeforeEach(func() {
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
 		})
 
-		// Clean up after the test
-		// This is run after every Spec (It)
-		var _ = AfterEach(func() {
-			helper.OcDeleteProject(project)
-			helper.DeleteDir(context)
+		// go back to original directory after each test
+		var _ = JustAfterEach(func() {
+			helper.Chdir(originalDir)
 		})
 
-		var _ = Context("when component is in the current directory", func() {
+		var _ = Context("when --project flag is used", func() {
+			It("odo watch fail when component not pushed", func() {
 
-			// we will be testing components that are created from the current directory
-			// switch to the clean context dir before each test
-			var _ = JustBeforeEach(func() {
-				originalDir = helper.Getwd()
-				helper.Chdir(context)
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+				helper.CmdShouldPass("odo component create nodejs --project " + project)
+				output := helper.CmdShouldFail("odo watch")
+				Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create you component"))
 			})
 
-			// go back to original directory after each test
-			var _ = JustAfterEach(func() {
-				helper.Chdir(originalDir)
-			})
-
-			var _ = Context("when --project flag is used", func() {
-				It("odo watch fail when component not pushed", func() {
-
-					helper.CopyExample(filepath.Join("source", "nodejs"), context)
-					helper.CmdShouldPass("odo component create nodejs --project " + project)
-					output := helper.CmdShouldFail("odo watch")
-					Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create you component"))
-				})
-
-			})
 		})
 	})
 
