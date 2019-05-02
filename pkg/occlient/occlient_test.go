@@ -765,9 +765,9 @@ func TestCreateRoute(t *testing.T) {
 			service:    "mailserver",
 			portNumber: intstr.FromInt(8080),
 			labels: map[string]string{
-				"SLA":                      "High",
-				"app.kubernetes.io/name":   "backend",
-				"app.openshift.io/runtime": "python",
+				"SLA":                        "High",
+				"app.kubernetes.io/instance": "backend",
+				"app.kubernetes.io/name":     "python",
 			},
 			wantErr: false,
 		},
@@ -778,9 +778,9 @@ func TestCreateRoute(t *testing.T) {
 			service:    "blog",
 			portNumber: intstr.FromInt(9100),
 			labels: map[string]string{
-				"SLA":                      "High",
-				"app.kubernetes.io/name":   "backend",
-				"app.openshift.io/runtime": "golang",
+				"SLA":                        "High",
+				"app.kubernetes.io/instance": "backend",
+				"app.kubernetes.io/name":     "golang",
 			},
 			wantErr: false,
 		},
@@ -1088,10 +1088,10 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                       "apptmp",
-				"app.kubernetes.io/name":    "ruby",
-				"app.openshift.io/runtime":  "ruby",
-				"app.kubernetes.io/part-of": "apptmp",
+				"app":                        "apptmp",
+				"app.kubernetes.io/instance": "ruby",
+				"app.kubernetes.io/name":     "ruby",
+				"app.kubernetes.io/part-of":  "apptmp",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1122,10 +1122,10 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "wildfly",
-						"app.openshift.io/runtime":  "wildfly",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "wildfly",
+						"app.kubernetes.io/name":     "wildfly",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
@@ -1150,10 +1150,10 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                       "apptmp",
-				"app.kubernetes.io/name":    "ruby",
-				"app.openshift.io/runtime":  "ruby",
-				"app.kubernetes.io/part-of": "apptmp",
+				"app":                        "apptmp",
+				"app.kubernetes.io/instance": "ruby",
+				"app.kubernetes.io/name":     "ruby",
+				"app.kubernetes.io/part-of":  "apptmp",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1185,10 +1185,10 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "wildfly",
-						"app.openshift.io/runtime":  "wildfly",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "wildfly",
+						"app.kubernetes.io/name":     "wildfly",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
@@ -1213,10 +1213,10 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                       "apptmp",
-				"app.kubernetes.io/name":    "ruby",
-				"app.openshift.io/runtime":  "ruby",
-				"app.kubernetes.io/part-of": "apptmp",
+				"app":                        "apptmp",
+				"app.kubernetes.io/instance": "ruby",
+				"app.kubernetes.io/name":     "ruby",
+				"app.kubernetes.io/part-of":  "apptmp",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1248,10 +1248,10 @@ func TestSetupForSupervisor(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "wildfly",
-						"app.openshift.io/runtime":  "wildfly",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "wildfly",
+						"app.kubernetes.io/name":     "wildfly",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
@@ -1275,10 +1275,10 @@ func TestSetupForSupervisor(t *testing.T) {
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
-				"app":                       "apptmp",
-				"app.kubernetes.io/name":    "ruby",
-				"app.openshift.io/runtime":  "ruby",
-				"app.kubernetes.io/part-of": "apptmp",
+				"app":                        "apptmp",
+				"app.kubernetes.io/instance": "ruby",
+				"app.kubernetes.io/name":     "ruby",
+				"app.kubernetes.io/part-of":  "apptmp",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1529,10 +1529,10 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "ruby",
-						"app.openshift.io/runtime":  "ruby",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 					Annotations: map[string]string{
 						"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",
@@ -1555,10 +1555,10 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "ruby",
-						"app.openshift.io/runtime":  "ruby",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 					Annotations: map[string]string{
 						"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",
@@ -1582,10 +1582,10 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "ruby",
-						"app.openshift.io/runtime":  "ruby",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 					Annotations: map[string]string{
 						"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",
@@ -1609,10 +1609,10 @@ func TestNewAppS2I(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "ruby",
-						"app.openshift.io/runtime":  "ruby",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 					Annotations: map[string]string{
 						"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",
@@ -1637,8 +1637,8 @@ func TestNewAppS2I(t *testing.T) {
 		// 		gitURL:       "https://github.com/openshift/ruby",
 		// 		labels: map[string]string{
 		// 			"app": "apptmp",
+		// 			"app.kubernetes.io/instance": "ruby",
 		// 			"app.kubernetes.io/name": "ruby",
-		// 			"app.openshift.io/runtime": "ruby",
 		// 			"app.kubernetes.io/part-of":           "apptmp",
 		// 		},
 		// 		annotations: map[string]string{
@@ -2866,10 +2866,10 @@ func TestCreateService(t *testing.T) {
 			commonObjectMeta: metav1.ObjectMeta{
 				Name: "nodejs",
 				Labels: map[string]string{
-					"app":                       "apptmp",
-					"app.kubernetes.io/name":    "ruby",
-					"app.openshift.io/runtime":  "ruby",
-					"app.kubernetes.io/part-of": "apptmp",
+					"app":                        "apptmp",
+					"app.kubernetes.io/instance": "ruby",
+					"app.kubernetes.io/name":     "ruby",
+					"app.kubernetes.io/part-of":  "apptmp",
 				},
 				Annotations: map[string]string{
 					"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",
@@ -4907,10 +4907,10 @@ func TestCreateBuildConfig(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "ruby",
-						"app.openshift.io/runtime":  "ruby",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 					Annotations: map[string]string{
 						"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",
@@ -4940,10 +4940,10 @@ func TestCreateBuildConfig(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "ruby",
-						"app.openshift.io/runtime":  "ruby",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 					Annotations: map[string]string{
 						"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",
@@ -4973,10 +4973,10 @@ func TestCreateBuildConfig(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "ruby",
-						"app.openshift.io/runtime":  "ruby",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 					Annotations: map[string]string{
 						"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",
@@ -5007,10 +5007,10 @@ func TestCreateBuildConfig(t *testing.T) {
 				commonObjectMeta: metav1.ObjectMeta{
 					Name: "ruby",
 					Labels: map[string]string{
-						"app":                       "apptmp",
-						"app.kubernetes.io/name":    "ruby",
-						"app.openshift.io/runtime":  "ruby",
-						"app.kubernetes.io/part-of": "apptmp",
+						"app":                        "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name":     "ruby",
+						"app.kubernetes.io/part-of":  "apptmp",
 					},
 					Annotations: map[string]string{
 						"app.openshift.io/vcs-uri":                "https://github.com/openshift/ruby",

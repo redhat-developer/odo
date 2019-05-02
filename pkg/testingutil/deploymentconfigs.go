@@ -36,10 +36,10 @@ func getDeploymentConfig(namespace string, componentName string, componentType s
 			Name:      fmt.Sprintf("%v-%v", componentName, applicationName),
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app":                       "app",
-				"app.kubernetes.io/name":    componentName,
-				"app.openshift.io/runtime":  componentType,
-				"app.kubernetes.io/part-of": applicationName,
+				"app":                        "app",
+				"app.kubernetes.io/instance": componentName,
+				"app.kubernetes.io/name":     componentType,
+				"app.kubernetes.io/part-of":  applicationName,
 			},
 			Annotations: map[string]string{ // Convert into separate function when other source types required in tests
 				"app.kubernetes.io/component-source-type": "git",

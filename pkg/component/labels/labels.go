@@ -5,10 +5,10 @@ import (
 )
 
 // ComponentLabel is a label key used to identify the component name
-const ComponentLabel = "app.kubernetes.io/name"
+const ComponentLabel = "app.kubernetes.io/instance"
 
 // ComponentTypeLabel is Kubernetes label that identifies the type of a component being used
-const ComponentTypeLabel = "app.openshift.io/runtime"
+const ComponentTypeLabel = "app.kubernetes.io/name"
 
 // ComponentTypeVersion is a Kubernetes label that identifies the component version
 const ComponentTypeVersion = "app.openshift.io/runtime-version"

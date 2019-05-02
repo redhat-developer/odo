@@ -70,7 +70,7 @@ func (oc *OcRunner) GetCurrentProject() string {
 func (oc *OcRunner) GetFirstURL(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "route",
 		"-n", project,
-		"-l", "app.kubernetes.io/name="+component,
+		"-l", "app.kubernetes.io/instance="+component,
 		"-l", "app.kubernetes.io/part-of="+app,
 		"-o", "jsonpath={.items[0].spec.host}")
 
@@ -85,7 +85,7 @@ func (oc *OcRunner) GetFirstURL(component string, app string, project string) st
 func (oc *OcRunner) GetComponentRoutes(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "route",
 		"-n", project,
-		"-l", "app.kubernetes.io/name="+component,
+		"-l", "app.kubernetes.io/instance="+component,
 		"-l", "app.kubernetes.io/part-of="+app,
 		"-o", "yaml")
 
@@ -98,7 +98,7 @@ func (oc *OcRunner) GetComponentRoutes(component string, app string, project str
 func (oc *OcRunner) GetComponentDC(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "dc",
 		"-n", project,
-		"-l", "app.kubernetes.io/name="+component,
+		"-l", "app.kubernetes.io/instance="+component,
 		"-l", "app.kubernetes.io/part-of="+app,
 		"-o", "yaml")
 

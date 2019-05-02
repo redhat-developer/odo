@@ -58,7 +58,7 @@ func VerifyAppNameOfComponent(cmpName string, appName string) {
 
 func VerifyCmpName(cmpName string) {
 	dcName := getDcName(cmpName)
-	session := runCmdShouldPass(fmt.Sprintf("oc get dc %s -L app.kubernetes.io/name| awk '{print $6}'|sed -n 2p", dcName))
+	session := runCmdShouldPass(fmt.Sprintf("oc get dc %s -L app.kubernetes.io/instance| awk '{print $6}'|sed -n 2p", dcName))
 	Expect(session).To(ContainSubstring(cmpName))
 }
 

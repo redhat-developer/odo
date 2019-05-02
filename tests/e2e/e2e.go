@@ -119,7 +119,7 @@ func waitForCmdOut(cmd string, timeout int, errOnFail bool, check func(output st
 // this is very useful to avoid race conditions that can occur when
 // updating the component
 func waitForDCOfComponentToRolloutCompletely(componentName string) {
-	fullDCName := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/name=%s -o name", componentName))
+	fullDCName := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/instance=%s -o name", componentName))
 	// oc rollout status ensures that the existing DC is fully rolled out before it terminates
 	// we need this because a rolling DC could cause odo update to fail due to its use
 	// of the read/update-in-memory/write-changes pattern
