@@ -23,7 +23,7 @@ func SourceTest(appTestName string, sourceType string, source string) {
 	Expect(getDc).To(ContainSubstring(sourceType))
 
 	// checking for source in dc
-	getDc = runCmdShouldPass("oc get dc wildfly-" + appTestName + " -o go-template='{{index .metadata.annotations \"app.kubernetes.io/url\"}}'")
+	getDc = runCmdShouldPass("oc get dc wildfly-" + appTestName + " -o go-template='{{index .metadata.annotations \"app.openshift.io/vcs-uri\"}}'")
 	Expect(getDc).To(ContainSubstring(source))
 }
 
@@ -99,15 +99,15 @@ func componentTests(componentCmdPrefix string) {
 				runCmdShouldPass("odo config set memory 2Gi")
 				runCmdShouldPass("odo push")
 				componentName := getConfigValue("Name")
-				maxMemory := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o jsonpath='{%s.limits.memory}'", componentName, resourcePath))
+				maxMemory := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/name=%s -o jsonpath='{%s.limits.memory}'", componentName, resourcePath))
 				Expect(maxMemory).To(Equal("2Gi"))
-				minMemory := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o jsonpath='{%s.requests.memory}'", componentName, resourcePath))
+				minMemory := runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/name=%s -o jsonpath='{%s.requests.memory}'", componentName, resourcePath))
 				Expect(minMemory).To(Equal("2Gi"))
 				runCmdShouldPass("odo config unset -f memory")
 				runCmdShouldPass("odo push --config")
-				maxMemory = runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o jsonpath='{%s.limits.memory}'", componentName, resourcePath))
+				maxMemory = runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/name=%s -o jsonpath='{%s.limits.memory}'", componentName, resourcePath))
 				Expect(maxMemory).To(BeEmpty())
-				minMemory = runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/component-name=%s -o jsonpath='{%s.requests.memory}'", componentName, resourcePath))
+				minMemory = runCmdShouldPass(fmt.Sprintf("oc get dc -l app.kubernetes.io/name=%s -o jsonpath='{%s.requests.memory}'", componentName, resourcePath))
 				Expect(minMemory).To(BeEmpty())
 				runCmdShouldPass("odo component delete -f")
 			})
