@@ -3641,6 +3641,24 @@ func TestPatchCurrentDC(t *testing.T) {
 			wantErr: true,
 			actions: 2,
 		},
+		{
+			name: "Case 4: Test patching with the dc with same requirements",
+			args: args{
+				name: "foo",
+				dcBefore: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar",
+					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					fakeResourceRequirements(),
+				),
+				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar",
+					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					fakeResourceRequirements(),
+				),
+			},
+			wantErr: false,
+			actions: 1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -3666,7 +3684,7 @@ func TestPatchCurrentDC(t *testing.T) {
 				if dc.Name != tt.args.dcPatch.Name {
 					return true, nil, fmt.Errorf("got different dc")
 				}
-				return true, nil, nil
+				return true, dc, nil
 			})
 
 			// Run function PatchCurrentDC
@@ -3830,7 +3848,7 @@ func TestUpdateDCToGit(t *testing.T) {
 					return true, nil, fmt.Errorf("got %s image, suppose to get %s", dc.Spec.Template.Spec.Containers[0].Image, tt.args.newImage)
 				}
 
-				return true, nil, nil
+				return true, dc, nil
 			})
 
 			// Fake the pvc delete
@@ -4253,7 +4271,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 					return true, nil, fmt.Errorf("client.UpdateDCSupervisor() does not contain the copy-supervisord container within Spec.Template.Spec.InitContainers, found: %v", dc.Spec.Template.Spec.InitContainers[1].Name)
 				}
 
-				return true, nil, nil
+				return true, dc, nil
 			})
 
 			// Fake getting image stream

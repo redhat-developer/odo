@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -1289,6 +1290,8 @@ type dcRollOutWait func(*appsv1.DeploymentConfig, int64) bool
 // to perform arbitrary updates to a DC before it's finalized for patching
 func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, waitCond dcRollOutWait, currentDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container) error {
 
+	modifiedDC := *currentDC
+
 	// copy the any remaining volumes and volume mounts
 	copyVolumesAndVolumeMounts(dc, currentDC, existingCmpContainer)
 
@@ -1300,20 +1303,24 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatc
 	}
 
 	// Replace the current spec with the new one
-	currentDC.Spec = dc.Spec
+	modifiedDC.Spec = dc.Spec
 
 	// Replace the old annotations with the new ones too
 	// the reason we do this is because Kubernetes handles metadata such as resourceVersion
 	// that should not be overridden.
-	currentDC.ObjectMeta.Annotations = dc.ObjectMeta.Annotations
-	currentDC.ObjectMeta.Labels = dc.ObjectMeta.Labels
+	modifiedDC.ObjectMeta.Annotations = dc.ObjectMeta.Annotations
+	modifiedDC.ObjectMeta.Labels = dc.ObjectMeta.Labels
 
 	// Update the current one that's deployed with the new Spec.
 	// despite the "patch" function name, we use update since `.Patch` requires
 	// use to define each and every object we must change. Updating makes it easier.
-	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(currentDC)
+	updatedDc, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(&modifiedDC)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
+	}
+
+	if reflect.DeepEqual(updatedDc.Spec.Template, currentDC.Spec.Template) {
+		return nil
 	}
 
 	// We use the currentDC + 1 for the next revision.. We do NOT use the updated DC (see above code)
@@ -1397,7 +1404,12 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 		return errors.New("UpdateDCToGit imageName cannot be blank")
 	}
 
-	dc := generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
+	var dc appsv1.DeploymentConfig
+	if isDeleteSupervisordVolumes {
+		dc = generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
+	} else {
+		dc = updateGitDeploymentConfig(ucp.ExistingDC.DeepCopy(), ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
+	}
 
 	if isDeleteSupervisordVolumes {
 		// Patch the current DC
@@ -1512,20 +1524,30 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		inputEnvs = deleteEnvVars(inputEnvs, EnvS2ISrcBackupDir)
 	}
 
-	// Generate the SupervisorD Config
-	dc := generateSupervisordDeploymentConfig(
-		ucp.CommonObjectMeta,
-		ucp.ImageMeta,
-		inputEnvs,
-		cmpContainer.EnvFrom,
-		&ucp.ResourceLimits,
-	)
+	var dc appsv1.DeploymentConfig
+	if isCreatePVC {
+		// Generate the SupervisorD Config
+		dc = generateSupervisordDeploymentConfig(
+			ucp.CommonObjectMeta,
+			ucp.ImageMeta,
+			inputEnvs,
+			cmpContainer.EnvFrom,
+			&ucp.ResourceLimits,
+		)
 
-	// Add the appropriate bootstrap volumes for SupervisorD
-	addBootstrapVolumeCopyInitContainer(&dc, ucp.CommonObjectMeta.Name)
-	addBootstrapSupervisordInitContainer(&dc, ucp.CommonObjectMeta.Name)
-	addBootstrapVolume(&dc, ucp.CommonObjectMeta.Name)
-	addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
+		// Add the appropriate bootstrap volumes for SupervisorD
+		addBootstrapVolumeCopyInitContainer(&dc, ucp.CommonObjectMeta.Name)
+		addBootstrapSupervisordInitContainer(&dc, ucp.CommonObjectMeta.Name)
+		addBootstrapVolume(&dc, ucp.CommonObjectMeta.Name)
+		addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
+	} else {
+		dc = updateSupervisorDeploymentConfig(ucp.ExistingDC.DeepCopy(), ucp.CommonObjectMeta,
+			ucp.ImageMeta,
+			inputEnvs,
+			cmpContainer.EnvFrom,
+			&ucp.ResourceLimits,
+		)
+	}
 
 	if isCreatePVC {
 		// Setup PVC

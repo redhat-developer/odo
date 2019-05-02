@@ -2,10 +2,10 @@ package occlient
 
 import (
 	"fmt"
-
 	"github.com/golang/glog"
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsutil "github.com/openshift/origin/pkg/apps/util"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func hasTag(tags []string, requiredTag string) bool {
@@ -83,4 +83,21 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 		}
 	}
 	return false
+}
+
+func hasUpdatedImages(oldDC *appsv1.DeploymentConfig, newDC *appsv1.DeploymentConfig) bool {
+	updatedImages := []string{}
+	rcImages := sets.NewString()
+	for _, c := range newDC.Spec.Template.Spec.Containers {
+		rcImages.Insert(c.Image)
+	}
+	for _, c := range oldDC.Spec.Template.Spec.Containers {
+		if !rcImages.Has(c.Image) {
+			updatedImages = append(updatedImages, c.Image)
+		}
+	}
+	if len(updatedImages) == 0 {
+		return false
+	}
+	return true
 }
