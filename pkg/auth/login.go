@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/fatih/color"
 	odolog "github.com/openshift/odo/pkg/log"
 	"github.com/openshift/origin/pkg/oc/cli/login"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -62,12 +61,7 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 	// 1. Say we're connecting
 	odolog.Info("Connecting to the OpenShift cluster\n")
 
-	// 2. Gather information and connect
-	// We set the color to "yellow" to distinguish between odo and oc output
-	color.Set(color.FgYellow)
-	defer color.Unset()
-
-	// Handle the error messages here. This is copied over from:
+	// 2. Handle the error messages here. This is copied over from:
 	// https://github.com/openshift/origin/blob/master/pkg/oc/cli/login/login.go#L60
 	// as unauthorization errors are handled MANUALLY by oc.
 	if err := a.GatherInfo(); err != nil {
@@ -83,7 +77,6 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 				}
 			}
 		}
-		color.Unset()
 		return err
 	}
 
