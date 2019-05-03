@@ -154,15 +154,15 @@ link:https://learn.openshift.com/introduction/developing-with-odo/[interactive t
 
 Additional documentation can be found below:
 
-* link:https://github.com/openshift/odo/blob/master/docs/installation.md[Detailed
+* link:https://github.com/openshift/odo/blob/master/docs/installation.adoc[Detailed
 Installation Guide]
-* link:https://github.com/openshift/odo/blob/master/docs/getting-started.md[Getting
+* link:https://github.com/openshift/odo/blob/master/docs/getting-started.adoc[Getting
 Started Guide]
-* link:https://github.com/openshift/odo/blob/master/docs/examples.md[Usage
+* link:https://github.com/openshift/odo/blob/master/docs/examples.adoc[Usage
 Examples for Other Languages and Runtimes]
-* link:https://github.com/openshift/odo/blob/master/docs/cli-reference.md[CLI
+* link:https://github.com/openshift/odo/blob/master/docs/cli-reference.adoc[CLI
 Reference]
-* link:https://github.com/openshift/odo/blob/master/docs/development.md[Development
+* link:https://github.com/openshift/odo/blob/master/docs/development.adoc[Development
 Guide]
 
 [[contributing]]
