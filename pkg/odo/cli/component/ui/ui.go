@@ -20,7 +20,7 @@ import (
 func SelectComponentType(options []catalog.CatalogImage) string {
 	var componentType string
 	prompt := &survey.Select{
-		Message: "Which component type would wish to create",
+		Message: "Which component type do you wish to create",
 		Options: getComponentTypeNameCandidates(options),
 	}
 	err := survey.AskOne(prompt, &componentType, survey.Required)
