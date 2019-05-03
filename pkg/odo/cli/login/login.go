@@ -2,6 +2,7 @@ package login
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/auth"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"

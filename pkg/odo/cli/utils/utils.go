@@ -27,12 +27,3 @@ func NewCmdUtils(name, fullName string) *cobra.Command {
 	utilsCmd.AddCommand(terminalCmd)
 	return utilsCmd
 }
-
-// VisitCommands visits each command within Cobra.
-// Adapted from: https://github.com/cppforlife/knctl/blob/612840d3c9729b1c57b20ca0450acab0d6eceeeb/pkg/knctl/cobrautil/misc.go#L23
-func VisitCommands(cmd *cobra.Command, f func(*cobra.Command)) {
-	f(cmd)
-	for _, child := range cmd.Commands() {
-		VisitCommands(child, f)
-	}
-}
