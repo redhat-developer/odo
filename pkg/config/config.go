@@ -303,6 +303,9 @@ func (lci *LocalConfigInfo) DeleteUrl(parameter string) error {
 	return lci.writeToFile()
 }
 
+// DeleteFromConfigurationList is used to delete a value from a list from the local odo config
+// parameter is the name of the config parameter
+// value is the value to be deleted
 func (lci *LocalConfigInfo) DeleteFromConfigurationList(parameter string, value string) error {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {

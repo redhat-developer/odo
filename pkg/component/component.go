@@ -358,7 +358,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 
 	// create and get the storage to be created/mounted during the component creation
 	storageList := getStorageFromConfig(&componentConfig)
-	storageToBeCreated, _, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
+	storageToBeMounted, _, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 		ImageName:          cmpType,
 		ApplicationName:    appName,
 		EnvVars:            envVarsList.ToStringSlice(),
-		StorageToBeCreated: storageToBeCreated,
+		StorageToBeMounted: storageToBeMounted,
 	}
 	createArgs.SourceType = cmpSrcType
 	createArgs.SourcePath = componentConfig.GetSourceLocation()

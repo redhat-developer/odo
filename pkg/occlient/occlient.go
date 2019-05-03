@@ -68,17 +68,19 @@ var (
 
 // CreateArgs is a container of attributes of component create action
 type CreateArgs struct {
-	Name               string
-	SourcePath         string
-	SourceRef          string
-	SourceType         config.SrcType
-	ImageName          string
-	EnvVars            []string
-	Ports              []string
-	Resources          *corev1.ResourceRequirements
-	ApplicationName    string
-	Wait               bool
-	StorageToBeCreated map[string]*corev1.PersistentVolumeClaim
+	Name            string
+	SourcePath      string
+	SourceRef       string
+	SourceType      config.SrcType
+	ImageName       string
+	EnvVars         []string
+	Ports           []string
+	Resources       *corev1.ResourceRequirements
+	ApplicationName string
+	Wait            bool
+	// StorageToBeMounted describes the storage to be created
+	// storagePath is the key of the map, the generatedPVC is the value of the map
+	StorageToBeMounted map[string]*corev1.PersistentVolumeClaim
 }
 
 const (
@@ -857,7 +859,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 
 	// Generate and create the DeploymentConfig
 	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars, params.Resources)
-	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeCreated, nil)
+	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
@@ -1182,7 +1184,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
-	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeCreated, nil)
+	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
