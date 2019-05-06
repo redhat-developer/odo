@@ -34,7 +34,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - travis_wait make test-main-e2e
+        - travis_wait 30 make test-main-e2e
         - travis_wait make test-odo-login-e2e
         - travis_wait make test-cmp-e2e
 
@@ -46,7 +46,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - travis_wait make test-java-e2e
+        - travis_wait 30 make test-java-e2e
 
     - <<: *base-test
       stage: test
@@ -70,7 +70,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-service-e2e
+        - travis_wait 30 make test-service-e2e
         - make test-link-e2e
         - travis_wait make test-cmp-sub-e2e
 
