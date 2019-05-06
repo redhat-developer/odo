@@ -130,7 +130,7 @@ func createComponentNameValidator(context *genericclioptions.Context) survey.Val
 func EnterComponentName(defaultName string, context *genericclioptions.Context) string {
 	var path string
 	prompt := &survey.Input{
-		Message: "How do you wish to name the new component",
+		Message: "What do you wish to name the new component",
 		Default: defaultName,
 	}
 	err := survey.AskOne(prompt, &path, createComponentNameValidator(context))
