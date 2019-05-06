@@ -455,7 +455,7 @@ const (
 	// Memory is the name of the setting controlling the memory a component consumes
 	Memory = "Memory"
 	// MemoryDescription is the name of the setting controlling the min and max memory to same value
-	MemoryDescription = "The minimum and maximum Memory a component can consume"
+	MemoryDescription = "The minimum and maximum memory a component can consume"
 	// Ignore is the name of the setting controlling the min memory a component consumes
 	Ignore = "Ignore"
 	// IgnoreDescription is the name of the setting controlling the use of .odoignore file
@@ -463,11 +463,11 @@ const (
 	// MinCPU is the name of the setting controlling minimum cpu
 	MinCPU = "MinCPU"
 	// MinCPUDescription is the name of the setting controlling the min CPU value
-	MinCPUDescription = "The minimum cpu a component can consume"
+	MinCPUDescription = "The minimum CPU a component can consume"
 	// MaxCPU is the name of the setting controlling the use of .odoignore file
 	MaxCPU = "MaxCPU"
 	//MaxCPUDescription is the name of the setting controlling the max CPU value
-	MaxCPUDescription = "The maximum cpu a component can consume"
+	MaxCPUDescription = "The maximum CPU a component can consume"
 	// CPU is the name of the setting controlling the cpu a component consumes
 	CPU = "CPU"
 	// CPUDescription is the name of the setting controlling the min and max CPU to same value
@@ -499,7 +499,7 @@ const (
 	// Url
 	Url = "Url"
 	// UrlDescription is the description of URL
-	UrlDescription = "Url to access the compoent"
+	UrlDescription = "URL to access the component"
 )
 
 var (
