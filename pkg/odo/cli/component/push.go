@@ -3,16 +3,11 @@ package component
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/project"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
@@ -34,69 +29,24 @@ const PushRecommendedCommandName = "push"
 
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {
-	*commonPushOptions
+	*CommonPushOptions
 }
 
 // NewPushOptions returns new instance of PushOptions
 // with "default" values for certain values, for example, show is "false"
 func NewPushOptions() *PushOptions {
 	return &PushOptions{
-		commonPushOptions: newCommonPushOptions(),
+		CommonPushOptions: NewCommonPushOptions(),
 	}
 }
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.resolveSrcAndConfigFlags()
-
-	conf, err := config.NewLocalConfigInfo(po.componentContext)
+	err = po.CommonComplete(cmd)
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve configuration information")
+		return err
 	}
-
-	// Set the necessary values within WatchOptions
-	po.localConfig = conf
-	po.sourceType = conf.LocalConfig.GetSourceType()
-
-	glog.V(4).Infof("SourceLocation: %s", po.localConfig.GetSourceLocation())
-
-	// Get SourceLocation here...
-	po.sourcePath, err = conf.GetOSSourcePath()
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve absolute path to source location")
-	}
-
-	glog.V(4).Infof("Source Path: %s", po.sourcePath)
-
-	// Apply ignore information
-	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
-	if err != nil {
-		return errors.Wrap(err, "unable to apply ignore information")
-	}
-
-	// Set the correct context
-	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
-	// check if project exist
-	prjName := po.localConfig.GetProject()
-	isPrjExists, err := project.Exists(po.Context.Client, prjName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
-	}
-	if !isPrjExists {
-		log.Successf("Creating project %s", prjName)
-		err = project.Create(po.Context.Client, prjName, true)
-		if err != nil {
-			log.Errorf("Failed creating project %s", prjName)
-			return errors.Wrapf(
-				err,
-				"project %s does not exist. Failed creating it.Please try after creating project using `odo project create <project_name>`",
-				prjName,
-			)
-		}
-		log.Successf("Successfully created project %s", prjName)
-	}
-	po.Context.Client.Namespace = prjName
 	return
 }
 
@@ -127,7 +77,7 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
-	return po.push()
+	return po.Push()
 }
 
 func (po *PushOptions) resolveSrcAndConfigFlags() {
