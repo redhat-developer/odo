@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
 	"github.com/fatih/color"
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
@@ -14,12 +16,13 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 )
 
 // CommonPushOptions has data needed for all pushes
-type commonPushOptions struct {
+type CommonPushOptions struct {
 	ignores []string
 	show    bool
 
@@ -35,14 +38,14 @@ type commonPushOptions struct {
 	*genericclioptions.Context
 }
 
-// newCommonPushOptions instantiates a commonPushOptions object
-func newCommonPushOptions() *commonPushOptions {
-	return &commonPushOptions{
+// NewCommonPushOptions instantiates a commonPushOptions object
+func NewCommonPushOptions() *CommonPushOptions {
+	return &CommonPushOptions{
 		show: false,
 	}
 }
 
-func (cpo *commonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
+func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
 	if !cpo.pushConfig {
 		// Not the case of component creation or updation(with new config)
 		// So nothing to do here and hence return from here
@@ -92,8 +95,61 @@ func (cpo *commonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	return nil
 }
 
-// push pushes changes as per set options
-func (cpo *commonPushOptions) push() (err error) {
+// CommonComplete completes the push options as needed
+func (cpo *CommonPushOptions) CommonComplete(cmd *cobra.Command) (err error) {
+	conf, err := config.NewLocalConfigInfo(cpo.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve configuration information")
+	}
+
+	// Set the necessary values within WatchOptions
+	cpo.localConfig = conf
+	cpo.sourceType = conf.LocalConfig.GetSourceType()
+
+	glog.V(4).Infof("SourceLocation: %s", cpo.localConfig.GetSourceLocation())
+
+	// Get SourceLocation here...
+	cpo.sourcePath, err = conf.GetOSSourcePath()
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve absolute path to source location")
+	}
+
+	glog.V(4).Infof("Source Path: %s", cpo.sourcePath)
+
+	// Apply ignore information
+	err = genericclioptions.ApplyIgnore(&cpo.ignores, cpo.sourcePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to apply ignore information")
+	}
+
+	// Set the correct context
+	cpo.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+
+	// check if project exist
+	prjName := cpo.localConfig.GetProject()
+	isPrjExists, err := project.Exists(cpo.Context.Client, prjName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
+	}
+	if !isPrjExists {
+		log.Successf("Creating project %s", prjName)
+		err = project.Create(cpo.Context.Client, prjName, true)
+		if err != nil {
+			log.Errorf("Failed creating project %s", prjName)
+			return errors.Wrapf(
+				err,
+				"project %s does not exist. Failed creating it.Please try after creating project using `odo project create <project_name>`",
+				prjName,
+			)
+		}
+		log.Successf("Successfully created project %s", prjName)
+	}
+	cpo.Context.Client.Namespace = prjName
+	return
+}
+
+// Push pushes changes as per set options
+func (cpo *CommonPushOptions) Push() (err error) {
 	stdout := color.Output
 
 	cmpName := cpo.localConfig.GetName()
