@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,6 +48,8 @@ type CreateOptions struct {
 	cpu              string
 	wait             bool
 	interactive      bool
+	now              bool
+	*CommonPushOptions
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -110,7 +113,9 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
-	return &CreateOptions{}
+	return &CreateOptions{
+		CommonPushOptions: NewCommonPushOptions(),
+	}
 }
 
 func (co *CreateOptions) setComponentSourceAttributes() (err error) {
@@ -401,6 +406,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 	co.componentSettings.Envs = envs
 
+	if co.now {
+		co.pushConfig = true
+		co.pushSource = true
+		co.CommonComplete(cmd)
+	}
+
 	return
 }
 
@@ -423,8 +434,50 @@ func (co *CreateOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
-	log.Infof("Please use `odo push` command to create the component with source deployed")
+	if co.now {
+		err = co.Push()
+		if err != nil {
+			return errors.Wrapf(err, "failed to push the changes")
+		}
+	} else {
+		log.Infof("Please use `odo push` command to create the component with source deployed")
+	}
 	return
+}
+
+func (co *CreateOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
+
+	cmpName := co.localConfigInfo.GetName()
+	appName := co.localConfigInfo.GetApplication()
+	cmpType := co.localConfigInfo.GetType()
+
+	isCmpExists, err := component.Exists(co.Context.Client, cmpName, appName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
+	}
+
+	if !isCmpExists {
+		log.Successf("Creating %s component with name %s", cmpType, cmpName)
+		// Classic case of component creation
+		if err = component.CreateComponent(co.Context.Client, *co.localConfigInfo, co.componentContext, stdout); err != nil {
+			log.Errorf(
+				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
+				cmpName,
+				err,
+			)
+			os.Exit(1)
+		}
+		log.Successf("Successfully created component %s", cmpName)
+	}
+
+	// Apply config
+	err = component.ApplyConfig(co.Context.Client, *co.localConfigInfo, stdout, isCmpExists)
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
+	}
+	log.Successf("Successfully updated component with name: %v", cmpName)
+
+	return nil
 }
 
 // The general cpu/memory is used as a fallback when it's set and both min-cpu/memory max-cpu/memory are not set
@@ -479,11 +532,12 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringVar(&co.cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
 	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
-
 	// Add a defined annotation in order to appear in the help menu
 	componentCreateCmd.Annotations = map[string]string{"command": "component"}
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
+	// Adding `--now` flag
+	genericclioptions.AddNowFlag(componentCreateCmd, &co.now)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag
