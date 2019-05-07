@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -60,7 +61,7 @@ Utility Commands:{{range .Commands}}{{if or (eq .Annotations.command "utility") 
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
 
 Flags:
-{{.LocalFlags.FlagUsages | trimRightSpace}}{{end}}{{ if .HasAvailableInheritedFlags}}
+{{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace }}{{end}}{{ if .HasAvailableInheritedFlags}}
 
 Global Flags:
 {{.InheritedFlags.FlagUsages | trimRightSpace}}{{end}}{{if .HasHelpSubCommands}}
@@ -95,6 +96,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
+	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", odoutil.CapitalizeFlagDescriptions)
 
 	rootCmd.AddCommand(
 		application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),
@@ -122,7 +124,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 	)
 
-	utils.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
+	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
 	return rootCmd
 }
