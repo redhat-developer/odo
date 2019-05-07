@@ -127,6 +127,22 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 	return
 }
 
+// SetSourceInfo sets up source information
+func (cpo *CommonPushOptions) SetSourceInfo() (err error) {
+	cpo.sourceType = cpo.localConfig.GetSourceType()
+
+	glog.V(4).Infof("SourceLocation: %s", cpo.localConfig.GetSourceLocation())
+
+	// Get SourceLocation here...
+	cpo.sourcePath, err = cpo.localConfig.GetOSSourcePath()
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve absolute path to source location")
+	}
+
+	glog.V(4).Infof("Source Path: %s", cpo.sourcePath)
+	return
+}
+
 // Push pushes changes as per set options
 func (cpo *CommonPushOptions) Push() (err error) {
 	stdout := color.Output

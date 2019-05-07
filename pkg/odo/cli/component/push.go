@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -52,18 +51,10 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// Set the necessary values within WatchOptions
 	po.localConfig = conf
-	po.sourceType = conf.LocalConfig.GetSourceType()
-
-	glog.V(4).Infof("SourceLocation: %s", po.localConfig.GetSourceLocation())
-
-	// Get SourceLocation here...
-	po.sourcePath, err = conf.GetOSSourcePath()
+	err = po.SetSourceInfo()
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve absolute path to source location")
+		return errors.Wrap(err, "unable to set source information")
 	}
-
-	glog.V(4).Infof("Source Path: %s", po.sourcePath)
-
 	// Apply ignore information
 	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
 	if err != nil {
