@@ -434,6 +434,15 @@ func (co *CreateOptions) Run() (err error) {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
 	if co.now {
+		co.Context, co.localConfig, err = genericclioptions.UpdatedContext(co.Context)
+
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve updated local config")
+		}
+		err = co.SetSourceInfo()
+		if err != nil {
+			return errors.Wrap(err, "unable to set source information")
+		}
 		err = co.Push()
 		if err != nil {
 			return errors.Wrapf(err, "failed to push the changes")
