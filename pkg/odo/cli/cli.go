@@ -88,8 +88,16 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
 	rootCmd.PersistentFlags().Bool(genericclioptions.SkipConnectionCheckFlagName, false, "Skip cluster check")
+
+	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
+	// as they are not necessarily needed and more for advanced debugging
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.CommandLine.Set("logtostderr", "true")
+	pflag.CommandLine.MarkHidden("alsologtostderr")
+	pflag.CommandLine.MarkHidden("log_backtrace_at")
+	pflag.CommandLine.MarkHidden("log_dir")
+	pflag.CommandLine.MarkHidden("logtostderr")
+	pflag.CommandLine.MarkHidden("stderrthreshold")
 
 	// Override the verbosity flag description
 	verbosity := pflag.Lookup("v")
