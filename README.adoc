@@ -140,6 +140,7 @@ $ odo url create --port <application port>
 $ curl <generated URL>
 ----
 . When finished, remove your component from `Minishift` and stop your `Minishift` cluster.
++
 ----
 $ odo delete <component>
 $ minishift stop
