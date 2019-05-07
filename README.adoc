@@ -106,7 +106,7 @@ https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicas
 After installing `odo`, follow these steps to build, push, and
 deploy a Node.js application. Examples for other supported languages and runtimes can be found link:https://github.com/openshift/odo/blob/master/docs/examples.md[here].
 
-. Start a local OpenShift development cluster by running minishift.
+. Start a local OpenShift development cluster by using `Minishift`. More information on how to install and use Minishift can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here], but, if properly set up already, run the following:
 +
 ----
 $ minishift start
@@ -115,12 +115,6 @@ $ minishift start
 +
 ----
 $ odo login -u developer -p developer
-----
-. Create an application. An application in `odo` is an umbrella
-under which you add other components.
-+
-----
-$ odo app create node-example-app
 ----
 . Download the Node.js sample code and change directory to the
 location of the sample code.
@@ -144,6 +138,11 @@ $ odo push
 ----
 $ odo url create --port <application port>
 $ curl <generated URL>
+----
+. When finished, remove your component from `Minishift` and stop your `Minishift` cluster.
+----
+$ odo delete <component>
+$ minishift stop
 ----
 
 For more in-depth information and advanced use-cases such as adding storage to a component or linking components, see the
