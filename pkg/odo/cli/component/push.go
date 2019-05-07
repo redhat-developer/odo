@@ -3,9 +3,12 @@ package component
 import (
 	"fmt"
 
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
@@ -42,8 +45,36 @@ func NewPushOptions() *PushOptions {
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.resolveSrcAndConfigFlags()
-	err = po.CommonComplete(cmd)
+	conf, err := config.NewLocalConfigInfo(po.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve configuration information")
+	}
+
+	// Set the necessary values within WatchOptions
+	po.localConfig = conf
+	po.sourceType = conf.LocalConfig.GetSourceType()
+
+	glog.V(4).Infof("SourceLocation: %s", po.localConfig.GetSourceLocation())
+
+	// Get SourceLocation here...
+	po.sourcePath, err = conf.GetOSSourcePath()
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve absolute path to source location")
+	}
+
+	glog.V(4).Infof("Source Path: %s", po.sourcePath)
+
+	// Apply ignore information
+	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to apply ignore information")
+	}
+
+	// Set the correct context
+	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	prjName := po.localConfig.GetProject()
+	po.ResolveSrcAndConfigFlags()
+	err = po.ResolveProject(prjName)
 	if err != nil {
 		return err
 	}
@@ -78,14 +109,6 @@ func (po *PushOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
 	return po.Push()
-}
-
-func (po *PushOptions) resolveSrcAndConfigFlags() {
-	// If neither config nor source flag is passed, update both config and source to the component
-	if !po.pushConfig && !po.pushSource {
-		po.pushConfig = true
-		po.pushSource = true
-	}
 }
 
 // NewCmdPush implements the push odo command

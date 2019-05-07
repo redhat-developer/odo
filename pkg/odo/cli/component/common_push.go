@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
-
 	"github.com/fatih/color"
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
@@ -42,6 +40,15 @@ type CommonPushOptions struct {
 func NewCommonPushOptions() *CommonPushOptions {
 	return &CommonPushOptions{
 		show: false,
+	}
+}
+
+// ResolveSrcAndConfigFlags sets all pushes if none is asked
+func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
+	// If neither config nor source flag is passed, update both config and source to the component
+	if !cpo.pushConfig && !cpo.pushSource {
+		cpo.pushConfig = true
+		cpo.pushSource = true
 	}
 }
 
@@ -95,38 +102,10 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	return nil
 }
 
-// CommonComplete completes the push options as needed
-func (cpo *CommonPushOptions) CommonComplete(cmd *cobra.Command) (err error) {
-	conf, err := config.NewLocalConfigInfo(cpo.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve configuration information")
-	}
-
-	// Set the necessary values within WatchOptions
-	cpo.localConfig = conf
-	cpo.sourceType = conf.LocalConfig.GetSourceType()
-
-	glog.V(4).Infof("SourceLocation: %s", cpo.localConfig.GetSourceLocation())
-
-	// Get SourceLocation here...
-	cpo.sourcePath, err = conf.GetOSSourcePath()
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve absolute path to source location")
-	}
-
-	glog.V(4).Infof("Source Path: %s", cpo.sourcePath)
-
-	// Apply ignore information
-	err = genericclioptions.ApplyIgnore(&cpo.ignores, cpo.sourcePath)
-	if err != nil {
-		return errors.Wrap(err, "unable to apply ignore information")
-	}
-
-	// Set the correct context
-	cpo.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+// CommonResolve completes the push options as needed
+func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 
 	// check if project exist
-	prjName := cpo.localConfig.GetProject()
 	isPrjExists, err := project.Exists(cpo.Context.Client, prjName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
