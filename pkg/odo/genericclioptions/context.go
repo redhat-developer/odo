@@ -235,6 +235,12 @@ func resolveComponent(command *cobra.Command, lci *config.LocalConfigInfo, conte
 	return cmp
 }
 
+// Update returns a new context updated from config file
+func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error) {
+	lci, err := getValidConfig(context.command)
+	return newContext(context.command, true), lci, err
+}
+
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	client := client(command)
@@ -268,6 +274,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		Project:     ns,
 		Application: app,
 		OutputFlag:  outputFlag,
+		command:     command,
 	}
 
 	// create a context from the internal representation
@@ -300,6 +307,7 @@ type Context struct {
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
 	Client      *occlient.Client
+	command     *cobra.Command
 	Project     string
 	Application string
 	cmp         string
