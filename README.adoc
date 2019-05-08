@@ -90,7 +90,7 @@ link:https://github.com/openshift/odo/releases[GitHub releases page].
 . Add the location of extracted binary to your PATH environment
 variable by following the steps listed in this link:https://github.com/openshift/odo/wiki/Setting-PATH-variable-on-Windows[Wiki page].
 
-For a list of other methods such as installing the latest binary or specific OS installations, visit the link:/docs/installation.md[installation page].
+For a list of other methods such as installing the latest binary or specific OS installations, visit the link:/docs/installation.adoc[installation page].
 
 [[demonstration]]
 == Demonstration
@@ -103,7 +103,7 @@ https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicas
 == Deploying an application using `odo`
 
 After installing `odo`, follow these steps to build, push, and
-deploy a Node.js application. Examples for other supported languages and runtimes can be found link:https://github.com/openshift/odo/blob/master/docs/examples.md[here].
+deploy a Node.js application. Examples for other supported languages and runtimes can be found link:https://github.com/openshift/odo/blob/master/docs/examples.adoc[here].
 
 These steps recommend using link:https://github.com/minishift/minishift[Minishift] for running an OpenShift 3.10.0 or above cluster locally. More information on how to install and use `Minishift` can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here].
 
@@ -148,22 +148,22 @@ $ minishift stop
 ----
 
 For more in-depth information and advanced use-cases such as adding storage to a component or linking components, see the
-link:https://learn.openshift.com/introduction/developing-with-odo/[interactive tutorial] or the link:/docs/getting-started.md[Getting Started Guide].
+link:https://learn.openshift.com/introduction/developing-with-odo/[interactive tutorial] or the link:/docs/getting-started.adoc[Getting Started Guide].
 
 [[additional-documentation]]
 == Additional documentation
 
 Additional documentation can be found below:
 
-* link:https://github.com/openshift/odo/blob/master/docs/installation.md[Detailed
+* link:https://github.com/openshift/odo/blob/master/docs/installation.adoc[Detailed
 Installation Guide]
-* link:https://github.com/openshift/odo/blob/master/docs/getting-started.md[Getting
+* link:https://github.com/openshift/odo/blob/master/docs/getting-started.adoc[Getting
 Started Guide]
-* link:https://github.com/openshift/odo/blob/master/docs/examples.md[Usage
+* link:https://github.com/openshift/odo/blob/master/docs/examples.adoc[Usage
 Examples for Other Languages and Runtimes]
-* link:https://github.com/openshift/odo/blob/master/docs/cli-reference.md[CLI
+* link:https://github.com/openshift/odo/blob/master/docs/cli-reference.adoc[CLI
 Reference]
-* link:https://github.com/openshift/odo/blob/master/docs/development.md[Development
+* link:https://github.com/openshift/odo/blob/master/docs/development.adoc[Development
 Guide]
 
 [[contributing]]
@@ -175,7 +175,7 @@ chat.openshift.io].
 *Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
 
 *Contributing:* Want to become a contributor and submit your own code?
-Have a look at our link:https://github.com/openshift/odo/blob/master/docs/development.md[Development Guide].
+Have a look at our link:https://github.com/openshift/odo/blob/master/docs/development.adoc[Development Guide].
 
 [[glossary]]
 == Glossary
