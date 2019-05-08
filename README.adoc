@@ -106,7 +106,7 @@ https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicas
 After installing `odo`, follow these steps to build, push, and
 deploy a Node.js application. Examples for other supported languages and runtimes can be found link:https://github.com/openshift/odo/blob/master/docs/examples.md[here].
 
-. Start a local OpenShift development cluster by using `Minishift`. More information on how to install and use Minishift can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here], but, if properly set up already, run the following:
+. Start a local OpenShift development cluster by using `Minishift`. More information on how to install and use `Minishift` can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here]. If properly set up already, run the following:
 +
 ----
 $ minishift start
