@@ -20,7 +20,7 @@ import (
 func SelectComponentType(options []catalog.CatalogImage) string {
 	var componentType string
 	prompt := &survey.Select{
-		Message: "Which component type would wish to create",
+		Message: "Which component type do you wish to create",
 		Options: getComponentTypeNameCandidates(options),
 	}
 	err := survey.AskOne(prompt, &componentType, survey.Required)
@@ -41,7 +41,7 @@ func getComponentTypeNameCandidates(options []catalog.CatalogImage) []string {
 func SelectImageTag(options []catalog.CatalogImage, selectedComponentType string) string {
 	var tag string
 	prompt := &survey.Select{
-		Message: fmt.Sprintf("Which version of '%s' component type would you wish to create", selectedComponentType),
+		Message: fmt.Sprintf("Which version of '%s' component type do you wish to create", selectedComponentType),
 		Options: getTagCandidates(options, selectedComponentType),
 	}
 	err := survey.AskOne(prompt, &tag, survey.Required)
@@ -69,7 +69,7 @@ func SelectSourceType(sourceTypes []config.SrcType) config.SrcType {
 
 	var selectedSourceType string
 	prompt := &survey.Select{
-		Message: "Which input type would wish to use for the component",
+		Message: "Which input type do you wish to use for the component",
 		Options: options,
 	}
 	err := survey.AskOne(prompt, &selectedSourceType, survey.Required)
@@ -130,7 +130,7 @@ func createComponentNameValidator(context *genericclioptions.Context) survey.Val
 func EnterComponentName(defaultName string, context *genericclioptions.Context) string {
 	var path string
 	prompt := &survey.Input{
-		Message: "How would you wish to name the new component",
+		Message: "What do you wish to name the new component",
 		Default: defaultName,
 	}
 	err := survey.AskOne(prompt, &path, createComponentNameValidator(context))
@@ -161,7 +161,7 @@ func EnterGitInfo() (string, string) {
 func enterGitInputTypePath() string {
 	var path string
 	prompt := &survey.Input{
-		Message: "What is the URL of the git repository you would wish the new component to use",
+		Message: "What is the URL of the git repository you wish the new component to use",
 	}
 	err := survey.AskOne(prompt, &path, survey.Required)
 	ui.HandleError(err)
@@ -171,7 +171,7 @@ func enterGitInputTypePath() string {
 func enterGitRef(defaultRef string) string {
 	var path string
 	prompt := &survey.Input{
-		Message: "What git ref (branch, tag, commit) would you wish to use",
+		Message: "What git ref (branch, tag, commit) do you wish to use",
 		Default: defaultRef,
 	}
 	err := survey.AskOne(prompt, &path, survey.Required)
