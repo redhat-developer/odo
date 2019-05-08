@@ -77,21 +77,37 @@ spec:
         name: ${HTPASSWD_SECRET}
 EOF
 
-# Login as developer and setup project
+# Login as developer and check for stable server
 for i in {1..40}; do
+    # Try logging in as developer
     oc login -u developer -p $USERPASS &> /dev/null
     if [ $? -eq 0 ]; then
-	OC_LOGIN_SUCCESS="true"
-        break
+        # If login succeeds, assume success
+	    OC_STABLE_LOGIN="true"
+        # Attempt failure of `oc whoami`
+        for j in {1..25}; do
+            oc whoami &> /dev/null
+            if [ $? -ne 0 ]; then
+                # If `oc whoami` fails, assume fail and break out of trying `oc whoami`
+                OC_STABLE_LOGIN="false"
+                break
+            fi
+            sleep 2
+        done
+        # If `oc whoami` never failed, break out trying to login again
+        if [ ! -z $OC_STABLE_LOGIN ] && [ $OC_STABLE_LOGIN == "true" ]; then
+            break
+        fi
     fi
     sleep 3
 done
 
-if [ -z $OC_LOGIN_SUCCESS ]; then
+if [ -z $OC_STABLE_LOGIN ] || [ $OC_STABLE_LOGIN == "false" ]; then
     echo "Failed to login as developer"
     exit 1
 fi
 
+# Setup project
 oc new-project myproject
 sleep 4
 oc version
