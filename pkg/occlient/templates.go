@@ -22,6 +22,23 @@ type CommonImageMeta struct {
 	Ports     []corev1.ContainerPort
 }
 
+type SupervisorDUpdateParams struct {
+	existingDc           *appsv1.DeploymentConfig
+	commonObjectMeta     metav1.ObjectMeta
+	commonImageMeta      CommonImageMeta
+	envVar               []corev1.EnvVar
+	envFrom              []corev1.EnvFromSource
+	resourceRequirements *corev1.ResourceRequirements
+}
+
+type GitDeploymentConfigUpdateParams struct {
+	existingDc           *appsv1.DeploymentConfig
+	commonObjectMeta     metav1.ObjectMeta
+	containerPorts       []corev1.ContainerPort
+	envVars              []corev1.EnvVar
+	resourceRequirements *corev1.ResourceRequirements
+}
+
 // generateSupervisordDeploymentConfig generates dc for local and binary components
 // Parameters:
 //	commonObjectMeta: Contains annotations and labels for dc
@@ -139,45 +156,29 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 	return dc
 }
 
-func updateSupervisorDeploymentConfig(existingDc *appsv1.DeploymentConfig, commonObjectMeta metav1.ObjectMeta, commonImageMeta CommonImageMeta,
-	envVar []corev1.EnvVar, envFrom []corev1.EnvFromSource, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {
+func updateSupervisorDeploymentConfig(updateParams SupervisorDUpdateParams) appsv1.DeploymentConfig {
 
-	dc := *existingDc
+	dc := *updateParams.existingDc
 
-	dc.ObjectMeta = commonObjectMeta
-	dc.Spec.Strategy.Type = appsv1.DeploymentStrategyTypeRecreate
-
-	dc.Spec.Selector = map[string]string{
-		"deploymentconfig": commonObjectMeta.Name,
-	}
-
-	dc.Spec.Template.ObjectMeta = metav1.ObjectMeta{
-		Labels: map[string]string{
-			"deploymentconfig": commonObjectMeta.Name,
-		},
-		// https://github.com/openshift/odo/pull/622#issuecomment-413410736
-		Annotations: map[string]string{
-			"alpha.image.policy.openshift.io/resolve-names": "*",
-		},
-	}
+	dc.ObjectMeta = updateParams.commonObjectMeta
 
 	for i := range dc.Spec.Template.Spec.Containers {
-		dc.Spec.Template.Spec.Containers[i].Name = commonObjectMeta.Name
-		dc.Spec.Template.Spec.Containers[i].Ports = commonImageMeta.Ports
-		dc.Spec.Template.Spec.Containers[i].Env = envVar
-		dc.Spec.Template.Spec.Containers[i].EnvFrom = envFrom
+		dc.Spec.Template.Spec.Containers[i].Name = updateParams.commonObjectMeta.Name
+		dc.Spec.Template.Spec.Containers[i].Ports = updateParams.commonImageMeta.Ports
+		dc.Spec.Template.Spec.Containers[i].Env = updateParams.envVar
+		dc.Spec.Template.Spec.Containers[i].EnvFrom = updateParams.envFrom
 	}
 
 	containerIndex := -1
-	if resourceRequirements != nil {
+	if updateParams.resourceRequirements != nil {
 		for index, container := range dc.Spec.Template.Spec.Containers {
-			if container.Name == commonObjectMeta.Name {
+			if container.Name == updateParams.commonObjectMeta.Name {
 				containerIndex = index
 				break
 			}
 		}
 		if containerIndex != -1 {
-			dc.Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+			dc.Spec.Template.Spec.Containers[containerIndex].Resources = *updateParams.resourceRequirements
 		}
 	}
 
@@ -305,44 +306,6 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 			},
 		},
 	}
-	containerIndex := -1
-	if resourceRequirements != nil {
-		for index, container := range dc.Spec.Template.Spec.Containers {
-			if container.Name == commonObjectMeta.Name {
-				containerIndex = index
-				break
-			}
-		}
-		if containerIndex != -1 {
-			dc.Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
-		}
-	}
-	return dc
-}
-
-func updateGitDeploymentConfig(existingDc *appsv1.DeploymentConfig, commonObjectMeta metav1.ObjectMeta, image string, containerPorts []corev1.ContainerPort, envVars []corev1.EnvVar, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {
-	dc := *existingDc
-
-	dc.ObjectMeta = commonObjectMeta
-	dc.Spec.Strategy.Type = appsv1.DeploymentStrategyTypeRecreate
-
-	dc.Spec.Selector = map[string]string{
-		"deploymentconfig": commonObjectMeta.Name,
-	}
-
-	dc.Spec.Template.ObjectMeta = metav1.ObjectMeta{
-		Labels: map[string]string{
-			"deploymentconfig": commonObjectMeta.Name,
-		},
-	}
-
-	for i := range dc.Spec.Template.Spec.Containers {
-		dc.Spec.Template.Spec.Containers[i].Image = image
-		dc.Spec.Template.Spec.Containers[i].Name = commonObjectMeta.Name
-		dc.Spec.Template.Spec.Containers[i].Ports = containerPorts
-		dc.Spec.Template.Spec.Containers[i].Env = envVars
-	}
-
 	containerIndex := -1
 	if resourceRequirements != nil {
 		for index, container := range dc.Spec.Template.Spec.Containers {

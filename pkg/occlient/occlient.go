@@ -23,7 +23,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
-
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
@@ -1288,7 +1287,7 @@ type dcRollOutWait func(*appsv1.DeploymentConfig, int64) bool
 // if prePatchDCHandler is specified (meaning not nil), then it's applied
 // as the last action before the actual call to the Kubernetes API thus giving us the chance
 // to perform arbitrary updates to a DC before it's finalized for patching
-func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, waitCond dcRollOutWait, currentDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container) error {
+func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, waitCond dcRollOutWait, currentDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container, waitForDc bool) error {
 
 	modifiedDC := *currentDC
 
@@ -1319,8 +1318,24 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatc
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
 	}
 
+	// till we find a better solution for git
+	// it is better, not to follow the logs as the build will anyways trigger a new deployment later
+	if !waitForDc {
+		return nil
+	}
+
+	// we check after the update that the template in the earlier and the new dc are same or not
+	// if they are same, we don't wait as new deployment won't run and we will wait till timeout
+	// inspired from https://github.com/openshift/origin/blob/bb1b9b5223dd37e63790d99095eec04bfd52b848/pkg/apps/controller/deploymentconfig/deploymentconfig_controller.go#L609
 	if reflect.DeepEqual(updatedDc.Spec.Template, currentDC.Spec.Template) {
 		return nil
+	} else {
+		currentDCBytes, err := json.Marshal(currentDC.Spec.Template)
+		updatedDCBytes, err := json.Marshal(updatedDc.Spec.Template)
+		if err != nil {
+			return errors.Wrapf(err, "unable to unmarshal dc")
+		}
+		glog.V(4).Infof("updatedDc Spec.Template: %v, not matching currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
 	}
 
 	// We use the currentDC + 1 for the next revision.. We do NOT use the updated DC (see above code)
@@ -1405,11 +1420,8 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 	}
 
 	var dc appsv1.DeploymentConfig
-	if isDeleteSupervisordVolumes {
-		dc = generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
-	} else {
-		dc = updateGitDeploymentConfig(ucp.ExistingDC.DeepCopy(), ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
-	}
+
+	dc = generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
 
 	if isDeleteSupervisordVolumes {
 		// Patch the current DC
@@ -1420,7 +1432,18 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 			ucp.DcRollOutWaitCond,
 			ucp.ExistingDC,
 			existingCmpContainer,
+			true,
 		)
+
+		if err != nil {
+			return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", ucp.CommonObjectMeta.Name)
+		}
+
+		// Cleanup after the supervisor
+		err = c.DeletePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name))
+		if err != nil {
+			return errors.Wrapf(err, "unable to delete S2I data PVC from %s", ucp.CommonObjectMeta.Name)
+		}
 	} else {
 		err = c.PatchCurrentDC(
 			ucp.CommonObjectMeta.Name,
@@ -1429,18 +1452,12 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 			ucp.DcRollOutWaitCond,
 			ucp.ExistingDC,
 			existingCmpContainer,
+			false,
 		)
 	}
+
 	if err != nil {
 		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", ucp.CommonObjectMeta.Name)
-	}
-
-	if isDeleteSupervisordVolumes {
-		// Cleanup after the supervisor
-		err = c.DeletePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name))
-		if err != nil {
-			return errors.Wrapf(err, "unable to delete S2I data PVC from %s", ucp.CommonObjectMeta.Name)
-		}
 	}
 
 	return nil
@@ -1540,21 +1557,22 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		addBootstrapSupervisordInitContainer(&dc, ucp.CommonObjectMeta.Name)
 		addBootstrapVolume(&dc, ucp.CommonObjectMeta.Name)
 		addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
-	} else {
-		dc = updateSupervisorDeploymentConfig(ucp.ExistingDC.DeepCopy(), ucp.CommonObjectMeta,
-			ucp.ImageMeta,
-			inputEnvs,
-			cmpContainer.EnvFrom,
-			&ucp.ResourceLimits,
-		)
-	}
 
-	if isCreatePVC {
 		// Setup PVC
 		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels)
 		if err != nil {
 			return errors.Wrapf(err, "unable to create PVC for %s", ucp.CommonObjectMeta.Name)
 		}
+	} else {
+		dc = updateSupervisorDeploymentConfig(
+			SupervisorDUpdateParams{
+				ucp.ExistingDC.DeepCopy(), ucp.CommonObjectMeta,
+				ucp.ImageMeta,
+				inputEnvs,
+				cmpContainer.EnvFrom,
+				&ucp.ResourceLimits,
+			},
+		)
 	}
 
 	// Patch the current DC with the new one
@@ -1565,6 +1583,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		ucp.DcRollOutWaitCond,
 		ucp.ExistingDC,
 		existingCmpContainer,
+		true,
 	)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", ucp.CommonObjectMeta.Name)

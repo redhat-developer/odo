@@ -3694,7 +3694,7 @@ func TestPatchCurrentDC(t *testing.T) {
 			}
 			err = fakeClient.PatchCurrentDC(tt.args.name, tt.args.dcPatch, tt.args.prePatchDCHandler, func(*appsv1.DeploymentConfig, int64) bool {
 				return true
-			}, &(tt.args.dcBefore), existingContainer)
+			}, &(tt.args.dcBefore), existingContainer, true)
 
 			// Error checking PatchCurrentDC
 			if !tt.wantErr == (err != nil) {
@@ -3753,7 +3753,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			actions: 2,
+			actions: 1,
 		},
 		{
 			name: "Case 2: Fail if the variable passed in is blank",
@@ -3813,7 +3813,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			actions: 2,
+			actions: 1,
 		},
 	}
 	for _, tt := range tests {
