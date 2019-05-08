@@ -626,6 +626,15 @@ func ApplyConfigCreateUrl(client *occlient.Client, componentConfig config.LocalC
 //	Error if any
 func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
+
+	// Edge case: check to see that the path is NOT empty.
+	emptyDir, err := isEmpty(path)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to check directory: %s", path)
+	} else if emptyDir {
+		return errors.New(fmt.Sprintf("Directory / file %s is empty", path))
+	}
+
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -1248,4 +1257,21 @@ func getMachineReadableFormatForList(components []Component) ComponentList {
 		Items:    components,
 	}
 
+}
+
+// isEmpty checks to see if a directory is empty
+// shamelessly taken from: https://stackoverflow.com/questions/30697324/how-to-check-if-directory-on-path-is-empty
+// this helps detect any edge cases where an empty directory is copied over
+func isEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1) // Or f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err // Either not empty or error, suits both cases
 }
