@@ -46,6 +46,7 @@ type WatchParameters struct {
 // path is the path of the file or the directory
 // ignores contains the glob rules for matching
 func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string) error {
+
 	file, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -210,7 +211,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				// because its parent is watched, the fsnotify automatically raises an event
 				// for it.
 				matched, err := util.IsGlobExpMatch(event.Name, parameters.FileIgnores)
-				glog.V(4).Infof("Matching %s with %s\n.matched %v, err: %v", event.Name, parameters.FileIgnores, matched, err)
+				glog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, err)
 				if err != nil {
 					watchError = errors.Wrap(err, "unable to watch changes")
 				}

@@ -532,8 +532,23 @@ func GetContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 // strToMatch : a string for matching against the rules
 // globExps : a list of glob patterns to match strToMatch with
 // Returns: true if there is any match else false the error (if any)
+// Notes:
+// Source as well as glob expression to match is changed to forward
+// slashes due to supporting Windows as well as support with the
+// "github.com/gobwas/glob" library that we use.
 func IsGlobExpMatch(strToMatch string, globExps []string) (bool, error) {
+
+	// Replace all backslashes with forward slashes in order for
+	// glob / expression matching to work correctly with
+	// the "github.com/gobwas/glob" library
+	strToMatch = strings.Replace(strToMatch, "\\", "/", -1)
+
 	for _, globExp := range globExps {
+
+		// We replace backslashes with forward slashes for
+		// glob expression / matching support
+		globExp = strings.Replace(globExp, "\\", "/", -1)
+
 		pattern, err := glob.Compile(globExp)
 		if err != nil {
 			return false, err
