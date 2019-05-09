@@ -5,6 +5,7 @@ COMMON_FLAGS := -X $(PROJECT)/pkg/odo/cli/version.GITCOMMIT=$(GITCOMMIT)
 BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
 DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
+TIMEOUT ?= 1800s
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -92,109 +93,70 @@ configure-installer-tests-cluster:
 test:
 	go test -race $(PKGS)
 
-# Run main e2e tests
-.PHONY: test-main-e2e
-test-main-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoe2e" -ginkgo.v
-endif
+# Run generic integration tests
+.PHONY: test-generic
+test-generic:
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo generic" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run json outout tests
 .PHONY: test-json-format-output
 test-json-format-output:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odojsonoutput" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odojsonoutput" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run component e2e tests
 .PHONY: test-cmp-e2e
 test-cmp-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpE2e" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoCmpE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run component subcommands e2e tests
 .PHONY: test-cmp-sub-e2e
 test-cmp-sub-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoCmpSubE2e" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoCmpSubE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run java e2e tests
 .PHONY: test-java-e2e
 test-java-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoJavaE2e" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoJavaE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run source e2e tests
 .PHONY: test-source-e2e
 test-source-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoSourceE2e" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoSourceE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run service catalog e2e tests
 .PHONY: test-service-e2e
 test-service-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoServiceE2e" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoServiceE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run link e2e tests
 .PHONY: test-link-e2e
 test-link-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLinkE2e" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoLinkE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run link e2e tests
 .PHONY: test-watch-e2e
 test-watch-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoWatchE2e" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoWatchE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run login e2e tests
 .PHONY: test-odo-login-e2e
 test-odo-login-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e --ginkgo.focus="odoLoginE2e" -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoLoginE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+
+# Run config tests
+.PHONY: test-odo-config
+test-odo-config:
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo config test" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run all e2e tests
 .PHONY: test-e2e
 test-e2e:
-ifdef TIMEOUT
-	go test -v github.com/openshift/odo/tests/e2e -ginkgo.v -timeout $(TIMEOUT)
-else
-	go test -v github.com/openshift/odo/tests/e2e -ginkgo.v
-endif
+	go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios
 test-e2e-scenarios:
-	go test -v github.com/openshift/odo/tests/e2escenarios -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v
+	go test -v github.com/openshift/odo/tests/e2escenarios -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!

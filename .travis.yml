@@ -28,19 +28,19 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "main,login,component e2e tests"
+      name: "generic,login,component integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - travis_wait make test-main-e2e
+        - travis_wait make test-generic
         - travis_wait make test-odo-login-e2e
         - travis_wait make test-cmp-e2e
 
     - <<: *base-test
       stage: test
-      name: "java e2e tests"
+      name: "java e2e integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -50,7 +50,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "source,json e2e tests"
+      name: "source,json and config integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -58,6 +58,7 @@ jobs:
         - oc login -u developer
         - travis_wait make test-source-e2e
         - travis_wait make test-json-format-output
+        - travis_wait make test-odo-config
 
 # END Tests that are also in CircleCI
 
@@ -70,7 +71,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-service-e2e
+        - travis_wait make test-service-e2e
         - make test-link-e2e
         - travis_wait make test-cmp-sub-e2e
 
@@ -82,7 +83,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - make test-watch-e2e TIMEOUT=1200s
+        - make test-watch-e2e
 
     # test installation script on linux
     # - stage: test

@@ -6,7 +6,7 @@
 set -e
 echo "" > coverage.txt
 go test -i -race ./cmd/odo
-for d in $(go list ./... | grep -v vendor | grep -v tests/e2e | grep -v testingutil); do
+for d in $(go list ./... | grep -v vendor | grep -v tests | grep -v testingutil); do
     # For watch related tests, race check causes issue so disabling them here as race is already tested in other tests when used with `-coverprofile=profile.out`
     if [ "$d" = "github.com/openshift/odo/pkg/component" ]; then
         go test -coverprofile=profile.out -covermode=atomic $d

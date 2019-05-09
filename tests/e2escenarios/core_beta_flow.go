@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift/odo/tests/e2escenarios/helper"
+	"github.com/openshift/odo/tests/helper"
 )
 
 var _ = Describe("Core beta flow", func() {
@@ -33,12 +33,12 @@ var _ = Describe("Core beta flow", func() {
 		oc = helper.NewOcRunner("oc")
 		odo = "odo"
 
-		project = oc.CreateRandProject()
+		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 	})
 
 	AfterEach(func() {
-		oc.DeleteProject(project)
+		helper.DeleteProject(project)
 		helper.DeleteDir(context)
 	})
 
