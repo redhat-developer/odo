@@ -554,7 +554,8 @@ func componentTests(componentCmdPrefix string) {
 						appName := "nodejs-push-test"
 						cmpName := "nodejs"
 						helper.CopyExample(filepath.Join("source", "nodejs"), context)
-
+						helper.CmdShouldPass("pwd")
+						helper.CmdShouldPass("ls -la")
 						helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --project " + project)
 
 						// component doesn't exist yet so attempt to only push source should fail
@@ -587,6 +588,9 @@ func componentTests(componentCmdPrefix string) {
 						cmpName := "nodejs-push-atonce"
 						helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
+						helper.CmdShouldPass("pwd")
+						helper.CmdShouldPass("ls -la")
+
 						helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --project " + project)
 
 						// Push only config and see that the component is created but wothout any source copied
@@ -615,6 +619,8 @@ func componentTests(componentCmdPrefix string) {
 						appName := "nodejs-push-context-test"
 						cmpName := "nodejs"
 						helper.CopyExample(filepath.Join("source", "nodejs"), context)
+						helper.CmdShouldPass("pwd")
+						helper.CmdShouldPass("ls -la " + context)
 
 						helper.CmdShouldPass("odo component create nodejs " + cmpName + " --context " + context + " --app " + appName + " --project " + project)
 						//TODO: verify that config was properly created
