@@ -553,6 +553,10 @@ func componentTests(componentCmdPrefix string) {
 					It("create local nodejs component and push source and code separately", func() {
 						appName := "nodejs-push-test"
 						cmpName := "nodejs"
+						helper.CmdShouldPass("ls -la")
+
+						helper.CmdShouldPass("ls -la /go/src/github.com/openshift/odo/tests/e2e/examples/source/nodejs")
+
 						helper.CopyExample(filepath.Join("source", "nodejs"), context)
 						helper.CmdShouldPass("pwd")
 						helper.CmdShouldPass("ls -la")
@@ -586,11 +590,13 @@ func componentTests(componentCmdPrefix string) {
 					It("create local nodejs component and push source and code at once", func() {
 						appName := "nodejs-push-test"
 						cmpName := "nodejs-push-atonce"
-						helper.CopyExample(filepath.Join("source", "nodejs"), context)
-
-						helper.CmdShouldPass("pwd")
 						helper.CmdShouldPass("ls -la")
 
+						helper.CmdShouldPass("ls -la /go/src/github.com/openshift/odo/tests/e2e/examples/source/nodejs")
+
+						helper.CopyExample(filepath.Join("source", "nodejs"), context)
+						helper.CmdShouldPass("pwd")
+						helper.CmdShouldPass("ls -la")
 						helper.CmdShouldPass("odo component create nodejs " + cmpName + " --app " + appName + " --project " + project)
 
 						// Push only config and see that the component is created but wothout any source copied
@@ -618,10 +624,13 @@ func componentTests(componentCmdPrefix string) {
 					It("create local nodejs component and push source and code separately", func() {
 						appName := "nodejs-push-context-test"
 						cmpName := "nodejs"
+						helper.CmdShouldPass("ls -la " + context)
+
+						helper.CmdShouldPass("ls -la /go/src/github.com/openshift/odo/tests/e2e/examples/source/nodejs")
+
 						helper.CopyExample(filepath.Join("source", "nodejs"), context)
 						helper.CmdShouldPass("pwd")
 						helper.CmdShouldPass("ls -la " + context)
-
 						helper.CmdShouldPass("odo component create nodejs " + cmpName + " --context " + context + " --app " + appName + " --project " + project)
 						//TODO: verify that config was properly created
 
