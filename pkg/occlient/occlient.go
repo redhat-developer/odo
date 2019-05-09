@@ -519,6 +519,9 @@ func (c *Client) SetCurrentProject(projectName string) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to switch to %s project", projectName)
 	}
+
+	// we set the current namespace to the current project as well
+	c.Namespace = projectName
 	return nil
 }
 

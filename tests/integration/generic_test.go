@@ -155,6 +155,39 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
+	Context("project deletion", func() {
+		var originalDir string
+
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+
+		JustAfterEach(func() {
+			helper.Chdir(originalDir)
+			os.RemoveAll(context)
+		})
+		It("be able to delete two project one after the other", func() {
+			project1 := helper.CreateRandProject()
+			project2 := helper.CreateRandProject()
+
+			helper.DeleteProject(project2)
+			helper.DeleteProject(project1)
+		})
+
+		It("be able to delete three project one after the other in opposite order", func() {
+			project1 := helper.CreateRandProject()
+			project2 := helper.CreateRandProject()
+			project3 := helper.CreateRandProject()
+
+			helper.DeleteProject(project1)
+			helper.DeleteProject(project2)
+			helper.DeleteProject(project3)
+
+		})
+	})
+
 	Context("validate odo version cmd with other major components version", func() {
 		It("should show the version of odo major components", func() {
 			odoVersion := helper.CmdShouldPass("odo", "version")
