@@ -1335,7 +1335,7 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatc
 		if err != nil {
 			return errors.Wrapf(err, "unable to unmarshal dc")
 		}
-		glog.V(4).Infof("updatedDc Spec.Template: %v, not matching currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
+		glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
 	}
 
 	// We use the currentDC + 1 for the next revision.. We do NOT use the updated DC (see above code)

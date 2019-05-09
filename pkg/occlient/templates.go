@@ -31,14 +31,6 @@ type SupervisorDUpdateParams struct {
 	resourceRequirements *corev1.ResourceRequirements
 }
 
-type GitDeploymentConfigUpdateParams struct {
-	existingDc           *appsv1.DeploymentConfig
-	commonObjectMeta     metav1.ObjectMeta
-	containerPorts       []corev1.ContainerPort
-	envVars              []corev1.EnvVar
-	resourceRequirements *corev1.ResourceRequirements
-}
-
 // generateSupervisordDeploymentConfig generates dc for local and binary components
 // Parameters:
 //	commonObjectMeta: Contains annotations and labels for dc
@@ -162,11 +154,11 @@ func updateSupervisorDeploymentConfig(updateParams SupervisorDUpdateParams) apps
 
 	dc.ObjectMeta = updateParams.commonObjectMeta
 
-	for i := range dc.Spec.Template.Spec.Containers {
-		dc.Spec.Template.Spec.Containers[i].Name = updateParams.commonObjectMeta.Name
-		dc.Spec.Template.Spec.Containers[i].Ports = updateParams.commonImageMeta.Ports
-		dc.Spec.Template.Spec.Containers[i].Env = updateParams.envVar
-		dc.Spec.Template.Spec.Containers[i].EnvFrom = updateParams.envFrom
+	if len(dc.Spec.Template.Spec.Containers) > 0 {
+		dc.Spec.Template.Spec.Containers[0].Name = updateParams.commonObjectMeta.Name
+		dc.Spec.Template.Spec.Containers[0].Ports = updateParams.commonImageMeta.Ports
+		dc.Spec.Template.Spec.Containers[0].Env = updateParams.envVar
+		dc.Spec.Template.Spec.Containers[0].EnvFrom = updateParams.envFrom
 	}
 
 	containerIndex := -1
