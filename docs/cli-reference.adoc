@@ -1,4 +1,4 @@
-= Overview of the Odo (OpenShift Do) CLI Structure
+= Overview of the `odo` CLI Structure
 
 ___________________
 Example application
@@ -15,8 +15,8 @@ ___________________
   odo url create
 ----
 
-Odo (OpenShift Do) is a CLI tool for running OpenShift applications in a
-fast and automated matter. Odo reduces the complexity of deployment by
+`odo` is a CLI tool for running OpenShift applications in a
+fast and automated matter. `odo` reduces the complexity of deployment by
 adding iterative development without the worry of deploying your source
 code.
 
