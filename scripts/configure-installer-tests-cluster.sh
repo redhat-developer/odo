@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 # Setup to find nessasary data from cluster setup
 ## Constants
 HTPASSWD_FILE="./htpass"
@@ -8,6 +9,8 @@ HTPASSWD_SECRET="htpasswd-secret"
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
 KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
+# Default values
+OC_STABLE_LOGIN="false"
 # Exported to current env
 export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
@@ -95,14 +98,14 @@ for i in {1..40}; do
             sleep 2
         done
         # If `oc whoami` never failed, break out trying to login again
-        if [ ! -z $OC_STABLE_LOGIN ] && [ $OC_STABLE_LOGIN == "true" ]; then
+        if [ $OC_STABLE_LOGIN == "true" ]; then
             break
         fi
     fi
     sleep 3
 done
 
-if [ -z $OC_STABLE_LOGIN ] || [ $OC_STABLE_LOGIN == "false" ]; then
+if [ $OC_STABLE_LOGIN == "false" ]; then
     echo "Failed to login as developer"
     exit 1
 fi
