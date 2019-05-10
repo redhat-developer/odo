@@ -1471,7 +1471,7 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 //  isCreatePVC bool used to indicate if a new supervisorD PVC should be created during the update
 // Returns:
 //	errors if any or nil
-func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool, isCreatePVC bool) error {
+func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool, createPVC bool) error {
 
 	existingCmpContainer, err := FindContainer(ucp.ExistingDC.Spec.Template.Spec.Containers, ucp.CommonObjectMeta.Name)
 	if err != nil {
@@ -1543,7 +1543,10 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 	}
 
 	var dc appsv1.DeploymentConfig
-	if isCreatePVC {
+	// if createPVC is true then we need to create a supervisorD volume and generate a new deployment config
+	// needed for update from git to local/binary components
+	// if false, we just update the current deployment config
+	if createPVC {
 		// Generate the SupervisorD Config
 		dc = generateSupervisordDeploymentConfig(
 			ucp.CommonObjectMeta,
