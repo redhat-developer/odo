@@ -85,6 +85,16 @@ jobs:
         - oc login -u developer
         - make test-watch-e2e
 
+    - <<: *base-test
+      stage: test
+      name: "Storage e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - oc login -u developer
+        - make test-storage-e2e
+
     # test installation script on linux
     # - stage: test
     #   services:

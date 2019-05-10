@@ -75,7 +75,7 @@ var _ = Describe("odojsonoutput", func() {
 
 			// odo storage list -o json
 			actualSrorageList := helper.CmdShouldPass("odo", "storage", "list", "-o", "json")
-			desiredSrorageList := `{"kind":"List","apiVersion":"odo.openshift.io/v1aplha1","metadata":{},"items":[{"kind":"Storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi"},"status":{"path":"/opt/app-root/src/storage/"}}]}`
+			desiredSrorageList := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi"},"status":{"path":"/opt/app-root/src/storage/"}}]}`
 			Expect(desiredSrorageList).Should(MatchJSON(actualSrorageList))
 		})
 	})
