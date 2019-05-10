@@ -61,6 +61,11 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
+	// this to set the project in the file and runtime
+	err = project.SetCurrent(pdo.Context.Client, pdo.projectName)
+	if err != nil {
+		return
+	}
 	err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
 	if err != nil {
 		return err
