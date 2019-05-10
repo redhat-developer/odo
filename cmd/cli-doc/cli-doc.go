@@ -1,14 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
+	"os"
+
 	"github.com/openshift/odo/pkg/odo/cli"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"os"
 )
 
 /*
@@ -20,44 +19,60 @@ Use this to script to generate the documentation needed.
 
 // Uses portions of the help / cmd outputter in cobra13 as part of a CLI reference guide and outputs each command
 func referenceCommandFormatter(command *cobra.Command) string {
-	return fmt.Sprintf(`## %s
 
+	// Get length
+
+	var spacer string
+	for i := 0; i < len(command.Name()); i++ {
+		spacer = spacer + "~"
+	}
+
+	return fmt.Sprintf(`[[%s]]
+%s
 %s
 
-> Example using %s
-
+[source,sh]
+----
 %s
+----
 
+_________________
+Example using %s
+_________________
+
+[source,sh]
+----
+%s
+----
 
 %s
 
 `,
 		command.Name(),
-		"`"+command.Use+"`",
 		command.Name(),
-		"```sh\n"+command.Example+"\n```",
+		spacer,
+		command.Use,
+		command.Name(),
+		command.Example,
 		command.Long)
 }
 
 // This prints out the CLI reference
 func referencePrinter(command *cobra.Command, level int) string {
 
-	// List each command
-	var commandListTable [][]string
+	// Table generation
+	commandListTable := `
+.List of Commands
+[width="100%",cols="21%,79%",options="header",]
+|===
+| Name | Description
+
+`
 	for _, subcommand := range command.Commands() {
-		name := fmt.Sprintf("[%s](#%s)", subcommand.Name(), subcommand.Name())
-		commandListTable = append(commandListTable, []string{name, subcommand.Short})
+		commandListTable = commandListTable + fmt.Sprintf("| link:#%s[%s]\n| %s\n\n", subcommand.Name(), subcommand.Name(), subcommand.Short)
 	}
 
-	// Create a "table" for listing each command
-	tableOutput := new(bytes.Buffer)
-	table := tablewriter.NewWriter(tableOutput)
-	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-	table.SetCenterSeparator("|")
-	table.SetHeader([]string{"Name", "Description"})
-	table.SetColWidth(10000)
-	table.AppendBulk(commandListTable)
-	table.Render() // Send output to writer
+	commandListTable = commandListTable + "|==="
 
 	// Create documentation for each command
 	var commandOutput string
@@ -66,30 +81,40 @@ func referencePrinter(command *cobra.Command, level int) string {
 	}
 
 	// The main markdown "template" for everything
-	return fmt.Sprintf(`# Overview of the Odo (OpenShift Do) CLI Structure
+	return fmt.Sprintf(`= Overview of the Odo (OpenShift Do) CLI Structure
 
-> Example application
+___________________
+Example application
+___________________
 
+[source,sh]
+----
 %s 
+----
 
 %s
 
-# Syntax
-
-#### List of Commands
-
-%s
-
-#### CLI Structure
+[[syntax]]
+Syntax
+------
 
 %s
+
+[[cli-structure]]
+CLI Structure
++++++++++++++
+
+[source,sh]
+----
+%s
+----
 
 %s
 `,
-		"```sh\n"+command.Example+"\n```",
+		command.Example,
 		command.Long,
-		tableOutput.String(),
-		"```sh\n"+fmt.Sprint(commandPrinter(command, 0))+"\n```",
+		commandListTable,
+		fmt.Sprint(commandPrinter(command, 0)),
 		commandOutput)
 }
 
