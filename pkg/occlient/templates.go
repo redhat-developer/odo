@@ -148,6 +148,8 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 	return dc
 }
 
+// updateSupervisorDeploymentConfig updates the deploymentConfig during push
+// updateParams are the parameters used during the update
 func updateSupervisorDeploymentConfig(updateParams SupervisorDUpdateParams) appsv1.DeploymentConfig {
 
 	dc := *updateParams.existingDc
@@ -159,18 +161,9 @@ func updateSupervisorDeploymentConfig(updateParams SupervisorDUpdateParams) apps
 		dc.Spec.Template.Spec.Containers[0].Ports = updateParams.commonImageMeta.Ports
 		dc.Spec.Template.Spec.Containers[0].Env = updateParams.envVar
 		dc.Spec.Template.Spec.Containers[0].EnvFrom = updateParams.envFrom
-	}
 
-	containerIndex := -1
-	if updateParams.resourceRequirements != nil {
-		for index, container := range dc.Spec.Template.Spec.Containers {
-			if container.Name == updateParams.commonObjectMeta.Name {
-				containerIndex = index
-				break
-			}
-		}
-		if containerIndex != -1 {
-			dc.Spec.Template.Spec.Containers[containerIndex].Resources = *updateParams.resourceRequirements
+		if updateParams.resourceRequirements != nil && dc.Spec.Template.Spec.Containers[0].Name == updateParams.commonObjectMeta.Name {
+			dc.Spec.Template.Spec.Containers[0].Resources = *updateParams.resourceRequirements
 		}
 	}
 

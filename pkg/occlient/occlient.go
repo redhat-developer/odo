@@ -1467,7 +1467,8 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 // Parameters:
 //	commonObjectMeta: dc meta object
 //	componentImageType: type of builder image
-//	isToLocal: bool used to indicate if component is to be updated to local in which case a source backup dir will be injected into compoennt env
+//	isToLocal: bool used to indicate if component is to be updated to local in which case a source backup dir will be injected into component env
+//  isCreatePVC bool used to indicate if a new supervisorD PVC should be created during the update
 // Returns:
 //	errors if any or nil
 func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool, isCreatePVC bool) error {
