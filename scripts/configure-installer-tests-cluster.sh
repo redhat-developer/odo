@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 # Setup to find nessasary data from cluster setup
 ## Constants
 HTPASSWD_FILE="./htpass"
@@ -8,6 +9,8 @@ HTPASSWD_SECRET="htpasswd-secret"
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
 KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
+# Default values
+OC_STABLE_LOGIN="false"
 # Exported to current env
 export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
@@ -77,21 +80,37 @@ spec:
         name: ${HTPASSWD_SECRET}
 EOF
 
-# Login as developer and setup project
+# Login as developer and check for stable server
 for i in {1..40}; do
+    # Try logging in as developer
     oc login -u developer -p $USERPASS &> /dev/null
     if [ $? -eq 0 ]; then
-	OC_LOGIN_SUCCESS="true"
-        break
+        # If login succeeds, assume success
+	    OC_STABLE_LOGIN="true"
+        # Attempt failure of `oc whoami`
+        for j in {1..25}; do
+            oc whoami &> /dev/null
+            if [ $? -ne 0 ]; then
+                # If `oc whoami` fails, assume fail and break out of trying `oc whoami`
+                OC_STABLE_LOGIN="false"
+                break
+            fi
+            sleep 2
+        done
+        # If `oc whoami` never failed, break out trying to login again
+        if [ $OC_STABLE_LOGIN == "true" ]; then
+            break
+        fi
     fi
     sleep 3
 done
 
-if [ -z $OC_LOGIN_SUCCESS ]; then
+if [ $OC_STABLE_LOGIN == "false" ]; then
     echo "Failed to login as developer"
     exit 1
 fi
 
+# Setup project
 oc new-project myproject
 sleep 4
 oc version
