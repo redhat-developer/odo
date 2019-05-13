@@ -22,6 +22,15 @@ type CommonImageMeta struct {
 	Ports     []corev1.ContainerPort
 }
 
+type SupervisorDUpdateParams struct {
+	existingDc           *appsv1.DeploymentConfig
+	commonObjectMeta     metav1.ObjectMeta
+	commonImageMeta      CommonImageMeta
+	envVar               []corev1.EnvVar
+	envFrom              []corev1.EnvFromSource
+	resourceRequirements *corev1.ResourceRequirements
+}
+
 // generateSupervisordDeploymentConfig generates dc for local and binary components
 // Parameters:
 //	commonObjectMeta: Contains annotations and labels for dc
@@ -136,6 +145,28 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 			dc.Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
 		}
 	}
+	return dc
+}
+
+// updateSupervisorDeploymentConfig updates the deploymentConfig during push
+// updateParams are the parameters used during the update
+func updateSupervisorDeploymentConfig(updateParams SupervisorDUpdateParams) appsv1.DeploymentConfig {
+
+	dc := *updateParams.existingDc
+
+	dc.ObjectMeta = updateParams.commonObjectMeta
+
+	if len(dc.Spec.Template.Spec.Containers) > 0 {
+		dc.Spec.Template.Spec.Containers[0].Name = updateParams.commonObjectMeta.Name
+		dc.Spec.Template.Spec.Containers[0].Ports = updateParams.commonImageMeta.Ports
+		dc.Spec.Template.Spec.Containers[0].Env = updateParams.envVar
+		dc.Spec.Template.Spec.Containers[0].EnvFrom = updateParams.envFrom
+
+		if updateParams.resourceRequirements != nil && dc.Spec.Template.Spec.Containers[0].Name == updateParams.commonObjectMeta.Name {
+			dc.Spec.Template.Spec.Containers[0].Resources = *updateParams.resourceRequirements
+		}
+	}
+
 	return dc
 }
 

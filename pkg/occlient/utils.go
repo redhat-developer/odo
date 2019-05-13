@@ -2,7 +2,6 @@ package occlient
 
 import (
 	"fmt"
-
 	"github.com/golang/glog"
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsutil "github.com/openshift/origin/pkg/apps/util"
