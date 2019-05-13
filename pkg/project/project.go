@@ -69,21 +69,16 @@ func DescribeProjects(client *occlient.Client) (ProjectList, error) {
 	return getMachineReadableFormatForList(projects), nil
 }
 
-// Checks whether a project with the given name exists or not
+// Exists Checks whether a project with the given name exists or not
 // projectName is the project name to perform check for
 // The first returned parameter is a bool indicating if a project with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(client *occlient.Client, projectName string) (bool, error) {
-	projects, err := client.GetProjectNames()
-	if err != nil {
-		return false, errors.Wrap(err, "unable to get the project list")
+	project, err := client.GetProject(projectName)
+	if err != nil || project == nil {
+		return false, err
 	}
-	for _, project := range projects {
-		if project == projectName {
-			return true, nil
-		}
-	}
-	return false, nil
+	return true, nil
 }
 
 func GetMachineReadableFormat(projectName string, isActive bool, apps []string) Project {

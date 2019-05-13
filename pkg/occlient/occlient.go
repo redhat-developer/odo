@@ -470,6 +470,10 @@ func (c *Client) GetProjectNames() ([]string, error) {
 	return projectNames, nil
 }
 
+func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
+	return c.projectClient.Projects().Get(projectName, metav1.GetOptions{})
+}
+
 // CreateNewProject creates project with given projectName
 func (c *Client) CreateNewProject(projectName string, wait bool) error {
 	projectRequest := &projectv1.ProjectRequest{
