@@ -15,7 +15,7 @@ ___________________
   odo url create 
 ----
 
-(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated matter. odo reduces the complexity of deployment by adding iterative development without the worry of deploying your source code. 
+(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated matter. Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code. 
 
 Find more information at https://github.com/openshift/odo
 
