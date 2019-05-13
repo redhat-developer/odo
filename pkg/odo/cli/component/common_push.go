@@ -102,7 +102,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	return nil
 }
 
-// CommonResolve completes the push options as needed
+// ResolveProject completes the push options as needed
 func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 
 	// check if project exist

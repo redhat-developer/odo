@@ -235,7 +235,7 @@ func resolveComponent(command *cobra.Command, lci *config.LocalConfigInfo, conte
 	return cmp
 }
 
-// Update returns a new context updated from config file
+// UpdatedContext returns a new context updated from config file
 func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error) {
 	lci, err := getValidConfig(context.command)
 	return newContext(context.command, true), lci, err
