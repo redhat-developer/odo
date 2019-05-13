@@ -138,6 +138,10 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		if fcc.Name() == "app" && len(pfs) > 0 {
 			return lci, nil
 		}
+		// Case 4 : Check if fcc is catalog and request is to list
+		if fcc.Name() == "catalog" && p.Name() == "list" {
+			return lci, nil
+		}
 		if fcc.Name() == "component" && len(pfs) > 0 && len(afs) > 0 {
 			return lci, nil
 		}
