@@ -44,6 +44,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	oauthv1client "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	// utilities
@@ -471,7 +472,21 @@ func (c *Client) GetProjectNames() ([]string, error) {
 }
 
 func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
-	return c.projectClient.Projects().Get(projectName, metav1.GetOptions{})
+	prj, err := c.projectClient.Projects().Get(projectName, metav1.GetOptions{})
+	if err != nil {
+		istatus, ok := err.(kerrors.APIStatus)
+		if ok {
+			status := istatus.Status()
+			if status.Reason == metav1.StatusReasonNotFound {
+				return nil, nil
+			}
+		} else {
+			return nil, err
+		}
+
+	}
+	return prj, err
+
 }
 
 // CreateNewProject creates project with given projectName

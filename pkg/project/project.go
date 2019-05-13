@@ -78,6 +78,7 @@ func Exists(client *occlient.Client, projectName string) (bool, error) {
 	if err != nil || project == nil {
 		return false, err
 	}
+
 	return true, nil
 }
 
