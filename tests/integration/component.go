@@ -214,7 +214,7 @@ func componentTests(args ...string) {
 			})
 		})
 
-		Context("Flag --context is used", func() {
+		Context("when --context is used", func() {
 			// don't need to switch to any dir here, as this test should use --context flag
 			It("create local nodejs component and push source and code separately", func() {
 				appName := "nodejs-push-context-test"
@@ -406,7 +406,6 @@ func componentTests(args ...string) {
 	*/
 
 	Context("odo component delete, list and describe", func() {
-
 		appName := "app"
 		cmpName := "nodejs"
 
