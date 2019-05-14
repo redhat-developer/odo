@@ -49,6 +49,11 @@ func (o *DeleteOptions) Validate() (err error) {
 	if !util.CheckOutputFlag(o.OutputFlag) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
+
+	exist, err := application.Exists(o.appName, o.Client)
+	if !exist {
+		return fmt.Errorf("%s app does not exists", o.appName)
+	}
 	return nil
 }
 

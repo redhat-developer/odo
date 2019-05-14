@@ -36,6 +36,21 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	return appNames, nil
 }
 
+// Exists check whether given app exist or not
+func Exists(app string, client *occlient.Client) (bool, error) {
+
+	appList, err := List(client)
+	if err != nil {
+		return false, err
+	}
+	for _, appName := range appList {
+		if appName == app {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // Delete deletes the given application
 func Delete(client *occlient.Client, name string) error {
 	glog.V(4).Infof("Deleting application %s", name)
