@@ -191,8 +191,8 @@ func componentTests(args ...string) {
 			})
 
 			It("should successfully create config and push code in one create command with --now", func() {
-				appName := "nodejs-create-push-test-now"
-				cmpName := "nodejs-create-push-atonce-now"
+				appName := "nodejs-create-now-test"
+				cmpName := "nodejs-push-atonce"
 				helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
 				helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--now")...)
