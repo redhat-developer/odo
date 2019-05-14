@@ -166,6 +166,52 @@ func componentTests(args ...string) {
 				)
 				Expect(remoteCmdExecPass).To(Equal(true))
 			})
+
+		})
+
+		Context("Test odo push with --now flag during creation", func() {
+			var originalDir string
+			BeforeEach(func() {
+				context = helper.CreateNewContext()
+			})
+
+			AfterEach(func() {
+				helper.DeleteProject(project)
+				helper.DeleteDir(context)
+			})
+
+			JustBeforeEach(func() {
+				project = helper.CreateRandProject()
+				originalDir = helper.Getwd()
+				helper.Chdir(context)
+			})
+
+			JustAfterEach(func() {
+				helper.Chdir(originalDir)
+			})
+
+			It("should successfully create config and push code in one create command with --now", func() {
+				appName := "nodejs-create-push-test-now"
+				cmpName := "nodejs-create-push-atonce-now"
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+				helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--now")...)
+
+				oc.VerifyCmpExists(cmpName, appName, project)
+				remoteCmdExecPass := oc.CheckCmdOpInRemoteCmpPod(
+					cmpName,
+					appName,
+					project,
+					[]string{"ls", "-la", "/tmp/src/package.json"},
+					func(cmdOp string, err error) bool {
+						if err != nil {
+							return false
+						}
+						return true
+					},
+				)
+				Expect(remoteCmdExecPass).To(Equal(true))
+			})
 		})
 
 		Context("Flag --context is used", func() {
