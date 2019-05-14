@@ -477,7 +477,8 @@ func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
 		istatus, ok := err.(kerrors.APIStatus)
 		if ok {
 			status := istatus.Status()
-			if status.Reason == metav1.StatusReasonNotFound {
+			// the
+			if status.Reason == metav1.StatusReasonNotFound || status.Reason == metav1.StatusReasonForbidden {
 				return nil, nil
 			}
 		} else {

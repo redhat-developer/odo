@@ -260,20 +260,22 @@ func componentTests(args ...string) {
 	})
 
 	FContext("Creating Component even in new project", func() {
+		var project string
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
+			project = helper.RandString(10)
 		})
 
 		JustAfterEach(func() {
 			os.RemoveAll(context)
+			helper.DeleteProject(project)
 		})
 		It("should create component", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", "new-project", "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", project, "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", "push", "--context", context, "-v4")
-			oc.SwitchProject("new-project")
+			oc.SwitchProject(project)
 			projectList := helper.CmdShouldPass("odo", "project", "list")
-			Expect(projectList).To(ContainSubstring("new-project"))
-			helper.DeleteProject("new-project")
+			Expect(projectList).To(ContainSubstring(project))
 		})
 	})
 
