@@ -1,4 +1,4 @@
-= Overview of the `odo` CLI Structure
+= Overview of the Odo (OpenShift Do) CLI Structure
 
 ___________________
 Example application
@@ -12,13 +12,10 @@ ___________________
   odo push
   
   # Accessing your Node.js component
-  odo url create
+  odo url create 
 ----
 
-`odo` is a CLI tool for running OpenShift applications in a
-fast and automated matter. `odo` reduces the complexity of deployment by
-adding iterative development without the worry of deploying your source
-code.
+(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated matter. Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code. 
 
 Find more information at https://github.com/openshift/odo
 
@@ -26,68 +23,82 @@ Find more information at https://github.com/openshift/odo
 Syntax
 ------
 
-[[list-of-commands]]
-List of Commands
-++++++++++++++++
 
+.List of Commands
 [width="100%",cols="21%,79%",options="header",]
-|=======================================================================
-|NAME |DESCRIPTION
-|link:#app[app] |Perform application operations (delete, describe, list)
+|===
+| Name | Description
 
-|link:#catalog[catalog] |Catalog related operations (describe, list,
-search)
+| link:#app[app]
+| Perform application operations (delete, describe, list)
 
-|link:#component[component] |Components of an application (create,
-delete, describe, get, link, list, log, push, unlink, update, watch)
+| link:#catalog[catalog]
+| Catalog related operations (describe, list, search)
 
-|link:#config[config] |Modifies configuration settings (set, unset,
-view)
+| link:#component[component]
+| Components of an application (create, delete, describe, get, link, list, log, push, unlink, update, watch)
 
-|link:#create[create] |Create a new component
+| link:#config[config]
+| Modifies configuration settings (set, unset, view)
 
-|link:#delete[delete] |Delete an existing component
+| link:#create[create]
+| Create a new component
 
-|link:#describe[describe] |Describe the given component
+| link:#delete[delete]
+| Delete an existing component
 
-|link:#link[link] |Link component to a service or component
+| link:#describe[describe]
+| Describe the given component
 
-|link:#list[list] |List all components in the current application
+| link:#link[link]
+| Link component to a service or component
 
-|link:#log[log] |Retrieve the log for the given component
+| link:#list[list]
+| List all components in the current application
 
-|link:#login[login] |Login to cluster
+| link:#log[log]
+| Retrieve the log for the given component
 
-|link:#logout[logout] |Log out of the current OpenShift session
+| link:#login[login]
+| Login to cluster
 
-|link:#preference[preference] |Modifies preference settings (set, unset,
-view)
+| link:#logout[logout]
+| Log out of the current OpenShift session
 
-|link:#project[project] |Perform project operations (create, delete,
-get, list, set)
+| link:#preference[preference]
+| Modifies preference settings (set, unset, view)
 
-|link:#push[push] |Push source code to a component
+| link:#project[project]
+| Perform project operations (create, delete, get, list, set)
 
-|link:#service[service] |Perform service catalog operations (create,
-delete, list)
+| link:#push[push]
+| Push source code to a component
 
-|link:#storage[storage] |Perform storage operations (create, delete,
-list, mount, unmount)
+| link:#service[service]
+| Perform service catalog operations (create, delete, list)
 
-|link:#unlink[unlink] |Unlink component to a service or component
+| link:#storage[storage]
+| Perform storage operations (create, delete, list, mount, unmount)
 
-|link:#update[update] |Update the source code path of a component
+| link:#unlink[unlink]
+| Unlink component to a service or component
 
-|link:#url[url] |Expose component to the outside world (create, delete,
-list)
+| link:#update[update]
+| Update the source code path of a component
 
-|link:#utils[utils] |Utilities for terminal commands and modifying Odo
-configurations (terminal)
+| link:#url[url]
+| Expose component to the outside world (create, delete, list)
 
-|link:#version[version] |Print the client version information
+| link:#utils[utils]
+| Utilities for terminal commands and modifying Odo configurations (terminal)
 
-|link:#watch[watch] |Watch for changes, update component on change
-|=======================================================================
+| link:#version[version]
+| Print the client version information
+
+| link:#watch[watch]
+| Watch for changes, update component on change
+
+|===
 
 [[cli-structure]]
 CLI Structure
@@ -120,7 +131,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         push --config --context --ignore --show-log --source : Push source code to a component
         unlink --app --component --context --port --project --wait : Unlink component to a service or component
         update --app --context --git --local --project --ref : Update the source code path of a component
-        watch --app --context --delay --ignore --project : Watch for changes, update component on change
+        watch --app --context --delay --ignore --project --show-log : Watch for changes, update component on change
     config : Modifies configuration settings (set, unset, view)
         set --context --env --force : Set a value in odo config file
         unset --context --env --force : Unset a value in odo config file
@@ -163,14 +174,18 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
     utils : Utilities for terminal commands and modifying Odo configurations (terminal)
         terminal : Add Odo terminal support to your development environment
     version --client : Print the client version information
-    watch --app --context --delay --ignore --project : Watch for changes, update component on change
+    watch --app --context --delay --ignore --project --show-log : Watch for changes, update component on change
+
 ----
 
 [[app]]
 app
 ~~~
 
-`app`
+[source,sh]
+----
+app
+----
 
 _________________
 Example using app
@@ -195,11 +210,14 @@ Performs application operations related to your OpenShift project.
 catalog
 ~~~~~~~
 
-`catalog [options]`
+[source,sh]
+----
+catalog [options]
+----
 
-_____________________
+_________________
 Example using catalog
-_____________________
+_________________
 
 [source,sh]
 ----
@@ -225,11 +243,14 @@ Catalog related operations
 component
 ~~~~~~~~~
 
-`component`
+[source,sh]
+----
+component
+----
 
-_______________________
+_________________
 Example using component
-_______________________
+_________________
 
 [source,sh]
 ----
@@ -239,15 +260,20 @@ create
   See sub-commands individually for more examples
 ----
 
+
+
 [[config]]
 config
 ~~~~~~
 
-`config`
+[source,sh]
+----
+config
+----
 
-____________________
+_________________
 Example using config
-____________________
+_________________
 
 [source,sh]
 ----
@@ -284,32 +310,40 @@ ____________________
   odo config unset --env KAFKA_HOST --env KAFKA_PORT
 ----
 
-Modifies Odo specific configuration settings within the config file.
+Modifies odo specific configuration settings within the config file. 
 
-Available Local Parameters: Application - Application is the name of
-application the component needs to be part of CPU - The minimum and
-maximum CPU a component can consume Ignore - Consider the .odoignore
-file for push and watch MaxCPU - The maximum cpu a component can consume
-MaxMemory - The maximum memory a component can consume Memory - The
-minimum and maximum Memory a component can consume MinCPU - The minimum
-cpu a component can consume MinMemory - The minimum memory a component
-is provided Name - The name of the component Ports - Ports to be opened
-in the component Project - Project is the name of the project the
-component is part of Ref - Git ref to use for creating component from
-git source SourceLocation - The path indicates the location of binary
-file or git source SourceType - Type of component source -
-git/binary/local Type - The type of component Url - Url to access the
-compoent
+
+Available Local Parameters:
+Application - Application is the name of application the component needs to be part of
+CPU - The minimum and maximum CPU a component can consume
+Ignore - Consider the .odoignore file for push and watch
+MaxCPU - The maximum CPU a component can consume
+MaxMemory - The maximum memory a component can consume
+Memory - The minimum and maximum memory a component can consume
+MinCPU - The minimum CPU a component can consume
+MinMemory - The minimum memory a component is provided
+Name - The name of the component
+Ports - Ports to be opened in the component
+Project - Project is the name of the project the component is part of
+Ref - Git ref to use for creating component from git source
+SourceLocation - The path indicates the location of binary file or git source
+SourceType - Type of component source - git/binary/local
+Type - The type of component
+Url - URL to access the component
+
 
 [[create]]
 create
 ~~~~~~
 
-`create <component_type> [component_name] [flags]`
+[source,sh]
+----
+create <component_type> [component_name] [flags]
+----
 
-____________________
+_________________
 Example using create
-____________________
+_________________
 
 [source,sh]
 ----
@@ -326,7 +360,7 @@ ____________________
   odo create openshift/nodejs:6 --context /nodejs-ex
   
   # Create new Wildfly component with binary named sample.war in './downloads' directory
-  odo create wildfly wildly --binary ./downloads/sample.war
+  odo create wildfly wildfly --binary ./downloads/sample.war
   
   # Create new Node.js component with source from remote git repository
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
@@ -336,37 +370,45 @@ ____________________
   
   # Create new Node.js git component while specifying a tag
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
-
-  # Create a new Node.js component of version 6 from the 'openshift' namespace
-  odo create openshift/nodejs:6 --local /nodejs-ex
-
-  # Create new Wildfly component with binary named sample.war in './downloads' directory
-  odo create wildfly wildfly --binary ./downloads/sample.war
-
+  
+  # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
+  odo create nodejs --port 8080,8100/tcp,9100/udp
+  
+  # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
+  odo create nodejs --env key=value,key1=value1
+  
+  # For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.md
+  odo create python --git https://github.com/openshift/django-ex.git
+  
+  # Passing memory limits
+  odo create nodejs --memory 150Mi
+  odo create nodejs --min-memory 150Mi --max-memory 300 Mi
+  
+  # Passing cpu limits
+  odo create nodejs --cpu 2
+  odo create nodejs --min-cpu 200m --max-cpu 2
 ----
 
-Create a configuration describing a component to be deployed on
-OpenShift.
+Create a configuration describing a component to be deployed on OpenShift. 
 
-If a component name is not provided, it'll be auto-generated.
+If a component name is not provided, it'll be auto-generated. 
 
-By default, builder images will be used from the current namespace. You
-can explicitly supply a namespace by using: odo create
-namespace/name:version If version is not specified by default, latest
-will be chosen as the version.
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest will be chosen as the version. 
 
-A full list of component types that can be deployed is available using:
-'odo catalog list'
+A full list of component types that can be deployed is available using: 'odo catalog list'
 
 [[delete]]
 delete
 ~~~~~~
 
-`delete <component_name>`
+[source,sh]
+----
+delete <component_name>
+----
 
-____________________
+_________________
 Example using delete
-____________________
+_________________
 
 [source,sh]
 ----
@@ -380,11 +422,14 @@ Delete an existing component.
 describe
 ~~~~~~~~
 
-`describe [component_name]`
+[source,sh]
+----
+describe [component_name]
+----
 
-______________________
+_________________
 Example using describe
-______________________
+_________________
 
 [source,sh]
 ----
@@ -398,11 +443,14 @@ Describe the given component.
 link
 ~~~~
 
-`link <service> --component [component] OR link <component> --component [component]`
+[source,sh]
+----
+link <service> --component [component] OR link <component> --component [component]
+----
 
-__________________
+_________________
 Example using link
-__________________
+_________________
 
 [source,sh]
 ----
@@ -424,42 +472,45 @@ __________________
 
 Link component to a service or component
 
-If the source component is not provided, the current active component is
-assumed. In both use cases, link adds the appropriate secret to the
-environment of the source component. The source component can then
-consume the entries of the secret as environment variables.
+If the source component is not provided, the current active component is assumed.
+In both use cases, link adds the appropriate secret to the environment of the source component. 
+The source component can then consume the entries of the secret as environment variables.
 
 For example:
 
-We have created a frontend application called 'frontend' using: odo
-create nodejs frontend
+We have created a frontend application called 'frontend' using:
+odo create nodejs frontend
 
-We've also created a backend application called 'backend' with port 8080
-exposed: odo create nodejs backend --port 8080
+We've also created a backend application called 'backend' with port 8080 exposed:
+odo create nodejs backend --port 8080
 
-We can now link the two applications: odo link backend --component
-frontend
+We can now link the two applications:
+odo link backend --component frontend
 
 Now the frontend has 2 ENV variables it can use:
-COMPONENT_BACKEND_HOST=backend-app COMPONENT_BACKEND_PORT=8080
+COMPONENT_BACKEND_HOST=backend-app
+COMPONENT_BACKEND_PORT=8080
 
-If you wish to use a database, we can use the Service Catalog and link
-it to our backend: odo service create dh-postgresql-apb --plan dev -p
-postgresql_user=luke -p postgresql_password=secret odo link
-dh-postgresql-apb
+If you wish to use a database, we can use the Service Catalog and link it to our backend:
+odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret
+odo link dh-postgresql-apb
 
-Now backend has 2 ENV variables it can use: DB_USER=luke
+Now backend has 2 ENV variables it can use:
+DB_USER=luke
 DB_PASSWORD=secret
 
 [[list]]
 list
 ~~~~
 
-`list`
+[source,sh]
+----
+list
+----
 
-__________________
+_________________
 Example using list
-__________________
+_________________
 
 [source,sh]
 ----
@@ -473,7 +524,10 @@ List all components in the current application.
 log
 ~~~
 
-`log [component_name]`
+[source,sh]
+----
+log [component_name]
+----
 
 _________________
 Example using log
@@ -491,11 +545,14 @@ Retrieve the log for the given component
 login
 ~~~~~
 
-`login`
+[source,sh]
+----
+login
+----
 
-___________________
+_________________
 Example using login
-___________________
+_________________
 
 [source,sh]
 ----
@@ -518,11 +575,14 @@ Login to cluster
 logout
 ~~~~~~
 
-`logout`
+[source,sh]
+----
+logout
+----
 
-____________________
+_________________
 Example using logout
-____________________
+_________________
 
 [source,sh]
 ----
@@ -536,11 +596,14 @@ Log out of the current OpenShift session
 preference
 ~~~~~~~~~~
 
-`preference`
+[source,sh]
+----
+preference
+----
 
-________________________
+_________________
 Example using preference
-________________________
+_________________
 
 [source,sh]
 ----
@@ -562,24 +625,27 @@ ________________________
   odo preference unset  Timeout
 ----
 
-Modifies Odo specific configuration settings within the global
-preference file.
+Modifies Odo specific configuration settings within the global preference file. 
 
-Available Parameters: NamePrefix - Default prefix is the current
-directory name. Use this value to set a default name prefix Timeout -
-Timeout (in seconds) for OpenShift server connection check
-UpdateNotification - Controls if an update notification is shown or not
-(true or false)
+
+Available Parameters:
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
+Timeout - Timeout (in seconds) for OpenShift server connection check
+UpdateNotification - Controls if an update notification is shown or not (true or false)
+
 
 [[project]]
 project
 ~~~~~~~
 
-`project [options]`
+[source,sh]
+----
+project [options]
+----
 
-_____________________
+_________________
 Example using project
-_____________________
+_________________
 
 [source,sh]
 ----
@@ -605,11 +671,14 @@ Perform project operations
 push
 ~~~~
 
-`push [component name]`
+[source,sh]
+----
+push [component name]
+----
 
-__________________
+_________________
 Example using push
-__________________
+_________________
 
 [source,sh]
 ----
@@ -629,11 +698,14 @@ Push source code to a component.
 service
 ~~~~~~~
 
-`service`
+[source,sh]
+----
+service
+----
 
-_____________________
+_________________
 Example using service
-_____________________
+_________________
 
 [source,sh]
 ----
@@ -653,11 +725,14 @@ Perform service catalog operations
 storage
 ~~~~~~~
 
-`storage`
+[source,sh]
+----
+storage
+----
 
-_____________________
+_________________
 Example using storage
-_____________________
+_________________
 
 [source,sh]
 ----
@@ -690,11 +765,14 @@ Perform storage operations
 unlink
 ~~~~~~
 
-`unlink <service> --component [component] OR unlink <component> --component [component]`
+[source,sh]
+----
+unlink <service> --component [component] OR unlink <component> --component [component]
+----
 
-____________________
+_________________
 Example using unlink
-____________________
+_________________
 
 [source,sh]
 ----
@@ -714,19 +792,21 @@ ____________________
   odo unlink backend --port 8080
 ----
 
-Unlink component or service from a component. For this command to be
-successful, the service or component needs to have been linked prior to
-the invocation using 'odo link'
+Unlink component or service from a component. 
+For this command to be successful, the service or component needs to have been linked prior to the invocation using 'odo link'
 
 [[update]]
 update
 ~~~~~~
 
-`update`
+[source,sh]
+----
+update
+----
 
-____________________
+_________________
 Example using update
-____________________
+_________________
 
 [source,sh]
 ----
@@ -752,7 +832,10 @@ Update the source code path of a component
 url
 ~~~
 
-`url`
+[source,sh]
+----
+url
+----
 
 _________________
 Example using url
@@ -777,20 +860,22 @@ _________________
   odo url list
 ----
 
-Expose component to the outside world.
+Expose component to the outside world. 
 
-The URLs that are generated using this command, can be used to access
-the deployed components from outside the cluster.
+The URLs that are generated using this command, can be used to access the deployed components from outside the cluster.
 
 [[utils]]
 utils
 ~~~~~
 
-`utils`
+[source,sh]
+----
+utils
+----
 
-___________________
+_________________
 Example using utils
-___________________
+_________________
 
 [source,sh]
 ----
@@ -799,6 +884,7 @@ ___________________
   
   # Zsh terminal PS1 support
   source <(odo utils terminal zsh)
+
 ----
 
 Utilities for terminal commands and modifying Odo configurations
@@ -807,11 +893,14 @@ Utilities for terminal commands and modifying Odo configurations
 version
 ~~~~~~~
 
-`version`
+[source,sh]
+----
+version
+----
 
-_____________________
+_________________
 Example using version
-_____________________
+_________________
 
 [source,sh]
 ----
@@ -825,11 +914,14 @@ Print the client version information
 watch
 ~~~~~
 
-`watch [component name]`
+[source,sh]
+----
+watch [component name]
+----
 
-___________________
+_________________
 Example using watch
-___________________
+_________________
 
 [source,sh]
 ----
@@ -841,3 +933,5 @@ ___________________
 ----
 
 Watch for changes, update component on change.
+
+
