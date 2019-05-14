@@ -471,6 +471,8 @@ func (c *Client) GetProjectNames() ([]string, error) {
 	return projectNames, nil
 }
 
+// GetProject returns project based on the name of the project.Errors related to
+// project not being found or forbidden are translated to nil project for compatibility
 func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
 	prj, err := c.projectClient.Projects().Get(projectName, metav1.GetOptions{})
 	if err != nil {
