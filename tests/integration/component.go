@@ -259,7 +259,7 @@ func componentTests(args ...string) {
 		})
 	})
 
-	FContext("Creating Component even in new project", func() {
+	Context("Creating Component even in new project", func() {
 		var project string
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
@@ -279,7 +279,7 @@ func componentTests(args ...string) {
 		})
 	})
 
-	FContext("when component is in the current directory and --project flag is used", func() {
+	Context("when component is in the current directory and --project flag is used", func() {
 
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
