@@ -154,7 +154,9 @@ func reconfigureCmdWithSubcmd(cmd *cobra.Command) {
 
 	var strs []string
 	for _, subcmd := range cmd.Commands() {
-		strs = append(strs, strings.Split(subcmd.Use, " ")[0])
+		if !subcmd.Hidden {
+			strs = append(strs, strings.Split(subcmd.Use, " ")[0])
+		}
 	}
 
 	cmd.Short += " (" + strings.Join(strs, ", ") + ")"
@@ -165,7 +167,9 @@ func reconfigureCmdWithSubcmd(cmd *cobra.Command) {
 func ShowSubcommands(cmd *cobra.Command, args []string) error {
 	var strs []string
 	for _, subcmd := range cmd.Commands() {
-		strs = append(strs, subcmd.Use)
+		if !subcmd.Hidden {
+			strs = append(strs, subcmd.Use)
+		}
 	}
 	return fmt.Errorf("Use one of available subcommands: %s", strings.Join(strs, ", "))
 }

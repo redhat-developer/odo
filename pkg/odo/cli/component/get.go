@@ -76,6 +76,10 @@ func NewCmdGet(name, fullName string) *cobra.Command {
 	}
 
 	componentGetCmd.Flags().BoolVarP(&o.componentShortFlag, "short", "q", false, "If true, display only the component name")
+
+	// Hide component get, as we only use this command for autocompletion
+	componentGetCmd.Hidden = true
+
 	// add --context flag
 	genericclioptions.AddContextFlag(componentGetCmd, &o.componentContext)
 
