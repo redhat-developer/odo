@@ -296,5 +296,14 @@ func componentTests(args ...string) {
 			output := helper.CmdShouldFail("odo", append(args, "create", "nodejs", "--project", project, "--env", "key=value,key1=value1")...)
 			Expect(output).To(ContainSubstring("this directory already contains a component"))
 		})
+
+		It("creates and pushes local nodejs component and then deletes --all", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--env", "key=value,key1=value1")...)
+			helper.CmdShouldPass("odo", append(args, "push")...)
+			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f")...)
+
+		})
 	})
+
 }

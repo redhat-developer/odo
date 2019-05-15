@@ -234,6 +234,11 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 
 }
 
+// DeleteConfigDir Deletes the config directory with the config file
+func (lci *LocalConfigInfo) DeleteConfigDir() error {
+	return os.RemoveAll(filepath.Dir(lci.Filename))
+}
+
 // IsSet uses reflection to get the parameter from the localconfig struct, currently
 // it only searches the componentSettings
 func (lci *LocalConfigInfo) IsSet(parameter string) bool {
