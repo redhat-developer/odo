@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -23,18 +24,20 @@ const DeleteRecommendedCommandName = "delete"
 
 var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'. 
 %[1]s frontend
+%[1]s frontend --all
   `)
 
 // DeleteOptions is a container to attach complete, validate and run pattern
 type DeleteOptions struct {
 	componentForceDeleteFlag bool
+	componentDeleteAllFlag   bool
 	componentContext         string
 	*ComponentOptions
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, "", &ComponentOptions{}}
+	return &DeleteOptions{false, false, "", &ComponentOptions{}}
 }
 
 // Complete completes log args
@@ -76,6 +79,24 @@ func (do *DeleteOptions) Run() (err error) {
 		return fmt.Errorf("Aborting deletion of component: %v", do.componentName)
 	}
 
+	if do.componentDeleteAllFlag {
+		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete local config for %v?", do.componentName)) {
+			cfg, err := config.NewLocalConfigInfo(do.componentContext)
+			if err != nil {
+				return err
+			}
+
+			err = cfg.DeleteConfigDir()
+			if err != nil {
+				return err
+			}
+
+			log.Successf("Config for the Component %s has been deleted", do.componentName)
+		} else {
+			return fmt.Errorf("Aborting deletion of config for component: %s", do.componentName)
+		}
+	}
+
 	return
 }
 
@@ -96,6 +117,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	}
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
+	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteAllFlag, "all", "a", false, "Delete component and local config")
 
 	// Add a defined annotation in order to appear in the help menu
 	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
