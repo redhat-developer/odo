@@ -2859,8 +2859,13 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
 func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string, globExps []string) error {
-	dest := filepath.Join(targetPath, filepath.Base(localPath))
-	glog.V(4).Infof("CopyFile arugments: localPath %s, dest %s, copyFiles %s, globalExps %s", localPath, dest, copyFiles, globExps)
+
+	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
+	// Linux based and thus: "\opt\app-root\src" would not work correctly.
+	dest := filepath.ToSlash(filepath.Join(targetPath, filepath.Base(localPath)))
+	targetPath = filepath.ToSlash(targetPath)
+
+	glog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, copyFiles %s, globalExps %s", localPath, dest, copyFiles, globExps)
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
 	go func() {
@@ -2900,7 +2905,11 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 	tarWriter := taro.NewWriter(writer)
 	defer tarWriter.Close()
 	srcPath = filepath.Clean(srcPath)
-	destPath = filepath.Clean(destPath)
+
+	// "ToSlash" is used as all containers within OpenShisft are Linux based
+	// and thus \opt\app-root\src would be an invalid path. Backward slashes
+	// are converted to forward.
+	destPath = filepath.ToSlash(filepath.Clean(destPath))
 
 	glog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
@@ -2968,6 +2977,13 @@ func tar(tw *taro.Writer, fileName string, destFile string) error {
 // recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
 func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, globExps []string) error {
 	glog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
+
+	// The destination is a LINUX container and thus we *must* use ToSlash in order
+	// to get the copying over done correctly..
+	destBase = filepath.ToSlash(destBase)
+	destFile = filepath.ToSlash(destFile)
+	glog.V(4).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
+
 	joinedPath := filepath.Join(srcBase, srcFile)
 	matchedPathsDir, err := filepath.Glob(joinedPath)
 	if err != nil {
