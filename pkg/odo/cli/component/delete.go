@@ -24,6 +24,7 @@ const DeleteRecommendedCommandName = "delete"
 
 var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'. 
 %[1]s frontend
+%[1]s frontend --all
   `)
 
 // DeleteOptions is a container to attach complete, validate and run pattern
