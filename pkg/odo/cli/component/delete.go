@@ -79,21 +79,22 @@ func (do *DeleteOptions) Run() (err error) {
 		return fmt.Errorf("Aborting deletion of component: %v", do.componentName)
 	}
 
-	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete local config for %v?", do.componentName)) {
-		cfg, err := config.NewLocalConfigInfo(do.componentContext)
-		if err != nil {
-			return err
+	if do.componentDeleteAllFlag {
+		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete local config for %v?", do.componentName)) {
+			cfg, err := config.NewLocalConfigInfo(do.componentContext)
+			if err != nil {
+				return err
+			}
+
+			err = cfg.DeleteConfigDir()
+			if err != nil {
+				return err
+			}
+
+			log.Successf("Config for the Component %s has been deleted", do.componentName)
+		} else {
+			return fmt.Errorf("Aborting deletion of config for component: %s", do.componentName)
 		}
-
-		err = cfg.DeleteConfigDir()
-		if err != nil {
-			return err
-		}
-
-		log.Successf("Config for the Component %s has been deleted", do.componentName)
-
-	} else {
-		return fmt.Errorf("Aborting deletion of config for component: %v", do.componentName)
 	}
 
 	return
