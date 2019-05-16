@@ -1,7 +1,9 @@
 package integration
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	//. "github.com/Benjamintf1/unmarshalledmatchers"
@@ -81,8 +83,7 @@ var _ = Describe("odojsonoutput", func() {
 	})
 
 	Context("odo machine readable output on project nodejs is deployed", func() {
-		// https://github.com/openshift/odo/pull/1634
-		/*It("should be able to list url", func() {
+		It("should be able to list url", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
 			helper.CmdShouldPass("odo", "url", "create", "myurl", "--port", "8080")
 			helper.CmdShouldPass("odo", "push")
@@ -100,6 +101,6 @@ var _ = Describe("odojsonoutput", func() {
 			// desiredProjectListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myproject","creationTimestamp":null},"spec":{"apps":["myapp"]},"status":{"active":false}},{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"apps":["myapp"]},"status":{"active":true}}]}`, project)
 			// Expect(desiredProjectListJSON).Should(MatchJSON(actualProjectListJSON))
 
-		})*/
+		})
 	})
 })

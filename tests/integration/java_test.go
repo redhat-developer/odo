@@ -36,8 +36,7 @@ var _ = Describe("odoJavaE2e", func() {
 
 	// Test Java
 	Context("odo component creation", func() {
-		// https://github.com/openshift/odo/pull/1634
-		/*It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
+		It("Should be able to deploy a git repo that contains a wildfly application without wait flag", func() {
 			helper.CmdShouldPass("odo", "create", "wildfly", "wo-wait-javaee-git-test", "--project",
 				project, "--ref", "master", "--git", warGitRepo)
 
@@ -51,7 +50,7 @@ var _ = Describe("odoJavaE2e", func() {
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "wo-wait-javaee-git-test", "-f")
-		})*/
+		})
 
 		It("Should be able to deploy a .war file using wildfly", func() {
 			helper.CmdShouldPass("odo", "create", "wildfly", "javaee-war-test", "--project",
