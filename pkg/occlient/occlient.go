@@ -81,6 +81,7 @@ type CreateArgs struct {
 	// StorageToBeMounted describes the storage to be created
 	// storagePath is the key of the map, the generatedPVC is the value of the map
 	StorageToBeMounted map[string]*corev1.PersistentVolumeClaim
+	StdOut             io.Writer
 }
 
 const (
@@ -1326,7 +1327,8 @@ type dcRollOutWait func(*appsv1.DeploymentConfig, int64) bool
 // if prePatchDCHandler is specified (meaning not nil), then it's applied
 // as the last action before the actual call to the Kubernetes API thus giving us the chance
 // to perform arbitrary updates to a DC before it's finalized for patching
-func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, existingCmpContainer corev1.Container, ucp UpdateComponentParams, waitForDc bool) error {
+// isGit indicates if the deployment config belongs to a git component or a local/binary component
+func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, existingCmpContainer corev1.Container, ucp UpdateComponentParams, isGit bool) error {
 
 	name := ucp.CommonObjectMeta.Name
 	currentDC := ucp.ExistingDC
@@ -1368,24 +1370,29 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
 	}
 
-	// till we find a better solution for git
-	// it is better, not to follow the logs as the build will anyways trigger a new deployment later
-	if !waitForDc {
-		return nil
-	}
-
-	// we check after the update that the template in the earlier and the new dc are same or not
-	// if they are same, we don't wait as new deployment won't run and we will wait till timeout
-	// inspired from https://github.com/openshift/origin/blob/bb1b9b5223dd37e63790d99095eec04bfd52b848/pkg/apps/controller/deploymentconfig/deploymentconfig_controller.go#L609
-	if reflect.DeepEqual(updatedDc.Spec.Template, currentDC.Spec.Template) {
-		return nil
-	} else {
-		currentDCBytes, err := json.Marshal(currentDC.Spec.Template)
-		updatedDCBytes, err := json.Marshal(updatedDc.Spec.Template)
+	// if isGit is true, the DC belongs to a git component
+	// since build happens for every push in case of git and a new image is pushed, we need to wait
+	// so git oriented deployments, we start the deployment before waiting for it to be updated
+	if isGit {
+		_, err := c.StartDeployment(updatedDc.Name)
 		if err != nil {
-			return errors.Wrapf(err, "unable to unmarshal dc")
+			return errors.Wrapf(err, "unable to start deployment")
 		}
-		glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
+	} else {
+		// not a git oriented deployment, check before waiting
+		// we check after the update that the template in the earlier and the new dc are same or not
+		// if they are same, we don't wait as new deployment won't run and we will wait till timeout
+		// inspired from https://github.com/openshift/origin/blob/bb1b9b5223dd37e63790d99095eec04bfd52b848/pkg/apps/controller/deploymentconfig/deploymentconfig_controller.go#L609
+		if reflect.DeepEqual(updatedDc.Spec.Template, currentDC.Spec.Template) {
+			return nil
+		} else {
+			currentDCBytes, err := json.Marshal(currentDC.Spec.Template)
+			updatedDCBytes, err := json.Marshal(updatedDc.Spec.Template)
+			if err != nil {
+				return errors.Wrapf(err, "unable to unmarshal dc")
+			}
+			glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
+		}
 	}
 
 	// We use the currentDC + 1 for the next revision.. We do NOT use the updated DC (see above code)
@@ -1498,7 +1505,7 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 			nil,
 			existingCmpContainer,
 			ucp,
-			false,
+			true,
 		)
 	}
 
@@ -1631,7 +1638,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		nil,
 		existingCmpContainer,
 		ucp,
-		true,
+		false,
 	)
 	if err != nil {
 		return errors.Wrapf(err, "unable to update the current DeploymentConfig %s", ucp.CommonObjectMeta.Name)
@@ -3248,4 +3255,27 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 		return err
 	}
 	return err
+}
+
+// StartDeployment instantiates a given deployment
+// deploymentName is the name of the deployment to instantiate
+func (c *Client) StartDeployment(deploymentName string) (string, error) {
+	if deploymentName == "" {
+		return "", errors.Errorf("deployment name is empty")
+	}
+	glog.V(4).Infof("Deployment %s started.", deploymentName)
+	deploymentRequest := appsv1.DeploymentRequest{
+		Name: deploymentName,
+		// latest is set to true to prevent image name resolution issue
+		// inspired from https://github.com/openshift/origin/blob/882ed02142fbf7ba16da9f8efeb31dab8cfa8889/pkg/oc/cli/rollout/latest.go#L194
+		Latest: true,
+		Force:  true,
+	}
+	result, err := c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(deploymentName, &deploymentRequest)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to instantiate Deployment for %s", deploymentName)
+	}
+	glog.V(4).Infof("Deployment %s for DeploymentConfig %s triggered.", deploymentName, result.Name)
+
+	return result.Name, nil
 }

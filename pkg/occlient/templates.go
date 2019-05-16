@@ -278,7 +278,9 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 				{
 					Type: "ImageChange",
 					ImageChangeParams: &appsv1.DeploymentTriggerImageChangeParams{
-						Automatic: true,
+						// setting automatic to false so that the trigger is disabled and a new image doesn't trigger deployment
+						// we don't remove this trigger so that we don't face image resolution issues
+						Automatic: false,
 						ContainerNames: []string{
 							commonObjectMeta.Name,
 						},

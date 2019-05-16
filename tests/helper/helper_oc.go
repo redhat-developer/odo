@@ -193,6 +193,34 @@ func (oc *OcRunner) MinCPU(componentName string, appName string, project string)
 	return minMemory
 }
 
+// SourceTypeDC returns the source type from the deployment config
+func (oc *OcRunner) SourceTypeDC(componentName string, appName string, project string) string {
+	sourceType := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{index .metadata.annotations \"app.kubernetes.io/component-source-type\"}}'")
+	return sourceType
+}
+
+// SourceTypeBC returns the source type from the build config
+func (oc *OcRunner) SourceTypeBC(componentName string, appName string, project string) string {
+	sourceType := CmdShouldPass(oc.path, "get", "bc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{.spec.source.type}}'")
+	return sourceType
+}
+
+// SourceLocationDC returns the source location from the deployment config
+func (oc *OcRunner) SourceLocationDC(componentName string, appName string, project string) string {
+	sourceLocation := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{index .metadata.annotations \"app.kubernetes.io/url\"}}'")
+	return sourceLocation
+}
+
+// SourceLocationBC returns the source location from the build config
+func (oc *OcRunner) SourceLocationBC(componentName string, appName string, project string) string {
+	sourceLocation := CmdShouldPass(oc.path, "get", "bc", componentName+"-"+appName, "--namespace", project,
+		"-o", "go-template='{{index .spec.source.git \"uri\"}}'")
+	return sourceLocation
+}
+
 // ImportJavaIsToNspace import the openjdk image which is used for jars
 func (oc *OcRunner) ImportJavaIsToNspace(project string) {
 	// do nothing if running on OpenShiftCI

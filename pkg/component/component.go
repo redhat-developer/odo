@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -130,7 +131,7 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Loading spinner
-	s := log.Spinnerf("Creating component %s", params.Name)
+	s := log.SpinnerNoSpin("Creating component " + params.Name)
 	defer s.End(false)
 
 	// Parse componentImageType before adding to labels
@@ -163,6 +164,17 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 	err = client.NewAppS2I(params, commonObjectMeta)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
+	}
+
+	// Trigger build
+	if err = Build(client, params.Name, params.ApplicationName, params.Wait, params.StdOut, false); err != nil {
+		return errors.Wrapf(err, "failed to build component with args %+v", params)
+	}
+
+	// deploy the component and wait for it to complete
+	// desiredRevision is 1 as this is the first push
+	if err = Deploy(client, params, 1); err != nil {
+		return errors.Wrapf(err, "failed to deploy component with args %+v", params)
 	}
 
 	s.End(true)
@@ -389,15 +401,15 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 		if cmpSrcRef != "" {
 			createArgs.SourceRef = cmpSrcRef
 		}
+
+		createArgs.Wait = true
+		createArgs.StdOut = stdout
+
 		if err = CreateFromGit(
 			client,
 			createArgs,
 		); err != nil {
 			return errors.Wrapf(err, "failed to create component with args %+v", createArgs)
-		}
-		// Trigger build
-		if err = Build(client, createArgs.Name, createArgs.ApplicationName, true, stdout, false); err != nil {
-			return errors.Wrapf(err, "failed to build component with args %+v", componentConfig)
 		}
 	case config.LOCAL:
 		fileInfo, err := os.Stat(createArgs.SourcePath)
@@ -538,8 +550,6 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 // Returns:
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, stdout io.Writer, cmpExist bool) (err error) {
-	s := log.Spinnerf("Applying component settings to component: %v", componentConfig.GetName())
-	defer s.End(false)
 
 	// if component exist then only call the update function
 	if cmpExist {
@@ -559,7 +569,6 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 		return err
 	}
 
-	s.End(true)
 	return
 }
 
@@ -802,6 +811,28 @@ func Build(client *occlient.Client, componentName string, applicationName string
 	return nil
 }
 
+// Deploy deploys the component
+// desiredRevision is the desired version of the deployment config to wait for
+func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision int64) error {
+	// Namespace the component
+	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(params.Name, params.ApplicationName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	_, err = client.StartDeployment(namespacedOpenShiftObject)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", namespacedOpenShiftObject)
+	}
+
+	// Watch / wait for deployment config to update annotations
+	_, err = client.WaitAndGetDC(namespacedOpenShiftObject, desiredRevision, 5*time.Minute, occlient.IsDCRolledOut)
+	if err != nil {
+		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", namespacedOpenShiftObject)
+	}
+	return nil
+}
+
 // GetComponentType returns type of component in given application and project
 func GetComponentType(client *occlient.Client, componentName string, applicationName string) (string, error) {
 
@@ -896,6 +927,9 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 //	errors if any
 func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, newSource string, stdout io.Writer) error {
 	// STEP 1. Create the common Object Meta for updating.
+
+	s := log.Spinnerf("Retrieving component settings for component: %v", componentSettings.GetName())
+	defer s.End(false)
 
 	componentName := componentSettings.GetName()
 	applicationName := componentSettings.GetApplication()
@@ -999,6 +1033,8 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		StorageToBeMounted:   storageToMount,
 		StorageToBeUnMounted: storageToUnMount,
 	}
+
+	s.End(true)
 	// STEP 2. Determine what the new source is going to be
 
 	glog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
@@ -1017,12 +1053,21 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
 		}
 
+		// we build	as the build needs to happen before the deployment
+		err = Build(client, componentName, applicationName, true, stdout, false)
+		if err != nil {
+			return errors.Wrapf(err, "unable to build the component %v", componentName)
+		}
+
 		// Update / replace the current DeploymentConfig with a Git one (not SupervisorD!)
 		glog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
 
 		// Update the image for git deployment to the BC built component image
 		updateComponentParams.ImageMeta.Name = bc.Spec.Output.To.Name
 		isDeleteSupervisordVolumes := (oldSourceType != string(config.GIT))
+
+		s := log.Spinnerf("Applying component settings to component: %v", componentSettings.GetName())
+		defer s.End(false)
 
 		err = client.UpdateDCToGit(
 			updateComponentParams,
@@ -1031,14 +1076,13 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig image for %s component", componentName)
 		}
-
-		// Finally, we build!
-		err = Build(client, componentName, applicationName, true, stdout, false)
-		if err != nil {
-			return errors.Wrapf(err, "unable to build the component %v", componentName)
-		}
+		s.End(true)
 
 	} else if oldSourceType == "git" && (newSourceType == "binary" || newSourceType == "local") {
+
+		s := log.Spinnerf("Applying component settings to component: %v", componentSettings.GetName())
+		defer s.End(false)
+
 		// Steps to update component from git to local or binary
 
 		// Update the sourceURL since it is not a local/binary file.
@@ -1063,6 +1107,8 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 			return errors.Wrapf(err, "unable to update DeploymentConfig for %s component", componentName)
 		}
 
+		s.End(true)
+
 	} else {
 		// save source path as annotation
 		// this part is for updates where the source does not change or change from local to binary and vice versa
@@ -1080,12 +1126,21 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 				return errors.Wrap(err, "unable to get the BuildConfig file")
 			}
 
+			// Build it before running the deployment
+			err = Build(client, componentName, applicationName, true, stdout, false)
+			if err != nil {
+				return errors.Wrapf(err, "unable to build the component: %v", componentName)
+			}
+
 			// Update the current DeploymentConfig with all config applied
 			glog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
 
 			// Update the image for git deployment to the BC built component image
 			updateComponentParams.ImageMeta.Name = bc.Spec.Output.To.Name
 			isDeleteSupervisordVolumes := (oldSourceType != string(config.GIT))
+
+			s := log.Spinnerf("Applying component settings to component: %v", componentSettings.GetName())
+			defer s.End(false)
 
 			err = client.UpdateDCToGit(
 				updateComponentParams,
@@ -1095,10 +1150,12 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 				return errors.Wrapf(err, "unable to update DeploymentConfig image for %s component", componentName)
 			}
 
-			// Build it
-			err = Build(client, componentName, applicationName, true, stdout, false)
+			s.End(true)
 
 		} else if newSourceType == "local" || newSourceType == "binary" {
+
+			s := log.Spinnerf("Applying component settings to component: %v", componentSettings.GetName())
+			defer s.End(false)
 
 			// Update the sourceURL
 			sourceURL := util.GenFileURL(newSource)
@@ -1114,6 +1171,8 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 			if err != nil {
 				return errors.Wrapf(err, "unable to update DeploymentConfig for %s component", componentName)
 			}
+
+			s.End(true)
 		}
 
 		if err != nil {

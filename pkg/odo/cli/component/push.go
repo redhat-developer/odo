@@ -244,15 +244,9 @@ func (po *PushOptions) Run() (err error) {
 			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
 		}
 
-	case config.GIT:
-		err := component.Build(
-			po.Context.Client,
-			cmpName,
-			appName,
-			true,
-			stdout,
-			po.show,
-		)
+		// we don't need a case for building git components
+		// the build happens before deployment
+
 		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
 	}
 
