@@ -3,12 +3,36 @@
 This document provides information on the installation of `odo` on various operating systems and the location of the binaries and the releases.
 
 * The latest `odo` binaries are available on link:https://dl.bintray.com/odo/odo/latest/[Bintray].
-* The latest `odo` releases are available on
-link:https://github.com/openshift/odo/releases/latest[Github].
+* The latest `odo` releases are available on link:https://github.com/openshift/odo/releases/latest[Github].
 
-== Installing `odo`
+[[prerequisites]]
+== Prerequisites
 
+OpenShift 3.10.0 or above is required.
+
+[[procedure]]
+== Procedure
+In this document we will cover multiple installation methods for various OS
+
+. <<macOS>>
+* <<homebrew>>
+* <<mac-binary>>
+* <<mac-tarball>>
+. <<ubuntu-debian>>
+* <<apt>>
+* <<ubuntu-debian-binary>>
+* <<ubuntu-debian-tarball>>
+. <<fedora-centos-rhel>>
+* <<yum-dnf>>
+* <<fcr-binary>>
+* <<fcr-tarball>>
+. <<windows>>
+
+[[macos]]
 === macOS
+
+[[homebrew]]
+==== Using Homebrew Tap
 
 . Access the repository using the Homebrew Tap as follows:
 +
@@ -29,7 +53,26 @@ $ brew install kadel/odo/odo --HEAD
 $ brew install kadel/odo/odo
 ----
 
+[[mac-binary]]
+==== Binary installation
+
+----
+# curl -L https://github.com/openshift/odo/releases/latest/download/odo-darwin-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
+----
+
+[[mac-tarball]]
+==== Tarball installation
+
+----
+# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+----
+
+
+[[ubuntu-debian]]
 === Ubuntu or Debian
+
+[[apt]]
+==== Using apt
 
 . Add the GPG key from the Bintray used to sign repositories:
 +
@@ -56,8 +99,26 @@ $ echo "deb https://dl.bintray.com/odo/odo-deb-releases stretch main" | sudo tee
 # apt-get install odo
 ----
 
+[[ubuntu-debian-binary]]
+==== Binary installation
+
+----
+# curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
+----
+
+[[ubuntu-debian-tarball]]
+==== Tarball installation
+
+----
+# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+----
+
+
+[[fedora-centos-rhel]]
 === Fedora, CentOS, or RHEL
 
+[[yum-dnf]]
+==== Using yum or dnf
 . Access the `odo` repository:
 
 * From the latest builds:
@@ -108,13 +169,29 @@ $ yum install odo
 $ dnf install odo
 ----
 
+[[fcr-binary]]
+==== Binary installation
+
+----
+# curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
+----
+
+[[fcr-tarball]]
+==== Tarball installation
+
+----
+# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+----
+
+
+[[windows]]
 === Windows
 
 . Download the latest file from the Bintray link:https://dl.bintray.com/odo/odo/latest/windows-amd64/odo.exe[odo.exe]
 or from the latest release page on link:https://github.com/openshift/odo/releases[GitHub].
 . Extract the file and add the location of extracted binary to your `GOPATH/bin` directory (see below to create a Go binary directory)
 
-==== Setting a PATH variable for Windows 7/8
+==== Setting the PATH variable for Windows 7/8
 
 The following example demonstrates how to set up a path variable. Your binaries can be located in any location but for the purpose of this example we will use `C:\go-bin` as the location.
 
@@ -125,7 +202,7 @@ The following example demonstrates how to set up a path variable. Your binaries 
 . Select *Path* from the *Variable* section and click *Edit*.
 . Click *New* and type `C:\go-bin` into the field or click *Browse* and select the directory, and click *OK*.
 
-==== Setting a PATH variable for Windows 10
+==== Setting the PATH variable for Windows 10
 
 You can edit `Environment Variables` faster using search as follows:
 
