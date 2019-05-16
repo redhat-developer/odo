@@ -58,7 +58,6 @@ var _ = Describe("odoWatchE2e", func() {
 				output := helper.CmdShouldFail("odo", "watch")
 				Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create you component"))
 			})
-
 		})
 	})
 

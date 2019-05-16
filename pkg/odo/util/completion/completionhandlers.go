@@ -2,6 +2,7 @@ package completion
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/config"
 	"strings"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -205,12 +206,18 @@ var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *ge
 // StorageDeleteCompletionHandler provides storage name completion for storage delete
 var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	storageList, err := storage.List(context.Client, context.Component(), context.Application)
+
+	localConfig, err := config.New()
 	if err != nil {
 		return completions
 	}
 
-	for _, storage := range storageList.Items {
+	storageList, err := localConfig.StorageList()
+	if err != nil {
+		return completions
+	}
+
+	for _, storage := range storageList {
 		// we found the storage name in the list which means
 		// that the storage name has been already selected by the user so no need to suggest more
 		if args.commands[storage.Name] {

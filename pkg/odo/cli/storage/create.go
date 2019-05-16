@@ -2,8 +2,10 @@ package storage
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -25,9 +27,11 @@ var (
 )
 
 type StorageCreateOptions struct {
-	storageName string
-	storageSize string
-	storagePath string
+	storageName      string
+	storageSize      string
+	storagePath      string
+	componentContext string
+	localConfig      *config.LocalConfigInfo
 	*genericclioptions.Context
 }
 
@@ -38,6 +42,11 @@ func NewStorageCreateOptions() *StorageCreateOptions {
 
 // Complete completes StorageCreateOptions after they've been created
 func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.Context = genericclioptions.NewContext(cmd)
+	o.localConfig, err = config.NewLocalConfigInfo(o.componentContext)
+	if err != nil {
+		return err
+	}
 	o.Context = genericclioptions.NewContext(cmd)
 	if len(args) != 0 {
 		o.storageName = args[0]
@@ -54,23 +63,25 @@ func (o *StorageCreateOptions) Validate() (err error) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
 	// validate storage path
-	return validateStoragePath(o.Client, o.storageName, o.Component(), o.Application)
+	return o.localConfig.ValidateStorage(o.storageName, o.storagePath)
 }
 
 // Run contains the logic for the odo storage create command
 func (o *StorageCreateOptions) Run() (err error) {
-	storageResult, err := storage.Create(o.Client, o.storageName, o.storageSize, o.storagePath, o.Component(), o.Application)
+	storageResult, err := o.localConfig.StorageCreate(o.storageName, o.storageSize, o.storagePath)
 	if err != nil {
 		return err
 	}
-	out, err := util.MachineOutput(o.OutputFlag, storageResult)
+
+	storageResultMachineReadable := storage.GetMachineReadableFormat(storageResult.Name, storageResult.Size, storageResult.Path)
+	out, err := util.MachineOutput(o.OutputFlag, storageResultMachineReadable)
 	if err != nil {
 		return err
 	}
 	if out != "" {
 		fmt.Println(out)
 	} else {
-		log.Successf("Added storage %v to %v", o.storageName, o.Component())
+		log.Successf("Added storage %v to %v", o.storageName, o.localConfig.GetName())
 	}
 	return
 }
@@ -99,6 +110,8 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	componentCmd.AddComponentFlag(storageCreateCmd)
 
 	genericclioptions.AddOutputFlag(storageCreateCmd)
+	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
+	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)
 
 	return storageCreateCmd
 }

@@ -23,9 +23,14 @@ const (
 	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
 )
 
+type ComponentStorageSettings struct {
+	Name string `yaml:"Name,omitempty"`
+	Size string `yaml:"Size,omitempty"`
+	Path string `yaml:"Path,omitempty"`
+}
+
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-
 	// The builder image to use
 	Type *string `yaml:"Type,omitempty"`
 
@@ -52,6 +57,8 @@ type ComponentSettings struct {
 	MinMemory *string `yaml:"MinMemory,omitempty"`
 
 	MaxMemory *string `yaml:"MaxMemory,omitempty"`
+
+	Storage *[]ComponentStorageSettings `yaml:"Storage,omitempty"`
 
 	// Ignore if set to true then odoignore file should be considered
 	Ignore *bool `yaml:"Ignore,omitempty"`
@@ -216,6 +223,13 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			lci.componentSettings.MinCPU = &strValue
 		case "maxcpu":
 			lci.componentSettings.MaxCPU = &strValue
+		case "storage":
+			storageSetting, _ := value.(ComponentStorageSettings)
+			if lci.componentSettings.Storage != nil {
+				*lci.componentSettings.Storage = append(*lci.componentSettings.Storage, storageSetting)
+			} else {
+				lci.componentSettings.Storage = &[]ComponentStorageSettings{storageSetting}
+			}
 		case "cpu":
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
@@ -292,7 +306,24 @@ func (lci *LocalConfigInfo) DeleteUrl(parameter string) error {
 		}
 	}
 	return lci.writeToFile()
+}
 
+// DeleteFromConfigurationList is used to delete a value from a list from the local odo config
+// parameter is the name of the config parameter
+// value is the value to be deleted
+func (lci *LocalConfigInfo) DeleteFromConfigurationList(parameter string, value string) error {
+	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+		switch parameter {
+		case "storage":
+			for i, storage := range lci.GetStorage() {
+				if storage.Name == value {
+					*lci.componentSettings.Storage = append((*lci.componentSettings.Storage)[:i], (*lci.componentSettings.Storage)[i+1:]...)
+				}
+			}
+			return lci.writeToFile()
+		}
+	}
+	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
 }
 
 // GetComponentSettings returns the componentSettings from local config
@@ -439,8 +470,15 @@ func (lc *LocalConfig) GetUrl() []ConfigUrl {
 	return *lc.componentSettings.Url
 }
 
-const (
+// GetStorage returns the Storage, returns empty if nil
+func (lc *LocalConfig) GetStorage() []ComponentStorageSettings {
+	if lc.componentSettings.Storage == nil {
+		return []ComponentStorageSettings{}
+	}
+	return *lc.componentSettings.Storage
+}
 
+const (
 	// Type is the name of the setting controlling the component type i.e. builder image
 	Type = "Type"
 	// TypeDescription is human-readable description of the componentType setting
@@ -499,6 +537,10 @@ const (
 	RefDescription = "Git ref to use for creating component from git source"
 	// SourceTypeDescription is the description of type setting
 	SourceTypeDescription = "Type of component source - git/binary/local"
+	// Storage is the name of the setting controlling storage
+	Storage = "Storage"
+	// StorageDescription is the description of the storage
+	StorageDescription = "Storage of the component"
 	// SourceLocationDescription is the human-readable description of path setting
 	SourceLocationDescription = "The path indicates the location of binary file or git source"
 	// Url
@@ -523,6 +565,7 @@ var (
 		Ignore:         IgnoreDescription,
 		MinCPU:         MinCPUDescription,
 		MaxCPU:         MaxCPUDescription,
+		Storage:        StorageDescription,
 		CPU:            CPUDescription,
 		Url:            UrlDescription,
 	}

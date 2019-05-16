@@ -47,8 +47,6 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	// utilities
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -80,6 +78,9 @@ type CreateArgs struct {
 	Resources       *corev1.ResourceRequirements
 	ApplicationName string
 	Wait            bool
+	// StorageToBeMounted describes the storage to be created
+	// storagePath is the key of the map, the generatedPVC is the value of the map
+	StorageToBeMounted map[string]*corev1.PersistentVolumeClaim
 }
 
 const (
@@ -166,7 +167,7 @@ type S2IPaths struct {
 	BuilderImgName      string
 }
 
-// UpdateComponentParams serves the purpose of holding the arguements to a component update request
+// UpdateComponentParams serves the purpose of holding the arguments to a component update request
 type UpdateComponentParams struct {
 	// CommonObjectMeta is the object meta containing the labels and annotations expected for the new deployment
 	CommonObjectMeta metav1.ObjectMeta
@@ -180,6 +181,12 @@ type UpdateComponentParams struct {
 	DcRollOutWaitCond dcRollOutWait
 	// ImageMeta describes the image to be used in dc(builder image for local/binary and built component image for git deployments)
 	ImageMeta CommonImageMeta
+	// StorageToBeMounted describes the storage to be mounted
+	// storagePath is the key of the map, the generatedPVC is the value of the map
+	StorageToBeMounted map[string]*corev1.PersistentVolumeClaim
+	// StorageToBeUnMounted describes the storage to be unmounted
+	// path is the key of the map,storageName is the value of the map
+	StorageToBeUnMounted map[string]string
 }
 
 // S2IDeploymentsDir is a set of possible S2I labels that provides S2I deployments directory
@@ -852,6 +859,10 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 
 	// Generate and create the DeploymentConfig
 	dc := generateGitDeploymentConfig(commonObjectMeta, buildConfig.Spec.Output.To.Name, containerPorts, inputEnvVars, params.Resources)
+	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
+	}
 	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
@@ -1173,6 +1184,10 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
+	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
+	}
 
 	if len(inputEnvs) != 0 {
 		err = updateEnvVar(&dc, inputEnvs)
@@ -1311,9 +1326,13 @@ type dcRollOutWait func(*appsv1.DeploymentConfig, int64) bool
 // if prePatchDCHandler is specified (meaning not nil), then it's applied
 // as the last action before the actual call to the Kubernetes API thus giving us the chance
 // to perform arbitrary updates to a DC before it's finalized for patching
-func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, waitCond dcRollOutWait, currentDC *appsv1.DeploymentConfig, existingCmpContainer corev1.Container, waitForDc bool) error {
+func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dcStructUpdater, existingCmpContainer corev1.Container, ucp UpdateComponentParams, waitForDc bool) error {
 
+	name := ucp.CommonObjectMeta.Name
+	currentDC := ucp.ExistingDC
 	modifiedDC := *currentDC
+
+	waitCond := ucp.DcRollOutWaitCond
 
 	// copy the any remaining volumes and volume mounts
 	copyVolumesAndVolumeMounts(dc, currentDC, existingCmpContainer)
@@ -1323,6 +1342,12 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatc
 		if err != nil {
 			return errors.Wrapf(err, "Unable to correctly update dc %s using the specified prePatch handler", name)
 		}
+	}
+
+	// now mount/unmount the newly created/deleted pvc
+	err := addOrRemoveVolumeAndVolumeMount(c, &dc, ucp.StorageToBeMounted, ucp.StorageToBeUnMounted)
+	if err != nil {
+		return err
 	}
 
 	// Replace the current spec with the new one
@@ -1338,6 +1363,7 @@ func (c *Client) PatchCurrentDC(name string, dc appsv1.DeploymentConfig, prePatc
 	// despite the "patch" function name, we use update since `.Patch` requires
 	// use to define each and every object we must change. Updating makes it easier.
 	updatedDc, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(&modifiedDC)
+
 	if err != nil {
 		return errors.Wrapf(err, "unable to update DeploymentConfig %s", name)
 	}
@@ -1450,12 +1476,10 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 	if isDeleteSupervisordVolumes {
 		// Patch the current DC
 		err = c.PatchCurrentDC(
-			ucp.CommonObjectMeta.Name,
 			dc,
 			removeTracesOfSupervisordFromDC,
-			ucp.DcRollOutWaitCond,
-			ucp.ExistingDC,
 			existingCmpContainer,
+			ucp,
 			true,
 		)
 
@@ -1470,12 +1494,10 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 		}
 	} else {
 		err = c.PatchCurrentDC(
-			ucp.CommonObjectMeta.Name,
 			dc,
 			nil,
-			ucp.DcRollOutWaitCond,
-			ucp.ExistingDC,
 			existingCmpContainer,
+			ucp,
 			false,
 		)
 	}
@@ -1605,12 +1627,10 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 
 	// Patch the current DC with the new one
 	err = c.PatchCurrentDC(
-		ucp.CommonObjectMeta.Name,
 		dc,
 		nil,
-		ucp.DcRollOutWaitCond,
-		ucp.ExistingDC,
 		existingCmpContainer,
+		ucp,
 		true,
 	)
 	if err != nil {
@@ -2557,43 +2577,6 @@ func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
 	return secretList.Items, nil
 }
 
-// CreatePVC creates a PVC resource in the cluster with the given name, size and
-// labels
-func (c *Client) CreatePVC(name string, size string, labels map[string]string) (*corev1.PersistentVolumeClaim, error) {
-	quantity, err := resource.ParseQuantity(size)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
-	}
-
-	pvc := &corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
-		},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: quantity,
-				},
-			},
-			AccessModes: []corev1.PersistentVolumeAccessMode{
-				corev1.ReadWriteOnce,
-			},
-		},
-	}
-
-	createdPvc, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(pvc)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create PVC")
-	}
-	return createdPvc, nil
-}
-
-// DeletePVC deletes the given PVC by name
-func (c *Client) DeletePVC(name string) error {
-	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(name, nil)
-}
-
 // DeleteBuildConfig deletes the given BuildConfig by name using CommonObjectMeta..
 func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 
@@ -2604,77 +2587,6 @@ func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs with DeleteBuildConfig")
 	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-}
-
-// generateVolumeNameFromPVC generates a random volume name based on the name
-// of the given PVC
-func generateVolumeNameFromPVC(pvc string) string {
-	return fmt.Sprintf("%v-%v-volume", pvc, util.GenerateRandomString(nameLength))
-}
-
-// AddPVCToDeploymentConfig adds the given PVC to the given Deployment Config
-// at the given path
-func (c *Client) AddPVCToDeploymentConfig(dc *appsv1.DeploymentConfig, pvc string, path string) error {
-	volumeName := generateVolumeNameFromPVC(pvc)
-
-	// Validating dc.Spec.Template is present before dereferencing
-	if dc.Spec.Template == nil {
-		return fmt.Errorf("TemplatePodSpec in %s DeploymentConfig is empty", dc.Name)
-	}
-	dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes, corev1.Volume{
-		Name: volumeName,
-		VolumeSource: corev1.VolumeSource{
-			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: pvc,
-			},
-		},
-	})
-
-	// Validating dc.Spec.Template.Spec.Containers[] is present before dereferencing
-	if len(dc.Spec.Template.Spec.Containers) == 0 {
-		return fmt.Errorf("DeploymentConfig %s doesn't have any Containers defined", dc.Name)
-	}
-	dc.Spec.Template.Spec.Containers[0].VolumeMounts = append(dc.Spec.Template.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-		Name:      volumeName,
-		MountPath: path,
-	},
-	)
-
-	glog.V(4).Infof("Updating DeploymentConfig: %v", dc)
-	_, err := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-	if err != nil {
-		return errors.Wrapf(err, "failed to update DeploymentConfig: %v", dc)
-	}
-	return nil
-}
-
-// removeVolumeFromDC removes the volume from the given Deployment Config and
-// returns true. If the given volume is not found, it returns false.
-func removeVolumeFromDC(vol string, dc *appsv1.DeploymentConfig) bool {
-	found := false
-	for i, volume := range dc.Spec.Template.Spec.Volumes {
-		if volume.Name == vol {
-			found = true
-			dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes[:i], dc.Spec.Template.Spec.Volumes[i+1:]...)
-		}
-	}
-	return found
-}
-
-// removeVolumeMountFromDC removes the volumeMount from all the given containers
-// in the given Deployment Config and return true. If the given volumeMount is
-// not found, it returns false
-func removeVolumeMountFromDC(vm string, dc *appsv1.DeploymentConfig) bool {
-	found := false
-	for i, container := range dc.Spec.Template.Spec.Containers {
-		for j, volumeMount := range container.VolumeMounts {
-			if volumeMount.Name == vm {
-				found = true
-				dc.Spec.Template.Spec.Containers[i].VolumeMounts = append(dc.Spec.Template.Spec.Containers[i].VolumeMounts[:j], dc.Spec.Template.Spec.Containers[i].VolumeMounts[j+1:]...)
-			}
-		}
-	}
-	return found
 }
 
 // RemoveVolumeFromDeploymentConfig removes the volume associated with the
@@ -2716,27 +2628,6 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 		return errors.Wrapf(retryErr, "updating Deployment Config %v failed", dcName)
 	}
 	return nil
-}
-
-// getVolumeNamesFromPVC returns the name of the volume associated with the given
-// PVC in the given Deployment Config
-func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) []string {
-	var volumes []string
-	for _, volume := range dc.Spec.Template.Spec.Volumes {
-
-		// If PVC does not exist, we skip (as this is either EmptyDir or "shared-data" from SupervisorD
-		if volume.PersistentVolumeClaim == nil {
-			glog.V(4).Infof("Volume has no PVC, skipping %s", volume.Name)
-			continue
-		}
-
-		// If we find the PVC, add to volumes to be returned
-		if volume.PersistentVolumeClaim.ClaimName == pvc {
-			volumes = append(volumes, volume.Name)
-		}
-
-	}
-	return volumes
 }
 
 // GetDeploymentConfigsFromSelector returns an array of Deployment Config
@@ -3241,16 +3132,6 @@ func (c *Client) GetPVCNameFromVolumeMountName(volumeMountName string, dc *appsv
 // GetPVCFromName returns the PVC of the given name
 func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error) {
 	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
-}
-
-// UpdatePVCLabels updates the given PVC with the given labels
-func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error {
-	pvc.Labels = labels
-	_, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(pvc)
-	if err != nil {
-		return errors.Wrap(err, "unable to remove storage label from PVC")
-	}
-	return nil
 }
 
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.

@@ -133,10 +133,15 @@ test-service-e2e:
 test-link-e2e:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoLinkE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
-# Run link e2e tests
+# Run watch e2e tests
 .PHONY: test-watch-e2e
 test-watch-e2e:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoWatchE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+
+# Run storage e2e tests
+.PHONY: test-storage-e2e
+test-storage-e2e:
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoStorageE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run login e2e tests
 .PHONY: test-odo-login-e2e

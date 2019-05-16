@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/storage"
 
 	"github.com/golang/glog"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
