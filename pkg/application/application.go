@@ -36,7 +36,7 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	return appNames, nil
 }
 
-// Exists check whether given app exist or not
+// Exists checks whether the given app exist or not
 func Exists(app string, client *occlient.Client) (bool, error) {
 
 	appList, err := List(client)
