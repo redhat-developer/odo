@@ -10,9 +10,8 @@ This document provides information on the installation of `odo` on various opera
 
 OpenShift 3.10.0 or above is required.
 
-[[procedure]]
-== Procedure
-In this document we will cover multiple installation methods for various OS
+[[installation]]
+== Installation methods for various operating systems
 
 . <<macOS>>
 * <<homebrew>>
@@ -191,7 +190,7 @@ $ dnf install odo
 or from the latest release page on link:https://github.com/openshift/odo/releases[GitHub].
 . Extract the file and add the location of extracted binary to your `GOPATH/bin` directory (see below to create a Go binary directory)
 
-==== Setting the PATH variable for Windows 7/8
+==== Setting the `PATH` variable for Windows 7/8
 
 The following example demonstrates how to set up a path variable. Your binaries can be located in any location but for the purpose of this example we will use `C:\go-bin` as the location.
 
@@ -202,7 +201,7 @@ The following example demonstrates how to set up a path variable. Your binaries 
 . Select *Path* from the *Variable* section and click *Edit*.
 . Click *New* and type `C:\go-bin` into the field or click *Browse* and select the directory, and click *OK*.
 
-==== Setting the PATH variable for Windows 10
+==== Setting the `PATH` variable for Windows 10
 
 You can edit `Environment Variables` faster using search as follows:
 
