@@ -36,8 +36,7 @@ var _ = Describe("odo generic", func() {
 			helper.DeleteProject(project)
 			os.RemoveAll(".odo")
 		})
-		// https://github.com/openshift/odo/pull/1634
-		/*It("should create the component in default application", func() {
+		It("should create the component in default application", func() {
 			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "e2e-xyzk", "--project", project, "--git", testPHPGitURL)
 			helper.CmdShouldPass("odo", "config", "set", "Ports", "8080/TCP")
 			helper.CmdShouldPass("odo", "push", "--config")
@@ -47,7 +46,7 @@ var _ = Describe("odo generic", func() {
 			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", project)
 			helper.CmdShouldPass("odo", "url", "delete", "myurl", "-f")
 			helper.CmdShouldPass("odo", "app", "delete", "e2e-xyzk", "-f")
-		})*/
+		})
 	})
 
 	Context("should list applications in other project", func() {
