@@ -19,9 +19,6 @@ var _ = Describe("odoLinkE2e", func() {
 	var context1, context2, context3, context4 string
 	var originalDir string
 
-	//  current directory and project (before eny test is run) so it can restored  after all testing is done
-	//var oc helper.OcRunner
-
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
