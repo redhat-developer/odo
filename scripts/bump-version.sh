@@ -21,9 +21,6 @@ check_version(){
     echo ""
 }
 
-echo "* Bumping version in README.adoc"
-sed -i "s/v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?/${NEW_VERSION}/g" README.adoc
-check_version README.adoc
 
 echo "* Bumping version in pkg/odo/cli/version/version.go"
 sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSION}\"/g" pkg/odo/cli/version/version.go
