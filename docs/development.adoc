@@ -270,15 +270,8 @@ NOTE: Do not upload any binaries for the release. When the new tag is created, T
 . Update the descriptions and publish the release.
 . Verify that packages have been uploaded to the `rpm` and `deb` repositories.
 . Update the Homebrew package:
-.. Download the current release `.tar.gz` file and retrieve the `sha256` value.
-+
-----
-$ RELEASE=X.X.X
-wget https://github.com/openshift/odo/archive/v$RELEASE.tar.gz
-sha256sum v$RELEASE.tar.gz
-----
-+
-.. Create a PR to update the https://github.com/kadel/homebrew-odo/blob/master/Formula/odo.rb[`odo.rb`] file
+.. Check commit id for the released tag `git show-ref v0.0.1`
+.. Create a PR to update `:tag` and `:revision` in the https://github.com/kadel/homebrew-odo/blob/master/Formula/odo.rb[`odo.rb`] file
 in https://github.com/kadel/homebrew-odo[`kadel/homebrew-odo`].
 . Confirm the binaries are available in the GitHub release page.
 . Create a PR and update the file `build/VERSION` with the  latest version number.
