@@ -29,13 +29,12 @@ var _ = Describe("odojsonoutput", func() {
 	})
 
 	Context("odo machine readable output on empty project", func() {
-		//https://github.com/openshift/odo/issues/1708
 		//odo project list -o json
-		/*It("should be able to return project list", func() {
+		It("should be able to return project list", func() {
 			actualProjectListJSON := helper.CmdShouldPass("odo", "project", "list", "-o", "json")
 			desiredProjectListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myproject","creationTimestamp":null},"spec":{"apps":null},"status":{"active":false}},{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"apps":null},"status":{"active":true}}]}`, project)
 			Expect(desiredProjectListJSON).Should(MatchUnorderedJSON(actualProjectListJSON, WithUnorderedListKeys("items")))
-		})*/
+		})
 
 		// odo app list -o json
 		It("should be able to return empty list", func() {
