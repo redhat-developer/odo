@@ -36,7 +36,7 @@ Syntax
 | Catalog related operations (describe, list, search)
 
 | link:#component[component]
-| Components of an application (create, delete, describe, get, link, list, log, push, unlink, update, watch)
+| Components of an application (create, delete, describe, link, list, log, push, unlink, update, watch)
 
 | link:#config[config]
 | Modifies configuration settings (set, unset, view)
@@ -78,7 +78,7 @@ Syntax
 | Perform service catalog operations (create, delete, list)
 
 | link:#storage[storage]
-| Perform storage operations (create, delete, list, mount, unmount)
+| Perform storage operations (create, delete, list)
 
 | link:#unlink[unlink]
 | Unlink component to a service or component
@@ -120,9 +120,9 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         search : Search available component & service types. (component, service)
             component : Search component type in catalog
             service : Search service type in catalog
-    component --app --context --project --short : Components of an application (create, delete, describe, get, link, list, log, push, unlink, update, watch)
+    component --app --context --project --short : Components of an application (create, delete, describe, link, list, log, push, unlink, update, watch)
         create --app --binary --context --cpu --env --git --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref : Create a new component
-        delete --app --context --force --project : Delete an existing component
+        delete --all --app --context --force --project : Delete an existing component
         describe --app --context --output --project : Describe the given component
         get --app --context --project --short : Get currently active component
         link --app --component --context --port --project --wait --wait-for-target : Link component to a service or component
@@ -137,7 +137,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         unset --context --env --force : Unset a value in odo config file
         view --context : View current configuration values
     create --app --binary --context --cpu --env --git --max-cpu --max-memory --memory --min-cpu --min-memory --port --project --ref : Create a new component
-    delete --app --context --force --project : Delete an existing component
+    delete --all --app --context --force --project : Delete an existing component
     describe --app --context --output --project : Describe the given component
     link --app --component --context --port --project --wait --wait-for-target : Link component to a service or component
     list --app --context --output --project : List all components in the current application
@@ -159,12 +159,10 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         create --app --parameters --plan --project --wait : Create a new service from service catalog using the plan defined and deploy it on OpenShift.
         delete --app --force --project : Delete an existing service
         list --app --project : List all services in the current application
-    storage : Perform storage operations (create, delete, list, mount, unmount)
-        create --app --component --output --path --project --size : Create storage and mount to a component
-        delete --app --component --force --project : Delete storage from component
-        list --all --app --component --output --project : List storage attached to a component
-        mount --app --component --path --project : mount storage to a component
-        unmount --app --component --project : Unmount storage from the given path or identified by its name, from the current component
+    storage : Perform storage operations (create, delete, list)
+        create --app --component --context --output --path --project --size : Create storage and mount to a component
+        delete --app --component --context --force --project : Delete storage from component
+        list --app --component --context --output --project : List storage attached to a component
     unlink --app --component --context --port --project --wait : Unlink component to a service or component
     update --app --context --git --local --project --ref : Update the source code path of a component
     url : Expose component to the outside world (create, delete, list)
@@ -328,6 +326,7 @@ Project - Project is the name of the project the component is part of
 Ref - Git ref to use for creating component from git source
 SourceLocation - The path indicates the location of binary file or git source
 SourceType - Type of component source - git/binary/local
+Storage - Storage of the component
 Type - The type of component
 Url - URL to access the component
 
@@ -414,6 +413,7 @@ _________________
 ----
   # Delete component named 'frontend'.
   odo delete frontend
+  odo delete frontend --all
 ----
 
 Delete an existing component.
@@ -743,17 +743,6 @@ _________________
   
   # Delete storage mystorage from component 'mongodb'
   odo storage delete mystorage --component mongodb
-  # Unmount storage 'dbstorage' from current component
-  odo storage unmount dbstorage
-  
-  # Unmount storage 'database' from component 'mongodb'
-  odo storage unmount database --component mongodb
-  
-  # Unmount storage mounted to path '/data' from current component
-  odo storage unmount /data
-  
-  # Unmount storage mounted to path '/data' from component 'mongodb'
-  odo storage unmount /data --component mongodb
   # List all storage attached or mounted to the current component and
   # all unattached or unmounted storage in the current application
   odo storage list
