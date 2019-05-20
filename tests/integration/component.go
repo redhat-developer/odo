@@ -46,8 +46,9 @@ func componentTests(args ...string) {
 			Expect(applicationName).To(Equal("app"))
 
 			// clean up
-			helper.CmdShouldPass("odo", "component", "delete", componentName, "-f")
 			helper.CmdShouldPass("odo", "app", "delete", "app", "-f")
+			helper.CmdShouldFail("odo", "app", "delete", "app", "-f")
+			helper.CmdShouldFail("odo", "component", "delete", componentName, "-f")
 
 		})
 	})
