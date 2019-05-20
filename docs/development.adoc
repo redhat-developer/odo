@@ -246,11 +246,10 @@ To release a new version:
 
 * Updates the version in the following files:
 
-** link:/cmd/version.go[`cmd/version.go`]
+** link:/pkg/odo/cli/version/version.go[`cmd/version.go`]
 ** link:/scripts/install.sh[`scripts/install.sh`]
-** link:/README.md[`README.md`]
 +
-There is a helper script link:/scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above (expect `odo.rb`).
+There is a helper script link:/scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above (except `odo.rb`).
 
 * Updates the CLI reference documentation in the `docs/cli-reference.md` file:
 +
