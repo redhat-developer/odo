@@ -3,9 +3,10 @@ package url
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/odo/genericclioptions/printtemplates"
 	"os"
 	"text/tabwriter"
+
+	"github.com/openshift/odo/pkg/odo/genericclioptions/printtemplates"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -76,6 +77,7 @@ func (o *URLListOptions) Run() (err error) {
 		if len(urls.Items) == 0 && len(localUrls) == 0 {
 			return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
 		} else {
+			// cm=create message dm=delete message. If these flags are set then push message needs to be printed
 			var cm, dm bool
 			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -116,11 +118,11 @@ func (o *URLListOptions) Run() (err error) {
 			}
 			tabWriterURL.Flush()
 			if cm && dm {
-				printtemplates.PrintPushMessage("create/delete", "URLS")
+				printtemplates.PrintPushMessage("create/delete", "URLs")
 			} else if cm {
-				printtemplates.PrintPushMessage("create", "URLS")
+				printtemplates.PrintPushMessage("create", "URLs")
 			} else if dm {
-				printtemplates.PrintPushMessage("delete", "URLS")
+				printtemplates.PrintPushMessage("delete", "URLs")
 			}
 		}
 
