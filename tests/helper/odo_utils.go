@@ -66,7 +66,7 @@ func DetermineRouteURL() string {
 func CreateRandProject() string {
 	projectName := RandString(10)
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	session := CmdShouldPass("odo", "project", "create", projectName, "-w")
+	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v", "4")
 	Expect(session).To(ContainSubstring("New project created"))
 	Expect(session).To(ContainSubstring(projectName))
 	return projectName
