@@ -27,6 +27,17 @@ var _ = Describe("odo generic", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 	})
 
+	Context("Executing catalog list without component directory", func() {
+		It("All component catalogs are listed ", func() {
+			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "components")
+			Expect(stdOut).To(ContainSubstring("dotnet"))
+			Expect(stdOut).To(ContainSubstring("nginx"))
+			Expect(stdOut).To(ContainSubstring("php"))
+			Expect(stdOut).To(ContainSubstring("ruby"))
+			Expect(stdOut).To(ContainSubstring("wildfly"))
+		})
+	})
+
 	Context("creating component without an application and url", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
