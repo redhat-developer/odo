@@ -1,132 +1,137 @@
 package integration
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo"
-	//. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
+
+	"github.com/openshift/odo/tests/helper"
 )
 
 var _ = Describe("odoLinkE2e", func() {
-	// Uncomment when link commands are made to use config file and context flag
-	/*
-		projName := generateTimeBasedName("odolnk")
-		const appTestName = "testing"
 
-		// Create a separate project for Java
-		Context("create separate project", func() {
-			It("should create a new test project", func() {
-				session := runCmdShouldPass("odo project create " + projName)
-				Expect(session).To(ContainSubstring(projName))
-				waitForCmdOut("odo project set "+projName, 4, false, func(output string) bool {
-					return strings.Contains(output, "Already on project : "+projName)
-				})
-				runCmdShouldPass("odo app create " + appTestName)
+	//new clean project and context for each test
+	var project string
+	var context1, context2, context3, context4 string
+	var originalDir string
+
+	// Setup up state for each test spec
+	// create new project (not set as active) and new context directory for each test spec
+	// This is before every spec (It)
+	var _ = BeforeEach(func() {
+		SetDefaultEventuallyTimeout(10 * time.Minute)
+		oc = helper.NewOcRunner("oc")
+		project = helper.CreateRandProject()
+	})
+
+	// Clean up after the test
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		helper.DeleteProject(project)
+		os.RemoveAll(".odo")
+	})
+
+	Context("odo link/unlink handling between components", func() {
+		JustBeforeEach(func() {
+			context1 = helper.CreateNewContext()
+			context2 = helper.CreateNewContext()
+		})
+		JustAfterEach(func() {
+			helper.DeleteDir(context1)
+			helper.DeleteDir(context2)
+		})
+		It("reports error when using wrong port", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1)
+			helper.CmdShouldPass("odo", "push", "--context", context1)
+			helper.CopyExample(filepath.Join("source", "python"), context2)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2)
+			helper.CmdShouldPass("odo", "push", "--context", context2)
+			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--context", context2, "--port", "1234")
+			Expect(stdErr).To(ContainSubstring("Unable to properly link to component backend using port 1234"))
+		})
+		It("link the frontend application to the backend", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1)
+			helper.CmdShouldPass("odo", "push", "--context", context1)
+			helper.CopyExample(filepath.Join("source", "python"), context2)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2)
+			helper.CmdShouldPass("odo", "push", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context2)
+			// ensure that the proper envFrom entry was created
+			envFromOutput := oc.GetEnvFromEntry("frontend", "app")
+			Expect(envFromOutput).To(ContainSubstring("backend"))
+			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--context", context2)
+			Expect(outputErr).To(ContainSubstring("been linked"))
+			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--context", context2)
+		})
+	})
+
+	Context("odo link/unlink handling between components and service", func() {
+		JustBeforeEach(func() {
+			context3 = helper.CreateNewContext()
+			context4 = helper.CreateNewContext()
+			originalDir = helper.Getwd()
+		})
+		JustAfterEach(func() {
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context3)
+			helper.DeleteDir(context4)
+		})
+		It("should link backend to service", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context3)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context3)
+			helper.CmdShouldPass("odo", "push", "--context", context3)
+			helper.CopyExample(filepath.Join("source", "python"), context4)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context4)
+			helper.CmdShouldPass("odo", "push", "--context", context4)
+			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context4)
+			helper.Chdir(context4)
+			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
+
+			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "mysql-persistent")
 			})
+			helper.CmdShouldPass("odo", "link", "mysql-persistent", "--wait-for-target", "--component", "backend")
+			// ensure that the proper envFrom entry was created
+			envFromOutput := oc.GetEnvFromEntry("backend", "app")
+			Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
+
+			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--component", "backend", "--context", context4)
+			Expect(outputErr).To(ContainSubstring("been linked"))
 		})
 
-		Context("odo link/unlink handling between components and service", func() {
+		It("Delete service and unlink the backend from the frontend", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context3)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context3)
+			helper.CmdShouldPass("odo", "push", "--context", context3)
+			helper.CopyExample(filepath.Join("source", "python"), context4)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context4)
+			helper.CmdShouldPass("odo", "push", "--context", context4)
+			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context4)
+			helper.Chdir(context4)
+			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
-			It("create a frontend and backend application", func() {
-				runCmdShouldPass("odo create nodejs frontend")
-				runCmdShouldPass("odo create python backend")
-
-				cmpList := runCmdShouldPass("odo list")
-				Expect(cmpList).To(ContainSubstring("frontend"))
-				Expect(cmpList).To(ContainSubstring("backend"))
+			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "mysql-persistent")
 			})
-
-			It("reports error when using wrong port", func() {
-				outputErr := runCmdShouldFail("odo link backend --component frontend --port 1234")
-				Expect(outputErr).To(ContainSubstring("8080"))
-			})
-
-			It("link the frontend application to the backend", func() {
-				runCmdShouldPass("odo link backend --component frontend")
-
-				// ensure that the proper envFrom entry was created
-				envFromOutput :=
-					runCmdShouldPass("oc get dc frontend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
-				Expect(envFromOutput).To(ContainSubstring("backend"))
-			})
-
-			It("describe on the frontend should show the linked backend component", func() {
-				describeOutput := runCmdShouldPass("odo describe frontend")
-
-				// ensure that the output contains the component and port
-				Expect(describeOutput).To(ContainSubstring("backend"))
-				Expect(describeOutput).To(ContainSubstring("8080"))
-			})
-
-			It("link should fail when linking to the same component again", func() {
-				outputErr := runCmdShouldFail("odo link backend --component frontend")
-				Expect(outputErr).To(ContainSubstring("been linked"))
-			})
-
-			It("should be able to create a service", func() {
-				runCmdShouldPass("odo service create mysql-persistent")
-
-				waitForCmdOut("oc get serviceinstance -o name", 1, true, func(output string) bool {
-					return strings.Contains(output, "mysql-persistent")
-				})
-			})
-
-			It("app describe should show the mysql service", func() {
-				describeOutput := runCmdShouldPass("odo app describe")
-
-				// ensure that the output contains the service
-				Expect(describeOutput).To(ContainSubstring("mysql-persistent"))
-			})
-
-			It("should link backend to service", func() {
-				runCmdShouldPass("odo link mysql-persistent --wait-for-target --component backend")
-
-				// ensure that the proper envFrom entry was created
-				envFromOutput :=
-					runCmdShouldPass("oc get dc backend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
-				Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
-			})
-
-			It("link should fail when linking to the same service again", func() {
-				outputErr := runCmdShouldFail("odo link mysql-persistent --component backend")
-				Expect(outputErr).To(ContainSubstring("been linked"))
-			})
-
-			It("describe on the backend should show the linked mysql service", func() {
-				describeOutput := runCmdShouldPass("odo describe backend")
-
-				// ensure that the output contains the service
-				Expect(describeOutput).To(ContainSubstring("mysql-persistent"))
-			})
-
-			It("delete the service", func() {
-				runCmdShouldPass("odo service delete mysql-persistent -f")
-
-				// ensure that the backend no longer has an envFrom value
-				backendEnvFromOutput :=
-					runCmdShouldPass("oc get dc backend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
-				Expect(backendEnvFromOutput).To(BeEmpty())
-
-				// ensure that the frontend envFrom was not changed
-				frontEndEnvFromOutput :=
-					runCmdShouldPass("oc get dc frontend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
-				Expect(frontEndEnvFromOutput).To(ContainSubstring("backend"))
-			})
-
-			It("unlink the backend from the frontend", func() {
-				runCmdShouldPass("odo unlink backend --component frontend")
-
-				// ensure that the proper envFrom entry was created
-				envFromOutput :=
-					runCmdShouldPass("oc get dc frontend-testing -o jsonpath='{.spec.template.spec.containers[0].envFrom}'")
-				Expect(envFromOutput).To(BeEmpty())
-			})
+			helper.CmdShouldPass("odo", "service", "delete", "mysql-persistent", "-f")
+			// ensure that the backend no longer has an envFrom value
+			backendEnvFromOutput := oc.GetEnvFromEntry("backend", "app")
+			Expect(backendEnvFromOutput).To(Equal("''"))
+			// ensure that the frontend envFrom was not changed
+			frontEndEnvFromOutput := oc.GetEnvFromEntry("frontend", "app")
+			Expect(frontEndEnvFromOutput).To(ContainSubstring("backend"))
+			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend")
+			// ensure that the proper envFrom entry was created
+			envFromOutput := oc.GetEnvFromEntry("frontend", "app")
+			Expect(envFromOutput).To(Equal("''"))
 		})
-
-		// Delete the project
-		Context("delete delete", func() {
-			It("should delete test project", func() {
-				session := runCmdShouldPass("odo project delete " + projName + " -f")
-				Expect(session).To(ContainSubstring(projName))
-			})
-		})
-	*/
+	})
 })
