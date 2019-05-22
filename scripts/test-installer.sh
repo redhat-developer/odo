@@ -26,7 +26,7 @@ for image in $DOCKER_IMAGES; do
         FAILED_INSTALL="$FAILED_INSTALL $image"
     fi
 
-    docker run -it --rm -volumes `pwd`:/opt/odo $image /bin/bash -c "/opt/odo/scripts/installer.sh; /opt/odo/scripts/installer.sh --uninstall"
+    docker run -it --rm -v `pwd`:/opt/odo $image /bin/bash -c "/opt/odo/scripts/installer.sh; /opt/odo/scripts/installer.sh --uninstall"
     if [ $? -eq 0 ]; then
         echo "******************************************************"
         echo "**** Uninstall PASSED for $image"
