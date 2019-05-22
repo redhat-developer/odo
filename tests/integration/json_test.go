@@ -90,7 +90,7 @@ var _ = Describe("odojsonoutput", func() {
 
 			// odo url list -o json
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
-			fullURLPath := helper.DetermineRouteURL()
+			fullURLPath := helper.DetermineRouteURL("")
 			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
 			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080}}]}`, pathNoHTTP)
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))

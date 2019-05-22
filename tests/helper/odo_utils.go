@@ -52,10 +52,20 @@ func GetPreferenceValue(key string) string {
 	return ""
 }
 
-// DetermineRouteURL returns the http URL where the current component exposes it's service
-// this URL can then be used in order to interact with the deployed service running in Openshift
-func DetermineRouteURL() string {
-	stdOut := CmdShouldPass("odo", "url", "list")
+// DetermineRouteURL takes context path as argument and returns the http URL
+// where the current component exposes it's service this URL can
+// then be used in order to interact with the deployed service running in Openshift
+func DetermineRouteURL(context string) string {
+	return routeURL(context)
+}
+
+func routeURL(context string) string {
+	var stdOut string
+	if context != "" {
+		stdOut = CmdShouldPass("odo", "url", "list", "--context", context)
+	} else {
+		stdOut = CmdShouldPass("odo", "url", "list")
+	}
 	reURL := regexp.MustCompile(`\s+http://.\S+`)
 	odoURL := reURL.FindString(stdOut)
 	return strings.TrimSpace(odoURL)
