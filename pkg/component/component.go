@@ -131,7 +131,7 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Loading spinner
-	s := log.SpinnerNoSpin("Creating component " + params.Name)
+	s := log.Spinnerf("Creating component %s", params.Name)
 	defer s.End(false)
 
 	// Parse componentImageType before adding to labels
@@ -166,6 +166,8 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
 
+	s.End(true)
+
 	// Trigger build
 	if err = Build(client, params.Name, params.ApplicationName, params.Wait, params.StdOut, false); err != nil {
 		return errors.Wrapf(err, "failed to build component with args %+v", params)
@@ -177,7 +179,6 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 		return errors.Wrapf(err, "failed to deploy component with args %+v", params)
 	}
 
-	s.End(true)
 	return nil
 }
 
@@ -814,6 +815,11 @@ func Build(client *occlient.Client, componentName string, applicationName string
 // Deploy deploys the component
 // desiredRevision is the desired version of the deployment config to wait for
 func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision int64) error {
+
+	// Loading spinner
+	s := log.Spinnerf("Deploying component %s", params.Name)
+	defer s.End(false)
+
 	// Namespace the component
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(params.Name, params.ApplicationName)
 	if err != nil {
@@ -830,6 +836,9 @@ func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision
 	if err != nil {
 		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", namespacedOpenShiftObject)
 	}
+
+	s.End(true)
+
 	return nil
 }
 
@@ -1053,7 +1062,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
 		}
 
-		// we build	as the build needs to happen before the deployment
+		// we build as the build needs to happen before the deployment
 		err = Build(client, componentName, applicationName, true, stdout, false)
 		if err != nil {
 			return errors.Wrapf(err, "unable to build the component %v", componentName)
