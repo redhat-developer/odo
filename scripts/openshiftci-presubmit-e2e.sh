@@ -9,7 +9,8 @@ export CI="openshift"
 export TIMEOUT="30m"
 make configure-installer-tests-cluster
 make bin
-export PATH="$PATH:$(pwd)"
+echo $GOPATH
+export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR="/tmp/artifacts"
 make clean-test
 make test-generic
