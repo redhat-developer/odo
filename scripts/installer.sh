@@ -35,14 +35,15 @@ parse_installer_action_flag ()
 {
     case "$@" in
 
-      # Set INSTALLER_ACTION to uninstall odo or install odo
-      # Include --uninstall flag when running installer.sh to uninstall and simply run installer.sh to install latest version of odo
-      --uninstall)
+    # Set INSTALLER_ACTION to uninstall odo or install odo
+    # Include --uninstall flag when running installer.sh to uninstall and simply run installer.sh to install latest version of odo
+    --uninstall)
         INSTALLER_ACTION="uninstall"
-        ;;
-      *)
+    ;;
+
+    *)
         INSTALLER_ACTION="install"
-        ;;
+    ;;
     esac
 }
 
@@ -56,13 +57,14 @@ command_exists() {
 
     case "$distribution" in
 
-      ubuntu|debian)
+    ubuntu|debian)
         # Use which to verify install/uninstall on ubuntu and debian distributions
         which "$@" > /dev/null 2>&1
-        ;;
-      *)
+    ;;
+
+    *)
         command -v "$@" > /dev/null 2>&1
-        ;;
+    ;;
     esac
 }
 
