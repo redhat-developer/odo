@@ -6,6 +6,7 @@ BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
 DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
 TIMEOUT ?= 1800s
+SPEC_EXEC_METHOD ?=
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -92,6 +93,15 @@ configure-installer-tests-cluster:
 .PHONY: test
 test:
 	go test -race $(PKGS)
+
+# Run generic integration tests
+.PHONY: clean-test
+clean-test:
+ifeq ($(SPEC_EXEC_METHOD),series)
+	go test -v github.com/openshift/odo/tests/template --ginkgo.focus="Example of a clean test" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+else
+	ginkgo -v -nodes=4 -focus="Example of a clean test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/template/
+endif
 
 # Run generic integration tests
 .PHONY: test-generic

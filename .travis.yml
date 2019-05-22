@@ -34,6 +34,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
+        - travis_wait make clean-test
         - travis_wait make test-generic
         - travis_wait make test-odo-login-e2e
         - travis_wait make test-cmp-e2e

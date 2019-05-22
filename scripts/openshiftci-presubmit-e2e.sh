@@ -11,6 +11,7 @@ make configure-installer-tests-cluster
 make bin
 export PATH="$PATH:$(pwd)"
 export CUSTOM_HOMEDIR="/tmp/artifacts"
+make clean-test
 make test-generic
 make test-odo-login-e2e
 make test-json-format-output
