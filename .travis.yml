@@ -51,7 +51,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "source,json and config integration tests"
+      name: "source,json, config and url integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -60,6 +60,7 @@ jobs:
         - travis_wait make test-source-e2e
         - travis_wait make test-json-format-output
         - travis_wait make test-odo-config
+        - travis_wait make test-odo-url-int
 
 # END Tests that are also in CircleCI
 

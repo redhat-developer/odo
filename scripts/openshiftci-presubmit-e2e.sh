@@ -24,3 +24,4 @@ make test-odo-config
 make test-watch-e2e
 make test-cmd-storage
 make test-cmd-app
+make test-odo-url-int

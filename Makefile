@@ -169,21 +169,14 @@ test-odo-login-e2e:
 test-odo-config:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo config test" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
-<<<<<<< HEAD
 # Run all integration tests
 .PHONY: test-integration
 test-integration:
-=======
+    go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 # Run config tests
 .PHONY: test-odo-url-int
 test-odo-url-int:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoURLIntegration" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
-
-# Run all e2e tests
-.PHONY: test-e2e
-test-e2e:
->>>>>>> Adding url integration tests
-	go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoURLIntegration" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)	
 
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios
