@@ -32,7 +32,7 @@ func NewCmdCatalog(name, fullName string) *cobra.Command {
 	catalogCmd.AddCommand(catalogSearchCmd, catalogListCmd, catalogDescribeCmd)
 
 	// Add a defined annotation in order to appear in the help menu
-	catalogCmd.Annotations = map[string]string{"command": "other"}
+	catalogCmd.Annotations = map[string]string{"command": "main"}
 	catalogCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return catalogCmd

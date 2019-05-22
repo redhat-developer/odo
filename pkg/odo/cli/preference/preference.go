@@ -37,7 +37,7 @@ func NewCmdPreference(name, fullName string) *cobra.Command {
 	preferenceCmd.AddCommand(preferenceViewCmd, preferenceSetCmd)
 	preferenceCmd.AddCommand(preferenceUnsetCmd)
 	preferenceCmd.SetUsageTemplate(util.CmdUsageTemplate)
-	preferenceCmd.Annotations = map[string]string{"command": "other"}
+	preferenceCmd.Annotations = map[string]string{"command": "main"}
 
 	return preferenceCmd
 }

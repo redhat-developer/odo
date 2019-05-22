@@ -51,10 +51,10 @@ Aliases:
 Examples:
 {{ .Example }}{{end}}{{ if .HasAvailableSubCommands}}
 
-Component Commands:{{range .Commands}}{{if eq .Annotations.command "component"}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
+Shortcuts:{{range .Commands}}{{if eq .Annotations.command "component"}}
+  {{rpad .Name .NamePadding }} {{.Short}} (shortcut for "component {{.Name}}") {{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
 
-Other Commands:{{range .Commands}}{{if eq .Annotations.command "other"}}
+Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
 
 Utility Commands:{{range .Commands}}{{if or (eq .Annotations.command "utility") (eq .Name "help") }}

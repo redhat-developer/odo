@@ -44,7 +44,7 @@ func NewCmdStorage(name, fullName string) *cobra.Command {
 	//storageCmd.AddCommand(storageMountCmd)
 
 	// Add a defined annotation in order to appear in the help menu
-	storageCmd.Annotations = map[string]string{"command": "other"}
+	storageCmd.Annotations = map[string]string{"command": "main"}
 	storageCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return storageCmd

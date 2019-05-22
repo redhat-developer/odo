@@ -60,7 +60,7 @@ func NewCmdProject(name, fullName string) *cobra.Command {
 	projectCmd.AddCommand(projectListCmd)
 
 	// Add a defined annotation in order to appear in the help menu
-	projectCmd.Annotations = map[string]string{"command": "other"}
+	projectCmd.Annotations = map[string]string{"command": "main"}
 	projectCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	completion.RegisterCommandHandler(projectSetCmd, completion.ProjectNameCompletionHandler)

@@ -38,7 +38,7 @@ func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationCmd.AddCommand(configurationViewCmd, configurationSetCmd)
 	configurationCmd.AddCommand(configurationUnsetCmd)
 	configurationCmd.SetUsageTemplate(util.CmdUsageTemplate)
-	configurationCmd.Annotations = map[string]string{"command": "component"}
+	configurationCmd.Annotations = map[string]string{"command": "main"}
 
 	return configurationCmd
 }

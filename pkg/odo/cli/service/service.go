@@ -32,7 +32,7 @@ func NewCmdService(name, fullName string) *cobra.Command {
 		Args: cobra.RangeArgs(1, 3),
 	}
 	// Add a defined annotation in order to appear in the help menu
-	serviceCmd.Annotations = map[string]string{"command": "other"}
+	serviceCmd.Annotations = map[string]string{"command": "main"}
 	serviceCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	serviceCmd.AddCommand(serviceCreateCmd, serviceDeleteCmd, serviceListCmd)
 
