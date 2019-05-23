@@ -43,7 +43,7 @@ done
 if [ -n "$FAILED_INSTALL" ] || [ -n "$FAILED_UNINSTALL" ]; then
     echo "TEST FAILED!!"
     echo "Installation script failed in following images:"
-    echo "Intsall test failures: $FAILED_INSTALL"
+    echo "Install test failures: $FAILED_INSTALL"
     echo "Uninstall test failures: $FAILED_UNINSTALL"
     exit 1
 else
