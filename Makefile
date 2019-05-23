@@ -94,7 +94,7 @@ configure-installer-tests-cluster:
 test:
 	go test -race $(PKGS)
 
-# Run generic integration tests
+# Run clean test template spec parallelly
 .PHONY: clean-test
 clean-test:
 ifeq ($(SPEC_EXEC_METHOD),series)
