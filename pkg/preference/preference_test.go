@@ -403,6 +403,23 @@ func TestIsSupportedParameter(t *testing.T) {
 	}
 }
 
+func TestPreferenceIsntCreatedWhenOdoIsUsed(t *testing.T) {
+	// cleaning up old odo files if any
+	filename, err := getPreferenceFile()
+	if err != nil {
+		t.Error(err)
+	}
+	os.RemoveAll(filename)
+
+	conf, err := NewPreferenceInfo()
+	if err != nil {
+		t.Errorf("error while creating global preference %v", err)
+	}
+	if _, err = os.Stat(conf.Filename); !os.IsNotExist(err) {
+		t.Errorf("preference file shouldn't exist yet")
+	}
+}
+
 func TestMetaTypePopulatedInPreference(t *testing.T) {
 	pi, err := NewPreferenceInfo()
 
