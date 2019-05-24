@@ -7,6 +7,7 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,13 +28,14 @@ func List(client *occlient.Client) ([]string, error) {
 // ListInProject lists all applications in given project by Querying the cluster
 func ListInProject(client *occlient.Client) ([]string, error) {
 
-	// Get applications from cluster
+	// Get all deploymentconfigs with the "app" label
 	appNames, err := client.GetLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications")
 	}
 
-	return appNames, nil
+	// Filter out any names, as there could be multiple components but within the same application
+	return util.RemoveDuplicates(appNames), nil
 }
 
 // Exists checks whether the given app exist or not

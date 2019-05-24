@@ -583,3 +583,24 @@ func MachineOutput(outputFlag string, resource interface{}) (string, error) {
 
 	return string(out), err
 }
+
+// RemoveDuplicates goes through a string slice and removes all duplicates.
+// Reference: https://siongui.github.io/2018/04/14/go-remove-duplicates-from-slice-or-array/
+func RemoveDuplicates(s []string) []string {
+
+	// Make a map and go through each value to see if it's a duplicate or not
+	m := make(map[string]bool)
+	for _, item := range s {
+		if _, ok := m[item]; ok {
+		} else {
+			m[item] = true
+		}
+	}
+
+	// Append to the unique string
+	var result []string
+	for item := range m {
+		result = append(result, item)
+	}
+	return result
+}

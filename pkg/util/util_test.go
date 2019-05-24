@@ -1034,3 +1034,41 @@ func TestIsGlobExpMatch(t *testing.T) {
 		})
 	}
 }
+
+func TestRemoveDuplicate(t *testing.T) {
+	type args struct {
+		input  []string
+		output []string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "Case 1 - Remove duplicates",
+			args: args{
+				input:  []string{"bar", "bar"},
+				output: []string{"bar"},
+			},
+		},
+		{
+			name: "Case 2 - Remove duplicates, none in array",
+			args: args{
+				input:  []string{"bar", "foo"},
+				output: []string{"bar", "foo"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Run function RemoveDuplicate
+			output := RemoveDuplicates(tt.args.input)
+
+			if !(reflect.DeepEqual(output, tt.args.output)) {
+				t.Errorf("expected %v, got %v", tt.args.output, output)
+			}
+
+		})
+	}
+}
