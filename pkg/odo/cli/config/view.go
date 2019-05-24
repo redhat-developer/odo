@@ -33,6 +33,11 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	cfg, err := config.NewLocalConfigInfo(o.contextDir)
+	if err != nil {
+		return err
+	}
+	o.lci = cfg
 	return
 }
 
@@ -43,13 +48,9 @@ func (o *ViewOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *ViewOptions) Run() (err error) {
-	cfg, err := config.NewLocalConfigInfo(o.contextDir)
-	if err != nil {
-		return err
-	}
-	cs := cfg.GetComponentSettings()
+	cs := o.lci.GetComponentSettings()
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-	envVarList := cfg.GetEnvVars()
+	envVarList := o.lci.GetEnvVars()
 	if len(envVarList) != 0 {
 		fmt.Fprintln(w, "ENVIRONMENT VARIABLES")
 		fmt.Fprintln(w, "------------------------------------------------")
