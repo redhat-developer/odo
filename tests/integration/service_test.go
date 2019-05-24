@@ -72,7 +72,7 @@ var _ = Describe("odoServiceE2e", func() {
 					strings.Contains(output, "ProvisionedAndLinked")
 			})
 
-			routeURL := helper.DetermineRouteURL()
+			routeURL := helper.DetermineRouteURL("")
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Spring Boot", 30, 1)
