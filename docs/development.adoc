@@ -160,33 +160,22 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 
 .Procedure:
 
-To deploy an integration test:
+Integration tests can be run in the following two ways:
 
+* To run the test spec parallelly (default):
++
+----
+$ make clean-test
+----
++
 
-* For the entire integration suite use:
+* To run the test spec sequentially use enviornment variable `SPEC_EXEC_METHOD`:
++
 ----
-$ make test-e2e
-----
-
-* For the generic tests use:
-----
-$ make test-generic
-----
-
-* For the component tests use:
-----
-$ make test-cmp-e2e
+$ make clean-test SPEC_EXEC_METHOD=series
 ----
 
-* For the service catalog tests use:
-----
-$ make test-service-e2e
-----
-
-* For the e2e scenario test use:
-----
-$ make test-e2e-scenarios
-----
+NOTE: Currently only the clean test template is configured with environment variable `SPEC_EXEC_METHOD` and rest of the test does not honour this environment variable. So by default rest of the test runs sequencially.
 
 You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
 
