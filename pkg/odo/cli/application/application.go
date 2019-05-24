@@ -45,7 +45,7 @@ func NewCmdApplication(name, fullName string) *cobra.Command {
 	applicationCmd.AddCommand(delete, describe, list)
 
 	// Add a defined annotation in order to appear in the help menu
-	applicationCmd.Annotations = map[string]string{"command": "other"}
+	applicationCmd.Annotations = map[string]string{"command": "main"}
 	applicationCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return applicationCmd
