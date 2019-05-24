@@ -27,7 +27,7 @@ sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSIO
 check_version pkg/odo/cli/version/version.go
 
 echo "* Bumping version in scripts/installer.sh"
-sed -i "s/\(LATEST_VERSION=\)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSION}\"/g" scripts/install.sh
+sed -i "s/\(LATEST_VERSION=\)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSION}\"/g" scripts/installer.sh
 check_version scripts/installer.sh
 
 echo "****************************************************************************************"
