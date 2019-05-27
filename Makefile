@@ -100,7 +100,7 @@ clean-test:
 ifeq ($(SPEC_EXEC_METHOD),series)
 	go test -v github.com/openshift/odo/tests/template --ginkgo.focus="Example of a clean test" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 else
-	ginkgo -v -nodes=4 -focus="Example of a clean test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/template/
+	ginkgo -v -nodes=4 -focus="Example of a clean test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/template/ -timeout $(TIMEOUT)
 endif
 
 # Run generic integration tests
