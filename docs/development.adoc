@@ -162,7 +162,7 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 
 Integration tests can be run in the following two ways:
 
-* To run the template spec parallelly (default):
+* To run the template spec in parallel (default):
 +
 ----
 $ make clean-test
