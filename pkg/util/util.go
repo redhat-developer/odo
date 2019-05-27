@@ -591,8 +591,7 @@ func RemoveDuplicates(s []string) []string {
 	// Make a map and go through each value to see if it's a duplicate or not
 	m := make(map[string]bool)
 	for _, item := range s {
-		if _, ok := m[item]; ok {
-		} else {
+		if _, ok := m[item]; !ok {
 			m[item] = true
 		}
 	}
