@@ -323,7 +323,7 @@ func componentTests(args ...string) {
 		It("should be able to update a component from local to git", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
 			getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
 			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
 			getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
@@ -338,7 +338,7 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "config", "set", "sourcetype", "git", "--context", context, "-f")
 
 			// check if the earlier resource requests are still valid
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
 			getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
 			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
 			getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)
@@ -364,7 +364,7 @@ func componentTests(args ...string) {
 
 		It("should be able to update a component from git to local", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
 			getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
 			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
 			getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
@@ -380,7 +380,7 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "config", "set", "sourcetype", "local", "--context", context, "-f")
 
 			// check if the earlier resource requests are still valid
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
 			getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
 			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
 			getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)

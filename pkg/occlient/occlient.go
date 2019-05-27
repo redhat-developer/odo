@@ -85,7 +85,7 @@ type CreateArgs struct {
 }
 
 const (
-	ocUpdateTimeout    = 5 * time.Minute
+	OcUpdateTimeout    = 5 * time.Minute
 	OpenShiftNameSpace = "openshift"
 
 	// The length of the string to be generated for names of resources
@@ -1402,7 +1402,7 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 
 	// Watch / wait for deploymentconfig to update annotations
 	// importing "component" results in an import loop, so we do *not* use the constants here.
-	_, err = c.WaitAndGetDC(name, desiredRevision, ocUpdateTimeout, waitCond)
+	_, err = c.WaitAndGetDC(name, desiredRevision, OcUpdateTimeout, waitCond)
 	if err != nil {
 		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", name)
 	}

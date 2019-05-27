@@ -4,14 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
-
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/catalog"
@@ -813,6 +811,7 @@ func Build(client *occlient.Client, componentName string, applicationName string
 }
 
 // Deploy deploys the component
+// it starts a new deployment and wait for the new dc to be available
 // desiredRevision is the desired version of the deployment config to wait for
 func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision int64) error {
 
@@ -826,13 +825,15 @@ func Deploy(client *occlient.Client, params occlient.CreateArgs, desiredRevision
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
 
+	// start the deployment
+	// the build must be finished before this call and the new image must be successfully updated
 	_, err = client.StartDeployment(namespacedOpenShiftObject)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", namespacedOpenShiftObject)
 	}
 
 	// Watch / wait for deployment config to update annotations
-	_, err = client.WaitAndGetDC(namespacedOpenShiftObject, desiredRevision, 5*time.Minute, occlient.IsDCRolledOut)
+	_, err = client.WaitAndGetDC(namespacedOpenShiftObject, desiredRevision, occlient.OcUpdateTimeout, occlient.IsDCRolledOut)
 	if err != nil {
 		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", namespacedOpenShiftObject)
 	}
@@ -1062,10 +1063,11 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
 		}
 
-		// we build as the build needs to happen before the deployment
+		// we need to retrieve and build the git repository before deployment for the git components
+		// so we build before updating the deployment
 		err = Build(client, componentName, applicationName, true, stdout, false)
 		if err != nil {
-			return errors.Wrapf(err, "unable to build the component %v", componentName)
+			return errors.Wrapf(err, "unable to build the component %s", componentName)
 		}
 
 		// Update / replace the current DeploymentConfig with a Git one (not SupervisorD!)
@@ -1089,7 +1091,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 
 	} else if oldSourceType == "git" && (newSourceType == "binary" || newSourceType == "local") {
 
-		s := log.Spinnerf("Applying component settings to component: %v", componentSettings.GetName())
+		s := log.Spinnerf("Applying component settings to component: %s", componentSettings.GetName())
 		defer s.End(false)
 
 		// Steps to update component from git to local or binary
@@ -1135,7 +1137,8 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 				return errors.Wrap(err, "unable to get the BuildConfig file")
 			}
 
-			// Build it before running the deployment
+			// we need to retrieve and build the git repository before deployment for git components
+			// so we build it before running the deployment
 			err = Build(client, componentName, applicationName, true, stdout, false)
 			if err != nil {
 				return errors.Wrapf(err, "unable to build the component: %v", componentName)
