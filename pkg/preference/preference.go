@@ -117,14 +117,16 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
 	}
-	// Check whether directory and file are not present if they aren't then create them
-	if err = util.CreateIfNotExists(configFile); err != nil {
-		return nil, err
-	}
+
 	c := PreferenceInfo{
 		Preference: NewPreference(),
+		Filename:   configFile,
 	}
-	c.Filename = configFile
+	// if the config file doesn't exist then we dont worry about it and return
+	if _, err = os.Stat(configFile); os.IsNotExist(err) {
+		return &c, nil
+	}
+
 	err = util.GetFromFile(&c.Preference, c.Filename)
 	if err != nil {
 		return nil, err
