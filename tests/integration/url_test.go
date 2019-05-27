@@ -53,7 +53,7 @@ var _ = Describe("odoURLIntegration", func() {
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080")
 			stdout = helper.CmdShouldPass("odo", "url", "list")
-			helper.MatchAllInOutput(stdout, []string{url1, "<not created on cluster>", "Present", "Create URLs", "odo push"})
+			helper.MatchAllInOutput(stdout, []string{url1, "<not created on cluster>", "Present", "create URLs", "odo push"})
 			helper.CmdShouldPass("odo", "push")
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, "Present"})
