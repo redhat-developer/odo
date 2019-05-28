@@ -97,7 +97,13 @@ func EnterInputTypePath(inputType string, currentDir string, defaultPath ...stri
 
 	err := survey.AskOne(prompt, &path, validation.PathValidator)
 	ui.HandleError(err)
-	return path
+
+	// We handle getting the absolute path here..
+	absPath, err := util.GetAbsPath(path)
+	if err != nil {
+		ui.HandleError(err)
+	}
+	return absPath
 }
 
 // we need this because the validator for the component name needs use info from the Context
