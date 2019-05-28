@@ -101,16 +101,21 @@ func (lo *ListOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-
+		activeMark := " "
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
-
+		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
+		currentComponent := lo.Context.ComponentAllowingEmpty(true)
 		for _, file := range ap {
-			d := "not deployed"
+			d := "not Deployed"
 			if file.Status.State {
-				d = "deployed"
+				d = "Deployed"
 			}
-			fmt.Fprintln(w, file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", d, "\t", file.Status.Context)
+			if file.Name == currentComponent {
+				activeMark = "*"
+			}
+			fmt.Fprintln(w, activeMark, "\t", file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", d, "\t", file.Status.Context)
+			activeMark = " "
+
 		}
 		w.Flush()
 		return nil
@@ -137,13 +142,13 @@ func (lo *ListOptions) Run() (err error) {
 		}
 		activeMark := " "
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
+		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE")
 		currentComponent := lo.Context.ComponentAllowingEmpty(true)
 		for _, comp := range components.Items {
 			if comp.Name == currentComponent {
 				activeMark = "*"
 			}
-			fmt.Fprintln(w, activeMark, "\t", comp.Name, "\t", comp.Spec.Type)
+			fmt.Fprintln(w, activeMark, "\t", comp.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Source, "\t", "Deployed")
 			activeMark = " "
 		}
 		w.Flush()
