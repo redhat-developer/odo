@@ -85,19 +85,6 @@ func componentTests(args ...string) {
 			os.RemoveAll(context)
 		})
 
-		It("should be able to create a component with git source", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
-			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-			getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
-			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
-			getCPULimit := oc.MaxCPU("cmp-git", "testing", project)
-			Expect(getCPULimit).To(ContainSubstring("2"))
-			getCPURequest := oc.MinCPU("cmp-git", "testing", project)
-			Expect(getCPURequest).To(ContainSubstring("100m"))
-		})
-
 		It("should list the component", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", "push", "--context", context)
@@ -320,14 +307,10 @@ func componentTests(args ...string) {
 			os.RemoveAll(context)
 		})
 
-		It("should be able to update a component from local to git", func() {
+		It("should be able to create a git component and update it from local to git", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
-			getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
-			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-			getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
-			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
 			getCPULimit := oc.MaxCPU("cmp-git", "testing", project)
 			Expect(getCPULimit).To(ContainSubstring("2"))
 			getCPURequest := oc.MinCPU("cmp-git", "testing", project)
@@ -339,10 +322,6 @@ func componentTests(args ...string) {
 
 			// check if the earlier resource requests are still valid
 			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
-			getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
-			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-			getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)
-			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
 			getCPULimit = oc.MaxCPU("cmp-git", "testing", project)
 			Expect(getCPULimit).To(ContainSubstring("2"))
 			getCPURequest = oc.MinCPU("cmp-git", "testing", project)
@@ -363,16 +342,12 @@ func componentTests(args ...string) {
 		})
 
 		It("should be able to update a component from git to local", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
 			getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
 			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
 			getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
 			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
-			getCPULimit := oc.MaxCPU("cmp-git", "testing", project)
-			Expect(getCPULimit).To(ContainSubstring("2"))
-			getCPURequest := oc.MinCPU("cmp-git", "testing", project)
-			Expect(getCPURequest).To(ContainSubstring("100m"))
 
 			// update the component config according to the git component
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
@@ -385,10 +360,6 @@ func componentTests(args ...string) {
 			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
 			getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)
 			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
-			getCPULimit = oc.MaxCPU("cmp-git", "testing", project)
-			Expect(getCPULimit).To(ContainSubstring("2"))
-			getCPURequest = oc.MinCPU("cmp-git", "testing", project)
-			Expect(getCPURequest).To(ContainSubstring("100m"))
 
 			// check the source location and type in the deployment config
 			getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
