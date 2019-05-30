@@ -120,6 +120,12 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
+
+	log.Info("Validation and pre-check")
+
+	s := log.Spinner("Validating component")
+	defer s.End(false)
+
 	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfig.GetComponentSettings(), false); err != nil {
 		return err
 	}
@@ -133,6 +139,7 @@ func (po *PushOptions) Validate() (err error) {
 		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfig.GetName())
 	}
 
+	s.End(true)
 	return nil
 }
 
@@ -146,6 +153,9 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 	cmpName := po.localConfig.GetName()
 	appName := po.localConfig.GetApplication()
 	cmpType := po.localConfig.GetType()
+
+	s := log.Spinner("Validating configuration")
+	defer s.End(false)
 
 	isCmpExists, err := component.Exists(po.Context.Client, cmpName, appName)
 	if err != nil {
@@ -166,12 +176,13 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 		log.Successf("Successfully created component %s", cmpName)
 	}
 
+	s.End(true)
+
 	// Apply config
 	err = component.ApplyConfig(po.Context.Client, *po.localConfig, stdout, isCmpExists)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
-	log.Successf("Successfully updated component with name: %v", cmpName)
 
 	return nil
 }
@@ -193,7 +204,7 @@ func (po *PushOptions) Run() (err error) {
 		return nil
 	}
 
-	log.Successf("Pushing changes to component: %v of type %s", cmpName, po.sourceType)
+	log.Infof("\nPushing changes to component: %v of type %s", cmpName, po.sourceType)
 
 	// Get SourceLocation here...
 	po.sourcePath, err = po.localConfig.GetOSSourcePath()
@@ -250,7 +261,7 @@ func (po *PushOptions) Run() (err error) {
 		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
 	}
 
-	log.Successf("Changes successfully pushed to component: %v", cmpName)
+	log.Success("Changes successfully pushed to component")
 	return
 }
 

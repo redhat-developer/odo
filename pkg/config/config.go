@@ -646,7 +646,7 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 	// Validation check if the user passes in a URL despite us being LOCAL or BINARY
 	u, err := url.Parse(sourceLocation)
 	if err != nil || (u.Scheme == "https" || u.Scheme == "http") {
-		return "", fmt.Errorf("URL: %s passed even though source type is: %s", sourceLocation, sourceType)
+		return "", fmt.Errorf("URL %s passed even though source type is: %s", sourceLocation, sourceType)
 	}
 
 	// Always piped to "fromslash" so it's correct for the OS..

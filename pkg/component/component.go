@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/catalog"
@@ -550,6 +551,8 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, stdout io.Writer, cmpExist bool) (err error) {
 
+	s := log.Spinner("Applying configuration")
+	defer s.End(false)
 	// if component exist then only call the update function
 	if cmpExist {
 
@@ -557,22 +560,34 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 			return err
 		}
 	}
-	// URL creation part
-	err = ApplyConfigCreateUrl(client, componentConfig)
+	s.End(true)
+
+	showChanges, err := checkIfURLChangesWillBeMade(client, componentConfig)
 	if err != nil {
 		return err
 	}
-	// URL deletion part
-	err = applyConfigDeleteUrl(client, componentConfig)
-	if err != nil {
-		return err
+
+	if showChanges {
+		log.Info("\nApplying URL changes")
+		// Create any URLs that have been added to the component
+		err = ApplyConfigCreateURL(client, componentConfig)
+		if err != nil {
+			return err
+		}
+
+		// Delete any URLs
+		err = applyConfigDeleteURL(client, componentConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	return
 }
 
-// ApplyConfigDeleteUrl applies url config deletion onto component
-func applyConfigDeleteUrl(client *occlient.Client, componentConfig config.LocalConfigInfo) (err error) {
+// ApplyConfigDeleteURL applies url config deletion onto component
+func applyConfigDeleteURL(client *occlient.Client, componentConfig config.LocalConfigInfo) (err error) {
+
 	urlList, err := urlpkg.List(client, componentConfig.GetName(), componentConfig.GetApplication())
 	if err != nil {
 		return err
@@ -584,7 +599,7 @@ func applyConfigDeleteUrl(client *occlient.Client, componentConfig config.LocalC
 			if err != nil {
 				return err
 			}
-			log.Successf("Successfully deleted URL %v", u.Name)
+			log.Successf("URL %s successfully deleted", u.Name)
 		}
 	}
 	return nil
@@ -599,30 +614,27 @@ func checkIfUrlPresentInConfig(localUrl []config.ConfigUrl, url string) bool {
 	return false
 }
 
-// ApplyConfigCreateUrl applies url config onto component
-func ApplyConfigCreateUrl(client *occlient.Client, componentConfig config.LocalConfigInfo) error {
+// ApplyConfigCreateURL applies url config onto component
+func ApplyConfigCreateURL(client *occlient.Client, componentConfig config.LocalConfigInfo) error {
 
 	urls := componentConfig.GetUrl()
 	for _, urlo := range urls {
-		log.Successf("Checking URL %v", urlo.Name)
 		exist, err := urlpkg.Exists(client, urlo.Name, componentConfig.GetName(), componentConfig.GetApplication())
 		if err != nil {
-			return fmt.Errorf("failed check URL Exist")
+			return errors.Wrapf(err, "unable to check url")
 		}
 		if exist {
-			log.Successf("URL %v already exist", urlo.Name)
+			log.Successf("URL %s already exists", urlo.Name)
 		} else {
 			host, err := urlpkg.Create(client, urlo.Name, urlo.Port, componentConfig.GetName(), componentConfig.GetApplication())
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "unable to create url")
 			}
-			log.Successf("Successfully created URL for component: %v", componentConfig.GetName())
-			log.Successf("%v", host)
+			log.Successf("URL %s: %s created", urlo.Name, host)
 		}
 	}
 
 	return nil
-
 }
 
 // PushLocal push local code to the cluster and trigger build there.
@@ -696,6 +708,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	// Copy the files to the pod
 	s := log.Spinner("Copying files to component")
+	defer s.End(false)
 
 	if !isForcePush {
 		if len(files) == 0 && len(delFiles) == 0 {
@@ -870,6 +883,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
+// TODO: This is where a lot of the pauses happen....
 func List(client *occlient.Client, applicationName string) (ComponentList, error) {
 
 	var applicationSelector string
@@ -936,10 +950,8 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 // Returns:
 //	errors if any
 func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, newSource string, stdout io.Writer) error {
-	// STEP 1. Create the common Object Meta for updating.
 
-	s := log.Spinnerf("Retrieving component settings for component: %v", componentSettings.GetName())
-	defer s.End(false)
+	// STEP 1. Create the common Object Meta for updating.
 
 	componentName := componentSettings.GetName()
 	applicationName := componentSettings.GetApplication()
@@ -1044,7 +1056,6 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		StorageToBeUnMounted: storageToUnMount,
 	}
 
-	s.End(true)
 	// STEP 2. Determine what the new source is going to be
 
 	glog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
@@ -1077,9 +1088,6 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		updateComponentParams.ImageMeta.Name = bc.Spec.Output.To.Name
 		isDeleteSupervisordVolumes := (oldSourceType != string(config.GIT))
 
-		s := log.Spinnerf("Applying component settings to component: %v", componentSettings.GetName())
-		defer s.End(false)
-
 		err = client.UpdateDCToGit(
 			updateComponentParams,
 			isDeleteSupervisordVolumes,
@@ -1087,12 +1095,8 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig image for %s component", componentName)
 		}
-		s.End(true)
 
 	} else if oldSourceType == "git" && (newSourceType == "binary" || newSourceType == "local") {
-
-		s := log.Spinnerf("Applying component settings to component: %s", componentSettings.GetName())
-		defer s.End(false)
 
 		// Steps to update component from git to local or binary
 
@@ -1117,8 +1121,6 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		if err != nil {
 			return errors.Wrapf(err, "unable to update DeploymentConfig for %s component", componentName)
 		}
-
-		s.End(true)
 
 	} else {
 		// save source path as annotation
@@ -1151,9 +1153,6 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 			updateComponentParams.ImageMeta.Name = bc.Spec.Output.To.Name
 			isDeleteSupervisordVolumes := (oldSourceType != string(config.GIT))
 
-			s := log.Spinnerf("Applying component settings to component: %v", componentSettings.GetName())
-			defer s.End(false)
-
 			err = client.UpdateDCToGit(
 				updateComponentParams,
 				isDeleteSupervisordVolumes,
@@ -1162,12 +1161,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 				return errors.Wrapf(err, "unable to update DeploymentConfig image for %s component", componentName)
 			}
 
-			s.End(true)
-
 		} else if newSourceType == "local" || newSourceType == "binary" {
-
-			s := log.Spinnerf("Applying component settings to component: %v", componentSettings.GetName())
-			defer s.End(false)
 
 			// Update the sourceURL
 			sourceURL := util.GenFileURL(newSource)
@@ -1184,7 +1178,6 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 				return errors.Wrapf(err, "unable to update DeploymentConfig for %s component", componentName)
 			}
 
-			s.End(true)
 		}
 
 		if err != nil {
@@ -1371,4 +1364,22 @@ func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageLi
 		storageList.Items = append(storageList.Items, storage.GetMachineReadableFormat(storageVar.Name, storageVar.Size, storageVar.Path))
 	}
 	return storageList
+}
+
+// checkIfURLChangesWillBeMade checks to see if there are going to be any changes
+// to the URLs when deploying and returns a true / false
+func checkIfURLChangesWillBeMade(client *occlient.Client, componentConfig config.LocalConfigInfo) (bool, error) {
+
+	urlList, err := urlpkg.List(client, componentConfig.GetName(), componentConfig.GetApplication())
+	if err != nil {
+		return false, err
+	}
+
+	// If config has URL(s) (since we check) or if the cluster has URL's but
+	// componentConfig does not (deleting)
+	if len(componentConfig.GetUrl()) > 0 || len(componentConfig.GetUrl()) == 0 && (len(urlList.Items) > 0) {
+		return true, nil
+	}
+
+	return false, nil
 }
