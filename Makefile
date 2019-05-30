@@ -7,10 +7,12 @@ DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
 TIMEOUT ?= 1800s
 
-# Env variable SPEC_EXEC_METHOD can be used to pass spec exeution type
+# Env variable TEST_EXEC_NODES is used to pass spec exeution type
 # (parallel or sequential) for ginkgo tests. To run the specs sequentially use
-# SPEC_EXEC_METHOD=series, otherwise specs run in parallel on 4 node.
-SPEC_EXEC_METHOD ?=
+# TEST_EXEC_NODES=1, otherwise bydefault the specs are run in parallel on 4 node.
+# NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
+# on the same number of node.
+TEST_EXEC_NODES ?= 4
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -98,14 +100,12 @@ configure-installer-tests-cluster:
 test:
 	go test -race $(PKGS)
 
+# This test is only for reference and will be removed
+# in the subsequent subtask of https://github.com/openshift/odo/issues/1473 
 # Run clean test template spec parallelly
 .PHONY: clean-test
 clean-test:
-ifeq ($(SPEC_EXEC_METHOD),series)
-	go test -v github.com/openshift/odo/tests/template --ginkgo.focus="Example of a clean test" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
-else
-	ginkgo -v -nodes=4 -focus="Example of a clean test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/template/ -timeout $(TIMEOUT)
-endif
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="Example of a clean test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/template/ -timeout $(TIMEOUT)
 
 # Run generic integration tests
 .PHONY: test-generic
