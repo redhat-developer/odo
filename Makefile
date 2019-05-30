@@ -6,6 +6,10 @@ BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
 DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
 TIMEOUT ?= 1800s
+
+# Env variable SPEC_EXEC_METHOD can be used to pass spec exeution type
+# (parallel or sequential) for ginkgo tests. To run the specs sequentially use
+# SPEC_EXEC_METHOD=series, otherwise specs run in parallel on 4 node.
 SPEC_EXEC_METHOD ?=
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
@@ -168,6 +172,8 @@ test-odo-login-e2e:
 test-odo-config:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo config test" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
+# Yet to decide on this test. Discussion is being tracked in
+# https://github.com/openshift/odo/issues/1769
 # Run all e2e tests
 .PHONY: test-e2e
 test-e2e:
