@@ -341,32 +341,36 @@ func componentTests(args ...string) {
 			Expect(getSourceType).To(ContainSubstring("Git"))
 		})
 
-		It("should be able to update a component from git to local", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--context", context, "--app", "testing")...)
-			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
-			getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
-			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-			getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
-			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
+		/*
+			Enable once https://github.com/openshift/odo/issues/1778 is merged
 
-			// update the component config according to the git component
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "config", "set", "sourcelocation", "./", "--context", context, "-f")
-			helper.CmdShouldPass("odo", "config", "set", "sourcetype", "local", "--context", context, "-f")
+			It("should be able to update a component from git to local", func() {
+				helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--context", context, "--app", "testing")...)
+				helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
+				getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
+				Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
+				getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
+				Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
 
-			// check if the earlier resource requests are still valid
-			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
-			getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
-			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-			getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)
-			Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
+				// update the component config according to the git component
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+				helper.CmdShouldPass("odo", "config", "set", "sourcelocation", "./", "--context", context, "-f")
+				helper.CmdShouldPass("odo", "config", "set", "sourcetype", "local", "--context", context, "-f")
 
-			// check the source location and type in the deployment config
-			getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
-			Expect(getSourceLocation).To(ContainSubstring("file://./"))
-			getSourceType := oc.SourceTypeDC("cmp-git", "testing", project)
-			Expect(getSourceType).To(ContainSubstring("local"))
-		})
+				// check if the earlier resource requests are still valid
+				helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
+				getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
+				Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
+				getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)
+				Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
+
+				// check the source location and type in the deployment config
+				getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
+				Expect(getSourceLocation).To(ContainSubstring("file://./"))
+				getSourceType := oc.SourceTypeDC("cmp-git", "testing", project)
+				Expect(getSourceType).To(ContainSubstring("local"))
+			})
+		*/
 	})
 
 }
