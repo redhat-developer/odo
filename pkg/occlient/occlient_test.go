@@ -48,8 +48,8 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, en
 	labels[componentlabels.ComponentTypeVersion] = "latest"
 
 	// save source path as annotation
-	annotations := map[string]string{"app.kubernetes.io/url": "github.com/foo/bar.git",
-		"app.kubernetes.io/component-source-type": "git",
+	annotations := map[string]string{"app.kubernetes.io/url": "./",
+		"app.kubernetes.io/component-source-type": "local",
 	}
 
 	// Create CommonObjectMeta to be passed in
@@ -80,6 +80,44 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, en
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
+
+	return &dc
+}
+
+func fakeDeploymentConfigGit(name string, image string, envVars []corev1.EnvVar, containerPorts []corev1.ContainerPort) *appsv1.DeploymentConfig {
+
+	// save component type as label
+	labels := componentlabels.GetLabels(name, name, true)
+	labels[componentlabels.ComponentTypeLabel] = image
+	labels[componentlabels.ComponentTypeVersion] = "latest"
+
+	// save source path as annotation
+	annotations := map[string]string{"app.kubernetes.io/url": "github.com/foo/bar.git",
+		"app.kubernetes.io/component-source-type": "git",
+	}
+
+	// Create CommonObjectMeta to be passed in
+	commonObjectMeta := metav1.ObjectMeta{
+		Name:        name,
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
+	commonImageMeta := CommonImageMeta{
+		Name:      name,
+		Tag:       "latest",
+		Namespace: "openshift",
+		Ports:     []corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
+	}
+
+	// Generate the DeploymentConfig that will be used.
+	dc := generateGitDeploymentConfig(
+		commonObjectMeta,
+		commonImageMeta.Name,
+		containerPorts,
+		envVars,
+		fakeResourceRequirements(),
+	)
 
 	return &dc
 }
@@ -3340,6 +3378,7 @@ func TestPatchCurrentDC(t *testing.T) {
 		ucp               UpdateComponentParams
 		dcPatch           appsv1.DeploymentConfig
 		prePatchDCHandler dcStructUpdater
+		isGit             bool
 	}
 	tests := []struct {
 		name    string
@@ -3348,7 +3387,7 @@ func TestPatchCurrentDC(t *testing.T) {
 		actions int
 	}{
 		{
-			name: "Case 1: Test patching with nil prePatchDCHandler",
+			name: "Case 1: Test patching with nil prePatchDCHandler (local/binary to git)",
 			args: args{
 				ucp: UpdateComponentParams{
 					CommonObjectMeta: metav1.ObjectMeta{
@@ -3362,12 +3401,13 @@ func TestPatchCurrentDC(t *testing.T) {
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					fakeResourceRequirements()),
+				isGit: true,
 			},
 			wantErr: false,
-			actions: 2,
+			actions: 3,
 		},
 		{
-			name: "Case 2: Test patching with non-nil prePatchDCHandler",
+			name: "Case 2: Test patching with non-nil prePatchDCHandler (local/binary to git)",
 			args: args{
 				ucp: UpdateComponentParams{
 					CommonObjectMeta: metav1.ObjectMeta{
@@ -3382,12 +3422,31 @@ func TestPatchCurrentDC(t *testing.T) {
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					fakeResourceRequirements()),
 				prePatchDCHandler: removeTracesOfSupervisordFromDC,
+				isGit:             true,
+			},
+			wantErr: false,
+			actions: 3,
+		},
+		{
+			name: "Case 3: Test patching with different dc configuration (local/binary to local/binary)",
+			args: args{
+				ucp: UpdateComponentParams{
+					CommonObjectMeta: metav1.ObjectMeta{
+						Name: "foo",
+					},
+					ExistingDC: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
+						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, t),
+					DcRollOutWaitCond: dcRollOutWait,
+				},
+				dcPatch:           *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}}, []corev1.EnvFromSource{}, t),
+				prePatchDCHandler: removeTracesOfSupervisordFromDC,
+				isGit:             false,
 			},
 			wantErr: false,
 			actions: 2,
 		},
 		{
-			name: "Case 3: Test patching with the wrong name",
+			name: "Case 4: Test patching with the wrong name",
 			args: args{
 				ucp: UpdateComponentParams{
 					CommonObjectMeta: metav1.ObjectMeta{
@@ -3403,12 +3462,13 @@ func TestPatchCurrentDC(t *testing.T) {
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					fakeResourceRequirements(),
 				),
+				isGit: false,
 			},
 			wantErr: true,
-			actions: 2,
+			actions: 3,
 		},
 		{
-			name: "Case 4: Test patching with the dc with same requirements",
+			name: "Case 5: Test patching with the dc with same requirements (local/binary to local/binary)",
 			args: args{
 				ucp: UpdateComponentParams{
 					CommonObjectMeta: metav1.ObjectMeta{
@@ -3424,9 +3484,54 @@ func TestPatchCurrentDC(t *testing.T) {
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 					[]corev1.EnvFromSource{}, t,
 				),
+				isGit: false,
 			},
 			wantErr: false,
 			actions: 1,
+		},
+		{
+			name: "Case 6: Test patching (git to git)",
+			args: args{
+				ucp: UpdateComponentParams{
+					CommonObjectMeta: metav1.ObjectMeta{
+						Name: "foo",
+					},
+					ExistingDC: fakeDeploymentConfigGit("foo", "foo",
+						[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+						[]corev1.ContainerPort{{Name: "port-1", ContainerPort: 8080}},
+					),
+					DcRollOutWaitCond: dcRollOutWait,
+				},
+				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
+					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					fakeResourceRequirements(),
+				),
+				isGit: true,
+			},
+			wantErr: false,
+			actions: 3,
+		},
+		{
+			name: "Case 7: Test patching (git to local/binary)",
+			args: args{
+				ucp: UpdateComponentParams{
+					CommonObjectMeta: metav1.ObjectMeta{
+						Name: "foo",
+					},
+					ExistingDC: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
+						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, t),
+					DcRollOutWaitCond: dcRollOutWait,
+				},
+				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
+					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
+					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
+					fakeResourceRequirements(),
+				),
+				isGit: false,
+			},
+			wantErr: false,
+			actions: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -3456,13 +3561,21 @@ func TestPatchCurrentDC(t *testing.T) {
 				return true, dc, nil
 			})
 
+			fakeClientSet.AppsClientset.PrependReactor("create", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				dc := action.(ktesting.CreateAction).GetObject().(*appsv1.DeploymentRequest)
+				if dc.Name != tt.args.dcPatch.Name {
+					return true, nil, fmt.Errorf("got request for different dc")
+				}
+				return true, &tt.args.dcPatch, nil
+			})
+
 			// Run function PatchCurrentDC
 			existingContainer, err := FindContainer(tt.args.ucp.ExistingDC.Spec.Template.Spec.Containers, tt.args.ucp.ExistingDC.Name)
 			if err != nil {
 				t.Errorf("client.PatchCurrentDC() unexpected error attempting to fetch component container. error %v", err)
 			}
 
-			err = fakeClient.PatchCurrentDC(tt.args.dcPatch, tt.args.prePatchDCHandler, existingContainer, tt.args.ucp, true)
+			err = fakeClient.PatchCurrentDC(tt.args.dcPatch, tt.args.prePatchDCHandler, existingContainer, tt.args.ucp, tt.args.isGit)
 
 			// Error checking PatchCurrentDC
 			if !tt.wantErr == (err != nil) {
@@ -3521,7 +3634,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			actions: 1,
+			actions: 3,
 		},
 		{
 			name: "Case 2: Fail if the variable passed in is blank",
@@ -3581,7 +3694,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			actions: 1,
+			actions: 3,
 		},
 	}
 	for _, tt := range tests {
@@ -3617,6 +3730,14 @@ func TestUpdateDCToGit(t *testing.T) {
 				}
 
 				return true, dc, nil
+			})
+
+			fakeClientSet.AppsClientset.PrependReactor("create", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				dc := action.(ktesting.CreateAction).GetObject().(*appsv1.DeploymentRequest)
+				if dc.Name != tt.args.dc.Name {
+					return true, nil, fmt.Errorf("got request for different dc")
+				}
+				return true, &tt.args.dc, nil
 			})
 
 			// Fake the pvc delete
@@ -4915,4 +5036,61 @@ func TestGetMatchingPlans(t *testing.T) {
 			t.Errorf("test failed, expected %v, got %v", expected, plans)
 		}
 	})
+}
+
+func TestStartDeployment(t *testing.T) {
+	tests := []struct {
+		name           string
+		deploymentName string
+		wantErr        bool
+	}{
+		{
+			name:           "Case 1: Testing valid name",
+			deploymentName: "ruby",
+			wantErr:        false,
+		},
+		{
+			name:           "Case 2: Testing invalid name",
+			deploymentName: "",
+			wantErr:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fkclient, fkclientset := FakeNew()
+
+			fkclientset.AppsClientset.PrependReactor("create", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				deploymentConfig := appsv1.DeploymentConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tt.deploymentName,
+					},
+				}
+				return true, &deploymentConfig, nil
+			})
+
+			_, err := fkclient.StartDeployment(tt.deploymentName)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf(" client.StartDeployment(string) unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err == nil {
+
+				if len(fkclientset.AppsClientset.Actions()) != 1 {
+					t.Errorf("expected 1 action in StartDeployment got: %v", fkclientset.AppsClientset.Actions())
+				} else {
+					startedDeployment := fkclientset.AppsClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*appsv1.DeploymentRequest)
+
+					if startedDeployment.Name != tt.deploymentName {
+						t.Errorf("deployment name is not matching to expected name, expected: %s, got %s", tt.deploymentName, startedDeployment.Name)
+					}
+
+					if startedDeployment.Latest == false {
+						t.Errorf("deployment is not set to latest")
+					}
+				}
+			}
+		})
+	}
 }
