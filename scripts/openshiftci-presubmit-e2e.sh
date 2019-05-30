@@ -11,7 +11,7 @@ make configure-installer-tests-cluster
 make bin
 mkdir -p $GOPATH/bin
 go get -u github.com/onsi/ginkgo/ginkgo
-export PATH="$PATH:$GOPATH/bin"
+export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR="/tmp/artifacts"
 make test-generic
 make test-odo-login-e2e
