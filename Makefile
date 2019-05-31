@@ -100,13 +100,6 @@ configure-installer-tests-cluster:
 test:
 	go test -race $(PKGS)
 
-# This test is only for reference and will be removed
-# in the subsequent subtask of https://github.com/openshift/odo/issues/1473 
-# Run clean test template spec parallelly
-.PHONY: clean-test
-clean-test:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="Example of a clean test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/template/ -timeout $(TIMEOUT)
-
 # Run generic integration tests
 .PHONY: test-generic
 test-generic:
