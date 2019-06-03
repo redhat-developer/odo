@@ -4,13 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 	"text/tabwriter"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -19,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -61,57 +57,33 @@ func (lo *ListOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run() (err error) {
-	var ap []component.Component
 	if lo.pathFlag != "" {
-		err := filepath.Walk(lo.pathFlag, func(path string, f os.FileInfo, err error) error {
-			if strings.Contains(f.Name(), ".odo") {
-				data, err := config.NewLocalConfigInfo(filepath.Dir(path))
-				if err != nil {
-					return err
-				}
-				exist, err := component.Exists(lo.Context.Client, data.GetName(), data.GetApplication())
-				if err != nil {
-					return err
-				}
-				// context will be filepath.Dir(path)
-				con, _ := filepath.Abs(filepath.Dir(path))
-				a := component.Component{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "Component",
-						APIVersion: "odo.openshift.io/v1alpha1",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: data.GetName(),
-					},
-					Spec: component.ComponentSpec{
-						Source: data.GetSourceLocation(),
-						Type:   data.GetType(),
-					},
-					Status: component.ComponentStatus{
-						Context: con,
-						State:   exist,
-					},
-				}
-				ap = append(ap, a)
-
-			}
-			return nil
-		})
-
+		components, err := component.ListIfPathGiven(lo.pathFlag, lo.Context.Client)
 		if err != nil {
 			return err
 		}
-		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
-		for _, file := range ap {
-			d := "not Deployed"
-			if file.Status.State {
-				d = "Deployed"
-			}
-			fmt.Fprintln(w, file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", d, "\t", file.Status.Context)
+		if lo.outputFlag == "json" {
 
+			out, err := json.Marshal(components)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(out))
+
+		} else {
+
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
+			for _, file := range components.Items {
+				d := "not Deployed"
+				if file.Status.State {
+					d = "Deployed"
+				}
+				fmt.Fprintln(w, file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", d, "\t", file.Status.Context)
+
+			}
+			w.Flush()
 		}
-		w.Flush()
 		return nil
 	}
 

@@ -906,6 +906,31 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 	return compoList, nil
 }
 
+// ListIfPathGiven lists all available component in given path directory
+func ListIfPathGiven(path string, client *occlient.Client) (ComponentList, error) {
+	var components []Component
+	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+		if strings.Contains(f.Name(), ".odo") {
+			data, err := config.NewLocalConfigInfo(filepath.Dir(path))
+			if err != nil {
+				return err
+			}
+			exist, err := Exists(client, data.GetName(), data.GetApplication())
+			if err != nil {
+				return err
+			}
+			con, _ := filepath.Abs(filepath.Dir(path))
+			a := getMachineReadableFormat(data.GetName(), data.GetType())
+			a.Status.Context = con
+			a.Status.State = exist
+			a.Spec.Source = data.GetSourceLocation()
+			components = append(components, a)
+		}
+		return nil
+	})
+	return getMachineReadableFormatForList(components), err
+}
+
 // GetComponentSource what source type given component uses
 // The first returned string is component source type ("git" or "local" or "binary")
 // The second returned string is a source (url to git repository or local path or path to binary)
