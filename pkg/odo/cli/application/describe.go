@@ -42,6 +42,8 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 	if len(args) == 1 {
 		o.appName = args[0]
 	}
+	checkProjectName(o.Context)
+	checkApplicationName(o.appName)
 	return
 }
 

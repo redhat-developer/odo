@@ -2,9 +2,9 @@ package application
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/storage"
-
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/storage"
+	"os"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/log"
@@ -136,4 +136,26 @@ func getMachineReadableFormat(client *occlient.Client, appName string, projectNa
 		},
 	}
 	return appDef
+}
+
+// checkApplicationName checks if the application is present or not
+func checkApplicationName(applicationName string) {
+	if applicationName == "" {
+		printContextError()
+	}
+}
+
+// checkProjectName checks if the project is present in the context or not
+func checkProjectName(context *genericclioptions.Context) {
+	if context.Project == "" {
+		printContextError()
+	}
+}
+
+// printContextError prints a context error if application/project is not found
+func printContextError() {
+	log.Errorf("Please specify the application name and a project name" +
+		"\n Or use the command from inside an directory containing an odo component." +
+		"\n HINT: See 'odo app describe --help' for more information.")
+	os.Exit(1)
 }

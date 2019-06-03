@@ -41,6 +41,8 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 		// If app name passed, consider it for deletion
 		o.appName = args[0]
 	}
+	checkProjectName(o.Context)
+	checkApplicationName(o.appName)
 	return
 }
 
