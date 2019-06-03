@@ -275,10 +275,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 
-		co.componentContext, err = util.GetAbsPath(ui.EnterInputTypePath("context", currentDirectory, currentDirectory))
-		if err != nil {
-			return err
-		}
+		co.componentContext = ui.EnterInputTypePath("context", currentDirectory, "/")
 
 		selectedSourceType := ui.SelectSourceType([]config.SrcType{config.LOCAL, config.GIT, config.BINARY})
 		co.componentSettings.SourceType = &selectedSourceType
@@ -297,10 +294,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.componentSettings.Ref = &selectedGitRef
 		} else if selectedSourceType == config.LOCAL {
 			if len(co.componentContext) > 0 {
-				co.componentContext, err = util.GetAbsPath(co.componentContext)
-				if err != nil {
-					return errors.Wrap(err, "failed to create component config")
-				}
 				co.componentSettings.SourceLocation = &(co.componentContext)
 			} else {
 				co.componentContext = currentDirectory
