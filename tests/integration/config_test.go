@@ -209,5 +209,16 @@ var _ = Describe("odo config test", func() {
 			Expect(configValue).To(Not(ContainSubstring(("PORT"))))
 			Expect(configValue).To(Not(ContainSubstring(("SECRET_KEY"))))
 		})
+
+		It("should list config without logging into the OpenShift cluster", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+			helper.CmdShouldPass("odo", "config", "set", "--env", "hello=world")
+			kubeconfigOld := os.Getenv("KUBECONFIG")
+			os.Setenv("KUBECONFIG", "")
+			configValue := helper.CmdShouldPass("odo", "config", "view")
+			Expect(configValue).To(ContainSubstring("hello"))
+			Expect(configValue).To(ContainSubstring("world"))
+			os.Setenv("KUBECONFIG", kubeconfigOld)
+		})
 	})
 })
