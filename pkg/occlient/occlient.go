@@ -23,6 +23,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
+
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
@@ -501,6 +502,20 @@ func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
 
 // CreateNewProject creates project with given projectName
 func (c *Client) CreateNewProject(projectName string, wait bool) error {
+	// Instantiate watcher before requesting new project
+	// If watched is created after the project it can lead to situation when the project is created before the watcher.
+	// When this happens, it gets stuck waiting for event that already happened.
+	var watcher watch.Interface
+	if wait {
+		watcher, err := c.projectClient.Projects().Watch(metav1.ListOptions{
+			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
+		})
+		if err != nil {
+			return errors.Wrapf(err, "unable to watch new project %s creation", projectName)
+		}
+		defer watcher.Stop()
+	}
+
 	projectRequest := &projectv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: projectName,
@@ -511,17 +526,9 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}
 
-	if wait {
-		w, err := c.projectClient.Projects().Watch(metav1.ListOptions{
-			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
-		})
-		if err != nil {
-			return errors.Wrapf(err, "unable to watch new project %s creation", projectName)
-		}
-		defer w.Stop()
-
+	if watcher != nil {
 		for {
-			val, ok := <-w.ResultChan()
+			val, ok := <-watcher.ResultChan()
 			if !ok {
 				break
 			}
