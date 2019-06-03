@@ -63,15 +63,12 @@ func (lo *ListOptions) Run() (err error) {
 			return err
 		}
 		if lo.outputFlag == "json" {
-
 			out, err := json.Marshal(components)
 			if err != nil {
 				return err
 			}
 			fmt.Println(string(out))
-
 		} else {
-
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
 			for _, file := range components.Items {
