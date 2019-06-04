@@ -76,7 +76,7 @@ func (o *URLDeleteOptions) Run() (err error) {
 			return err
 		}
 		log.Successf("URL %s removed from the config file", o.urlName)
-		printtemplates.PrintPushMessage("delete", "URL")
+		fmt.Print(printtemplates.PushMessage("delete", "URL"))
 	} else {
 		return fmt.Errorf("aborting deletion of URL: %v", o.urlName)
 	}

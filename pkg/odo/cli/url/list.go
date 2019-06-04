@@ -118,11 +118,11 @@ func (o *URLListOptions) Run() (err error) {
 			}
 			tabWriterURL.Flush()
 			if cm && dm {
-				printtemplates.PrintPushMessage("create/delete", "URLs")
+				fmt.Print(printtemplates.PushMessage("create/delete", "URLs"))
 			} else if cm {
-				printtemplates.PrintPushMessage("create", "URLs")
+				fmt.Print(printtemplates.PushMessage("create", "URLs"))
 			} else if dm {
-				printtemplates.PrintPushMessage("delete", "URLs")
+				fmt.Print(printtemplates.PushMessage("delete", "URLs"))
 			}
 		}
 

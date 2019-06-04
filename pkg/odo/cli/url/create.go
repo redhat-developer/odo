@@ -101,7 +101,7 @@ func (o *URLCreateOptions) Run() (err error) {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
 	log.Successf("URL %s created for component: %v\n", o.urlName, o.Component())
-	printtemplates.PrintPushMessage("create", "URL")
+	fmt.Print(printtemplates.PushMessage("create", "URL"))
 	return
 }
 
