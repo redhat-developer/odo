@@ -77,7 +77,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "Watch and Storage e2e tests"
+      name: "Watch, Storage and App Cmd e2e tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -85,6 +85,7 @@ jobs:
         - oc login -u developer
         - travis_wait make test-watch-e2e
         - travis_wait make test-storage-e2e
+        - travis_wait make test-cmd-app-e2e
 
     # test installation script on linux
     # - stage: test
