@@ -214,7 +214,7 @@ var _ = Describe("odo config test", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
 			helper.CmdShouldPass("odo", "config", "set", "--env", "hello=world")
 			kubeconfigOld := os.Getenv("KUBECONFIG")
-			os.Setenv("KUBECONFIG", "")
+			os.Setenv("KUBECONFIG", "/no/such/path")
 			configValue := helper.CmdShouldPass("odo", "config", "view")
 			Expect(configValue).To(ContainSubstring("hello"))
 			Expect(configValue).To(ContainSubstring("world"))
