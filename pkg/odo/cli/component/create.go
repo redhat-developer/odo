@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -197,6 +198,23 @@ func (co *CreateOptions) setComponentName(args []string) (err error) {
 	return
 }
 
+func getSourceLocation(componentContext string, currentDirectory string) (string, error) {
+
+	// After getting the path relative to the current directory, we set the SourceLocation
+	sourceLocation, err := filepath.Rel(currentDirectory, componentContext)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to get a path relative to the current directory")
+	}
+
+	// If the paths are the same (currentDirectory vs co.componentSettings.SourceLocation)
+	// then we use the default location
+	if sourceLocation == "." {
+		return LocalDirectoryDefaultLocation, nil
+	}
+
+	return sourceLocation, nil
+}
+
 func createDefaultComponentName(context *genericclioptions.Context, componentType string, sourceType config.SrcType, sourcePath string) (string, error) {
 	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
 	componentName, err := component.GetDefaultComponentName(
@@ -270,42 +288,53 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		componentType := selectedComponentType + ":" + selectedImageTag
 		co.componentSettings.Type = &componentType
 
+		// Ask for the type of source if not provided
+		selectedSourceType := ui.SelectSourceType([]config.SrcType{config.LOCAL, config.GIT, config.BINARY})
+		co.componentSettings.SourceType = &selectedSourceType
+		selectedSourcePath := LocalDirectoryDefaultLocation
+
+		// Get the current directory
 		currentDirectory, err := os.Getwd()
 		if err != nil {
 			return err
 		}
 
-		co.componentContext, err = util.GetAbsPath(ui.EnterInputTypePath("context", currentDirectory, currentDirectory))
-		if err != nil {
-			return err
-		}
-
-		selectedSourceType := ui.SelectSourceType([]config.SrcType{config.LOCAL, config.GIT, config.BINARY})
-		co.componentSettings.SourceType = &selectedSourceType
-		selectedSourcePath := ""
-
 		if selectedSourceType == config.BINARY {
+
+			// We ask for the source of the component context
+			co.componentContext = ui.EnterInputTypePath("context", currentDirectory, currentDirectory)
+			glog.V(4).Infof("Context: %s", co.componentContext)
+
+			// If it's a binary, we have to ask where the actual binary in relation
+			// to the context
 			selectedSourcePath = ui.EnterInputTypePath("binary", currentDirectory)
-			selectedSourcePath, err = util.GetAbsPath(selectedSourcePath)
+
+			// Get the correct source location
+			sourceLocation, err := getSourceLocation(selectedSourcePath, currentDirectory)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "unable to get source location")
 			}
-			co.componentSettings.SourceLocation = &selectedSourcePath
+			co.componentSettings.SourceLocation = &sourceLocation
+
 		} else if selectedSourceType == config.GIT {
+
+			// For git, we ask for the Git URL and set that as the source location
 			cmpSrcLOC, selectedGitRef := ui.EnterGitInfo()
 			co.componentSettings.SourceLocation = &cmpSrcLOC
 			co.componentSettings.Ref = &selectedGitRef
+
 		} else if selectedSourceType == config.LOCAL {
-			if len(co.componentContext) > 0 {
-				co.componentContext, err = util.GetAbsPath(co.componentContext)
-				if err != nil {
-					return errors.Wrap(err, "failed to create component config")
-				}
-				co.componentSettings.SourceLocation = &(co.componentContext)
-			} else {
-				co.componentContext = currentDirectory
-				co.componentSettings.SourceLocation = &currentDirectory
+
+			// We ask for the source of the component, in this case the "path"!
+			co.componentContext = ui.EnterInputTypePath("path", currentDirectory, currentDirectory)
+
+			// Get the correct source location
+			sourceLocation, err := getSourceLocation(co.componentContext, currentDirectory)
+			if err != nil {
+				return errors.Wrapf(err, "unable to get source location")
 			}
+			co.componentSettings.SourceLocation = &sourceLocation
+
 		}
 
 		defaultComponentName, err := createDefaultComponentName(co.Context, selectedComponentType, selectedSourceType, selectedSourcePath)
@@ -348,6 +377,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 		// Above code is for INTERACTIVE mode
+
 	} else {
 		// Else if NOT using interactive / UI
 		err = co.setComponentSourceAttributes()

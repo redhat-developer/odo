@@ -527,6 +527,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 
 	// If component is of type local, check if the source path is valid
 	if *componentSettings.SourceType == config.LOCAL {
+		glog.V(4).Infof("Checking source location: %s", *(componentSettings.SourceLocation))
 		srcLocInfo, err := os.Stat(*(componentSettings.SourceLocation))
 		if err != nil {
 			return errors.Wrap(err, "failed to create component. Please view the settings used using the command `odo config view`")
