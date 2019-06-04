@@ -62,12 +62,12 @@ var _ = Describe("odojsonoutput", func() {
 
 			// odo component list -o json
 			actualCompListJSON := helper.CmdShouldPass("odo", "list", "-o", "json")
-			desiredCompListJSON := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex"},"status":{"active":false}}]}`
+			desiredCompListJSON := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex"},"status":{"state":false}}]}`
 			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 
 			// odo describe component -o json
 			actualDesCompJSON := helper.CmdShouldPass("odo", "describe", "nodejs", "-o", "json")
-			desiredDesCompJSON := `{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex"},"status":{"active":false}}`
+			desiredDesCompJSON := `{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex"},"status":{"state":false}}`
 			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
 
 			// odo storage create -o json
