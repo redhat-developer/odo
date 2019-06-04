@@ -335,8 +335,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 			co.componentSettings.SourceLocation = &sourceLocation
 
-			//glog.V(4).Infof("Selected source path: %s, context %s", *(co.componentSettings.SourceLocation), co.componentContext)
-
 		}
 
 		defaultComponentName, err := createDefaultComponentName(co.Context, selectedComponentType, selectedSourceType, selectedSourcePath)
