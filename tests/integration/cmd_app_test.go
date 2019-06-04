@@ -21,7 +21,6 @@ var _ = Describe("odoCmdAppE2e", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
-		oc = helper.NewOcRunner("oc")
 	})
 
 	// Clean up after the test
