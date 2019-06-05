@@ -79,6 +79,13 @@ var _ = Describe("odojsonoutput", func() {
 			actualSrorageList := helper.CmdShouldPass("odo", "storage", "list", "-o", "json")
 			desiredSrorageList := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi"},"status":{"path":"/opt/app-root/src/storage/"}}]}`
 			Expect(desiredSrorageList).Should(MatchJSON(actualSrorageList))
+
+			// odo list -o json --path .
+			pwd := helper.CmdShouldPass("pwd")
+			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex"},"status":{"context":"%s","state":true}}]}`, strings.TrimSpace(pwd))
+			actual := helper.CmdShouldPass("odo", "list", "-o", "json", "--path", ".")
+			Expect(desired).Should(MatchJSON(actual))
+
 		})
 	})
 
