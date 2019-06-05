@@ -876,7 +876,6 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
-// TODO: This is where a lot of the pauses happen....
 func List(client *occlient.Client, applicationName string) (ComponentList, error) {
 
 	var applicationSelector string
