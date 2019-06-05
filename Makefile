@@ -112,7 +112,7 @@ test-generic:
 # Run json outout tests
 .PHONY: test-json-format-output
 test-json-format-output:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odojsonoutput" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odojsonoutput" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run component e2e tests
 .PHONY: test-cmp-e2e
