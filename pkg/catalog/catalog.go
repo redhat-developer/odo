@@ -55,8 +55,6 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 // Exists returns true if the given component type is valid, false if not
 func Exists(client *occlient.Client, componentType string) (bool, error) {
 
-	//s := log.Spinner("Checking component")
-	//defer s.End(false)
 	catalogList, err := List(client)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to list catalog")
@@ -64,7 +62,6 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 
 	for _, supported := range catalogList {
 		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
-			//s.End(true)
 			return true, nil
 		}
 	}

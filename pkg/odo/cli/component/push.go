@@ -121,7 +121,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
 
-	log.Info("Validation and pre-check")
+	log.Info("Validation")
 
 	s := log.Spinner("Validating component")
 	defer s.End(false)
@@ -152,18 +152,25 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 
 	cmpName := po.localConfig.GetName()
 	appName := po.localConfig.GetApplication()
-	cmpType := po.localConfig.GetType()
 
-	s := log.Spinner("Validating configuration")
+	// First off, we check to see if the component exists. This is ran each time we do `odo push`
+	s := log.Spinner("Checking component")
 	defer s.End(false)
-
 	isCmpExists, err := component.Exists(po.Context.Client, cmpName, appName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
 	}
+	s.End(true)
 
+	// Output the "new" section (applying changes)
+	log.Info("\nConfiguration changes")
+
+	// If the component does not exist, we will create it for the first time.
 	if !isCmpExists {
-		log.Successf("Creating %s component with name %s", cmpType, cmpName)
+
+		s = log.Spinner("Creating component")
+		defer s.End(false)
+
 		// Classic case of component creation
 		if err = component.CreateComponent(po.Context.Client, *po.localConfig, po.componentContext, stdout); err != nil {
 			log.Errorf(
@@ -173,10 +180,9 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 			)
 			os.Exit(1)
 		}
-		log.Successf("Successfully created component %s", cmpName)
-	}
 
-	s.End(true)
+		s.End(true)
+	}
 
 	// Apply config
 	err = component.ApplyConfig(po.Context.Client, *po.localConfig, stdout, isCmpExists)
@@ -204,7 +210,7 @@ func (po *PushOptions) Run() (err error) {
 		return nil
 	}
 
-	log.Infof("\nPushing changes to component: %v of type %s", cmpName, po.sourceType)
+	log.Infof("\nPushing to component %s of type %s", cmpName, po.sourceType)
 
 	// Get SourceLocation here...
 	po.sourcePath, err = po.localConfig.GetOSSourcePath()

@@ -129,10 +129,6 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
-	// Loading spinner
-	s := log.Spinnerf("Creating component %s", params.Name)
-	defer s.End(false)
-
 	// Parse componentImageType before adding to labels
 	_, imageName, imageTag, _, err := occlient.ParseImageName(params.ImageName)
 	if err != nil {
@@ -164,8 +160,6 @@ func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to create git component %s", namespacedOpenShiftObject)
 	}
-
-	s.End(true)
 
 	// Trigger build
 	if err = Build(client, params.Name, params.ApplicationName, params.Wait, params.StdOut, false); err != nil {
@@ -225,10 +219,6 @@ func GetComponentLinkedSecretNames(client *occlient.Client, componentName string
 func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
-	// Loading spinner
-	s := log.Spinnerf("Creating component %s", params.Name)
-	defer s.End(false)
-
 	// Parse componentImageType before adding to labels
 	_, imageName, imageTag, _, err := occlient.ParseImageName(params.ImageName)
 	if err != nil {
@@ -262,7 +252,6 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	if err != nil {
 		return err
 	}
-	s.End(true)
 
 	if params.Wait {
 		// if wait flag is present then extract the podselector
@@ -375,7 +364,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 		return err
 	}
 
-	log.Successf("Initializing '%s' component", cmpName)
+	log.Successf("Initializing component")
 	createArgs := occlient.CreateArgs{
 		Name:               cmpName,
 		ImageName:          cmpType,
@@ -483,12 +472,16 @@ func CheckComponentMandatoryParams(componentSettings config.ComponentSettings) e
 // Returns:
 //	errors if any
 func ValidateComponentCreateRequest(client *occlient.Client, componentSettings config.ComponentSettings, isCmpExistsCheck bool) (err error) {
+
+	// Check the mandatory parameters first
 	err = CheckComponentMandatoryParams(componentSettings)
 	if err != nil {
 		return err
 	}
 
+	// Parse the image name
 	_, componentType, _, componentVersion := util.ParseComponentImageName(*componentSettings.Type)
+
 	// Check to see if the catalog type actually exists
 	exists, err := catalog.Exists(client, componentType)
 	if err != nil {
@@ -1192,7 +1185,6 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(client *occlient.Client, componentName, applicationName string) (bool, error) {
-
 	componentList, err := List(client, applicationName)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the component list")
