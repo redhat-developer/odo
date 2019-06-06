@@ -908,31 +908,35 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 }
 
 // ListIfPathGiven lists all available component in given path directory
-func ListIfPathGiven(client *occlient.Client, path string) (ComponentList, error) {
+func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, error) {
 	var components []Component
-	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-		if strings.Contains(f.Name(), ".odo") {
-			data, err := config.NewLocalConfigInfo(filepath.Dir(path))
-			if err != nil {
-				return err
+	var err error
+	for _, path := range paths {
+		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+			if strings.Contains(f.Name(), ".odo") {
+				data, err := config.NewLocalConfigInfo(filepath.Dir(path))
+				if err != nil {
+					return err
+				}
+				exist, err := Exists(client, data.GetName(), data.GetApplication())
+				if err != nil {
+					return err
+				}
+				con, _ := filepath.Abs(filepath.Dir(path))
+				a := getMachineReadableFormat(data.GetName(), data.GetType())
+				a.Spec.Source = data.GetSourceLocation()
+				a.Status.Context = con
+				state := "Not Pushed"
+				if exist {
+					state = "Pushed"
+				}
+				a.Status.State = state
+				components = append(components, a)
 			}
-			exist, err := Exists(client, data.GetName(), data.GetApplication())
-			if err != nil {
-				return err
-			}
-			con, _ := filepath.Abs(filepath.Dir(path))
-			a := getMachineReadableFormat(data.GetName(), data.GetType())
-			a.Spec.Source = data.GetSourceLocation()
-			a.Status.Context = con
-			state := "Not Pushed"
-			if exist {
-				state = "Pushed"
-			}
-			a.Status.State = state
-			components = append(components, a)
-		}
-		return nil
-	})
+			return nil
+		})
+
+	}
 	return getMachineReadableFormatForList(components), err
 }
 
