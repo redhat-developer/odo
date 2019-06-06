@@ -913,7 +913,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 	var err error
 	for _, path := range paths {
 		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-			if strings.Contains(f.Name(), ".odo") {
+			if f != nil && strings.Contains(f.Name(), ".odo") {
 				data, err := config.NewLocalConfigInfo(filepath.Dir(path))
 				if err != nil {
 					return err
