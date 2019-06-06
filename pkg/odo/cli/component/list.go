@@ -58,7 +58,7 @@ func (lo *ListOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run() (err error) {
 	if lo.pathFlag != "" {
-		components, err := component.ListIfPathGiven(lo.pathFlag, lo.Context.Client)
+		components, err := component.ListIfPathGiven(lo.Context.Client, lo.pathFlag)
 		if err != nil {
 			return err
 		}

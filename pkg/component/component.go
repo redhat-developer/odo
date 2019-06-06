@@ -908,7 +908,7 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 }
 
 // ListIfPathGiven lists all available component in given path directory
-func ListIfPathGiven(path string, client *occlient.Client) (ComponentList, error) {
+func ListIfPathGiven(client *occlient.Client, path string) (ComponentList, error) {
 	var components []Component
 	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
 		if strings.Contains(f.Name(), ".odo") {
