@@ -42,13 +42,15 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 		// If app name passed, consider it for deletion
 		o.appName = args[0]
 	}
-	odoUtil.CheckProjectName(o.Context.Project)
-	odoUtil.CheckApplicationName(o.appName)
+
 	return
 }
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
+	if o.Context.Project == "" || o.appName == "" {
+		return odoUtil.ThrowContextError()
+	}
 	if !util.CheckOutputFlag(o.OutputFlag) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}

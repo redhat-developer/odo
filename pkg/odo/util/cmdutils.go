@@ -149,25 +149,8 @@ Additional help topics:{{range .Commands}}{{if .IsHelpCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 
-// CheckApplicationName checks if the application is present or not
-// use this function if the app name is required
-func CheckApplicationName(applicationName string) {
-	if applicationName == "" {
-		printContextError()
-	}
-}
-
-// CheckProjectName checks if the project is present in the context or not
-// use this function if the project name is required
-func CheckProjectName(projectName string) {
-	if projectName == "" {
-		printContextError()
-	}
-}
-
-// printContextError prints a context error if application/project is not found
-func printContextError() {
-	log.Errorf("Please specify the application name and project name" +
+// ThrowContextError prints a context error if application/project is not found
+func ThrowContextError() error {
+	return errors.Errorf("Please specify the application name and project name" +
 		"\n Or use the command from inside a directory containing an odo component.")
-	os.Exit(1)
 }

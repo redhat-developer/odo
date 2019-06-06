@@ -42,13 +42,14 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 	if len(args) == 1 {
 		o.appName = args[0]
 	}
-	util.CheckProjectName(o.Context.Project)
-	util.CheckApplicationName(o.appName)
 	return
 }
 
 // Validate validates the DescribeOptions based on completed values
 func (o *DescribeOptions) Validate() (err error) {
+	if o.Context.Project == "" || o.appName == "" {
+		return util.ThrowContextError()
+	}
 	err = util.CheckOutputFlag(o.outputFormat)
 	if err != nil {
 		return err
