@@ -55,7 +55,7 @@ var _ = Describe("odoCmdAppE2e", func() {
 			appListOutput := helper.CmdShouldPass("odo", "app", "list")
 			Expect(appListOutput).To(ContainSubstring(appName))
 			helper.CmdShouldFail("odo", "app", "describe")
-			helper.CmdShouldFail("odo", "app", "delete")
+			helper.CmdShouldFail("odo", "app", "delete", "-f")
 		})
 
 		It("should pass outside a odo directory with app parameters", func() {

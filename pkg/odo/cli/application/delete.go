@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	odoUtil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/log"
@@ -41,8 +42,8 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 		// If app name passed, consider it for deletion
 		o.appName = args[0]
 	}
-	checkProjectName(o.Context)
-	checkApplicationName(o.appName)
+	odoUtil.CheckProjectName(o.Context.Project)
+	odoUtil.CheckApplicationName(o.appName)
 	return
 }
 

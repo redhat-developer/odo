@@ -39,7 +39,7 @@ func NewListOptions() *ListOptions {
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	checkProjectName(o.Context)
+	util.CheckProjectName(o.Context.Project)
 	return
 }
 
