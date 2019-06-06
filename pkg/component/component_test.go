@@ -348,6 +348,7 @@ func TestList(t *testing.T) {
 							Type: "nodejs",
 						},
 						Status: ComponentStatus{
+							State:            "Pushed",
 							LinkedServices:   []string{},
 							LinkedComponents: map[string][]string{},
 						},
@@ -364,6 +365,7 @@ func TestList(t *testing.T) {
 							Type: "java",
 						},
 						Status: ComponentStatus{
+							State:            "Pushed",
 							LinkedServices:   []string{},
 							LinkedComponents: map[string][]string{},
 						},
