@@ -154,8 +154,7 @@ func checkProjectName(context *genericclioptions.Context) {
 
 // printContextError prints a context error if application/project is not found
 func printContextError() {
-	log.Errorf("Please specify the application name and a project name" +
-		"\n Or use the command from inside an directory containing an odo component." +
-		"\n HINT: See 'odo app describe --help' for more information.")
+	log.Errorf("Please specify the application name and project name" +
+		"\n Or use the command from inside a directory containing an odo component.")
 	os.Exit(1)
 }
