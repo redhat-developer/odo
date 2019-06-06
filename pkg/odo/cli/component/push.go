@@ -120,6 +120,12 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
+
+	log.Info("Validation")
+
+	s := log.Spinner("Validating component")
+	defer s.End(false)
+
 	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfig.GetComponentSettings(), false); err != nil {
 		return err
 	}
@@ -133,6 +139,7 @@ func (po *PushOptions) Validate() (err error) {
 		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfig.GetName())
 	}
 
+	s.End(true)
 	return nil
 }
 
@@ -145,15 +152,25 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 
 	cmpName := po.localConfig.GetName()
 	appName := po.localConfig.GetApplication()
-	cmpType := po.localConfig.GetType()
 
+	// First off, we check to see if the component exists. This is ran each time we do `odo push`
+	s := log.Spinner("Checking component")
+	defer s.End(false)
 	isCmpExists, err := component.Exists(po.Context.Client, cmpName, appName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
 	}
+	s.End(true)
 
+	// Output the "new" section (applying changes)
+	log.Info("\nConfiguration changes")
+
+	// If the component does not exist, we will create it for the first time.
 	if !isCmpExists {
-		log.Successf("Creating %s component with name %s", cmpType, cmpName)
+
+		s = log.Spinner("Creating component")
+		defer s.End(false)
+
 		// Classic case of component creation
 		if err = component.CreateComponent(po.Context.Client, *po.localConfig, po.componentContext, stdout); err != nil {
 			log.Errorf(
@@ -163,7 +180,8 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 			)
 			os.Exit(1)
 		}
-		log.Successf("Successfully created component %s", cmpName)
+
+		s.End(true)
 	}
 
 	// Apply config
@@ -171,7 +189,6 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
-	log.Successf("Successfully updated component with name: %v", cmpName)
 
 	return nil
 }
@@ -193,7 +210,7 @@ func (po *PushOptions) Run() (err error) {
 		return nil
 	}
 
-	log.Successf("Pushing changes to component: %v of type %s", cmpName, po.sourceType)
+	log.Infof("\nPushing to component %s of type %s", cmpName, po.sourceType)
 
 	// Get SourceLocation here...
 	po.sourcePath, err = po.localConfig.GetOSSourcePath()
@@ -250,7 +267,7 @@ func (po *PushOptions) Run() (err error) {
 		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
 	}
 
-	log.Successf("Changes successfully pushed to component: %v", cmpName)
+	log.Success("Changes successfully pushed to component")
 	return
 }
 

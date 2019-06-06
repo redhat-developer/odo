@@ -73,10 +73,10 @@ func (o *URLDeleteOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		log.Info("URL removed from the config file")
-		log.Info("To delete URL from the OpenShift cluster, please run `odo push`")
+		log.Successf("URL %s removed from the config file", o.urlName)
+		log.Infof("\nRun 'odo push' to delete URL: %s", o.urlName)
 	} else {
-		return fmt.Errorf("aborting deletion of url: %v", o.urlName)
+		return fmt.Errorf("aborting deletion of URL: %v", o.urlName)
 	}
 	return
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/pkg/errors"
 )
@@ -56,8 +55,6 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 // Exists returns true if the given component type is valid, false if not
 func Exists(client *occlient.Client, componentType string) (bool, error) {
 
-	s := log.Spinner("Checking component")
-	defer s.End(false)
 	catalogList, err := List(client)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to list catalog")
@@ -65,7 +62,6 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 
 	for _, supported := range catalogList {
 		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
-			s.End(true)
 			return true, nil
 		}
 	}
@@ -76,8 +72,7 @@ func Exists(client *occlient.Client, componentType string) (bool, error) {
 func VersionExists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
 
 	// Loading status
-	s := log.Spinner("Checking component version")
-	defer s.End(false)
+	glog.V(4).Info("Checking component version")
 
 	// Retrieve the catalogList
 	catalogList, err := List(client)
@@ -94,7 +89,6 @@ func VersionExists(client *occlient.Client, componentType string, componentVersi
 			// so let's allow it
 			for _, tag := range supported.AllTags {
 				if componentVersion == tag {
-					s.End(true)
 					return true, nil
 				}
 			}

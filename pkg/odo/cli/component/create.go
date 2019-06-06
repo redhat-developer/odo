@@ -406,7 +406,15 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
-	return component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, false)
+	s := log.Spinner("Validating component")
+	defer s.End(false)
+
+	if err := component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, false); err != nil {
+		return err
+	}
+
+	s.End(true)
+	return nil
 }
 
 // Run has the logic to perform the required actions as part of command
