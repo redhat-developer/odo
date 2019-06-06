@@ -72,11 +72,7 @@ func (lo *ListOptions) Run() (err error) {
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
 			for _, file := range components.Items {
-				d := "not Deployed"
-				if file.Status.State {
-					d = "Deployed"
-				}
-				fmt.Fprintln(w, file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", d, "\t", file.Status.Context)
+				fmt.Fprintln(w, file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", file.Status.State, "\t", file.Status.Context)
 
 			}
 			w.Flush()
@@ -106,7 +102,7 @@ func (lo *ListOptions) Run() (err error) {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE")
 		for _, comp := range components.Items {
-			fmt.Fprintln(w, comp.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Source, "\t", "Deployed")
+			fmt.Fprintln(w, comp.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Source, "\t", comp.Status.State)
 		}
 		w.Flush()
 	}

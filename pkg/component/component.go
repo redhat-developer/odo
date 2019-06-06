@@ -898,6 +898,7 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
+		component.Status.State = "Pushed"
 		components = append(components, component)
 
 	}
@@ -921,9 +922,13 @@ func ListIfPathGiven(path string, client *occlient.Client) (ComponentList, error
 			}
 			con, _ := filepath.Abs(filepath.Dir(path))
 			a := getMachineReadableFormat(data.GetName(), data.GetType())
-			a.Status.Context = con
-			a.Status.State = exist
 			a.Spec.Source = data.GetSourceLocation()
+			a.Status.Context = con
+			state := "Not Pushed"
+			if exist {
+				state = "Pushed"
+			}
+			a.Status.State = state
 			components = append(components, a)
 		}
 		return nil
@@ -1301,6 +1306,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 	component.Spec.Env = filteredEnv
 	component.Status.LinkedComponents = linkedComponents
 	component.Status.LinkedServices = linkedServices
+	component.Status.State = "Pushed"
 
 	return component, nil
 }
