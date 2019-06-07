@@ -16,7 +16,7 @@ import (
 
 const (
 	globalConfigEnvName  = "GLOBALODOCONFIG"
-	configFileName       = "config.yaml"
+	configFileName       = "preference.yaml"
 	preferenceKind       = "Preference"
 	preferenceAPIVersion = "odo.openshift.io/v1alpha1"
 
