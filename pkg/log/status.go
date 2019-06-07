@@ -142,10 +142,10 @@ func (s *Status) End(success bool) {
 
 	if success {
 		green := color.New(color.FgGreen).SprintFunc()
-		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s\n", green(getSuccessString()), s.status)
+		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%v]\n", green(getSuccessString()), s.status, s.spinner.TimeSpent())
 	} else {
 		red := color.New(color.FgRed).SprintFunc()
-		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s\n", red(getErrString()), s.status)
+		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%v]\n", red(getErrString()), s.status, s.spinner.TimeSpent())
 	}
 
 	s.status = ""

@@ -60,6 +60,7 @@ type Spinner struct {
 	// protected by mu
 	prefix string
 	suffix string
+	start  time.Time
 }
 
 // NewSpinner initializes and returns a new Spinner that will write to
@@ -95,6 +96,7 @@ func (s *Spinner) SetSuffix(suffix string) {
 
 // Start starts the spinner running
 func (s *Spinner) Start() {
+	s.start = time.Now()
 	go func() {
 		for {
 			for _, frame := range s.frames {
@@ -116,4 +118,15 @@ func (s *Spinner) Start() {
 // Stop signals the spinner to stop
 func (s *Spinner) Stop() {
 	s.stop <- struct{}{}
+}
+
+// TimeSpent returns the seconds spent since the spinner first started
+func (s *Spinner) TimeSpent() time.Duration {
+	t := time.Now()
+
+	if t.Sub(s.start) < time.Second {
+		return t.Sub(s.start).Round(time.Millisecond)
+	}
+
+	return t.Sub(s.start).Round(time.Second)
 }
