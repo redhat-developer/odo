@@ -122,11 +122,11 @@ func (s *Spinner) Stop() {
 
 // TimeSpent returns the seconds spent since the spinner first started
 func (s *Spinner) TimeSpent() time.Duration {
-	t := time.Now()
+	currentTime := time.Now()
 
-	if t.Sub(s.start) < time.Second {
-		return t.Sub(s.start).Round(time.Millisecond)
+	if currentTime.Sub(s.start) < time.Second {
+		return currentTime.Sub(s.start).Round(time.Millisecond)
 	}
 
-	return t.Sub(s.start).Round(time.Second)
+	return currentTime.Sub(s.start).Round(time.Second)
 }
