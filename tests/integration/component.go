@@ -19,22 +19,41 @@ func componentTests(args ...string) {
 	var project string
 	var context string
 	var originalDir string
-	oc = helper.NewOcRunner("oc")
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		oc = helper.NewOcRunner("oc")
+		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
-	Context("odo component creation without application", func() {
+	// Clean up after the test
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
+	})
+
+	Context("Creating component", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			os.RemoveAll(".odo")
+			helper.Chdir(originalDir)
 		})
-		It("creating a component without an application should create one", func() {
+
+		It("should create component even in new project", func() {
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", project, "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v4")
+			oc.SwitchProject(project)
+			projectList := helper.CmdShouldPass("odo", "project", "list")
+			Expect(projectList).To(ContainSubstring(project))
+		})
+
+		It("Without an application should create one", func() {
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex")...)
 			helper.CmdShouldPass("odo", "push")
@@ -51,74 +70,52 @@ func componentTests(args ...string) {
 			helper.CmdShouldFail("odo", "component", "delete", componentName, "-f")
 
 		})
-	})
-
-	Context("odo component creation", func() {
-
-		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.RemoveAll(".odo")
-		})
 
 		It("should show an error when ref flag is provided with sources except git", func() {
 			outputErr := helper.CmdShouldFail("odo", append(args, "create", "nodejs", "--project", project, "cmp-git", "--ref", "test")...)
 			Expect(outputErr).To(ContainSubstring("The --ref flag is only valid for --git flag"))
 		})
 
+		It("create component twice fails from same directory", func() {
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project)...)
+			output := helper.CmdShouldFail("odo", append(args, "create", "nodejs", "--project", project)...)
+			Expect(output).To(ContainSubstring("this directory already contains a component"))
+		})
+
 		It("should create the component from the branch ref when provided", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "ruby", "ref-test", "--project", project, "--git", "https://github.com/girishramnani/ruby-ex.git", "--ref", "develop")...)
 			helper.CmdShouldPass("odo", "push")
-		})
-	})
-
-	Context("odo component creation", func() {
-		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
-		})
-
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.RemoveAll(context)
 		})
 
 		It("should list the component", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			originalDir := helper.Getwd()
-			helper.Chdir(context)
 			cmpList := helper.CmdShouldPass("odo", append(args, "list")...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
-			helper.Chdir(originalDir)
+		})
+
+		It("creates and pushes local nodejs component and then deletes --all", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--env", "key=value,key1=value1")...)
+			helper.CmdShouldPass("odo", append(args, "push")...)
+			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f")...)
+
 		})
 	})
 
 	Context("Test odo push with --source and --config flags", func() {
 		var originalDir string
-		BeforeEach(func() {
-			context = helper.CreateNewContext()
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
 		})
-
-		AfterEach(func() {
+		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.DeleteDir(context)
+			helper.Chdir(originalDir)
 		})
-
-		Context("when using project flag(--project) and current directory", func() {
-			JustBeforeEach(func() {
-				project = helper.CreateRandProject()
-				originalDir = helper.Getwd()
-				helper.Chdir(context)
-			})
-
-			JustAfterEach(func() {
-				helper.Chdir(originalDir)
-			})
-
+		Context("Using project flag(--project) and current directory", func() {
 			It("create local nodejs component and push source and code separately", func() {
 				appName := "nodejs-push-test"
 				cmpName := "nodejs"
@@ -177,16 +174,8 @@ func componentTests(args ...string) {
 			})
 		})
 
-		Context("when --context is used", func() {
+		Context("Flag --context is used", func() {
 			// don't need to switch to any dir here, as this test should use --context flag
-			JustBeforeEach(func() {
-				project = helper.CreateRandProject()
-			})
-
-			JustAfterEach(func() {
-				os.RemoveAll(".odo")
-			})
-
 			It("create local nodejs component and push source and code separately", func() {
 				appName := "nodejs-push-context-test"
 				cmpName := "nodejs"
@@ -428,7 +417,5 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "describe", cmpName, "--app", appName)
 			helper.CmdShouldPass("odo", "delete", cmpName, "--app", appName, "-f")
 		})
-
 	})
-
 }
