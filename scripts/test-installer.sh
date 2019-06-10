@@ -2,7 +2,7 @@
 
 # this script test installer.sh in different distributions using docker.
 
-# docker images where install script will be tested in
+# docker images where install/uninstall script will be tested in
 DOCKER_IMAGES="ubuntu:latest debian:latest fedora:latest base/archlinux:latest"
 
 # save tests that failed to this variable
