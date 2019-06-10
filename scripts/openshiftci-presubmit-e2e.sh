@@ -21,3 +21,4 @@ make test-cmp-sub-e2e
 make test-odo-config
 make test-watch-e2e
 make test-storage-e2e
+make test-cmd-app-e2e

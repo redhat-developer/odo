@@ -135,7 +135,7 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 			return lci, nil
 		}
 		// Case 3 : Check if specific flags are set for specific first child commands
-		if fcc.Name() == "app" && len(pfs) > 0 {
+		if fcc.Name() == "app" {
 			return lci, nil
 		}
 		// Case 4 : Check if fcc is catalog and request is to list

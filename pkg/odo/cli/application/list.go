@@ -44,6 +44,10 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the ListOptions based on completed values
 func (o *ListOptions) Validate() (err error) {
+	// list doesn't need the app name
+	if o.Context.Project == "" {
+		return util.ThrowContextError()
+	}
 	return util.CheckOutputFlag(o.outputFormat)
 }
 

@@ -47,6 +47,9 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 
 // Validate validates the DescribeOptions based on completed values
 func (o *DescribeOptions) Validate() (err error) {
+	if o.Context.Project == "" || o.appName == "" {
+		return util.ThrowContextError()
+	}
 	err = util.CheckOutputFlag(o.outputFormat)
 	if err != nil {
 		return err
