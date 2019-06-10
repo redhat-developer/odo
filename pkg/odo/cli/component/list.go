@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/tabwriter"
 
 	"github.com/golang/glog"
@@ -30,7 +31,7 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
 	outputFlag       string
-	pathFlag         []string
+	pathFlag         string
 	componentContext string
 	*genericclioptions.Context
 }
@@ -58,7 +59,7 @@ func (lo *ListOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run() (err error) {
 	if len(lo.pathFlag) != 0 {
-		components, err := component.ListIfPathGiven(lo.Context.Client, lo.pathFlag)
+		components, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
 		if err != nil {
 			return err
 		}
@@ -127,7 +128,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
 	componentListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
-	componentListCmd.Flags().StringSliceVar(&o.pathFlag, "path", []string{}, "path")
+	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path")
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)
 	//Adding `--application` flag
