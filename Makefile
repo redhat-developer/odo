@@ -114,12 +114,12 @@ test-json-format-output:
 # Run component e2e tests
 .PHONY: test-cmp-e2e
 test-cmp-e2e:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoCmpE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmpE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run component subcommands e2e tests
 .PHONY: test-cmp-sub-e2e
 test-cmp-sub-e2e:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoCmpSubE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmpE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run java e2e tests
 .PHONY: test-java-e2e
@@ -166,9 +166,9 @@ test-odo-login-e2e:
 test-odo-config:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo config test" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
-# Run all e2e tests
-.PHONY: test-e2e
-test-e2e:
+# Run all integration tests
+.PHONY: test-integration
+test-integration:
 	go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run e2e test scenarios
