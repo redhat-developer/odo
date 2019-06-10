@@ -66,6 +66,7 @@ goget-tools:
 	# go get -u golang.org/x/lint/golint
 	go get -u github.com/mitchellh/gox
 	go get github.com/frapposelli/wwhrd
+	go get -u github.com/onsi/ginkgo/ginkgo
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage
