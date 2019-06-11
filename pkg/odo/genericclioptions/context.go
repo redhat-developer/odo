@@ -118,7 +118,6 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		// Gather nessasary info
 		p := command.Parent()
 		r := command.Root()
-		pfs := FlagValueIfSet(command, ProjectFlagName)
 		afs := FlagValueIfSet(command, ApplicationFlagName)
 		// Find the first child of the command. As some groups are allowed even with non existent config
 		fcc := getFirstChildOfCommand(command)
