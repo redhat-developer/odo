@@ -169,7 +169,7 @@ test-odo-config:
 # Run all integration tests
 .PHONY: test-integration
 test-integration:
-	go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="Integration Suite" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios

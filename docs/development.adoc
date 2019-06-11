@@ -178,6 +178,20 @@ $ make test-cmp-e2e
 ----
 $ make test-cmp-e2e TEST_EXEC_NODES=1
 ----
++
+
+* To run the integration test suite in parallel (default: 4 ginkgo test node), on a test cluster :
++
+----
+$ make test-integration
+----
++
+
+* To run the integration test suite sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
++
+----
+$ make test-integration TEST_EXEC_NODES=1
+----
 
 You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
 
