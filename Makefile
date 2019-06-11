@@ -154,10 +154,10 @@ test-watch-e2e:
 test-storage-e2e:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoStorageE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
-# Run cmd app e2e tests
-.PHONY: test-cmd-app-e2e
-test-cmd-app-e2e:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoCmdAppE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+# Run odo app cmd tests
+.PHONY: test-cmd-app
+test-cmd-app:
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmdApp" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run login e2e tests
 .PHONY: test-odo-login-e2e
