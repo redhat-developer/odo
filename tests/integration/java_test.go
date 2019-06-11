@@ -68,8 +68,7 @@ var _ = Describe("odoJavaE2e", func() {
 			helper.CmdShouldPass("odo", "delete", "javaee-war-test", "-f")
 		})
 
-		// https://github.com/openshift/odo/pull/1634
-		/*It("Should be able to deploy a git repo that contains a java uberjar application using openjdk", func() {
+		It("Should be able to deploy a git repo that contains a java uberjar application using openjdk", func() {
 			oc.ImportJavaIsToNspace(project)
 
 			// Deploy the git repo / wildfly example
@@ -86,7 +85,7 @@ var _ = Describe("odoJavaE2e", func() {
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "uberjar-git-test", "-f")
-		})*/
+		})
 
 		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			oc.ImportJavaIsToNspace(project)
