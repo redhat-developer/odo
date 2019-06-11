@@ -48,6 +48,9 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
+	if do.Context.Project == "" || do.Application == "" {
+		return odoutil.ThrowContextError()
+	}
 	isExists, err := component.Exists(do.Client, do.componentName, do.Application)
 	if err != nil {
 		return err

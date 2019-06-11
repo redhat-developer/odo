@@ -44,6 +44,10 @@ func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 // Validate validates the describe parameters
 func (do *DescribeOptions) Validate() (err error) {
+	if do.Context.Project == "" || do.Application == "" {
+		return odoutil.ThrowContextError()
+	}
+
 	isExists, err := component.Exists(do.Context.Client, do.componentName, do.Context.Application)
 	if err != nil {
 		return err

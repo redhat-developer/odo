@@ -118,7 +118,6 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		// Gather nessasary info
 		p := command.Parent()
 		r := command.Root()
-		pfs := FlagValueIfSet(command, ProjectFlagName)
 		afs := FlagValueIfSet(command, ApplicationFlagName)
 		// Find the first child of the command. As some groups are allowed even with non existent config
 		fcc := getFirstChildOfCommand(command)
@@ -130,19 +129,24 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		if command.Name() == "create" && (p.Name() == "component" || p.Name() == r.Name()) {
 			return lci, nil
 		}
-		// Case 2 : Check if fcc is project. If so, skip validation of context
+		// Case 2 : if command is list,describe or delete and app flag is used just allow it
+		if (fcc.Name() == "list" || fcc.Name() == "describe" || fcc.Name() == "delete") && len(afs) > 0 {
+			return lci, nil
+		}
+		// Case 3 : Check if fcc is project. If so, skip validation of context
 		if fcc.Name() == "project" {
 			return lci, nil
 		}
-		// Case 3 : Check if specific flags are set for specific first child commands
+		// Case 4 : Check if specific flags are set for specific first child commands
 		if fcc.Name() == "app" {
 			return lci, nil
 		}
-		// Case 4 : Check if fcc is catalog and request is to list
+		// Case 5 : Check if fcc is catalog and request is to list
 		if fcc.Name() == "catalog" && p.Name() == "list" {
 			return lci, nil
 		}
-		if fcc.Name() == "component" && len(pfs) > 0 && len(afs) > 0 {
+		// Case 6 : Check if fcc is component and app flag is used
+		if fcc.Name() == "component" && len(afs) > 0 {
 			return lci, nil
 		}
 	} else {

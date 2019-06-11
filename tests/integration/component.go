@@ -373,4 +373,61 @@ func componentTests(args ...string) {
 		*/
 	})
 
+	Context("odo component delete, list and describe", func() {
+
+		appName := "app"
+		cmpName := "nodejs"
+
+		JustBeforeEach(func() {
+			SetDefaultEventuallyTimeout(10 * time.Minute)
+			project = helper.CreateRandProject()
+			context = helper.CreateNewContext()
+			originalDir = helper.Getwd()
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.DeleteDir(context)
+			os.RemoveAll(context)
+		})
+
+		It("should pass inside a odo directory without component name as parameter", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			// changing directory to the context directory
+			helper.Chdir(context)
+			cmpListOutput := helper.CmdShouldPass("odo", "list")
+			Expect(cmpListOutput).To(ContainSubstring(cmpName))
+			helper.CmdShouldPass("odo", "describe")
+			helper.CmdShouldPass("odo", "delete", "-f")
+			helper.Chdir(originalDir)
+		})
+
+		It("should fail outside a odo directory without component name as parameter", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			// list command should fail as no app flag is given
+			helper.CmdShouldFail("odo", "list")
+			// commands should fail as the component name is missing
+			helper.CmdShouldFail("odo", "describe", "--app", appName)
+			helper.CmdShouldFail("odo", "delete", "-f", "--app", appName)
+		})
+
+		It("should pass outside a odo directory with component name as parameter", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			cmpListOutput := helper.CmdShouldPass("odo", "list", "--app", appName)
+			Expect(cmpListOutput).To(ContainSubstring(cmpName))
+			helper.CmdShouldPass("odo", "describe", cmpName, "--app", appName)
+			helper.CmdShouldPass("odo", "delete", cmpName, "--app", appName, "-f")
+		})
+
+	})
+
 }

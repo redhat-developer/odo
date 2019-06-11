@@ -47,6 +47,10 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
+	if lo.Context.Project == "" || lo.Application == "" {
+		return odoutil.ThrowContextError()
+	}
+
 	return odoutil.CheckOutputFlag(lo.outputFlag)
 }
 
