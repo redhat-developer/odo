@@ -63,6 +63,9 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 	if len(args) == 0 {
 		o.urlName = url.GetURLName(o.Component(), o.componentPort)
 	} else {
+		if len(args[0]) > 63 {
+			return fmt.Errorf("url name must be shorter than 63 characters")
+		}
 		o.urlName = args[0]
 	}
 	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
