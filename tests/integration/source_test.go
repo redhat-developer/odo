@@ -47,8 +47,7 @@ var _ = Describe("odoSourceE2e", func() {
 			helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")
 		})
 
-		//https://github.com/openshift/odo/issues/1698
-		/*It("Should be able to deploy an openjdk source application", func() {
+		It("Should be able to deploy an openjdk source application", func() {
 			oc.ImportJavaIsToNspace(project)
 			helper.CopyExample(filepath.Join("source", "openjdk"), context)
 			helper.CmdShouldPass("odo", "create", "java", "openjdk-app", "--project",
@@ -69,7 +68,7 @@ var _ = Describe("odoSourceE2e", func() {
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")
-		})*/
+		})
 
 		It("Should be able to deploy a wildfly source application", func() {
 			helper.CopyExample(filepath.Join("source", "wildfly"), context)
