@@ -12,9 +12,11 @@ import (
 var _ = Describe("odoSourceE2e", func() {
 	var project string
 	var context string
+	var oc helper.OcRunner
 
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
+		oc = helper.NewOcRunner("oc")
 		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 	})
