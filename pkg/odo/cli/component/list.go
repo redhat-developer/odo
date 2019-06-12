@@ -8,6 +8,9 @@ import (
 	"text/tabwriter"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -15,8 +18,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
