@@ -166,10 +166,10 @@ test-odo-login-e2e:
 test-odo-config:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo config test" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
-# Run all integration tests
-.PHONY: test-integration
-test-integration:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="Integration Suite" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+# Run all e2e tests
+.PHONY: test-e2e
+test-e2e:
+	go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios

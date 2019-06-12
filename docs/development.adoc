@@ -158,39 +158,34 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 
 * `odo` and `oc` binaries in `$PATH`.
 
-.How to write:
-
-Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/tests/template/template_cleantest_test.go[`template`].
-
 .Procedure:
 
-Integration tests can be run in the following two ways:
+To deploy an integration test:
 
-* To run the component test in parallel (default: 4 ginkgo test node), on a test cluster :
-+
+
+* For the entire integration suite use:
+----
+$ make test-e2e
+----
+
+* For the generic tests use:
+----
+$ make test-generic
+----
+
+* For the component tests use:
 ----
 $ make test-cmp-e2e
 ----
-+
 
-* To run component test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
-+
+* For the service catalog tests use:
 ----
-$ make test-cmp-e2e TEST_EXEC_NODES=1
+$ make test-service-e2e
 ----
-+
 
-* To run the integration test suite in parallel (default: 4 ginkgo test node), on a test cluster :
-+
+* For the e2e scenario test use:
 ----
-$ make test-integration
-----
-+
-
-* To run the integration test suite sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
-+
-----
-$ make test-integration TEST_EXEC_NODES=1
+$ make test-e2e-scenarios
 ----
 
 You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
