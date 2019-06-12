@@ -17,6 +17,7 @@ jobs:
       install:
         - make goget-tools
       script:
+        - export PATH="$PATH:$GOPATH/bin"
         - make bin
         - make validate
         - make test-coverage

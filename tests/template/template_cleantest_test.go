@@ -1,6 +1,7 @@
 package template
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
@@ -20,10 +21,7 @@ var _ = Describe("Example of a clean test", func() {
 	//  current directory and project (before eny test is run) so it can restored  after all testing is done
 	var originalDir string
 	var originalProject string
-
 	var oc helper.OcRunner
-	// path to odo binary
-	//var odo string
 
 	BeforeEach(func() {
 		// Set default timeout for Eventually assertions
@@ -33,15 +31,16 @@ var _ = Describe("Example of a clean test", func() {
 		// initialize oc runner
 		// right now it uses oc binary, but we should convert it to client-go
 		oc = helper.NewOcRunner("oc")
-		//odo = "odo"
-
-		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		project = helper.CreateRandProject()
+
 	})
 
 	AfterEach(func() {
 		helper.DeleteProject(project)
 		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	var _ = Context("when component is in the current directory", func() {
