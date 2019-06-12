@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/tabwriter"
 
 	"github.com/golang/glog"
@@ -16,6 +17,7 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -30,6 +32,7 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
 	outputFlag       string
+	pathFlag         string
 	componentContext string
 	*genericclioptions.Context
 }
@@ -47,7 +50,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	if lo.Context.Project == "" || lo.Application == "" {
+	if lo.pathFlag == "" && (lo.Context.Project == "" || lo.Application == "") {
 		return odoutil.ThrowContextError()
 	}
 
@@ -56,6 +59,28 @@ func (lo *ListOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run() (err error) {
+	if len(lo.pathFlag) != 0 {
+		components, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
+		if err != nil {
+			return err
+		}
+		if lo.outputFlag == "json" {
+			out, err := json.Marshal(components)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(out))
+		} else {
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
+			for _, file := range components.Items {
+				fmt.Fprintln(w, file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", file.Status.State, "\t", file.Status.Context)
+
+			}
+			w.Flush()
+		}
+		return nil
+	}
 
 	components, err := component.List(lo.Client, lo.Application)
 	if err != nil {
@@ -76,16 +101,10 @@ func (lo *ListOptions) Run() (err error) {
 			log.Errorf("There are no components deployed.")
 			return
 		}
-		activeMark := " "
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "ACTIVE", "\t", "NAME", "\t", "TYPE")
-		currentComponent := lo.Context.ComponentAllowingEmpty(true)
+		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE")
 		for _, comp := range components.Items {
-			if comp.Name == currentComponent {
-				activeMark = "*"
-			}
-			fmt.Fprintln(w, activeMark, "\t", comp.Name, "\t", comp.Spec.Type)
-			activeMark = " "
+			fmt.Fprintln(w, comp.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Source, "\t", comp.Status.State)
 		}
 		w.Flush()
 	}
@@ -110,11 +129,13 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
 	componentListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
-
+	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path")
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)
 	//Adding `--application` flag
 	appCmd.AddApplicationFlag(componentListCmd)
+
+	completion.RegisterCommandFlagHandler(componentListCmd, "path", completion.FileCompletionHandler)
 
 	return componentListCmd
 }

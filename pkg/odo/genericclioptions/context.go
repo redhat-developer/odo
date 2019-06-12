@@ -129,8 +129,12 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		if command.Name() == "create" && (p.Name() == "component" || p.Name() == r.Name()) {
 			return lci, nil
 		}
-		// Case 2 : if command is list,describe or delete and app flag is used just allow it
-		if (fcc.Name() == "list" || fcc.Name() == "describe" || fcc.Name() == "delete") && len(afs) > 0 {
+		// Case 2 : if command is describe or delete and app flag is used just allow it
+		if (fcc.Name() == "describe" || fcc.Name() == "delete") && len(afs) > 0 {
+			return lci, nil
+		}
+		// Case 2 : if command is list, just allow it
+		if fcc.Name() == "list" {
 			return lci, nil
 		}
 		// Case 3 : Check if fcc is project. If so, skip validation of context
@@ -145,10 +149,15 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		if fcc.Name() == "catalog" && p.Name() == "list" {
 			return lci, nil
 		}
+		// Check if fcc is component and  request is list
+		if fcc.Name() == "component" && command.Name() == "list" {
+			return lci, nil
+		}
 		// Case 6 : Check if fcc is component and app flag is used
 		if fcc.Name() == "component" && len(afs) > 0 {
 			return lci, nil
 		}
+
 	} else {
 		return lci, nil
 	}
