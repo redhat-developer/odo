@@ -126,7 +126,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         describe --app --context --output --project : Describe the given component
         get --app --context --project --short : Get currently active component
         link --app --component --context --port --project --wait --wait-for-target : Link component to a service or component
-        list --app --context --output --project : List all components in the current application
+        list --app --context --output --path --project : List all components in the current application
         log --app --context --follow --project : Retrieve the log for the given component
         push --config --context --ignore --show-log --source : Push source code to a component
         unlink --app --component --context --port --project --wait : Unlink component to a service or component
@@ -140,7 +140,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
     delete --all --app --context --force --project : Delete an existing component
     describe --app --context --output --project : Describe the given component
     link --app --component --context --port --project --wait --wait-for-target : Link component to a service or component
-    list --app --context --output --project : List all components in the current application
+    list --app --context --output --path --project : List all components in the current application
     log --app --context --follow --project : Retrieve the log for the given component
     login --certificate-authority --insecure-skip-tls-verify --password --token --username : Login to cluster
     logout : Log out of the current OpenShift session
