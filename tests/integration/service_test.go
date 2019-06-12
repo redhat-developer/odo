@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -42,8 +44,7 @@ var _ = Describe("odoServiceE2e", func() {
 	})
 
 	Context("odo service create with a spring boot application", func() {
-		// https://github.com/openshift/odo/issues/1698
-		/*It("should be able to create postgresql and link it with springboot", func() {
+		It("should be able to create postgresql and link it with springboot", func() {
 			oc.ImportJavaIsToNspace(project)
 			helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
 
@@ -82,7 +83,7 @@ var _ = Describe("odoServiceE2e", func() {
 
 			// Delete the service
 			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f")
-		})*/
+		})
 	})
 
 	// TODO: auth issue, we need to find a proper way how to test it without requiring cluster admin privileges
