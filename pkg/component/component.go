@@ -903,7 +903,7 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 
 	}
 
-	compoList := getMachineReadableFormatForList(components)
+	compoList := GetMachineReadableFormatForList(components)
 	return compoList, nil
 }
 
@@ -924,6 +924,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				}
 				con, _ := filepath.Abs(filepath.Dir(path))
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
+				a.Spec.App = data.GetApplication()
 				a.Spec.Source = data.GetSourceLocation()
 				a.Status.Context = con
 				state := "Not Pushed"
@@ -937,7 +938,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 		})
 
 	}
-	return getMachineReadableFormatForList(components), err
+	return GetMachineReadableFormatForList(components), err
 }
 
 // GetComponentSource what source type given component uses
@@ -1304,6 +1305,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 	}
 
 	component = getMachineReadableFormat(componentName, componentType)
+	component.Spec.App = applicationName
 	component.Spec.Source = path
 	component.Spec.URL = urls
 	component.Spec.Storage = storage
@@ -1350,8 +1352,8 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 
 }
 
-// getMachineReadableFormatForList returns list of components in machine readable format
-func getMachineReadableFormatForList(components []Component) ComponentList {
+// GetMachineReadableFormatForList returns list of components in machine readable format
+func GetMachineReadableFormatForList(components []Component) ComponentList {
 	if len(components) == 0 {
 		components = []Component{}
 	}

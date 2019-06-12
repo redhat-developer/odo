@@ -15,6 +15,7 @@ type Component struct {
 
 // ComponentSpec is spec of components
 type ComponentSpec struct {
+	App     string          `json:"app,omitempty"`
 	Type    string          `json:"type,omitempty"`
 	Source  string          `json:"source,omitempty"`
 	URL     []string        `json:"url,omitempty"`
