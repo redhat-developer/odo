@@ -22,5 +22,10 @@ make test-cmp-e2e
 make test-cmp-sub-e2e
 make test-odo-config
 make test-watch-e2e
+<<<<<<< HEAD
 make test-storage-e2e
 make test-cmd-app
+=======
+make test-cmd-storage
+make test-cmd-app-e2e
+>>>>>>> Run storage command test in parallel
