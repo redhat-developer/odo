@@ -102,7 +102,7 @@ jobs:
     #   install:
     #     - true
     #   script:
-    #     ./scripts/install.sh
+    #     ./scripts/installer.sh
 
     - stage: deploy
       # run this stage only on master branch and on tags

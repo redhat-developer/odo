@@ -46,7 +46,7 @@ OpenShift 3.10.0 or above is required.
 
 ===== OS-independent automated installation for Mac and Linux systems
 
-Use this link:./scripts/install.sh[bash script] to quickly install `odo`. It will automatically detect your operating system and install `odo` accordingly.
+Use this link:./scripts/installer.sh[bash script] to quickly install `odo`. It will automatically detect your operating system and install `odo` accordingly.
 
 ----
 $ curl -L https://github.com/openshift/odo/raw/master/scripts/installer.sh | bash

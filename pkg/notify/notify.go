@@ -13,7 +13,7 @@ const (
 	// VersionFetchURL is the URL to fetch latest version number
 	VersionFetchURL = "https://raw.githubusercontent.com/openshift/odo/master/build/VERSION"
 	// InstallScriptURL is URL of the installation shell script
-	InstallScriptURL = "https://raw.githubusercontent.com/openshift/odo/master/scripts/install.sh"
+	InstallScriptURL = "https://raw.githubusercontent.com/openshift/odo/master/scripts/installer.sh"
 )
 
 // getLatestReleaseTag polls odo's upstream GitHub repository to get the
