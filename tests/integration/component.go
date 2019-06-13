@@ -94,14 +94,6 @@ func componentTests(args ...string) {
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
 		})
-
-		It("creates and pushes local nodejs component and then deletes --all", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--env", "key=value,key1=value1")...)
-			helper.CmdShouldPass("odo", append(args, "push")...)
-			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f")...)
-
-		})
 	})
 
 	Context("Test odo push with --source and --config flags", func() {
@@ -260,12 +252,14 @@ func componentTests(args ...string) {
 
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
+			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
 		})
 
 		JustAfterEach(func() {
 			helper.Chdir(originalDir)
+			helper.DeleteProject(project)
 			os.RemoveAll(context)
 		})
 
@@ -369,7 +363,6 @@ func componentTests(args ...string) {
 		cmpName := "nodejs"
 
 		JustBeforeEach(func() {
-			SetDefaultEventuallyTimeout(10 * time.Minute)
 			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			originalDir = helper.Getwd()
@@ -401,10 +394,10 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// list command should fail as no app flag is given
-			helper.CmdShouldFail("odo", "list")
+			helper.CmdShouldFail("odo", "list", "--project", project)
 			// commands should fail as the component name is missing
-			helper.CmdShouldFail("odo", "describe", "--app", appName)
-			helper.CmdShouldFail("odo", "delete", "-f", "--app", appName)
+			helper.CmdShouldFail("odo", "describe", "--app", appName, "--project", project)
+			helper.CmdShouldFail("odo", "delete", "-f", "--app", appName, "--project", project)
 		})
 
 		It("should pass outside a odo directory with component name as parameter", func() {
@@ -412,10 +405,10 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
-			cmpListOutput := helper.CmdShouldPass("odo", "list", "--app", appName)
+			cmpListOutput := helper.CmdShouldPass("odo", "list", "--app", appName, "--project", project)
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
-			helper.CmdShouldPass("odo", "describe", cmpName, "--app", appName)
-			helper.CmdShouldPass("odo", "delete", cmpName, "--app", appName, "-f")
+			helper.CmdShouldPass("odo", "describe", cmpName, "--app", appName, "--project", project)
+			helper.CmdShouldPass("odo", "delete", cmpName, "--app", appName, "--project", project, "-f")
 		})
 	})
 }
