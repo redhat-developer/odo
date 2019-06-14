@@ -174,6 +174,18 @@ func Successf(format string, a ...interface{}) {
 	fmt.Fprintf(GetStdout(), "%s%s%s%s\n", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
+// Warningf will output in an appropriate "progress" manner
+func Warningf(format string, a ...interface{}) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
+}
+
+// Warning will output in an appropriate "progress" manner
+func Warning(a ...interface{}) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
+}
+
 // Errorf will output in an appropriate "progress" manner
 func Errorf(format string, a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
@@ -272,6 +284,16 @@ func getErrString() string {
 		return "X"
 	}
 	return "✗"
+}
+
+// getWarningString returns a certain string based upon the OS.
+// Some Windows terminals do not support unicode and must use ASCII.
+// TODO: Test needs to be added once we get Windows testing available on TravisCI / CI platform.
+func getWarningString() string {
+	if runtime.GOOS == "windows" {
+		return "!"
+	}
+	return "⚠"
 }
 
 // getSuccessString returns a certain string based upon the OS.
