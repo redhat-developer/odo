@@ -321,8 +321,8 @@ func (oc *OcRunner) GetVolumeMountPath(dcName string, namespace string) string {
 }
 
 // GetEnvFromEntry returns envFrom entry
-func (oc *OcRunner) GetEnvFromEntry(componentName string, appName string) string {
-	envFromOut := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName,
+func (oc *OcRunner) GetEnvFromEntry(componentName string, appName string, projectName string) string {
+	envFromOut := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
 		"-o", "jsonpath='{.spec.template.spec.containers[0].envFrom}'")
 	return strings.TrimSpace(envFromOut)
 }

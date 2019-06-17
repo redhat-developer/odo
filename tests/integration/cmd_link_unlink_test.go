@@ -91,7 +91,7 @@ var _ = Describe("odoLinkE2e", func() {
 			helper.CmdShouldPass("odo", "push", "--context", context2)
 			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context2)
 			// ensure that the proper envFrom entry was created
-			envFromOutput := oc.GetEnvFromEntry("frontend", "app")
+			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
 			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--context", context2)
 			Expect(outputErr).To(ContainSubstring("been linked"))
@@ -128,7 +128,7 @@ var _ = Describe("odoLinkE2e", func() {
 			})
 			helper.CmdShouldPass("odo", "link", "mysql-persistent", "--wait-for-target", "--component", "backend")
 			// ensure that the proper envFrom entry was created
-			envFromOutput := oc.GetEnvFromEntry("backend", "app")
+			envFromOutput := oc.GetEnvFromEntry("backend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
 			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--component", "backend", "--context", context2)
 			Expect(outputErr).To(ContainSubstring("been linked"))
@@ -163,14 +163,14 @@ var _ = Describe("odoLinkE2e", func() {
 			})
 			helper.CmdShouldPass("odo", "service", "delete", "mysql-persistent", "-f")
 			// ensure that the backend no longer has an envFrom value
-			backendEnvFromOutput := oc.GetEnvFromEntry("backend", "app")
+			backendEnvFromOutput := oc.GetEnvFromEntry("backend", "app", project)
 			Expect(backendEnvFromOutput).To(Equal("''"))
 			// ensure that the frontend envFrom was not changed
-			frontEndEnvFromOutput := oc.GetEnvFromEntry("frontend", "app")
+			frontEndEnvFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
 			Expect(frontEndEnvFromOutput).To(ContainSubstring("backend"))
 			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend")
 			// ensure that the proper envFrom entry was created
-			envFromOutput := oc.GetEnvFromEntry("frontend", "app")
+			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
 			Expect(envFromOutput).To(Equal("''"))
 		})
 	})
