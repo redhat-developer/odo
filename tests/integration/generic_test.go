@@ -219,16 +219,22 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Context("prevent the user from creating a URL with name that has more than 63 characters", func() {
+		var originalDir string
+
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
+			context = helper.CreateNewContext()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
 		})
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			os.RemoveAll(".odo")
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context)
 		})
 		It("should not allow creating a URL with long name", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
 			stdOut := helper.CmdShouldFail("odo", "url", "create", testLongURLName, "--port", "8080")
 			Expect(stdOut).To(ContainSubstring("url name must be shorter than 63 characters"))
 		})
