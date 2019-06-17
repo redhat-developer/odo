@@ -121,12 +121,18 @@ func (s *Spinner) Stop() {
 }
 
 // TimeSpent returns the seconds spent since the spinner first started
-func (s *Spinner) TimeSpent() time.Duration {
+func (s *Spinner) TimeSpent() string {
 	currentTime := time.Now()
+	timeElapsed := currentTime.Sub(s.start)
 
-	if currentTime.Sub(s.start) < time.Second {
-		return currentTime.Sub(s.start).Round(time.Millisecond)
+	// Print ms if less than a second
+	// else print out minutes if more than 1 minute
+	// else print the default (seconds)
+	if timeElapsed < time.Second {
+		return fmt.Sprintf("%dms", timeElapsed.Nanoseconds()/int64(time.Millisecond))
+	} else if timeElapsed > time.Minute {
+		return fmt.Sprintf("%.0fm", timeElapsed.Minutes())
 	}
 
-	return currentTime.Sub(s.start).Round(time.Second)
+	return fmt.Sprintf("%.0fs", timeElapsed.Seconds())
 }
