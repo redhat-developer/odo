@@ -74,6 +74,16 @@ var _ = Describe("odojsonoutput", func() {
 			desiredDesCompJSON := `{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","app": "myapp","source":"https://github.com/openshift/nodejs-ex"},"status":{"state":"Pushed"}}`
 			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
 
+			// odo storage create -o json
+			actualJSONStorage := helper.CmdShouldPass("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "-o", "json")
+			desiredJSONStorage := `{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi"},"status":{"path":"/opt/app-root/src/storage/"}}`
+			Expect(desiredJSONStorage).Should(MatchJSON(actualJSONStorage))
+
+			// odo storage list -o json
+			actualSrorageList := helper.CmdShouldPass("odo", "storage", "list", "-o", "json")
+			desiredSrorageList := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi"},"status":{"path":"/opt/app-root/src/storage/"}}]}`
+			Expect(desiredSrorageList).Should(MatchJSON(actualSrorageList))
+
 			// odo list -o json --path .
 			pwd := helper.Getwd()
 
@@ -97,7 +107,8 @@ var _ = Describe("odojsonoutput", func() {
 		})
 		It("should be able to list url", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
-			helper.CmdShouldPass("odo", "url", "create", "myurl", "--port", "8080")
+			helper.CmdShouldPass("odo", "push")
+			helper.CmdShouldPass("odo", "url", "create", "myurl")
 			helper.CmdShouldPass("odo", "push")
 
 			// odo url list -o json

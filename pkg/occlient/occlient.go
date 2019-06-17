@@ -1093,19 +1093,9 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 	var containerPorts []corev1.ContainerPort
-	if len(params.Ports) == 0 {
-		containerPorts, err = c.GetExposedPorts(imageStreamImage)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
-		}
-	} else {
-		if err != nil {
-			return errors.Wrapf(err, "unable to bootstrap s2i supervisored for %s", commonObjectMeta.Name)
-		}
-		containerPorts, err = util.GetContainerPortsFromStrings(params.Ports)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
-		}
+	containerPorts, err = util.GetContainerPortsFromStrings(params.Ports)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
 	}
 
 	inputEnvs, err := GetInputEnvVarsFromStrings(params.EnvVars)
@@ -1209,7 +1199,6 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
-
 	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)

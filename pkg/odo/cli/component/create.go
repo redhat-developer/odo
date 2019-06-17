@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
@@ -392,9 +393,31 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 		co.setResourceLimits()
+
+		var portList []string
 		if len(co.componentPorts) > 0 {
-			co.componentSettings.Ports = &(co.componentPorts)
+			portList = co.componentPorts
+		} else {
+
+			// checking port through builder image
+			imageNS, imageName, imageTag, _, err := occlient.ParseImageName(*co.componentSettings.Type)
+			if err != nil {
+				return err
+			}
+			imageStream, err := co.Client.GetImageStream(imageNS, imageName, imageTag)
+			imageStreamImage, err := co.Client.GetImageStreamImage(imageStream, imageTag)
+			containerPorts, err := co.Client.GetExposedPorts(imageStreamImage)
+			if len(containerPorts) == 0 && len(co.componentPorts) == 0 {
+				return fmt.Errorf("there's no port mentioned in builder image or with port flag, please provide port with --port")
+			}
+			for _, po := range containerPorts {
+				strPort := fmt.Sprint(po.ContainerPort) + "/" + string(po.Protocol)
+
+				portList = append(portList, strPort)
+			}
 		}
+
+		co.componentSettings.Ports = &(portList)
 	}
 
 	co.componentSettings.Project = &(co.Context.Project)

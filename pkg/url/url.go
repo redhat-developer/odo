@@ -164,7 +164,6 @@ func GetValidPortNumber(client *occlient.Client, portNumber int, componentName s
 
 	// port number will be -1 if the user doesn't specify any port
 	if portNumber == -1 {
-
 		switch {
 		case len(componentPorts) > 1:
 			return portNumber, errors.Errorf("port for the component %s is required as it exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
@@ -181,7 +180,7 @@ func GetValidPortNumber(client *occlient.Client, portNumber int, componentName s
 		}
 	}
 
-	return portNumber, nil
+	return portNumber, fmt.Errorf("given port %d is not exposed on given component", portNumber)
 }
 
 // getMachineReadableFormat gives machine readable URL definition
