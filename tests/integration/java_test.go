@@ -44,9 +44,15 @@ var _ = Describe("odoJavaE2e", func() {
 				project, "--ref", "master", "--git", warGitRepo, "--context", context)
 
 			// Create a URL
+<<<<<<< HEAD
 			helper.CmdShouldPass("odo", "url", "create", "gitrepo", "--port", "8080", "--context", context)
 			helper.CmdShouldPass("odo", "push", "-v", "4", "--context", context)
 			routeURL := helper.DetermineRouteURL(context)
+=======
+			helper.CmdShouldPass("odo", "url", "create", "gitrepo")
+			helper.CmdShouldPass("odo", "push", "-v", "4")
+			routeURL := helper.DetermineRouteURL("")
+>>>>>>> 54634013... fixed tests
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Insult", 90, 1)
@@ -62,9 +68,15 @@ var _ = Describe("odoJavaE2e", func() {
 				project, "--binary", filepath.Join(context, "ROOT.war"), "--context", context)
 
 			// Create a URL
+<<<<<<< HEAD
 			helper.CmdShouldPass("odo", "url", "create", "warfile", "--port", "8080", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			routeURL := helper.DetermineRouteURL(context)
+=======
+			helper.CmdShouldPass("odo", "url", "create", "warfile")
+			helper.CmdShouldPass("odo", "push")
+			routeURL := helper.DetermineRouteURL("")
+>>>>>>> 54634013... fixed tests
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Sample", 90, 1)
