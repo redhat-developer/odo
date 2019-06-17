@@ -16,7 +16,7 @@ var _ = Describe("odoLinkE2e", func() {
 
 	//new clean project and context for each test
 	var project string
-	var context1, context2, context3, context4 string
+	var context, context1, context2 string
 	var originalDir string
 
 	// Setup up state for each test spec
@@ -26,16 +26,33 @@ var _ = Describe("odoLinkE2e", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		oc = helper.NewOcRunner("oc")
 		project = helper.CreateRandProject()
+		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.DeleteProject(project)
-		os.RemoveAll(".odo")
+		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
-	Context("odo link/unlink handling between components", func() {
+	Context("when running help for link command", func() {
+		It("should display the help", func() {
+			appHelp := helper.CmdShouldPass("odo", "link", "-h")
+			Expect(appHelp).To(ContainSubstring("Link component to a service or component"))
+		})
+	})
+
+	Context("when running help for unlink command", func() {
+		It("should display the help", func() {
+			appHelp := helper.CmdShouldPass("odo", "unlink", "-h")
+			Expect(appHelp).To(ContainSubstring("Unlink component or service from a component"))
+		})
+	})
+
+	Context("When link between components using wrong port", func() {
 		JustBeforeEach(func() {
 			context1 = helper.CreateNewContext()
 			context2 = helper.CreateNewContext()
@@ -44,22 +61,33 @@ var _ = Describe("odoLinkE2e", func() {
 			helper.DeleteDir(context1)
 			helper.DeleteDir(context2)
 		})
-		It("reports error when using wrong port", func() {
+		It("should fail", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context1)
 			helper.CopyExample(filepath.Join("source", "python"), context2)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
 			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--context", context2, "--port", "1234")
 			Expect(stdErr).To(ContainSubstring("Unable to properly link to component backend using port 1234"))
 		})
-		It("link the frontend application to the backend", func() {
+	})
+
+	Context("When handiling link/unlink between components", func() {
+		JustBeforeEach(func() {
+			context1 = helper.CreateNewContext()
+			context2 = helper.CreateNewContext()
+		})
+		JustAfterEach(func() {
+			helper.DeleteDir(context1)
+			helper.DeleteDir(context2)
+		})
+		It("should link the frontend application to the backend and then unlink successfully", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context1)
 			helper.CopyExample(filepath.Join("source", "python"), context2)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
 			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context2)
 			// ensure that the proper envFrom entry was created
@@ -71,26 +99,27 @@ var _ = Describe("odoLinkE2e", func() {
 		})
 	})
 
-	Context("odo link/unlink handling between components and service", func() {
+	Context("When link backend between component and service", func() {
 		JustBeforeEach(func() {
-			context3 = helper.CreateNewContext()
-			context4 = helper.CreateNewContext()
+			context1 = helper.CreateNewContext()
+			context2 = helper.CreateNewContext()
 			originalDir = helper.Getwd()
 		})
 		JustAfterEach(func() {
 			helper.Chdir(originalDir)
-			helper.DeleteDir(context3)
-			helper.DeleteDir(context4)
+			helper.DeleteDir(context1)
+			helper.DeleteDir(context2)
 		})
-		It("should link backend to service", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context3)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context3)
-			helper.CmdShouldPass("odo", "push", "--context", context3)
-			helper.CopyExample(filepath.Join("source", "python"), context4)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context4)
-			helper.CmdShouldPass("odo", "push", "--context", context4)
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context4)
-			helper.Chdir(context4)
+		It("should link backend to service successfully", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", context1)
+			helper.CopyExample(filepath.Join("source", "python"), context2)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context2)
+			// Switching to context2 dir because --context flag is not supported with service command
+			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
 			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
@@ -101,20 +130,31 @@ var _ = Describe("odoLinkE2e", func() {
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("backend", "app")
 			Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
-
-			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--component", "backend", "--context", context4)
+			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--component", "backend", "--context", context2)
 			Expect(outputErr).To(ContainSubstring("been linked"))
 		})
+	})
 
-		It("Delete service and unlink the backend from the frontend", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context3)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context3)
-			helper.CmdShouldPass("odo", "push", "--context", context3)
-			helper.CopyExample(filepath.Join("source", "python"), context4)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context4)
-			helper.CmdShouldPass("odo", "push", "--context", context4)
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context4)
-			helper.Chdir(context4)
+	Context("When deleting service and unlink the backend from the frontend", func() {
+		JustBeforeEach(func() {
+			context1 = helper.CreateNewContext()
+			context2 = helper.CreateNewContext()
+			originalDir = helper.Getwd()
+		})
+		JustAfterEach(func() {
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context1)
+			helper.DeleteDir(context2)
+		})
+		It("should pass", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", context1)
+			helper.CopyExample(filepath.Join("source", "python"), context2)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--context", context2)
+			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
 			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
