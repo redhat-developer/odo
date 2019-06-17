@@ -44,8 +44,8 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	// however, we should at least warn the user.
 	serviceInstanceAppNames, err := client.GetServiceInstanceLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
-		glog.V(4).Infof("Unable to list Service Catalog images: %s", err)
-		log.Warning("Unable to access Service Catalog list, may not be enabled on cluster")
+		glog.V(4).Infof("Unable to list Service Catalog instances: %s", err)
+		log.Warning("Unable to access Service Catalog instances, may not be enabled on cluster")
 	} else {
 		appNames = append(deploymentConfigAppNames, serviceInstanceAppNames...)
 	}
