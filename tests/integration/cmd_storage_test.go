@@ -17,9 +17,9 @@ var _ = Describe("odo storage command", func() {
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		oc = helper.NewOcRunner("oc")
 	})
 
