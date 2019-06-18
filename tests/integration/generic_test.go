@@ -18,6 +18,7 @@ var _ = Describe("odo generic", func() {
 	// odo and oc in $PATH already.
 	var project string
 	var context string
+	var originalDir string
 	var oc helper.OcRunner
 	var err error
 	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
