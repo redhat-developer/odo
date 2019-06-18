@@ -144,6 +144,8 @@ NOTE: You can use environment variable `CUSTOM_HOMEDIR` to specify a custom home
 . In the case where functions fetch or create new objects through the APIs, add a https://godoc.org/k8s.io/client-go/testing#Fake.AddReactor[reactor] interface returning fake objects.
 . Verify the objects returned.
 
+NOTE: Refer https://github.com/golang/go/wiki/LearnTesting for Go best practices on unit testing.
+
 === Integration tests
 
 Integration tests are used within `odo`. All tests can be found in the `tests/` directory and can be called using functions within `makefile`. Also test directory comprises `e2e` scenario and a clean `test template` for reference.
@@ -189,6 +191,38 @@ $ make test-e2e-scenarios
 ----
 
 You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
+
+=== Test guidelines
+
+Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`].
+
+* Protocols (Integration/e2e test):
++
+Before writing tests (Integration/e2e) scenario make sure that
+Identify the test (Integration or e2e) properly.
++
+For example:
+In storage feature test, storage command will be tested properly includes positive, negative and corner cases whereas in e2e scenario only one or two storage command will be tested in e2e scenario like login -> create component -> link -> add storage -> certain operation -> delete storage -> unlink -> delete component ->logout`. For e2e test no need to create a test file. You can update those scenarios what ever e2e test file is available for a particular version of release.
+
++
+Create a new test file for a new feature. If the feature test file is already present then update the same test file with new scenario. Also make sure that the feature file name should add proper sense.
++
+For example:
+For storage feature, a new storage test file is created. If new functionality is added to the storage feature then same file will be updated with new scenario. Naming of the test file should follow a common format like cmd_<feature name>_test. So the storage feature test file name will be cmd_storage_test.go. Same naming convention can be used for e2e test too like e2e_<release name>_test.
++
+Don’t create new test file for issues(bug) and try to add some scenario for each bug fix if Applicable
++
+Don’t use unnecessary functionality validation for a specific scenario
++
+Not to use unnecessary text validation
++
+If oc, odo or generic library you are looking for is not present in helper package then create a new function in the same package as per scenario requirement
++
+The test spec should run parallelly (Default) or sequentially as per choice. Check test template for reference.
++
+Spec description should make sense of what it implements in the spec
++
+Try to run tests on local env as much as possible before pushing PRs
 
 === Race conditions
 
