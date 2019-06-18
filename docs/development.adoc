@@ -178,6 +178,16 @@ $ make test-cmp-e2e
 ----
 $ make test-cmp-e2e TEST_EXEC_NODES=1
 ----
++
+
+* For the entire integration test suite use:
++
+----
+$ make test-integration
+----
++
+
+NOTE: `make test-integration` doesn't honour enviornment variable `TEST_EXEC_NODES`. So by default it runs the entire integration test suite on a single ginkgo test node sequentially.
 
 You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
 
