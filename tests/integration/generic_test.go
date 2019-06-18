@@ -21,6 +21,7 @@ var _ = Describe("odo generic", func() {
 	var oc helper.OcRunner
 	var err error
 	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
+	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
 
 	BeforeEach(func() {
 		oc = helper.NewOcRunner("oc")
@@ -214,6 +215,28 @@ var _ = Describe("odo generic", func() {
 			reServerURL := regexp.MustCompile(`Server:\s*https:\/\/(.+\.com|([0-9]+.){3}[0-9]+):[0-9]{4}`)
 			serverURLStringMatch := reServerURL.MatchString(odoVersion)
 			Expect(serverURLStringMatch).Should(BeTrue())
+		})
+	})
+
+	Context("prevent the user from creating a URL with name that has more than 63 characters", func() {
+		var originalDir string
+
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			context = helper.CreateNewContext()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context)
+		})
+		It("should not allow creating a URL with long name", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", testLongURLName, "--port", "8080")
+			Expect(stdOut).To(ContainSubstring("url name must be shorter than 63 characters"))
 		})
 	})
 })

@@ -80,9 +80,15 @@ func (o *URLCreateOptions) Validate() (err error) {
 		}
 	}
 
+	// Check if url name is more than 63 characters long
+	if len(o.urlName) > 63 {
+		return fmt.Errorf("url name must be shorter than 63 characters")
+	}
+
 	if !util.CheckOutputFlag(o.OutputFlag) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
+
 	return
 }
 
