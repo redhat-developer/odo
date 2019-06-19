@@ -28,7 +28,7 @@ type CommonPushOptions struct {
 	sourcePath       string
 	componentContext string
 	client           *occlient.Client
-	localConfigInfo      *config.LocalConfigInfo
+	localConfigInfo  *config.LocalConfigInfo
 
 	pushConfig bool
 	pushSource bool
