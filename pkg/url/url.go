@@ -123,29 +123,6 @@ func Exists(client *occlient.Client, urlName string, componentName string, appli
 	return false, nil
 }
 
-// GetComponentServicePortNumbers returns the port numbers exposed by the service of the component
-// componentName is the name of the component
-// applicationName is the name of the application
-func GetComponentServicePortNumbers(client *occlient.Client, componentName string, applicationName string) ([]int, error) {
-	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
-	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-
-	services, err := client.GetServicesFromSelector(componentSelector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get the service")
-	}
-
-	var ports []int
-
-	for _, service := range services {
-		for _, port := range service.Spec.Ports {
-			ports = append(ports, int(port.Port))
-		}
-	}
-
-	return ports, nil
-}
-
 // GetURLName returns a url name from the component name and the given port number
 func GetURLName(componentName string, componentPort int) string {
 	if componentPort == -1 {
