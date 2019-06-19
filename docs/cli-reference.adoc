@@ -106,7 +106,7 @@ CLI Structure
 
 [source,sh]
 ----
-odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : Odo (OpenShift Do) (app, catalog, component, config, create, delete, describe, link, list, log, login, logout, preference, project, push, service, storage, unlink, update, url, utils, version, watch)
+odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connection-check --stderrthreshold --v --vmodule : odo (OpenShift Do) (app, catalog, component, config, create, delete, describe, link, list, log, login, logout, preference, project, push, service, storage, unlink, update, url, utils, version, watch)
     app : Perform application operations (delete, describe, list)
         delete --force --output --project : Delete the given application
         describe --output --project : Describe the given application
@@ -169,8 +169,8 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --skip-connecti
         create --app --component --context --output --port --project : Create a URL for a component
         delete --app --component --context --force --project : Delete a URL
         list --app --component --context --output --project : List URLs
-    utils : Utilities for terminal commands and modifying Odo configurations (terminal)
-        terminal : Add Odo terminal support to your development environment
+    utils : Utilities for terminal commands and modifying odo configurations (terminal)
+        terminal : Add odo terminal support to your development environment
     version --client : Print the client version information
     watch --app --context --delay --ignore --project --show-log : Watch for changes, update component on change
 
@@ -625,7 +625,7 @@ _________________
   odo preference unset  Timeout
 ----
 
-Modifies Odo specific configuration settings within the global preference file.
+Modifies odo specific configuration settings within the global preference file.
 
 
 Available Parameters:
@@ -876,7 +876,7 @@ _________________
 
 ----
 
-Utilities for terminal commands and modifying Odo configurations
+Utilities for terminal commands and modifying odo configurations
 
 [[version]]
 version
@@ -893,7 +893,7 @@ _________________
 
 [source,sh]
 ----
-  # Print the client version of Odo
+  # Print the client version of odo
   odo version
 ----
 
