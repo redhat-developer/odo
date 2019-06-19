@@ -1158,37 +1158,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	}
 
 	// Append s2i related parameters extracted above to env
-	inputEnvs = uniqueAppendOrOverwriteEnvVars(
-		inputEnvs,
-		corev1.EnvVar{
-			Name:  EnvS2IScriptsURL,
-			Value: s2iPaths.ScriptsPath,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IScriptsProtocol,
-			Value: s2iPaths.ScriptsPathProtocol,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2ISrcOrBinPath,
-			Value: s2iPaths.SrcOrBinPath,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IDeploymentDir,
-			Value: s2iPaths.DeploymentDir,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IWorkingDir,
-			Value: s2iPaths.WorkingDir,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IBuilderImageName,
-			Value: s2iPaths.BuilderImgName,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IDeploymentBackupDir,
-			Value: DefaultS2IDeploymentBackupDir,
-		},
-	)
+	inputEnvs = uniqueUpsertEnvVarsFromS2IPaths(inputEnvs, s2iPaths)
 
 	if params.SourceType == config.LOCAL {
 		inputEnvs = uniqueAppendOrOverwriteEnvVars(
@@ -1214,6 +1184,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
+	addDepoymentDirVolumeMount(&dc, commonObjectMeta.Name, s2iPaths.DeploymentDir)
 	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
@@ -1579,37 +1550,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 	cmpContainer := ucp.ExistingDC.Spec.Template.Spec.Containers[0]
 
 	// Append s2i related parameters extracted above to env
-	inputEnvs := uniqueAppendOrOverwriteEnvVars(
-		ucp.EnvVars,
-		corev1.EnvVar{
-			Name:  EnvS2IScriptsURL,
-			Value: s2iPaths.ScriptsPath,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IScriptsProtocol,
-			Value: s2iPaths.ScriptsPathProtocol,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2ISrcOrBinPath,
-			Value: s2iPaths.SrcOrBinPath,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IDeploymentDir,
-			Value: s2iPaths.DeploymentDir,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IWorkingDir,
-			Value: s2iPaths.WorkingDir,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IBuilderImageName,
-			Value: s2iPaths.BuilderImgName,
-		},
-		corev1.EnvVar{
-			Name:  EnvS2IDeploymentBackupDir,
-			Value: DefaultS2IDeploymentBackupDir,
-		},
-	)
+	inputEnvs := uniqueUpsertEnvVarsFromS2IPaths(ucp.EnvVars, s2iPaths)
 
 	if isToLocal {
 		inputEnvs = uniqueAppendOrOverwriteEnvVars(
@@ -1642,6 +1583,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		addBootstrapSupervisordInitContainer(&dc, ucp.CommonObjectMeta.Name)
 		addBootstrapVolume(&dc, ucp.CommonObjectMeta.Name)
 		addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
+		addDepoymentDirVolumeMount(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
 
 		// Setup PVC
 		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels)
@@ -1688,36 +1630,6 @@ func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]strin
 	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
-	}
-	return nil
-}
-
-// SetupForSupervisor adds the supervisor to the deployment config
-// dcName is the name of the deployment config to be updated
-// projectName is the name of the project
-// annotations are the updated annotations for the new deployment config
-// labels are the labels of the PVC created while setting up the supervisor
-func (c *Client) SetupForSupervisor(dcName string, annotations map[string]string, labels map[string]string) error {
-	dc, err := c.GetDeploymentConfigFromName(dcName)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get DeploymentConfig %s", dcName)
-	}
-
-	dc.Annotations = annotations
-
-	addBootstrapVolumeCopyInitContainer(dc, dcName)
-
-	addBootstrapVolume(dc, dcName)
-
-	addBootstrapVolumeMount(dc, dcName)
-
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
-	if err != nil {
-		return errors.Wrapf(err, "unable to uDeploymentConfig config %s", dcName)
-	}
-	_, err = c.CreatePVC(getAppRootVolumeName(dcName), "1Gi", labels)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create PVC for %s", dcName)
 	}
 	return nil
 }
@@ -2671,9 +2583,10 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 		numVolumes := len(volumeNames)
 		if numVolumes == 0 {
 			return fmt.Errorf("no volume found for PVC %v in DC %v, expected one", pvc, dc.Name)
-		} else if numVolumes > 1 {
-			return fmt.Errorf("found more than one volume for PVC %v in DC %v, expected one", pvc, dc.Name)
+		} else if numVolumes > 2 {
+			return fmt.Errorf("found more than two volume for PVC %v in DC %v, expected two", pvc, dc.Name)
 		}
+		// TODO: iterate over removing volumes
 		volumeName := volumeNames[0]
 
 		// Remove volume if volume exists in Deployment Config
@@ -3337,4 +3250,39 @@ func (c *Client) StartDeployment(deploymentName string) (string, error) {
 	glog.V(4).Infof("Deployment %s for DeploymentConfig %s triggered.", deploymentName, result.Name)
 
 	return result.Name, nil
+}
+
+func uniqueUpsertEnvVarsFromS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.EnvVar {
+	return uniqueAppendOrOverwriteEnvVars(
+		existingVars,
+		corev1.EnvVar{
+			Name:  EnvS2IScriptsURL,
+			Value: s2iPaths.ScriptsPath,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IScriptsProtocol,
+			Value: s2iPaths.ScriptsPathProtocol,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2ISrcOrBinPath,
+			Value: s2iPaths.SrcOrBinPath,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IDeploymentDir,
+			Value: s2iPaths.DeploymentDir,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IWorkingDir,
+			Value: s2iPaths.WorkingDir,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IBuilderImageName,
+			Value: s2iPaths.BuilderImgName,
+		},
+		corev1.EnvVar{
+			Name:  EnvS2IDeploymentBackupDir,
+			Value: DefaultS2IDeploymentBackupDir,
+		},
+	)
+
 }

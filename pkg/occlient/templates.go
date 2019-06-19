@@ -440,11 +440,25 @@ func addBootstrapVolume(dc *appsv1.DeploymentConfig, dcName string) {
 // dc is the deployment config to be updated
 // dcName is the name of the deployment config
 func addBootstrapVolumeMount(dc *appsv1.DeploymentConfig, dcName string) {
+	addVolumeMount(dc, getAppRootVolumeName(dcName), "/opt/app-root", "app-root")
+}
+
+// addDepoymentDirVolumeMount mounts the bootstrap volume to the deployment config
+// in a sub bath where the ODO_S2I_DEPLOYMENT_DIR is present for optimisation purposes
+// dc is the deployment config to be updated
+// dcName is the name of the deployment config
+func addDepoymentDirVolumeMount(dc *appsv1.DeploymentConfig, dcName, mountPath string) {
+	addVolumeMount(dc, getAppRootVolumeName(dcName), mountPath, "deployment")
+}
+
+// addVolumeMount adds a volume mount to the deployment config
+// dc is the deployment config to be updated
+func addVolumeMount(dc *appsv1.DeploymentConfig, name, mountPath, subPath string) {
 	for i := range dc.Spec.Template.Spec.Containers {
 		dc.Spec.Template.Spec.Containers[i].VolumeMounts = append(dc.Spec.Template.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
-			Name:      getAppRootVolumeName(dcName),
-			MountPath: "/opt/app-root",
-			SubPath:   "app-root",
+			Name:      name,
+			MountPath: mountPath,
+			SubPath:   subPath,
 		})
 	}
 }
