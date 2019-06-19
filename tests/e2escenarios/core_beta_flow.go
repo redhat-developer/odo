@@ -112,8 +112,6 @@ var _ = Describe("Core beta flow", func() {
 		// abstract main test to the function, to allow running the same test in a different context (slightly different arguments)
 		TestBasicCreateConfigPush := func(extraArgs ...string) {
 			createSession := helper.CmdShouldPass(odo, append([]string{"component", "create", "java", "mycomponent", "--app", "myapp"}, extraArgs...)...)
-			helper.CmdShouldPass(odo, append([]string{"push"}, extraArgs...)...)
-
 			// output of the commands should point user to running "odo push"
 			Expect(createSession).Should(ContainSubstring("odo push"))
 			configFile := filepath.Join(context, ".odo", "config.yaml")
@@ -127,8 +125,6 @@ var _ = Describe("Core beta flow", func() {
 			helper.FileShouldContainSubstring(configFile, "Project: "+project)
 
 			configSession := helper.CmdShouldPass(odo, append([]string{"config", "set", "--env", "FOO=bar"}, extraArgs...)...)
-			helper.CmdShouldPass(odo, append([]string{"push"}, extraArgs...)...)
-
 			// output of the commands should point user to running "odo push"
 			// currently failing
 			Expect(configSession).Should(ContainSubstring("odo push"))
