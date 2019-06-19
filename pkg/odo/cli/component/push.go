@@ -50,7 +50,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	}
 
 	// Set the necessary values within WatchOptions
-	po.localConfig = conf
+	po.localConfigInfo = conf
 	err = po.SetSourceInfo()
 	if err != nil {
 		return errors.Wrap(err, "unable to set source information")
@@ -63,7 +63,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// Set the correct context
 	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-	prjName := po.localConfig.GetProject()
+	prjName := po.localConfigInfo.GetProject()
 	po.ResolveSrcAndConfigFlags()
 	err = po.ResolveProject(prjName)
 	if err != nil {
@@ -80,17 +80,17 @@ func (po *PushOptions) Validate() (err error) {
 	s := log.Spinner("Validating component")
 	defer s.End(false)
 
-	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfig.GetComponentSettings(), false); err != nil {
+	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfigInfo.GetComponentSettings(), false); err != nil {
 		return err
 	}
 
-	isCmpExists, err := component.Exists(po.Context.Client, po.localConfig.GetName(), po.localConfig.GetApplication())
+	isCmpExists, err := component.Exists(po.Context.Client, po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
 	if err != nil {
 		return err
 	}
 
 	if !isCmpExists && po.pushSource && !po.pushConfig {
-		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfig.GetName())
+		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfigInfo.GetName())
 	}
 
 	s.End(true)

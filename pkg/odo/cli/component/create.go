@@ -262,18 +262,18 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.interactive = true
 	}
 
-	co.localConfig, err = config.NewLocalConfigInfo(co.componentContext)
+	co.localConfigInfo, err = config.NewLocalConfigInfo(co.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
 
 	// check to see if config file exists or not, if it does that
 	// means we shouldn't allow the user to override the current component
-	if co.localConfig.ConfigFileExists() {
+	if co.localConfigInfo.ConfigFileExists() {
 		return errors.New("this directory already contains a component")
 	}
 
-	co.componentSettings = co.localConfig.GetComponentSettings()
+	co.componentSettings = co.localConfigInfo.GetComponentSettings()
 
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
@@ -429,12 +429,12 @@ func (co *CreateOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
-	err = co.localConfig.SetComponentSettings(co.componentSettings)
+	err = co.localConfigInfo.SetComponentSettings(co.componentSettings)
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
 	if co.now {
-		co.Context, co.localConfig, err = genericclioptions.UpdatedContext(co.Context)
+		co.Context, co.localConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
 
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve updated local config")
@@ -455,9 +455,9 @@ func (co *CreateOptions) Run() (err error) {
 
 func (co *CreateOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
 
-	cmpName := co.localConfig.GetName()
-	appName := co.localConfig.GetApplication()
-	cmpType := co.localConfig.GetType()
+	cmpName := co.localConfigInfo.GetName()
+	appName := co.localConfigInfo.GetApplication()
+	cmpType := co.localConfigInfo.GetType()
 
 	isCmpExists, err := component.Exists(co.Context.Client, cmpName, appName)
 	if err != nil {
@@ -467,7 +467,7 @@ func (co *CreateOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer)
 	if !isCmpExists {
 		log.Successf("Creating %s component with name %s", cmpType, cmpName)
 		// Classic case of component creation
-		if err = component.CreateComponent(co.Context.Client, *co.localConfig, co.componentContext, stdout); err != nil {
+		if err = component.CreateComponent(co.Context.Client, *co.localConfigInfo, co.componentContext, stdout); err != nil {
 			log.Errorf(
 				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
 				cmpName,
@@ -479,7 +479,7 @@ func (co *CreateOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer)
 	}
 
 	// Apply config
-	err = component.ApplyConfig(co.Context.Client, *co.localConfig, stdout, isCmpExists)
+	err = component.ApplyConfig(co.Context.Client, *co.localConfigInfo, stdout, isCmpExists)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
