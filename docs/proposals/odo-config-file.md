@@ -121,7 +121,7 @@ For some specific values, there will be the possibility to set them globally, as
 
 ### Developer friendly flags
 
-One of the goals of `odo` is to be easy to use for developers. This forces to translate some configuration possible in the underlying technology (OpenShift/Kubernetes) into a friendlier name that developers could easily understand. An example of this would be the amount of memory a component needs. In OpenShift, this is reflected by limits.memory and requests.memory, and depending how you set these values influence the QoS of the deployment. In `odo` these should be simplified to `memory`, `min-memory` and `max-memory`. These are terms that any developer will most likely understand without looking at the documentation.
+One of the goals of `odo` is to be easy to use for developers. This forces to translate some configuration possible in the underlying technology (OpenShift/Kubernetes) into a friendlier name that developers could easily understand. An example of this would be the amount of memory a component needs. In OpenShift, this is reflected by `limits.memory` and `requests.memory`, and depending on how you set these values, influences the QoS of the deployment. In `odo` these should be simplified to `memory`, `min-memory` and `max-memory`. These are terms that any developer will most likely understand without looking at the documentation.
 
 * When `memory` is set, memory requests and limits in k8s parlance and both have the same value.
 * `min-memory` should be memory requests in k8s parlance.
