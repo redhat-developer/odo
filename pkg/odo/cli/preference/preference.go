@@ -13,7 +13,7 @@ import (
 // RecommendedCommandName is the recommended preference command name
 const RecommendedCommandName = "preference"
 
-var preferenceLongDesc = ktemplates.LongDesc(`Modifies Odo specific configuration settings within the global preference file.
+var preferenceLongDesc = ktemplates.LongDesc(`Modifies odo specific configuration settings within the global preference file.
 
 %[1]s
 `)

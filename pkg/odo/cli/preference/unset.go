@@ -17,16 +17,16 @@ import (
 const unsetCommandName = "unset"
 
 var (
-	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the Odo preference file.
+	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the odo preference file.
 
 %[1]s
 %[2]s
 `)
 	unsetExample = ktemplates.Examples(`
    # Unset a preference value in the global preference
-   %[1]s  %[2]s 
-   %[1]s  %[3]s 
-   %[1]s  %[4]s 
+   %[1]s  %[2]s
+   %[1]s  %[3]s
+   %[1]s  %[4]s
 	`)
 )
 

@@ -18,7 +18,7 @@ import (
 const setCommandName = "set"
 
 var (
-	setLongDesc = ktemplates.LongDesc(`Set an individual value in the Odo preference file.
+	setLongDesc = ktemplates.LongDesc(`Set an individual value in the odo preference file.
 
 %[1]s`)
 	setExample = ktemplates.Examples(`

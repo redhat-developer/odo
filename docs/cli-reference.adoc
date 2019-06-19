@@ -1,4 +1,4 @@
-= Overview of the Odo (OpenShift Do) CLI Structure
+= Overview of the odo (OpenShift Do) CLI Structure
 
 ___________________
 Example application
@@ -10,12 +10,12 @@ ___________________
   git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
   odo create nodejs
   odo push
-  
+
   # Accessing your Node.js component
-  odo url create 
+  odo url create
 ----
 
-(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated matter. Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code. 
+(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated matter. Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code.
 
 Find more information at https://github.com/openshift/odo
 
@@ -197,7 +197,7 @@ _________________
   odo app describe webapp
   # List all applications in the current project
   odo app list
-  
+
   # List all applications in the specified project
   odo app list --project myproject
 ----
@@ -289,7 +289,7 @@ _________________
   odo config set MinCPU 0.5
   odo config set MaxCPU 2
   odo config set CPU 1
-  
+
   # Set a env variable in the local config
   odo config set --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
 
@@ -303,12 +303,12 @@ _________________
   odo config unset MinCPU
   odo config unset MaxCPU
   odo config unset CPU
-  
+
   # Unset a env variable in the local config
   odo config unset --env KAFKA_HOST --env KAFKA_PORT
 ----
 
-Modifies odo specific configuration settings within the config file. 
+Modifies odo specific configuration settings within the config file.
 
 
 Available Local Parameters:
@@ -348,51 +348,51 @@ _________________
 ----
   # Create new Node.js component with the source in current directory.
   odo create nodejs
-  
+
   # A specific image version may also be specified
   odo create nodejs:latest
-  
+
   # Create new Node.js component named 'frontend' with the source in './frontend' directory
   odo create nodejs frontend --context ./frontend
-  
+
   # Create a new Node.js component of version 6 from the 'openshift' namespace
   odo create openshift/nodejs:6 --context /nodejs-ex
-  
+
   # Create new Wildfly component with binary named sample.war in './downloads' directory
   odo create wildfly wildfly --binary ./downloads/sample.war
-  
+
   # Create new Node.js component with source from remote git repository
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git
-  
+
   # Create new Node.js git component while specifying a branch, tag or commit ref
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
-  
+
   # Create new Node.js git component while specifying a tag
   odo create nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
-  
+
   # Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
   odo create nodejs --port 8080,8100/tcp,9100/udp
-  
+
   # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
   odo create nodejs --env key=value,key1=value1
-  
+
   # For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.md
   odo create python --git https://github.com/openshift/django-ex.git
-  
+
   # Passing memory limits
   odo create nodejs --memory 150Mi
   odo create nodejs --min-memory 150Mi --max-memory 300 Mi
-  
+
   # Passing cpu limits
   odo create nodejs --cpu 2
   odo create nodejs --min-cpu 200m --max-cpu 2
 ----
 
-Create a configuration describing a component to be deployed on OpenShift. 
+Create a configuration describing a component to be deployed on OpenShift.
 
-If a component name is not provided, it'll be auto-generated. 
+If a component name is not provided, it'll be auto-generated.
 
-By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest will be chosen as the version. 
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest will be chosen as the version.
 
 A full list of component types that can be deployed is available using: 'odo catalog list'
 
@@ -456,16 +456,16 @@ _________________
 ----
   # Link the current component to the 'my-postgresql' service
   odo link my-postgresql
-  
+
   # Link component 'nodejs' to the 'my-postgresql' service
   odo link my-postgresql --component nodejs
-  
+
   # Link current component to the 'backend' component (backend must have a single exposed port)
   odo link backend
-  
+
   # Link component 'nodejs' to the 'backend' component
   odo link backend --component nodejs
-  
+
   # Link current component to port 8080 of the 'backend' component (backend must have port 8080 exposed)
   odo link backend --port 8080
 ----
@@ -473,7 +473,7 @@ _________________
 Link component to a service or component
 
 If the source component is not provided, the current active component is assumed.
-In both use cases, link adds the appropriate secret to the environment of the source component. 
+In both use cases, link adds the appropriate secret to the environment of the source component.
 The source component can then consume the entries of the secret as environment variables.
 
 For example:
@@ -558,13 +558,13 @@ _________________
 ----
   # Log in interactively
   odo login
-  
+
   # Log in to the given server with the given certificate authority file
   odo login localhost:8443 --certificate-authority=/path/to/cert.crt
-  
+
   # Log in to the given server with the given credentials (basic auth)
   odo login localhost:8443 --username=myuser --password=mypass
-  
+
   # Log in to the given server with the given credentials (token)
   odo login localhost:8443 --token=xxxxxxxxxxxxxxxxxxxxxxx
 ----
@@ -610,7 +610,7 @@ _________________
 
   # For viewing the current local preference
   odo preference view
-  
+
   # For viewing the current global preference
   odo preference view
 
@@ -625,7 +625,7 @@ _________________
   odo preference unset  Timeout
 ----
 
-Modifies Odo specific configuration settings within the global preference file. 
+Modifies Odo specific configuration settings within the global preference file.
 
 
 Available Parameters:
@@ -684,10 +684,10 @@ _________________
 ----
   # Push source code to the current component
   odo push
-  
+
   # Push data to the current component from the original source.
   odo push
-  
+
   # Push source code in ~/mycode to component called my-component
   odo push my-component --context ~/mycode
 ----
@@ -740,7 +740,7 @@ _________________
   odo storage create mystorage --path=/opt/app-root/src/storage/ --size=1Gi
   # Delete storage mystorage from the currently active component
   odo storage delete mystorage
-  
+
   # Delete storage mystorage from component 'mongodb'
   odo storage delete mystorage --component mongodb
   # List all storage attached or mounted to the current component and
@@ -767,21 +767,21 @@ _________________
 ----
   # Unlink the 'my-postgresql' service from the current component
   odo unlink my-postgresql
-  
+
   # Unlink the 'my-postgresql' service  from the 'nodejs' component
   odo unlink my-postgresql --component nodejs
-  
+
   # Unlink the 'backend' component from the current component (backend must have a single exposed port)
   odo unlink backend
-  
+
   # Unlink the 'backend' service  from the 'nodejs' component
   odo unlink backend --component nodejs
-  
+
   # Unlink the backend's 8080 port from the current component
   odo unlink backend --port 8080
 ----
 
-Unlink component or service from a component. 
+Unlink component or service from a component.
 For this command to be successful, the service or component needs to have been linked prior to the invocation using 'odo link'
 
 [[update]]
@@ -801,16 +801,16 @@ _________________
 ----
   # Change the source code path of a currently active component to local (use the current directory as a source)
   odo update --local
-  
+
   # Change the source code path of the frontend component to local with source in ./frontend directory
   odo update frontend --local ./frontend
-  
+
   # Change the source code path of a currently active component to git
   odo update --git https://github.com/openshift/nodejs-ex.git
-  
+
   # Change the source code path of the component named node-ex to git
   odo update node-ex --git https://github.com/openshift/nodejs-ex.git
-  
+
   # Change the source code path of the component named wildfly to a binary named sample.war in ./downloads directory
   odo update wildfly --binary ./downloads/sample.war
 ----
@@ -834,13 +834,13 @@ _________________
 ----
   # Create a URL for the current component with a specific port
   odo url create --port 8080
-  
+
   # Create a URL with a specific name and port
   odo url create example --port 8080
-  
+
   # Create a URL with a specific name by automatic detection of port (only for components which expose only one service port)
   odo url create example
-  
+
   # Create a URL with a specific name and port for component frontend
   odo url create example --port 8080 --component frontend
   # Delete a URL to a component
@@ -849,7 +849,7 @@ _________________
   odo url list
 ----
 
-Expose component to the outside world. 
+Expose component to the outside world.
 
 The URLs that are generated using this command, can be used to access the deployed components from outside the cluster.
 
@@ -870,7 +870,7 @@ _________________
 ----
   # Bash terminal PS1 support
   source <(odo utils terminal bash)
-  
+
   # Zsh terminal PS1 support
   source <(odo utils terminal zsh)
 
@@ -916,11 +916,9 @@ _________________
 ----
   # Watch for changes in directory for current component
   odo watch
-  
+
   # Watch for changes in directory for component called frontend
   odo watch frontend
 ----
 
 Watch for changes, update component on change.
-
-
