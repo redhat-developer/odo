@@ -6,6 +6,7 @@ import (
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 
@@ -28,10 +29,25 @@ func List(client *occlient.Client) ([]string, error) {
 // ListInProject lists all applications in given project by Querying the cluster
 func ListInProject(client *occlient.Client) ([]string, error) {
 
-	// Get all deploymentconfigs with the "app" label
-	appNames, err := client.GetLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
+	var appNames []string
+
+	// Get all DeploymentConfigs with the "app" label
+	deploymentConfigAppNames, err := client.GetDeploymentConfigLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list applications")
+		return nil, errors.Wrap(err, "unable to list applications from deployment config")
+	}
+
+	appNames = append(appNames, deploymentConfigAppNames...)
+
+	// Get all ServiceInstances with the "app" label
+	// Okay, so there is an edge-case here.. if Service Catalog is *not* enabled in the cluster, we shouldn't error out..
+	// however, we should at least warn the user.
+	serviceInstanceAppNames, err := client.GetServiceInstanceLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
+	if err != nil {
+		glog.V(4).Infof("Unable to list Service Catalog instances: %s", err)
+		log.Warning("Unable to access Service Catalog instances, may not be enabled on cluster")
+	} else {
+		appNames = append(deploymentConfigAppNames, serviceInstanceAppNames...)
 	}
 
 	// Filter out any names, as there could be multiple components but within the same application

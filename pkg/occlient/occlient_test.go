@@ -46,6 +46,7 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, en
 	labels := componentlabels.GetLabels(name, name, true)
 	labels[componentlabels.ComponentTypeLabel] = image
 	labels[componentlabels.ComponentTypeVersion] = "latest"
+	labels[applabels.ApplicationLabel] = name
 
 	// save source path as annotation
 	annotations := map[string]string{"app.kubernetes.io/url": "./",
@@ -2749,7 +2750,6 @@ func TestGetDeploymentConfigsFromSelector(t *testing.T) {
 
 	listOfDC := appsv1.DeploymentConfigList{
 		Items: []appsv1.DeploymentConfig{
-
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
@@ -3146,6 +3146,276 @@ func TestGetClusterPlansFromServiceName(t *testing.T) {
 			} else if err != nil && !tt.wantErr {
 				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
 			}
+		})
+	}
+}
+
+func TestGetDeploymentConfigLabelValues(t *testing.T) {
+	type args struct {
+		deploymentConfigList appsv1.DeploymentConfigList
+		expectedOutput       []string
+	}
+	tests := []struct {
+		applicationName string
+		name            string
+		args            args
+		wantErr         bool
+		actions         int
+	}{
+		{
+			name:            "Case 1 - Retrieve list",
+			applicationName: "app",
+			args: args{
+				expectedOutput: []string{"app", "app2"},
+				deploymentConfigList: appsv1.DeploymentConfigList{
+					Items: []appsv1.DeploymentConfig{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"app.kubernetes.io/name": "app",
+								},
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"app.kubernetes.io/name": "app2",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+			actions: 1,
+		},
+		{
+			name:            "Case 1 - Retrieve list, different order",
+			applicationName: "app",
+			args: args{
+				expectedOutput: []string{"app", "app2"},
+				deploymentConfigList: appsv1.DeploymentConfigList{
+					Items: []appsv1.DeploymentConfig{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"app.kubernetes.io/name": "app2",
+								},
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"app.kubernetes.io/name": "app",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+			actions: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.args.deploymentConfigList, nil
+			})
+
+			// Run function GetServiceInstanceLabelValues
+			list, err := fakeClient.GetDeploymentConfigLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
+
+			if err == nil && !tt.wantErr {
+
+				// Compare arrays
+				if !reflect.DeepEqual(list, tt.args.expectedOutput) {
+					t.Errorf("expected %s output, got %s", tt.args.expectedOutput, list)
+				}
+
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in GetServiceInstanceLabelValues got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
+				}
+
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+
+		})
+	}
+}
+
+func TestGetServiceInstanceLabelValues(t *testing.T) {
+	type args struct {
+		serviceList    scv1beta1.ServiceInstanceList
+		expectedOutput []string
+		// dcBefore appsv1.DeploymentConfig
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		actions int
+	}{
+		{
+			name: "Case 1 - Retrieve list",
+			args: args{
+				expectedOutput: []string{"app", "app2"},
+				serviceList: scv1beta1.ServiceInstanceList{
+					Items: []scv1beta1.ServiceInstance{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:       "mysql-persistent",
+								Finalizers: []string{"kubernetes-incubator/service-catalog"},
+								Labels: map[string]string{
+									applabels.ApplicationLabel:         "app",
+									componentlabels.ComponentLabel:     "mysql-persistent",
+									componentlabels.ComponentTypeLabel: "mysql-persistent",
+								},
+								Namespace: "myproject",
+							},
+							Spec: scv1beta1.ServiceInstanceSpec{
+								PlanReference: scv1beta1.PlanReference{
+									ClusterServiceClassExternalName: "mysql-persistent",
+									ClusterServicePlanExternalName:  "default",
+								},
+							},
+							Status: scv1beta1.ServiceInstanceStatus{
+								Conditions: []scv1beta1.ServiceInstanceCondition{
+									{
+										Reason: "ProvisionedSuccessfully",
+									},
+								},
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:       "jenkins-persistent",
+								Finalizers: []string{"kubernetes-incubator/service-catalog"},
+								Labels: map[string]string{
+									applabels.ApplicationLabel:         "app2",
+									componentlabels.ComponentLabel:     "jenkins-persistent",
+									componentlabels.ComponentTypeLabel: "jenkins-persistent",
+								},
+								Namespace: "myproject",
+							},
+							Spec: scv1beta1.ServiceInstanceSpec{
+								PlanReference: scv1beta1.PlanReference{
+									ClusterServiceClassExternalName: "jenkins-persistent",
+									ClusterServicePlanExternalName:  "default",
+								},
+							},
+							Status: scv1beta1.ServiceInstanceStatus{
+								Conditions: []scv1beta1.ServiceInstanceCondition{
+									{
+										Reason: "ProvisionedSuccessfully",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+			actions: 0,
+		},
+		{
+			name: "Case 2 - Retrieve list, different order",
+			args: args{
+				expectedOutput: []string{"app", "app2"},
+				serviceList: scv1beta1.ServiceInstanceList{
+					Items: []scv1beta1.ServiceInstance{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:       "mysql-persistent",
+								Finalizers: []string{"kubernetes-incubator/service-catalog"},
+								Labels: map[string]string{
+									applabels.ApplicationLabel:         "app2",
+									componentlabels.ComponentLabel:     "mysql-persistent",
+									componentlabels.ComponentTypeLabel: "mysql-persistent",
+								},
+								Namespace: "myproject",
+							},
+							Spec: scv1beta1.ServiceInstanceSpec{
+								PlanReference: scv1beta1.PlanReference{
+									ClusterServiceClassExternalName: "mysql-persistent",
+									ClusterServicePlanExternalName:  "default",
+								},
+							},
+							Status: scv1beta1.ServiceInstanceStatus{
+								Conditions: []scv1beta1.ServiceInstanceCondition{
+									{
+										Reason: "ProvisionedSuccessfully",
+									},
+								},
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:       "jenkins-persistent",
+								Finalizers: []string{"kubernetes-incubator/service-catalog"},
+								Labels: map[string]string{
+									applabels.ApplicationLabel:         "app",
+									componentlabels.ComponentLabel:     "jenkins-persistent",
+									componentlabels.ComponentTypeLabel: "jenkins-persistent",
+								},
+								Namespace: "myproject",
+							},
+							Spec: scv1beta1.ServiceInstanceSpec{
+								PlanReference: scv1beta1.PlanReference{
+									ClusterServiceClassExternalName: "jenkins-persistent",
+									ClusterServicePlanExternalName:  "default",
+								},
+							},
+							Status: scv1beta1.ServiceInstanceStatus{
+								Conditions: []scv1beta1.ServiceInstanceCondition{
+									{
+										Reason: "ProvisionedSuccessfully",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+			actions: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fakeClient, fakeClientSet := FakeNew()
+
+			fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.args.serviceList, nil
+			})
+
+			// Run function GetServiceInstanceLabelValues
+			list, err := fakeClient.GetServiceInstanceLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
+
+			if err == nil && !tt.wantErr {
+
+				// Compare arrays
+				if !reflect.DeepEqual(list, tt.args.expectedOutput) {
+					t.Errorf("expected %s output, got %s", tt.args.expectedOutput, list)
+				}
+
+				if (len(fakeClientSet.AppsClientset.Actions()) != tt.actions) && !tt.wantErr {
+					t.Errorf("expected %v action(s) in GetServiceInstanceLabelValues got %v: %v", tt.actions, len(fakeClientSet.AppsClientset.Actions()), fakeClientSet.AppsClientset.Actions())
+				}
+
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+
 		})
 	}
 }

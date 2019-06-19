@@ -855,7 +855,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 
 	// filter according to component and application name
 	selector := fmt.Sprintf("%s=%s,%s=%s", componentlabels.ComponentLabel, componentName, applabels.ApplicationLabel, applicationName)
-	componentImageTypes, err := client.GetLabelValues(componentlabels.ComponentTypeLabel, selector)
+	componentImageTypes, err := client.GetDeploymentConfigLabelValues(componentlabels.ComponentTypeLabel, selector)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get type of %s component")
 	}

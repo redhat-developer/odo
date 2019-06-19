@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -2159,14 +2160,17 @@ func (c *Client) DeleteProject(name string) error {
 	}
 }
 
-// GetLabelValues get label values of given label from objects in project that are matching selector
+// GetDeploymentConfigLabelValues get label values of given label from objects in project that are matching selector
 // returns slice of unique label values
-func (c *Client) GetLabelValues(label string, selector string) ([]string, error) {
+func (c *Client) GetDeploymentConfigLabelValues(label string, selector string) ([]string, error) {
+
 	// List DeploymentConfig according to selectors
 	dcList, err := c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
 	}
+
+	// Grab all the matched strings
 	var values []string
 	for _, elem := range dcList.Items {
 		for key, val := range elem.Labels {
@@ -2175,6 +2179,34 @@ func (c *Client) GetLabelValues(label string, selector string) ([]string, error)
 			}
 		}
 	}
+
+	// Sort alphabetically
+	sort.Strings(values)
+
+	return values, nil
+}
+
+// GetServiceInstanceLabelValues get label values of given label from objects in project that match the selector
+func (c *Client) GetServiceInstanceLabelValues(label string, selector string) ([]string, error) {
+
+	// List ServiceInstance according to given selectors
+	svcList, err := c.serviceCatalogClient.ServiceInstances(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list ServiceInstances")
+	}
+
+	// Grab all the matched strings
+	var values []string
+	for _, elem := range svcList.Items {
+		for key, val := range elem.Labels {
+			if key == label {
+				values = append(values, val)
+			}
+		}
+	}
+
+	// Sort alphabetically
+	sort.Strings(values)
 
 	return values, nil
 }
