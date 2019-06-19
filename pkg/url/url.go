@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -156,12 +157,12 @@ func GetURLName(componentName string, componentPort int) string {
 // GetValidPortNumber checks if the given port number is a valid component port or not
 // if port number is not provided and the component is a single port component, the component port is returned
 // port number is -1 if the user does not specify any port
-func GetValidPortNumber(client *occlient.Client, portNumber int, componentName string, applicationName string) (int, error) {
-	componentPorts, err := GetComponentServicePortNumbers(client, componentName, applicationName)
-	if err != nil {
-		return portNumber, errors.Wrapf(err, "unable to get exposed ports for component %s", componentName)
+func GetValidPortNumber(componentName string, portNumber int, portList []string) (int, error) {
+	var componentPorts []int
+	for _, p := range portList {
+		po, _ := strconv.Atoi(strings.Split(p, "/")[0])
+		componentPorts = append(componentPorts, po)
 	}
-
 	// port number will be -1 if the user doesn't specify any port
 	if portNumber == -1 {
 		switch {

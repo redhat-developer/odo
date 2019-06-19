@@ -58,7 +58,9 @@ func NewURLCreateOptions() *URLCreateOptions {
 // Complete completes UrlCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	o.componentPort, err = url.GetValidPortNumber(o.Client, o.urlPort, o.Component(), o.Application)
+	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+
+	o.componentPort, err = url.GetValidPortNumber(o.Component(), o.urlPort, o.localConfigInfo.GetPorts())
 	if err != nil {
 		return err
 	}
@@ -67,7 +69,6 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 	} else {
 		o.urlName = args[0]
 	}
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 
 	return
 }
