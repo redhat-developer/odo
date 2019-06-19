@@ -137,8 +137,11 @@ func GetURLName(componentName string, componentPort int) string {
 func GetValidPortNumber(componentName string, portNumber int, portList []string) (int, error) {
 	var componentPorts []int
 	for _, p := range portList {
-		po, _ := strconv.Atoi(strings.Split(p, "/")[0])
-		componentPorts = append(componentPorts, po)
+		port, err := strconv.Atoi(strings.Split(p, "/")[0])
+		if err != nil {
+			return port, err
+		}
+		componentPorts = append(componentPorts, port)
 	}
 	// port number will be -1 if the user doesn't specify any port
 	if portNumber == -1 {

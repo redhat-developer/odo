@@ -377,6 +377,33 @@ func imageWithMetadata(image *imagev1.Image) error {
 	return nil
 }
 
+// GetPortsFromBuilderImage returns list of available port from given builder image of given component type
+func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error) {
+	// checking port through builder image
+	imageNS, imageName, imageTag, _, err := ParseImageName(componentType)
+	if err != nil {
+		return []string{}, err
+	}
+	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
+	if err != nil {
+		return []string{}, err
+	}
+	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
+	if err != nil {
+		return []string{}, err
+	}
+	containerPorts, err := c.GetExposedPorts(imageStreamImage)
+	if err != nil {
+		return []string{}, err
+	}
+	var portList []string
+	for _, po := range containerPorts {
+		port := fmt.Sprint(po.ContainerPort) + "/" + string(po.Protocol)
+		portList = append(portList, port)
+	}
+	return portList, nil
+}
+
 // isLoggedIn checks whether user is logged in or not and returns boolean output
 func (c *Client) isLoggedIn() bool {
 	// ~ indicates current user
