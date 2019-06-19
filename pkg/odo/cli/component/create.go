@@ -398,6 +398,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			portList = co.componentPorts
 		} else {
 			portList, err = co.Client.GetPortsFromBuilderImage(*co.componentSettings.Type)
+			if err != nil {
+				return err
+			}
 		}
 
 		co.componentSettings.Ports = &(portList)
