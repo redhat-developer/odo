@@ -78,7 +78,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:     name,
-		Short:   "Odo (OpenShift Do)",
+		Short:   "odo (OpenShift Do)",
 		Long:    odoLong,
 		Example: fmt.Sprintf(odoExample, fullName),
 	}

@@ -80,7 +80,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 		// which we can link to
 		_, err = o.Client.GetServiceBinding(o.secretName, o.Project)
 		if err != nil {
-			return fmt.Errorf("The service was not created via Odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
+			return fmt.Errorf("The service was not created via odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
 		}
 
 		if wait {

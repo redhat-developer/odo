@@ -31,7 +31,7 @@ const RecommendedCommandName = "version"
 var versionLongDesc = ktemplates.LongDesc("Print the client version information")
 
 var versionExample = ktemplates.Examples(`
-# Print the client version of Odo
+# Print the client version of odo
 %[1]s`,
 )
 
