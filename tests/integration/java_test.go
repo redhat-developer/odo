@@ -58,8 +58,9 @@ var _ = Describe("odoJavaE2e", func() {
 		})
 
 		It("Should be able to deploy a .war file using wildfly", func() {
+			helper.CopyExample(filepath.Join("binary", "java", "wildfly"), context)
 			helper.CmdShouldPass("odo", "create", "wildfly", "javaee-war-test", "--project",
-				project, "--binary", "../examples/binary/java/wildfly/ROOT.war", "--context", context)
+				project, "--binary", filepath.Join(context, "ROOT.war"), "--context", context)
 
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "warfile", "--port", "8080", "--context", context)
