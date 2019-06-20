@@ -172,13 +172,9 @@ test-odo-config:
 # Run all integration tests
 .PHONY: test-integration
 test-integration:
-    go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
-# Run config tests
-.PHONY: test-odo-url-int
-test-odo-url-int:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoURLIntegration" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)	
+	go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
-# Run config tests
+# Run url integreation tests
 .PHONY: test-odo-url-int
 test-odo-url-int:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoURLIntegration" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
