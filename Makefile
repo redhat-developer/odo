@@ -127,7 +127,7 @@ test-cmp-sub-e2e:
 # Run java e2e tests
 .PHONY: test-java-e2e
 test-java-e2e:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoJavaE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoJavaE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run source e2e tests
 .PHONY: test-source-e2e
