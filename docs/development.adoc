@@ -166,17 +166,35 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 Integration tests can be run in the following two ways:
 
-* To run the component test in parallel (default: 4 ginkgo test node), on a test cluster :
+* To run the test in parallel (default: 4 ginkgo test node), on a test cluster :
++
+Run component command integration test
 +
 ----
 $ make test-cmp-e2e
 ----
 +
 
-* To run component test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
+Run application command integration test
++
+----
+$ make test-cmd-app
+----
++
+
+* To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
++
+Run component command integration test
 +
 ----
 $ make test-cmp-e2e TEST_EXEC_NODES=1
+----
++
+
+Run application command integration test
++
+----
+$ make test-cmd-app TEST_EXEC_NODES=1
 ----
 +
 
