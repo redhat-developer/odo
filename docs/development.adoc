@@ -66,7 +66,7 @@ dependencies with other features, forward and backward compatibility, API and fl
 ** *Reviewers* look for general code quality, correctness, sane software engineering, style, etc. In essence, the quality of the actual code itself.
 
 * Avoid merging the PR manually, unless it is an emergency and  you have the required permissions). Prow’s tide component automatically merges the PR once all the conditions are met.
-It also ensures that post-submit tests (tests that run before merge) valiate the PR.
+It also ensures that post-submit tests (tests that run before merge) validate the PR.
 * Use the link:https://deck-ci.svc.ci.openshift.org/command-help[command-help] to see the list of possible bot commands.
 
 == Test Driven Development
