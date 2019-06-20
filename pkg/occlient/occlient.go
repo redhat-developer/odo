@@ -1651,7 +1651,7 @@ func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
 		return errors.New("unable to find volume in dc with name: " + dcName)
 	}
 
-	found = removeVolumeMountFromDC(getAppRootVolumeName(dcName), dc)
+	found = removeVolumeMountsFromDC(getAppRootVolumeName(dcName), dc)
 	if !found {
 		return errors.New("unable to find volume mount in dc with name: " + dcName)
 	}
@@ -2590,20 +2590,18 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 		numVolumes := len(volumeNames)
 		if numVolumes == 0 {
 			return fmt.Errorf("no volume found for PVC %v in DC %v, expected one", pvc, dc.Name)
-		} else if numVolumes > 2 {
-			return fmt.Errorf("found more than two volume for PVC %v in DC %v, expected two", pvc, dc.Name)
+		} else if numVolumes > 1 {
+			return fmt.Errorf("found more than one volume for PVC %v in DC %v, expected one", pvc, dc.Name)
 		}
-		// TODO: iterate over removing volumes
 		volumeName := volumeNames[0]
-
 		// Remove volume if volume exists in Deployment Config
 		if !removeVolumeFromDC(volumeName, dc) {
 			return fmt.Errorf("could not find volume '%v' in Deployment Config '%v'", volumeName, dc.Name)
 		}
 		glog.V(4).Infof("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
 
-		// Remove volume mount if volume mount exists
-		if !removeVolumeMountFromDC(volumeName, dc) {
+		// Remove at max 2 volume mounts if volume mounts exists
+		if !removeVolumeMountsFromDC(volumeName, dc) {
 			return fmt.Errorf("could not find volumeMount: %v in Deployment Config: %v", volumeName, dc)
 		}
 
