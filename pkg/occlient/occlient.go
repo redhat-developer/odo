@@ -1184,7 +1184,11 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
-	addDepoymentDirVolumeMount(&dc, commonObjectMeta.Name, s2iPaths.DeploymentDir)
+	// only use the deployment Directory volume mount if its being used
+	if s2iPaths.DeploymentDir != "" {
+		addDepoymentDirVolumeMount(&dc, commonObjectMeta.Name, s2iPaths.DeploymentDir)
+	}
+
 	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
@@ -1583,7 +1587,10 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		addBootstrapSupervisordInitContainer(&dc, ucp.CommonObjectMeta.Name)
 		addBootstrapVolume(&dc, ucp.CommonObjectMeta.Name)
 		addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
-		addDepoymentDirVolumeMount(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
+		// only use the deployment Directory volume mount if its being used
+		if s2iPaths.DeploymentDir != "" {
+			addDepoymentDirVolumeMount(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
+		}
 
 		// Setup PVC
 		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels)
