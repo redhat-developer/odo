@@ -52,16 +52,6 @@ var _ = Describe("odojsonoutput", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
 			helper.CmdShouldPass("odo", "push")
 
-			// odo app list -o json
-			actualAppListJSON := helper.CmdShouldPass("odo", "app", "list", "-o", "json")
-			desiredAppListJSON := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"` + project + `","creationTimestamp":null},"spec":{"components":["nodejs"]},"status":{"active":false}}]}`
-			Expect(desiredAppListJSON).Should(MatchJSON(actualAppListJSON))
-
-			// odo app describe myapp -o json
-			desiredDesAppJSON := `{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"` + project + `","creationTimestamp":null},"spec":{"components":["nodejs"]},"status":{"active":false}}`
-			actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", "myapp", "-o", "json")
-			Expect(desiredDesAppJSON).Should(MatchJSON(actualDesAppJSON))
-
 			// odo component list -o json
 			actualCompListJSON := helper.CmdShouldPass("odo", "list", "-o", "json")
 			desiredCompListJSON := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","source":"https://github.com/openshift/nodejs-ex"},"status":{"state":"Pushed"}}]}`
