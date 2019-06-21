@@ -2,11 +2,10 @@ package version
 
 import (
 	"fmt"
-	"os"
-	"strings"
-
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"os"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/notify"
@@ -91,6 +90,7 @@ func (o *VersionOptions) Run() (err error) {
 			openshiftStr,
 			o.serverInfo.KubernetesVersion)
 	}
+
 	return
 }
 

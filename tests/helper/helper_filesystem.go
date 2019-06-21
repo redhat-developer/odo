@@ -29,10 +29,22 @@ func DeleteDir(dir string) {
 
 }
 
+// RenameFile renames a file from oldFileName to newFileName
+func RenameFile(oldFileName, newFileName string) {
+	err := os.Rename(oldFileName, newFileName)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 // Chdir change current working dir
 func Chdir(dir string) {
 	fmt.Fprintf(GinkgoWriter, "Setting current dir to: %s\n", dir)
 	err := os.Chdir(dir)
+	Expect(err).ShouldNot(HaveOccurred())
+}
+
+// MakeDir creates a new dir
+func MakeDir(dir string) {
+	err := os.MkdirAll(dir, 0755)
 	Expect(err).ShouldNot(HaveOccurred())
 }
 

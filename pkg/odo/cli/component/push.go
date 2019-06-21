@@ -2,7 +2,7 @@ package component
 
 import (
 	"fmt"
-
+	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -52,6 +52,15 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	// Set the necessary values within WatchOptions
 	po.localConfigInfo = conf
 	err = po.SetSourceInfo()
+
+	// Set the necessary values within PushOptions
+	po.sourceType = conf.LocalConfig.GetSourceType()
+
+	glog.V(4).Infof("SourceLocation: %s", po.localConfigInfo.GetSourceLocation())
+
+	// Get SourceLocation here...
+	po.sourcePath, err = conf.GetOSSourcePath()
+
 	if err != nil {
 		return errors.Wrap(err, "unable to set source information")
 	}
@@ -69,6 +78,9 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if err != nil {
 		return err
 	}
+
+	po.Context.Client.Namespace = prjName
+
 	return
 }
 
@@ -121,6 +133,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	pushCmd.Flags().BoolVar(&po.pushConfig, "config", false, "Use config flag to only apply config on to cluster")
 	pushCmd.Flags().BoolVar(&po.pushSource, "source", false, "Use source flag to only push latest source on to cluster")
+	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to force building the component")
 
 	// Add a defined annotation in order to appear in the help menu
 	pushCmd.Annotations = map[string]string{"command": "component"}
