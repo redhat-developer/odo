@@ -182,7 +182,7 @@ test-odo-url-int:
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios
 test-e2e-scenarios:
-	go test -v github.com/openshift/odo/tests/e2escenarios -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/e2escenarios/ -timeout $(TIMEOUT)
 
 # this test shouldn't be in paralel -  it will effect the results
 .PHONY: test-benchmark
