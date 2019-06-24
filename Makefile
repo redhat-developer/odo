@@ -101,6 +101,9 @@ configure-installer-tests-cluster:
 test:
 	go test -race $(PKGS)
 
+# -randomizeAllSpecs - If set, ginkgo will randomize all specs together.
+# By default, ginkgo only randomizes the top level Describe, Context and When groups.
+
 # Run generic integration tests
 .PHONY: test-generic
 test-generic:
@@ -110,9 +113,6 @@ test-generic:
 .PHONY: test-json-format-output
 test-json-format-output:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odojsonoutput" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
-
-# -randomizeAllSpecs - If set, ginkgo will randomize all specs together.
-# By default, ginkgo only randomizes the top level Describe, Context and When groups.
 
 # Run component e2e tests
 .PHONY: test-cmp-e2e
@@ -149,10 +149,10 @@ test-link-e2e:
 test-watch-e2e:
 	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoWatchE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
-# Run storage e2e tests
-.PHONY: test-storage-e2e
-test-storage-e2e:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoStorageE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+# Run storage command integration tests
+.PHONY: test-cmd-storage
+test-cmd-storage:
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo storage command" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run odo app cmd tests
 .PHONY: test-cmd-app

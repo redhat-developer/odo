@@ -85,7 +85,7 @@ jobs:
         - sudo cp odo /usr/bin
         - oc login -u developer
         - travis_wait make test-watch-e2e
-        - travis_wait make test-storage-e2e
+        - travis_wait make test-cmd-storage
         - travis_wait make test-cmd-app
 
     # test installation script on linux

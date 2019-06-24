@@ -182,6 +182,13 @@ $ make test-cmd-app
 ----
 +
 
+Run storage command integration test
++
+----
+$ make test-cmd-storage
+----
++
+
 * To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
 Run component command integration test
@@ -195,6 +202,13 @@ Run application command integration test
 +
 ----
 $ make test-cmd-app TEST_EXEC_NODES=1
+----
++
+
+Run storage command integration test
++
+----
+$ make test-cmd-storage TEST_EXEC_NODES=1
 ----
 +
 

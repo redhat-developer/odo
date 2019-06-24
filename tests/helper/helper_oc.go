@@ -301,19 +301,21 @@ func (oc *OcRunner) ServiceInstanceStatus(serviceInstanceName string) string {
 }
 
 // GetVolumeMountName returns the name of the volume
-func (oc *OcRunner) GetVolumeMountName(dcName string) string {
-	volumeName := CmdShouldPass(oc.path, "get", "dc", dcName, "-o", "go-template='"+
-		"{{range .spec.template.spec.containers}}"+
-		"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
+func (oc *OcRunner) GetVolumeMountName(dcName string, namespace string) string {
+	volumeName := CmdShouldPass(oc.path, "get", "dc", dcName, "--namespace", namespace,
+		"-o", "go-template='"+
+			"{{range .spec.template.spec.containers}}"+
+			"{{range .volumeMounts}}{{.name}}{{end}}{{end}}'")
 
 	return strings.TrimSpace(volumeName)
 }
 
 // GetVolumeMountPath returns the path of the volume mount
-func (oc *OcRunner) GetVolumeMountPath(dcName string) string {
-	volumePaths := CmdShouldPass(oc.path, "get", "dc", dcName, "-o", "go-template='"+
-		"{{range .spec.template.spec.containers}}"+
-		"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
+func (oc *OcRunner) GetVolumeMountPath(dcName string, namespace string) string {
+	volumePaths := CmdShouldPass(oc.path, "get", "dc", dcName, "--namespace", namespace,
+		"-o", "go-template='"+
+			"{{range .spec.template.spec.containers}}"+
+			"{{range .volumeMounts}}{{.mountPath}} {{end}}{{end}}'")
 
 	return strings.TrimSpace(volumePaths)
 }
