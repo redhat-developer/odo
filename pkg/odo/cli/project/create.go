@@ -1,6 +1,7 @@
 package project
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
@@ -32,6 +33,9 @@ type ProjectCreateOptions struct {
 
 	// generic context options common to all commands
 	*genericclioptions.Context
+
+	// machine-readable output
+	outputFlag string
 }
 
 // NewProjectCreateOptions creates a ProjectCreateOptions instance
@@ -53,6 +57,29 @@ func (pco *ProjectCreateOptions) Validate() (err error) {
 
 // Run runs the project create command
 func (pco *ProjectCreateOptions) Run() (err error) {
+
+	// Machine readable output
+	if pco.OutputFlag == "json" {
+
+		// Create the project
+		err = project.Create(pco.Client, pco.projectName, false)
+		if err != nil {
+			return err
+		}
+
+		// Get the proper machine readable format
+		output := project.GetMachineReadableFormat(pco.projectName, false, nil)
+
+		// Marshal and print it out
+		printableOutput, err := json.Marshal(output)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(printableOutput))
+
+		return nil
+	}
+
 	if pco.wait {
 		s := log.Spinner("Waiting for project to come up")
 		err = project.Create(pco.Client, pco.projectName, true)
@@ -92,6 +119,7 @@ func NewCmdProjectCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
+	projectCreateCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
 	projectCreateCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the project is ready")
 	return projectCreateCmd
 }
