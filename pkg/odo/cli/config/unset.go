@@ -59,7 +59,6 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if o.envArray == nil {
 		o.paramName = args[0]
 	}
-	o.context = genericclioptions.NewContext(cmd)
 	return
 }
 

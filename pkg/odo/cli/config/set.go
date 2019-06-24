@@ -60,7 +60,6 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
-	o.context = genericclioptions.NewContext(cmd)
 	return
 }
 
