@@ -165,7 +165,7 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 
 	// If file does not exist at this point, raise an error
 	if !lci.ConfigFileExists() {
-		return nil, fmt.Errorf("the current directory does not represent an odo component.\nMaybe use 'odo create' to create component here or switch to directory with a component")
+		return nil, fmt.Errorf("The current directory does not represent an odo component. Maybe use 'odo create' to create component here or switch to directory with a component")
 	}
 	// else simply return the local config info
 	return lci, nil
