@@ -189,6 +189,13 @@ $ make test-cmd-storage
 ----
 +
 
+Run watch command integration test
++
+----
+$ make test-watch-e2e
+----
++
+
 * To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
 Run component command integration test
@@ -209,6 +216,13 @@ Run storage command integration test
 +
 ----
 $ make test-cmd-storage TEST_EXEC_NODES=1
+----
++
+
+Run watch command integration test
++
+----
+$ make test-watch-e2e TEST_EXEC_NODES=1
 ----
 +
 
