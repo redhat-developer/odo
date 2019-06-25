@@ -18,7 +18,7 @@ import (
 const unsetCommandName = "unset"
 
 var (
-	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the Odo configuration file.
+	unsetLongDesc = ktemplates.LongDesc(`Unset an individual value in the odo configuration file.
 
 %[1]s
 %[2]s
@@ -26,13 +26,13 @@ var (
 	unsetExample = ktemplates.Examples(`
    # Unset a configuration value in the local config
    %[1]s %[2]s
-   %[1]s %[3]s 
-   %[1]s %[4]s  
-   %[1]s %[5]s 
-   %[1]s %[6]s 
-   %[1]s %[7]s  
-   %[1]s %[8]s 
-   %[1]s %[9]s 
+   %[1]s %[3]s
+   %[1]s %[4]s
+   %[1]s %[5]s
+   %[1]s %[6]s
+   %[1]s %[7]s
+   %[1]s %[8]s
+   %[1]s %[9]s
    %[1]s %[10]s
 
    # Unset a env variable in the local config

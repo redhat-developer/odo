@@ -56,9 +56,9 @@ var (
   # Zsh terminal PS1 support
   source <(%[1]s zsh)
 `)
-	terminalLongDesc = ktemplates.LongDesc(`Add Odo terminal support to your development environment. 
+	terminalLongDesc = ktemplates.LongDesc(`Add odo terminal support to your development environment.
 
-This will append your PS1 environment variable with Odo component and application information.`)
+This will append your PS1 environment variable with odo component and application information.`)
 	supportedShells = map[string]string{"bash": bashPS1Output, "zsh": zshPS1Output}
 )
 

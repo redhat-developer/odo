@@ -15,8 +15,8 @@ func NewCmdUtils(name, fullName string) *cobra.Command {
 	terminalCmd := NewCmdTerminal(terminalCommandName, odoutil.GetFullName(fullName, terminalCommandName))
 	utilsCmd := &cobra.Command{
 		Use:   name,
-		Short: "Utilities for terminal commands and modifying Odo configurations",
-		Long:  `Utilities for terminal commands and modifying Odo configurations`,
+		Short: "Utilities for terminal commands and modifying odo configurations",
+		Long:  "Utilities for terminal commands and modifying odo configurations",
 		Example: fmt.Sprintf("%s\n",
 			terminalCmd.Example),
 	}
