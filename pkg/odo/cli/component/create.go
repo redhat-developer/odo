@@ -95,7 +95,7 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 # Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
 %[1]s nodejs --env key=value,key1=value1
 
-# For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.md
+# For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.adoc
 %[1]s python --git https://github.com/openshift/django-ex.git
 
 # Passing memory limits
