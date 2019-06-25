@@ -206,14 +206,18 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 
 			}
 
-			builderImages = append(builderImages,
-				CatalogImage{Name: imageStream.Name, Namespace: imageStream.Namespace,
-					AllTags: allTags, NonHiddenTags: getAllNonHiddenTags(allTags, hiddenTags)})
+			catalogImage := CatalogImage{
+				Name:          imageStream.Name,
+				Namespace:     imageStream.Namespace,
+				AllTags:       allTags,
+				NonHiddenTags: getAllNonHiddenTags(allTags, hiddenTags),
+			}
+			builderImages = append(builderImages, catalogImage)
+			glog.V(5).Infof("Found builder image: %#v", catalogImage)
 		}
 
 	}
 
-	glog.V(4).Infof("Found builder images: %v", builderImages)
 	return builderImages, nil
 }
 

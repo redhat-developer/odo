@@ -179,6 +179,11 @@ test-integration:
 test-e2e-scenarios:
 	go test -v github.com/openshift/odo/tests/e2escenarios -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
 
+# this test shouldn't be in paralel -  it will effect the results
+.PHONY: test-benchmark
+test-benchmark:
+	go test -v github.com/openshift/odo/tests/benchmark -timeout $(TIMEOUT)
+
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
 .PHONY: packages

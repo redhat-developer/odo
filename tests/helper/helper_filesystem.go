@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -63,6 +64,19 @@ func FileShouldContainSubstring(file string, subString string) {
 	data, err := ioutil.ReadFile(file)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(string(data)).To(ContainSubstring(subString))
+}
+
+// ReplaceString replaces oldString with newString in text file
+func ReplaceString(filename string, oldString string, newString string) {
+	fmt.Fprintf(GinkgoWriter, "Replacing \"%s\" with \"%s\" in %s\n", oldString, newString, filename)
+
+	f, err := ioutil.ReadFile(filename)
+	Expect(err).NotTo(HaveOccurred())
+
+	newContent := strings.Replace(string(f), oldString, newString, 1)
+
+	err = ioutil.WriteFile(filename, []byte(newContent), 644)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 // copyDir copy one directory to the other
