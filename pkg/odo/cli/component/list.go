@@ -86,13 +86,14 @@ func (lo *ListOptions) Run() (err error) {
 	var components component.ComponentList
 
 	if lo.allFlag {
+		// retrieve list of application
 		apps, err := application.List(lo.Client)
 		if err != nil {
 			return err
 		}
 
 		var componentList []component.Component
-
+		// interating over list of application and get list of all components
 		for _, app := range apps {
 			comps, err := component.List(lo.Client, app)
 			if err != nil {
@@ -100,6 +101,7 @@ func (lo *ListOptions) Run() (err error) {
 			}
 			componentList = append(componentList, comps.Items...)
 		}
+		// Get machine readable component list format
 		components = component.GetMachineReadableFormatForList(componentList)
 	} else {
 
