@@ -193,6 +193,7 @@ Run watch command integration test
 +
 ----
 $ make test-watch-e2e
+<<<<<<< HEAD
 ----
 +
 
@@ -202,6 +203,66 @@ Run json output integration test
 $ make test-json-format-output
 ----
 +
+
+* To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
++
+Run component command integration test
++
+----
+$ make test-cmp-e2e TEST_EXEC_NODES=1
+----
++
+
+Run application command integration test
++
+----
+$ make test-cmd-app TEST_EXEC_NODES=1
+----
++
+
+Run storage command integration test
+=======
+----
++
+
+Run json output integration test
++
+----
+$ make test-json-format-output
+----
++
+
+Run service command integration test
+>>>>>>> Updated doc
++
+----
+$ make test-cmd-storage TEST_EXEC_NODES=1
+----
++
+<<<<<<< HEAD
+
+Run watch command integration test
++
+----
+$ make test-watch-e2e TEST_EXEC_NODES=1
+----
++
+
+Run json output integration test
++
+----
+$ make test-json-format-output TEST_EXEC_NODES=1
+----
++
+
+* For the entire integration test suite use:
++
+----
+$ make test-integration
+----
++
+
+=======
 
 * To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
@@ -240,6 +301,13 @@ $ make test-json-format-output TEST_EXEC_NODES=1
 ----
 +
 
+Run service command integration test
++
+----
+$ make test-service-e2e TEST_EXEC_NODES=1
+----
++
+
 * For the entire integration test suite use:
 +
 ----
@@ -247,6 +315,7 @@ $ make test-integration
 ----
 +
 
+>>>>>>> Updated doc
 NOTE: `make test-integration` doesn't honour enviornment variable `TEST_EXEC_NODES`. So by default it runs the entire integration test suite on a single ginkgo test node sequentially.
 
 You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
