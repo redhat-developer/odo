@@ -77,6 +77,7 @@ func NewSpinner(w io.Writer) *Spinner {
 		ticker: time.NewTicker(time.Millisecond * 200),
 		mu:     &sync.Mutex{},
 		writer: w,
+		start:  time.Now(),
 	}
 }
 
@@ -96,7 +97,6 @@ func (s *Spinner) SetSuffix(suffix string) {
 
 // Start starts the spinner running
 func (s *Spinner) Start() {
-	s.start = time.Now()
 	go func() {
 		for {
 			for _, frame := range s.frames {
@@ -121,12 +121,20 @@ func (s *Spinner) Stop() {
 }
 
 // TimeSpent returns the seconds spent since the spinner first started
-func (s *Spinner) TimeSpent() time.Duration {
+func (s *Spinner) TimeSpent() string {
 	currentTime := time.Now()
+	timeElapsed := currentTime.Sub(s.start)
 
-	if currentTime.Sub(s.start) < time.Second {
-		return currentTime.Sub(s.start).Round(time.Millisecond)
+	// Print ms if less than a second
+	// else print out minutes if more than 1 minute
+	// else print the default (seconds)
+	if timeElapsed > time.Minute {
+		return fmt.Sprintf("%.0fm", timeElapsed.Minutes())
+	} else if timeElapsed < time.Minute && timeElapsed > time.Second {
+		return fmt.Sprintf("%.0fs", timeElapsed.Seconds())
+	} else if timeElapsed < time.Second && timeElapsed > time.Millisecond {
+		return fmt.Sprintf("%dms", timeElapsed.Nanoseconds()/int64(time.Millisecond))
 	}
 
-	return currentTime.Sub(s.start).Round(time.Second)
+	return fmt.Sprintf("%dns", timeElapsed.Nanoseconds())
 }
