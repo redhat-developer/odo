@@ -635,7 +635,7 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 	componentContext := strings.Trim(filepath.Dir(lci.Filename), ".odo")
 
 	if sourceLocation == "" {
-		return "", fmt.Errorf("Blank source location provided")
+		return "", fmt.Errorf("Blank source location, does the .odo directory exist?")
 	}
 
 	if sourceType == GIT {
