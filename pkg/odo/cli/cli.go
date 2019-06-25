@@ -168,8 +168,8 @@ func ShowSubcommands(cmd *cobra.Command, args []string) error {
 	var strs []string
 	for _, subcmd := range cmd.Commands() {
 		if !subcmd.Hidden {
-			strs = append(strs, subcmd.Use)
+			strs = append(strs, subcmd.Name())
 		}
 	}
-	return fmt.Errorf("Use one of available subcommands: %s", strings.Join(strs, ", "))
+	return fmt.Errorf("Subcommand not found, use one of the available commands: %s", strings.Join(strs, ", "))
 }
