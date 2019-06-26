@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,32 +19,36 @@ var _ = Describe("odoServiceE2e", func() {
 
 	//  current directory and project (before eny test is run) so it can restored  after all testing is done
 	var originalDir string
-	var originalProject string
 	var oc helper.OcRunner
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
-	var _ = BeforeEach(func() {
+	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		oc = helper.NewOcRunner("oc")
-		project = helper.CreateRandProject()
-		context = helper.CreateNewContext()
-		originalDir = helper.Getwd()
-		originalProject = oc.GetCurrentProject()
-		helper.Chdir(context)
-		oc.SwitchProject(project)
 	})
 
-	// Clean up after the test
-	// This is run after every Spec (It)
-	var _ = AfterEach(func() {
-		helper.Chdir(originalDir)
-		oc.SwitchProject(originalProject)
-		helper.DeleteProject(project)
-		helper.DeleteDir(context)
+	Context("when running help for service command", func() {
+		It("should display the help", func() {
+			appHelp := helper.CmdShouldPass("odo", "service", "-h")
+			Expect(appHelp).To(ContainSubstring("Perform service catalog operations"))
+		})
 	})
 
-	Context("odo service create with a spring boot application", func() {
+	Context("When creating with a spring boot application", func() {
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.DeleteDir(context)
+			helper.Chdir(originalDir)
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
 		It("should be able to create postgresql and link it with springboot", func() {
 			oc.ImportJavaIsToNspace(project)
 			helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
