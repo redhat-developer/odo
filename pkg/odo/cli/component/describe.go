@@ -53,7 +53,7 @@ func (do *DescribeOptions) Validate() (err error) {
 		return err
 	}
 	if !existsInCluster {
-		return fmt.Errorf("component %s not found in the OpenShift cluster, use `odo push` to deploy the component", do.componentName)
+		return fmt.Errorf("component %s not pushed to OpenShift cluster, use `odo push` to deploy the component", do.componentName)
 	}
 
 	return odoutil.CheckOutputFlag(do.outputFlag)
