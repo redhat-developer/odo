@@ -6,7 +6,6 @@ import (
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 
@@ -45,7 +44,6 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	serviceInstanceAppNames, err := client.GetServiceInstanceLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
 		glog.V(4).Infof("Unable to list Service Catalog instances: %s", err)
-		log.Warning("Unable to access Service Catalog instances, may not be enabled on cluster")
 	} else {
 		appNames = append(deploymentConfigAppNames, serviceInstanceAppNames...)
 	}
