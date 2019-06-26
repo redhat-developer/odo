@@ -15,10 +15,6 @@ var _ = Describe("odoURLIntegration", func() {
 	var project string
 	var context string
 
-	//  current directory and project (before eny test is run) so it can restored  after all testing is done
-	var originalProject string
-	var oc helper.OcRunner
-
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
@@ -26,11 +22,8 @@ var _ = Describe("odoURLIntegration", func() {
 		// Set default timeout for Eventually assertions
 		// commands like odo push, might take a long time
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-
-		// initialize oc runner
-		// right now it uses oc binary, but we should convert it to client-go
-		oc = helper.NewOcRunner("oc")
 		context = helper.CreateNewContext()
+		helper.CopyExample(filepath.Join("source", "nodejs"), context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()
 	})
@@ -44,18 +37,6 @@ var _ = Describe("odoURLIntegration", func() {
 	})
 
 	Context("Listing urls", func() {
-		// Set active project for each test spec
-		JustBeforeEach(func() {
-			originalProject = oc.GetCurrentProject()
-			// WARNING: this project switching makes it impossible to run this in parallel
-			// it should set different KUBECONFIG before witching project
-			oc.SwitchProject(project)
-		})
-		// go back to original project after each test
-		JustAfterEach(func() {
-			oc.SwitchProject(originalProject)
-		})
-
 		It("should list appropriate URLs and push message", func() {
 			var stdout string
 			url1 := helper.RandString(5)
