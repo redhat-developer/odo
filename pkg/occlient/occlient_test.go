@@ -9,15 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
-
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
-
-	// api resources
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
@@ -26,15 +17,19 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/watch"
-
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -5358,6 +5353,57 @@ func TestStartDeployment(t *testing.T) {
 						t.Errorf("deployment is not set to latest")
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestGetPortsFromBuilderImage(t *testing.T) {
+
+	type args struct {
+		componentType string
+	}
+	tests := []struct {
+		name           string
+		imageNamespace string
+		args           args
+		want           []string
+		wantErr        bool
+	}{
+		{
+			name:           "component type: nodejs",
+			imageNamespace: "openshift",
+			args:           args{componentType: "nodejs"},
+			want:           []string{"8080/TCP"},
+			wantErr:        false,
+		},
+		{
+			name:           "component type: php",
+			imageNamespace: "openshift",
+			args:           args{componentType: "php"},
+			want:           []string{"8080/TCP", "8443/TCP"},
+			wantErr:        false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := FakeNew()
+			fkclient.Namespace = "testing"
+			// Fake getting image stream
+			fkclientset.ImageClientset.PrependReactor("get", "imagestreams", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStream(tt.args.componentType, tt.imageNamespace, []string{"latest"}), nil
+			})
+
+			fkclientset.ImageClientset.PrependReactor("get", "imagestreamimages", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, fakeImageStreamImage(tt.args.componentType, tt.want, ""), nil
+			})
+			got, err := fkclient.GetPortsFromBuilderImage(tt.args.componentType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Client.GetPortsFromBuilderImage() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Client.GetPortsFromBuilderImage() = %v, want %v", got, tt.want)
 			}
 		})
 	}
