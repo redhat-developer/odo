@@ -285,5 +285,15 @@ var _ = Describe("odo config test", func() {
 			Expect(configValue).To(ContainSubstring("world"))
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
+
+		It("should set config veriable without logging in", func() {
+			kubeconfigOld := os.Getenv("KUBECONFIG")
+			os.Setenv("KUBECONFIG", "/no/such/path")
+			helper.CmdShouldPass("odo", "config", "set", "Name", "foobar")
+			configValue := helper.CmdShouldPass("odo", "config", "view")
+			Expect(configValue).To(ContainSubstring("foobar"))
+			helper.CmdShouldPass("odo", "config", "unset", "Name")
+			os.Setenv("KUBECONFIG", kubeconfigOld)
+		})
 	})
 })
