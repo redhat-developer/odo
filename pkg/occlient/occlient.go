@@ -125,9 +125,6 @@ const (
 	// This is required to persist deployed artifacts across supervisord restarts
 	EnvS2IDeploymentBackupDir = "ODO_DEPLOYMENT_BACKUP_DIR"
 
-	// EnvAppRoot is env var s2i exposes in component container to indicate the path where component source resides
-	EnvAppRoot = "APP_ROOT"
-
 	// S2IScriptsURLLabel S2I script location Label name
 	// Ref: https://docs.openshift.com/enterprise/3.2/creating_images/s2i.html#build-process
 	S2IScriptsURLLabel = "io.openshift.s2i.scripts-url"
@@ -1186,7 +1183,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
 	// only use the deployment Directory volume mount if its being used and
 	// its not a sub directory of src_or_bin_path
-	if s2iPaths.DeploymentDir != "" && !isSubDir(s2iPaths.SrcOrBinPath, s2iPaths.DeploymentDir) {
+	if s2iPaths.DeploymentDir != "" && !isSubDir("/opt/app-root", s2iPaths.DeploymentDir) {
 		addDepoymentDirVolumeMount(&dc, commonObjectMeta.Name, s2iPaths.DeploymentDir)
 	}
 
@@ -1590,7 +1587,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
 		// only use the deployment Directory volume mount if its being used and
 		// its not a sub directory of src_or_bin_path
-		if s2iPaths.DeploymentDir != "" && !isSubDir(s2iPaths.SrcOrBinPath, s2iPaths.DeploymentDir) {
+		if s2iPaths.DeploymentDir != "" && !isSubDir("/opt/app-root", s2iPaths.DeploymentDir) {
 			addDepoymentDirVolumeMount(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
 		}
 
