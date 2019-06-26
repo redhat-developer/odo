@@ -23,7 +23,7 @@ func CreateNewContext() string {
 
 // DeleteDir delete directory
 func DeleteDir(dir string) {
-	fmt.Fprintf(GinkgoWriter, "Deleating dir: %s\n", dir)
+	fmt.Fprintf(GinkgoWriter, "Deleting dir: %s\n", dir)
 	err := os.RemoveAll(dir)
 	Expect(err).NotTo(HaveOccurred())
 
