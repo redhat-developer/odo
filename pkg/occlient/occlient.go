@@ -1184,8 +1184,9 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
 	addBootstrapVolume(&dc, commonObjectMeta.Name)
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
-	// only use the deployment Directory volume mount if its being used
-	if s2iPaths.DeploymentDir != "" {
+	// only use the deployment Directory volume mount if its being used and
+	// its not a sub directory of src_or_bin_path
+	if s2iPaths.DeploymentDir != "" && !isSubDir(s2iPaths.SrcOrBinPath, s2iPaths.DeploymentDir) {
 		addDepoymentDirVolumeMount(&dc, commonObjectMeta.Name, s2iPaths.DeploymentDir)
 	}
 
@@ -1587,8 +1588,9 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		addBootstrapSupervisordInitContainer(&dc, ucp.CommonObjectMeta.Name)
 		addBootstrapVolume(&dc, ucp.CommonObjectMeta.Name)
 		addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
-		// only use the deployment Directory volume mount if its being used
-		if s2iPaths.DeploymentDir != "" {
+		// only use the deployment Directory volume mount if its being used and
+		// its not a sub directory of src_or_bin_path
+		if s2iPaths.DeploymentDir != "" && !isSubDir(s2iPaths.SrcOrBinPath, s2iPaths.DeploymentDir) {
 			addDepoymentDirVolumeMount(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
 		}
 
@@ -3290,4 +3292,14 @@ func uniqueUpsertEnvVarsFromS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IP
 		},
 	)
 
+}
+
+func isSubDir(baseDir, otherDir string) bool {
+	cleanedBaseDir := filepath.Clean(baseDir)
+	cleanedOtherDir := filepath.Clean(otherDir)
+	if cleanedBaseDir == cleanedOtherDir {
+		return true
+	}
+	matches, _ := filepath.Match(fmt.Sprintf("%s/*", cleanedBaseDir), cleanedOtherDir)
+	return matches
 }

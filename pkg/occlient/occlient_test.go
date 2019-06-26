@@ -5138,3 +5138,65 @@ func sliceEqual(x, y []string) bool {
 
 	return reflect.DeepEqual(xc, yc)
 }
+
+func TestIsSubDir(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		baseDir  string
+		otherDir string
+		matches  bool
+	}{
+		{
+			name:     "Case 1: same dirs with slashes",
+			baseDir:  "/abcd/",
+			otherDir: "/abcd",
+			matches:  true,
+		},
+		{
+			name:     "Case 2: same dirs with slashes order reverse",
+			baseDir:  "/abcd",
+			otherDir: "/abcd/",
+			matches:  true,
+		},
+		{
+			name:     "Case 3: other dir same prefix",
+			baseDir:  "/abcd",
+			otherDir: "/abcde/",
+			matches:  false,
+		},
+		{
+			name:     "Case 4: other dir same prefix more complex",
+			baseDir:  "/abcde/fg",
+			otherDir: "/abcde/fgh",
+			matches:  false,
+		},
+		{
+			name:     "Case 5: other dir same prefix more complex matching",
+			baseDir:  "/abcde/fg",
+			otherDir: "/abcde/fg/h",
+			matches:  true,
+		},
+		{
+			name:     "Case 6: dirs with ..",
+			baseDir:  "/abcde/fg/../h",
+			otherDir: "/abcde/h/ij",
+			matches:  true,
+		},
+		{
+			name:     "Case 7: dirs with .. not matching",
+			baseDir:  "/abcde/fg/../h",
+			otherDir: "/abcde/fg/h",
+			matches:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if isSubDir(tt.baseDir, tt.otherDir) != tt.matches {
+				t.Errorf("the outcome for %s and %s is not expected", tt.baseDir, tt.otherDir)
+			}
+		})
+	}
+
+}
