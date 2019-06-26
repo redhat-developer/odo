@@ -10,8 +10,6 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-const javaFiles = "examples/binary/java/"
-
 var _ = Describe("odoJavaE2e", func() {
 	var project string
 	var context string
@@ -94,7 +92,8 @@ var _ = Describe("odoJavaE2e", func() {
 			helper.CmdShouldPass("odo", "delete", "uberjar-git-test", "-f", "--context", context)
 		})
 
-		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
+		// https://github.com/openshift/odo/issues/1846
+		/*It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			oc.ImportJavaIsToNspace(project)
 
 			helper.CmdShouldPass("odo", "create", "java", "sb-jar-test", "--project",
@@ -110,7 +109,7 @@ var _ = Describe("odoJavaE2e", func() {
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "sb-jar-test", "-f", "--context", context)
-		})
+		})*/
 
 	})
 })
