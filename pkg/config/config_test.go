@@ -436,7 +436,6 @@ func TestWrongData(t *testing.T) {
 	memoryValue := "0"
 	portsValue := "8080/TCP,45/UDP, wrongPort"
 
-
 	tests := []struct {
 		name           string
 		parameter      string
@@ -459,8 +458,7 @@ func TestWrongData(t *testing.T) {
 			value:     minCPUValue,
 			wantErr:   true,
 			existingConfig: LocalConfig{
-				componentSettings: ComponentSettings{
-				},
+				componentSettings: ComponentSettings{},
 			},
 		},
 		{
@@ -547,11 +545,11 @@ func TestEmptyInputs(t *testing.T) {
 
 	for i, thing := range objects {
 		tt := Format{
-			name:		fmt.Sprintf("Case %v: Expecting an error if passing an empty parameter for \"%s\"", i, thing),
-			parameter:	thing,
-			value:		"",
-			wantErr:	true,
-			existingConfig:	LocalConfig{
+			name:      fmt.Sprintf("Case %v: Expecting an error if passing an empty parameter for \"%s\"", i, thing),
+			parameter: thing,
+			value:     "",
+			wantErr:   true,
+			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{},
 			},
 		}

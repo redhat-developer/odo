@@ -226,7 +226,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "minmemory":
 			value, err := units.Parse(strValue)
 			if err != nil {
-				return errors.Wrapf(err, "%s has wrong format: %s",parameter, strValue)
+				return errors.Wrapf(err, "%s has wrong format: %s", parameter, strValue)
 			} else {
 				postParsed := strconv.FormatInt(value, 10)
 				lci.componentSettings.MinMemory = &postParsed
@@ -234,7 +234,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "maxmemory":
 			value, err := units.Parse(strValue)
 			if err != nil {
-				return errors.Wrapf(err, "%s has wrong format: %s",parameter, strValue)
+				return errors.Wrapf(err, "%s has wrong format: %s", parameter, strValue)
 			} else {
 				postParsed := strconv.FormatInt(value, 10)
 				lci.componentSettings.MaxMemory = &postParsed
@@ -242,7 +242,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "memory":
 			value, err := units.Parse(strValue)
 			if err != nil {
-				return errors.Wrapf(err, "%s has wrong format: %s",parameter, strValue)
+				return errors.Wrapf(err, "%s has wrong format: %s", parameter, strValue)
 			} else if value == 0 {
 				return errors.Errorf("while setting %s, you are setting MaxMemory to %s which is incorrect", parameter, strValue)
 			} else {
