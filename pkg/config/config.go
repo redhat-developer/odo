@@ -190,7 +190,7 @@ func newProxyLocalConfig() proxyLocalConfig {
 func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	// getting the second arg makes sure that this never panics
 	strValue, _ := value.(string)
-	if len(strValue) <= 0 && parameter != "storage" {
+	if len(strValue) <= 0 && parameter != "storage" && parameter != "url" {
 		return errors.Errorf("Can't use an empty string for %s", parameter)
 	}
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
