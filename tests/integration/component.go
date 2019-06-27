@@ -418,4 +418,41 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "delete", cmpName, "--app", appName, "--project", project, "-f")
 		})
 	})
+
+	Context("successive odo push to check for existence of environment variables", func() {
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			context = helper.CreateNewContext()
+			originalDir = helper.Getwd()
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.DeleteDir(context)
+			os.RemoveAll(context)
+		})
+
+		It("should create a component with environment variables and the env vars should persist multiple odo push", func() {
+			componentName := helper.RandString(6)
+			appName := helper.RandString(6)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", componentName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			helper.Chdir(context)
+			helper.CmdShouldPass("odo", "config", "set", "--env", "FOO=BAR")
+			helper.CmdShouldPass("odo", "push")
+			helper.CmdShouldPass("oc", "project", project)
+
+			dc := oc.GetDcName(componentName, project)
+			out := helper.CmdShouldPass("oc", "describe", "dc/"+dc, "-n", project)
+			Expect(out).To(ContainSubstring("FOO:"))
+
+			helper.CmdShouldPass("odo", "push")
+			out = helper.CmdShouldPass("oc", "describe", "dc")
+			Expect(out).To(ContainSubstring("FOO:"))
+
+			helper.Chdir(originalDir)
+		})
+	})
 }
