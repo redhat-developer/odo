@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -346,20 +347,9 @@ func TestGetOSSourcePath(t *testing.T) {
 			},
 		},
 		{
-			name:      "Case 2: Error if passing in blank",
-			parameter: SourceLocation,
-			value:     "",
-			wantErr:   true,
-			existingConfig: LocalConfig{
-				componentSettings: ComponentSettings{
-					SourceType: &localSourceType,
-				},
-			},
-		},
-		{
 			name:      "Case 3: Error if we're passing in git source type...",
 			parameter: SourceLocation,
-			value:     "",
+			value:     "somedata",
 			wantErr:   true,
 			existingConfig: LocalConfig{
 				componentSettings: ComponentSettings{
@@ -428,14 +418,166 @@ func TestGetOSSourcePath(t *testing.T) {
 			if !isSet {
 				t.Errorf("the '%v' was not set", tt.parameter)
 			}
-
-			_, err = cfg.GetOSSourcePath()
-			if tt.wantErr && err == nil {
-				t.Errorf("expected error for %s source path", tt.value)
-			} else if !tt.wantErr && err != nil {
-				t.Error(err)
-			}
-
 		})
 	}
+}
+
+func TestWrongData(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(localConfigEnvName, tempConfigFile.Name())
+	minCPUValue := "wrongMinCpu"
+	maxCPUValue := "wrongMaxCpu"
+	minMemValue := "500Mmm"
+	maxMemValue := "100J"
+	memoryValue := "0"
+	portsValue := "8080/TCP,45/UDP, wrongPort"
+
+
+	tests := []struct {
+		name           string
+		parameter      string
+		value          string
+		wantErr        bool
+		existingConfig LocalConfig
+	}{
+		{
+			name:      fmt.Sprintf("Case 1: Expecting an error if passing in non float64 parsable string. Passed: %s to %s", maxCPUValue, MaxCPU),
+			parameter: MaxCPU,
+			value:     maxCPUValue,
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 2: Expecting an error if passing in non float64 parsable string. Passed: %s to %s", minCPUValue, MinCPU),
+			parameter: MinCPU,
+			value:     minCPUValue,
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{
+				},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 3: Expecting an error for %s to be set to %s", MinMemory, minMemValue),
+			parameter: MinMemory,
+			value:     minMemValue,
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 4: Expecting an error for %s to be set to %s", MaxMemory, maxCPUValue),
+			parameter: MaxMemory,
+			value:     maxMemValue,
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 5: Expecting an error for %s to be set to %s", Memory, memoryValue),
+			parameter: Memory,
+			value:     memoryValue,
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+		{
+			name:      fmt.Sprintf("Case 6: Expecting an error if passing a parameter %s that is not a %s", portsValue, Ports),
+			parameter: Ports,
+			value:     portsValue,
+			wantErr:   true,
+			existingConfig: LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := NewLocalConfigInfo("")
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.LocalConfig = tt.existingConfig
+
+			err = cfg.SetConfiguration(tt.parameter, tt.value)
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error for paramter: %s with value: \"%s\" ", tt.parameter, tt.value)
+			} else if !tt.wantErr && err != nil {
+				t.Error(err)
+			} else if tt.wantErr && err != nil {
+				fmt.Println(err)
+				assert.Error(t, err)
+			}
+			isSet := cfg.IsSet(tt.parameter)
+			if tt.wantErr && isSet {
+				t.Errorf("expected error for paramter: %s with value: \"%s\" ", tt.parameter, tt.value)
+			} else if !tt.wantErr && !isSet {
+				t.Error(err)
+			}
+		})
+	}
+}
+
+func TestEmptyInputs(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(localConfigEnvName, tempConfigFile.Name())
+
+	objects := []string{Name, Project, Type, Application, Ref, SourceLocation, SourceType, Url, Ports, MinMemory, MaxMemory, Memory, MinCPU, MaxCPU, Url, SourceType}
+
+	type Format struct {
+		name           string
+		parameter      string
+		value          string
+		wantErr        bool
+		existingConfig LocalConfig
+	}
+
+	for i, thing := range objects {
+		tt := Format{
+			name:		fmt.Sprintf("Case %v: Expecting an error if passing an empty parameter for \"%s\"", i, thing),
+			parameter:	thing,
+			value:		"",
+			wantErr:	true,
+			existingConfig:	LocalConfig{
+				componentSettings: ComponentSettings{},
+			},
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := NewLocalConfigInfo("")
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.LocalConfig = tt.existingConfig
+
+			err = cfg.SetConfiguration(tt.parameter, tt.value)
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error for paramter: %s with value: \"%s\" ", tt.parameter, tt.value)
+			} else if !tt.wantErr && err != nil {
+				t.Error(err)
+			} else if tt.wantErr && err != nil {
+				fmt.Println(err)
+				assert.Error(t, err)
+			}
+			isSet := cfg.IsSet(tt.parameter)
+			if tt.wantErr && isSet {
+				t.Errorf("expected error for paramter: %s with value: \"%s\" ", tt.parameter, tt.value)
+			} else if !tt.wantErr && !isSet {
+				t.Error(err)
+			}
+		})
+	}
+
 }

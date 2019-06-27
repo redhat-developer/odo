@@ -5,12 +5,14 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
+	"github.com/libopenstorage/openstorage/pkg/units"
 	"github.com/openshift/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -188,6 +190,9 @@ func newProxyLocalConfig() proxyLocalConfig {
 func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	// getting the second arg makes sure that this never panics
 	strValue, _ := value.(string)
+	if len(strValue) <= 0 && parameter != "storage" {
+		return errors.Errorf("Can't use an empty string for %s", parameter)
+	}
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "type":
@@ -207,15 +212,44 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "sourcelocation":
 			lci.componentSettings.SourceLocation = &strValue
 		case "ports":
-			arrValue := strings.Split(strValue, ",")
+			arrValue := util.GetSplitValuesFromStr(strValue)
+			fmt.Println(arrValue)
+			for _, value := range arrValue {
+				if !regexp.MustCompile("[0-9]{1,5}\\/(TCP|UDP)").MatchString(value) {
+					return errors.Errorf("Unable to set %s to [%s] because of %s", parameter, strValue, value)
+				}
+			}
+			fmt.Printf("%q\n", arrValue)
 			lci.componentSettings.Ports = &arrValue
 		case "name":
 			lci.componentSettings.Name = &strValue
 		case "minmemory":
-			lci.componentSettings.MinMemory = &strValue
+			value, err := units.Parse(strValue)
+			if err != nil {
+				return errors.Wrapf(err, "%s has wrong format: %s",parameter, strValue)
+			} else {
+				postParsed := strconv.FormatInt(value, 10)
+				lci.componentSettings.MinMemory = &postParsed
+			}
 		case "maxmemory":
-			lci.componentSettings.MaxMemory = &strValue
+			value, err := units.Parse(strValue)
+			if err != nil {
+				return errors.Wrapf(err, "%s has wrong format: %s",parameter, strValue)
+			} else {
+				postParsed := strconv.FormatInt(value, 10)
+				lci.componentSettings.MaxMemory = &postParsed
+			}
 		case "memory":
+			value, err := units.Parse(strValue)
+			if err != nil {
+				return errors.Wrapf(err, "%s has wrong format: %s",parameter, strValue)
+			} else if value == 0 {
+				return errors.Errorf("while setting %s, you are setting MaxMemory to %s which is incorrect", parameter, strValue)
+			} else {
+				postParsed := strconv.FormatInt(value, 10)
+				lci.componentSettings.MinMemory = &postParsed
+				lci.componentSettings.MaxMemory = &postParsed
+			}
 			lci.componentSettings.MaxMemory = &strValue
 			lci.componentSettings.MinMemory = &strValue
 		case "debugport":
@@ -231,8 +265,16 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			}
 			lci.componentSettings.Ignore = &val
 		case "mincpu":
+			_, err := strconv.ParseFloat(strValue, 64)
+			if err != nil {
+				return errors.Wrapf(err, "unable to parse %s to float64 to set %s", parameter, strValue)
+			}
 			lci.componentSettings.MinCPU = &strValue
 		case "maxcpu":
+			_, err := strconv.ParseFloat(strValue, 64)
+			if err != nil {
+				return errors.Wrapf(err, "unable to parse %s to float64 to set %s", parameter, strValue)
+			}
 			lci.componentSettings.MaxCPU = &strValue
 		case "storage":
 			storageSetting, _ := value.(ComponentStorageSettings)
@@ -242,6 +284,10 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 				lci.componentSettings.Storage = &[]ComponentStorageSettings{storageSetting}
 			}
 		case "cpu":
+			_, err := strconv.ParseFloat(strValue, 64)
+			if err != nil {
+				return errors.Wrapf(err, "unable to parse %s to float64 to set %s", parameter, strValue)
+			}
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
 		case "url":
