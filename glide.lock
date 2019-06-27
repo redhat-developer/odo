@@ -72,7 +72,7 @@ imports:
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/getsentry/raven-go
-  version: 32a13797442ccb601b11761d74232773c1402d14
+  version: ""
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-openapi/jsonpointer
@@ -173,6 +173,10 @@ imports:
   subpackages:
   - diff
   - pretty
+- name: github.com/libopenstorage/openstorage
+  version: e354d4650fb692f8bd0dd5f0ef08f7627349c923
+  subpackages:
+  - pkg/units
 - name: github.com/mailru/easyjson
   version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
   subpackages:

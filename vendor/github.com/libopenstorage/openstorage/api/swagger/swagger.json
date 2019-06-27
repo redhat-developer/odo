@@ -1,0 +1,2040 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "OpenStorage is a clustered implementation of the Open Storage specification and relies on the Docker runtime.\nIt allows you to run stateful services in Docker in a multi-host environment.\nIt plugs into Docker volumes to provide storage to a container and plugs into Swarm to operate in a clustered environment.",
+    "title": "OSD API.",
+    "termsOfService": "there are no TOS at this moment, use at your own risk we take no responsibility",
+    "contact": {
+      "name": "Luis Pabon",
+      "email": "luis@portworx.com"
+    },
+    "license": {
+      "name": "APACHE2",
+      "url": "https://opensource.org/licenses/Apache-2.0"
+    },
+    "version": "1.0.0"
+  },
+  "host": "localhost",
+  "basePath": "/v1",
+  "paths": {
+    "/cluster/alerts/{resource}": {
+      "get": {
+        "description": "This will return a list of alerts for the requested resource",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "alerts",
+          "enumerate"
+        ],
+        "operationId": "enumerateAlerts",
+        "parameters": [
+          {
+            "description": "resourcetype to get alerts with",
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ResourceType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerts object",
+            "schema": {
+              "$ref": "#/definitions/Alerts"
+            }
+          }
+        }
+      }
+    },
+    "/cluster/alerts/{resource}/{id}": {
+      "put": {
+        "description": "This will clear alert {id} with resourcetype {resource}",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "alerts",
+          "clear"
+        ],
+        "operationId": "clearAlert",
+        "parameters": [
+          {
+            "description": "resourcetype to get alerts with",
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ResourceType"
+            }
+          },
+          {
+            "description": "id to get alerts with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerts object",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "This delete clear alert {id} with resourcetype {resource}",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "alerts",
+          "delete"
+        ],
+        "operationId": "deleteAlert",
+        "parameters": [
+          {
+            "description": "resourcetype to get alerts with",
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ResourceType"
+            }
+          },
+          {
+            "description": "id to get alerts with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerts object",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/cluster/enumerate": {
+      "get": {
+        "description": "This will return the entire cluster object and it's nodes.",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "enumerate"
+        ],
+        "summary": "Lists cluster Nodes.",
+        "operationId": "enumerateCluster",
+        "responses": {
+          "200": {
+            "description": "current cluster state",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Cluster"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cluster/inspect/{id}": {
+      "get": {
+        "description": "This will return the requested node object",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "inspect"
+        ],
+        "summary": "Inspect cluster Nodes.",
+        "operationId": "inspectNode",
+        "parameters": [
+          {
+            "description": "id to get node with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "a node",
+            "schema": {
+              "$ref": "#/definitions/Node"
+            }
+          }
+        }
+      }
+    },
+    "/cluster/nodehealth": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "node",
+          "health"
+        ],
+        "summary": "This will return node health.",
+        "operationId": "nodeHealth",
+        "responses": {
+          "200": {
+            "description": "node health of responding node.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/cluster/nodestatus": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "node",
+          "status"
+        ],
+        "summary": "This will return the node status .",
+        "operationId": "nodeStatus",
+        "responses": {
+          "200": {
+            "description": "node status of responding node.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/cluster/peerstatus": {
+      "get": {
+        "description": "This will return the peer node status",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "node",
+          "peerstatus"
+        ],
+        "operationId": "peerStatus",
+        "parameters": [
+          {
+            "description": "id of the node we want to check.",
+            "name": "name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "node status of requested node",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/cluster/status": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "status"
+        ],
+        "summary": "this will return the cluster status.",
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "description": "cluster status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/cluster/versions": {
+      "get": {
+        "description": "Lists API Versions supported by this cluster",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "versions"
+        ],
+        "operationId": "enumerateVersions",
+        "responses": {
+          "200": {
+            "description": "anode",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cluster/{id}": {
+      "put": {
+        "description": "This will shutdown a node (Not Implemented)",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "node",
+          "shutdown"
+        ],
+        "operationId": "shutdownNode",
+        "parameters": [
+          {
+            "description": "id to get node with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "shutdown success",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "This will delete a node from the cluster",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "node",
+          "delete"
+        ],
+        "operationId": "deleteNode",
+        "parameters": [
+          {
+            "description": "id to get node with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "forceRemove node",
+            "name": "forceRemove",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "delete node success",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/loggingurl": {
+      "put": {
+        "description": "Set Logging url",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "cluster",
+          "loggingurl"
+        ],
+        "operationId": "setLoggingUrl",
+        "deprecated": true,
+        "parameters": [
+          {
+            "description": "url to set loggingurl with",
+            "name": "url",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "cluster response",
+            "schema": {
+              "$ref": "#/definitions/ClusterResponse"
+            }
+          }
+        }
+      }
+    },
+    "/osd-snapshots": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "snapshot",
+          "enumerate"
+        ],
+        "summary": "Enumerate snapshots.",
+        "operationId": "enumerateSnaps",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Volume name that maps to this snap",
+            "name": "name",
+            "in": "query"
+          },
+          {
+            "example": {
+              "label1": null,
+              "label2": null
+            },
+            "description": "Comma separated volume labels",
+            "name": "VolumeLabels",
+            "in": "formData",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "example": {
+              "label1": null,
+              "label2": null
+            },
+            "description": "Comma separated snap labels",
+            "name": "SnapLabels",
+            "in": "formData",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "type": "string",
+            "format": "uuid",
+            "description": "Snap UUID",
+            "name": "uuid",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "an array of snapshots",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Volume"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Take a snapshot of volume in SnapCreateRequest",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "snapshot",
+          "create"
+        ],
+        "operationId": "createSnap",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "query",
+            "required": true
+          },
+          {
+            "description": "spec to create snap with",
+            "name": "spec",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SnapCreateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "an array of volumes",
+            "schema": {
+              "$ref": "#/definitions/SnapCreateResponse"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/SnapCreateResponse"
+            }
+          }
+        }
+      }
+    },
+    "/osd-snapshots/restore/{id}": {
+      "post": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "snapshot",
+          "restore"
+        ],
+        "summary": "Restore snapshot with specified id.",
+        "operationId": "restoreSnap",
+        "parameters": [
+          {
+            "description": "id of snapshot to restore",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored volume",
+            "schema": {
+              "$ref": "#/definitions/VolumeResponse"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/VolumeResponse"
+            }
+          }
+        }
+      }
+    },
+    "/osd-volumes": {
+      "get": {
+        "description": "Enumerate all volumes",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "enumerate"
+        ],
+        "operationId": "enumerateVolumes",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "User specified volume name (Case Sensitive)",
+            "name": "Name",
+            "in": "query"
+          },
+          {
+            "example": {
+              "label1": null,
+              "label2": null
+            },
+            "description": "Comma separated name value pairs",
+            "name": "Label",
+            "in": "formData",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "example": {
+              "label1": null,
+              "label2": null
+            },
+            "description": "Comma separated name value pairs",
+            "name": "ConfigLabel",
+            "in": "formData",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "type": "string",
+            "format": "uuid",
+            "description": "Volume UUID",
+            "name": "VolumeID",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "an array of volumes",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Volume"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "create"
+        ],
+        "summary": "Creates a single volume with given spec.",
+        "operationId": "createVolume",
+        "parameters": [
+          {
+            "description": "spec to create volume with",
+            "name": "spec",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/VolumeCreateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume create response",
+            "schema": {
+              "$ref": "#/definitions/VolumeCreateResponse"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/VolumeCreateResponse"
+            }
+          }
+        }
+      }
+    },
+    "/osd-volumes/quiesce/{id}": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "quiesce"
+        ],
+        "summary": "Quiesce volume with specified id.",
+        "operationId": "quiesceVolume",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume set response",
+            "schema": {
+              "$ref": "#/definitions/VolumeResponse"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/VolumeResponse"
+            }
+          }
+        }
+      }
+    },
+    "/osd-volumes/requests/{id}": {
+      "post": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "requests"
+        ],
+        "summary": "Get Requests for volume with specified id.",
+        "operationId": "requestsVolume",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume set response",
+            "schema": {
+              "$ref": "#/definitions/ActiveRequests"
+            }
+          }
+        }
+      }
+    },
+    "/osd-volumes/stats/{id}": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "stats"
+        ],
+        "summary": "Get stats for volume with specified id.",
+        "operationId": "statsVolume",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume set response",
+            "schema": {
+              "$ref": "#/definitions/Stats"
+            }
+          }
+        }
+      }
+    },
+    "/osd-volumes/unquiesce/{id}": {
+      "post": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "unquiesce"
+        ],
+        "summary": "Unquiesce volume with specified id.",
+        "operationId": "unquiesceVolume",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume set response",
+            "schema": {
+              "$ref": "#/definitions/VolumeResponse"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/VolumeResponse"
+            }
+          }
+        }
+      }
+    },
+    "/osd-volumes/usedsize/{id}": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "usedsize"
+        ],
+        "summary": "Get Used size of volume with specified id.",
+        "operationId": "usedSizeVolume",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume set response"
+          }
+        }
+      }
+    },
+    "/osd-volumes/versions": {
+      "get": {
+        "description": "This will show all supported versions of the API for this volumeDriver.",
+        "produces": [
+          "application/json",
+          "parameters:",
+          "name: id",
+          "in: query",
+          "description: id to get volume with",
+          "required: true"
+        ],
+        "tags": [
+          "volume",
+          "versions"
+        ],
+        "summary": "Lists API versions supported by this volumeDriver.",
+        "operationId": "listVersions",
+        "responses": {}
+      }
+    },
+    "/osd-volumes/{id}": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "inspect"
+        ],
+        "summary": "Inspect volume with specified id.",
+        "operationId": "inspectVolume",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume get response",
+            "schema": {
+              "$ref": "#/definitions/Volume"
+            }
+          }
+        }
+      },
+      "put": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "update"
+        ],
+        "summary": "Updates a single volume with given spec.",
+        "operationId": "setVolume",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "query",
+            "required": true
+          },
+          {
+            "description": "spec to set volume with",
+            "name": "spec",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/VolumeSetRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume set response",
+            "schema": {
+              "$ref": "#/definitions/VolumeSetResponse"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/VolumeSetResponse"
+            }
+          }
+        }
+      },
+      "delete": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "volume",
+          "delete"
+        ],
+        "summary": "Delete volume with specified id.",
+        "operationId": "deleteVolume",
+        "parameters": [
+          {
+            "description": "id to get volume with",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "volume set response",
+            "schema": {
+              "$ref": "#/definitions/VolumeResponse"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/VolumeResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ActiveRequest": {
+      "type": "object",
+      "properties": {
+        "ReqestKV": {}
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "ActiveRequests": {
+      "type": "object",
+      "properties": {
+        "ActiveRequest": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ActiveRequest"
+          }
+        },
+        "RequestCount": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Alert": {
+      "description": "Alert is a structure that represents an alert object",
+      "type": "object",
+      "properties": {
+        "alert_type": {
+          "description": "AlertType user defined alert type",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "AlertType"
+        },
+        "cleared": {
+          "description": "Cleared Flag",
+          "type": "boolean",
+          "x-go-name": "Cleared"
+        },
+        "id": {
+          "description": "Id for Alert",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Id"
+        },
+        "message": {
+          "description": "Message describing the Alert",
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "resource": {
+          "$ref": "#/definitions/ResourceType"
+        },
+        "resource_id": {
+          "description": "ResourceId where Alert occured",
+          "type": "string",
+          "x-go-name": "ResourceId"
+        },
+        "severity": {
+          "$ref": "#/definitions/SeverityType"
+        },
+        "timestamp": {
+          "$ref": "#/definitions/Timestamp"
+        },
+        "ttl": {
+          "description": "TTL in seconds for this Alert",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Ttl"
+        },
+        "unique_tag": {
+          "description": "UniqueTag helps identify a unique alert for a given resouce",
+          "type": "string",
+          "x-go-name": "UniqueTag"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "AlertActionType": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Alerts": {
+      "description": "Alerts is an array of Alert objects",
+      "type": "object",
+      "properties": {
+        "alert": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Alert"
+          },
+          "x-go-name": "Alert"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "AttachState": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Cluster": {
+      "type": "object",
+      "title": "Cluster represents the state of the cluster.",
+      "required": [
+        "Id"
+      ],
+      "properties": {
+        "FluentDConfig": {
+          "$ref": "#/definitions/FluentDConfig"
+        },
+        "Id": {
+          "description": "Id of the cluster.",
+          "type": "string"
+        },
+        "LoggingURL": {
+          "description": "Logging url for the cluster.",
+          "type": "string"
+        },
+        "ManagementURL": {
+          "description": "Management url for the cluster",
+          "type": "string"
+        },
+        "NodeId": {
+          "description": "Id of the node on which this cluster object is initialized",
+          "type": "string"
+        },
+        "Nodes": {
+          "description": "array of all the nodes in the cluster.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Node"
+          }
+        },
+        "Status": {
+          "$ref": "#/definitions/Status"
+        },
+        "TunnelConfig": {
+          "$ref": "#/definitions/TunnelConfig"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "ClusterNotify": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "ClusterResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "x-go-name": "Error"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "CosType": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "CredCreateRequest": {
+      "description": "CredCreateRequest is the input for CredCreate command",
+      "type": "object",
+      "properties": {
+        "InputParams": {
+          "description": "InputParams is map describing cloud provide",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "CredCreateResponse": {
+      "description": "CredCreateResponse is returned for CredCreate command",
+      "type": "object",
+      "properties": {
+        "CredErr": {
+          "description": "CredErr indicates reasonfor failed CredCreate",
+          "type": "string"
+        },
+        "UUID": {
+          "description": "UUID of the credential that was just created",
+          "type": "string"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "DriverType": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "FSType": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "FluentDConfig": {
+      "description": "DEPRECATED",
+      "type": "object",
+      "title": "FluentDConfig describes ip and port of a fluentdhost.",
+      "properties": {
+        "ip": {
+          "type": "string",
+          "x-go-name": "IP"
+        },
+        "port": {
+          "type": "string",
+          "x-go-name": "Port"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "GraphDriverChangeType": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "GraphDriverChanges": {
+      "description": "GraphDriverChanges represent a list of changes between the filesystem layers\nspecified by the ID and Parent.  // Parent may be an empty string, in which\ncase there is no parent.\nWhere the Path is the filesystem path within the layered filesystem",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/definitions/GraphDriverChangeType"
+        },
+        "path": {
+          "type": "string",
+          "x-go-name": "Path"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Group": {
+      "description": "Group represents VolumeGroup / namespace\nAll volumes in the same group share this object.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Id common identifier across volumes that have the same group.",
+          "type": "string",
+          "x-go-name": "Id"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "IoProfile": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Node": {
+      "description": "It includes the current physical state (CPU, memory, storage, network usage) as\nwell as the containers running on the system.",
+      "type": "object",
+      "title": "Node describes the state of a node.",
+      "properties": {
+        "Avgload": {
+          "description": "Average load (percentage)",
+          "type": "integer",
+          "format": "int64"
+        },
+        "Cpu": {
+          "description": "Cpu usage of the node.",
+          "type": "number",
+          "format": "double"
+        },
+        "DataIp": {
+          "description": "Data IP",
+          "type": "string"
+        },
+        "Disks": {
+          "description": "List of disks on this node.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/StorageResource"
+          }
+        },
+        "GenNumber": {
+          "description": "GenNumber of the node",
+          "type": "integer",
+          "format": "uint64"
+        },
+        "Hostname": {
+          "description": "Hostname of this node",
+          "type": "string"
+        },
+        "Id": {
+          "description": "Id of the node.",
+          "type": "string"
+        },
+        "MemFree": {
+          "description": "Free Memory of the node",
+          "type": "integer",
+          "format": "uint64"
+        },
+        "MemTotal": {
+          "description": "Total Memory of the node",
+          "type": "integer",
+          "format": "uint64"
+        },
+        "MemUsed": {
+          "description": "Used Memory of the node",
+          "type": "integer",
+          "format": "uint64"
+        },
+        "MgmtIp": {
+          "description": "Management IP",
+          "type": "string"
+        },
+        "NodeData": {
+          "description": "Node data for this node (EX: Public IP, Provider, City..)",
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        },
+        "NodeLabels": {
+          "description": "User defined labels for node. Key Value pairs",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "Pools": {
+          "description": "List of storage pools this node supports",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StoragePool"
+          }
+        },
+        "StartTime": {
+          "description": "Start time of this node",
+          "type": "string",
+          "format": "date-time"
+        },
+        "Status": {
+          "$ref": "#/definitions/Status"
+        },
+        "Timestamp": {
+          "description": "Timestamp",
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "ReplicaSet": {
+      "description": "ReplicaSet set of machine IDs (nodes) to which part of this volume is erasure\ncoded - for clustered storage arrays",
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "Nodes"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "ResourceType": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "RuntimeStateMap": {
+      "description": "RuntimeStateMap is a list of name value mapping of driver specific runtime\ninformation.",
+      "type": "object",
+      "properties": {
+        "runtime_state": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-go-name": "RuntimeState"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "SeverityType": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "SnapCreateRequest": {
+      "type": "object",
+      "title": "SnapCreateRequest specifies a request to create a snapshot of given volume.",
+      "properties": {
+        "id": {
+          "description": "volume id",
+          "type": "string",
+          "x-go-name": "Id"
+        },
+        "locator": {
+          "$ref": "#/definitions/VolumeLocator"
+        },
+        "readonly": {
+          "type": "boolean",
+          "x-go-name": "Readonly"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "SnapCreateResponse": {
+      "type": "object",
+      "properties": {
+        "volume_create_response": {
+          "$ref": "#/definitions/VolumeCreateResponse"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Source": {
+      "description": "Source is a structure that can be given to a volume\nto seed the volume with data.",
+      "type": "object",
+      "properties": {
+        "parent": {
+          "description": "A volume id, if specified will create a clone of the parent.",
+          "type": "string",
+          "x-go-name": "Parent"
+        },
+        "seed": {
+          "description": "Seed will seed the volume from the specified URI\nAny additional config for the source comes from the labels in the spec",
+          "type": "string",
+          "x-go-name": "Seed"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "StatPoint": {
+      "description": "StatPoint represents the basic structure of a single Stat reported\nTODO: This is the first step to introduce stats in openstorage.\nFollow up task is to introduce an API for logging stats",
+      "type": "object",
+      "properties": {
+        "Fields": {
+          "description": "Fields and values of the stat",
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        },
+        "Name": {
+          "description": "Name of the Stat",
+          "type": "string"
+        },
+        "Tags": {
+          "description": "Tags for the Stat",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "Timestamp": {
+          "description": "Timestamp in Unix format",
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Stats": {
+      "description": "Stats is a structure that represents last collected stats for a volume",
+      "type": "object",
+      "properties": {
+        "bytes_used": {
+          "description": "BytesUsed",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "BytesUsed"
+        },
+        "interval_ms": {
+          "description": "Interval in ms during which stats were collected",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "IntervalMs"
+        },
+        "io_ms": {
+          "description": "Time spent doing IOs ms",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "IoMs"
+        },
+        "io_progress": {
+          "description": "IOs curently in progress",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "IoProgress"
+        },
+        "read_bytes": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "ReadBytes"
+        },
+        "read_ms": {
+          "description": "Time spent in reads in ms",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "ReadMs"
+        },
+        "reads": {
+          "description": "Reads completed successfully",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Reads"
+        },
+        "write_bytes": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "WriteBytes"
+        },
+        "write_ms": {
+          "description": "Time spent in writes in ms",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "WriteMs"
+        },
+        "writes": {
+          "description": "Writes completed successfully",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Writes"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Status": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "StorageMedium": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "StoragePool": {
+      "description": "StoragePool groups different storage devices based on their CosType",
+      "type": "object",
+      "properties": {
+        "Cos": {
+          "$ref": "#/definitions/CosType"
+        },
+        "ID": {
+          "description": "ID pool ID",
+          "type": "integer",
+          "format": "int32"
+        },
+        "Medium": {
+          "$ref": "#/definitions/StorageMedium"
+        },
+        "RaidLevel": {
+          "description": "RaidLevel storage raid level",
+          "type": "string"
+        },
+        "TotalSize": {
+          "description": "TotalSize of the pool",
+          "type": "integer",
+          "format": "uint64"
+        },
+        "Used": {
+          "description": "Used size of the pool",
+          "type": "integer",
+          "format": "uint64"
+        },
+        "labels": {
+          "description": "Labels is a list of user defined name-value pairs",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-go-name": "Labels"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "StorageResource": {
+      "type": "object",
+      "title": "StorageResource groups properties of a storage device.",
+      "properties": {
+        "id": {
+          "description": "Id is the LUN identifier.",
+          "type": "string",
+          "x-go-name": "Id"
+        },
+        "iops": {
+          "description": "IOPS",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Iops"
+        },
+        "last_scan": {
+          "$ref": "#/definitions/Timestamp"
+        },
+        "medium": {
+          "$ref": "#/definitions/StorageMedium"
+        },
+        "online": {
+          "description": "True if this device is online.",
+          "type": "boolean",
+          "x-go-name": "Online"
+        },
+        "path": {
+          "description": "Path device path for this storage resource.",
+          "type": "string",
+          "x-go-name": "Path"
+        },
+        "randRW": {
+          "description": "RandRW",
+          "type": "number",
+          "format": "double",
+          "x-go-name": "RandRW"
+        },
+        "rotation_speed": {
+          "description": "True if this device is rotational.",
+          "type": "string",
+          "x-go-name": "RotationSpeed"
+        },
+        "seq_read": {
+          "description": "SeqRead",
+          "type": "number",
+          "format": "double",
+          "x-go-name": "SeqRead"
+        },
+        "seq_write": {
+          "description": "SeqWrite",
+          "type": "number",
+          "format": "double",
+          "x-go-name": "SeqWrite"
+        },
+        "size": {
+          "description": "Total size in bytes.",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Size"
+        },
+        "used": {
+          "description": "Physical Bytes used.",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Used"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Timestamp": {
+      "description": "# Examples\n\nExample 1: Compute Timestamp from POSIX `time()`.\n\nTimestamp timestamp;\ntimestamp.set_seconds(time(NULL));\ntimestamp.set_nanos(0);\n\nExample 2: Compute Timestamp from POSIX `gettimeofday()`.\n\nstruct timeval tv;\ngettimeofday(\u0026tv, NULL);\n\nTimestamp timestamp;\ntimestamp.set_seconds(tv.tv_sec);\ntimestamp.set_nanos(tv.tv_usec * 1000);\n\nExample 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.\n\nFILETIME ft;\nGetSystemTimeAsFileTime(\u0026ft);\nUINT64 ticks = (((UINT64)ft.dwHighDateTime) \u003c\u003c 32) | ft.dwLowDateTime;\n\nA Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z\nis 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.\nTimestamp timestamp;\ntimestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));\ntimestamp.set_nanos((INT32) ((ticks % 10000000) * 100));\n\nExample 4: Compute Timestamp from Java `System.currentTimeMillis()`.\n\nlong millis = System.currentTimeMillis();\n\nTimestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)\n.setNanos((int) ((millis % 1000) * 1000000)).build();\n\n\nExample 5: Compute Timestamp from current time in Python.\n\ntimestamp = Timestamp()\ntimestamp.GetCurrentTime()\n\n# JSON Mapping\n\nIn JSON format, the Timestamp type is encoded as a string in the\n[RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the\nformat is \"{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z\"\nwhere {year} is always expressed using four digits while {month}, {day},\n{hour}, {min}, and {sec} are zero-padded to two digits each. The fractional\nseconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),\nare optional. The \"Z\" suffix indicates the timezone (\"UTC\"); the timezone\nis required, though only UTC (as indicated by \"Z\") is presently supported.\n\nFor example, \"2017-01-15T01:30:15.01Z\" encodes 15.01 seconds past\n01:30 UTC on January 15, 2017.\n\nIn JavaScript, one can convert a Date object to this format using the\nstandard [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString]\nmethod. In Python, a standard `datetime.datetime` object can be converted\nto this format using [`strftime`](https://docs.python.org/2/library/time.html#time.strftime)\nwith the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one\ncan use the Joda Time's [`ISODateTimeFormat.dateTime()`](\nhttp://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime())\nto obtain a formatter capable of generating timestamps in this format.",
+      "type": "object",
+      "title": "A Timestamp represents a point in time independent of any time zone\nor calendar, represented as seconds and fractions of seconds at\nnanosecond resolution in UTC Epoch time. It is encoded using the\nProleptic Gregorian Calendar which extends the Gregorian calendar\nbackwards to year one. It is encoded assuming all minutes are 60\nseconds long, i.e. leap seconds are \"smeared\" so that no leap second\ntable is needed for interpretation. Range is from\n0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z.\nBy restricting to that range, we ensure that we can convert to\nand from  RFC 3339 date strings.\nSee [https://www.ietf.org/rfc/rfc3339.txt](https://www.ietf.org/rfc/rfc3339.txt).",
+      "properties": {
+        "nanos": {
+          "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive.",
+          "type": "integer",
+          "format": "int32",
+          "x-go-name": "Nanos"
+        },
+        "seconds": {
+          "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Seconds"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/vendor/github.com/golang/protobuf/ptypes/timestamp"
+    },
+    "TunnelConfig": {
+      "description": "TunnelConfig describes key, cert and endpoint of a reverse proxy tunnel\nDEPRECATED",
+      "type": "object",
+      "properties": {
+        "cert": {
+          "type": "string",
+          "x-go-name": "Cert"
+        },
+        "key": {
+          "type": "string",
+          "x-go-name": "Key"
+        },
+        "tunnel_endpoint": {
+          "type": "string",
+          "x-go-name": "Endpoint"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "Volume": {
+      "description": "Volume represents an abstract storage volume.",
+      "type": "object",
+      "title": "Volume represents an abstract storage volume.",
+      "properties": {
+        "attach_info": {
+          "description": "AttachInfo is a list of name value mappings that provides attach information.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-go-name": "AttachInfo"
+        },
+        "attach_path": {
+          "description": "AttachPath is the mounted path in the host namespace.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "AttachPath"
+        },
+        "attached_on": {
+          "description": "AttachedOn is the node instance identifier for clustered systems.",
+          "type": "string",
+          "x-go-name": "AttachedOn"
+        },
+        "attached_state": {
+          "$ref": "#/definitions/AttachState"
+        },
+        "ctime": {
+          "$ref": "#/definitions/Timestamp"
+        },
+        "device_path": {
+          "description": "DevicePath is the device exported by block device implementations.",
+          "type": "string",
+          "x-go-name": "DevicePath"
+        },
+        "error": {
+          "description": "Error is the Last recorded error.",
+          "type": "string",
+          "x-go-name": "Error"
+        },
+        "format": {
+          "$ref": "#/definitions/FSType"
+        },
+        "group": {
+          "$ref": "#/definitions/Group"
+        },
+        "id": {
+          "description": "Self referential volume ID.",
+          "type": "string",
+          "x-go-name": "Id"
+        },
+        "last_scan": {
+          "$ref": "#/definitions/Timestamp"
+        },
+        "locator": {
+          "$ref": "#/definitions/VolumeLocator"
+        },
+        "readonly": {
+          "description": "Readonly is true if this volume is to be mounted with readonly access.",
+          "type": "boolean",
+          "x-go-name": "Readonly"
+        },
+        "replica_sets": {
+          "description": "ReplicatSets storage for this volumefor clustered storage arrays.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReplicaSet"
+          },
+          "x-go-name": "ReplicaSets"
+        },
+        "runtime_state": {
+          "description": "RuntimeState is a lst of name value mapping of driver specific runtime\ninformation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RuntimeStateMap"
+          },
+          "x-go-name": "RuntimeState"
+        },
+        "secure_device_path": {
+          "description": "SecureDevicePath is the device path for an encrypted volume.",
+          "type": "string",
+          "x-go-name": "SecureDevicePath"
+        },
+        "source": {
+          "$ref": "#/definitions/Source"
+        },
+        "spec": {
+          "$ref": "#/definitions/VolumeSpec"
+        },
+        "state": {
+          "$ref": "#/definitions/VolumeState"
+        },
+        "status": {
+          "$ref": "#/definitions/VolumeStatus"
+        },
+        "usage": {
+          "description": "Usage is bytes consumed by vtheis volume.",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Usage"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeActionParam": {
+      "type": "integer",
+      "format": "int32",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeCreateRequest": {
+      "description": "VolumeCreateRequest is a structure that has the locator, source and spec\nto create a volume",
+      "type": "object",
+      "properties": {
+        "locator": {
+          "$ref": "#/definitions/VolumeLocator"
+        },
+        "source": {
+          "$ref": "#/definitions/Source"
+        },
+        "spec": {
+          "$ref": "#/definitions/VolumeSpec"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeCreateResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "ID of the newly created volume",
+          "type": "string",
+          "x-go-name": "Id"
+        },
+        "volume_response": {
+          "$ref": "#/definitions/VolumeResponse"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeInfo": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "x-go-name": "Path"
+        },
+        "storage": {
+          "$ref": "#/definitions/VolumeSpec"
+        },
+        "volume_id": {
+          "type": "string",
+          "x-go-name": "VolumeId"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeLocator": {
+      "description": "VolumeLocator is a structure that is attached to a volume\nand is used to carry opaque metadata.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "User friendly identifier",
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "volume_labels": {
+          "description": "A set of name-value pairs that acts as search filters",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-go-name": "VolumeLabels"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeResponse": {
+      "type": "object",
+      "title": "VolumeResponse is a structure that wraps an error.",
+      "properties": {
+        "error": {
+          "type": "string",
+          "x-go-name": "Error"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeSetRequest": {
+      "type": "object",
+      "title": "VolumeSet specifies a request to update a volume.",
+      "properties": {
+        "action": {
+          "$ref": "#/definitions/VolumeStateAction"
+        },
+        "locator": {
+          "$ref": "#/definitions/VolumeLocator"
+        },
+        "options": {
+          "description": "additional options\nrequired for the Set operation.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-go-name": "Options"
+        },
+        "spec": {
+          "$ref": "#/definitions/VolumeSpec"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeSetResponse": {
+      "type": "object",
+      "properties": {
+        "volume": {
+          "$ref": "#/definitions/Volume"
+        },
+        "volume_response": {
+          "$ref": "#/definitions/VolumeResponse"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeSpec": {
+      "type": "object",
+      "title": "VolumeSpec has the properties needed to create a volume.",
+      "properties": {
+        "aggregation_level": {
+          "description": "Aggregatiokn level Specifies the number of parts the volume can be aggregated from.",
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "AggregationLevel"
+        },
+        "block_size": {
+          "description": "BlockSize for the filesystem.",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "BlockSize"
+        },
+        "cascaded": {
+          "description": "Cascaded is true if this volume can be populated on any node from an external source.",
+          "type": "boolean",
+          "x-go-name": "Cascaded"
+        },
+        "compressed": {
+          "description": "Compressed is true if this volume is to be compressed.",
+          "type": "boolean",
+          "x-go-name": "Compressed"
+        },
+        "cos": {
+          "$ref": "#/definitions/CosType"
+        },
+        "dedupe": {
+          "description": "Dedupe specifies if the volume data is to be de-duplicated.",
+          "type": "boolean",
+          "x-go-name": "Dedupe"
+        },
+        "encrypted": {
+          "description": "Encrypted is true if this volume will be cryptographically secured.",
+          "type": "boolean",
+          "x-go-name": "Encrypted"
+        },
+        "ephemeral": {
+          "description": "Ephemeral storage",
+          "type": "boolean",
+          "x-go-name": "Ephemeral"
+        },
+        "format": {
+          "$ref": "#/definitions/FSType"
+        },
+        "group": {
+          "$ref": "#/definitions/Group"
+        },
+        "group_enforced": {
+          "description": "GroupEnforced is true if consistency group creation is enforced.",
+          "type": "boolean",
+          "x-go-name": "GroupEnforced"
+        },
+        "ha_level": {
+          "description": "HaLevel specifies the number of copies of data.",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "HaLevel"
+        },
+        "io_profile": {
+          "$ref": "#/definitions/IoProfile"
+        },
+        "journal": {
+          "description": "Journal is true if data for the volume goes into the journal.",
+          "type": "boolean",
+          "x-go-name": "Journal"
+        },
+        "nfs": {
+          "description": "Nfs is true if this volume can be accessed via nfs.",
+          "type": "boolean",
+          "x-go-name": "Nfs"
+        },
+        "passphrase": {
+          "description": "Passphrase for an encrypted volume",
+          "type": "string",
+          "x-go-name": "Passphrase"
+        },
+        "replica_set": {
+          "$ref": "#/definitions/ReplicaSet"
+        },
+        "scale": {
+          "description": "Scale allows autocreation of volumes.",
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Scale"
+        },
+        "shared": {
+          "description": "Shared is true if this volume can be remotely accessed.",
+          "type": "boolean",
+          "x-go-name": "Shared"
+        },
+        "size": {
+          "description": "Size specifies the thin provisioned volume size.",
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Size"
+        },
+        "snapshot_interval": {
+          "description": "SnapshotInterval in minutes, set to 0 to disable snapshots",
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "SnapshotInterval"
+        },
+        "snapshot_schedule": {
+          "description": "SnapshotSchedule a well known string that specifies when snapshots should be taken.",
+          "type": "string",
+          "x-go-name": "SnapshotSchedule"
+        },
+        "sticky": {
+          "description": "Sticky volumes cannot be deleted until the flag is removed.",
+          "type": "boolean",
+          "x-go-name": "Sticky"
+        },
+        "volume_labels": {
+          "description": "VolumeLabels configuration labels",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-go-name": "VolumeLabels"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeState": {
+      "type": "integer",
+      "format": "int32",
+      "title": "VolumeState represents the state of a volume.",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeStateAction": {
+      "type": "object",
+      "title": "VolumeStateAction specifies desired actions.",
+      "properties": {
+        "attach": {
+          "$ref": "#/definitions/VolumeActionParam"
+        },
+        "device_path": {
+          "description": "DevicePath Path returned in attach",
+          "type": "string",
+          "x-go-name": "DevicePath"
+        },
+        "mount": {
+          "$ref": "#/definitions/VolumeActionParam"
+        },
+        "mount_path": {
+          "description": "MountPath Path where the device is mounted",
+          "type": "string",
+          "x-go-name": "MountPath"
+        }
+      },
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    },
+    "VolumeStatus": {
+      "type": "integer",
+      "format": "int32",
+      "title": "VolumeStatus represents a health status for a volume.",
+      "x-go-package": "github.com/libopenstorage/openstorage/api"
+    }
+  },
+  "responses": {
+    "ClusterResponse": {
+      "headers": {
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "SnapCreateResponse": {
+      "schema": {
+        "$ref": "#/definitions/VolumeCreateResponse"
+      },
+      "headers": {
+        "volume_create_response": {}
+      }
+    },
+    "VolumeCreateResponse": {
+      "schema": {
+        "$ref": "#/definitions/VolumeResponse"
+      },
+      "headers": {
+        "id": {
+          "type": "string",
+          "description": "ID of the newly created volume"
+        },
+        "volume_response": {}
+      }
+    },
+    "VolumeResponse": {
+      "description": "VolumeResponse is a structure that wraps an error.",
+      "headers": {
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "VolumeSetResponse": {
+      "schema": {
+        "$ref": "#/definitions/VolumeResponse"
+      },
+      "headers": {
+        "volume": {},
+        "volume_response": {}
+      }
+    }
+  }
+}

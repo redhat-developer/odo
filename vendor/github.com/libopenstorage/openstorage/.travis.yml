@@ -1,0 +1,35 @@
+sudo: required
+dist: trusty
+services:
+  - docker
+language: go
+go:
+  - 1.8.5
+  - 1.9.2
+before_install:
+  - sudo apt-get update -yq
+  - sudo apt-get -o Dpkg::Options::="--force-confnew" install -yq docker-ce
+install:
+  - go get github.com/mattn/goveralls
+  - go get -u github.com/vbatts/git-validation
+script:
+  - git-validation -run DCO,short-subject
+  - go fmt $(go list ./... | grep -v vendor) | wc -l | grep 0
+  - make install
+  - make vet
+  - make lint
+  - make docker-test
+  - make docker-coverage
+  - goveralls -coverprofile=/mnt/coverage.out -service=travis-ci -repotoken "${COVERALLS_TOKEN}"
+  - if [ "${TRAVIS_BRANCH}" == "master" ] && [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then
+      make docker-build-osd;
+      docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      docker push openstorage/osd;
+    fi
+notifications:
+  email:
+    recipients:
+      - aditya@portworx.com
+      - eng@portworx.com
+    on_success: always
+    on_failure: always
