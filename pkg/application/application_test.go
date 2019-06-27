@@ -151,9 +151,6 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 						Spec: AppSpec{
 							Components: []string{"frontend"},
 						},
-						Status: AppStatus{
-							Active: true,
-						},
 					},
 				},
 			},
@@ -174,9 +171,6 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: AppSpec{
 							Components: []string{"frontend"},
-						},
-						Status: AppStatus{
-							Active: true,
 						},
 					},
 				},

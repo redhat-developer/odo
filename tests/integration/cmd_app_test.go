@@ -74,7 +74,7 @@ var _ = Describe("odoCmdApp", func() {
 				Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 
 				helper.CmdShouldPass("odo", "app", "describe")
-				desiredDesAppJSON := fmt.Sprintf(`{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"%s","creationTimestamp":null},"spec":{},"status":{"active":false}}`, project)
+				desiredDesAppJSON := fmt.Sprintf(`{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myapp","namespace":"%s","creationTimestamp":null},"spec":{}}`, project)
 				actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", "myapp", "-o", "json")
 				Expect(desiredDesAppJSON).Should(MatchJSON(actualDesAppJSON))
 
@@ -107,11 +107,11 @@ var _ = Describe("odoCmdApp", func() {
 				Expect(appListOutput).To(ContainSubstring(appName))
 				actualCompListJSON := helper.CmdShouldPass("odo", "app", "list", "-o", "json", "--project", project)
 				//desiredCompListJSON := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[]}`
-				desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"app","namespace":"%s","creationTimestamp":null},"spec":{"components":["%s"]},"status":{"active":false}}]}`, project, cmpName)
+				desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"app","namespace":"%s","creationTimestamp":null},"spec":{"components":["%s"]}}]}`, project, cmpName)
 				Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 
 				helper.CmdShouldPass("odo", "app", "describe", appName, "--project", project)
-				desiredDesAppJSON := fmt.Sprintf(`{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"spec":{"components":["%s"]},"status":{"active":false}}`, appName, project, cmpName)
+				desiredDesAppJSON := fmt.Sprintf(`{"kind":"app","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"spec":{"components":["%s"]}}`, appName, project, cmpName)
 				actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", appName, "--project", project, "-o", "json")
 				Expect(desiredDesAppJSON).Should(MatchJSON(actualDesAppJSON))
 

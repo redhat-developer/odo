@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/log"
@@ -128,9 +129,6 @@ func getMachineReadableFormat(client *occlient.Client, appName string, projectNa
 		},
 		Spec: application.AppSpec{
 			Components: compList,
-		},
-		Status: application.AppStatus{
-			Active: active,
 		},
 	}
 	return appDef
