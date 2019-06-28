@@ -147,7 +147,7 @@ var _ = Describe("odo generic", func() {
 		})
 		It("should be able to push changes", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context)
 
 			// Push the changes with --show-log
 			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context)
@@ -169,7 +169,7 @@ var _ = Describe("odo generic", func() {
 		})
 		It("should be able to spam odo push without anything breaking", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
 			// Iteration 1
 			helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
 			// Iteration 2
@@ -193,7 +193,7 @@ var _ = Describe("odo generic", func() {
 		})
 		It("should deploy the component", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "create", "nodejs:latest", "testversioncmp", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "nodejs:latest", "testversioncmp", "--project", project, "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "delete", "-f", "--context", context+"/nodejs-ex")
 		})
