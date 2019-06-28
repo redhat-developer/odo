@@ -11,8 +11,6 @@ toc::[]
 
 https://travis-ci.org/openshift/odo[image:https://travis-ci.org/openshift/odo.svg?branch=master[Build
 Status]]
-https://codecov.io/gh/openshift/odo[image:https://codecov.io/gh/openshift/odo/branch/master/graph/badge.svg[codecov]]
-https://circleci.com/gh/openshift/odo/tree/master[image:https://circleci.com/gh/openshift/odo/tree/master.svg?style=svg[CircleCI]]
 
 
 [[overview]]
@@ -162,6 +160,15 @@ Guide]
 
 *Contributing:* Want to become a contributor and submit your own code?
 Have a look at our link:https://github.com/openshift/odo/blob/master/docs/development.adoc[Development Guide].
+
+[[projects-using-odo]]
+== Projects using odo
+
+These are some of the IDE plugins which use odo:
+
+* link:https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector[VS Code Openshift Connector]
+* link:http://plugins.jetbrains.com/plugin/12030-openshift-connector-by-red-hat[Openshift Connector for Intellij]
+
 
 [[glossary]]
 == Glossary
