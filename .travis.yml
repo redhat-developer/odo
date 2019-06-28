@@ -25,8 +25,7 @@ jobs:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
 
-# BEGIN Tests that are also in CircleCI
-
+    # Uncomment odo logout command once https://github.com/openshift/odo/issues/1836 is fixed
     - <<: *base-test
       stage: test
       name: "generic,login,component integration tests"
@@ -38,7 +37,7 @@ jobs:
         - travis_wait make test-generic
         - travis_wait make test-odo-login-e2e
         - travis_wait make test-cmp-e2e
-        - odo logout
+        # - odo logout
 
     - <<: *base-test
       stage: test
@@ -49,7 +48,7 @@ jobs:
         - sudo cp odo /usr/bin
         - oc login -u developer
         - travis_wait make test-java-e2e
-        - odo logout
+        # - odo logout
 
     - <<: *base-test
       stage: test
@@ -63,9 +62,7 @@ jobs:
         - travis_wait make test-json-format-output
         - travis_wait make test-odo-config
         - travis_wait make test-odo-url-int
-        - odo logout
-
-# END Tests that are also in CircleCI
+        # - odo logout
 
     # Run service-catalog e2e tests
     - <<: *base-test
@@ -79,7 +76,7 @@ jobs:
         - travis_wait make test-service-e2e
         - make test-link-e2e
         - travis_wait make test-cmp-sub-e2e
-        - odo logout
+        # - odo logout
 
     - <<: *base-test
       stage: test
