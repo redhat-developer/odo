@@ -46,7 +46,7 @@ var _ = Describe("odoJavaE2e", func() {
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "gitrepo", "--port", "8080", "--context", context)
 			helper.CmdShouldPass("odo", "push", "-v", "4", "--context", context)
-			routeURL := helper.DetermineRouteURL("")
+			routeURL := helper.DetermineRouteURL(context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Insult", 90, 1)
@@ -64,7 +64,7 @@ var _ = Describe("odoJavaE2e", func() {
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "warfile", "--port", "8080", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			routeURL := helper.DetermineRouteURL("")
+			routeURL := helper.DetermineRouteURL(context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Sample", 90, 1)
@@ -83,7 +83,7 @@ var _ = Describe("odoJavaE2e", func() {
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "uberjar", "--port", "8080", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			routeURL := helper.DetermineRouteURL("")
+			routeURL := helper.DetermineRouteURL(context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Hello World", 90, 1)
@@ -102,7 +102,7 @@ var _ = Describe("odoJavaE2e", func() {
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			routeURL := helper.DetermineRouteURL("")
+			routeURL := helper.DetermineRouteURL(context)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "HTTP Booster", 90, 1)
