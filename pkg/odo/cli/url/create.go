@@ -3,6 +3,8 @@ package url
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/odo/genericclioptions/printtemplates"
+
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -98,8 +100,8 @@ func (o *URLCreateOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
-	log.Successf("URL %s created", o.urlName)
-	log.Infof("\nRun `odo push` to apply URL: %s", o.urlName)
+	log.Successf("URL %s created for component: %v\n", o.urlName, o.Component())
+	fmt.Print(printtemplates.PushMessage("create", "URL"))
 	return
 }
 

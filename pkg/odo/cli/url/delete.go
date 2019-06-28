@@ -3,6 +3,8 @@ package url
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/odo/genericclioptions/printtemplates"
+
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -74,7 +76,7 @@ func (o *URLDeleteOptions) Run() (err error) {
 			return err
 		}
 		log.Successf("URL %s removed from the config file", o.urlName)
-		log.Infof("\nRun 'odo push' to delete URL: %s", o.urlName)
+		fmt.Print(printtemplates.PushMessage("delete", "URL"))
 	} else {
 		return fmt.Errorf("aborting deletion of URL: %v", o.urlName)
 	}
