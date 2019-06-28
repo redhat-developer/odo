@@ -9,7 +9,7 @@
 
 toc::[]
 
-https://travis-ci.org/openshift/odo[image:https://travis-ci.org/openshift/odo.svg?branch=master[Build
+https://travis-ci.com/openshift/odo[image:https://travis-ci.com/openshift/odo.svg?branch=master[Build
 Status]]
 
 
