@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("odo storage command", func() {
+var _ = Describe("odo storage command tests", func() {
 	var project string
 	var context string
 

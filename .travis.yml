@@ -36,19 +36,8 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-generic
-        - travis_wait make test-odo-login-e2e
-        - travis_wait make test-cmp-e2e
-        - odo logout
-
-    - <<: *base-test
-      stage: test
-      name: "java e2e integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-java-e2e
+        - travis_wait make test-cmd-login-logout
+        - travis_wait make test-cmd-cmp
         - odo logout
 
     - <<: *base-test
@@ -59,10 +48,9 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
-        - travis_wait make test-source-e2e
         - travis_wait make test-json-format-output
-        - travis_wait make test-odo-config
-        - travis_wait make test-odo-url-int
+        - travis_wait make test-cmd-pref-config
+        - travis_wait make test-cmd-url
         - odo logout
 
 # END Tests that are also in CircleCI
@@ -76,9 +64,9 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
-        - travis_wait make test-service-e2e
-        - make test-link-e2e
-        - travis_wait make test-cmp-sub-e2e
+        - travis_wait make test-cmd-service
+        - make test-cmd-link
+        - travis_wait make test-cmd-sub-cmp
         - odo logout
 
     - <<: *base-test
@@ -89,7 +77,7 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
-        - travis_wait make test-watch-e2e
+        - travis_wait make test-cmd-watch
         - travis_wait make test-cmd-storage
         - travis_wait make test-cmd-app
         - travis_wait make test-cmd-push

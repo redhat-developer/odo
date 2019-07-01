@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("odoCmdApp", func() {
+var _ = Describe("odo app command tests", func() {
 	var project string
 	var context string
 	var originalDir string

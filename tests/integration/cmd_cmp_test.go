@@ -10,4 +10,4 @@ func componentTestsNoSub() {
 	componentTests()
 }
 
-var _ = Describe("odoCmpE2e", componentTestsNoSub)
+var _ = Describe("odo component command tests", componentTestsNoSub)
