@@ -142,7 +142,7 @@ test-service-e2e:
 # Run link e2e tests
 .PHONY: test-link-e2e
 test-link-e2e:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoLinkE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoLinkE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run watch e2e tests
 .PHONY: test-watch-e2e
