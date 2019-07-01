@@ -42,7 +42,7 @@ var _ = Describe("odoURLIntegration", func() {
 			url1 := helper.RandString(5)
 			//url2 := helper.RandString(5)
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			stdout = helper.CmdShouldFail("odo", "url", "list", "--context", context)
 			Expect(stdout).To(ContainSubstring("no URLs found"))
