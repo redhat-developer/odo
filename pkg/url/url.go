@@ -161,7 +161,7 @@ func GetValidPortNumber(componentName string, portNumber int, portList []string)
 		}
 	}
 
-	return portNumber, fmt.Errorf("given port %d is not exposed on given component", portNumber)
+	return portNumber, fmt.Errorf("given port %d is not exposed on given component, available ports are: %s", portNumber, strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
 }
 
 // getMachineReadableFormat gives machine readable URL definition
