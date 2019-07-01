@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/application"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -33,6 +34,7 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 type ListOptions struct {
 	outputFlag       string
 	pathFlag         string
+	allFlag          bool
 	componentContext string
 	*genericclioptions.Context
 }
@@ -50,7 +52,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	if lo.pathFlag == "" && (lo.Context.Project == "" || lo.Application == "") {
+	if !lo.allFlag && lo.pathFlag == "" && (lo.Context.Project == "" || lo.Application == "") {
 		return odoutil.ThrowContextError()
 	}
 
@@ -72,19 +74,41 @@ func (lo *ListOptions) Run() (err error) {
 			fmt.Println(string(out))
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
 			for _, file := range components.Items {
-				fmt.Fprintln(w, file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", file.Status.State, "\t", file.Status.Context)
+				fmt.Fprintln(w, file.Spec.App, "\t", file.Name, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", file.Status.State, "\t", file.Status.Context)
 
 			}
 			w.Flush()
 		}
 		return nil
 	}
+	var components component.ComponentList
 
-	components, err := component.List(lo.Client, lo.Application)
-	if err != nil {
-		return errors.Wrapf(err, "failed to fetch components list")
+	if lo.allFlag {
+		// retrieve list of application
+		apps, err := application.List(lo.Client)
+		if err != nil {
+			return err
+		}
+
+		var componentList []component.Component
+		// interating over list of application and get list of all components
+		for _, app := range apps {
+			comps, err := component.List(lo.Client, app)
+			if err != nil {
+				return err
+			}
+			componentList = append(componentList, comps.Items...)
+		}
+		// Get machine readable component list format
+		components = component.GetMachineReadableFormatForList(componentList)
+	} else {
+
+		components, err = component.List(lo.Client, lo.Application)
+		if err != nil {
+			return errors.Wrapf(err, "failed to fetch components list")
+		}
 	}
 	glog.V(4).Infof("the components are %+v", components)
 
@@ -102,9 +126,9 @@ func (lo *ListOptions) Run() (err error) {
 			return
 		}
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE")
+		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE")
 		for _, comp := range components.Items {
-			fmt.Fprintln(w, comp.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Source, "\t", comp.Status.State)
+			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Source, "\t", comp.Status.State)
 		}
 		w.Flush()
 	}
@@ -130,6 +154,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
 	componentListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
 	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path")
+	componentListCmd.Flags().BoolVar(&o.allFlag, "all", false, "lists all components")
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)
 	//Adding `--application` flag

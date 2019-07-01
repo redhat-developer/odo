@@ -346,6 +346,7 @@ func TestList(t *testing.T) {
 						},
 						Spec: ComponentSpec{
 							Type: "nodejs",
+							App:  "app",
 						},
 						Status: ComponentStatus{
 							State:            "Pushed",
@@ -363,6 +364,7 @@ func TestList(t *testing.T) {
 						},
 						Spec: ComponentSpec{
 							Type: "java",
+							App:  "app",
 						},
 						Status: ComponentStatus{
 							State:            "Pushed",
@@ -665,7 +667,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getMachineReadableFormatForList(tt.args.components); !reflect.DeepEqual(got, tt.want) {
+			if got := GetMachineReadableFormatForList(tt.args.components); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getMachineReadableFormatForList() = %v, want %v", got, tt.want)
 			}
 		})

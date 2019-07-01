@@ -94,6 +94,13 @@ func componentTests(args ...string) {
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
 		})
+		It("should list the component using --all flag", func() {
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--all")...)
+			Expect(cmpList).To(ContainSubstring("cmp-git"))
+			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
+		})
 	})
 
 	Context("Test odo push with --source and --config flags", func() {
