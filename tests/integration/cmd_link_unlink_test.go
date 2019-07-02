@@ -122,7 +122,7 @@ var _ = Describe("odoLinkE2e", func() {
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
-			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
+			ocArgs := []string{"get", "serviceinstance", "-n", project, "-o", "name"}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
@@ -157,7 +157,7 @@ var _ = Describe("odoLinkE2e", func() {
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
-			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
+			ocArgs := []string{"get", "serviceinstance", "-n", project, "-o", "name"}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
