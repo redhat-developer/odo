@@ -107,7 +107,7 @@ test:
 # Run generic integration tests
 .PHONY: test-generic
 test-generic:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo generic" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo generic" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run json outout tests
 .PHONY: test-json-format-output
