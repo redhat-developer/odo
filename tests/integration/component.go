@@ -445,8 +445,8 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("oc", "project", project)
 
 			dc := oc.GetDcName(componentName, project)
-			out := helper.CmdShouldPass("oc", "describe", "dc/"+dc, "-n", project)
-			Expect(out).To(ContainSubstring("FOO:"))
+			out := helper.CmdShouldPass("oc", "get", "dc/"+dc, "-n", project, "-o", "go-template={{ .spec.template.spec }}{{.env}}")
+			Expect(out).To(ContainSubstring("FOO"))
 
 			helper.CmdShouldPass("odo", "push")
 			out = helper.CmdShouldPass("oc", "describe", "dc")
