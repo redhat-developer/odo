@@ -1184,7 +1184,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	// only use the deployment Directory volume mount if its being used and
 	// its not a sub directory of src_or_bin_path
 	if s2iPaths.DeploymentDir != "" && !isSubDir("/opt/app-root", s2iPaths.DeploymentDir) {
-		addDepoymentDirVolumeMount(&dc, commonObjectMeta.Name, s2iPaths.DeploymentDir)
+		addDepoymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
 	}
 
 	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
@@ -1588,7 +1588,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		// only use the deployment Directory volume mount if its being used and
 		// its not a sub directory of src_or_bin_path
 		if s2iPaths.DeploymentDir != "" && !isSubDir("/opt/app-root", s2iPaths.DeploymentDir) {
-			addDepoymentDirVolumeMount(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
+			addDepoymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
 		}
 
 		// Setup PVC

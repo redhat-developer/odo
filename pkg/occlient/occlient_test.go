@@ -3858,6 +3858,55 @@ func TestUniqueAppendOrOverwriteEnvVars(t *testing.T) {
 	}
 }
 
+func TestUniqueUpsertEnvVarsFromS2IPaths(t *testing.T) {
+	tests := []struct {
+		name            string
+		existingEnvVars []corev1.EnvVar
+		envVars         []corev1.EnvVar
+		wantLength      int
+	}{
+		{
+			name: "Case: Overlapping env vars appends",
+			existingEnvVars: []corev1.EnvVar{
+				{
+					Name:  EnvS2IScriptsProtocol,
+					Value: "value1",
+				},
+				{
+					Name:  EnvS2IBuilderImageName,
+					Value: "value2",
+				},
+			},
+			wantLength: 7,
+		},
+		{
+			name: "New env vars append",
+			existingEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key1",
+					Value: "value1",
+				},
+				{
+					Name:  "key2",
+					Value: "value2",
+				},
+			},
+			wantLength: 9,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotEnvVars := uniqueUpsertEnvVarsFromS2IPaths(tt.existingEnvVars, S2IPaths{
+				"test", "test", "test", "test", "test", "test", "test",
+			})
+			if tt.wantLength != len(gotEnvVars) {
+				t.Errorf("Tc: %s, expected %+v, got %+v", tt.name, tt.wantLength, len(gotEnvVars))
+			}
+		})
+	}
+}
+
 func TestGetS2IMetaInfoFromBuilderImg(t *testing.T) {
 	tests := []struct {
 		name             string
