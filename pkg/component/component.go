@@ -1082,6 +1082,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 		ExistingDC:           currentDC,
 		StorageToBeMounted:   storageToMount,
 		StorageToBeUnMounted: storageToUnMount,
+		EnvVars:              evl,
 	}
 
 	// STEP 2. Determine what the new source is going to be
