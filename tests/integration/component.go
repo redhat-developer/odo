@@ -419,7 +419,7 @@ func componentTests(args ...string) {
 		})
 	})
 
-	Context("successive odo push to check for existence of environment variables", func() {
+	Context("when running odo push multiple times, check for existence of environment variables", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
@@ -432,11 +432,11 @@ func componentTests(args ...string) {
 			os.RemoveAll(context)
 		})
 
-		It("should create a component with environment variables and the env vars should persist multiple odo push", func() {
+		It("should should retain the same environment variable on multiple push", func() {
 			componentName := helper.RandString(6)
 			appName := helper.RandString(6)
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", componentName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", componentName, "--app", appName, "--project", project, "--context", context)...)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			helper.Chdir(context)
@@ -444,13 +444,13 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "push")
 			helper.CmdShouldPass("oc", "project", project)
 
-			dc := oc.GetDcName(componentName, project)
-			out := helper.CmdShouldPass("oc", "get", "dc/"+dc, "-n", project, "-o", "go-template={{ .spec.template.spec }}{{.env}}")
-			Expect(out).To(ContainSubstring("FOO"))
+			dcName := oc.GetDcName(componentName, project)
+			stdOut := helper.CmdShouldPass("oc", "get", "dc/"+dcName, "-n", project, "-o", "go-template={{ .spec.template.spec }}{{.env}}")
+			Expect(stdOut).To(ContainSubstring("FOO"))
 
 			helper.CmdShouldPass("odo", "push")
-			out = helper.CmdShouldPass("oc", "describe", "dc")
-			Expect(out).To(ContainSubstring("FOO:"))
+			stdOut = helper.CmdShouldPass("oc", "describe", "dc")
+			Expect(stdOut).To(ContainSubstring("FOO:"))
 
 			helper.Chdir(originalDir)
 		})
