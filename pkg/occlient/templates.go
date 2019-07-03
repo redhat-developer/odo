@@ -440,14 +440,14 @@ func addBootstrapVolume(dc *appsv1.DeploymentConfig, dcName string) {
 // dc is the deployment config to be updated
 // dcName is the name of the deployment config
 func addBootstrapVolumeMount(dc *appsv1.DeploymentConfig, dcName string) {
-	addVolumeMount(dc, getAppRootVolumeName(dcName), "/opt/app-root", "app-root")
+	addVolumeMount(dc, getAppRootVolumeName(dcName), DefaultAppRootDir, "app-root")
 }
 
-// addDepoymentDirVolumeMount mounts the bootstrap volume to the deployment config
+// addDeploymentDirVolumeMount mounts the bootstrap volume to the deployment config
 // in a sub path where the ODO_S2I_DEPLOYMENT_DIR is present for optimisation purposes
 // dc is the deployment config to be updated
 // dcName is the name of the deployment config
-func addDepoymentDirVolumeMount(dc *appsv1.DeploymentConfig, mountPath string) {
+func addDeploymentDirVolumeMount(dc *appsv1.DeploymentConfig, mountPath string) {
 	addVolumeMount(dc, getAppRootVolumeName(dc.Name), mountPath, "deployment")
 }
 

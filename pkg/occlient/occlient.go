@@ -153,6 +153,8 @@ const (
 
 	// EnvS2IWorkingDir is an env var to odo-supervisord-image assemble-and-restart.sh to indicate to it the s2i working directory
 	EnvS2IWorkingDir = "ODO_S2I_WORKING_DIR"
+
+	DefaultAppRootDir = "/opt/app-root"
 )
 
 // S2IPaths is a struct that will hold path to S2I scripts and the protocol indicating access to them, component source/binary paths, artifacts deployments directory
@@ -1183,8 +1185,8 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
 	// only use the deployment Directory volume mount if its being used and
 	// its not a sub directory of src_or_bin_path
-	if s2iPaths.DeploymentDir != "" && !isSubDir("/opt/app-root", s2iPaths.DeploymentDir) {
-		addDepoymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
+	if s2iPaths.DeploymentDir != "" && !isSubDir(DefaultAppRootDir, s2iPaths.DeploymentDir) {
+		addDeploymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
 	}
 
 	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
@@ -1587,8 +1589,8 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
 		// only use the deployment Directory volume mount if its being used and
 		// its not a sub directory of src_or_bin_path
-		if s2iPaths.DeploymentDir != "" && !isSubDir("/opt/app-root", s2iPaths.DeploymentDir) {
-			addDepoymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
+		if s2iPaths.DeploymentDir != "" && !isSubDir(DefaultAppRootDir, s2iPaths.DeploymentDir) {
+			addDeploymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
 		}
 
 		// Setup PVC
