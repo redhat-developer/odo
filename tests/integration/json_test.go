@@ -33,7 +33,7 @@ var _ = Describe("odojsonoutput", func() {
 	Context("odo machine create project json output", func() {
 		// odo project create newprojectjson -o json
 		It("should be able to create project and show output in json format", func() {
-			actual := helper.CmdShouldPass("odo project create newprojectjson -o json")
+			actual := helper.CmdShouldPass("odo", "project", "create", "newprojectjson", "-o", "json")
 			desired := `{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"newprojectjson","creationTimestamp":null},"spec":{"apps":null},"status":{"active":false}}`
 			Expect(desired).Should(MatchJSON(actual))
 		})
