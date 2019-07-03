@@ -401,6 +401,9 @@ func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error
 		port := fmt.Sprint(po.ContainerPort) + "/" + string(po.Protocol)
 		portList = append(portList, port)
 	}
+	if len(portList) == 0 {
+		return []string{}, fmt.Errorf("given component type doesn't expose any ports, please use --port flag to specify a port")
+	}
 	return portList, nil
 }
 
