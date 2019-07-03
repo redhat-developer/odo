@@ -90,7 +90,7 @@ var _ = Describe("odoCmdApp", func() {
 				helper.CmdShouldPass("odo", "push", "--context", context)
 
 				// list should pass as the project exists
-				appListOutput := helper.CmdShouldPass("odo", "app", "list")
+				appListOutput := helper.CmdShouldPass("odo", "app", "list", "--project", project)
 				Expect(appListOutput).To(ContainSubstring(appName))
 				helper.CmdShouldFail("odo", "app", "describe")
 				helper.CmdShouldFail("odo", "app", "delete", "-f")

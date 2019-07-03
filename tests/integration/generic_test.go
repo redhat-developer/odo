@@ -58,7 +58,6 @@ var _ = Describe("odo generic", func() {
 		It("should create the component in default application", func() {
 			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "e2e-xyzk", "--project", project, "--git", testPHPGitURL)
 			helper.CmdShouldPass("odo", "config", "set", "Ports", "8080/TCP")
-			helper.CmdShouldPass("odo", "push", "--config")
 			helper.CmdShouldPass("odo", "push")
 			oc.VerifyCmpName("testcmp", project)
 			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", project)
@@ -82,7 +81,7 @@ var _ = Describe("odo generic", func() {
 			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "testing", "--project", project, "--ref", "master", "--git", testPHPGitURL, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			currentProject := helper.CreateRandProject()
-			currentAppNames := helper.CmdShouldPass("odo", "app", "list")
+			currentAppNames := helper.CmdShouldPass("odo", "app", "list", "--project", currentProject)
 			Expect(currentAppNames).To(ContainSubstring("There are no applications deployed in the project '" + currentProject + "'"))
 			appNames := helper.CmdShouldPass("odo", "app", "list", "--project", project)
 			Expect(appNames).To(ContainSubstring("testing"))
