@@ -238,6 +238,13 @@ $ make test-java-e2e
 ----
 +
 
+Run source integration test
++
+----
+$ make test-source-e2e
+----
++
+
 * To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
 Run component command integration test
@@ -307,6 +314,13 @@ Run java source integration test
 +
 ----
 $ TEST_EXEC_NODES=1 make test-java-e2e
+----
++
+
+Run source integration test
++
+----
+$ TEST_EXEC_NODES=1 make test-source-e2e
 ----
 +
 
