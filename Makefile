@@ -141,16 +141,16 @@ test-cmd-cmp-sub:
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run java e2e tests
-.PHONY: test-java-e2e
-test-java-e2e:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoJavaE2e" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+.PHONY: test-e2e-java
+test-e2e-java:
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo java e2e tests" \
+	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/e2escenarios/ -timeout $(TIMEOUT)
 
 # Run source e2e tests
-.PHONY: test-source-e2e
-test-source-e2e:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoSourceE2e" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+.PHONY: test-e2e-source
+test-e2e-source:
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo source e2e tests" \
+	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/e2escenarios/ -timeout $(TIMEOUT)
 
 # Run odo service command tests
 .PHONY: test-cmd-service
