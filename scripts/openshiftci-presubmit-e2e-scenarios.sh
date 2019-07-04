@@ -13,3 +13,4 @@ export PATH="$PATH:$(pwd)"
 export CUSTOM_HOMEDIR="/tmp/artifacts"
 
 make test-e2e-scenarios
+odo logout
