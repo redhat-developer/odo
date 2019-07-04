@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/openshift/odo/pkg/component"
@@ -26,6 +27,7 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
+	localConfigInfo  *config.LocalConfigInfo
 	outputFlag       string
 	componentContext string
 	*ComponentOptions
@@ -33,12 +35,13 @@ type DescribeOptions struct {
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{"", "", &ComponentOptions{}}
+	return &DescribeOptions{nil, "", "", &ComponentOptions{}}
 }
 
 // Complete completes describe args
 func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	err = do.ComponentOptions.Complete(name, cmd, args)
+	do.localConfigInfo, err = config.NewLocalConfigInfo(do.componentContext)
 	return
 }
 
@@ -66,6 +69,7 @@ func (do *DescribeOptions) Run() (err error) {
 		return err
 	}
 	if do.outputFlag == "json" {
+		componentDesc.Spec.Ports = do.localConfigInfo.GetPorts()
 		out, err := json.Marshal(componentDesc)
 		if err != nil {
 			return err

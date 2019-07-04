@@ -21,6 +21,7 @@ type ComponentSpec struct {
 	URL     []string        `json:"url,omitempty"`
 	Storage []string        `json:"storage,omitempty"`
 	Env     []corev1.EnvVar `json:"env,omitempty"`
+	Ports   []string        `json:"ports,omitempty"`
 }
 
 // ComponentList is list of components
