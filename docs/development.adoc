@@ -243,70 +243,70 @@ $ make test-java-e2e
 Run component command integration test
 +
 ----
-$ make test-cmp-e2e TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-cmp-e2e
 ----
 +
 
 Run application command integration test
 +
 ----
-$ make test-cmd-app TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-cmd-app
 ----
 +
 
 Run storage command integration test
 +
 ----
-$ make test-cmd-storage TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-cmd-storage
 ----
 +
 
 Run watch command integration test
 +
 ----
-$ make test-watch-e2e TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-watch-e2e
 ----
 +
 
 Run config/preference command integration test
 +
 ----
-$ make test-odo-config TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-odo-config
 ----
 +
 
 Run generic integration test
 +
 ----
-$ make test-generic TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-generic
 ----
 +
 
 Run json output integration test
 +
 ----
-$ make test-json-format-output TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-json-format-output
 ----
 +
 
 Run service command integration test
 +
 ----
-$ make test-service-e2e TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-service-e2e
 ----
 +
 
 Run link/unlink command integration test
 +
 ----
-$ make test-link-e2e TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-link-e2e
 ----
 +
 
 Run java source integration test
 +
 ----
-$ make test-java-e2e TEST_EXEC_NODES=1
+$ TEST_EXEC_NODES=1 make test-java-e2e
 ----
 +
 
