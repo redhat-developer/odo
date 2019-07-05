@@ -48,12 +48,12 @@ func (do *DescribeOptions) Validate() (err error) {
 		return odoutil.ThrowContextError()
 	}
 
-	isExists, err := component.Exists(do.Context.Client, do.componentName, do.Context.Application)
+	existsInCluster, err := component.Exists(do.Context.Client, do.componentName, do.Context.Application)
 	if err != nil {
 		return err
 	}
-	if !isExists {
-		return fmt.Errorf("component %s does not exist", do.componentName)
+	if !existsInCluster {
+		return fmt.Errorf("component %s not pushed to the OpenShift cluster, use `odo push` to deploy the component", do.componentName)
 	}
 
 	return odoutil.CheckOutputFlag(do.outputFlag)
