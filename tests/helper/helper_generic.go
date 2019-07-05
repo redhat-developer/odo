@@ -3,7 +3,6 @@ package helper
 import (
 	"fmt"
 	"math/rand"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -43,11 +42,7 @@ func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, c
 			Fail(fmt.Sprintf("Timeout out after %v minutes", timeout))
 
 		case <-tick:
-			stdOut, err := exec.Command(program, args...).Output()
-			if err != nil && errOnFail {
-				fmt.Fprintf(GinkgoWriter, "Command (%s) output: %s\n", args, stdOut)
-				Fail(err.Error())
-			}
+			stdOut := CmdShouldPass(program, args...)
 			if check(strings.TrimSpace(string(stdOut))) {
 				return true
 			}
