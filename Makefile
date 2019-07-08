@@ -12,7 +12,7 @@ TIMEOUT ?= 7200s
 # TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node.
 # NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
 # on the same number of ginkgo test nodes.
-TEST_EXEC_NODES ?= 2
+TEST_EXEC_NODES ?= 4
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -182,12 +182,16 @@ test-cmd-app:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo app command tests" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
-# This test shouldn't run spec in paralel because it will break the test behaviour
-# due to race condition in parallel run.
+# Run odo login tests
 .PHONY: test-cmd-login-logout
+<<<<<<< HEAD
 test-odo-login-e2e:
 	ginkgo -v -nodes=1 -focus="odoLoginE2e" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/loginlogout/ -timeout $(TIMEOUT)
+=======
+test-cmd-login-logout:
+	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo login command tests" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+>>>>>>> Updated test file
 
 # Run odo preference and config command tests
 .PHONY: test-cmd-pref-config
@@ -195,6 +199,7 @@ test-cmd-pref-config:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo preference and config command tests" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
+<<<<<<< HEAD
 # Run command's integration tests irrespective of service catalog status in the cluster.
 # Service, link and login/logout command tests are not the part of this test run
 .PHONY: test-integration
@@ -209,23 +214,52 @@ test-integration-service-catalog:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/servicecatalog -timeout $(TIMEOUT)
 
+=======
+>>>>>>> Updated test file
 # Run odo url command tests
 .PHONY: test-cmd-url
 test-cmd-url:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo url command tests" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
-# Run push command e2e
+# Run odo push command tests
 .PHONY: test-cmd-push
 test-cmd-push:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo push command tests" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
+<<<<<<< HEAD
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios
 test-e2e-scenarios:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -randomizeAllSpecs \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) tests/e2escenarios/ -timeout $(TIMEOUT)
+=======
+# Run all integration tests
+.PHONY: test-cmd-all
+test-cmd-all:
+	go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+
+# Run all e2e test scenarios
+.PHONY: test-e2e-all
+test-e2e-all:
+	go test -v github.com/openshift/odo/tests/e2escenarios -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+
+# Run core beta flow e2e tests
+.PHONY: test-e2e-beta
+test-e2e-beta:
+	go test -v github.com/openshift/odo/tests/e2escenarios --ginkgo.focus="odo core beta flow" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+
+# Run java e2e tests
+.PHONY: test-e2e-java
+test-e2e-java:
+	go test -v github.com/openshift/odo/tests/e2escenarios --ginkgo.focus="odo java e2e tests" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+
+# Run source e2e tests
+.PHONY: test-e2e-source
+test-e2e-source:
+	go test -v github.com/openshift/odo/tests/e2escenarios --ginkgo.focus="odo source e2e tests" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+>>>>>>> Updated test file
 
 # this test shouldn't be in paralel -  it will effect the results
 .PHONY: test-benchmark
