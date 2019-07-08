@@ -123,8 +123,8 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
-			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
-			helper.WaitForCmdOut("oc", ocArgs, 2, true, func(output string) bool {
+			ocArgs := []string{"get", "serviceinstance", "-n", project, "-o", "name"}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
 			helper.CmdShouldPass("odo", "link", "mysql-persistent", "--wait-for-target", "--component", "backend", "--project", project)
@@ -158,8 +158,8 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
-			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
-			helper.WaitForCmdOut("oc", ocArgs, 2, true, func(output string) bool {
+			ocArgs := []string{"get", "serviceinstance", "-n", project, "-o", "name"}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "mysql-persistent")
 			})
 			helper.CmdShouldPass("odo", "service", "delete", "mysql-persistent", "-f")
