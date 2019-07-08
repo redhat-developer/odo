@@ -165,9 +165,7 @@ NOTE: You can use environment variable `CUSTOM_HOMEDIR` to specify a custom home
 . In the case where functions fetch or create new objects through the APIs, add a https://godoc.org/k8s.io/client-go/testing#Fake.AddReactor[reactor] interface returning fake objects.
 . Verify the objects returned.
 
-=== Integration tests
-
-Integration tests are used within `odo`. All tests can be found in the `tests/` directory and can be called using functions within `makefile`. Also test directory comprises `e2e` scenario and a clean `test template` for reference.
+=== Integration and e2e tests
 
 .Prerequisites:
 
@@ -179,15 +177,69 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 
 * `odo` and `oc` binaries in `$PATH`.
 
+.Integration tests:
+
+Integration tests utilize link:https://github.com/onsi/ginkgo[`Ginkgo`] and it's preferred matcher library link:https://github.com/onsi/gomega[`Gomega`] which define sets of test cases (spec). As per ginkgo test file comprises specs and these test file are controlled by test suite. Test and testsuite files are located in `tests/integration` directory and can be called using functions within `makefile`. Integration tests validates and focuses on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
+
+.E2e tests:
+
+E2e (End to end) uses the same library as integtarion test. E2e tests and testsuite files are located in `tests/e2escenarios` directory and can be called using `.PHONY` within `makefile`. Basically end to end (e2e) test contains user specific scenario that is combination of some features/commands in a single test file.
+
 .How to write:
 
 Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/tests/template/template_cleantest_test.go[`template`].
 
-.Procedure:
+.Test guidelines:
 
-Integration tests can be run in the following two ways:
+Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`].
 
-* To run the tests in parallel (default: 2 ginkgo test node), on a test cluster:
+* Protocols (Integration/e2e test):
++
+
+Before writing tests (Integration/e2e) scenario make sure that
+Identify the test (Integration or e2e) properly.
++
+----
+For example:
+In storage feature test, storage command will be tested properly includes positive, negative and corner cases whereas in e2e scenario only one or two storage command will be tested in e2e scenario like `login -> create component -> link -> add storage -> certain operation -> delete storage -> unlink -> delete component ->logout`. For e2e test no need to create a test file. You can update those scenarios what ever e2e test file is available for a particular version of release.
+----
++
+
+Create a new test file for a new feature. If the feature test file is already present then update the same test file with new scenario. Also make sure that the feature file name should add proper sense.
++
+
+----
+For example:
+For storage feature, a new storage test file is created. If new functionality is added to the storage feature then same file will be updated with new scenario. Naming of the test file should follow a common format like cmd_<feature name>_test. So the storage feature test file name will be `cmd_storage_test.go`. Same naming convention can be used for e2e test too like `e2e_<release name>_test`.
+----
++
+
+Don’t create new test file for issues(bug) and try to add some scenario for each bug fix if Applicable
++
+
+Don’t use unnecessary functionality validation for a specific scenario
++
+
+Not to use unnecessary text validation
++
+
+If oc, odo or generic library you are looking for is not present in helper package then create a new function in the same package as per scenario requirement
++
+
+The test spec should run in parallel (Default) or sequentially as per choice. Check test template for reference.
++
+
+Spec description should make sense of what it implements in the spec
++
+
+Try to run tests on local env as much as possible before pushing PRs
+
+.Running integration tests:
+
+By default, tests are run against the `odo` binary placed in the PATH which is created by command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use environment variable `TEST_EXEC_NODES`. For example component test can be run
+
+* To run the test in parallel, on a test cluster (By default the test will run in parallel on two ginkgo test node):
+
 +
 Run component command integration tests
 +
@@ -196,216 +248,32 @@ $ make test-cmp-e2e
 ----
 +
 
-Run application command integration tests
+* To run the component command integration tests sequentially or on single ginkgo test node:
 +
-----
-$ make test-cmd-app
-----
-+
-
-Run storage command integration tests
-+
-----
-$ make test-cmd-storage
-----
-+
-
-Run watch command integration tests
-+
-----
-$ make test-watch-e2e
-----
-+
-
-Run config/preference command integration tests
-+
-----
-$ make test-odo-config
-----
-+
-
-Run generic integration tests
-+
-----
-$ make test-generic
-----
-+
-
-Run json output integration tests
-+
-----
-$ make test-json-format-output
-----
-+
-
-Run service command integration tests
-+
-----
-$ make test-service-e2e
-----
-+
-
-Run link/unlink command integration tests
-+
-----
-$ make test-link-e2e
-----
-+
-
-Run java source integration tests
-+
-----
-$ make test-java-e2e
-----
-+
-
-Run source integration tests
-+
-----
-$ make test-source-e2e
-----
-+
-
-* To run the tests sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
-+
-
-NOTE: However the env variable `TEST_EXEC_NODES` can be used to increase or decrease any number of test node for parallel run depending on the resource allocated to the OpenShift cluster. Make sure that the `TEST_EXEC_NODES` value cannot be `0` or any `negative` value.
-+
-
 Run component command integration tests
 +
 ----
-$ TEST_EXEC_NODES=1 make test-cmp-e2e
+$ TEST_EXEC_NODES=1 make test-cmd-cmp
+----
+
+NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-`. However there is a test file `generic_test.go` which handles certain test spec easily and can run the spec in parallel by calling `make test-generic`. By calling make `test-integration`, the whole suite can run all the spec in parallel on two ginkgo test node except `service` and `link` irrespective of service catalog status in the cluster. However `make test-integration-service-catalog` runs all spec of service and link tests successfully in parallel on cluster having service catalog enabled. `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
+
+.Running e2e Tests:
+
+(E2e) End to end test run behaves in the similar way like integration test does. To see the number of available e2e test file for execution, press tab just after writing `make test-e2e-`. For e2e suite level execution of all e2e test spec use `make test-e2e-all`. For example
+
+* To run the java e2e test in parallel, on a test cluster (By default the component test will run in parallel on two ginkgo test node):
++
+----
+$ make test-e2e-java
 ----
 +
 
-Run application command integration tests
+* To run the java e2e test sequentially or on single ginkgo test node:
 +
 ----
-$ TEST_EXEC_NODES=1 make test-cmd-app
+$ TEST_EXEC_NODES=1 make test-e2e-java
 ----
-+
-
-Run storage command integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-cmd-storage
-----
-+
-
-Run watch command integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-watch-e2e
-----
-+
-
-Run config/preference command integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-odo-config
-----
-+
-
-Run generic integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-generic
-----
-+
-
-Run json output integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-json-format-output
-----
-+
-
-Run service command integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-service-e2e
-----
-+
-
-Run link/unlink command integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-link-e2e
-----
-+
-
-Run java source integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-java-e2e
-----
-+
-
-Run source integration tests
-+
-----
-$ TEST_EXEC_NODES=1 make test-source-e2e
-----
-+
-
-* For the login and logout command integration tests:
-+
-----
-$ make test-odo-login-e2e
-----
-+
-
-NOTE: `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
-
-Entire integration tests suite can be run in parallel and sequentially separately:
-
-* To run entire integration tests spec in parallel (default: 2 ginkgo test node), on a test cluster:
-+
-----
-$ make test-integration-service-catalog
-----
-+
-
-----
-$ make test-integration
-----
-+
-
-* To run entire integration tests spec sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
-+
-----
-$ TEST_EXEC_NODES=1 make test-integration-service-catalog
-----
-+
-
-----
-$ TEST_EXEC_NODES=1 make test-integration
-----
-+
-
-NOTE: `make test-integration-service-catalog` includes only service and link tests and can be successfully validated only if the cluster has service catalog enabled. Whereas `make test-integration` includes tests except service, link, login tests and runs rest of the tests irrespective of service catalog status in the cluster.
-
-Similarly e2e (end to end) tests can be run in parallel and sequentially separately.
-
-* To run the test in parallel (default: 2 ginkgo test node), on a test cluster:
-+
-Run core beta flow e2e test
-+
-----
-$ make test-e2e-scenarios
-----
-+
-
-* To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
-+
-Run core beta flow e2e test
-+
-----
-$ TEST_EXEC_NODES=1 make test-e2e-scenarios
-----
-
-You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
 
 === Race conditions
 
