@@ -157,6 +157,10 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		if fcc.Name() == "component" && len(afs) > 0 {
 			return lci, nil
 		}
+		// Case 7 : Check if fcc is logout and app flag is used
+		if fcc.Name() == "logout" {
+			return lci, nil
+		}
 
 	} else {
 		return lci, nil
