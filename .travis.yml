@@ -25,6 +25,8 @@ jobs:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
 
+# BEGIN Tests that are also in CircleCI
+
     - <<: *base-test
       stage: test
       name: "generic,login,component integration tests"
@@ -62,6 +64,8 @@ jobs:
         - travis_wait make test-odo-config
         - travis_wait make test-odo-url-int
         - odo logout
+
+# END Tests that are also in CircleCI
 
     # Run service-catalog e2e tests
     - <<: *base-test
