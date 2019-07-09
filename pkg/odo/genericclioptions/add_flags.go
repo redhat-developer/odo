@@ -19,7 +19,7 @@ func AddContextFlag(cmd *cobra.Command, setValueTo *string) {
 
 // AddNowFlag adds `now` flag to given cobra command
 func AddNowFlag(cmd *cobra.Command, setValueTo *bool) {
-	helpMessage := "Push changes to cluster right now"
+	helpMessage := "Push changes to the cluster immediately"
 	if setValueTo != nil {
 		cmd.Flags().BoolVar(setValueTo, "now", false, helpMessage)
 	} else {
