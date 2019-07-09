@@ -260,7 +260,7 @@ func (oc *OcRunner) EnvVarTest(resourceName string, sourceType string, envString
 // component by passing component name as a argument
 func (oc *OcRunner) GetRunningPodNameOfComp(compName string, namespace string) string {
 	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
-	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running`)
+	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*deploymentconfig=` + compName)
 	podName := re.FindStringSubmatch(stdOut)[1]
 	return strings.TrimSpace(podName)
 }
