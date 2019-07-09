@@ -450,7 +450,7 @@ func (co *CreateOptions) Validate() (err error) {
 	s := log.Spinner("Validating component")
 	defer s.End(false)
 
-	if err := component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, false); err != nil {
+	if err := component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, false, false); err != nil {
 		return err
 	}
 

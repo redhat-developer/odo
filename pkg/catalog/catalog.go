@@ -52,51 +52,16 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 	return result, nil
 }
 
-// Exists returns true if the given component type is valid, false if not
-func Exists(client *occlient.Client, componentType string) (bool, error) {
-
-	catalogList, err := List(client)
+// Exists returns true if the given component type and the version are valid, false if not
+func Exists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
+	imageStream, err := client.GetImageStream("", componentType, componentVersion)
 	if err != nil {
-		return false, errors.Wrapf(err, "unable to list catalog")
+		return false, errors.Wrapf(err, "unable to get from catalog")
 	}
-
-	for _, supported := range catalogList {
-		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
-			return true, nil
-		}
+	if imageStream == nil {
+		return false, nil
 	}
-	return false, nil
-}
-
-// VersionExists checks if that version exists, returns true if the given version exists, false if not
-func VersionExists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
-
-	// Loading status
-	glog.V(4).Info("Checking component version")
-
-	// Retrieve the catalogList
-	catalogList, err := List(client)
-	if err != nil {
-		return false, errors.Wrapf(err, "unable to list catalog")
-	}
-
-	// Find the component and then return true if the version has been found
-	for _, supported := range catalogList {
-		if componentType == supported.Name || componentType == fmt.Sprintf("%s/%s", supported.Namespace, supported.Name) {
-			// Now check to see if that version matches that components tag
-			// here we use the AllTags, because if the user somehow got hold of a version that was hidden
-			// then it's safe to assume that this user went to a lot of trouble to actually use that version,
-			// so let's allow it
-			for _, tag := range supported.AllTags {
-				if componentVersion == tag {
-					return true, nil
-				}
-			}
-		}
-	}
-
-	// Else return false if nothing is found
-	return false, nil
+	return true, nil
 }
 
 // getDefaultBuilderImages returns the default builder images available in the

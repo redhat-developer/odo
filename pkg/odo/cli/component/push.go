@@ -76,19 +76,23 @@ func (po *PushOptions) Validate() (err error) {
 
 	log.Info("Validation")
 
-	s := log.Spinner("Validating component")
+	// First off, we check to see if the component exists. This is ran each time we do `odo push`
+	s := log.Spinner("Checking component")
 	defer s.End(false)
 
-	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfigInfo.GetComponentSettings(), false); err != nil {
-		return err
-	}
-
-	isCmpExists, err := component.Exists(po.Context.Client, po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
+	po.isCmpExists, err = component.Exists(po.Context.Client, po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
 	if err != nil {
+		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
+	}
+	s.End(true)
+
+	s = log.Spinner("Validating component")
+	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfigInfo.GetComponentSettings(), po.isCmpExists, false); err != nil {
 		return err
 	}
+	s.End(true)
 
-	if !isCmpExists && po.pushSource && !po.pushConfig {
+	if !po.isCmpExists && po.pushSource && !po.pushConfig {
 		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfigInfo.GetName())
 	}
 

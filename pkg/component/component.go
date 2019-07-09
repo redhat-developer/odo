@@ -471,7 +471,7 @@ func CheckComponentMandatoryParams(componentSettings config.ComponentSettings) e
 //	isCmpExistsCheck: boolean to indicate whether or not error out if component with same name already exists
 // Returns:
 //	errors if any
-func ValidateComponentCreateRequest(client *occlient.Client, componentSettings config.ComponentSettings, isCmpExistsCheck bool) (err error) {
+func ValidateComponentCreateRequest(client *occlient.Client, componentSettings config.ComponentSettings, isCmpExists bool, isCmpExistsCheck bool) (err error) {
 
 	// Check the mandatory parameters first
 	err = CheckComponentMandatoryParams(componentSettings)
@@ -483,23 +483,13 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 	_, componentType, _, componentVersion := util.ParseComponentImageName(*componentSettings.Type)
 
 	// Check to see if the catalog type actually exists
-	exists, err := catalog.Exists(client, componentType)
+	exists, err := catalog.Exists(client, componentType, componentVersion)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create component of type %s", componentType)
 	}
 	if !exists {
 		log.Info("Run 'odo catalog list components' for a list of supported component types")
-		return fmt.Errorf("Failed to find component of type %s", componentType)
-	}
-
-	// Check to see if that particular version exists
-	versionExists, err := catalog.VersionExists(client, componentType, componentVersion)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to create component of type %s of version %s", componentType, componentVersion)
-	}
-	if !versionExists {
-		log.Info("Run 'odo catalog list components' to see a list of supported component type versions")
-		return fmt.Errorf("Invalid component version %s:%s", componentType, componentVersion)
+		return fmt.Errorf("Failed to find component of type %s and version%s", componentType, componentVersion)
 	}
 
 	// Validate component name
@@ -510,11 +500,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 
 	// If component does not exist, create it
 	if isCmpExistsCheck {
-		exists, err = Exists(client, *componentSettings.Name, *componentSettings.Application)
-		if err != nil {
-			return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", *componentSettings.Name, *componentSettings.Application)
-		}
-		if exists {
+		if isCmpExists {
 			return fmt.Errorf("component with name %s already exists in application %s", *componentSettings.Name, *componentSettings.Application)
 		}
 	}

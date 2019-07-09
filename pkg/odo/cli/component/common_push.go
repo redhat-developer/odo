@@ -31,9 +31,10 @@ type CommonPushOptions struct {
 	client           *occlient.Client
 	localConfigInfo  *config.LocalConfigInfo
 
-	pushConfig bool
-	pushSource bool
-	forceBuild bool
+	pushConfig  bool
+	pushSource  bool
+	forceBuild  bool
+	isCmpExists bool
 
 	*genericclioptions.Context
 }
@@ -77,13 +78,13 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	log.Info("\nConfiguration changes")
 
 	// If the component does not exist, we will create it for the first time.
-	if !isCmpExists {
+	if !cpo.isCmpExists {
 
-		s = log.Spinner("Creating component")
+		s := log.Spinner("Creating component")
 		defer s.End(false)
 
 		// Classic case of component creation
-		if err = component.CreateComponent(cpo.Context.Client, *cpo.localConfigInfo, cpo.componentContext, stdout); err != nil {
+		if err := component.CreateComponent(cpo.Context.Client, *cpo.localConfigInfo, cpo.componentContext, stdout); err != nil {
 			log.Errorf(
 				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
 				cmpName,
@@ -96,7 +97,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	}
 
 	// Apply config
-	err = component.ApplyConfig(cpo.Context.Client, *cpo.localConfigInfo, stdout, isCmpExists)
+	err = component.ApplyConfig(cpo.Context.Client, *cpo.localConfigInfo, stdout, cpo.isCmpExists)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
