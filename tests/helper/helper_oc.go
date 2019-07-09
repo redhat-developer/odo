@@ -259,7 +259,7 @@ func (oc *OcRunner) EnvVarTest(resourceName string, sourceType string, envString
 // GetRunningPodNameOfComp executes oc command and returns the running pod name of a delopyed
 // component by passing component name as a argument
 func (oc *OcRunner) GetRunningPodNameOfComp(compName string, namespace string) string {
-	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace)
+	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
 	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running`)
 	podName := re.FindStringSubmatch(stdOut)[1]
 	return strings.TrimSpace(podName)
