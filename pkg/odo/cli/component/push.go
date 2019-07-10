@@ -2,23 +2,14 @@ package component
 
 import (
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-
-	"github.com/fatih/color"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/project"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
@@ -40,52 +31,30 @@ const PushRecommendedCommandName = "push"
 
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {
-	ignores []string
-	show    bool
-
-	sourceType       config.SrcType
-	sourcePath       string
-	componentContext string
-	client           *occlient.Client
-	localConfig      *config.LocalConfigInfo
-
-	pushConfig bool
-	pushSource bool
-
-	*genericclioptions.Context
+	*CommonPushOptions
 }
 
 // NewPushOptions returns new instance of PushOptions
 // with "default" values for certain values, for example, show is "false"
 func NewPushOptions() *PushOptions {
 	return &PushOptions{
-		show: false,
+		CommonPushOptions: NewCommonPushOptions(),
 	}
 }
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.resolveSrcAndConfigFlags()
-
 	conf, err := config.NewLocalConfigInfo(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
 
 	// Set the necessary values within WatchOptions
-	po.localConfig = conf
-	po.sourceType = conf.LocalConfig.GetSourceType()
-
-	glog.V(4).Infof("SourceLocation: %s", po.localConfig.GetSourceLocation())
-
-	// Get SourceLocation here...
-	po.sourcePath, err = conf.GetOSSourcePath()
+	po.localConfigInfo = conf
+	err = po.SetSourceInfo()
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve absolute path to source location")
+		return errors.Wrap(err, "unable to set source information")
 	}
-
-	glog.V(4).Infof("Source Path: %s", po.sourcePath)
-
 	// Apply ignore information
 	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
 	if err != nil {
@@ -94,27 +63,12 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// Set the correct context
 	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
-	// check if project exist
-	prjName := po.localConfig.GetProject()
-	isPrjExists, err := project.Exists(po.Context.Client, prjName)
+	prjName := po.localConfigInfo.GetProject()
+	po.ResolveSrcAndConfigFlags()
+	err = po.ResolveProject(prjName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
+		return err
 	}
-	if !isPrjExists {
-		log.Successf("Creating project %s", prjName)
-		err = project.Create(po.Context.Client, prjName, true)
-		if err != nil {
-			log.Errorf("Failed creating project %s", prjName)
-			return errors.Wrapf(
-				err,
-				"project %s does not exist. Failed creating it.Please try after creating project using `odo project create <project_name>`",
-				prjName,
-			)
-		}
-		log.Successf("Successfully created project %s", prjName)
-	}
-	po.Context.Client.Namespace = prjName
 	return
 }
 
@@ -126,157 +80,26 @@ func (po *PushOptions) Validate() (err error) {
 	s := log.Spinner("Validating component")
 	defer s.End(false)
 
-	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfig.GetComponentSettings(), false); err != nil {
+	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfigInfo.GetComponentSettings(), false); err != nil {
 		return err
 	}
 
-	isCmpExists, err := component.Exists(po.Context.Client, po.localConfig.GetName(), po.localConfig.GetApplication())
+	isCmpExists, err := component.Exists(po.Context.Client, po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
 	if err != nil {
 		return err
 	}
 
 	if !isCmpExists && po.pushSource && !po.pushConfig {
-		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfig.GetName())
+		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfigInfo.GetName())
 	}
 
 	s.End(true)
-	return nil
-}
-
-func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
-	if !po.pushConfig {
-		// Not the case of component creation or updation(with new config)
-		// So nothing to do here and hence return from here
-		return nil
-	}
-
-	cmpName := po.localConfig.GetName()
-	appName := po.localConfig.GetApplication()
-
-	// First off, we check to see if the component exists. This is ran each time we do `odo push`
-	s := log.Spinner("Checking component")
-	defer s.End(false)
-	isCmpExists, err := component.Exists(po.Context.Client, cmpName, appName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
-	}
-	s.End(true)
-
-	// Output the "new" section (applying changes)
-	log.Info("\nConfiguration changes")
-
-	// If the component does not exist, we will create it for the first time.
-	if !isCmpExists {
-
-		s = log.Spinner("Creating component")
-		defer s.End(false)
-
-		// Classic case of component creation
-		if err = component.CreateComponent(po.Context.Client, *po.localConfig, po.componentContext, stdout); err != nil {
-			log.Errorf(
-				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
-				cmpName,
-				err,
-			)
-			os.Exit(1)
-		}
-
-		s.End(true)
-	}
-
-	// Apply config
-	err = component.ApplyConfig(po.Context.Client, *po.localConfig, stdout, isCmpExists)
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
-	}
-
 	return nil
 }
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
-	stdout := color.Output
-
-	cmpName := po.localConfig.GetName()
-	appName := po.localConfig.GetApplication()
-
-	err = po.createCmpIfNotExistsAndApplyCmpConfig(stdout)
-	if err != nil {
-		return
-	}
-
-	if !po.pushSource {
-		// If source is not requested for update, return
-		return nil
-	}
-
-	log.Infof("\nPushing to component %s of type %s", cmpName, po.sourceType)
-
-	// Get SourceLocation here...
-	po.sourcePath, err = po.localConfig.GetOSSourcePath()
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve OS source path to source location")
-	}
-
-	switch po.sourceType {
-	case config.LOCAL:
-		glog.V(4).Infof("Copying directory %s to pod", po.sourcePath)
-		err = component.PushLocal(
-			po.Context.Client,
-			cmpName,
-			appName,
-			po.sourcePath,
-			os.Stdout,
-			[]string{},
-			[]string{},
-			true,
-			util.GetAbsGlobExps(po.sourcePath, po.ignores),
-			po.show,
-		)
-
-		if err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
-		}
-
-	case config.BINARY:
-
-		// We will pass in the directory, NOT filepath since this is a binary..
-		binaryDirectory := filepath.Dir(po.sourcePath)
-
-		glog.V(4).Infof("Copying binary file %s to pod", po.sourcePath)
-		err = component.PushLocal(
-			po.Context.Client,
-			cmpName,
-			appName,
-			binaryDirectory,
-			os.Stdout,
-			[]string{po.sourcePath},
-			[]string{},
-			true,
-			util.GetAbsGlobExps(po.sourcePath, po.ignores),
-			po.show,
-		)
-
-		if err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
-		}
-
-		// we don't need a case for building git components
-		// the build happens before deployment
-
-		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
-	}
-
-	log.Success("Changes successfully pushed to component")
-	return
-}
-
-func (po *PushOptions) resolveSrcAndConfigFlags() {
-	// If neither config nor source flag is passed, update both config and source to the component
-	if !po.pushConfig && !po.pushSource {
-		po.pushConfig = true
-		po.pushSource = true
-	}
+	return po.Push()
 }
 
 // NewCmdPush implements the push odo command
