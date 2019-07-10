@@ -1,11 +1,13 @@
 package project
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/spf13/cobra"
 
@@ -54,30 +56,65 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	// Validate existence of the project to be deleted
 	isValidProject, err := project.Exists(pdo.Context.Client, pdo.projectName)
 	if !isValidProject {
-		return fmt.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
+		errorMsg := fmt.Sprintf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
+
+		// If json has been selected
+		if pdo.OutputFlag == "json" {
+			odoutil.ErrorMachineOutput(pdo.projectName, errors.New(errorMsg))
+		}
+
+		return fmt.Errorf(errorMsg)
 	}
 	return
 }
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
-	// this to set the project in the file and runtime
+
+	// Set the current project
 	err = project.SetCurrent(pdo.Context.Client, pdo.projectName)
 	if err != nil {
 		return
 	}
-	err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
-	if err != nil {
-		return err
-	}
-	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+
+	// If machine readable output is selected, we will skip printing the project information
+	// as well as the force flag.
+
+	if pdo.OutputFlag == "json" {
+
+		// Delete the project without confirmation
 		err := project.Delete(pdo.Context.Client, pdo.projectName)
+		if err != nil {
+			// Error out with Json...
+			odoutil.ErrorMachineOutput(pdo.projectName, err)
+		}
+
+		// Create "machine-readable" output
+		odoutil.SuccessMachineOutput(pdo.projectName,
+			fmt.Sprintf("Deleted project %s", pdo.projectName),
+			"Project")
+
+		return nil
+
+	} else {
+
+		// Print the artifacts that will be deleted as the result of project deletion
+		err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
 		if err != nil {
 			return err
 		}
 
-		log.Infof("Deleted project : %v", pdo.projectName)
-		return nil
+		// Check to see if the "force" flag is being used.
+		if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+			err := project.Delete(pdo.Context.Client, pdo.projectName)
+			if err != nil {
+				return err
+			}
+
+			log.Infof("Deleted project : %v", pdo.projectName)
+			return nil
+		}
+
 	}
 
 	return fmt.Errorf("Aborting deletion of project: %v", pdo.projectName)
@@ -97,6 +134,8 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	genericclioptions.AddOutputFlag(projectDeleteCmd)
 
 	projectDeleteCmd.Flags().BoolVarP(&o.projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
 

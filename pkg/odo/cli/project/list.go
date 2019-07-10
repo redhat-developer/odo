@@ -89,6 +89,6 @@ func NewCmdProjectList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddOutputFlag(projectListCmd)
+	//genericclioptions.AddOutputFlag(projectListCmd)
 	return projectListCmd
 }

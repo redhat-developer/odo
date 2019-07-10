@@ -1,11 +1,13 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/config"
 	"os"
 	"strings"
 	"unicode"
+
+	"github.com/openshift/odo/pkg/config"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
@@ -15,7 +17,67 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const errorKind = "Error"
+const apiVersion = "odo.openshift.io/v1alpha1"
+
+// Machine-readable output
+type MachineOutput struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Message           string `json:"message"`
+}
+
+// Create the "json" output and output it to fmt.Println
+func ErrorMachineOutput(namespace string, err error) error {
+
+	out, err := json.Marshal(MachineOutput{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       errorKind,
+			APIVersion: apiVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+		Message: err.Error(),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// We print and then exit making sure we exit with an error code and that NOTHING else has been printed
+	fmt.Println(string(out))
+	os.Exit(1)
+
+	return nil
+}
+
+/*
+// Return success result to fmt.Println
+func SuccessMachineOutput(namespace string, outputMessage string, kind string) error {
+	out, err := json.Marshal(MachineOutput{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kind,
+			APIVersion: apiVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+		Message: outputMessage,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(out))
+
+	return nil
+}
+*/
 
 // LogErrorAndExit prints the cause of the given error and exits the code with an
 // exit code of 1.

@@ -110,8 +110,9 @@ func IsTerminal(w io.Writer) bool {
 
 // Start starts a new phase of the status, if attached to a terminal
 // there will be a loading spinner with this status
-func (s *Status) Start(status string, debug bool) {
+func (s *Status) Start(status string, debug bool, json bool) {
 	s.End(true)
+
 	// set new status
 	isTerm := IsTerminal(s.writer)
 	s.status = status
@@ -119,7 +120,7 @@ func (s *Status) Start(status string, debug bool) {
 	// If we are in debug mode, don't spin!
 	if !isTerm || debug {
 		fmt.Fprintf(s.writer, prefixSpacing+getSpacingString()+suffixSpacing+"%s  ...\n", s.status)
-	} else {
+	} else if !json {
 		s.spinner.SetPrefix(prefixSpacing)
 		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
 		s.spinner.Start()
@@ -223,7 +224,7 @@ func Askf(format string, a ...interface{}) {
 // For example: defer s.End(false)
 func Spinner(status string) *Status {
 	s := NewStatus(GetStdout())
-	s.Start(status, IsDebug())
+	s.Start(status, IsDebug(), IsJSON())
 	return s
 }
 
@@ -233,15 +234,28 @@ func Spinner(status string) *Status {
 // for situations where spinning isn't viable (debug)
 func Spinnerf(format string, a ...interface{}) *Status {
 	s := NewStatus(GetStdout())
-	s.Start(fmt.Sprintf(format, a...), IsDebug())
+	s.Start(fmt.Sprintf(format, a...), IsDebug(), IsJSON())
 	return s
 }
 
 // SpinnerNoSpin is the same as the "Spinner" function but forces no spinning
 func SpinnerNoSpin(status string) *Status {
 	s := NewStatus(os.Stdout)
-	s.Start(status, true)
+	s.Start(status, true, IsJSON())
 	return s
+}
+
+// IsJSON returns true if we are in machine output mode..
+// under NO circumstances should we output any logging.. as we are only outputting json
+func IsJSON() bool {
+
+	flag := pflag.Lookup("o")
+
+	if flag != nil {
+		return !strings.Contains(pflag.Lookup("v").Value.String(), "json")
+	}
+
+	return false
 }
 
 // IsDebug returns true if we are debugging (-v is set to anything but 0)
