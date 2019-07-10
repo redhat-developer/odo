@@ -5,7 +5,7 @@ This document walks you through the development and deployment of a Node.js appl
 == Developing and deploying an application to an OpenShift cluster
 To develop and deploy a Node.js application to an OpenShift cluster using `odo`:
 
-. link:/docs/installation.md[Install the `odo` binary].
+. link:https://openshiftdo.org/installation/[Install the `odo` binary].
 . Log into an OpenShift cluster:
 
 * If you lack a local development cluster, we recommend using link:https://docs.openshift.org/latest/minishift/getting-started/installing.html[Minishift] to deploy a development OpenShift cluster.
@@ -178,7 +178,7 @@ $ odo service <verb> <servicename>
 
 OpenShift enables you to add a link:https://docs.openshift.com/container-platform/3.7/creating_images/custom.html[custom image] to bridge the gap between the creation of custom images. A custom builder image usually includes the base image of link:https://hub.docker.com/r/openshift/origin-custom-docker-builder/[openshift/origin-custom-docker-builder].
 
-The following example demonstrates the successful import and use of the link:registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift[redhat-openjdk-18] image:
+The following example demonstrates the successful import and use of the link:https://access.redhat.com/containers/?tab=images&platform=openshift#/registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift[redhat-openjdk-18] image:
 
 .Prerequisites:
 `oc` binary is link:https://docs.openshift.org/latest/cli_reference/get_started_cli.html#installing-the-cli[installed] and present on the `$PATH`.
