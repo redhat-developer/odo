@@ -14,6 +14,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	appRootSubPath       = "app-root"
+	deploymentDirSubPath = "deployment"
+)
+
 // CommonImageMeta has all the most common image data that is passed around within Odo
 type CommonImageMeta struct {
 	Name      string
@@ -440,7 +445,7 @@ func addBootstrapVolume(dc *appsv1.DeploymentConfig, dcName string) {
 // dc is the deployment config to be updated
 // dcName is the name of the deployment config
 func addBootstrapVolumeMount(dc *appsv1.DeploymentConfig, dcName string) {
-	addVolumeMount(dc, getAppRootVolumeName(dcName), DefaultAppRootDir, "app-root")
+	addVolumeMount(dc, getAppRootVolumeName(dcName), DefaultAppRootDir, appRootSubPath)
 }
 
 // addDeploymentDirVolumeMount mounts the bootstrap volume to the deployment config
@@ -448,7 +453,7 @@ func addBootstrapVolumeMount(dc *appsv1.DeploymentConfig, dcName string) {
 // dc is the deployment config to be updated
 // dcName is the name of the deployment config
 func addDeploymentDirVolumeMount(dc *appsv1.DeploymentConfig, mountPath string) {
-	addVolumeMount(dc, getAppRootVolumeName(dc.Name), mountPath, "deployment")
+	addVolumeMount(dc, getAppRootVolumeName(dc.Name), mountPath, deploymentDirSubPath)
 }
 
 // addVolumeMount adds a volume mount to the deployment config
