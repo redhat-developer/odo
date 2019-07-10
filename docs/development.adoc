@@ -319,6 +319,25 @@ $ make test-integration
 
 NOTE: `make test-integration` doesn't honour enviornment variable `TEST_EXEC_NODES`. So by default it runs the entire integration test suite on a single ginkgo test node sequentially.
 
+Similarly e2e (end to end) tests can be run in parallel and sequentially separately.
+
+* To run the test in parallel (default: 4 ginkgo test node), on a test cluster:
++
+Run core beta flow e2e test
++
+----
+$ make test-e2e-scenarios
+----
++
+
+* To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
++
+Run core beta flow e2e test
++
+----
+$ TEST_EXEC_NODES=1 make test-e2e-scenarios
+----
+
 You can run a subset of tests with ginkgo by using focused specs mechanism https://onsi.github.io/ginkgo/#focused-specs
 
 === Race conditions
