@@ -97,7 +97,7 @@ var _ = Describe("odojsonoutput", func() {
 		})
 		It("should be able to list url", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
-			helper.CmdShouldPass("odo", "url", "create", "myurl", "--port", "8080")
+			helper.CmdShouldPass("odo", "url", "create", "myurl")
 			helper.CmdShouldPass("odo", "push")
 
 			// odo url list -o json

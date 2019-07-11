@@ -58,7 +58,11 @@ func NewURLCreateOptions() *URLCreateOptions {
 // Complete completes UrlCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	o.componentPort, err = url.GetValidPortNumber(o.Client, o.urlPort, o.Component(), o.Application)
+	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+	if err != nil {
+		return err
+	}
+	o.componentPort, err = url.GetValidPortNumber(o.Component(), o.urlPort, o.localConfigInfo.GetPorts())
 	if err != nil {
 		return err
 	}
@@ -67,7 +71,6 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 	} else {
 		o.urlName = args[0]
 	}
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 
 	return
 }
@@ -96,7 +99,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
-	err = o.localConfigInfo.SetConfiguration("url", config.ConfigUrl{Name: o.urlName, Port: o.urlPort})
+	err = o.localConfigInfo.SetConfiguration("url", config.ConfigUrl{Name: o.urlName, Port: o.componentPort})
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
@@ -119,7 +122,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		},
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
-	_ = urlCreateCmd.MarkFlagRequired("port")
 	genericclioptions.AddOutputFlag(urlCreateCmd)
 	genericclioptions.AddContextFlag(urlCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)

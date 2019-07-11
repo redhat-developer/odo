@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -122,29 +123,6 @@ func Exists(client *occlient.Client, urlName string, componentName string, appli
 	return false, nil
 }
 
-// GetComponentServicePortNumbers returns the port numbers exposed by the service of the component
-// componentName is the name of the component
-// applicationName is the name of the application
-func GetComponentServicePortNumbers(client *occlient.Client, componentName string, applicationName string) ([]int, error) {
-	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
-	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-
-	services, err := client.GetServicesFromSelector(componentSelector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get the service")
-	}
-
-	var ports []int
-
-	for _, service := range services {
-		for _, port := range service.Spec.Ports {
-			ports = append(ports, int(port.Port))
-		}
-	}
-
-	return ports, nil
-}
-
 // GetURLName returns a url name from the component name and the given port number
 func GetURLName(componentName string, componentPort int) string {
 	if componentPort == -1 {
@@ -156,15 +134,17 @@ func GetURLName(componentName string, componentPort int) string {
 // GetValidPortNumber checks if the given port number is a valid component port or not
 // if port number is not provided and the component is a single port component, the component port is returned
 // port number is -1 if the user does not specify any port
-func GetValidPortNumber(client *occlient.Client, portNumber int, componentName string, applicationName string) (int, error) {
-	componentPorts, err := GetComponentServicePortNumbers(client, componentName, applicationName)
-	if err != nil {
-		return portNumber, errors.Wrapf(err, "unable to get exposed ports for component %s", componentName)
+func GetValidPortNumber(componentName string, portNumber int, portList []string) (int, error) {
+	var componentPorts []int
+	for _, p := range portList {
+		port, err := strconv.Atoi(strings.Split(p, "/")[0])
+		if err != nil {
+			return port, err
+		}
+		componentPorts = append(componentPorts, port)
 	}
-
 	// port number will be -1 if the user doesn't specify any port
 	if portNumber == -1 {
-
 		switch {
 		case len(componentPorts) > 1:
 			return portNumber, errors.Errorf("port for the component %s is required as it exposes %d ports: %s", componentName, len(componentPorts), strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
@@ -181,7 +161,7 @@ func GetValidPortNumber(client *occlient.Client, portNumber int, componentName s
 		}
 	}
 
-	return portNumber, nil
+	return portNumber, fmt.Errorf("given port %d is not exposed on given component, available ports are: %s", portNumber, strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
 }
 
 // getMachineReadableFormat gives machine readable URL definition

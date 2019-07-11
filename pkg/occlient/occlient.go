@@ -377,6 +377,36 @@ func imageWithMetadata(image *imagev1.Image) error {
 	return nil
 }
 
+// GetPortsFromBuilderImage returns list of available port from given builder image of given component type
+func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error) {
+	// checking port through builder image
+	imageNS, imageName, imageTag, _, err := ParseImageName(componentType)
+	if err != nil {
+		return []string{}, err
+	}
+	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
+	if err != nil {
+		return []string{}, err
+	}
+	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
+	if err != nil {
+		return []string{}, err
+	}
+	containerPorts, err := c.GetExposedPorts(imageStreamImage)
+	if err != nil {
+		return []string{}, err
+	}
+	var portList []string
+	for _, po := range containerPorts {
+		port := fmt.Sprint(po.ContainerPort) + "/" + string(po.Protocol)
+		portList = append(portList, port)
+	}
+	if len(portList) == 0 {
+		return []string{}, fmt.Errorf("given component type doesn't expose any ports, please use --port flag to specify a port")
+	}
+	return portList, nil
+}
+
 // isLoggedIn checks whether user is logged in or not and returns boolean output
 func (c *Client) isLoggedIn() bool {
 	// ~ indicates current user
@@ -1093,19 +1123,9 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
 	var containerPorts []corev1.ContainerPort
-	if len(params.Ports) == 0 {
-		containerPorts, err = c.GetExposedPorts(imageStreamImage)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
-		}
-	} else {
-		if err != nil {
-			return errors.Wrapf(err, "unable to bootstrap s2i supervisored for %s", commonObjectMeta.Name)
-		}
-		containerPorts, err = util.GetContainerPortsFromStrings(params.Ports)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
-		}
+	containerPorts, err = util.GetContainerPortsFromStrings(params.Ports)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
 	}
 
 	inputEnvs, err := GetInputEnvVarsFromStrings(params.EnvVars)
@@ -1209,7 +1229,6 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
-
 	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)

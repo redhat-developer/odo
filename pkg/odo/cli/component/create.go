@@ -392,9 +392,18 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 		co.setResourceLimits()
+
+		var portList []string
 		if len(co.componentPorts) > 0 {
-			co.componentSettings.Ports = &(co.componentPorts)
+			portList = co.componentPorts
+		} else {
+			portList, err = co.Client.GetPortsFromBuilderImage(*co.componentSettings.Type)
+			if err != nil {
+				return err
+			}
 		}
+
+		co.componentSettings.Ports = &(portList)
 	}
 
 	co.componentSettings.Project = &(co.Context.Project)
