@@ -21,6 +21,7 @@ var _ = Describe("odoLoginE2e", func() {
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
+		SetDefaultConsistentlyDuration(30 * time.Second)
 		oc = helper.NewOcRunner("oc")
 	})
 

@@ -26,6 +26,7 @@ var _ = Describe("Core beta flow", func() {
 		// Set default timeout for Eventually assertions
 		// commands like odo push, might take a long time
 		SetDefaultEventuallyTimeout(10 * time.Minute)
+		SetDefaultConsistentlyDuration(30 * time.Second)
 
 		// initialize oc runner
 		// right now it uses oc binary, but we should convert it to client-go
