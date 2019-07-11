@@ -9,6 +9,7 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -28,6 +29,7 @@ type ViewOptions struct {
 
 // NewViewOptions creates a new ViewOptions instance
 func NewViewOptions() *ViewOptions {
+
 	return &ViewOptions{}
 }
 
@@ -43,6 +45,9 @@ func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the ViewOptions based on completed values
 func (o *ViewOptions) Validate() (err error) {
+	if !o.lci.ConfigFileExists() {
+		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	}
 	return
 }
 
