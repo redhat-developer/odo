@@ -166,7 +166,7 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 Integration tests can be run in the following two ways:
 
-* To run the test in parallel (default: 4 ginkgo test node), on a test cluster :
+* To run the test in parallel (default: 4 ginkgo test node), on a test cluster:
 +
 Run component command integration test
 +
@@ -235,6 +235,13 @@ Run java source integration test
 +
 ----
 $ make test-java-e2e
+----
++
+
+Run source integration test
++
+----
+$ make test-source-e2e
 ----
 +
 
@@ -307,6 +314,13 @@ Run java source integration test
 +
 ----
 $ TEST_EXEC_NODES=1 make test-java-e2e
+----
++
+
+Run source integration test
++
+----
+$ TEST_EXEC_NODES=1 make test-source-e2e
 ----
 +
 

@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
@@ -14,15 +15,18 @@ var _ = Describe("odoSourceE2e", func() {
 	var context string
 	var oc helper.OcRunner
 
-	var _ = BeforeEach(func() {
+	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		oc = helper.NewOcRunner("oc")
 		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
-	var _ = AfterEach(func() {
+	AfterEach(func() {
 		helper.DeleteProject(project)
+		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	Context("odo component creation", func() {
