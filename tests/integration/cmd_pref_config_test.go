@@ -287,12 +287,13 @@ var _ = Describe("odo config test", func() {
 		})
 
 		It("should set config veriable without logging in", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
 			kubeconfigOld := os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
-			helper.CmdShouldPass("odo", "config", "set", "Name", "foobar")
-			configValue := helper.CmdShouldPass("odo", "config", "view")
+			helper.CmdShouldPass("odo", "config", "set", "--force", "--context", context, "Name", "foobar")
+			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", context)
 			Expect(configValue).To(ContainSubstring("foobar"))
-			helper.CmdShouldPass("odo", "config", "unset", "Name")
+			helper.CmdShouldPass("odo", "config", "unset", "--context", context, "Name")
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 	})
