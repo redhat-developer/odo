@@ -17,4 +17,3 @@ export CUSTOM_HOMEDIR="/tmp/artifacts"
 env
 
 make test-benchmark
-odo logout
