@@ -16,7 +16,7 @@ type Predictor interface {
 ----
 
 These implementations are then bound to a `complete.Command` which describes how commands are supposed to be completed by the shell. While
-it is possible to create an external application simply for the purpose of providing completions, it made more sense for `odo` to have `odo`itself deal with exposing possible completions. In this case, we need to hook into the `cobra` command lifecycle and expose completion information before `cobra` takes over. This happens in the main entry point for the `odo` application. Completion information is provided by the `createCompletion` function which walks the `cobra` command tree and creates the `complete.Command` tree as it goes along, attaching completion handler to commands (for arguments) and flags.
+it is possible to create an external application simply for the purpose of providing completions, it made more sense to have `odo` itself deal with exposing possible completions. In this case, we need to hook into the `cobra` command lifecycle and expose completion information before `cobra` takes over. This happens in the main entry point for the `odo` application. Completion information is provided by the `createCompletion` function which walks the `cobra` command tree and creates the `complete.Command` tree as it goes along, attaching completion handler to commands (for arguments) and flags.
 
 In order to provide this information, `odo` allows commands to register completion handlers for their arguments and flags using `completion.RegisterCommandHandler` and
 `completion.RegisterCommandFlagHandler` respectively. These functions will adapt the contextualized predictor that we expose to commands to the `posener/complete` `Predictor` interface internally.
