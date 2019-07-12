@@ -924,6 +924,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				}
 				con, _ := filepath.Abs(filepath.Dir(path))
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
+				a.Namespace = data.GetProject()
 				a.Spec.App = data.GetApplication()
 				a.Spec.Source = data.GetSourceLocation()
 				a.Status.Context = con
@@ -1306,6 +1307,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 	}
 
 	component = getMachineReadableFormat(componentName, componentType)
+	component.Namespace = client.Namespace
 	component.Spec.App = applicationName
 	component.Spec.Source = path
 	component.Spec.URL = urls
