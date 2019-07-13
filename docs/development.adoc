@@ -266,13 +266,6 @@ $ make test-source-e2e
 ----
 +
 
-Run login command integration test
-+
-----
-$ make test-odo-login-e2e
-----
-+
-
 * To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
 Run component command integration test
@@ -352,14 +345,16 @@ $ TEST_EXEC_NODES=1 make test-source-e2e
 ----
 +
 
-Run login command integration test
+* For the login and logout command integration test:
 +
 ----
-$ make test-odo-login-e2e TEST_EXEC_NODES=1
+$ make test-odo-login-e2e
 ----
 +
 
-* For the entire integration test suite use:
+NOTE: `make test-odo-login-e2e` doesn't honour enviornment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race condition in parallel run.
+
+* For the entire integration test suite:
 +
 ----
 $ make test-integration

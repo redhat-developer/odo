@@ -17,8 +17,11 @@ TEST_EXEC_NODES ?= 4
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
 
+# Env variable CLUSTER_LOGIN_URL is used to pass cluster URL (Default: current cluster on host) for login
 CLUSTER_LOGIN_URL ?=
+# Env variable CLUSTER_USER_NAME is used to pass cluster login username (Default: developer)
 CLUSTER_USER_NAME ?= developer
+# Env variable CLUSTER_PASSWORD is used to pass cluster login password (Default: developer)
 CLUSTER_PASSWORD ?= developer
 
 default: bin
@@ -186,9 +189,11 @@ test-cmd-app:
 	odo logout
 
 # Run login e2e tests
+# This test shouldn't run spec in paralel because it will effect the results due to
+# parallel run.
 .PHONY: test-odo-login-e2e
 test-odo-login-e2e:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoLoginE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=1 -focus="odoLoginE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run config tests
 .PHONY: test-odo-config
