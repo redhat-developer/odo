@@ -160,8 +160,8 @@ test-cmd-app:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmdApp" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run login e2e tests
-# This test shouldn't run spec in paralel because it will effect the results due to
-# parallel run.
+# This test shouldn't run spec in paralel because it will break the test behaviour
+# due to race condition in parallel run.
 .PHONY: test-odo-login-e2e
 test-odo-login-e2e:
 	ginkgo -v -nodes=1 -focus="odoLoginE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
