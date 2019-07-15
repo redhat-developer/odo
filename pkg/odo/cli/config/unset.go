@@ -45,8 +45,8 @@ type UnsetOptions struct {
 	paramName       string
 	configForceFlag bool
 	contextDir      string
-	context         *genericclioptions.Context
 	envArray        []string
+	lci             *config.LocalConfigInfo
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
@@ -59,28 +59,32 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if o.envArray == nil {
 		o.paramName = args[0]
 	}
+
+	cfg, err := config.NewLocalConfigInfo(o.contextDir)
+	if err != nil {
+		return err
+	}
+	o.lci = cfg
 	return
 }
 
 // Validate validates the UnsetOptions based on completed values
 func (o *UnsetOptions) Validate() (err error) {
+	if !o.lci.ConfigFileExists() {
+		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	}
 	return
 }
 
 // Run contains the logic for the command
 func (o *UnsetOptions) Run() (err error) {
 
-	cfg, err := config.NewLocalConfigInfo(o.contextDir)
-
-	if err != nil {
-		return errors.Wrapf(err, "")
-	}
 	// env variables have been provided
 	if o.envArray != nil {
 
-		envList := cfg.GetEnvVars()
+		envList := o.lci.GetEnvVars()
 		newEnvList := config.RemoveEnvVarsFromList(envList, o.envArray)
-		if err := cfg.SetEnvVars(newEnvList); err != nil {
+		if err := o.lci.SetEnvVars(newEnvList); err != nil {
 			return err
 		}
 
@@ -88,12 +92,12 @@ func (o *UnsetOptions) Run() (err error) {
 		return nil
 	}
 
-	if isSet := cfg.IsSet(o.paramName); isSet {
+	if isSet := o.lci.IsSet(o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the config", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
 		}
-		err = cfg.DeleteConfiguration(strings.ToLower(o.paramName))
+		err = o.lci.DeleteConfiguration(strings.ToLower(o.paramName))
 		if err != nil {
 			return err
 		}

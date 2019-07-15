@@ -125,10 +125,9 @@ var _ = Describe("Core beta flow", func() {
 			helper.CmdShouldFail("odo", "component", "create", "nodejs", "--context", context, "--project", project)
 		})
 
-		// Uncomment once https://github.com/openshift/odo/issues/1895 is fixed
-		/*It("odo config should fail if there is no .odo dir", func() {
+		It("odo config should fail if there is no .odo dir", func() {
 			helper.CmdShouldFail("odo", "config", "set", "memory", "2Gi", "--context", context)
-		})*/
+		})
 
 		It("create local java component and push code", func() {
 			oc.ImportJavaIsToNspace(project)

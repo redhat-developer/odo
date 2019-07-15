@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/odo/cli/ui"
+	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -44,8 +44,8 @@ type SetOptions struct {
 	paramValue      string
 	configForceFlag bool
 	contextDir      string
-	context         *genericclioptions.Context
 	envArray        []string
+	lci             *config.LocalConfigInfo
 }
 
 // NewSetOptions creates a new SetOptions instance
@@ -60,22 +60,25 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
+
+	cfg, err := config.NewLocalConfigInfo(o.contextDir)
+	if err != nil {
+		return err
+	}
+	o.lci = cfg
 	return
 }
 
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
+	if !o.lci.ConfigFileExists() {
+		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	}
 	return
 }
 
 // Run contains the logic for the command
 func (o *SetOptions) Run() (err error) {
-
-	cfg, err := config.NewLocalConfigInfo(o.contextDir)
-
-	if err != nil {
-		return errors.Wrapf(err, "unable to set configuration")
-	}
 
 	// env variables have been provided
 	if o.envArray != nil {
@@ -84,9 +87,9 @@ func (o *SetOptions) Run() (err error) {
 			return err
 		}
 		// keeping the old env vars as well
-		presentEnvVarList := cfg.GetEnvVars()
+		presentEnvVarList := o.lci.GetEnvVars()
 		newEnvVarList = presentEnvVarList.Merge(newEnvVarList)
-		if err := cfg.SetEnvVars(newEnvVarList); err != nil {
+		if err := o.lci.SetEnvVars(newEnvVarList); err != nil {
 			return err
 		}
 
@@ -97,7 +100,7 @@ func (o *SetOptions) Run() (err error) {
 	}
 
 	if !o.configForceFlag {
-		if isSet := cfg.IsSet(o.paramName); isSet {
+		if isSet := o.lci.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
 				fmt.Println("Aborted by the user.")
 				return nil
@@ -105,7 +108,7 @@ func (o *SetOptions) Run() (err error) {
 		}
 	}
 
-	err = cfg.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	err = o.lci.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
 	if err != nil {
 		return err
 	}
