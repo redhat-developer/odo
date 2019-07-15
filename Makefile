@@ -17,13 +17,6 @@ TEST_EXEC_NODES ?= 4
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
 
-# Env variable CLUSTER_LOGIN_URL is used to pass cluster URL (Default: current cluster on host) for login
-CLUSTER_LOGIN_URL ?=
-# Env variable CLUSTER_USER_NAME is used to pass cluster login username (Default: developer)
-CLUSTER_USER_NAME ?= developer
-# Env variable CLUSTER_PASSWORD is used to pass cluster login password (Default: developer)
-CLUSTER_PASSWORD ?= developer
-
 default: bin
 
 .PHONY: debug
@@ -114,79 +107,57 @@ test:
 # Run generic integration tests
 .PHONY: test-generic
 test-generic:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo generic" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run json outout tests
 .PHONY: test-json-format-output
 test-json-format-output:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odojsonoutput" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run component e2e tests
 .PHONY: test-cmp-e2e
 test-cmp-e2e:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmpE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run component subcommands e2e tests
 .PHONY: test-cmp-sub-e2e
 test-cmp-sub-e2e:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmpE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run java e2e tests
 .PHONY: test-java-e2e
 test-java-e2e:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoJavaE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run source e2e tests
 .PHONY: test-source-e2e
 test-source-e2e:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoSourceE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run service catalog e2e tests
 .PHONY: test-service-e2e
 test-service-e2e:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoServiceE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run link e2e tests
 .PHONY: test-link-e2e
 test-link-e2e:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoLinkE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run watch e2e tests
 .PHONY: test-watch-e2e
 test-watch-e2e:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoWatchE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run storage command integration tests
 .PHONY: test-cmd-storage
 test-cmd-storage:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo storage command" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run odo app cmd tests
 .PHONY: test-cmd-app
 test-cmd-app:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmdApp" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run login e2e tests
 # This test shouldn't run spec in paralel because it will effect the results due to
@@ -198,23 +169,17 @@ test-odo-login-e2e:
 # Run config tests
 .PHONY: test-odo-config
 test-odo-config:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo config test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run all integration tests
 .PHONY: test-integration
 test-integration:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	go test -v github.com/openshift/odo/tests/integration -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
-	odo logout
 
 # Run url integreation tests
 .PHONY: test-odo-url-int
 test-odo-url-int:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoURLIntegration" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
-	odo logout
 
 # Run push command e2e
 .PHONY: test-cmd-push
@@ -224,16 +189,12 @@ test-cmd-push:
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios
 test-e2e-scenarios:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/e2escenarios/ -timeout $(TIMEOUT)
-	odo logout
 
 # this test shouldn't be in paralel -  it will effect the results
 .PHONY: test-benchmark
 test-benchmark:
-	odo login -u $(CLUSTER_USER_NAME) -p $(CLUSTER_PASSWORD) $(CLUSTER_LOGIN_URL) --insecure-skip-tls-verify
 	go test -v github.com/openshift/odo/tests/benchmark -timeout $(TIMEOUT)
-	odo logout
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!

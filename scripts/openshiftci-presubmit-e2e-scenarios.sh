@@ -14,3 +14,4 @@ export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR="/tmp/artifacts"
 
 make test-e2e-scenarios
+odo logout
