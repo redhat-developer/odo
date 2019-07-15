@@ -166,7 +166,7 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 Integration tests can be run in the following two ways:
 
-* To run the test in parallel (default: 4 ginkgo test node), on a test cluster:
+* To run the test in parallel (default: 2 ginkgo test node), on a test cluster:
 +
 Run component command integration test
 +
@@ -335,7 +335,7 @@ NOTE: `make test-integration` doesn't honour enviornment variable `TEST_EXEC_NOD
 
 Similarly e2e (end to end) tests can be run in parallel and sequentially separately.
 
-* To run the test in parallel (default: 4 ginkgo test node), on a test cluster:
+* To run the test in parallel (default: 2 ginkgo test node), on a test cluster:
 +
 Run core beta flow e2e test
 +
