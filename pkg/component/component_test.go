@@ -342,7 +342,8 @@ func TestList(t *testing.T) {
 							APIVersion: "odo.openshift.io/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "frontend",
+							Name:      "frontend",
+							Namespace: "test",
 						},
 						Spec: ComponentSpec{
 							Type: "nodejs",
@@ -360,7 +361,8 @@ func TestList(t *testing.T) {
 							APIVersion: "odo.openshift.io/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "backend",
+							Name:      "backend",
+							Namespace: "test",
 						},
 						Spec: ComponentSpec{
 							Type: "java",

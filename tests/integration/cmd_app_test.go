@@ -70,7 +70,7 @@ var _ = Describe("odoCmdApp", func() {
 				appListOutput := helper.CmdShouldPass("odo", "app", "list")
 				Expect(appListOutput).To(ContainSubstring(appName))
 				actualCompListJSON := helper.CmdShouldPass("odo", "list", "-o", "json")
-				desiredCompListJSON := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null},"spec":{"type":"nodejs","app":"app","source":"file://./"},"status":{"state":"Pushed"}}]}`
+				desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null, "namespace":"%s"},"spec":{"type":"nodejs","app":"app","source":"file://./"},"status":{"state":"Pushed"}}]}`, project)
 				Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 
 				helper.CmdShouldPass("odo", "app", "describe")
