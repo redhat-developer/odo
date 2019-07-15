@@ -1157,7 +1157,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	}
 
 	// Append s2i related parameters extracted above to env
-	inputEnvs = uniqueUpsertEnvVarsFromS2IPaths(inputEnvs, s2iPaths)
+	inputEnvs = injectS2IPaths(inputEnvs, s2iPaths)
 
 	if params.SourceType == config.LOCAL {
 		inputEnvs = uniqueAppendOrOverwriteEnvVars(
@@ -1554,7 +1554,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 	cmpContainer := ucp.ExistingDC.Spec.Template.Spec.Containers[0]
 
 	// Append s2i related parameters extracted above to env
-	inputEnvs := uniqueUpsertEnvVarsFromS2IPaths(ucp.EnvVars, s2iPaths)
+	inputEnvs := injectS2IPaths(ucp.EnvVars, s2iPaths)
 
 	if isToLocal {
 		inputEnvs = uniqueAppendOrOverwriteEnvVars(
@@ -3258,7 +3258,7 @@ func (c *Client) StartDeployment(deploymentName string) (string, error) {
 	return result.Name, nil
 }
 
-func uniqueUpsertEnvVarsFromS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.EnvVar {
+func injectS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.EnvVar {
 	return uniqueAppendOrOverwriteEnvVars(
 		existingVars,
 		corev1.EnvVar{

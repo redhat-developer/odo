@@ -15,7 +15,9 @@ import (
 )
 
 const (
-	appRootSubPath       = "app-root"
+	// appRootSubPath defines the sup-path in the odo's PV where app root will recide
+	appRootSubPath = "app-root"
+	// deploymentDirSubPath defines the sup-path in the odo's PV where the deployment dir will recide
 	deploymentDirSubPath = "deployment"
 )
 
@@ -451,7 +453,6 @@ func addBootstrapVolumeMount(dc *appsv1.DeploymentConfig, dcName string) {
 // addDeploymentDirVolumeMount mounts the bootstrap volume to the deployment config
 // in a sub path where the ODO_S2I_DEPLOYMENT_DIR is present for optimisation purposes
 // dc is the deployment config to be updated
-// dcName is the name of the deployment config
 func addDeploymentDirVolumeMount(dc *appsv1.DeploymentConfig, mountPath string) {
 	addVolumeMount(dc, getAppRootVolumeName(dc.Name), mountPath, deploymentDirSubPath)
 }

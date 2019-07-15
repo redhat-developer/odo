@@ -3858,7 +3858,7 @@ func TestUniqueAppendOrOverwriteEnvVars(t *testing.T) {
 	}
 }
 
-func TestUniqueUpsertEnvVarsFromS2IPaths(t *testing.T) {
+func TestInjectS2IPaths(t *testing.T) {
 	tests := []struct {
 		name            string
 		existingEnvVars []corev1.EnvVar
@@ -3897,7 +3897,7 @@ func TestUniqueUpsertEnvVarsFromS2IPaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotEnvVars := uniqueUpsertEnvVarsFromS2IPaths(tt.existingEnvVars, S2IPaths{
+			gotEnvVars := injectS2IPaths(tt.existingEnvVars, S2IPaths{
 				"test", "test", "test", "test", "test", "test", "test",
 			})
 			if tt.wantLength != len(gotEnvVars) {
