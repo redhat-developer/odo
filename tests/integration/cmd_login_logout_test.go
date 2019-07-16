@@ -17,6 +17,7 @@ var _ = Describe("odoLoginE2e", func() {
 	var session1 string
 	var testUserToken1 string
 	var oc helper.OcRunner
+	var currentUserToken1 string
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
@@ -39,6 +40,7 @@ var _ = Describe("odoLoginE2e", func() {
 
 	Context("Run login tests with no active projects, having default is also considered as not having active project", func() {
 		It("Should login successfully with username and password without any projects with appropriate message", func() {
+			currentUserToken1 = oc.GetToken()
 			session1 = helper.CmdShouldPass("odo", "login", "-u", loginTestUserForNoProject, "-p", loginTestUserPassword)
 			Expect(session1).To(ContainSubstring("Login successful"))
 			Expect(session1).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
@@ -61,6 +63,7 @@ var _ = Describe("odoLoginE2e", func() {
 		It("Should fail login on invalid token with appropriate message", func() {
 			sessionErr := helper.CmdShouldFail("odo", "login", "-t", "verybadtoken")
 			Expect(sessionErr).To(ContainSubstring("The token provided is invalid or expired"))
+			helper.CmdShouldPass("odo", "login", "--token", currentUserToken1)
 		})
 	})
 })
