@@ -71,13 +71,13 @@ var _ = Describe("odojsonoutput", func() {
 
 			// odo describe component -o json
 			actualDesCompJSON := helper.CmdShouldPass("odo", "describe", "nodejs", "-o", "json")
-			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null,"namespace":"%s"},"spec":{"type":"nodejs","app": "myapp","source":"https://github.com/openshift/nodejs-ex"},"status":{"state":"Pushed"}}`, project)
+			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null,"namespace":"%s"},"spec":{"type":"nodejs","app": "myapp","source":"https://github.com/openshift/nodejs-ex","ports": ["8080/TCP"]},"status":{"state":"Pushed"}}`, project)
 			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
 
 			// odo list -o json --path .
 			pwd := helper.Getwd()
 
-			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null,"namespace":"%s"},"spec":{"type":"nodejs","app": "myapp","source":"https://github.com/openshift/nodejs-ex"},"status":{"context":"%s","state":"Pushed"}}]}`, project, strings.TrimSpace(pwd))
+			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null,"namespace":"%s"},"spec":{"type":"nodejs","app": "myapp","source":"https://github.com/openshift/nodejs-ex","ports": ["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}]}`, project, strings.TrimSpace(pwd))
 			helper.Chdir(context)
 			actual := helper.CmdShouldPass("odo", "list", "-o", "json", "--path", pwd)
 			helper.Chdir(pwd)
