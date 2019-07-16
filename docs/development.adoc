@@ -266,7 +266,14 @@ $ make test-source-e2e
 ----
 +
 
-* To run the tests sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
+Run entire integration test suite:
++
+----
+$ make test-integration
+----
++
+
+* To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
 Run component command integration tests
 +
@@ -355,13 +362,11 @@ $ make test-odo-login-e2e
 NOTE: `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
 
 * For the entire integration test suite:
+Run entire integration test suite:
 +
 ----
-$ make test-integration
+$ TEST_EXEC_NODES=1 make test-integration
 ----
-+
-
-NOTE: `make test-integration` doesn't honour enviornment variable `TEST_EXEC_NODES`. So by default it runs the entire integration test suite on a single ginkgo test node sequentially.
 
 Similarly e2e (end to end) tests can be run in parallel and sequentially separately.
 
