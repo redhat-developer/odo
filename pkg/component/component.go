@@ -1222,14 +1222,13 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(client *occlient.Client, componentName, applicationName string) (bool, error) {
-	componentList, err := List(client, applicationName)
+	deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
-		return false, errors.Wrap(err, "unable to get the component list")
+		return false, errors.Wrapf(err, "unable to create namespaced name")
 	}
-	for _, component := range componentList.Items {
-		if component.Name == componentName {
-			return true, nil
-		}
+	deployment, _ := client.GetDeploymentConfigFromName(deploymentName)
+	if deployment != nil {
+		return true, nil
 	}
 	return false, nil
 }
