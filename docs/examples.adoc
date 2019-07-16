@@ -81,7 +81,7 @@ $ odo create ruby --git https://github.com/openshift/ruby-ex.git
 
 === wildfly
 
-This example helps build and run WildFly applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/openshift-s2i/s2i-wildfly/blob/master/README.md[here].
+This example helps build and run WildFly applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see link:https://github.com/wildfly/wildfly-s2i/blob/master/README.md[here].
 
 ----
 $ odo create wildfly --git https://github.com/openshift/openshift-jee-sample.git
