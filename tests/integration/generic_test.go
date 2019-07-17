@@ -27,6 +27,7 @@ var _ = Describe("odo generic", func() {
 	BeforeEach(func() {
 		oc = helper.NewOcRunner("oc")
 		SetDefaultEventuallyTimeout(10 * time.Minute)
+		SetDefaultConsistentlyDuration(30 * time.Second)
 	})
 
 	Context("When executing catalog list without component directory", func() {

@@ -22,6 +22,7 @@ func componentTests(args ...string) {
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
+		SetDefaultConsistentlyDuration(30 * time.Second)
 		oc = helper.NewOcRunner("oc")
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
