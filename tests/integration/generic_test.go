@@ -9,8 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
-
-	"fmt"
 )
 
 var _ = Describe("odo generic", func() {
@@ -20,7 +18,6 @@ var _ = Describe("odo generic", func() {
 	var context string
 	var originalDir string
 	var oc helper.OcRunner
-	var err error
 	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
 	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
 
@@ -87,47 +84,6 @@ var _ = Describe("odo generic", func() {
 			appNames := helper.CmdShouldPass("odo", "app", "list", "--project", project)
 			Expect(appNames).To(ContainSubstring("testing"))
 			helper.DeleteProject(currentProject)
-		})
-	})
-
-	Context("when .odoignore file exists", func() {
-		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		})
-
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.RemoveAll(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
-		It("should create and push the contents of a named component excluding the contents in .odoignore file", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-
-			ignoreFilePath := filepath.Join(context, "nodejs-ex", ".odoignore")
-			if helper.CreateFileWithContent(ignoreFilePath, ".git\ntests/\nREADME.md") != nil {
-				fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
-			}
-
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-
-			// get the name of running pod
-			podName := oc.GetRunningPodNameOfComp("nodejs", project)
-
-			// verify that the views folder got pushed
-			stdOut1 := oc.ExecListDir(podName, project)
-			Expect(stdOut1).To(ContainSubstring("views"))
-
-			// verify that the tests was not pushed
-			stdOut2 := oc.ExecListDir(podName, project)
-			Expect(stdOut2).To(Not(ContainSubstring(("tests"))))
-
-			// verify that the README.md file was not pushed
-			stdOut3 := oc.ExecListDir(podName, project)
-			Expect(stdOut3).To(Not(ContainSubstring(("README.md"))))
-
 		})
 	})
 

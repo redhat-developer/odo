@@ -2,10 +2,11 @@ package version
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"os"
 	"strings"
+
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/notify"

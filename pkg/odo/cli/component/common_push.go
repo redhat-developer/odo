@@ -176,9 +176,12 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		if cmpExists {
 			spinner.Start("Checking file changes for pushing", false)
 		} else {
+			// if the component doesn't exist, we don't check for changes in the files
+			// thus we show a different message
 			spinner.Start("Checking files for pushing", false)
 		}
 
+		// run the indexer and find the modified/added/deleted/renamed files
 		filesChanged, filesDeleted, err := util.Run(cpo.componentContext, absIgnoreRules)
 		spinner.End(true)
 
@@ -187,10 +190,13 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		}
 
 		if cmpExists {
+			// apply the glob rules from the .gitignore/.odo file
+			// and ignore the files on which the rules apply and filter them out
 			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
 
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
-				log.Success("No file changes detected, skipping build. Use to 'f' flag to force the build.")
+				// no file was modified/added/deleted/renamed, thus return without building
+				log.Success("No file changes detected, skipping build. Use to '-f' flag to force the build.")
 				return nil
 			}
 		}

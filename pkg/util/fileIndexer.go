@@ -35,6 +35,7 @@ func read(filePath string) (map[string]FileData, error) {
 	defer jsonFileRead.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFileRead)
+	// unmarshals the byte values and fill up the file read map
 	err = json.Unmarshal(byteValue, &fileReadMap)
 	if err != nil {
 		return nil, err
@@ -96,7 +97,7 @@ func Run(directory string, ignoreRules []string) (filesChanged []string, filesDe
 				return filepath.SkipDir
 			}
 
-			if fi.Name() == ".odo" || fi.Name() == ".git" {
+			if fi.Name() == fileIndexDirectory || fi.Name() == ".git" {
 				glog.V(4).Info(".odo or .git directory detected, skipping it")
 				return filepath.SkipDir
 			}

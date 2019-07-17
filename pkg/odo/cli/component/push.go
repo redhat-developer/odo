@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -52,15 +51,6 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	// Set the necessary values within WatchOptions
 	po.localConfigInfo = conf
 	err = po.SetSourceInfo()
-
-	// Set the necessary values within PushOptions
-	po.sourceType = conf.LocalConfig.GetSourceType()
-
-	glog.V(4).Infof("SourceLocation: %s", po.localConfigInfo.GetSourceLocation())
-
-	// Get SourceLocation here...
-	po.sourcePath, err = conf.GetOSSourcePath()
-
 	if err != nil {
 		return errors.Wrap(err, "unable to set source information")
 	}
@@ -78,9 +68,6 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if err != nil {
 		return err
 	}
-
-	po.Context.Client.Namespace = prjName
-
 	return
 }
 

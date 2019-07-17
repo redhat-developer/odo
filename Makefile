@@ -182,7 +182,7 @@ test-odo-url-int:
 # Run push command e2e
 .PHONY: test-cmd-push
 test-cmd-push:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odo push command tests" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo push command tests" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run e2e test scenarios
 .PHONY: test-e2e-scenarios
