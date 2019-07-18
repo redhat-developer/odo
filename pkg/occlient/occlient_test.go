@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -5402,9 +5403,27 @@ func TestGetPortsFromBuilderImage(t *testing.T) {
 				t.Errorf("Client.GetPortsFromBuilderImage() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if !sliceEqual(got, tt.want) {
 				t.Errorf("Client.GetPortsFromBuilderImage() = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
+
+// sliceEqual checks equality of two slices irrespective of the element ordering
+func sliceEqual(x, y []string) bool {
+	if len(x) != len(y) {
+		return false
+	}
+
+	xc := make([]string, len(x))
+	yc := make([]string, len(y))
+
+	copy(xc, x)
+	copy(yc, y)
+
+	sort.Strings(xc)
+	sort.Strings(yc)
+
+	return reflect.DeepEqual(xc, yc)
 }
