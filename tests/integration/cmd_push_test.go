@@ -66,7 +66,8 @@ var _ = Describe("odo push command tests", func() {
 				fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
 			}
 
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// get the name of running pod
 			podName := oc.GetRunningPodNameOfComp(cmpName, project)
@@ -118,7 +119,8 @@ var _ = Describe("odo push command tests", func() {
 
 			// rename a file and push
 			helper.RenameFile(filepath.Join(context, "/nodejs-ex", "README.md"), filepath.Join(context, "/nodejs-ex", "NEW-README.md"))
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// get the name of running pod
 			podName := oc.GetRunningPodNameOfComp(cmpName, project)
@@ -133,7 +135,8 @@ var _ = Describe("odo push command tests", func() {
 
 			// rename a folder and push
 			helper.RenameFile(filepath.Join(context, "/nodejs-ex", "/tests"), filepath.Join(context, "/nodejs-ex", "/testing"))
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// verify that the new file was pushed
 			stdOut = oc.ExecListDir(podName, project)
@@ -204,6 +207,22 @@ var _ = Describe("odo push command tests", func() {
 			stdOut3 := oc.ExecListDir(podName, project)
 			Expect(stdOut3).To(Not(ContainSubstring(("README.md"))))
 
+		})
+	})
+
+	Context("when running odo push with flag --show-log", func() {
+		It("should be able to spam odo push without anything breaking", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
+			// Iteration 1
+			output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
+			// Iteration 2
+			output = helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
+			// Iteration 3
+			output = helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 		})
 	})
 })

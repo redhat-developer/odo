@@ -109,30 +109,6 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	Context("when running odo push with flag --show-log", func() {
-		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		})
-
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.RemoveAll(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
-		It("should be able to spam odo push without anything breaking", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context+"/nodejs-ex")
-			// Iteration 1
-			helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
-			// Iteration 2
-			helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
-			// Iteration 3
-			helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
-		})
-	})
-
 	Context("deploying a component with a specific image name", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
