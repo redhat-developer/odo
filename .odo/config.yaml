@@ -1,9 +1,0 @@
-kind: LocalConfig
-apiversion: odo.openshift.io/v1alpha1
-ComponentSettings:
-  Type: nodejs
-  SourceLocation: ./
-  SourceType: local
-  Application: app
-  Project: myproject
-  Name: nodejs-vzae
