@@ -630,10 +630,6 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 	sourceType := lci.GetSourceType()
 	sourceLocation := lci.GetSourceLocation()
 
-	// Get the component context folder
-	// ".odo" is removed as lci.Filename will always return the '.odo' folder.. we don't need that!
-	componentContext := strings.Trim(filepath.Dir(lci.Filename), ".odo")
-
 	if sourceLocation == "" {
 		return "", fmt.Errorf("Blank source location, does the .odo directory exist?")
 	}
@@ -649,10 +645,15 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 		return "", fmt.Errorf("URL %s passed even though source type is: %s", sourceLocation, sourceType)
 	}
 
+	currentDirectory, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
 	// Always piped to "fromslash" so it's correct for the OS..
 	// after retrieving the sourceLocation we will covert it to the
 	// correct source path depending on the OS.
-	absPath, err := util.GetAbsPath(filepath.Join(componentContext, lci.GetSourceLocation()))
+	absPath, err := util.GetAbsPath(filepath.Join(currentDirectory, lci.GetSourceLocation()))
 
 	sourceOSPath := filepath.FromSlash(absPath)
 
