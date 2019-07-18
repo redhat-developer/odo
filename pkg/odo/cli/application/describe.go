@@ -6,7 +6,6 @@ import (
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -82,7 +81,7 @@ func (o *DescribeOptions) Run() (err error) {
 		serviceList, _ := service.ListWithDetailedStatus(o.Client, o.appName)
 
 		if len(componentList.Items) == 0 && len(serviceList) == 0 {
-			log.Errorf("Application %s has no components or services deployed.", o.appName)
+			fmt.Printf("Application %s has no components or services deployed.", o.appName)
 		} else {
 			fmt.Printf("Application Name: %s has %v component(s) and %v service(s):\n--------------------------------------\n",
 				o.appName, len(componentList.Items), len(serviceList))
