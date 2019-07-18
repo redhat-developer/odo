@@ -197,6 +197,7 @@ type UpdateComponentParams struct {
 var S2IDeploymentsDir = []string{
 	"com.redhat.deployments-dir",
 	"org.jboss.deployments-dir",
+	"org.jboss.container.deployments-dir",
 }
 
 // errorMsg is the message for user when invalid configuration error occurs
