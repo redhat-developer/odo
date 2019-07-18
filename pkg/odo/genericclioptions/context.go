@@ -150,7 +150,7 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 			return lci, nil
 		}
 		// Check if fcc is component and  request is list
-		if fcc.Name() == "component" && command.Name() == "list" {
+		if (fcc.Name() == "component" || fcc.Name() == "service") && command.Name() == "list" {
 			return lci, nil
 		}
 		// Case 6 : Check if fcc is component and app flag is used
