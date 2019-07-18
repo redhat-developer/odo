@@ -485,7 +485,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 	// Check to see if the catalog type actually exists
 	exists, err := catalog.Exists(client, componentType, componentVersion)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create component of type %s", componentType)
+		return errors.Wrapf(err, "Failed to check component of type %s", componentType)
 	}
 	if !exists {
 		log.Info("Run 'odo catalog list components' for a list of supported component types")
@@ -495,7 +495,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 	// Validate component name
 	err = validation.ValidateName(*componentSettings.Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create component of name %s", *componentSettings.Name)
+		return errors.Wrapf(err, "failed to check component of name %s", *componentSettings.Name)
 	}
 
 	// If component does not exist, create it
