@@ -141,7 +141,12 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 		if err != nil {
 			return err
 		}
-		co.componentSettings.SourceLocation = &cPath
+		// we need to store the SourceLocation relative to the componentContext
+		relcPath, err := filepath.Rel(co.componentContext, cPath)
+		if err != nil {
+			return err
+		}
+		co.componentSettings.SourceLocation = &relcPath
 
 	// --git
 	case config.GIT:
