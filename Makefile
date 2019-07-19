@@ -33,7 +33,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-vendor vet validate-vendor-licenses sec #lint
+validate: gofmt check-vendor lint validate-vendor-licenses
 
 .PHONY: gofmt
 gofmt:
@@ -46,14 +46,10 @@ check-vendor:
 .PHONY: validate-vendor-licenses
 validate-vendor-licenses:
 	wwhrd check -q
-# golint errors are only recommendations
+
 .PHONY: lint
 lint:
-	golint $(PKGS)
-
-.PHONY: vet
-vet:
-	go vet $(PKGS)
+	golangci-lint run ./...
 
 .PHONY: sec
 sec:
@@ -68,11 +64,11 @@ clean:
 .PHONY: goget-tools
 goget-tools:
 	go get -u github.com/Masterminds/glide
-	# go get -u golang.org/x/lint/golint
 	go get -u github.com/mitchellh/gox
 	go get github.com/frapposelli/wwhrd
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u github.com/securego/gosec/cmd/gosec
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage

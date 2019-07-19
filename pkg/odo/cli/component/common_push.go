@@ -145,7 +145,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	appName := cpo.localConfigInfo.GetApplication()
 
 	if cpo.componentContext == "" {
-		cpo.componentContext = strings.Trim(filepath.Dir(cpo.localConfigInfo.Filename), ".odo")
+		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.localConfigInfo.Filename), ".odo")
 	}
 
 	cmpExists, err := cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)

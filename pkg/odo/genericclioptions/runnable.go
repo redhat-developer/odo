@@ -44,6 +44,6 @@ func CheckMachineReadableOutputCommand() {
 	// in order to have NO verbose output when combining both `-o json` and `-v 4` so json output
 	// is not malformed / mixed in with normal logging
 	if log.IsJSON() {
-		flag.Set("v", "0")
+		_ = flag.Set("v", "0")
 	}
 }

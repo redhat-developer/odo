@@ -3861,7 +3861,6 @@ func TestInjectS2IPaths(t *testing.T) {
 	tests := []struct {
 		name            string
 		existingEnvVars []corev1.EnvVar
-		envVars         []corev1.EnvVar
 		wantLength      int
 	}{
 		{
