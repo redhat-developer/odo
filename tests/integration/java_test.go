@@ -93,9 +93,10 @@ var _ = Describe("odoJavaE2e", func() {
 
 		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			oc.ImportJavaIsToNspace(project)
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
 
 			helper.CmdShouldPass("odo", "create", "java", "sb-jar-test", "--project",
-				project, "--binary", "../examples/binary/java/openjdk/sb.jar", "--context", context)
+				project, "--binary", filepath.Join(context, "sb.jar"), "--context", context)
 
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", context)
