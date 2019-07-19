@@ -5,7 +5,7 @@
 
 toc::[]
 
-== Submitting a pull request(PR)
+== Setting up
 
  . link:https://help.github.com/en/articles/fork-a-repo[Fork] the link:https://github.com/openshift/odo[`odo`] repository.
 
@@ -26,12 +26,33 @@ When cloning `odo`, the Windows terminal such as PowerShell or CMD may throw a *
 $ git config --system core.longpaths true
 ----
 
+ . Install tools used by the build and test system:
++
+----
+$ make goget-tools
+----
+
+== Submitting a pull request(PR)
+
  . Create a branch, refer to the guidelines below in the sections below, and create a PR with your changes. If your PR is still in-progress, indicate this with a label or add WIP in your PR title.
 +
 A PR must include:
 
  * Descriptive context that outlines what has been changed and why
-* A link to the active or open issue it fixes (if applicable)
+ * A link to the active or open issue it fixes (if applicable)
+
+== Useful make targets
+
+bin:: (default) `go build` the executable in cmd/odo
+install:: build and install `odo` in your GOPATH
+validate:: run gofmt, go vet and other validity checks
+goget-tools:: download tools used to build & test
+test:: run all unit tests - same as `go test pkg/...`
+test-integration:: run all integration tests
+test-coverage:: generate test coverage report
+
+Read the Makefile itself for more information.
+
 
 == Reviewing a PR
 
