@@ -854,10 +854,6 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 			return errors.Wrapf(err, "unable to get exposed ports for %s:%s", imageName, imageTag)
 		}
 	} else {
-		if err != nil {
-			return errors.Wrapf(err, "unable to create s2i app for %s", commonObjectMeta.Name)
-		}
-		imageNS = imageStream.ObjectMeta.Namespace
 		containerPorts, err = util.GetContainerPortsFromStrings(params.Ports)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
@@ -1289,9 +1285,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annota
 	}
 
 	// generate BuildConfig
-	buildSource := buildv1.BuildSource{}
-
-	buildSource = buildv1.BuildSource{
+	buildSource := buildv1.BuildSource{
 		Git: &buildv1.GitBuildSource{
 			URI: gitURL,
 		},
@@ -1472,9 +1466,7 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 		return errors.New("UpdateDCToGit imageName cannot be blank")
 	}
 
-	var dc appsv1.DeploymentConfig
-
-	dc = generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
+	dc := generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
 
 	if isDeleteSupervisordVolumes {
 		// Patch the current DC
@@ -2442,40 +2434,6 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 	return planList.Items, nil
 }
 
-// imageStreamExists returns true if the given image stream exists in the given
-// namespace
-func (c *Client) imageStreamExists(name string, namespace string) bool {
-	imageStreams, err := c.GetImageStreamsNames(namespace)
-	if err != nil {
-		glog.V(4).Infof("unable to get image streams in the namespace: %v", namespace)
-		return false
-	}
-
-	for _, is := range imageStreams {
-		if is == name {
-			return true
-		}
-	}
-	return false
-}
-
-// clusterServiceClassExists returns true if the given external name of the
-// cluster service class exists in the cluster, and false otherwise
-func (c *Client) clusterServiceClassExists(name string) bool {
-	clusterServiceClasses, err := c.GetClusterServiceClassExternalNamesAndPlans()
-	if err != nil {
-		glog.V(4).Infof("unable to get cluster service classes' external names")
-	}
-
-	for _, class := range clusterServiceClasses {
-		if class.Name == name {
-			return true
-		}
-	}
-
-	return false
-}
-
 // CreateRoute creates a route object for the given service and with the given labels
 // serviceName is the name of the service for the target reference
 // portNumber is the target port of the route
@@ -2740,8 +2698,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 	go func() {
 		defer writer.Close()
 
-		var err error
-		err = makeTar(localPath, dest, writer, copyFiles, globExps)
+		err := makeTar(localPath, dest, writer, copyFiles, globExps)
 		if err != nil {
 			glog.Errorf("Error while creating tar: %#v", err)
 			os.Exit(1)
@@ -2761,10 +2718,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 // checkFileExist check if given file exists or not
 func checkFileExist(fileName string) bool {
 	_, err := os.Stat(fileName)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return os.IsNotExist(err)
 }
 
 // makeTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L309
@@ -2801,43 +2755,6 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 		}
 	} else {
 		return recursiveTar(filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), filepath.Base(destPath), tarWriter, globExps)
-	}
-
-	return nil
-}
-
-// Tar will be used to tar files using odo watch
-// inspired from https://gist.github.com/jonmorehouse/9060515
-func tar(tw *taro.Writer, fileName string, destFile string) error {
-	stat, _ := os.Lstat(fileName)
-
-	// now lets create the header as needed for this file within the tarball
-	hdr, err := taro.FileInfoHeader(stat, fileName)
-	if err != nil {
-		return err
-	}
-	splitFileName := strings.Split(fileName, destFile)[1]
-
-	// hdr.Name can have only '/' as path separator, next line makes sure there is no '\'
-	// in hdr.Name on Windows by replacing '\' to '/' in splitFileName. destFile is
-	// a result of path.Base() call and never have '\' in it.
-	hdr.Name = destFile + strings.Replace(splitFileName, "\\", "/", -1)
-	// write the header to the tarball archive
-	err = tw.WriteHeader(hdr)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Open(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// copy the file data to the tarball
-	_, err = io.Copy(tw, file)
-	if err != nil {
-		return err
 	}
 
 	return nil

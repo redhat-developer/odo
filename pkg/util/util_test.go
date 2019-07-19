@@ -72,7 +72,6 @@ func TestExtractComponentType(t *testing.T) {
 		testName      string
 		componentType string
 		want          string
-		wantErr       bool
 	}{
 		{
 			testName:      "Test namespacing and versioning",
@@ -1080,10 +1079,9 @@ func TestRemoveDuplicate(t *testing.T) {
 
 func TestRemoveRelativePathFromFiles(t *testing.T) {
 	type args struct {
-		path    string
-		input   []string
-		output  []string
-		wantErr bool
+		path   string
+		input  []string
+		output []string
 	}
 	tests := []struct {
 		name    string

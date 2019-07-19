@@ -12,8 +12,6 @@ import (
 
 // TODO: A neater way to provide odo path. Currently we assume \
 // odo and oc in $PATH already.
-var testNamespacedImage = "https://raw.githubusercontent.com/bucharest-gold/centos7-s2i-nodejs/master/imagestreams/nodejs-centos7.json"
-var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
 var oc helper.OcRunner
 var project string
 var context string

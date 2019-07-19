@@ -2,6 +2,9 @@ package storage
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
@@ -11,11 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"strings"
 )
-
-const unMountRecommendedCommandName = "unmount"
 
 var (
 	storageUnMountShortDesc = `Unmount storage from the given path or identified by its name, from the current component`

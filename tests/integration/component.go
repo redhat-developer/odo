@@ -13,10 +13,6 @@ import (
 )
 
 func componentTests(args ...string) {
-	const initContainerName = "copy-files-to-volume"
-	const wildflyURI1 = "https://github.com/marekjelen/katacoda-odo-backend"
-	const wildflyURI2 = "https://github.com/mik-dass/katacoda-odo-backend"
-	const appRootVolumeName = "-testing-s2idata"
 	var oc helper.OcRunner
 	var project string
 	var context string
@@ -147,10 +143,7 @@ func componentTests(args ...string) {
 					project,
 					[]string{"ls", "-la", "/tmp/src/package.json"},
 					func(cmdOp string, err error) bool {
-						if err != nil {
-							return false
-						}
-						return true
+						return err == nil
 					},
 				)
 				Expect(remoteCmdExecPass).To(Equal(true))
@@ -172,10 +165,7 @@ func componentTests(args ...string) {
 					project,
 					[]string{"ls", "-la", "/tmp/src/package.json"},
 					func(cmdOp string, err error) bool {
-						if err != nil {
-							return false
-						}
-						return true
+						return err == nil
 					},
 				)
 				Expect(remoteCmdExecPass).To(Equal(true))
@@ -209,10 +199,7 @@ func componentTests(args ...string) {
 					project,
 					[]string{"ls", "-la", "/tmp/src/package.json"},
 					func(cmdOp string, err error) bool {
-						if err != nil {
-							return false
-						}
-						return true
+						return err == nil
 					},
 				)
 				Expect(remoteCmdExecPass).To(Equal(true))
@@ -233,12 +220,7 @@ func componentTests(args ...string) {
 					appName,
 					project,
 					[]string{"ls", "-la", "/tmp/src/package.json"},
-					func(cmdOp string, err error) bool {
-						if err != nil {
-							return false
-						}
-						return true
-					},
+					func(cmdOp string, err error) bool { return err == nil },
 				)
 				Expect(remoteCmdExecPass).To(Equal(true))
 			})
@@ -285,12 +267,7 @@ func componentTests(args ...string) {
 				appName,
 				project,
 				[]string{"ls", "-la", "/tmp/src/package.json"},
-				func(cmdOp string, err error) bool {
-					if err != nil {
-						return false
-					}
-					return true
-				},
+				func(cmdOp string, err error) bool { return err == nil },
 			)
 			Expect(remoteCmdExecPass).To(Equal(true))
 		})

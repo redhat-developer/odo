@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,7 +43,6 @@ type CreateOptions struct {
 	cpuMax            string
 	cpuMin            string
 	cpu               string
-	wait              bool
 	interactive       bool
 	now               bool
 	*CommonPushOptions
@@ -499,41 +497,6 @@ func (co *CreateOptions) Run() (err error) {
 		log.Infof("Please use `odo push` command to create the component with source deployed\n")
 	}
 	return
-}
-
-func (co *CreateOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
-
-	cmpName := co.localConfigInfo.GetName()
-	appName := co.localConfigInfo.GetApplication()
-	cmpType := co.localConfigInfo.GetType()
-
-	isCmpExists, err := component.Exists(co.Context.Client, cmpName, appName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
-	}
-
-	if !isCmpExists {
-		log.Successf("Creating %s component with name %s", cmpType, cmpName)
-		// Classic case of component creation
-		if err = component.CreateComponent(co.Context.Client, *co.localConfigInfo, co.componentContext, stdout); err != nil {
-			log.Errorf(
-				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
-				cmpName,
-				err,
-			)
-			os.Exit(1)
-		}
-		log.Successf("Successfully created component %s", cmpName)
-	}
-
-	// Apply config
-	err = component.ApplyConfig(co.Context.Client, *co.localConfigInfo, stdout, isCmpExists)
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
-	}
-	log.Successf("Successfully updated component with name: %v", cmpName)
-
-	return nil
 }
 
 // The general cpu/memory is used as a fallback when it's set and both min-cpu/memory max-cpu/memory are not set

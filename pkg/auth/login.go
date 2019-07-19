@@ -99,7 +99,7 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 // Kindly taken from https://stackoverflow.com/questions/54570268/filtering-the-output-of-a-terminal-output-using-golang
 func copyAndFilter(w io.Writer, r io.Reader) ([]byte, error) {
 	var out []byte
-	buf := make([]byte, 1024, 1024)
+	buf := make([]byte, 1024)
 	for {
 		n, err := r.Read(buf[:])
 		if n > 0 {

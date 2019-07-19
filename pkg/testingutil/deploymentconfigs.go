@@ -10,14 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getContainerPort(containerPort int32, containerProtocol corev1.Protocol) (container corev1.ContainerPort) {
-	return corev1.ContainerPort{
-		Name:          fmt.Sprintf("%v/%v", containerPort, containerProtocol),
-		ContainerPort: containerPort,
-		Protocol:      containerProtocol,
-	}
-}
-
 func getContainer(componentName string, applicationName string, ports []corev1.ContainerPort,
 	envFromSources []corev1.EnvFromSource) corev1.Container {
 	return corev1.Container{
@@ -69,14 +61,10 @@ func getDeploymentConfig(namespace string, componentName string, componentType s
 
 func FakeDeploymentConfigs() *v1.DeploymentConfigList {
 
-	var componentName string
-	var applicationName string
-	var componentType string
-
 	// DC1 with multiple containers each with multiple ports
-	componentType = "python"
-	componentName = "python"
-	applicationName = "app"
+	componentType := "python"
+	componentName := "python"
+	applicationName := "app"
 	c1 := getContainer(componentName, applicationName, []corev1.ContainerPort{
 		{
 			Name:          fmt.Sprintf("%v-%v-p1", componentName, applicationName),

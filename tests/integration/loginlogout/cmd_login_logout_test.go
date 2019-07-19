@@ -11,8 +11,6 @@ import (
 var _ = Describe("odoLoginE2e", func() {
 	// user related constants
 	const loginTestUserForNoProject = "odologinnoproject"
-	const loginTestUserForSingleProject1 = "odologinsingleproject1"
-	const odoTestProjectForSingleProject1 = "odologintestproject1"
 	const loginTestUserPassword = "developer"
 	var session1 string
 	var testUserToken1 string

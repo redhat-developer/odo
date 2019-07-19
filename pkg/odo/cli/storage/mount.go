@@ -14,8 +14,6 @@ import (
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
-const mountRecommendedCommandName = "mount"
-
 var (
 	storageMountShortDesc = `mount storage to a component`
 	storageMountLongDesc  = ktemplates.LongDesc(`mount storage to a component`)

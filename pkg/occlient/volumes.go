@@ -91,10 +91,7 @@ func (c *Client) DeletePVC(name string) error {
 
 // IsAppSupervisorDVolume checks if the volume is a supervisorD volume
 func (c *Client) IsAppSupervisorDVolume(volumeName, dcName string) bool {
-	if volumeName == getAppRootVolumeName(dcName) {
-		return true
-	}
-	return false
+	return volumeName == getAppRootVolumeName(dcName)
 }
 
 // getVolumeNamesFromPVC returns the name of the volume associated with the given

@@ -151,6 +151,10 @@ func fakeResourceConsumption() []util.ResourceRequirementInfo {
 	}
 }
 
+// This function is not used anywhere, this assignment prevents lint
+// from complaining about dead code.
+var _ = fakeResourceConsumption
+
 // fakeImageStream gets imagestream for the reactor
 func fakeImageStream(imageName string, namespace string, strTags []string) *imagev1.ImageStream {
 	var tags []imagev1.NamedTagEventList
@@ -296,16 +300,12 @@ func fakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
 
 	planServiceInstanceCreateParameterSchemaRaw1, err := json.Marshal(planServiceInstanceCreateParameterSchema1)
 	if err != nil {
-		if err != nil {
-			return nil, errors.Wrap(err, "")
-		}
+		return nil, errors.Wrap(err, "")
 	}
 
 	planServiceInstanceCreateParameterSchemaRaw2, err := json.Marshal(planServiceInstanceCreateParameterSchema2)
 	if err != nil {
-		if err != nil {
-			return nil, errors.Wrap(err, "")
-		}
+		return nil, errors.Wrap(err, "")
 	}
 
 	var data [][]byte
@@ -1272,7 +1272,6 @@ func TestIsTagInImageStream(t *testing.T) {
 		name        string
 		imagestream imagev1.ImageStream
 		imageTag    string
-		wantErr     bool
 		want        bool
 	}{
 		{
