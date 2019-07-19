@@ -3,6 +3,7 @@ package testingutil
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -106,16 +107,12 @@ func FakePlanServiceInstanceCreateParameterSchemasRaw() [][]byte {
 
 	planServiceInstanceCreateParameterSchemaRaw1, err := json.Marshal(planServiceInstanceCreateParameterSchema1)
 	if err != nil {
-		if err != nil {
-			panic(err)
-		}
+		panic(err)
 	}
 
 	planServiceInstanceCreateParameterSchemaRaw2, err := json.Marshal(planServiceInstanceCreateParameterSchema2)
 	if err != nil {
-		if err != nil {
-			panic(err)
-		}
+		panic(err)
 	}
 
 	var data [][]byte

@@ -603,7 +603,9 @@ func addLabelsToArgs(labels map[string]string, args []string) []string {
 // getExposedPortsFromISI parse ImageStreamImage definition and return all exposed ports in form of ContainerPorts structs
 func getExposedPortsFromISI(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
 	// file DockerImageMetadata
-	imageWithMetadata(&image.Image)
+	if err := imageWithMetadata(&image.Image); err != nil {
+		return nil, err
+	}
 
 	var ports []corev1.ContainerPort
 
@@ -1377,6 +1379,9 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 			return nil
 		} else {
 			currentDCBytes, err := json.Marshal(currentDC.Spec.Template)
+			if err != nil {
+				return errors.Wrapf(err, "unable to marshal dc")
+			}
 			updatedDCBytes, err := json.Marshal(updatedDc.Spec.Template)
 			if err != nil {
 				return errors.Wrapf(err, "unable to unmarshal dc")

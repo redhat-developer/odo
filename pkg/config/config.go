@@ -653,6 +653,9 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 	// after retrieving the sourceLocation we will covert it to the
 	// correct source path depending on the OS.
 	absPath, err := util.GetAbsPath(filepath.Join(componentContext, lci.GetSourceLocation()))
+	if err != nil {
+		return "", nil
+	}
 
 	sourceOSPath := filepath.FromSlash(absPath)
 

@@ -98,12 +98,12 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
 	// as they are not necessarily needed and more for advanced debugging
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	pflag.CommandLine.Set("logtostderr", "true")
-	pflag.CommandLine.MarkHidden("alsologtostderr")
-	pflag.CommandLine.MarkHidden("log_backtrace_at")
-	pflag.CommandLine.MarkHidden("log_dir")
-	pflag.CommandLine.MarkHidden("logtostderr")
-	pflag.CommandLine.MarkHidden("stderrthreshold")
+	_ = pflag.CommandLine.Set("logtostderr", "true")
+	_ = pflag.CommandLine.MarkHidden("alsologtostderr")
+	_ = pflag.CommandLine.MarkHidden("log_backtrace_at")
+	_ = pflag.CommandLine.MarkHidden("log_dir")
+	_ = pflag.CommandLine.MarkHidden("logtostderr")
+	_ = pflag.CommandLine.MarkHidden("stderrthreshold")
 
 	// Override the verbosity flag description
 	verbosity := pflag.Lookup("v")

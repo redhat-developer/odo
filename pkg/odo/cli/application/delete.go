@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+
 	odoUtil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/openshift/odo/pkg/application"
@@ -56,6 +57,9 @@ func (o *DeleteOptions) Validate() (err error) {
 	}
 
 	exist, err := application.Exists(o.appName, o.Client)
+	if err != nil {
+		return err
+	}
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}

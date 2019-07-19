@@ -40,9 +40,10 @@ func NewDescribeOptions() *DescribeOptions {
 
 // Complete completes describe args
 func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	err = do.ComponentOptions.Complete(name, cmd, args)
-	do.localConfigInfo, err = config.NewLocalConfigInfo(do.componentContext)
-	return
+	if err = do.ComponentOptions.Complete(name, cmd, args); err == nil {
+		do.localConfigInfo, err = config.NewLocalConfigInfo(do.componentContext)
+	}
+	return err
 }
 
 // Validate validates the describe parameters
