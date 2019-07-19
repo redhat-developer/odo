@@ -529,7 +529,6 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 	// Instantiate watcher before requesting new project
 	// If watched is created after the project it can lead to situation when the project is created before the watcher.
 	// When this happens, it gets stuck waiting for event that already happened.
-	var watcher watch.Interface
 	if wait {
 		watcher, err := c.projectClient.Projects().Watch(metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
@@ -537,7 +536,18 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 		if err != nil {
 			return errors.Wrapf(err, "unable to watch new project %s creation", projectName)
 		}
-		defer watcher.Stop()
+		defer func() { // Wait at the end of the function
+			watcher.Stop()
+			for {
+				val, ok := <-watcher.ResultChan()
+				if !ok {
+					break
+				}
+				if e, ok := val.Object.(*projectv1.Project); ok {
+					glog.V(4).Infof("Project %s now exists", e.Name)
+				}
+			}
+		}()
 	}
 
 	projectRequest := &projectv1.ProjectRequest{
@@ -545,24 +555,9 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			Name: projectName,
 		},
 	}
-	_, err := c.projectClient.ProjectRequests().Create(projectRequest)
-	if err != nil {
+	if _, err := c.projectClient.ProjectRequests().Create(projectRequest); err != nil {
 		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}
-
-	if watcher != nil {
-		for {
-			val, ok := <-watcher.ResultChan()
-			if !ok {
-				break
-			}
-			if e, ok := val.Object.(*projectv1.Project); ok {
-				glog.V(4).Infof("Project %s now exists", e.Name)
-				return nil
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -763,12 +758,9 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 	imageNS := imageStream.ObjectMeta.Namespace
 	imageName := imageStream.ObjectMeta.Name
 
-	tagFound := false
-
 	for _, tag := range imageStream.Status.Tags {
 		// look for matching tag
 		if tag.Tag == imageTag {
-			tagFound = true
 			glog.V(4).Infof("Found exact image tag match for %s:%s", imageName, imageTag)
 
 			if len(tag.Items) > 0 {
@@ -782,16 +774,9 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 				}
 				return imageStreamImage, nil
 			}
-
 			return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
-
 		}
 	}
-
-	if !tagFound {
-		return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
-	}
-
 	// return error since its an unhandled case if code reaches here
 	return nil, fmt.Errorf("unable to fetch image with tag %s corresponding to imagestream %+v", imageTag, imageStream)
 }
@@ -841,8 +826,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	 in which case, GetImageStream function resolves to correct commonObjectMeta.Namespace in accordance with priorities in GetImageStream
 	*/
 
-	imageNS = imageStream.ObjectMeta.Namespace
-	glog.V(4).Infof("Using imageNS: %s", imageNS)
+	glog.V(4).Infof("Using imageNS: %s", imageStream.ObjectMeta.Namespace)
 
 	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
 	if err != nil {

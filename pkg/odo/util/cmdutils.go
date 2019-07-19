@@ -2,13 +2,13 @@ package util
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/config"
 	"os"
 	"strings"
 	"unicode"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	urlPkg "github.com/openshift/odo/pkg/url"
