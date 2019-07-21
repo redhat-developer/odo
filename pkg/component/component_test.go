@@ -435,7 +435,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentPath:      "./testing",
 			existingComponents: ComponentList{},
 			wantErr:            false,
-			wantRE:             "testing-nodejs-*",
+			wantRE:             "nodejs-testing-*",
 			needPrefix:         true,
 		},
 		{
@@ -445,7 +445,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			componentPath:      "./testing.war",
 			existingComponents: ComponentList{},
 			wantErr:            false,
-			wantRE:             "testing-wildfly-*",
+			wantRE:             "wildfly-testing-*",
 			needPrefix:         true,
 		},
 	}

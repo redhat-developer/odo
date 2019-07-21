@@ -95,7 +95,7 @@ func GetDefaultComponentName(componentPath string, componentPathType config.SrcT
 
 	// Generate unique name for the component using prefix and unique random suffix
 	componentName, err := util.GetRandomName(
-		fmt.Sprintf("%s-%s", prefix, componentType),
+		fmt.Sprintf("%s-%s", componentType, prefix),
 		componentNameMaxLen,
 		existingComponentNames,
 		componentNameMaxRetries,
