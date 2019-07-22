@@ -25,7 +25,7 @@ var _ = Describe("odoLinkE2e", func() {
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
-		s.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		oc = helper.NewOcRunner("oc")
 		project = helper.CreateRandProject()
 	})
