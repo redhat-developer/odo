@@ -55,8 +55,7 @@ var _ = Describe("odoJavaE2e", func() {
 			helper.CmdShouldPass("odo", "delete", "wo-wait-javaee-git-test", "-f", "--context", context)
 		})
 
-		// https://github.com/openshift/odo/issues/1846
-		/*It("Should be able to deploy a .war file using wildfly", func() {
+		It("Should be able to deploy a .war file using wildfly", func() {
 			helper.CopyExample(filepath.Join("binary", "java", "wildfly"), context)
 			helper.CmdShouldPass("odo", "create", "wildfly", "javaee-war-test", "--project",
 				project, "--binary", filepath.Join(context, "ROOT.war"), "--context", context)
@@ -71,7 +70,7 @@ var _ = Describe("odoJavaE2e", func() {
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "javaee-war-test", "-f", "--context", context)
-		})*/
+		})
 
 		It("Should be able to deploy a git repo that contains a java uberjar application using openjdk", func() {
 			oc.ImportJavaIsToNspace(project)
@@ -92,12 +91,12 @@ var _ = Describe("odoJavaE2e", func() {
 			helper.CmdShouldPass("odo", "delete", "uberjar-git-test", "-f", "--context", context)
 		})
 
-		// https://github.com/openshift/odo/issues/1846
-		/*It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
+		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			oc.ImportJavaIsToNspace(project)
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
 
 			helper.CmdShouldPass("odo", "create", "java", "sb-jar-test", "--project",
-				project, "--binary", "../examples/binary/java/openjdk/sb.jar", "--context", context)
+				project, "--binary", filepath.Join(context, "sb.jar"), "--context", context)
 
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", context)
@@ -109,7 +108,7 @@ var _ = Describe("odoJavaE2e", func() {
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "sb-jar-test", "-f", "--context", context)
-		})*/
+		})
 
 	})
 })

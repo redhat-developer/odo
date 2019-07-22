@@ -141,7 +141,12 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 		if err != nil {
 			return err
 		}
-		co.componentSettings.SourceLocation = &cPath
+		// we need to store the SourceLocation relative to the componentContext
+		relativePathToSource, err := filepath.Rel(co.componentContext, cPath)
+		if err != nil {
+			return err
+		}
+		co.componentSettings.SourceLocation = &relativePathToSource
 
 	// --git
 	case config.GIT:
@@ -331,7 +336,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			selectedSourcePath = ui.EnterInputTypePath("binary", currentDirectory)
 
 			// Get the correct source location
-			sourceLocation, err := getSourceLocation(selectedSourcePath, currentDirectory)
+			sourceLocation, err := getSourceLocation(selectedSourcePath, co.componentContext)
 			if err != nil {
 				return errors.Wrapf(err, "unable to get source location")
 			}
@@ -350,11 +355,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.componentContext = ui.EnterInputTypePath("path", currentDirectory, currentDirectory)
 
 			// Get the correct source location
-			sourceLocation, err := getSourceLocation(co.componentContext, currentDirectory)
-			if err != nil {
-				return errors.Wrapf(err, "unable to get source location")
+			if co.componentContext == "" {
+				co.componentContext = LocalDirectoryDefaultLocation
 			}
-			co.componentSettings.SourceLocation = &sourceLocation
+			co.componentSettings.SourceLocation = &co.componentContext
 
 		}
 
