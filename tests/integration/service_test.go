@@ -38,9 +38,9 @@ var _ = Describe("odoServiceE2e", func() {
 
 	Context("When creating with a spring boot application", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
 		})

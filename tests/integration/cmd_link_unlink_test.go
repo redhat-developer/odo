@@ -24,10 +24,10 @@ var _ = Describe("odoLinkE2e", func() {
 	// This is before every spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
+		context = helper.CreateNewContext()
+		s.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		oc = helper.NewOcRunner("oc")
 		project = helper.CreateRandProject()
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
 	// Clean up after the test

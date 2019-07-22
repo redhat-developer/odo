@@ -80,9 +80,9 @@ var _ = Describe("odo config test", func() {
 
 	Context("when creating odo local config in the same config dir", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
+			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
 		})
@@ -161,9 +161,9 @@ var _ = Describe("odo config test", func() {
 
 	Context("when creating odo local config with context flag", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
+			project = helper.CreateRandProject()
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
@@ -239,9 +239,9 @@ var _ = Describe("odo config test", func() {
 
 	Context("when creating odo local config with env variables", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
+			project = helper.CreateRandProject()
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
@@ -266,9 +266,9 @@ var _ = Describe("odo config test", func() {
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
+			project = helper.CreateRandProject()
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)

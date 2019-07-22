@@ -18,9 +18,9 @@ var _ = Describe("odoSourceE2e", func() {
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		oc = helper.NewOcRunner("oc")
-		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		project = helper.CreateRandProject()
 	})
 
 	AfterEach(func() {

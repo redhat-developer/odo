@@ -18,9 +18,9 @@ var _ = Describe("odoJavaE2e", func() {
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		oc = helper.NewOcRunner("oc")
-		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		project = helper.CreateRandProject()
 	})
 
 	// Clean up after the test

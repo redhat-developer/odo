@@ -40,9 +40,9 @@ var _ = Describe("odo generic", func() {
 
 	Context("creating component with an application and url", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
 		})
@@ -65,9 +65,9 @@ var _ = Describe("odo generic", func() {
 
 	Context("should list applications in other project", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
 		})
 
 		JustAfterEach(func() {
@@ -89,9 +89,9 @@ var _ = Describe("odo generic", func() {
 
 	Context("when running odo push with flag --show-log", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
 		})
 
 		JustAfterEach(func() {
@@ -111,9 +111,9 @@ var _ = Describe("odo generic", func() {
 
 	Context("deploying a component with a specific image name", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
 		})
 
 		JustAfterEach(func() {
@@ -130,6 +130,14 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Context("When deleting two project one after the other", func() {
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		})
+
+		JustAfterEach(func() {
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
 		It("should be able to delete sequentially", func() {
 			project1 := helper.CreateRandProject()
 			project2 := helper.CreateRandProject()
@@ -140,6 +148,14 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Context("When deleting three project one after the other in opposite order", func() {
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		})
+
+		JustAfterEach(func() {
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
 		It("should be able to delete", func() {
 			project1 := helper.CreateRandProject()
 			project2 := helper.CreateRandProject()
@@ -171,8 +187,9 @@ var _ = Describe("odo generic", func() {
 		var originalDir string
 
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
 		})
@@ -181,6 +198,7 @@ var _ = Describe("odo generic", func() {
 			helper.DeleteProject(project)
 			helper.Chdir(originalDir)
 			helper.DeleteDir(context)
+			os.Unsetenv("GLOBALODOCONFIG")
 		})
 		It("should not allow creating a URL with long name", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
