@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -70,6 +72,18 @@ func componentTests(args ...string) {
 			helper.CmdShouldFail("odo", "app", "delete", "app", "-f")
 			helper.CmdShouldFail("odo", "component", "delete", componentName, "-f")
 
+		})
+
+		It("should create default named component when passed same context differently", func() {
+			dir := filepath.Base(context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", ".", "--app", "testing")...)
+			componentName := helper.GetConfigValueWithContext("Name", context)
+			Expect(componentName).To(ContainSubstring("nodejs-" + dir))
+			helper.DeleteDir(filepath.Join(context, ".odo"))
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", context, "--app", "testing")...)
+			newComponentName := helper.GetConfigValueWithContext("Name", context)
+			Expect(newComponentName).To(ContainSubstring("nodejs-" + dir))
 		})
 
 		It("should show an error when ref flag is provided with sources except git", func() {
@@ -494,6 +508,28 @@ func componentTests(args ...string) {
 			Expect(stdOut).To(ContainSubstring("FOO:"))
 
 			helper.Chdir(originalDir)
+		})
+	})
+
+	Context("Creating component with numeric named context", func() {
+		var context string
+		JustBeforeEach(func() {
+			var err error
+			ts := time.Now().UnixNano()
+			context, err = ioutil.TempDir("", fmt.Sprint(ts))
+			Expect(err).ToNot(HaveOccurred())
+			os.Mkdir(context, 0755)
+			project = helper.CreateRandProject()
+			helper.Chdir(context)
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+		})
+
+		It("should create default named component in a directory with numeric name", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v4")
 		})
 	})
 }

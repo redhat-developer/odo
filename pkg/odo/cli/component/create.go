@@ -220,8 +220,26 @@ func getSourceLocation(componentContext string, currentDirectory string) (string
 
 func createDefaultComponentName(context *genericclioptions.Context, componentType string, sourceType config.SrcType, sourcePath string) (string, error) {
 	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
+	var err error
+	finalSourcePath := sourcePath
+	// we only get absolute path for local source type
+	if sourceType == config.LOCAL {
+		if sourcePath == "" {
+			wd, err := os.Getwd()
+			if err != nil {
+				return "", err
+			}
+			finalSourcePath = wd
+		} else {
+			finalSourcePath, err = filepath.Abs(sourcePath)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
 	componentName, err := component.GetDefaultComponentName(
-		sourcePath,
+		finalSourcePath,
 		sourceType,
 		componentType,
 		component.ComponentList{},
