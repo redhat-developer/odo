@@ -632,7 +632,7 @@ Modifies odo specific configuration settings within the global preference file.
 By default the path to the global preference file is `/home/username/.odo/preferece.yaml`, it is stored in the `GLOBALODOCONFIG` variable. You can set up a custom path by changing the value of the variable `GLOBALODOCONFIG="/new_path/preference.yaml"`.
 
 Run `echo "$GLOBALODOCONFIG"` to display the current value of the variable. 
-===-
+====
 
 Available Parameters:
 
