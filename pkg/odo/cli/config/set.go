@@ -2,8 +2,11 @@ package config
 
 import (
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/odo/genericclioptions/printtemplates"
 	"strings"
 
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/pkg/errors"
 
@@ -42,16 +45,17 @@ var (
 // SetOptions encapsulates the options for the command
 type SetOptions struct {
 	paramName       string
+	now             bool
 	paramValue      string
 	configForceFlag bool
 	contextDir      string
 	envArray        []string
-	lci             *config.LocalConfigInfo
+	*clicomponent.CommonPushOptions
 }
 
 // NewSetOptions creates a new SetOptions instance
 func NewSetOptions() *SetOptions {
-	return &SetOptions{}
+	return &SetOptions{CommonPushOptions: clicomponent.NewCommonPushOptions()}
 }
 
 // Complete completes SetOptions after they've been created
@@ -66,13 +70,20 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	if err != nil {
 		return err
 	}
-	o.lci = cfg
+	o.LocalConfigInfo = cfg
+	if o.now {
+		o.ResolveSrcAndConfigFlags()
+		err = o.ResolveProject(o.Context.Project)
+		if err != nil {
+			return err
+		}
+	}
 	return
 }
 
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
-	if !o.lci.ConfigFileExists() {
+	if !o.LocalConfigInfo.ConfigFileExists() {
 		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
 	}
 	return
@@ -88,9 +99,9 @@ func (o *SetOptions) Run() (err error) {
 			return err
 		}
 		// keeping the old env vars as well
-		presentEnvVarList := o.lci.GetEnvVars()
+		presentEnvVarList := o.LocalConfigInfo.GetEnvVars()
 		newEnvVarList = presentEnvVarList.Merge(newEnvVarList)
-		if err := o.lci.SetEnvVars(newEnvVarList); err != nil {
+		if err := o.LocalConfigInfo.SetEnvVars(newEnvVarList); err != nil {
 			return err
 		}
 
@@ -101,7 +112,7 @@ func (o *SetOptions) Run() (err error) {
 	}
 
 	if !o.configForceFlag {
-		if isSet := o.lci.IsSet(o.paramName); isSet {
+		if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
 				fmt.Println("Aborted by the user.")
 				return nil
@@ -109,13 +120,34 @@ func (o *SetOptions) Run() (err error) {
 		}
 	}
 
-	err = o.lci.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	err = o.LocalConfigInfo.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
 	if err != nil {
 		return err
 	}
 
 	log.Info("Local config was successfully updated.")
-	log.Info("Run `odo push --config` command to apply changes to the cluster.")
+	if o.now {
+		o.Context, _, err = genericclioptions.UpdatedContext(o.Context)
+		if o.LocalConfigInfo == nil {
+			fmt.Println("Ooops local config is nil")
+		}
+		glog.V(4).Infof("Reloaded context info %#v" , o)
+
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve updated local config")
+		}
+		err = o.SetSourceInfo()
+		if err != nil {
+			return errors.Wrap(err, "unable to set source information")
+		}
+		err = o.Push()
+		if err != nil {
+			return errors.Wrapf(err, "failed to push the changes")
+		}
+	} else {
+		fmt.Print(printtemplates.PushMessage("apply", "config changes", true))
+	}
+	//log.Info("Run `odo push --config` command to apply changes to the cluster.")
 
 	return nil
 }
@@ -150,6 +182,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	genericclioptions.AddNowFlag(configurationSetCmd, &o.now)
 	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
 	configurationSetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Set the environment variables in config")
 	genericclioptions.AddContextFlag(configurationSetCmd, &o.contextDir)
