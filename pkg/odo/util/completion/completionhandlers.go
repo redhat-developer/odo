@@ -2,8 +2,9 @@ package completion
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/config"
 	"strings"
+
+	"github.com/openshift/odo/pkg/config"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/application"
@@ -28,7 +29,7 @@ var ServiceCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context
 		return completions
 	}
 
-	for _, class := range services {
+	for _, class := range services.Items {
 		if args.commands[class.Name] {
 			return nil
 		}
@@ -312,7 +313,7 @@ var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 		}
 	}
 
-	for _, service := range services {
+	for _, service := range services.Items {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
 		if val, ok := args.commands[service.Name]; ok && val {
@@ -363,7 +364,7 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 		}
 	}
 
-	for _, service := range services {
+	for _, service := range services.Items {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
 		if val, ok := args.commands[service.Name]; ok && val {

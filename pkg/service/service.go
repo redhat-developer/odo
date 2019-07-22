@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/odo/util/validation"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sort"
 
@@ -169,7 +170,7 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 }
 
 // List lists all the deployed services
-func List(client *occlient.Client, applicationName string) ([]ServiceInfo, error) {
+func List(client *occlient.Client, applicationName string) (ServiceList, error) {
 	labels := map[string]string{
 		applabels.ApplicationLabel: applicationName,
 	}
@@ -181,10 +182,10 @@ func List(client *occlient.Client, applicationName string) ([]ServiceInfo, error
 	// get service instance list based on given selector
 	serviceInstanceList, err := client.GetServiceInstanceList(applicationSelector)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to list services")
+		return ServiceList{}, errors.Wrapf(err, "unable to list services")
 	}
 
-	var services []ServiceInfo
+	var services []Service
 	// Iterate through serviceInstanceList and add to service
 	for _, elem := range serviceInstanceList {
 		conditions := elem.Status.Conditions
@@ -195,28 +196,28 @@ func List(client *occlient.Client, applicationName string) ([]ServiceInfo, error
 		} else {
 			status = conditions[0].Reason
 		}
-
-		services = append(services, ServiceInfo{Name: elem.Labels[componentlabels.ComponentLabel], Type: elem.Labels[componentlabels.ComponentTypeLabel], Status: status})
+		svc := GetMachineReadableFormat(elem.Labels[componentlabels.ComponentLabel], elem.Labels[componentlabels.ComponentTypeLabel], status)
+		services = append(services, svc)
 	}
 
-	return services, nil
+	return GetMachineReadableFormatForList(services), nil
 }
 
 // ListWithDetailedStatus lists all the deployed services and additionally provides a "smart" status for each one of them
 // The smart status takes into account how Services are used in odo.
 // So when a secret has been created as a result of the created ServiceBinding, we set the appropriate status
 // Same for when the secret has been "linked" into the deploymentconfig
-func ListWithDetailedStatus(client *occlient.Client, applicationName string) ([]ServiceInfo, error) {
+func ListWithDetailedStatus(client *occlient.Client, applicationName string) (ServiceList, error) {
 
 	services, err := List(client, applicationName)
 	if err != nil {
-		return nil, err
+		return ServiceList{}, err
 	}
 
 	// retrieve secrets in order to set status
 	secrets, err := client.ListSecrets("")
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to list secrets as part of the bindings check")
+		return ServiceList{}, errors.Wrapf(err, "unable to list secrets as part of the bindings check")
 	}
 
 	// use the standard selector to retrieve DeploymentConfigs
@@ -229,37 +230,36 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) ([]
 	applicationSelector := util.ConvertLabelsToSelector(labels)
 	deploymentConfigs, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
 	if err != nil {
-		return nil, err
+		return ServiceList{}, err
 	}
 
 	// go through each service and see if there is a secret that has been created
 	// if so, update the status of the service
-	for i, service := range services {
+	for i, service := range services.Items {
 		for _, secret := range secrets {
 			if secret.Name == service.Name {
 				// this is the default status when the secret exists
-				services[i].Status = provisionedAndBoundStatus
+				services.Items[i].Status.Message = provisionedAndBoundStatus
 
 				// if we find that the dc contains a link to the secret
 				// we update the status to be even more specific
-				updateStatusIfMatchingDeploymentExists(deploymentConfigs, secret.Name, services, i)
+				updateStatusIfMatchingDeploymentExists(deploymentConfigs, secret.Name, services.Items, i)
 
 				break
 			}
 		}
 	}
-
-	return services, nil
+	return GetMachineReadableFormatForList(services.Items), nil
 }
 
 func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secretName string,
-	services []ServiceInfo, index int) {
+	services []Service, index int) {
 
 	for _, dc := range dcs {
 		foundMatchingSecret := false
 		for _, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
 			if env.SecretRef.Name == secretName {
-				services[index].Status = provisionedAndLinkedStatus
+				services[index].Status.Message = provisionedAndLinkedStatus
 			}
 			foundMatchingSecret = true
 			break
@@ -281,7 +281,7 @@ func SvcExists(client *occlient.Client, serviceName, applicationName string) (bo
 	if err != nil {
 		return false, errors.Wrap(err, "unable to get the service list")
 	}
-	for _, service := range serviceList {
+	for _, service := range serviceList.Items {
 		if service.Name == serviceName {
 			return true, nil
 		}
@@ -396,4 +396,27 @@ func isRequired(required []string, name string) bool {
 		}
 	}
 	return false
+}
+
+// GetMachineReadableFormat gives machine readable service definition
+func GetMachineReadableFormat(name, serviceType, status string) Service {
+	return Service{
+		TypeMeta:   metav1.TypeMeta{Kind: "service", APIVersion: "odo.openshift.io/v1alpha1"},
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec:       ServiceSpec{ServiceType: serviceType},
+		Status:     ServiceStatus{Message: status},
+	}
+
+}
+
+// GetMachineReadableFormatForList gives machine readable service list definition
+func GetMachineReadableFormatForList(services []Service) ServiceList {
+	return ServiceList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    services,
+	}
 }

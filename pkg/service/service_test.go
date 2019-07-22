@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/onsi/gomega/matchers"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -213,7 +214,7 @@ func TestListWithDetailedStatus(t *testing.T) {
 		serviceList scv1beta1.ServiceInstanceList
 		secretList  corev1.SecretList
 		dcList      appsv1.DeploymentConfigList
-		output      []ServiceInfo
+		output      ServiceList
 	}{
 		{
 			name: "Case 1: services with various statuses, some bound and some linked",
@@ -388,26 +389,58 @@ func TestListWithDetailedStatus(t *testing.T) {
 					},
 				},
 			},
-			output: []ServiceInfo{
-				{
-					Name:   "mysql-persistent",
-					Status: "ProvisionedAndLinked",
-					Type:   "mysql-persistent",
+			output: ServiceList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.openshift.io/v1alpha1",
 				},
-				{
-					Name:   "postgresql-ephemeral",
-					Status: "ProvisionedAndBound",
-					Type:   "postgresql-ephemeral",
-				},
-				{
-					Name:   "mongodb",
-					Status: "ProvisionedSuccessfully",
-					Type:   "mongodb",
-				},
-				{
-					Name:   "jenkins-persistent",
-					Status: "Provisioning",
-					Type:   "jenkins-persistent",
+				ListMeta: metav1.ListMeta{},
+				Items: []Service{
+					Service{
+						TypeMeta:   metav1.TypeMeta{Kind: "service", APIVersion: "odo.openshift.io/v1alpha1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "mysql-persistent"},
+						Spec:       ServiceSpec{ServiceType: "mysql-persistent"},
+						Status:     ServiceStatus{Message: "ProvisionedAndLinked"},
+					},
+					Service{
+						TypeMeta:   metav1.TypeMeta{Kind: "service", APIVersion: "odo.openshift.io/v1alpha1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "postgresql-ephemeral"},
+						Spec:       ServiceSpec{ServiceType: "postgresql-ephemeral"},
+						Status:     ServiceStatus{Message: "ProvisionedAndBound"},
+					},
+					Service{
+						TypeMeta:   metav1.TypeMeta{Kind: "service", APIVersion: "odo.openshift.io/v1alpha1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "mongodb"},
+						Spec:       ServiceSpec{ServiceType: "mongodb"},
+						Status:     ServiceStatus{Message: "ProvisionedSuccessfully"},
+					},
+					Service{
+						TypeMeta:   metav1.TypeMeta{Kind: "service", APIVersion: "odo.openshift.io/v1alpha1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "jenkins-persistent"},
+						Spec:       ServiceSpec{ServiceType: "jenkins-persistent"},
+						Status:     ServiceStatus{Message: "Provisioning"},
+					},
+					// {
+
+					// 	Name:   "mysql-persistent",
+					// 	Status: "ProvisionedAndLinked",
+					// 	Type:   "mysql-persistent",
+					// },
+					// {
+					// 	Name:   "postgresql-ephemeral",
+					// 	Status: "ProvisionedAndBound",
+					// 	Type:   "postgresql-ephemeral",
+					// },
+					// {
+					// 	Name:   "mongodb",
+					// 	Status: "ProvisionedSuccessfully",
+					// 	Type:   "mongodb",
+					// },
+					// {
+					// 	Name:   "jenkins-persistent",
+					// 	Status: "Provisioning",
+					// 	Type:   "jenkins-persistent",
+					// },
 				},
 			},
 		},

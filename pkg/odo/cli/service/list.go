@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -53,21 +54,39 @@ func (o *ServiceListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service list command
 func (o *ServiceListOptions) Run() (err error) {
-	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
-	if err != nil {
-		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
-	}
+	if log.IsJSON() {
+		services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
+		if err != nil {
+			return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
+		}
+		// var svcItems []svc.Service
+		// for _, svco := range services.Items {
+		// 	svcJSON := svc.GetMachineReadableFormat(svco.Name, svco.Spec.ServiceType, svco.Status.Message)
+		// 	svcItems = append(svcItems, svcJSON)
+		// }
+		// svccList := svc.GetMachineReadableFormatForList(svcItems)
+		out, err := json.Marshal(services)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
+	} else {
 
-	if len(services) == 0 {
-		log.Error("There are no services deployed for this application")
-		return
+		services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
+		if err != nil {
+			return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
+		}
+
+		if len(services.Items) == 0 {
+			return fmt.Errorf("There are no services deployed for this application")
+		}
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "STATUS")
+		for _, comp := range services.Items {
+			fmt.Fprintln(w, comp.Name, "\t", comp.Spec.ServiceType, "\t", comp.Status.Message)
+		}
+		w.Flush()
 	}
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "STATUS")
-	for _, comp := range services {
-		fmt.Fprintln(w, comp.Name, "\t", comp.Type, "\t", comp.Status)
-	}
-	w.Flush()
 	return
 }
 
