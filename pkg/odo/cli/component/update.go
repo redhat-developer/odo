@@ -31,6 +31,7 @@ type UpdateOptions struct {
 	local         string
 	ref           string
 	cmpCfgContext string
+	now           bool
 	cmpConfig     *config.LocalConfigInfo
 	*ComponentOptions
 }
@@ -53,7 +54,7 @@ var updateCmdExample = ktemplates.Examples(`  # Change the source code path of a
 
 // NewUpdateOptions returns new instance of UpdateOptions
 func NewUpdateOptions() *UpdateOptions {
-	return &UpdateOptions{ComponentOptions: &ComponentOptions{}}
+	return &UpdateOptions{ComponentOptions: NewComponentOptionsWithPushOptions()}
 }
 
 // Complete completes update args
@@ -67,7 +68,13 @@ func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if err != nil {
 		return errors.Wrapf(err, "failed to update component")
 	}
-
+	if uo.now {
+		uo.ResolveSrcAndConfigFlags()
+		err = uo.ResolveProject(uo.Context.Project)
+		if err != nil {
+			return err
+		}
+	}
 	return
 }
 
@@ -101,6 +108,23 @@ func (uo *UpdateOptions) Validate() (err error) {
 	return
 }
 
+func (uo *UpdateOptions) push() error {
+	var err error
+	uo.Context, uo.LocalConfigInfo, err = genericclioptions.UpdatedContext(uo.Context)
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve updated local config")
+	}
+	err = uo.SetSourceInfo()
+	if err != nil {
+		return errors.Wrap(err, "unable to set source information")
+	}
+	err = uo.Push()
+	if err != nil {
+		return errors.Wrapf(err, "failed to push the changes")
+	}
+	return nil
+}
+
 // Run has the logic to perform the required actions as part of command
 func (uo *UpdateOptions) Run() (err error) {
 	stdout := color.Output
@@ -112,7 +136,14 @@ func (uo *UpdateOptions) Run() (err error) {
 		if err := component.Update(uo.Context.Client, *uo.cmpConfig, uo.cmpConfig.GetSourceLocation(), stdout); err != nil {
 			return err
 		}
-		log.Successf("The component %s was updated successfully", uo.componentName)
+		if uo.now {
+			err = uo.push()
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Successf("The component %s was updated successfully", uo.componentName)
+		}
 	} else if cmpSrcType == config.LOCAL {
 		var cmpPath string
 		if len(uo.cmpCfgContext) > 0 {
@@ -134,7 +165,14 @@ func (uo *UpdateOptions) Run() (err error) {
 		if err = component.Update(uo.Context.Client, *uo.cmpConfig, cmpPath, stdout); err != nil {
 			return err
 		}
-		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", uo.componentName)
+		if uo.now {
+			err = uo.push()
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", uo.componentName)
+		}
 	} else if cmpSrcType == config.BINARY {
 		path, err := pkgUtil.GetAbsPath(uo.binary)
 		if err != nil {
@@ -143,7 +181,14 @@ func (uo *UpdateOptions) Run() (err error) {
 		if err = component.Update(uo.Context.Client, *uo.cmpConfig, path, stdout); err != nil {
 			return err
 		}
-		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", uo.componentName)
+		if uo.now {
+			err = uo.push()
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", uo.componentName)
+		}
 	}
 	return
 }
@@ -173,6 +218,8 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 	//Adding `--application` flag
 	appCmd.AddApplicationFlag(updateCmd)
 
+	//Adding `--now` flag
+	genericclioptions.AddNowFlag(updateCmd, &uo.now)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(updateCmd)
 

@@ -29,6 +29,7 @@ var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'.
 
 // DeleteOptions is a container to attach complete, validate and run pattern
 type DeleteOptions struct {
+	now                      bool
 	componentForceDeleteFlag bool
 	componentDeleteAllFlag   bool
 	componentContext         string
@@ -38,7 +39,7 @@ type DeleteOptions struct {
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, "", false, &ComponentOptions{}}
+	return &DeleteOptions{false, false, false, "", NewComponentOptionsWithPushOptions()}
 }
 
 // Complete completes log args
@@ -138,7 +139,8 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
 	//Adding `--context` flag
 	genericclioptions.AddContextFlag(componentDeleteCmd, &do.componentContext)
-
+	// Adding `--now` flag
+	//	genericclioptions.AddNowFlag(componentDeleteCmd, &do.now)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentDeleteCmd)
 	//Adding `--application` flag

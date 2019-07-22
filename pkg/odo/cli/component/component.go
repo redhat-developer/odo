@@ -23,7 +23,13 @@ const RecommendedCommandName = "component"
 // ComponentOptions encapsulates basic component options
 type ComponentOptions struct {
 	componentName string
-	*genericclioptions.Context
+	*CommonPushOptions
+}
+
+//NewComponentOptionsWithPushOptions returns empty Component Options with a new
+// CommonPushOptions
+func NewComponentOptionsWithPushOptions() *ComponentOptions {
+	return &ComponentOptions{CommonPushOptions: NewCommonPushOptions()}
 }
 
 // Complete completes component options
