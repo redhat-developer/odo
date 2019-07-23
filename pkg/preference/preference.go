@@ -115,7 +115,7 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 	configFile, err := getPreferenceFile()
 	glog.V(4).Infof("The configFile is %+v", configFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get odo config file")
+		return nil, errors.Wrap(err, "unable to get odo preference file")
 	}
 
 	c := PreferenceInfo{
