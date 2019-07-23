@@ -31,7 +31,7 @@ jobs:
       stage: test
       name: "generic,login,component integration tests"
       script:
-        - ./scripts/oc-cluster.sh
+        - ./scripts/oc-cluster.sh service-catalog
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
