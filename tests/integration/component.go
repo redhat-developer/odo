@@ -495,14 +495,11 @@ func componentTests(args ...string) {
 	Context("when running odo push multiple times, check for existence of environment variables", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
 			originalDir = helper.Getwd()
 		})
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			os.RemoveAll(context)
 		})
 
 		It("should should retain the same environment variable on multiple push", func() {
@@ -515,7 +512,6 @@ func componentTests(args ...string) {
 			helper.Chdir(context)
 			helper.CmdShouldPass("odo", "config", "set", "--env", "FOO=BAR")
 			helper.CmdShouldPass("odo", "push")
-			helper.CmdShouldPass("oc", "project", project)
 
 			dcName := oc.GetDcName(componentName, project)
 			stdOut := helper.CmdShouldPass("oc", "get", "dc/"+dcName, "-n", project, "-o", "go-template={{ .spec.template.spec }}{{.env}}")
@@ -524,8 +520,6 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "push")
 			stdOut = oc.DescribeDc(dcName, project)
 			Expect(stdOut).To(ContainSubstring("FOO"))
-
-			helper.Chdir(originalDir)
 		})
 	})
 
