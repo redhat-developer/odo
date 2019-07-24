@@ -91,6 +91,7 @@ func (o *VersionOptions) Run() (err error) {
 			openshiftStr,
 			o.serverInfo.KubernetesVersion)
 	}
+
 	return
 }
 

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
@@ -32,6 +33,7 @@ type CommonPushOptions struct {
 
 	pushConfig bool
 	pushSource bool
+	forceBuild bool
 
 	*genericclioptions.Context
 }
@@ -52,11 +54,11 @@ func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 	}
 }
 
-func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
+func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) (bool, error) {
 	if !cpo.pushConfig {
 		// Not the case of component creation or updation(with new config)
 		// So nothing to do here and hence return from here
-		return nil
+		return false, nil
 	}
 
 	cmpName := cpo.localConfigInfo.GetName()
@@ -67,7 +69,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	defer s.End(false)
 	isCmpExists, err := component.Exists(cpo.Context.Client, cmpName, appName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
+		return false, errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
 	}
 	s.End(true)
 
@@ -99,7 +101,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
 
-	return nil
+	return isCmpExists, nil
 }
 
 // ResolveProject completes the push options as needed
@@ -150,7 +152,11 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	cmpName := cpo.localConfigInfo.GetName()
 	appName := cpo.localConfigInfo.GetApplication()
 
-	err = cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)
+	if cpo.componentContext == "" {
+		cpo.componentContext = strings.Trim(filepath.Dir(cpo.localConfigInfo.Filename), ".odo")
+	}
+
+	cmpExists, err := cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)
 	if err != nil {
 		return
 	}
@@ -161,6 +167,40 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	}
 
 	log.Infof("\nPushing to component %s of type %s", cmpName, cpo.sourceType)
+
+	if !cpo.forceBuild && cpo.sourceType != config.GIT {
+		absIgnoreRules := util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores)
+
+		spinner := log.NewStatus(log.GetStdout())
+		defer spinner.End(true)
+		if cmpExists {
+			spinner.Start("Checking file changes for pushing", false)
+		} else {
+			// if the component doesn't exist, we don't check for changes in the files
+			// thus we show a different message
+			spinner.Start("Checking files for pushing", false)
+		}
+
+		// run the indexer and find the modified/added/deleted/renamed files
+		filesChanged, filesDeleted, err := util.Run(cpo.componentContext, absIgnoreRules)
+		spinner.End(true)
+
+		if err != nil {
+			return err
+		}
+
+		if cmpExists {
+			// apply the glob rules from the .gitignore/.odo file
+			// and ignore the files on which the rules apply and filter them out
+			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
+
+			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
+				// no file was modified/added/deleted/renamed, thus return without building
+				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
+				return nil
+			}
+		}
+	}
 
 	// Get SourceLocation here...
 	cpo.sourcePath, err = cpo.localConfigInfo.GetOSSourcePath()
@@ -219,4 +259,29 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 	log.Success("Changes successfully pushed to component")
 	return
+}
+
+// filterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
+// returns the filtered results which match any of the glob rules
+func filterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesChangedFiltered, filesDeletedFiltered []string) {
+	for _, file := range filesChanged {
+		match, err := util.IsGlobExpMatch(file, absIgnoreRules)
+		if err != nil {
+			continue
+		}
+		if !match {
+			filesChangedFiltered = append(filesChangedFiltered, file)
+		}
+	}
+
+	for _, file := range filesDeleted {
+		match, err := util.IsGlobExpMatch(file, absIgnoreRules)
+		if err != nil {
+			continue
+		}
+		if !match {
+			filesDeletedFiltered = append(filesDeletedFiltered, file)
+		}
+	}
+	return filesChangedFiltered, filesDeletedFiltered
 }

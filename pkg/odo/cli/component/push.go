@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -121,6 +120,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	pushCmd.Flags().BoolVar(&po.pushConfig, "config", false, "Use config flag to only apply config on to cluster")
 	pushCmd.Flags().BoolVar(&po.pushSource, "source", false, "Use source flag to only push latest source on to cluster")
+	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to force building the component")
 
 	// Add a defined annotation in order to appear in the help menu
 	pushCmd.Annotations = map[string]string{"command": "component"}
