@@ -500,6 +500,7 @@ func componentTests(args ...string) {
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
 		})
 
 		It("should should retain the same environment variable on multiple push", func() {
