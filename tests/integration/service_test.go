@@ -82,7 +82,7 @@ var _ = Describe("odoServiceE2e", func() {
 			routeURL := helper.DetermineRouteURL("")
 
 			// Ping said URL
-			helper.HttpWaitFor(routeURL, "Spring Boot", 30, 1)
+			helper.HttpWaitFor(routeURL, "Spring Boot", 90, 1)
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "sb-app", "-f")
