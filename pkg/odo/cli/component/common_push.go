@@ -171,7 +171,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	if !cpo.forceBuild && cpo.sourceType != config.GIT {
 		absIgnoreRules := util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores)
 
-		spinner := log.NewStatus(os.Stdout)
+		spinner := log.NewStatus(log.GetStdout())
 		defer spinner.End(true)
 		if cmpExists {
 			spinner.Start("Checking file changes for pushing", false)
@@ -196,7 +196,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
 				// no file was modified/added/deleted/renamed, thus return without building
-				log.Success("No file changes detected, skipping build. Use to '-f' flag to force the build.")
+				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 				return nil
 			}
 		}

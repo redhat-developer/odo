@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -84,7 +83,7 @@ func Run(directory string, ignoreRules []string) (filesChanged []string, filesDe
 		if fi.IsDir() {
 
 			// if folder is the root folder, don't add it
-			if fi.Name() == filepath.Base(directory) && len(strings.Split(fi.Name(), "/")) == 1 {
+			if fn == directory {
 				return nil
 			}
 
