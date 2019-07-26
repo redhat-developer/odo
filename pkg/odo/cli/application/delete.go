@@ -64,7 +64,7 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *DeleteOptions) Run() (err error) {
-	if o.OutputFlag == "json" {
+	if log.IsJSON() {
 		err = application.Delete(o.Client, o.appName)
 		if err != nil {
 			return err
@@ -105,7 +105,6 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	}
 
 	command.Flags().BoolVarP(&o.force, "force", "f", false, "Delete application without prompting")
-	genericclioptions.AddOutputFlag(command)
 
 	project.AddProjectFlag(command)
 	completion.RegisterCommandHandler(command, completion.AppCompletionHandler)

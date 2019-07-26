@@ -112,6 +112,7 @@ func IsTerminal(w io.Writer) bool {
 // there will be a loading spinner with this status
 func (s *Status) Start(status string, debug bool) {
 	s.End(true)
+
 	// set new status
 	isTerm := IsTerminal(s.writer)
 	s.status = status
@@ -119,7 +120,7 @@ func (s *Status) Start(status string, debug bool) {
 	// If we are in debug mode, don't spin!
 	if !isTerm || debug {
 		fmt.Fprintf(s.writer, prefixSpacing+getSpacingString()+suffixSpacing+"%s  ...\n", s.status)
-	} else {
+	} else if !IsJSON() {
 		s.spinner.SetPrefix(prefixSpacing)
 		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
 		s.spinner.Start()
@@ -154,68 +155,90 @@ func (s *Status) End(success bool) {
 // Namef will output the name of the component / application / project in a *bolded* manner
 func Namef(format string, a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
+	}
 }
 
 // Progressf will output in an appropriate "progress" manner
 func Progressf(format string, a ...interface{}) {
-	fmt.Fprintf(GetStdout(), " %s%s\n", prefixSpacing, fmt.Sprintf(format, a...))
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), " %s%s\n", prefixSpacing, fmt.Sprintf(format, a...))
+	}
 }
 
 // Success will output in an appropriate "success" manner
 func Success(a ...interface{}) {
 	green := color.New(color.FgGreen).SprintFunc()
-	fmt.Fprintf(GetStdout(), "%s%s%s%s", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintln(a...))
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s%s%s%s", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintln(a...))
+	}
 }
 
 // Successf will output in an appropriate "progress" manner
 func Successf(format string, a ...interface{}) {
 	green := color.New(color.FgGreen).SprintFunc()
-	fmt.Fprintf(GetStdout(), "%s%s%s%s\n", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintf(format, a...))
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s%s%s%s\n", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintf(format, a...))
+	}
 }
 
 // Warningf will output in an appropriate "progress" manner
 func Warningf(format string, a ...interface{}) {
 	yellow := color.New(color.FgYellow).SprintFunc()
-	fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
+	if !IsJSON() {
+		fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
+	}
 }
 
 // Warning will output in an appropriate "progress" manner
 func Warning(a ...interface{}) {
 	yellow := color.New(color.FgYellow).SprintFunc()
-	fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
+	if !IsJSON() {
+		fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
+	}
 }
 
 // Errorf will output in an appropriate "progress" manner
 func Errorf(format string, a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Fprintf(GetStderr(), " %s%s%s\n", red(getErrString()), suffixSpacing, fmt.Sprintf(format, a...))
+	if !IsJSON() {
+		fmt.Fprintf(GetStderr(), " %s%s%s\n", red(getErrString()), suffixSpacing, fmt.Sprintf(format, a...))
+	}
 }
 
 // Error will output in an appropriate "progress" manner
 func Error(a ...interface{}) {
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, red(getErrString()), suffixSpacing, fmt.Sprintln(a...))
+	if !IsJSON() {
+		fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, red(getErrString()), suffixSpacing, fmt.Sprintln(a...))
+	}
 }
 
 // Info will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Info(a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintln(a...)))
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintln(a...)))
+	}
 }
 
 // Infof will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Infof(format string, a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
+	}
 }
 
 // Askf will print out information, but in an "Ask" way (without newline)
 func Askf(format string, a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()
-	fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintf(format, a...)))
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintf(format, a...)))
+	}
 }
 
 // Spinner creates a spinner, sets the prefix then returns it.
@@ -242,6 +265,18 @@ func SpinnerNoSpin(status string) *Status {
 	s := NewStatus(os.Stdout)
 	s.Start(status, true)
 	return s
+}
+
+// IsJSON returns true if we are in machine output mode..
+// under NO circumstances should we output any logging.. as we are only outputting json
+func IsJSON() bool {
+
+	flag := pflag.Lookup("o")
+	if flag != nil && flag.Changed {
+		return strings.Contains(pflag.Lookup("o").Value.String(), "json")
+	}
+
+	return false
 }
 
 // IsDebug returns true if we are debugging (-v is set to anything but 0)

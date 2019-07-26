@@ -89,6 +89,12 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 
 	rootCmd.PersistentFlags().Bool(genericclioptions.SkipConnectionCheckFlagName, false, "Skip cluster check")
 
+	// Add the machine readable output flag to all commands
+	// We use "flag" in order to make this accessible throughtout ALL of odo, rather than the
+	// above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
+	// package
+	flag.CommandLine.String("o", "json", "Specify output format, supported format: json")
+
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
 	// as they are not necessarily needed and more for advanced debugging
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)

@@ -1,12 +1,13 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/util"
-	"os"
 
 	"text/tabwriter"
 
@@ -54,10 +55,6 @@ func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []st
 
 // Validate validates the StorageListOptions based on completed values
 func (o *StorageListOptions) Validate() (err error) {
-	// check the machine readable format
-	if !util.CheckOutputFlag(o.OutputFlag) {
-		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
-	}
 	return nil
 }
 
@@ -74,13 +71,13 @@ func (o *StorageListOptions) Run() (err error) {
 		storageListMachineReadable = append(storageListMachineReadable, storage.GetMachineReadableFormat(storageConfig.Name, storageConfig.Size, storageConfig.Path))
 	}
 	storageListResultMachineReadable := storage.GetMachineReadableFormatForList(storageListMachineReadable)
-	out, err := util.MachineOutput(o.OutputFlag, storageListResultMachineReadable)
-	if err != nil {
-		return err
-	}
 
-	if out != "" {
-		fmt.Println(out)
+	if log.IsJSON() {
+		out, err := json.Marshal(storageListResultMachineReadable)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
 	} else {
 		// defining the column structure of the table
 		tabWriterMounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -122,7 +119,6 @@ func NewCmdStorageList(name, fullName string) *cobra.Command {
 	appCmd.AddApplicationFlag(storageListCmd)
 	componentCmd.AddComponentFlag(storageListCmd)
 
-	genericclioptions.AddOutputFlag(storageListCmd)
 	genericclioptions.AddContextFlag(storageListCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageListCmd, "context", completion.FileCompletionHandler)
 
