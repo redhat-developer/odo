@@ -12,7 +12,7 @@ TIMEOUT ?= 1800s
 # TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node.
 # NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
 # on the same number of ginkgo test nodes.
-TEST_EXEC_NODES ?= 4
+TEST_EXEC_NODES ?= 2
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -182,7 +182,7 @@ test-odo-config:
 .PHONY: test-integration-all-no-service-catalog
 test-integration-all-no-service-catalog:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
-	-focus="odoCmdApp|odoCmpSubE2e|odoCmpE2e|odoLinkE2e|odo config test|odo storage command|odoWatchE2e|odo generic|odoJavaE2e|odojsonoutput|odoServiceE2e|odoSourceE2e|odoURLIntegration" \
+	-focus="odoCmdApp|odoCmpSubE2e|odoCmpE2e|odo config test|odo storage command|odoWatchE2e|odo generic|odoJavaE2e|odojsonoutput|odo push command tests|odoURLIntegration|odoSourceE2e" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout 7200s
 
 # Run all integration test which are depend on service catalog enabled cluster
