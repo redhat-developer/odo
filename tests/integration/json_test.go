@@ -34,6 +34,22 @@ var _ = Describe("odojsonoutput", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
+	Context("odo machine create project json output", func() {
+		// odo project create newprojectjson -o json
+		It("should be able to create project and show output in json format", func() {
+			actual := helper.CmdShouldPass("odo", "project", "create", "newprojectjson", "-o", "json")
+			desired := `{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"newprojectjson","namespace":"newprojectjson","creationTimestamp":null},"message":"Project 'newprojectjson' is ready for use"}`
+			Expect(desired).Should(MatchJSON(actual))
+		})
+
+		// odo project create newprojectjson -o json (x2)
+		It("should fail saying that there is already an existing project", func() {
+			actual := helper.CmdShouldFail("odo", "project", "create", "newprojectjson", "-o", "json")
+			desired := `{"kind":"Error","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"newprojectjson","creationTimestamp":null},"message":"unable to create new project: unable to create new project newprojectjson: project.project.openshift.io \"newprojectjson\" already exists"}`
+			Expect(desired).Should(MatchJSON(actual))
+		})
+	})
+
 	Context("odo machine readable output on empty project", func() {
 		//https://github.com/openshift/odo/issues/1708
 		//odo project list -o json

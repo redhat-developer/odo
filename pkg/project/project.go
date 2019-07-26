@@ -1,7 +1,12 @@
 package project
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+
 	"github.com/openshift/odo/pkg/application"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/log"
@@ -82,24 +87,79 @@ func Exists(client *occlient.Client, projectName string) (bool, error) {
 	return true, nil
 }
 
+// GetMachineReadableFormat gathers the readable format and output a Project struct
+// for json to marshal
 func GetMachineReadableFormat(projectName string, isActive bool, apps []string) Project {
-
 	return Project{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Project",
 			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: projectName,
+			Name:      projectName,
+			Namespace: projectName,
 		},
 		Spec: ProjectSpec{
 			Applications: apps,
 		},
 		Status: ProjectStatus{
-
 			Active: isActive,
 		},
 	}
+}
+
+// MachineReadableSuccessOutput ...
+func MachineReadableSuccessOutput(projectName string, message string) {
+	machineOutput := machineoutput.Success{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Project",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      projectName,
+			Namespace: projectName,
+		},
+		Message: message,
+	}
+
+	printableOutput, err := json.Marshal(machineOutput)
+
+	// If we error out... there's no way to output it (since we disable logging when using -o json)
+	if err != nil {
+		fmt.Printf("Unable to unmarshal JSON: %s", err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Println(string(printableOutput))
+	os.Exit(0)
+}
+
+// MachineReadableErrorOutput for the project
+// we force an os.Exit(1) as well as a fmt.Println since
+// all logging is disabled when using `-o json`. This function
+// prints out the success output and then errors out with the appropriate code.
+func MachineReadableErrorOutput(projectName string, err error) {
+	machineOutput := machineoutput.Error{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Error",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: projectName,
+		},
+		Message: err.Error(),
+	}
+
+	printableOutput, err := json.Marshal(machineOutput)
+
+	// If we error out... there's no way to output it (since we disable logging when using -o json)
+	if err != nil {
+		fmt.Printf("Unable to unmarshal JSON: %s", err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Println(string(printableOutput))
+	os.Exit(1)
 }
 
 // getMachineReadableFormatForList returns application list in machine readable format

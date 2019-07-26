@@ -53,26 +53,44 @@ func (pco *ProjectCreateOptions) Validate() (err error) {
 
 // Run runs the project create command
 func (pco *ProjectCreateOptions) Run() (err error) {
+
+	successMessage := fmt.Sprintf(`Project '%s' is ready for use`, pco.projectName)
+
+	// Create the "spinner"
+	s := &log.Status{}
+
+	// If the --wait parameter has been passed, we add a spinner..
 	if pco.wait {
-		s := log.Spinner("Waiting for project to come up")
-		err = project.Create(pco.Client, pco.projectName, true)
-		if err != nil {
-			return err
-		} else {
-			s.End(true)
-			log.Successf(`Project '%s' is ready for use`, pco.projectName)
-		}
-	} else {
-		err = project.Create(pco.Client, pco.projectName, false)
-		if err != nil {
-			return err
-		}
+		s = log.Spinner("Waiting for project to come up")
+		defer s.End(false)
 	}
 
-	err = project.SetCurrent(pco.Client, pco.projectName)
-	if err != nil {
+	// Create the project & end the spinner (if there is any..)
+	err = project.Create(pco.Client, pco.projectName, pco.wait)
+	s.End(true)
+
+	// If JSON has been passed, we will output json, if we error we do json error output
+	if log.IsJSON() && err != nil {
+		project.MachineReadableErrorOutput(pco.projectName, err)
+	} else if err != nil {
 		return err
 	}
+
+	log.Successf(successMessage)
+
+	// If -o json has been passed, let's output the approriate json output!
+	if log.IsJSON() {
+		project.MachineReadableSuccessOutput(pco.projectName, successMessage)
+	}
+
+	// Set the current project when created if it's json output, we output a json output error
+	err = project.SetCurrent(pco.Client, pco.projectName)
+	if log.IsJSON() && err != nil {
+		project.MachineReadableErrorOutput(pco.projectName, err)
+	} else if err != nil {
+		return err
+	}
+
 	log.Successf("New project created and now using project : %v", pco.projectName)
 	return
 }
