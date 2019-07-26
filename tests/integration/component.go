@@ -114,7 +114,6 @@ func componentTests(args ...string) {
 	})
 
 	Context("Test odo push with --source and --config flags", func() {
-		var originalDir string
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
@@ -452,6 +451,7 @@ func componentTests(args ...string) {
 			helper.DeleteProject(project)
 			helper.DeleteDir(context)
 			os.RemoveAll(context)
+			helper.Chdir(originalDir)
 		})
 
 		It("should pass inside a odo directory without component name as parameter", func() {
@@ -465,7 +465,6 @@ func componentTests(args ...string) {
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
 			helper.CmdShouldPass("odo", "describe")
 			helper.CmdShouldPass("odo", "delete", "-f")
-			helper.Chdir(originalDir)
 		})
 
 		It("should fail outside a odo directory without component name as parameter", func() {
@@ -537,6 +536,7 @@ func componentTests(args ...string) {
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
 		})
 
 		It("should create default named component in a directory with numeric name", func() {
