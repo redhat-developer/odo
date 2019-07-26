@@ -187,165 +187,174 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 Integration tests can be run in the following two ways:
 
-* To run the test in parallel (default: 4 ginkgo test node), on a test cluster:
+* To run the tests in parallel (default: 2 ginkgo test node), on a test cluster:
 +
-Run component command integration test
+Run component command integration tests
 +
 ----
 $ make test-cmp-e2e
 ----
 +
 
-Run application command integration test
+Run application command integration tests
 +
 ----
 $ make test-cmd-app
 ----
 +
 
-Run storage command integration test
+Run storage command integration tests
 +
 ----
 $ make test-cmd-storage
 ----
 +
 
-Run watch command integration test
+Run watch command integration tests
 +
 ----
 $ make test-watch-e2e
 ----
 +
 
-Run config/preference command integration test
+Run config/preference command integration tests
 +
 ----
 $ make test-odo-config
 ----
 +
 
-Run generic integration test
+Run generic integration tests
 +
 ----
 $ make test-generic
 ----
 +
 
-Run json output integration test
+Run json output integration tests
 +
 ----
 $ make test-json-format-output
 ----
 +
 
-Run service command integration test
+Run service command integration tests
 +
 ----
 $ make test-service-e2e
 ----
 +
 
-Run link/unlink command integration test
+Run link/unlink command integration tests
 +
 ----
 $ make test-link-e2e
 ----
 +
 
-Run java source integration test
+Run java source integration tests
 +
 ----
 $ make test-java-e2e
 ----
 +
 
-Run source integration test
+Run source integration tests
 +
 ----
 $ make test-source-e2e
 ----
 +
 
-* To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
+* To run the tests sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
-Run component command integration test
+Run component command integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-cmp-e2e
 ----
 +
 
-Run application command integration test
+Run application command integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-cmd-app
 ----
 +
 
-Run storage command integration test
+Run storage command integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-cmd-storage
 ----
 +
 
-Run watch command integration test
+Run watch command integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-watch-e2e
 ----
 +
 
-Run config/preference command integration test
+Run config/preference command integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-odo-config
 ----
 +
 
-Run generic integration test
+Run generic integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-generic
 ----
 +
 
-Run json output integration test
+Run json output integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-json-format-output
 ----
 +
 
-Run service command integration test
+Run service command integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-service-e2e
 ----
 +
 
-Run link/unlink command integration test
+Run link/unlink command integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-link-e2e
 ----
 +
 
-Run java source integration test
+Run java source integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-java-e2e
 ----
 +
 
-Run source integration test
+Run source integration tests
 +
 ----
 $ TEST_EXEC_NODES=1 make test-source-e2e
 ----
 +
 
-* For the entire integration test suite use:
+* For the login and logout command integration tests:
++
+----
+$ make test-odo-login-e2e
+----
++
+
+NOTE: `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
+
+* For the entire integration test suite:
 +
 ----
 $ make test-integration
@@ -356,7 +365,7 @@ NOTE: `make test-integration` doesn't honour enviornment variable `TEST_EXEC_NOD
 
 Similarly e2e (end to end) tests can be run in parallel and sequentially separately.
 
-* To run the test in parallel (default: 4 ginkgo test node), on a test cluster:
+* To run the test in parallel (default: 2 ginkgo test node), on a test cluster:
 +
 Run core beta flow e2e test
 +

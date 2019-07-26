@@ -25,6 +25,20 @@ var _ = Describe("odoLoginE2e", func() {
 		oc = helper.NewOcRunner("oc")
 	})
 
+	Context("when running help for login command", func() {
+		It("should display the help", func() {
+			appHelp := helper.CmdShouldPass("odo", "login", "-h")
+			Expect(appHelp).To(ContainSubstring("Login to cluster"))
+		})
+	})
+
+	Context("when running help for logout command", func() {
+		It("should display the help", func() {
+			appHelp := helper.CmdShouldPass("odo", "logout", "-h")
+			Expect(appHelp).To(ContainSubstring("Log out of the current OpenShift session"))
+		})
+	})
+
 	Context("Run login tests with no active projects, having default is also considered as not having active project", func() {
 		It("Should login successfully with username and password without any projects with appropriate message", func() {
 			currentUserToken1 = oc.GetToken()
@@ -50,7 +64,7 @@ var _ = Describe("odoLoginE2e", func() {
 		It("Should fail login on invalid token with appropriate message", func() {
 			sessionErr := helper.CmdShouldFail("odo", "login", "-t", "verybadtoken")
 			Expect(sessionErr).To(ContainSubstring("The token provided is invalid or expired"))
-			oc.LoginUsingToken(currentUserToken1)
+			helper.CmdShouldPass("odo", "login", "--token", currentUserToken1)
 		})
 	})
 })

@@ -12,7 +12,7 @@ TIMEOUT ?= 1800s
 # TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node.
 # NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
 # on the same number of ginkgo test nodes.
-TEST_EXEC_NODES ?= 4
+TEST_EXEC_NODES ?= 2
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -160,9 +160,11 @@ test-cmd-app:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmdApp" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run login e2e tests
+# This test shouldn't run spec in paralel because it will break the test behaviour
+# due to race condition in parallel run.
 .PHONY: test-odo-login-e2e
 test-odo-login-e2e:
-	go test -v github.com/openshift/odo/tests/integration --ginkgo.focus="odoLoginE2e" -ginkgo.slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -ginkgo.v -timeout $(TIMEOUT)
+	ginkgo -v -nodes=1 -focus="odoLoginE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run config tests
 .PHONY: test-odo-config
