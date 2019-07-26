@@ -13,7 +13,7 @@ mkdir -p $GOPATH/bin
 go get -u github.com/onsi/ginkgo/ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR="/tmp/artifacts"
-make test-integration-all
+make test-integration-all-no-service-catalog
 # make test-odo-login-e2e
 # make test-json-format-output
 # make test-java-e2e

@@ -35,7 +35,8 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - oc login -u developer
-        - travis_wait 150 make test-integration-all
+        - travis_wait 150 make test-integration-all-service-catalog
+        - travis_wait 150 make test-integration-all-no-service-catalog
         - odo logout
 
     # - <<: *base-test
