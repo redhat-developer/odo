@@ -430,7 +430,6 @@ func componentTests(args ...string) {
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.DeleteDir(context)
 			helper.Chdir(originalDir)
 		})
 
@@ -504,25 +503,26 @@ func componentTests(args ...string) {
 	})
 
 	Context("Creating component with numeric named context", func() {
-		var context string
+		var contextNumeric string
 		JustBeforeEach(func() {
 			var err error
 			ts := time.Now().UnixNano()
-			context, err = ioutil.TempDir("", fmt.Sprint(ts))
+			contextNumeric, err = ioutil.TempDir("", fmt.Sprint(ts))
 			Expect(err).ToNot(HaveOccurred())
 			os.Mkdir(context, 0750)
 			project = helper.CreateRandProject()
-			helper.Chdir(context)
+			helper.Chdir(contextNumeric)
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
 			helper.Chdir(originalDir)
+			helper.DeleteDir(contextNumeric)
 		})
 
 		It("should create default named component in a directory with numeric name", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", context, "--app", "testing")...)
-			helper.CmdShouldPass("odo", "push", "--context", context, "-v4")
+			helper.CopyExample(filepath.Join("source", "nodejs"), contextNumeric)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", contextNumeric, "--app", "testing")...)
+			helper.CmdShouldPass("odo", "push", "--context", contextNumeric, "-v4")
 		})
 	})
 
