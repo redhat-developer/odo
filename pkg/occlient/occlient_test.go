@@ -136,9 +136,19 @@ func fakeResourceRequirements() *corev1.ResourceRequirements {
 }
 
 func fakeResourceConsumption() []util.ResourceRequirementInfo {
+	memoryQuantity, err := util.FetchResourceQuantity(corev1.ResourceMemory, "100Mi", "350Mi", "")
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	cpuQuantity, err := util.FetchResourceQuantity(corev1.ResourceCPU, "100m", "350m", "")
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 	return []util.ResourceRequirementInfo{
-		*util.FetchResourceQuantity(corev1.ResourceMemory, "100Mi", "350Mi", ""),
-		*util.FetchResourceQuantity(corev1.ResourceCPU, "100m", "350m", ""),
+		*memoryQuantity,
+		*cpuQuantity,
 	}
 }
 

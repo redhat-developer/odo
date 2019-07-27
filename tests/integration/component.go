@@ -532,4 +532,18 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "push", "--context", context, "-v4")
 		})
 	})
+
+	Context("when creating component with improper memory quantities", func() {
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+		})
+		It("should fail gracefully with proper error message", func() {
+			stdError := helper.CmdShouldFail("odo", append(args, "create", "java", "backend", "--memory", "1GB", "--project", project, "--context", context)...)
+			Expect(stdError).ToNot(ContainSubstring("panic: cannot parse"))
+			Expect(stdError).To(ContainSubstring("quantities must match the regular expression"))
+		})
+	})
 }
