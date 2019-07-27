@@ -248,12 +248,10 @@ func componentTests(args ...string) {
 	Context("Creating Component even in new project", func() {
 		var project string
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
 			project = helper.RandString(10)
 		})
 
 		JustAfterEach(func() {
-			os.RemoveAll(context)
 			helper.DeleteProject(project)
 		})
 		It("should create component", func() {
@@ -266,16 +264,6 @@ func componentTests(args ...string) {
 	})
 
 	Context("Test odo push with --now flag during creation", func() {
-		var originalDir string
-		BeforeEach(func() {
-			context = helper.CreateNewContext()
-		})
-
-		AfterEach(func() {
-			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-		})
-
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
@@ -285,12 +273,10 @@ func componentTests(args ...string) {
 		JustAfterEach(func() {
 			helper.Chdir(originalDir)
 		})
-
 		It("should successfully create config and push code in one create command with --now", func() {
 			appName := "nodejs-create-now-test"
 			cmpName := "nodejs-push-atonce"
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--now")...)
 
 			oc.VerifyCmpExists(cmpName, appName, project)
@@ -316,7 +302,6 @@ func componentTests(args ...string) {
 		componentName := "my-component"
 
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
 			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
@@ -325,7 +310,6 @@ func componentTests(args ...string) {
 		JustAfterEach(func() {
 			helper.Chdir(originalDir)
 			helper.DeleteProject(project)
-			os.RemoveAll(context)
 		})
 
 		It("create local nodejs component twice and fail", func() {
@@ -365,12 +349,10 @@ func componentTests(args ...string) {
 				Context("odo component updating", func() {
 					JustBeforeEach(func() {
 						project = helper.CreateRandProject()
-						context = helper.CreateNewContext()
 					})
 
 					JustAfterEach(func() {
 						helper.DeleteProject(project)
-						os.RemoveAll(context)
 					})
 
 					It("should be able to create a git component and update it from local to git", func() {
@@ -443,14 +425,12 @@ func componentTests(args ...string) {
 
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
 			originalDir = helper.Getwd()
 		})
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
 			helper.DeleteDir(context)
-			os.RemoveAll(context)
 			helper.Chdir(originalDir)
 		})
 
