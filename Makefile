@@ -177,10 +177,9 @@ test-odo-login-e2e:
 test-odo-config:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo config test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
-# Run all commands integration tests which are not depend on
-# service catalog enabled cluster
-.PHONY: test-integration-all-no-service-catalog
-test-integration-all-no-service-catalog:
+# Runs all the test irrespective of service catalog status in the cluster
+.PHONY: test-integration-all
+test-integration-all:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
 	-focus="odoCmdApp|odoCmpSubE2e|odoCmpE2e|odo config test|odo storage command|odoWatchE2e|odo generic|odoJavaE2e|odojsonoutput|odo push command tests|odoURLIntegration|odoSourceE2e" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout 7200s
