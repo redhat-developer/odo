@@ -266,7 +266,7 @@ $ make test-source-e2e
 ----
 +
 
-* To run the test sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
+* To run the tests sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
 Run component command integration tests
 +
