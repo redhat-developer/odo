@@ -627,12 +627,20 @@ _________________
 
 Modifies odo specific configuration settings within the global preference file.
 
+[NOTE]
+====
+By default the path to the global preference file is `~/.odo/preferece.yaml`, it is stored in in the environment variable `GLOBALODOCONFIG`. You can set up a custom path by setting the value of the environment variable to a new preference path, for example `GLOBALODOCONFIG="new_path/preference.yaml"`
+
+Run `echo "$GLOBALODOCONFIG"` to display the current value of the variable. 
+====
 
 Available Parameters:
-NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
-Timeout - Timeout (in seconds) for OpenShift server connection check
-UpdateNotification - Controls if an update notification is shown or not (true or false)
 
+NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.
+
+Timeout - Timeout (in seconds) for OpenShift server connection check.
+
+UpdateNotification - Controls if an update notification is shown or not (true or false).
 
 [[project]]
 project
