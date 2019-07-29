@@ -75,10 +75,10 @@ var _ = Describe("Core beta flow", func() {
 		helper.CmdShouldPass(odo, append([]string{"push"}, extraArgs...)...)
 
 		dcSession := oc.GetComponentDC("mycomponent", "myapp", project)
-		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/component-name: mycomponent"))
+		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/instance: mycomponent"))
 		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/component-source-type: local"))
-		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/component-type: java"))
-		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/name: myapp"))
+		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/name: java"))
+		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/part-of: myapp"))
 		Expect(dcSession).Should(ContainSubstring("name: mycomponent-myapp"))
 		// DC should have env variable
 		Expect(dcSession).Should(ContainSubstring("name: FOO"))

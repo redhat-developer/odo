@@ -56,7 +56,7 @@ func TestCompletions(t *testing.T) {
 			Items: []v1beta1.ServiceInstance{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{"app.kubernetes.io/name": "foo", componentlabels.ComponentLabel: "foo", componentlabels.ComponentTypeLabel: "service"},
+						Labels: map[string]string{"app.kubernetes.io/part-of": "foo", componentlabels.ComponentLabel: "foo", componentlabels.ComponentTypeLabel: "service"},
 					},
 					Status: v1beta1.ServiceInstanceStatus{
 						Conditions: []v1beta1.ServiceInstanceCondition{

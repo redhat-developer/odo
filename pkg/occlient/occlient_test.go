@@ -45,7 +45,7 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, en
 	labels[applabels.ApplicationLabel] = name
 
 	// save source path as annotation
-	annotations := map[string]string{"app.kubernetes.io/url": "./",
+	annotations := map[string]string{"app.openshift.io/vcs-uri": "./",
 		"app.kubernetes.io/component-source-type": "local",
 	}
 
@@ -89,7 +89,7 @@ func fakeDeploymentConfigGit(name string, image string, envVars []corev1.EnvVar,
 	labels[componentlabels.ComponentTypeVersion] = "latest"
 
 	// save source path as annotation
-	annotations := map[string]string{"app.kubernetes.io/url": "github.com/foo/bar.git",
+	annotations := map[string]string{"app.openshift.io/vcs-uri": "github.com/foo/bar.git",
 		"app.kubernetes.io/component-source-type": "git",
 	}
 
@@ -549,8 +549,8 @@ func TestCreateRoute(t *testing.T) {
 			portNumber: intstr.FromInt(8080),
 			labels: map[string]string{
 				"SLA":                              "High",
-				"app.kubernetes.io/component-name": "backend",
-				"app.kubernetes.io/component-type": "python",
+				"app.kubernetes.io/instance": "backend",
+				"app.kubernetes.io/name": "python",
 			},
 			wantErr: false,
 		},
@@ -562,8 +562,8 @@ func TestCreateRoute(t *testing.T) {
 			portNumber: intstr.FromInt(9100),
 			labels: map[string]string{
 				"SLA":                              "High",
-				"app.kubernetes.io/component-name": "backend",
-				"app.kubernetes.io/component-type": "golang",
+				"app.kubernetes.io/instance": "backend",
+				"app.kubernetes.io/name": "golang",
 			},
 			wantErr: false,
 		},
@@ -770,13 +770,13 @@ func TestUpdateDCAnnotations(t *testing.T) {
 			name:   "existing dc",
 			dcName: "nodejs",
 			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
+				"app.openshift.io/vcs-uri":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nodejs",
-					Annotations: map[string]string{"app.kubernetes.io/url": "https://github.com/sclorg/nodejs-ex",
+					Annotations: map[string]string{"app.openshift.io/vcs-uri": "https://github.com/sclorg/nodejs-ex",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -787,13 +787,13 @@ func TestUpdateDCAnnotations(t *testing.T) {
 			name:   "non existing dc",
 			dcName: "nodejs",
 			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
+				"app.openshift.io/vcs-uri":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
-					Annotations: map[string]string{"app.kubernetes.io/url": "https://github.com/sclorg/nodejs-ex",
+					Annotations: map[string]string{"app.openshift.io/vcs-uri": "https://github.com/sclorg/nodejs-ex",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -867,19 +867,19 @@ func TestSetupForSupervisor(t *testing.T) {
 			name:   "setup with normal correct values",
 			dcName: "wildfly",
 			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
+				"app.openshift.io/vcs-uri":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
 				"app":                              "apptmp",
-				"app.kubernetes.io/component-name": "ruby",
-				"app.kubernetes.io/component-type": "ruby",
-				"app.kubernetes.io/name":           "apptmp",
+				"app.kubernetes.io/instance": "ruby",
+				"app.kubernetes.io/name": "ruby",
+				"app.kubernetes.io/part-of":           "apptmp",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
-					Annotations: map[string]string{"app.kubernetes.io/url": "https://github.com/sclorg/nodejs-ex",
+					Annotations: map[string]string{"app.openshift.io/vcs-uri": "https://github.com/sclorg/nodejs-ex",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -906,9 +906,9 @@ func TestSetupForSupervisor(t *testing.T) {
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "wildfly",
-						"app.kubernetes.io/component-type": "wildfly",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "wildfly",
+						"app.kubernetes.io/name": "wildfly",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
@@ -929,20 +929,20 @@ func TestSetupForSupervisor(t *testing.T) {
 			name:   "setup with wrong pvc name",
 			dcName: "wildfly",
 			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
+				"app.openshift.io/vcs-uri":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
 				"app":                              "apptmp",
-				"app.kubernetes.io/component-name": "ruby",
-				"app.kubernetes.io/component-type": "ruby",
-				"app.kubernetes.io/name":           "apptmp",
+				"app.kubernetes.io/instance": "ruby",
+				"app.kubernetes.io/name": "ruby",
+				"app.kubernetes.io/part-of":           "apptmp",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/sclorg/nodejs-ex",
+						"app.openshift.io/vcs-uri":                   "https://github.com/sclorg/nodejs-ex",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -969,9 +969,9 @@ func TestSetupForSupervisor(t *testing.T) {
 					Name: "wildfly",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "wildfly",
-						"app.kubernetes.io/component-type": "wildfly",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "wildfly",
+						"app.kubernetes.io/name": "wildfly",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
@@ -992,20 +992,20 @@ func TestSetupForSupervisor(t *testing.T) {
 			name:   "setup with wrong pvc specs",
 			dcName: "wildfly",
 			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
+				"app.openshift.io/vcs-uri":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
 				"app":                              "apptmp",
-				"app.kubernetes.io/component-name": "ruby",
-				"app.kubernetes.io/component-type": "ruby",
-				"app.kubernetes.io/name":           "apptmp",
+				"app.kubernetes.io/instance": "ruby",
+				"app.kubernetes.io/name": "ruby",
+				"app.kubernetes.io/part-of":           "apptmp",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "wildfly",
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/sclorg/nodejs-ex",
+						"app.openshift.io/vcs-uri":                   "https://github.com/sclorg/nodejs-ex",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -1032,9 +1032,9 @@ func TestSetupForSupervisor(t *testing.T) {
 					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "wildfly",
-						"app.kubernetes.io/component-type": "wildfly",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "wildfly",
+						"app.kubernetes.io/name": "wildfly",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
@@ -1054,14 +1054,14 @@ func TestSetupForSupervisor(t *testing.T) {
 			name:   "setup with non existing dc",
 			dcName: "wildfly",
 			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "file:///temp/nodejs-ex",
+				"app.openshift.io/vcs-uri":                   "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			labels: map[string]string{
 				"app":                              "apptmp",
-				"app.kubernetes.io/component-name": "ruby",
-				"app.kubernetes.io/component-type": "ruby",
-				"app.kubernetes.io/name":           "apptmp",
+				"app.kubernetes.io/instance": "ruby",
+				"app.kubernetes.io/name": "ruby",
+				"app.kubernetes.io/part-of":           "apptmp",
 			},
 			existingDc: appsv1.DeploymentConfig{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1211,7 +1211,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 			buildConfigName: "nodejs",
 			gitURL:          "https://github.com/sclorg/nodejs-ex",
 			annotations: map[string]string{
-				"app.kubernetes.io/url":                   "https://github.com/sclorg/nodejs-ex",
+				"app.openshift.io/vcs-uri":                   "https://github.com/sclorg/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "git",
 			},
 			existingBuildConfig: buildv1.BuildConfig{
@@ -1226,7 +1226,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nodejs",
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/sclorg/nodejs-ex",
+						"app.openshift.io/vcs-uri":                   "https://github.com/sclorg/nodejs-ex",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -1313,12 +1313,12 @@ func TestNewAppS2I(t *testing.T) {
 					Name: "ruby",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "ruby",
-						"app.kubernetes.io/component-type": "ruby",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name": "ruby",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -1339,12 +1339,12 @@ func TestNewAppS2I(t *testing.T) {
 					Name: "ruby",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "ruby",
-						"app.kubernetes.io/component-type": "ruby",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name": "ruby",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -1366,12 +1366,12 @@ func TestNewAppS2I(t *testing.T) {
 					Name: "ruby",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "ruby",
-						"app.kubernetes.io/component-type": "ruby",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name": "ruby",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -1393,12 +1393,12 @@ func TestNewAppS2I(t *testing.T) {
 					Name: "ruby",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "ruby",
-						"app.kubernetes.io/component-type": "ruby",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name": "ruby",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -1420,12 +1420,12 @@ func TestNewAppS2I(t *testing.T) {
 		// 		gitURL:       "https://github.com/openshift/ruby",
 		// 		labels: map[string]string{
 		// 			"app": "apptmp",
-		// 			"app.kubernetes.io/component-name": "ruby",
-		// 			"app.kubernetes.io/component-type": "ruby",
-		// 			"app.kubernetes.io/name":           "apptmp",
+		// 			"app.kubernetes.io/instance": "ruby",
+		// 			"app.kubernetes.io/name": "ruby",
+		// 			"app.kubernetes.io/part-of":           "apptmp",
 		// 		},
 		// 		annotations: map[string]string{
-		// 			"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+		// 			"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 		// 			"app.kubernetes.io/component-source-type": "git",
 		// 		},
 		// 	},
@@ -2648,12 +2648,12 @@ func TestCreateService(t *testing.T) {
 				Name: "nodejs",
 				Labels: map[string]string{
 					"app":                              "apptmp",
-					"app.kubernetes.io/component-name": "ruby",
-					"app.kubernetes.io/component-type": "ruby",
-					"app.kubernetes.io/name":           "apptmp",
+					"app.kubernetes.io/instance": "ruby",
+					"app.kubernetes.io/name": "ruby",
+					"app.kubernetes.io/part-of":           "apptmp",
 				},
 				Annotations: map[string]string{
-					"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+					"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 					"app.kubernetes.io/component-source-type": "git",
 				},
 			},
@@ -2728,17 +2728,17 @@ func TestGetDeploymentConfigsFromSelector(t *testing.T) {
 	}{
 		{
 			name:     "true case",
-			selector: "app.kubernetes.io/name=app",
+			selector: "app.kubernetes.io/part-of=app",
 			label: map[string]string{
-				"app.kubernetes.io/name": "app",
+				"app.kubernetes.io/part-of": "app",
 			},
 			wantErr: false,
 		},
 		{
 			name:     "true case",
-			selector: "app.kubernetes.io/name=app1",
+			selector: "app.kubernetes.io/part-of=app1",
 			label: map[string]string{
-				"app.kubernetes.io/name": "app",
+				"app.kubernetes.io/part-of": "app",
 			},
 			wantErr: false,
 		},
@@ -2749,7 +2749,7 @@ func TestGetDeploymentConfigsFromSelector(t *testing.T) {
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app.kubernetes.io/name": "app",
+						"app.kubernetes.io/part-of": "app",
 					},
 				},
 			},
@@ -3168,14 +3168,14 @@ func TestGetDeploymentConfigLabelValues(t *testing.T) {
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
-									"app.kubernetes.io/name": "app",
+									"app.kubernetes.io/part-of": "app",
 								},
 							},
 						},
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
-									"app.kubernetes.io/name": "app2",
+									"app.kubernetes.io/part-of": "app2",
 								},
 							},
 						},
@@ -3195,14 +3195,14 @@ func TestGetDeploymentConfigLabelValues(t *testing.T) {
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
-									"app.kubernetes.io/name": "app2",
+									"app.kubernetes.io/part-of": "app2",
 								},
 							},
 						},
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
-									"app.kubernetes.io/name": "app",
+									"app.kubernetes.io/part-of": "app",
 								},
 							},
 						},
@@ -3434,7 +3434,7 @@ func TestGetServiceInstanceList(t *testing.T) {
 			name: "test case 1",
 			args: args{
 				Project:  "myproject",
-				Selector: "app.kubernetes.io/component-name=mysql-persistent,app.kubernetes.io/name=app",
+				Selector: "app.kubernetes.io/instance=mysql-persistent,app.kubernetes.io/part-of=app",
 			},
 			serviceList: scv1beta1.ServiceInstanceList{
 				Items: []scv1beta1.ServiceInstance{
@@ -5079,12 +5079,12 @@ func TestCreateBuildConfig(t *testing.T) {
 					Name: "ruby",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "ruby",
-						"app.kubernetes.io/component-type": "ruby",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name": "ruby",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -5112,12 +5112,12 @@ func TestCreateBuildConfig(t *testing.T) {
 					Name: "ruby",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "ruby",
-						"app.kubernetes.io/component-type": "ruby",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name": "ruby",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -5145,12 +5145,12 @@ func TestCreateBuildConfig(t *testing.T) {
 					Name: "ruby",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "ruby",
-						"app.kubernetes.io/component-type": "ruby",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name": "ruby",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},
@@ -5179,12 +5179,12 @@ func TestCreateBuildConfig(t *testing.T) {
 					Name: "ruby",
 					Labels: map[string]string{
 						"app":                              "apptmp",
-						"app.kubernetes.io/component-name": "ruby",
-						"app.kubernetes.io/component-type": "ruby",
-						"app.kubernetes.io/name":           "apptmp",
+						"app.kubernetes.io/instance": "ruby",
+						"app.kubernetes.io/name": "ruby",
+						"app.kubernetes.io/part-of":           "apptmp",
 					},
 					Annotations: map[string]string{
-						"app.kubernetes.io/url":                   "https://github.com/openshift/ruby",
+						"app.openshift.io/vcs-uri":                   "https://github.com/openshift/ruby",
 						"app.kubernetes.io/component-source-type": "git",
 					},
 				},

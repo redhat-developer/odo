@@ -2,7 +2,7 @@ package labels
 
 // ApplicationLabel is label key that is used to group all object that belong to one application
 // It should be save to use just this label to filter application
-const ApplicationLabel = "app.kubernetes.io/name"
+const ApplicationLabel = "app.kubernetes.io/part-of"
 
 // AdditionalApplicationLabels additional labels that are applied to all objects belonging to one application
 // Those labels are not used for filtering or grouping, they are used just when creating and they are mend to be used by other tools
