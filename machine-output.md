@@ -58,8 +58,24 @@ This document outlines all the machine readable output options and examples.
   "kind": "List",
   "apiVersion": "odo.openshift.io/v1alpha1",
   "metadata": {},
-  "items": []
+  "items": [
+    {
+      "kind": "app",
+      "apiVersion": "odo.openshift.io/v1alpha1",
+      "metadata": {
+        "name": "app",
+        "namespace": "myproject",
+        "creationTimestamp": null
+      },
+      "spec": {
+        "components": [
+          "app-nodejs-komz"
+        ]
+      }
+    }
+  ]
 }
+
 ```
 
 
