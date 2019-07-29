@@ -67,8 +67,22 @@ var _ = Describe("odo url command tests", func() {
 			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", url2, "Not Pushed", "odo push"})
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url2, "Pushed"})
-			helper.DontMatchAllInOutput(stdout, []string{url1, "Not Pushed", "odo push"})
+			helper.MatchAllInOutput(stdout, url2, "Pushed")
+			helper.DontMatchAllInOutput(stdout, url1, "Not Pushed", "odo push")
+		})
+		It("should list appropriate urls after creation with --now flag", func() {
+			var stdout string
+			url1 := helper.RandString(5)
+			componentName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			stdout = helper.CmdShouldFail("odo", "url", "list", "--context", context)
+
+			Expect(stdout).To(ContainSubstring("no URLs found"))
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context, "--now")
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.MatchAllInOutput(stdout, url1, "Present")
 		})
 	})
 

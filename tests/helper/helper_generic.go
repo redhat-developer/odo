@@ -52,14 +52,14 @@ func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, c
 }
 
 // MatchAllInOutput ensures all strings are in output
-func MatchAllInOutput(output string, tomatch []string) {
+func MatchAllInOutput(output string, tomatch... string) {
 	for _, i := range tomatch {
 		Expect(output).To(ContainSubstring(i))
 	}
 }
 
 // DontMatchAllInOutput ensures all strings are not in output
-func DontMatchAllInOutput(output string, tonotmatch []string) {
+func DontMatchAllInOutput(output string, tonotmatch... string) {
 	for _, i := range tonotmatch {
 		Expect(output).ToNot(ContainSubstring(i))
 	}
