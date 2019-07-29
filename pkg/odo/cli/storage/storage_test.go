@@ -7,7 +7,7 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/occlient"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -52,9 +52,9 @@ func Test_validateStoragePath(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "mystorage-app-pvc",
 					Labels: map[string]string{
-						"app.kubernetes.io/instance": "nodejs",
-						"app.kubernetes.io/part-of":           "app",
-						"app.kubernetes.io/storage-name":   "mystorage",
+						"app.kubernetes.io/instance":     "nodejs",
+						"app.kubernetes.io/part-of":      "app",
+						"app.kubernetes.io/storage-name": "mystorage",
 					},
 					Namespace: "myproject",
 				},
@@ -67,9 +67,9 @@ func Test_validateStoragePath(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "mystorage-app-pvc",
 			Labels: map[string]string{
-				"app.kubernetes.io/instance": "nodejs",
-				"app.kubernetes.io/part-of":           "app",
-				"app.kubernetes.io/storage-name":   "mystorage",
+				"app.kubernetes.io/instance":     "nodejs",
+				"app.kubernetes.io/part-of":      "app",
+				"app.kubernetes.io/storage-name": "mystorage",
 			},
 			Namespace: "myproject",
 		},
@@ -83,8 +83,8 @@ func Test_validateStoragePath(t *testing.T) {
 					Namespace: "myproject",
 					Labels: map[string]string{
 						"app.kubernetes.io/instance": "nodejs",
-						"app.kubernetes.io/name": "nodejs",
-						"app.kubernetes.io/part-of":           "app",
+						"app.kubernetes.io/name":     "nodejs",
+						"app.kubernetes.io/part-of":  "app",
 					},
 				},
 				Spec: appsv1.DeploymentConfigSpec{

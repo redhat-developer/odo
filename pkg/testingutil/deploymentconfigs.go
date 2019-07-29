@@ -2,6 +2,7 @@ package testingutil
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/util"
 
 	v1 "github.com/openshift/api/apps/v1"
@@ -37,14 +38,14 @@ func getDeploymentConfig(namespace string, componentName string, componentType s
 			Name:      fmt.Sprintf("%v-%v", componentName, applicationName),
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app":                              "app",
+				"app":                        "app",
 				"app.kubernetes.io/instance": componentName,
-				"app.kubernetes.io/name": componentType,
-				"app.kubernetes.io/part-of":           applicationName,
+				"app.kubernetes.io/name":     componentType,
+				"app.kubernetes.io/part-of":  applicationName,
 			},
 			Annotations: map[string]string{ // Convert into separate function when other source types required in tests
 				"app.kubernetes.io/component-source-type": "git",
-				"app.openshift.io/vcs-uri":                   fmt.Sprintf("https://github.com/%s/%s.git", componentName, applicationName),
+				"app.openshift.io/vcs-uri":                fmt.Sprintf("https://github.com/%s/%s.git", componentName, applicationName),
 			},
 		},
 		Spec: v1.DeploymentConfigSpec{
