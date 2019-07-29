@@ -1,6 +1,7 @@
 package project
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
@@ -53,7 +54,11 @@ func (pdo *ProjectDeleteOptions) Complete(name string, cmd *cobra.Command, args 
 func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	// Validate existence of the project to be deleted
 	isValidProject, err := project.Exists(pdo.Context.Client, pdo.projectName)
-	if !isValidProject {
+	errorMessage := fmt.Sprintf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
+
+	if log.IsJSON() && !isValidProject {
+		project.MachineReadableErrorOutput(pdo.projectName, errors.New(errorMessage))
+	} else if !isValidProject {
 		return fmt.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
 	}
 	return
@@ -61,22 +66,41 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
-	// this to set the project in the file and runtime
+	// Set the current project
 	err = project.SetCurrent(pdo.Context.Client, pdo.projectName)
 	if err != nil {
 		return
 	}
+
+	// Print what projects will be deleted
+	// and ask are you sure Y/N?
 	err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
 	if err != nil {
 		return err
 	}
-	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+
+	// Delete the project
+	// force delete if either is true:
+	// 1. -f flag has been passed
+	// 2. Are you sure was Y in interactive mode
+	// 3. -o json has been passed
+	if log.IsJSON() || (pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName))) {
 		err := project.Delete(pdo.Context.Client, pdo.projectName)
-		if err != nil {
+		successMessage := fmt.Sprintf("Deleted project %v", pdo.projectName)
+
+		// If JSON has been passed, we will output json, if we error we do json error output
+		if log.IsJSON() && err != nil {
+			project.MachineReadableErrorOutput(pdo.projectName, err)
+		} else if err != nil {
 			return err
 		}
 
-		log.Infof("Deleted project : %v", pdo.projectName)
+		// If -o json has been passed, let's output the approriate json output!
+		if log.IsJSON() {
+			project.MachineReadableSuccessOutput(pdo.projectName, successMessage)
+		}
+
+		log.Successf(successMessage)
 		return nil
 	}
 

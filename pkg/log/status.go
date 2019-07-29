@@ -141,10 +141,10 @@ func (s *Status) End(success bool) {
 		fmt.Fprint(s.writer, "\r")
 	}
 
-	if success {
+	if success && !IsJSON() {
 		green := color.New(color.FgGreen).SprintFunc()
 		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", green(getSuccessString()), s.status, s.spinner.TimeSpent())
-	} else {
+	} else if !IsJSON() {
 		red := color.New(color.FgRed).SprintFunc()
 		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", red(getErrString()), s.status, s.spinner.TimeSpent())
 	}
