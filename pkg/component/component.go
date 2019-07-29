@@ -488,7 +488,6 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 		return errors.Wrapf(err, "Failed to check component of type %s", componentType)
 	}
 	if !exists {
-		log.Info("Run 'odo catalog list components' for a list of supported component types")
 		return fmt.Errorf("Failed to find component of type %s and version%s", componentType, componentVersion)
 	}
 

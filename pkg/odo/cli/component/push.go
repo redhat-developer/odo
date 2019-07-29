@@ -86,6 +86,8 @@ func (po *PushOptions) Validate() (err error) {
 	}
 
 	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfigInfo.GetComponentSettings(), po.isCmpExists, false); err != nil {
+		s.End(false)
+		log.Info("Run 'odo catalog list components' for a list of supported component types")
 		return fmt.Errorf("Invalid component type %s, %v", *po.localConfigInfo.GetComponentSettings().Type, errors.Cause(err))
 	}
 
