@@ -33,7 +33,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-vendor vet validate-vendor-licenses #lint
+validate: gofmt check-vendor vet validate-vendor-licenses sec #lint
 
 .PHONY: gofmt
 gofmt:
