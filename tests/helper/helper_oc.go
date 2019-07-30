@@ -165,6 +165,13 @@ func (oc *OcRunner) GetDcName(compName string, namespace string) string {
 	return strings.TrimSpace(dcName)
 }
 
+// DescribeDc execute oc command and returns dc describe as a string
+// by passing dcname and namespace as arguments
+func (oc *OcRunner) DescribeDc(dcName string, namespace string) string {
+	describeInfo := CmdShouldPass(oc.path, "describe", "dc/"+dcName, "-n", namespace)
+	return strings.TrimSpace(describeInfo)
+}
+
 // MaxMemory reuturns maximum memory
 func (oc *OcRunner) MaxMemory(componentName string, appName string, project string) string {
 	maxMemory := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,

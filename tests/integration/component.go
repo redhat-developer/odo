@@ -504,8 +504,8 @@ func componentTests(args ...string) {
 			Expect(stdOut).To(ContainSubstring("FOO"))
 
 			helper.CmdShouldPass("odo", "push")
-			stdOut = helper.CmdShouldPass("oc", "describe", "dc")
-			Expect(stdOut).To(ContainSubstring("FOO:"))
+			stdOut = oc.DescribeDc(dcName, project)
+			Expect(stdOut).To(ContainSubstring("FOO"))
 
 			helper.Chdir(originalDir)
 		})
