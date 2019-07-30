@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
+
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -58,10 +60,6 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 // Validate validates the StorageCreateOptions based on completed values
 func (o *StorageCreateOptions) Validate() (err error) {
-	// check the machine readable format
-	if !util.CheckOutputFlag(o.OutputFlag) {
-		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
-	}
 	// validate storage path
 	return o.localConfig.ValidateStorage(o.storageName, o.storagePath)
 }
@@ -74,12 +72,13 @@ func (o *StorageCreateOptions) Run() (err error) {
 	}
 
 	storageResultMachineReadable := storage.GetMachineReadableFormat(storageResult.Name, storageResult.Size, storageResult.Path)
-	out, err := util.MachineOutput(o.OutputFlag, storageResultMachineReadable)
-	if err != nil {
-		return err
-	}
-	if out != "" {
-		fmt.Println(out)
+
+	if log.IsJSON() {
+		out, err := json.Marshal(storageResultMachineReadable)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
 	} else {
 		log.Successf("Added storage %v to %v", o.storageName, o.localConfig.GetName())
 	}
@@ -109,7 +108,6 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	appCmd.AddApplicationFlag(storageCreateCmd)
 	componentCmd.AddComponentFlag(storageCreateCmd)
 
-	genericclioptions.AddOutputFlag(storageCreateCmd)
 	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)
 

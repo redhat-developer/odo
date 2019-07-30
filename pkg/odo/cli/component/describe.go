@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/openshift/odo/pkg/component"
@@ -28,14 +29,13 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
 	localConfigInfo  *config.LocalConfigInfo
-	outputFlag       string
 	componentContext string
 	*ComponentOptions
 }
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{nil, "", "", &ComponentOptions{}}
+	return &DescribeOptions{nil, "", &ComponentOptions{}}
 }
 
 // Complete completes describe args
@@ -59,7 +59,7 @@ func (do *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("component %s not pushed to the OpenShift cluster, use `odo push` to deploy the component", do.componentName)
 	}
 
-	return odoutil.CheckOutputFlag(do.outputFlag)
+	return nil
 }
 
 // Run has the logic to perform the required actions as part of command
@@ -68,7 +68,7 @@ func (do *DescribeOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	if do.outputFlag == "json" {
+	if log.IsJSON() {
 		componentDesc.Spec.Ports = do.localConfigInfo.GetPorts()
 		out, err := json.Marshal(componentDesc)
 		if err != nil {
@@ -102,7 +102,6 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	describeCmd.Annotations = map[string]string{"command": "component"}
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
-	describeCmd.Flags().StringVarP(&do.outputFlag, "output", "o", "", "output in json format")
 	// Adding --context flag
 	genericclioptions.AddContextFlag(describeCmd, &do.componentContext)
 

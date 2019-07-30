@@ -6,6 +6,7 @@ import (
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -62,7 +63,7 @@ func (o *DescribeOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *DescribeOptions) Run() (err error) {
-	if o.outputFormat == "json" {
+	if log.IsJSON() {
 		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
 		out, err := json.Marshal(appDef)
 		if err != nil {
@@ -121,7 +122,6 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 		},
 	}
 
-	command.Flags().StringVarP(&o.outputFormat, "output", "o", "", "output in json format")
 	completion.RegisterCommandHandler(command, completion.AppCompletionHandler)
 	project.AddProjectFlag(command)
 	return command

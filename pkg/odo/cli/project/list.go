@@ -6,6 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -51,7 +52,7 @@ func (plo *ProjectListOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	if plo.OutputFlag == "json" {
+	if log.IsJSON() {
 		out, err := json.Marshal(projects)
 		if err != nil {
 			return err
@@ -89,6 +90,5 @@ func NewCmdProjectList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddOutputFlag(projectListCmd)
 	return projectListCmd
 }

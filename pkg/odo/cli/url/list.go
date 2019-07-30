@@ -66,7 +66,7 @@ func (o *URLListOptions) Run() (err error) {
 
 	localUrls := o.localConfigInfo.GetUrl()
 
-	if o.OutputFlag == "json" {
+	if log.IsJSON() {
 		out, err := json.Marshal(urls)
 		if err != nil {
 			return err
@@ -143,7 +143,6 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddOutputFlag(urlListCmd)
 	genericclioptions.AddContextFlag(urlListCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(urlListCmd, "context", completion.FileCompletionHandler)
 

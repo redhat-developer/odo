@@ -32,7 +32,6 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
-	outputFlag       string
 	pathFlag         string
 	allFlag          bool
 	componentContext string
@@ -56,17 +55,18 @@ func (lo *ListOptions) Validate() (err error) {
 		return odoutil.ThrowContextError()
 	}
 
-	return odoutil.CheckOutputFlag(lo.outputFlag)
+	return nil
 }
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run() (err error) {
+
 	if len(lo.pathFlag) != 0 {
 		components, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
 		if err != nil {
 			return err
 		}
-		if lo.outputFlag == "json" {
+		if log.IsJSON() {
 			out, err := json.Marshal(components)
 			if err != nil {
 				return err
@@ -112,7 +112,7 @@ func (lo *ListOptions) Run() (err error) {
 	}
 	glog.V(4).Infof("the components are %+v", components)
 
-	if lo.outputFlag == "json" {
+	if log.IsJSON() {
 
 		out, err := json.Marshal(components)
 		if err != nil {
@@ -152,7 +152,6 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
-	componentListCmd.Flags().StringVarP(&o.outputFlag, "output", "o", "", "output in json format")
 	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path")
 	componentListCmd.Flags().BoolVar(&o.allFlag, "all", false, "lists all components")
 	//Adding `--project` flag

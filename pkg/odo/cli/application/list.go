@@ -60,7 +60,7 @@ func (o *ListOptions) Run() (err error) {
 
 	if len(apps) > 0 {
 
-		if o.outputFormat == "json" {
+		if log.IsJSON() {
 			var appList []application.App
 			for _, app := range apps {
 				appDef := application.GetMachineReadableFormat(o.Client, app, o.Project)
@@ -90,7 +90,7 @@ func (o *ListOptions) Run() (err error) {
 			return tabWriter.Flush()
 		}
 	} else {
-		if o.outputFormat == "json" {
+		if log.IsJSON() {
 			out, err := json.Marshal(application.GetMachineReadableFormatForList([]application.App{}))
 			if err != nil {
 				return err
@@ -118,7 +118,6 @@ func NewCmdList(name, fullName string) *cobra.Command {
 		},
 	}
 
-	command.Flags().StringVarP(&o.outputFormat, "output", "o", "", "output in json format")
 	project.AddProjectFlag(command)
 	return command
 }

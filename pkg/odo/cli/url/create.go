@@ -122,7 +122,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		},
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
-	genericclioptions.AddOutputFlag(urlCreateCmd)
 	genericclioptions.AddContextFlag(urlCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 	return urlCreateCmd
