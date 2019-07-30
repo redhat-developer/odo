@@ -63,16 +63,6 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	}
 
 	cmpName := cpo.localConfigInfo.GetName()
-	appName := cpo.localConfigInfo.GetApplication()
-
-	// First off, we check to see if the component exists. This is ran each time we do `odo push`
-	s := log.Spinner("Checking component")
-	defer s.End(false)
-	isCmpExists, err := component.Exists(cpo.Context.Client, cmpName, appName)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
-	}
-	s.End(true)
 
 	// Output the "new" section (applying changes)
 	log.Info("\nConfiguration changes")
@@ -97,12 +87,12 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	}
 
 	// Apply config
-	err = component.ApplyConfig(cpo.Context.Client, *cpo.localConfigInfo, stdout, cpo.isCmpExists)
+	err := component.ApplyConfig(cpo.Context.Client, *cpo.localConfigInfo, stdout, cpo.isCmpExists)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
 
-	return isCmpExists, nil
+	return cpo.isCmpExists, nil
 }
 
 // ResolveProject completes the push options as needed
