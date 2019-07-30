@@ -122,7 +122,7 @@ test-cmp-e2e:
 # Run component subcommands e2e tests
 .PHONY: test-cmp-sub-e2e
 test-cmp-sub-e2e:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmpE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odoCmpSubE2e" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run java e2e tests
 .PHONY: test-java-e2e
