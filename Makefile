@@ -184,7 +184,7 @@ test-integration-all:
 	-focus="odoCmdApp|odoCmpSubE2e|odoCmpE2e|odo config test|odo storage command|odoWatchE2e|odo generic|odoJavaE2e|odojsonoutput|odo push command tests|odoURLIntegration|odoSourceE2e" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout 7200s
 
-# Run all integration test which are depend on service catalog enabled cluster
+# Run all integration tests (link and service) which are depend on service catalog enabled cluster.
 .PHONY: test-integration-all-service-catalog
 test-integration-all-service-catalog:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) \

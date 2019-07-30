@@ -268,6 +268,10 @@ $ make test-source-e2e
 
 * To run the tests sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
+
+NOTE: However the env variable `TEST_EXEC_NODES` can be used to increase or decrease any number of test node for parallel run depending on the resource allocated to the OpenShift cluster. Make sure that the `TEST_EXEC_NODES` value cannot be `0` or any `negative` value.
++
+
 Run component command integration tests
 +
 ----
