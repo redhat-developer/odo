@@ -16,7 +16,7 @@ import (
 func CreateIfNotExists(configFile string) error {
 	_, err := os.Stat(filepath.Dir(configFile))
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(configFile), 0755)
+		err = os.MkdirAll(filepath.Dir(configFile), 0750)
 		if err != nil {
 			return errors.Wrap(err, "unable to create directory")
 		}

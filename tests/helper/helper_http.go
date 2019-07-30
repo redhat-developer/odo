@@ -21,6 +21,8 @@ func HttpWaitFor(url string, match string, maxRetry int, interval int) {
 	for i := 0; i < maxRetry; i++ {
 		fmt.Fprintf(GinkgoWriter, "try %d of %d\n", i, maxRetry)
 
+		// #nosec
+		// gosec:G107 -> This is safe since it's just used for testing.
 		resp, err := http.Get(url)
 		if err != nil {
 			Expect(err).NotTo(HaveOccurred())

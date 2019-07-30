@@ -518,7 +518,7 @@ func componentTests(args ...string) {
 			ts := time.Now().UnixNano()
 			context, err = ioutil.TempDir("", fmt.Sprint(ts))
 			Expect(err).ToNot(HaveOccurred())
-			os.Mkdir(context, 0755)
+			os.Mkdir(context, 0750)
 			project = helper.CreateRandProject()
 			helper.Chdir(context)
 		})
