@@ -43,9 +43,9 @@ func TestCreate(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "nodejs-app",
 					Labels: map[string]string{
-						"app.kubernetes.io/part-of":     "app",
-						"app.kubernetes.io/instance":    "nodejs",
-						"odo.openshift.io/url-name": "nodejs",
+						"app.kubernetes.io/part-of":  "app",
+						"app.kubernetes.io/instance": "nodejs",
+						"odo.openshift.io/url-name":  "nodejs",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -73,9 +73,9 @@ func TestCreate(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "example-url-app",
 					Labels: map[string]string{
-						"app.kubernetes.io/part-of":     "app",
-						"app.kubernetes.io/instance":    "nodejs",
-						"odo.openshift.io/url-name": "example-url",
+						"app.kubernetes.io/part-of":  "app",
+						"app.kubernetes.io/instance": "nodejs",
+						"odo.openshift.io/url-name":  "example-url",
 					},
 				},
 				Spec: routev1.RouteSpec{
