@@ -45,7 +45,7 @@ func TestCreate(t *testing.T) {
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":     "app",
 						"app.kubernetes.io/instance":    "nodejs",
-						"app.openshift.io/vcs-uri-name": "nodejs",
+						"odo.openshift.io/url-name": "nodejs",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -75,7 +75,7 @@ func TestCreate(t *testing.T) {
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":     "app",
 						"app.kubernetes.io/instance":    "nodejs",
-						"app.openshift.io/vcs-uri-name": "example-url",
+						"odo.openshift.io/url-name": "example-url",
 					},
 				},
 				Spec: routev1.RouteSpec{
