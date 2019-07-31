@@ -44,7 +44,7 @@ func Chdir(dir string) {
 
 // MakeDir creates a new dir
 func MakeDir(dir string) {
-	err := os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(dir, 0750)
 	Expect(err).ShouldNot(HaveOccurred())
 }
 
@@ -140,7 +140,7 @@ func copyDir(src string, dst string, info os.FileInfo) error {
 // fileContent is the content to be written to the given file
 func CreateFileWithContent(path string, fileContent string) error {
 	// create and open file if not exists
-	var file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
+	var file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}

@@ -33,7 +33,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-vendor vet validate-vendor-licenses #lint
+validate: gofmt check-vendor vet validate-vendor-licenses sec #lint
 
 .PHONY: gofmt
 gofmt:
@@ -55,6 +55,11 @@ lint:
 vet:
 	go vet $(PKGS)
 
+.PHONY: sec
+sec:
+	@which gosec 2> /dev/null >&1 || { echo "gosec must be installed to lint code";  exit 1; }
+	gosec -severity medium -confidence medium -exclude G304,G204 -quiet  ./...
+
 .PHONY: clean
 clean:
 	@rm -rf $(FILES)
@@ -67,6 +72,7 @@ goget-tools:
 	go get -u github.com/mitchellh/gox
 	go get github.com/frapposelli/wwhrd
 	go get -u github.com/onsi/ginkgo/ginkgo
+	go get -u github.com/securego/gosec/cmd/gosec
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage
