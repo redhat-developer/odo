@@ -121,20 +121,23 @@ var _ = Describe("odoServiceE2e", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--app", app, "--project", project)
 
 			// create a service from within a component directory
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
-				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
-				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6",
+			helper.CmdShouldPass("odo", "service", "create", "dh-prometheus-apb", "--plan", "ephemeral",
 				"--app", app, "--project", project,
 			)
 			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "dh-postgresql-apb")
+				return strings.Contains(output, "dh-prometheus-apb")
 			})
+
+			// Listing the services should work as expected from within the component directory.
+			// This means, it should not require --app or --project flags
+			stdOut := helper.CmdShouldPass("odo", "service", "list")
+			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
 
 			// cd to a non-component directory and list services
 			helper.Chdir(originalDir)
-			stdOut := helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project)
-			Expect(stdOut).To(ContainSubstring("dh-postgresql-apb"))
+			stdOut = helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project)
+			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
 		})
 	})
 })
