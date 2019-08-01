@@ -32,7 +32,7 @@ func NewCmdApplication(name, fullName string) *cobra.Command {
 		Use:   name,
 		Short: "Perform application operations",
 		Long:  `Performs application operations related to your OpenShift project.`,
-		Example: fmt.Sprintf("%s\n%s\n%s",
+		Example: fmt.Sprintf("%s\n\n%s\n\n%s",
 			delete.Example,
 			describe.Example,
 			list.Example),
