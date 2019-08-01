@@ -178,7 +178,7 @@ test-odo-config:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo config test" slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Runs all integration test irrespective of service catalog status in the cluster.
-# Service and link command test is not the part of this test run
+# Service and link command tests are not the part of this test run
 .PHONY: test-integration-all
 test-integration-all:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
@@ -186,7 +186,7 @@ test-integration-all:
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout 7200s
 
 # Run all integration tests (link and service) which are depend on service catalog enabled cluster.
-# Only service and link command test is the part of this test run
+# Only service and link command tests are the part of this test run
 .PHONY: test-integration-all-service-catalog
 test-integration-all-service-catalog:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
