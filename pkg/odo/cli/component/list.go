@@ -152,7 +152,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	componentListCmd.Annotations = map[string]string{"command": "component"}
 	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
-	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path")
+	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path of the directory to scan for odo component directories")
 	componentListCmd.Flags().BoolVar(&o.allFlag, "all", false, "lists all components")
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)
