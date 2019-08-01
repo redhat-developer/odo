@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -35,6 +36,33 @@ var _ = Describe("odo generic", func() {
 			Expect(stdOut).To(ContainSubstring("php"))
 			Expect(stdOut).To(ContainSubstring("ruby"))
 			Expect(stdOut).To(ContainSubstring("wildfly"))
+		})
+	})
+
+	// Test machine readable output
+	Context("Pass on creation: odo project create $PROJECT -o json", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(projectName)
+		})
+
+		// odo project create foobar -o json
+		It("should be able to create project and show output in json format", func() {
+			actual := helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"message":"Project '%s' is ready for use"}`, projectName, projectName, projectName)
+			Expect(desired).Should(MatchJSON(actual))
+		})
+	})
+
+	Context("Fail on double creation: odo project create $PROJECT -o json", func() {
+		// odo project create foobar -o json (x2)
+		It("should fail saying that there is already an existing project", func() {
+			actual := helper.CmdShouldFail("odo", "project", "create", project, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Error","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"creationTimestamp":null},"message":"unable to create new project: unable to create new project %s: project.project.openshift.io \"%s\" already exists"}`, project, project)
+			Expect(desired).Should(MatchJSON(actual))
 		})
 	})
 
