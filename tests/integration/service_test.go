@@ -60,7 +60,7 @@ var _ = Describe("odoServiceE2e", func() {
 			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
 				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
 				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
-			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
+			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "dh-postgresql-apb")
 			})
@@ -124,7 +124,7 @@ var _ = Describe("odoServiceE2e", func() {
 			helper.CmdShouldPass("odo", "service", "create", "dh-prometheus-apb", "--plan", "ephemeral",
 				"--app", app, "--project", project,
 			)
-			ocArgs := []string{"get", "serviceinstance", "-o", "name"}
+			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "dh-prometheus-apb")
 			})
