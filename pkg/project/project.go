@@ -108,7 +108,8 @@ func GetMachineReadableFormat(projectName string, isActive bool, apps []string) 
 	}
 }
 
-// MachineReadableSuccessOutput ...
+// MachineReadableSuccessOutput prints out a success output in a machine readble format.
+// we take in the projectName as well as message and then output the necessary format..
 func MachineReadableSuccessOutput(projectName string, message string) {
 	machineOutput := machineoutput.Success{
 		TypeMeta: metav1.TypeMeta{

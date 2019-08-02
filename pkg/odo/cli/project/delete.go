@@ -59,7 +59,7 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	if log.IsJSON() && !isValidProject {
 		project.MachineReadableErrorOutput(pdo.projectName, errors.New(errorMessage))
 	} else if !isValidProject {
-		return fmt.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
+		return fmt.Errorf(errorMessage)
 	}
 	return
 }
