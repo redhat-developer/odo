@@ -257,12 +257,15 @@ func createDefaultComponentName(context *genericclioptions.Context, componentTyp
 	return componentName, nil
 }
 
-func (co *CreateOptions) setResourceLimits() {
+func (co *CreateOptions) setResourceLimits() error {
 	ensureAndLogProperResourceUsage(co.memory, co.memoryMin, co.memoryMax, "memory")
 
 	ensureAndLogProperResourceUsage(co.cpu, co.cpuMin, co.cpuMax, "cpu")
 
-	memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, co.memoryMin, co.memoryMax, co.memory)
+	memoryQuantity, err := util.FetchResourceQuantity(corev1.ResourceMemory, co.memoryMin, co.memoryMax, co.memory)
+	if err != nil {
+		return err
+	}
 	if memoryQuantity != nil {
 		minMemory := memoryQuantity.MinQty.String()
 		maxMemory := memoryQuantity.MaxQty.String()
@@ -270,13 +273,18 @@ func (co *CreateOptions) setResourceLimits() {
 		co.componentSettings.MaxMemory = &maxMemory
 	}
 
-	cpuQuantity := util.FetchResourceQuantity(corev1.ResourceCPU, co.cpuMin, co.cpuMax, co.cpu)
+	cpuQuantity, err := util.FetchResourceQuantity(corev1.ResourceCPU, co.cpuMin, co.cpuMax, co.cpu)
+	if err != nil {
+		return err
+	}
 	if cpuQuantity != nil {
 		minCPU := cpuQuantity.MinQty.String()
 		maxCPU := cpuQuantity.MaxQty.String()
 		co.componentSettings.MinCPU = &minCPU
 		co.componentSettings.MaxCPU = &maxCPU
 	}
+
+	return nil
 }
 
 // Complete completes create args
@@ -389,12 +397,18 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				cpuMax := ui.EnterCPU("maximum", "1")
 				cpuMin := ui.EnterCPU("minimum", cpuMax)
 
-				memoryQuantity := util.FetchResourceQuantity(corev1.ResourceMemory, memMin, memMax, "")
+				memoryQuantity, err := util.FetchResourceQuantity(corev1.ResourceMemory, memMin, memMax, "")
+				if err != nil {
+					return err
+				}
 				if memoryQuantity != nil {
 					co.componentSettings.MinMemory = &memMin
 					co.componentSettings.MaxMemory = &memMax
 				}
-				cpuQuantity := util.FetchResourceQuantity(corev1.ResourceCPU, cpuMin, cpuMax, "")
+				cpuQuantity, err := util.FetchResourceQuantity(corev1.ResourceCPU, cpuMin, cpuMax, "")
+				if err != nil {
+					return err
+				}
 				if cpuQuantity != nil {
 					co.componentSettings.MinCPU = &cpuMin
 					co.componentSettings.MaxCPU = &cpuMax
@@ -413,7 +427,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return err
 		}
-		co.setResourceLimits()
+		err = co.setResourceLimits()
+		if err != nil {
+			return err
+		}
 
 		var portList []string
 		if len(co.componentPorts) > 0 {

@@ -342,29 +342,41 @@ func OpenBrowser(url string) error {
 }
 
 // FetchResourceQuantity takes passed min, max and requested resource quantities and returns min and max resource requests
-func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max string, request string) *ResourceRequirementInfo {
+func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max string, request string) (*ResourceRequirementInfo, error) {
 	if min == "" && max == "" && request == "" {
-		return nil
+		return nil, nil
 	}
 	// If minimum and maximum both are passed they carry highest priority
 	// Otherwise, use the request as min and max
 	var minResource resource.Quantity
 	var maxResource resource.Quantity
 	if min != "" {
-		minResource = resource.MustParse(min)
+		resourceVal, err := resource.ParseQuantity(min)
+		if err != nil {
+			return nil, err
+		}
+		minResource = resourceVal
 	}
 	if max != "" {
-		maxResource = resource.MustParse(max)
+		resourceVal, err := resource.ParseQuantity(max)
+		if err != nil {
+			return nil, err
+		}
+		maxResource = resourceVal
 	}
 	if request != "" && (min == "" || max == "") {
-		minResource = resource.MustParse(request)
-		maxResource = resource.MustParse(request)
+		resourceVal, err := resource.ParseQuantity(request)
+		if err != nil {
+			return nil, err
+		}
+		minResource = resourceVal
+		maxResource = resourceVal
 	}
 	return &ResourceRequirementInfo{
 		ResourceType: resourceType,
 		MinQty:       minResource,
 		MaxQty:       maxResource,
-	}
+	}, nil
 }
 
 // CheckPathExists checks if a path exists or not
