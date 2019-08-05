@@ -32,16 +32,18 @@ type DeleteOptions struct {
 	componentForceDeleteFlag bool
 	componentDeleteAllFlag   bool
 	componentContext         string
+	isCmpExists              bool
 	*ComponentOptions
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, "", &ComponentOptions{}}
+	return &DeleteOptions{false, false, "", false, &ComponentOptions{}}
 }
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	do.Context = genericclioptions.NewContext(cmd)
 	err = do.ComponentOptions.Complete(name, cmd, args)
 	return
 }
@@ -51,12 +53,14 @@ func (do *DeleteOptions) Validate() (err error) {
 	if do.Context.Project == "" || do.Application == "" {
 		return odoutil.ThrowContextError()
 	}
-	isExists, err := component.Exists(do.Client, do.componentName, do.Application)
+	do.isCmpExists, err = component.Exists(do.Client, do.componentName, do.Application)
 	if err != nil {
 		return err
 	}
-	if !isExists {
-		return fmt.Errorf("failed to delete component %s as it doesn't exist", do.componentName)
+	if do.isCmpExists {
+		do.isCmpExists = true
+	} else {
+		log.Errorf("Component %s does not exist on the cluster", do.ComponentOptions.componentName)
 	}
 	return
 }
@@ -66,20 +70,22 @@ func (do *DeleteOptions) Run() (err error) {
 	glog.V(4).Infof("component delete called")
 	glog.V(4).Infof("args: %#v", do)
 
-	err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
-	if err != nil {
-		return err
-	}
-
-	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
-		err := component.Delete(do.Client, do.componentName, do.Application)
+	if do.isCmpExists {
+		err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
 		if err != nil {
 			return err
 		}
-		log.Successf("Component %s from application %s has been deleted", do.componentName, do.Application)
 
-	} else {
-		return fmt.Errorf("Aborting deletion of component: %v", do.componentName)
+		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v?", do.componentName, do.Application)) {
+			err := component.Delete(do.Client, do.componentName, do.Application)
+			if err != nil {
+				return err
+			}
+			log.Successf("Component %s from application %s has been deleted", do.componentName, do.Application)
+
+		} else {
+			return fmt.Errorf("Aborting deletion of component: %v", do.componentName)
+		}
 	}
 
 	if do.componentDeleteAllFlag {
@@ -87,6 +93,10 @@ func (do *DeleteOptions) Run() (err error) {
 			cfg, err := config.NewLocalConfigInfo(do.componentContext)
 			if err != nil {
 				return err
+			}
+
+			if !cfg.ConfigFileExists() {
+				return nil
 			}
 
 			err = cfg.DeleteConfigDir()
