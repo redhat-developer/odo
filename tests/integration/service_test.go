@@ -55,7 +55,7 @@ var _ = Describe("odoServiceE2e", func() {
 			helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
 
 			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
-			helper.CmdShouldPass("odo", "create", "java", "sb-app")
+			helper.CmdShouldPass("odo", "create", "java", "sb-app", "--project", project)
 
 			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
 				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
