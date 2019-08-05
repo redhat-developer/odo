@@ -2,11 +2,12 @@ package util
 
 import (
 	"encoding/json"
-	"github.com/golang/glog"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 const fileIndexDirectory = ".odo"
@@ -26,14 +27,10 @@ func read(filePath string) (map[string]FileData, error) {
 		return map[string]FileData{}, nil
 	}
 
-	jsonFileRead, err := os.Open(filePath)
-	// if we os.Open returns an error then handle it
+	byteValue, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
-	defer jsonFileRead.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFileRead)
 	// unmarshals the byte values and fill up the file read map
 	err = json.Unmarshal(byteValue, &fileReadMap)
 	if err != nil {
@@ -126,7 +123,7 @@ func Run(directory string, ignoreRules []string) (filesChanged []string, filesDe
 	}
 
 	// find files which are deleted/renamed
-	for fileName, _ := range readData {
+	for fileName := range readData {
 		if _, ok := filesMap[fileName]; !ok {
 			glog.V(4).Infof("file deleted: %s", fileName)
 			filesDeleted = append(filesDeleted, fileName)
@@ -149,17 +146,9 @@ func Run(directory string, ignoreRules []string) (filesChanged []string, filesDe
 // filepath is the location of the file to which it is supposed to be written
 func write(filePath string, writeMap map[string]FileData) error {
 	jsonData, err := json.Marshal(writeMap)
-
-	jsonFile, err := os.Create(filePath)
-
 	if err != nil {
 		return err
 	}
-	defer jsonFile.Close()
-
-	_, err = jsonFile.Write(jsonData)
-	if err != nil {
-		return err
-	}
-	return nil
+	// 0666 is the mask used when a file is created using os.Create hence defaulting
+	return ioutil.WriteFile(filePath, jsonData, 0666)
 }
