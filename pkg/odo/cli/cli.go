@@ -52,13 +52,13 @@ Examples:
 {{ .Example }}{{end}}{{ if .HasAvailableSubCommands}}
 
 Shortcuts:{{range .Commands}}{{if eq .Annotations.command "component"}}
-  {{rpad .Name .NamePadding }} {{.Short}} (shortcut for "component {{.Name}}") {{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
+  {{rpad .Name .NamePadding }} {{.Short}} (shortcut for "component {{.Name}}") {{end}}{{end}}{{end}}
 
 Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
 
 Utility Commands:{{range .Commands}}{{if or (eq .Annotations.command "utility") (eq .Name "help") }}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
 
 Flags:
 {{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace }}{{end}}{{ if .HasAvailableInheritedFlags}}
