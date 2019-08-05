@@ -16,6 +16,8 @@ import (
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
@@ -67,6 +69,23 @@ func (o *URLListOptions) Run() (err error) {
 	localUrls := o.localConfigInfo.GetUrl()
 
 	if log.IsJSON() {
+		if len(localUrls) != 0 {
+			for _, u := range localUrls {
+				p, err := url.Exists(o.Client, u.Name, o.Component(), o.Application)
+				if err != nil {
+					return err
+				}
+				if !p {
+
+					urls.Items = append(urls.Items, url.Url{
+						TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+						ObjectMeta: metav1.ObjectMeta{Name: u.Name},
+					})
+				}
+			}
+
+		}
+
 		out, err := json.Marshal(urls)
 		if err != nil {
 			return err
