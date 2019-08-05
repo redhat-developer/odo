@@ -52,8 +52,8 @@ func (oc *OcRunner) GetCurrentProject() string {
 func (oc *OcRunner) GetFirstURL(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "route",
 		"-n", project,
-		"-l", "app.kubernetes.io/component-name="+component,
-		"-l", "app.kubernetes.io/name="+app,
+		"-l", "app.kubernetes.io/instance="+component,
+		"-l", "app.kubernetes.io/part-of="+app,
 		"-o", "jsonpath={.items[0].spec.host}")
 
 	session.Wait()
@@ -67,8 +67,8 @@ func (oc *OcRunner) GetFirstURL(component string, app string, project string) st
 func (oc *OcRunner) GetComponentRoutes(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "route",
 		"-n", project,
-		"-l", "app.kubernetes.io/component-name="+component,
-		"-l", "app.kubernetes.io/name="+app,
+		"-l", "app.kubernetes.io/instance="+component,
+		"-l", "app.kubernetes.io/part-of="+app,
 		"-o", "yaml")
 
 	session.Wait()
@@ -82,8 +82,8 @@ func (oc *OcRunner) GetComponentRoutes(component string, app string, project str
 func (oc *OcRunner) GetComponentDC(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "dc",
 		"-n", project,
-		"-l", "app.kubernetes.io/component-name="+component,
-		"-l", "app.kubernetes.io/name="+app,
+		"-l", "app.kubernetes.io/instance="+component,
+		"-l", "app.kubernetes.io/part-of="+app,
 		"-o", "yaml")
 
 	session.Wait()
@@ -105,7 +105,7 @@ func (oc *OcRunner) SourceTest(appTestName string, sourceType string, source str
 
 	// checking for source in dc
 	sourceInDc := CmdShouldPass(oc.path, "get", "dc", "wildfly-"+appTestName,
-		"-o", "go-template='{{index .metadata.annotations \"app.kubernetes.io/url\"}}'")
+		"-o", "go-template='{{index .metadata.annotations \"app.openshift.io/vcs-uri\"}}'")
 	Expect(sourceInDc).To(ContainSubstring(source))
 }
 
@@ -152,7 +152,7 @@ func (oc *OcRunner) VerifyCmpName(cmpName string, namespace string) {
 	dcName := oc.GetDcName(cmpName, namespace)
 	session := CmdShouldPass(oc.path, "get", "dc", dcName,
 		"--namespace", namespace,
-		"-L", "app.kubernetes.io/component-name")
+		"-L", "app.kubernetes.io/instance")
 	Expect(session).To(ContainSubstring(cmpName))
 }
 
@@ -217,7 +217,7 @@ func (oc *OcRunner) SourceTypeBC(componentName string, appName string, project s
 // SourceLocationDC returns the source location from the deployment config
 func (oc *OcRunner) SourceLocationDC(componentName string, appName string, project string) string {
 	sourceLocation := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
-		"-o", "go-template='{{index .metadata.annotations \"app.kubernetes.io/url\"}}'")
+		"-o", "go-template='{{index .metadata.annotations \"app.openshift.io/vcs-uri\"}}'")
 	return sourceLocation
 }
 

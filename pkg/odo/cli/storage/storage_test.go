@@ -7,7 +7,7 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/occlient"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -52,9 +52,9 @@ func Test_validateStoragePath(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "mystorage-app-pvc",
 					Labels: map[string]string{
-						"app.kubernetes.io/component-name": "nodejs",
-						"app.kubernetes.io/name":           "app",
-						"app.kubernetes.io/storage-name":   "mystorage",
+						"app.kubernetes.io/instance":     "nodejs",
+						"app.kubernetes.io/part-of":      "app",
+						"app.kubernetes.io/storage-name": "mystorage",
 					},
 					Namespace: "myproject",
 				},
@@ -67,9 +67,9 @@ func Test_validateStoragePath(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "mystorage-app-pvc",
 			Labels: map[string]string{
-				"app.kubernetes.io/component-name": "nodejs",
-				"app.kubernetes.io/name":           "app",
-				"app.kubernetes.io/storage-name":   "mystorage",
+				"app.kubernetes.io/instance":     "nodejs",
+				"app.kubernetes.io/part-of":      "app",
+				"app.kubernetes.io/storage-name": "mystorage",
 			},
 			Namespace: "myproject",
 		},
@@ -82,9 +82,9 @@ func Test_validateStoragePath(t *testing.T) {
 					Name:      "nodejs-app",
 					Namespace: "myproject",
 					Labels: map[string]string{
-						"app.kubernetes.io/component-name": "nodejs",
-						"app.kubernetes.io/component-type": "nodejs",
-						"app.kubernetes.io/name":           "app",
+						"app.kubernetes.io/instance": "nodejs",
+						"app.kubernetes.io/name":     "nodejs",
+						"app.kubernetes.io/part-of":  "app",
 					},
 				},
 				Spec: appsv1.DeploymentConfigSpec{
@@ -118,7 +118,7 @@ func Test_validateStoragePath(t *testing.T) {
 		},
 	}
 
-	labelSelector := "app.kubernetes.io/component-name=nodejs,app.kubernetes.io/name=app"
+	labelSelector := "app.kubernetes.io/instance=nodejs,app.kubernetes.io/part-of=app"
 	storageSelector := "app.kubernetes.io/storage-name"
 	client, fakeClientSet := occlient.FakeNew()
 	fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {

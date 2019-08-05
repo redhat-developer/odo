@@ -219,7 +219,7 @@ func TestListWithDetailedStatus(t *testing.T) {
 			name: "Case 1: services with various statuses, some bound and some linked",
 			args: args{
 				Project:  "myproject",
-				Selector: "app.kubernetes.io/component-name=mysql-persistent,app.kubernetes.io/name=app",
+				Selector: "app.kubernetes.io/instance=mysql-persistent,app.kubernetes.io/part-of=app",
 			},
 			serviceList: scv1beta1.ServiceInstanceList{
 				Items: []scv1beta1.ServiceInstance{

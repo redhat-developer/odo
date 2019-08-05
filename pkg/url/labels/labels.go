@@ -6,7 +6,7 @@ import (
 
 // URLLabel is the label key that is applied to all url resources
 // that are created
-const URLLabel = "app.kubernetes.io/url-name"
+const URLLabel = "odo.openshift.io/url-name"
 
 // GetLabels gets the labels to be applied to the given url besides the
 // component labels and application labels.

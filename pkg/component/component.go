@@ -30,7 +30,7 @@ import (
 
 // componentSourceURLAnnotation is an source url from which component was build
 // it can be also file://
-const componentSourceURLAnnotation = "app.kubernetes.io/url"
+const componentSourceURLAnnotation = "app.openshift.io/vcs-uri"
 const ComponentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
