@@ -55,7 +55,7 @@ var _ = Describe("odo generic", func() {
 		})
 		It("should create the component in default application", func() {
 			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "e2e-xyzk", "--project", project, "--git", testPHPGitURL)
-			helper.CmdShouldPass("odo", "config", "set", "Ports", "8080/TCP")
+			helper.CmdShouldPass("odo", "config", "set", "Ports", "8080/TCP", "-f")
 			helper.CmdShouldPass("odo", "push")
 			oc.VerifyCmpName("testcmp", project)
 			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", project)
