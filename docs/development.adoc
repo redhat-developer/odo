@@ -402,12 +402,17 @@ Supervisord is deployed via link:https://docs.openshift.com/container-platform/4
 `ODO_BOOTSTRAPPER_IMAGE` is an environmental variable which specifies the Init Container image used for Supervisord deployment.  You can modify the value of the variable to use a custom Init Container image.
 The default Init Container image is `quay.io/openshiftdo/supervisord:0.6.0` 
 
-To set a custom Init Container image, run:
-`ODO_BOOTSTRAPPER_IMAGE=quay.io/myrepo/myimage:test`
+. To set a custom Init Container image, run:
++
+----
+ODO_BOOTSTRAPPER_IMAGE=quay.io/myrepo/myimage:test
+----
 
-To revert back to the default Init Container image, unset the variable:  
-`unset ODO_BOOTSTRAPPER_IMAGE`
-
+. To revert back to the default Init Container image, unset the variable:
++
+----
+unset ODO_BOOTSTRAPPER_IMAGE
+----
 
 == Dependency management
 
