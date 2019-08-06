@@ -92,7 +92,7 @@ It also ensures that post-submit tests (tests that run before merge) validate th
 
 == Test Driven Development
 
-We follow the Test Driven Development(TDD) workflow in our development process. You can read more about it link:/docs/tdd-workflow.md[here].
+We follow the Test Driven Development(TDD) workflow in our development process. You can read more about it link:tdd-workflow.adoc[here].
 
 === Unit tests
 
@@ -395,6 +395,20 @@ The reason this happens is because the _read DeploymentConfig_ or _update DC in 
 
 Thus it is recommended to avoid the read, update-in-memory, or push-update actions as much as possible. One remedy is to use the `Patch` operation, for more information see the link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/[`Resource Operations`] section. Another remedy would be to retry the operation when the optimistic concurrency error is encountered.
 
+=== Setting custom Init Container image for bootstrapping Supervisord
+For quick deployment of components, odo uses the link:https://github.com/ochinchina/supervisord[Supervisord] process manager.
+Supervisord is deployed via link:https://docs.openshift.com/container-platform/4.1/nodes/containers/nodes-containers-init.html[Init Container] image. 
+
+`ODO_BOOTSTRAPPER_IMAGE` is an environmental variable which specifies the Init Container image used for Supervisord deployment.  You can modify the value of the variable to use a custom Init Container image.
+The default Init Container image is `quay.io/openshiftdo/supervisord:0.6.0` 
+
+To set a custom Init Container image, run:
+`ODO_BOOTSTRAPPER_IMAGE=quay.io/myrepo/myimage:test`
+
+To revert back to the default Init Container image, unset the variable:  
+`unset ODO_BOOTSTRAPPER_IMAGE`
+
+
 == Dependency management
 
 `odo` uses `glide` to manage dependencies. `glide` is not strictly required for building `odo` but it is required when managing dependencies under the `vendor/` directory.
@@ -443,7 +457,7 @@ To release a new version:
 ** link:/pkg/odo/cli/version/version.go[`cmd/version.go`]
 ** link:/scripts/installer.sh[`scripts/installer.sh`]
 +
-There is a helper script link:/scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above (except `odo.rb`).
+There is a helper script link:../scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above (except `odo.rb`).
 
 * Updates the CLI reference documentation in the `docs/cli-reference.md` file:
 +
