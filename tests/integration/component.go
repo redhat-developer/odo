@@ -345,6 +345,8 @@ func componentTests(args ...string) {
 		It("creates a local nodejs component without pushing and then deletes it using --all flag", func() {
 			helper.CopyExample(filepath.Join("source", "pyhton"), context)
 			helper.CmdShouldPass("odo", append(args, "create", "python", "--project", project, "--context", context)...)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "delete", "--context", context, "-f")
 			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f", "--context", context)...)
 			files := helper.ListFilesInDir(context)
 			Expect(files).NotTo(ContainElement(".odo"))
