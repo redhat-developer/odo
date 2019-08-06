@@ -3,11 +3,12 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"strings"
+	"text/template"
+
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/pkg/errors"
-	"strings"
-	"text/template"
 
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
@@ -65,6 +66,8 @@ type ServiceCreateOptions struct {
 	wait bool
 	// generic context options common to all commands
 	*genericclioptions.Context
+	// Context to use when creating service. This will use app and project values from the context
+	componentContext string
 }
 
 // NewServiceCreateOptions creates a new ServiceCreateOptions instance
@@ -78,7 +81,11 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		o.interactive = true
 	}
 
-	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	if o.componentContext != "" {
+		o.Context = genericclioptions.NewContext(cmd)
+	} else {
+		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	}
 
 	client := o.Client
 
@@ -246,6 +253,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringSliceVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 	serviceCreateCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the service is ready")
+	genericclioptions.AddContextFlag(serviceCreateCmd, &o.componentContext)
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
 	completion.RegisterCommandFlagHandler(serviceCreateCmd, "plan", completion.ServicePlanCompletionHandler)
 	completion.RegisterCommandFlagHandler(serviceCreateCmd, "parameters", completion.ServiceParameterCompletionHandler)
