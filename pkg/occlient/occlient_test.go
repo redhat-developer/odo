@@ -3877,7 +3877,7 @@ func TestInjectS2IPaths(t *testing.T) {
 					Value: "value2",
 				},
 			},
-			wantLength: 7,
+			wantLength: 6,
 		},
 		{
 			name: "New env vars append",
@@ -3891,7 +3891,7 @@ func TestInjectS2IPaths(t *testing.T) {
 					Value: "value2",
 				},
 			},
-			wantLength: 9,
+			wantLength: 8,
 		},
 	}
 	for _, tt := range tests {
