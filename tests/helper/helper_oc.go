@@ -110,9 +110,9 @@ func (oc *OcRunner) SourceTest(appTestName string, sourceType string, source str
 }
 
 // ExecListDir returns dir list in specified location of pod
-func (oc *OcRunner) ExecListDir(podName string, projectName string) string {
+func (oc *OcRunner) ExecListDir(podName string, projectName string, dir string) string {
 	stdOut := CmdShouldPass(oc.path, "exec", podName, "--namespace", projectName,
-		"--", "ls", "-lai", "/opt/app-root/src")
+		"--", "ls", "-lai", dir)
 	return stdOut
 }
 
@@ -332,4 +332,20 @@ func (oc *OcRunner) GetEnvFromEntry(componentName string, appName string, projec
 	envFromOut := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
 		"-o", "jsonpath='{.spec.template.spec.containers[0].envFrom}'")
 	return strings.TrimSpace(envFromOut)
+}
+
+// GetEnvs returns all env variables in deployment config
+func (oc *OcRunner) GetEnvs(componentName string, appName string, projectName string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	output := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
+		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+
+	for _, line := range strings.Split(output, "\n") {
+		splits := strings.Split(line, ":")
+		name := splits[0]
+		value := strings.Join(splits[1:], ":")
+		mapOutput[name] = value
+	}
+	return mapOutput
 }

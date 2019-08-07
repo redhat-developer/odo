@@ -2,10 +2,11 @@ package integration
 
 import (
 	"fmt"
-	"github.com/openshift/odo/tests/helper"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -107,7 +108,9 @@ var _ = Describe("odo push command tests", func() {
 			podName := oc.GetRunningPodNameOfComp(cmpName, project)
 
 			// verify that the new file was pushed
-			stdOut := oc.ExecListDir(podName, project)
+			envs := oc.GetEnvs(cmpName, appName, project)
+			dir := fmt.Sprintf("%s/%s", envs["ODO_S2I_SRC_BIN_PATH"], "/src")
+			stdOut := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut).To(ContainSubstring(("README.md")))
 
 			// make a new folder and push
@@ -115,7 +118,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
 			// verify that the new file was pushed
-			stdOut = oc.ExecListDir(podName, project)
+			stdOut = oc.ExecListDir(podName, project, dir)
 			Expect(stdOut).To(ContainSubstring(("exampleDir")))
 		})
 
@@ -135,8 +138,11 @@ var _ = Describe("odo push command tests", func() {
 			// get the name of running pod
 			podName := oc.GetRunningPodNameOfComp(cmpName, project)
 
+			envs := oc.GetEnvs(cmpName, appName, project)
+			dir := fmt.Sprintf("%s/%s", envs["ODO_S2I_SRC_BIN_PATH"], "/src")
+
 			// verify that the new file was pushed
-			stdOut := oc.ExecListDir(podName, project)
+			stdOut := oc.ExecListDir(podName, project, dir)
 
 			Expect(stdOut).To(Not(ContainSubstring("README.md")))
 
@@ -148,7 +154,7 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
 			// verify that the new file was pushed
-			stdOut = oc.ExecListDir(podName, project)
+			stdOut = oc.ExecListDir(podName, project, dir)
 
 			Expect(stdOut).To(Not(ContainSubstring("tests")))
 
@@ -267,16 +273,19 @@ var _ = Describe("odo push command tests", func() {
 			// get the name of running pod
 			podName := oc.GetRunningPodNameOfComp("nodejs", project)
 
+			envs := oc.GetEnvs(cmpName, appName, project)
+			dir := fmt.Sprintf("%s/%s", envs["ODO_S2I_SRC_BIN_PATH"], "/src")
+
 			// verify that the views folder got pushed
-			stdOut1 := oc.ExecListDir(podName, project)
+			stdOut1 := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut1).To(ContainSubstring("views"))
 
 			// verify that the tests was not pushed
-			stdOut2 := oc.ExecListDir(podName, project)
+			stdOut2 := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut2).To(Not(ContainSubstring(("tests"))))
 
 			// verify that the README.md file was not pushed
-			stdOut3 := oc.ExecListDir(podName, project)
+			stdOut3 := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut3).To(Not(ContainSubstring(("README.md"))))
 
 		})
