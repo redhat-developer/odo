@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -41,6 +42,12 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 
 // Validate validates the ServiceListOptions based on completed values
 func (o *ServiceListOptions) Validate() (err error) {
+	// Throw error if project and application values are not available.
+	// This will most likely be the case when user does odo service list from outside a component directory and
+	// doesn't provide --app and/or --project flags
+	if o.Context.Project == "" || o.Context.Application == "" {
+		return odoutil.ThrowContextError()
+	}
 	return
 }
 
