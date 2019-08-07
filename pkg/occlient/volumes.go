@@ -2,6 +2,7 @@ package occlient
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/util"
@@ -130,10 +131,10 @@ func removeVolumeFromDC(vol string, dc *appsv1.DeploymentConfig) bool {
 	return found
 }
 
-// removeVolumeMountFromDC removes the volumeMount from all the given containers
-// in the given Deployment Config and return true. If the given volumeMount is
-// not found, it returns false
-func removeVolumeMountFromDC(vm string, dc *appsv1.DeploymentConfig) bool {
+// removeVolumeMountsFromDC removes the volumeMounts from all the given containers
+// in the given Deployment Config and return true. If any of the volumeMount with the name
+// is not found, it returns false.
+func removeVolumeMountsFromDC(vm string, dc *appsv1.DeploymentConfig) bool {
 	found := false
 	for i, container := range dc.Spec.Template.Spec.Containers {
 		for j, volumeMount := range container.VolumeMounts {

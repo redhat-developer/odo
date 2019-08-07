@@ -25,7 +25,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -850,304 +849,6 @@ func TestUpdateDCAnnotations(t *testing.T) {
 
 				if !reflect.DeepEqual(updatedDc.Annotations, tt.annotations) {
 					t.Errorf("deployment Config annotations not matching with expected values, expected: %s, got %s", tt.annotations, updatedDc.Annotations)
-				}
-			} else if err == nil && tt.wantErr {
-				t.Error("error was expected, but no error was returned")
-			} else if err != nil && !tt.wantErr {
-				t.Errorf("test failed, no error was expected, but got unexpected error: %s", err)
-			}
-		})
-	}
-}
-
-func TestSetupForSupervisor(t *testing.T) {
-	quantity, _ := resource.ParseQuantity("1Gi")
-	errQuantity, _ := resource.ParseQuantity("2Gi")
-
-	tests := []struct {
-		name        string
-		dcName      string
-		annotations map[string]string
-		labels      map[string]string
-		existingDc  appsv1.DeploymentConfig
-		createdPVC  corev1.PersistentVolumeClaim
-		wantErr     bool
-	}{
-		{
-			name:   "setup with normal correct values",
-			dcName: "wildfly",
-			annotations: map[string]string{
-				"app.openshift.io/vcs-uri":                "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			labels: map[string]string{
-				"app":                        "apptmp",
-				"app.kubernetes.io/instance": "ruby",
-				"app.kubernetes.io/name":     "ruby",
-				"app.kubernetes.io/part-of":  "apptmp",
-			},
-			existingDc: appsv1.DeploymentConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "wildfly",
-					Annotations: map[string]string{"app.openshift.io/vcs-uri": "https://github.com/sclorg/nodejs-ex",
-						"app.kubernetes.io/component-source-type": "git",
-					},
-				},
-				Spec: appsv1.DeploymentConfigSpec{
-					Template: &corev1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"deploymentconfig": "wildfly",
-							},
-						},
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Image: "wildfly:latest",
-									Name:  "wildfly",
-								},
-							},
-						},
-					},
-				},
-			},
-			createdPVC: corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
-					Labels: map[string]string{
-						"app":                        "apptmp",
-						"app.kubernetes.io/instance": "wildfly",
-						"app.kubernetes.io/name":     "wildfly",
-						"app.kubernetes.io/part-of":  "apptmp",
-					},
-				},
-				Spec: corev1.PersistentVolumeClaimSpec{
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: quantity,
-						},
-					},
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.ReadWriteOnce,
-					},
-				},
-			},
-
-			wantErr: false,
-		},
-		{
-			name:   "setup with wrong pvc name",
-			dcName: "wildfly",
-			annotations: map[string]string{
-				"app.openshift.io/vcs-uri":                "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			labels: map[string]string{
-				"app":                        "apptmp",
-				"app.kubernetes.io/instance": "ruby",
-				"app.kubernetes.io/name":     "ruby",
-				"app.kubernetes.io/part-of":  "apptmp",
-			},
-			existingDc: appsv1.DeploymentConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "wildfly",
-					Annotations: map[string]string{
-						"app.openshift.io/vcs-uri":                "https://github.com/sclorg/nodejs-ex",
-						"app.kubernetes.io/component-source-type": "git",
-					},
-				},
-				Spec: appsv1.DeploymentConfigSpec{
-					Template: &corev1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"deploymentconfig": "wildfly",
-							},
-						},
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Image: "wildfly:latest",
-									Name:  "wildfly",
-								},
-							},
-						},
-					},
-				},
-			},
-			createdPVC: corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "wildfly",
-					Labels: map[string]string{
-						"app":                        "apptmp",
-						"app.kubernetes.io/instance": "wildfly",
-						"app.kubernetes.io/name":     "wildfly",
-						"app.kubernetes.io/part-of":  "apptmp",
-					},
-				},
-				Spec: corev1.PersistentVolumeClaimSpec{
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: quantity,
-						},
-					},
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.ReadWriteOnce,
-					},
-				},
-			},
-
-			wantErr: true,
-		},
-		{
-			name:   "setup with wrong pvc specs",
-			dcName: "wildfly",
-			annotations: map[string]string{
-				"app.openshift.io/vcs-uri":                "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			labels: map[string]string{
-				"app":                        "apptmp",
-				"app.kubernetes.io/instance": "ruby",
-				"app.kubernetes.io/name":     "ruby",
-				"app.kubernetes.io/part-of":  "apptmp",
-			},
-			existingDc: appsv1.DeploymentConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "wildfly",
-					Annotations: map[string]string{
-						"app.openshift.io/vcs-uri":                "https://github.com/sclorg/nodejs-ex",
-						"app.kubernetes.io/component-source-type": "git",
-					},
-				},
-				Spec: appsv1.DeploymentConfigSpec{
-					Template: &corev1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"deploymentconfig": "wildfly",
-							},
-						},
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Image: "wildfly:latest",
-									Name:  "wildfly",
-								},
-							},
-						},
-					},
-				},
-			},
-			createdPVC: corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: fmt.Sprintf("%s-s2idata", "wildfly"),
-					Labels: map[string]string{
-						"app":                        "apptmp",
-						"app.kubernetes.io/instance": "wildfly",
-						"app.kubernetes.io/name":     "wildfly",
-						"app.kubernetes.io/part-of":  "apptmp",
-					},
-				},
-				Spec: corev1.PersistentVolumeClaimSpec{
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: errQuantity,
-						},
-					},
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.ReadWriteOnce,
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:   "setup with non existing dc",
-			dcName: "wildfly",
-			annotations: map[string]string{
-				"app.openshift.io/vcs-uri":                "file:///temp/nodejs-ex",
-				"app.kubernetes.io/component-source-type": "local",
-			},
-			labels: map[string]string{
-				"app":                        "apptmp",
-				"app.kubernetes.io/instance": "ruby",
-				"app.kubernetes.io/name":     "ruby",
-				"app.kubernetes.io/part-of":  "apptmp",
-			},
-			existingDc: appsv1.DeploymentConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nodejs",
-				},
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fkclient, fkclientset := FakeNew()
-			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				dcName := action.(ktesting.GetAction).GetName()
-				if dcName != tt.dcName {
-					return true, nil, fmt.Errorf("'get' called with different dcName")
-				}
-				if tt.dcName != tt.existingDc.Name {
-					return true, nil, fmt.Errorf("got different dc")
-				}
-				return true, &tt.existingDc, nil
-			})
-
-			fkclientset.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
-				if dc.Name != tt.existingDc.Name {
-					return true, nil, fmt.Errorf("got different dc")
-				}
-				return true, dc, nil
-			})
-
-			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				createdPvc := action.(ktesting.CreateAction).GetObject().(*corev1.PersistentVolumeClaim)
-				if createdPvc.ObjectMeta.Name != tt.createdPVC.ObjectMeta.Name {
-					return true, nil, fmt.Errorf("got a different pvc name")
-				}
-				if !reflect.DeepEqual(createdPvc.Spec, tt.createdPVC.Spec) {
-					return true, nil, fmt.Errorf("got a different pvc spec")
-				}
-				return true, &tt.createdPVC, nil
-			})
-
-			err := fkclient.SetupForSupervisor(tt.dcName, tt.annotations, tt.labels)
-
-			if err == nil && !tt.wantErr {
-				// Check for validating actions performed
-				if (len(fkclientset.AppsClientset.Actions()) != 2) && (tt.wantErr != true) {
-					t.Errorf("expected 2 action in UpdateDeploymentConfig got: %v", fkclientset.AppsClientset.Actions())
-				}
-
-				// Check for validating actions performed
-				if (len(fkclientset.Kubernetes.Actions()) != 1) && (tt.wantErr != true) {
-					t.Errorf("expected 1 action in CreatePVC got: %v", fkclientset.AppsClientset.Actions())
-				}
-
-				updatedDc := fkclientset.AppsClientset.Actions()[1].(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
-				if updatedDc.Name != tt.dcName {
-					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.dcName, updatedDc.Name)
-				}
-
-				createdPVC := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.PersistentVolumeClaim)
-				if createdPVC.ObjectMeta.Name != fmt.Sprintf("%s-s2idata", tt.dcName) {
-					t.Errorf("pvc name is not matching with expected value, expected: %s, got %s", tt.createdPVC.ObjectMeta.Name, createdPVC.ObjectMeta.Name)
-				}
-
-				if !reflect.DeepEqual(updatedDc.Annotations, tt.annotations) {
-					t.Errorf("deployment Config annotations not matching with expected values, expected: %s, got %s", tt.annotations, updatedDc.Annotations)
-				}
-
-				if !reflect.DeepEqual(createdPVC.Name, tt.createdPVC.Name) {
-					t.Errorf("created PVC not matching with expected values, expected: %v, got %v", tt.createdPVC, createdPVC)
-				}
-
-				if !reflect.DeepEqual(createdPVC.Spec, tt.createdPVC.Spec) {
-					t.Errorf("created PVC spec not matching with expected values, expected: %v, got %v", createdPVC.Spec, tt.createdPVC.Spec)
 				}
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
@@ -4157,6 +3858,55 @@ func TestUniqueAppendOrOverwriteEnvVars(t *testing.T) {
 	}
 }
 
+func TestInjectS2IPaths(t *testing.T) {
+	tests := []struct {
+		name            string
+		existingEnvVars []corev1.EnvVar
+		envVars         []corev1.EnvVar
+		wantLength      int
+	}{
+		{
+			name: "Case: Overlapping env vars appends",
+			existingEnvVars: []corev1.EnvVar{
+				{
+					Name:  EnvS2IScriptsProtocol,
+					Value: "value1",
+				},
+				{
+					Name:  EnvS2IBuilderImageName,
+					Value: "value2",
+				},
+			},
+			wantLength: 6,
+		},
+		{
+			name: "New env vars append",
+			existingEnvVars: []corev1.EnvVar{
+				{
+					Name:  "key1",
+					Value: "value1",
+				},
+				{
+					Name:  "key2",
+					Value: "value2",
+				},
+			},
+			wantLength: 8,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotEnvVars := injectS2IPaths(tt.existingEnvVars, S2IPaths{
+				"test", "test", "test", "test", "test", "test", "test",
+			})
+			if tt.wantLength != len(gotEnvVars) {
+				t.Errorf("Tc: %s, expected %+v, got %+v", tt.name, tt.wantLength, len(gotEnvVars))
+			}
+		})
+	}
+}
+
 func TestGetS2IMetaInfoFromBuilderImg(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -5436,4 +5186,66 @@ func sliceEqual(x, y []string) bool {
 	sort.Strings(yc)
 
 	return reflect.DeepEqual(xc, yc)
+}
+
+func TestIsSubDir(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		baseDir  string
+		otherDir string
+		matches  bool
+	}{
+		{
+			name:     "Case 1: same dirs with slashes",
+			baseDir:  "/abcd/",
+			otherDir: "/abcd",
+			matches:  true,
+		},
+		{
+			name:     "Case 2: same dirs with slashes order reverse",
+			baseDir:  "/abcd",
+			otherDir: "/abcd/",
+			matches:  true,
+		},
+		{
+			name:     "Case 3: other dir same prefix",
+			baseDir:  "/abcd",
+			otherDir: "/abcde/",
+			matches:  false,
+		},
+		{
+			name:     "Case 4: other dir same prefix more complex",
+			baseDir:  "/abcde/fg",
+			otherDir: "/abcde/fgh",
+			matches:  false,
+		},
+		{
+			name:     "Case 5: other dir same prefix more complex matching",
+			baseDir:  "/abcde/fg",
+			otherDir: "/abcde/fg/h",
+			matches:  true,
+		},
+		{
+			name:     "Case 6: dirs with ..",
+			baseDir:  "/abcde/fg/../h",
+			otherDir: "/abcde/h/ij",
+			matches:  true,
+		},
+		{
+			name:     "Case 7: dirs with .. not matching",
+			baseDir:  "/abcde/fg/../h",
+			otherDir: "/abcde/fg/h",
+			matches:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if isSubDir(tt.baseDir, tt.otherDir) != tt.matches {
+				t.Errorf("the outcome for %s and %s is not expected", tt.baseDir, tt.otherDir)
+			}
+		})
+	}
+
 }
