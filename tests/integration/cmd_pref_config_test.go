@@ -1,8 +1,10 @@
 package integration
 
 import (
+	"github.com/libopenstorage/openstorage/pkg/units"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -150,7 +152,13 @@ var _ = Describe("odo preference and config command tests", func() {
 			for _, testCase := range cases {
 				helper.CmdShouldPass("odo", "config", "set", testCase.paramName, testCase.paramValue, "-f")
 				setValue := helper.GetConfigValue(testCase.paramName)
-				Expect(setValue).To(ContainSubstring(testCase.paramValue))
+				if testCase.paramName == "MinMemory" || testCase.paramName == "MaxMemory" {
+					value, _ := units.Parse(testCase.paramValue)
+					postParsed := strconv.FormatInt(value, 10)
+					Expect(setValue).To(ContainSubstring(postParsed))
+				} else {
+					Expect(setValue).To(ContainSubstring(testCase.paramValue))
+				}
 				// cleanup
 				helper.CmdShouldPass("odo", "config", "unset", testCase.paramName, "-f")
 				UnsetValue := helper.GetConfigValue(testCase.paramName)
