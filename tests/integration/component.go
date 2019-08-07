@@ -313,6 +313,9 @@ func componentTests(args ...string) {
 
 	Context("when component is in the current directory and --project flag is used", func() {
 
+		appName := "app"
+		componentName := "my-component"
+
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
 			project = helper.CreateRandProject()
@@ -335,19 +338,23 @@ func componentTests(args ...string) {
 
 		It("creates and pushes local nodejs component and then deletes --all", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--env", "key=value,key1=value1")...)
-			helper.CmdShouldPass("odo", append(args, "push")...)
-			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f")...)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", componentName, "--app", appName, "--project", project, "--env", "key=value,key1=value1")...)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+			helper.CmdShouldPass("odo", append(args, "delete", "--context", context, "-f", "--all", "--app", appName)...)
+			componentList := helper.CmdShouldPass("odo", append(args, "list", "--context", context, "--app", appName, "--project", project)...)
+			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(context)
 			Expect(files).NotTo(ContainElement(".odo"))
 		})
 
-		It("creates a local nodejs component without pushing and then deletes it using --all flag", func() {
-			helper.CopyExample(filepath.Join("source", "pyhton"), context)
-			helper.CmdShouldPass("odo", append(args, "create", "python", "--project", project, "--context", context)...)
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			helper.CmdShouldPass("odo", "delete", "--context", context, "-f")
+		It("creates a local python component, pushes it and then deletes it using --all flag", func() {
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "python", componentName, "--app", appName, "--project", project, "--context", context)...)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+			helper.CmdShouldPass("odo", append(args, "delete", "--context", context, "-f")...)
 			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f", "--context", context)...)
+			componentList := helper.CmdShouldPass("odo", append(args, "list", "--context", context, "--app", appName, "--project", project)...)
+			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(context)
 			Expect(files).NotTo(ContainElement(".odo"))
 		})
