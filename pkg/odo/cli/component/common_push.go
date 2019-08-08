@@ -46,6 +46,11 @@ func NewCommonPushOptions() *CommonPushOptions {
 	}
 }
 
+//EnablePushConfig enables pushing of the config only
+func (cpo *CommonPushOptions) EnablePushConfig()  {
+	cpo.pushConfig = true
+}
+
 // ResolveSrcAndConfigFlags sets all pushes if none is asked
 func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 	// If neither config nor source flag is passed, update both config and source to the component

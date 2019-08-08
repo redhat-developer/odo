@@ -72,7 +72,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	}
 	o.LocalConfigInfo = cfg
 	if o.now {
-		o.ResolveSrcAndConfigFlags()
+		o.EnablePushConfig()
 		err = o.ResolveProject(o.Context.Project)
 		if err != nil {
 			return err
