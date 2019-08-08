@@ -3,12 +3,20 @@
 # OpenShift golang image.
 
 FROM registry.svc.ci.openshift.org/openshift/release:golang-1.11 AS builder
+LABEL Description="This image is used to build odo(Developer-focused CLI for OpenShift) \
+executables for Windows, macOS and linux" Version="1.0"
+
 COPY . /go/src/github.com/openshift/odo
 WORKDIR /go/src/github.com/openshift/odo
 RUN go get github.com/mitchellh/gox &&\
     make cross
 
-FROM registry.access.redhat.com/ubi7/ubi
+# For local testing use registry image registry.access.redhat.com/ubi7/ubi instead of
+# registry.svc.ci.openshift.org/ocp/4.2:cli
+FROM registry.svc.ci.openshift.org/ocp/4.2:cli
+LABEL Description="This image is used to keep odo(Developer-focused CLI for OpenShift) \
+executables for Windows, macOS and linux" Version="1.0"
+
 COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/darwin-amd64/odo /usr/share/openshift/odo/mac/odo
 COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/windows-amd64/odo.exe /usr/share/openshift/odo/windows/odo.exe
 COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/linux-amd64/odo /usr/share/openshift/odo/linux/odo
