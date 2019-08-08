@@ -152,3 +152,16 @@ func CreateFileWithContent(path string, fileContent string) error {
 	}
 	return nil
 }
+
+// ListFilesInDir lists all the files in the directory
+// directoryName is the name of the directory
+func ListFilesInDir(directoryName string) []string {
+	var filesInDirectory []string
+	files, err := ioutil.ReadDir(directoryName)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	for _, file := range files {
+		filesInDirectory = append(filesInDirectory, file.Name())
+	}
+	return filesInDirectory
+}
