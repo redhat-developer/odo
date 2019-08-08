@@ -81,33 +81,19 @@ func (po *PushOptions) Validate() (err error) {
 	s := log.Spinner("Checking component")
 	defer s.End(false)
 
-<<<<<<< HEAD
-	po.isCmpExists, err = component.Exists(po.Context.Client, po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
+	po.isCmpExists, err = component.Exists(po.Context.Client, po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
+		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
 	}
 
 	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfigInfo.GetComponentSettings(), po.componentContext); err != nil {
 		s.End(false)
 		log.Info("Run 'odo catalog list components' for a list of supported component types")
-		return fmt.Errorf("Invalid component type %s, %v", *po.localConfigInfo.GetComponentSettings().Type, errors.Cause(err))
+		return fmt.Errorf("Invalid component type %s, %v", *po.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))
 	}
 
 	if !po.isCmpExists && po.pushSource && !po.pushConfig {
-		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfigInfo.GetName())
-=======
-	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.LocalConfigInfo.GetComponentSettings(), false); err != nil {
-		return err
-	}
-
-	isCmpExists, err := component.Exists(po.Context.Client, po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
-	if err != nil {
-		return err
-	}
-
-	if !isCmpExists && po.pushSource && !po.pushConfig {
 		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.LocalConfigInfo.GetName())
->>>>>>> Updating component as per changes to common push
 	}
 
 	s.End(true)
