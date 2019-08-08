@@ -2,9 +2,13 @@
 # It builds an image containing the Mac, Win and Linux version of odo binary on the
 # OpenShift golang image.
 
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.11
-RUN mkdir -p /go/src/github.com/openshift/odo
+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.11 AS builder
+COPY . /go/src/github.com/openshift/odo
 WORKDIR /go/src/github.com/openshift/odo
-COPY . .
 RUN go get github.com/mitchellh/gox &&\
     make cross
+
+FROM registry.svc.ci.openshift.org/ocp/4.2:cli
+COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/darwin-amd64/odo /usr/share/openshift/odo/mac/odo
+COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/windows-amd64/odo.exe /usr/share/openshift/odo/windows/odo.exe
+COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/linux-amd64/odo /usr/share/openshift/odo/linux/odo
