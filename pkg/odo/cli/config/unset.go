@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 
@@ -47,12 +47,13 @@ type UnsetOptions struct {
 	configForceFlag bool
 	contextDir      string
 	envArray        []string
-	lci             *config.LocalConfigInfo
+	now             bool
+	*clicomponent.CommonPushOptions
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
 func NewUnsetOptions() *UnsetOptions {
-	return &UnsetOptions{}
+	return &UnsetOptions{CommonPushOptions: clicomponent.NewCommonPushOptions()}
 }
 
 // Complete completes UnsetOptions after they've been created
@@ -65,13 +66,20 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if err != nil {
 		return err
 	}
-	o.lci = cfg
+	o.LocalConfigInfo = cfg
+	if o.now {
+		o.EnablePushConfig()
+		err = o.ResolveProject(o.Context.Project)
+		if err != nil {
+			return err
+		}
+	}
 	return
 }
 
 // Validate validates the UnsetOptions based on completed values
 func (o *UnsetOptions) Validate() (err error) {
-	if !o.lci.ConfigFileExists() {
+	if !o.LocalConfigInfo.ConfigFileExists() {
 		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
 	}
 	return
@@ -83,9 +91,9 @@ func (o *UnsetOptions) Run() (err error) {
 	// env variables have been provided
 	if o.envArray != nil {
 
-		envList := o.lci.GetEnvVars()
+		envList := o.LocalConfigInfo.GetEnvVars()
 		newEnvList := config.RemoveEnvVarsFromList(envList, o.envArray)
-		if err := o.lci.SetEnvVars(newEnvList); err != nil {
+		if err := o.LocalConfigInfo.SetEnvVars(newEnvList); err != nil {
 			return err
 		}
 
@@ -93,12 +101,12 @@ func (o *UnsetOptions) Run() (err error) {
 		return nil
 	}
 
-	if isSet := o.lci.IsSet(o.paramName); isSet {
+	if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the config", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
 		}
-		err = o.lci.DeleteConfiguration(strings.ToLower(o.paramName))
+		err = o.LocalConfigInfo.DeleteConfiguration(strings.ToLower(o.paramName))
 		if err != nil {
 			return err
 		}
@@ -144,6 +152,6 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
 	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Unset the environment variables in config")
 	genericclioptions.AddContextFlag(configurationUnsetCmd, &o.contextDir)
-
+	genericclioptions.AddNowFlag(configurationUnsetCmd, &o.now)
 	return configurationUnsetCmd
 }
