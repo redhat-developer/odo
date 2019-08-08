@@ -28,20 +28,19 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
-	localConfigInfo  *config.LocalConfigInfo
 	componentContext string
 	*ComponentOptions
 }
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{nil, "", &ComponentOptions{}}
+	return &DescribeOptions{"", NewComponentOptionsWithPushOptions()}
 }
 
 // Complete completes describe args
 func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	err = do.ComponentOptions.Complete(name, cmd, args)
-	do.localConfigInfo, err = config.NewLocalConfigInfo(do.componentContext)
+	do.LocalConfigInfo, err = config.NewLocalConfigInfo(do.componentContext)
 	return
 }
 
