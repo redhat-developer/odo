@@ -138,6 +138,9 @@ func (cpo *CommonPushOptions) SetSourceInfo() (err error) {
 
 // Push pushes changes as per set options
 func (cpo *CommonPushOptions) Push() (err error) {
+
+	deletedFiles := []string{}
+
 	stdout := color.Output
 
 	cmpName := cpo.localConfigInfo.GetName()
@@ -185,6 +188,15 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			// and ignore the files on which the rules apply and filter them out
 			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
 
+			glog.V(4).Infof("List of files which have been deleted: +%v", filesDeletedFiltered)
+
+			// Remove the relative file directory
+			deletedFiles, err = removePathFromFiles(filesDeletedFiltered, cpo.sourcePath)
+			if err != nil {
+				return err
+			}
+			glog.V(4).Infof("List of files to be deleted: +%v", filesDeletedFiltered)
+
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
 				// no file was modified/added/deleted/renamed, thus return without building
 				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
@@ -209,7 +221,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			cpo.sourcePath,
 			os.Stdout,
 			[]string{},
-			[]string{},
+			deletedFiles,
 			true,
 			util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores),
 			cpo.show,
@@ -232,7 +244,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			binaryDirectory,
 			os.Stdout,
 			[]string{cpo.sourcePath},
-			[]string{},
+			deletedFiles,
 			true,
 			util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores),
 			cpo.show,
@@ -275,4 +287,19 @@ func filterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 		}
 	}
 	return filesChangedFiltered, filesDeletedFiltered
+}
+
+// removePathFromFiles removes a specified path from a file
+func removePathFromFiles(files []string, path string) ([]string, error) {
+
+	removedRelativePathFiles := []string{}
+	for _, file := range files {
+		rel, err := filepath.Rel(path, file)
+		if err != nil {
+			return []string{}, err
+		}
+		removedRelativePathFiles = append(removedRelativePathFiles, rel)
+	}
+
+	return removedRelativePathFiles, nil
 }
