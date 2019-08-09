@@ -241,7 +241,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			_, err := units.Parse(strValue)
 			if err != nil {
 				return errors.Wrapf(err, "%s has wrong format: %s", parameter, strValue)
-			} else if value == 0 {
+			} else if strValue == "0" {
 				return errors.Errorf("while setting %s, you are setting MaxMemory to %s which is incorrect", parameter, strValue)
 			} else {
 				lci.componentSettings.MinMemory = &strValue
