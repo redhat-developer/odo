@@ -165,6 +165,8 @@ NOTE: You can use environment variable `CUSTOM_HOMEDIR` to specify a custom home
 . In the case where functions fetch or create new objects through the APIs, add a https://godoc.org/k8s.io/client-go/testing#Fake.AddReactor[reactor] interface returning fake objects.
 . Verify the objects returned.
 
+NOTE: Refer https://github.com/golang/go/wiki/LearnTesting for Go best practices on unit testing.
+
 === Integration and e2e tests
 
 .Prerequisites:
@@ -179,11 +181,11 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 
 .Integration tests:
 
-Integration tests utilize link:https://github.com/onsi/ginkgo[`Ginkgo`] and it's preferred matcher library link:https://github.com/onsi/gomega[`Gomega`] which define sets of test cases (spec). As per ginkgo test file comprises specs and these test file are controlled by test suite. Test and testsuite files are located in `tests/integration` directory and can be called using functions within `makefile`. Integration tests validates and focuses on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
+Integration tests utilize link:https://github.com/onsi/ginkgo[`Ginkgo`] and it's preferred matcher library link:https://github.com/onsi/gomega[`Gomega`] which define sets of test cases (spec). As per ginkgo test file comprises specs and these test file are controlled by test suite. Test and test suite files are located in `tests/integration` directory and can be called using `.PHONY` within `makefile`. Integration tests validates and focuses on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
 
 .E2e tests:
 
-E2e (End to end) uses the same library as integtarion test. E2e tests and testsuite files are located in `tests/e2escenarios` directory and can be called using `.PHONY` within `makefile`. Basically end to end (e2e) test contains user specific scenario that is combination of some features/commands in a single test file.
+E2e (End to end) uses the same library as integration test. E2e tests and test suite files are located in `tests/e2escenarios` directory and can be called using `.PHONY` within `makefile`. Basically end to end (e2e) test contains user specific scenario that is combination of some features/commands in a single test file.
 
 .How to write:
 
