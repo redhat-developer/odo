@@ -27,6 +27,8 @@ List all services in the current application
 // ServiceListOptions encapsulates the options for the odo service list command
 type ServiceListOptions struct {
 	*genericclioptions.Context
+	// Context to use when listing service. This will use app and project values from the context
+	componentContext string
 }
 
 // NewServiceListOptions creates a new ServiceListOptions instance
@@ -84,5 +86,6 @@ func NewCmdServiceList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	genericclioptions.AddContextFlag(serviceListCmd, &o.componentContext)
 	return serviceListCmd
 }
