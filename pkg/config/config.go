@@ -224,31 +224,28 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "name":
 			lci.componentSettings.Name = &strValue
 		case "minmemory":
-			value, err := units.Parse(strValue)
+			_, err := units.Parse(strValue)
 			if err != nil {
 				return errors.Wrapf(err, "%s has wrong format: %s", parameter, strValue)
 			} else {
-				postParsed := strconv.FormatInt(value, 10)
-				lci.componentSettings.MinMemory = &postParsed
+				lci.componentSettings.MinMemory = &strValue
 			}
 		case "maxmemory":
-			value, err := units.Parse(strValue)
+			_, err := units.Parse(strValue)
 			if err != nil {
 				return errors.Wrapf(err, "%s has wrong format: %s", parameter, strValue)
 			} else {
-				postParsed := strconv.FormatInt(value, 10)
-				lci.componentSettings.MaxMemory = &postParsed
+				lci.componentSettings.MaxMemory = &strValue
 			}
 		case "memory":
-			value, err := units.Parse(strValue)
+			_, err := units.Parse(strValue)
 			if err != nil {
 				return errors.Wrapf(err, "%s has wrong format: %s", parameter, strValue)
 			} else if value == 0 {
 				return errors.Errorf("while setting %s, you are setting MaxMemory to %s which is incorrect", parameter, strValue)
 			} else {
-				postParsed := strconv.FormatInt(value, 10)
-				lci.componentSettings.MinMemory = &postParsed
-				lci.componentSettings.MaxMemory = &postParsed
+				lci.componentSettings.MinMemory = &strValue
+				lci.componentSettings.MaxMemory = &strValue
 			}
 			lci.componentSettings.MaxMemory = &strValue
 			lci.componentSettings.MinMemory = &strValue
