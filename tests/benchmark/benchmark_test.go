@@ -15,11 +15,11 @@ func TestBenchmark(t *testing.T) {
 
 	reporters := []Reporter{}
 
+	// only when executed on OpenShift CI
 	if os.Getenv("CI") == "openshift" {
 		// If running on OpenShift CI, add reporter that will submit measurements to Google Sheets table
 		// https://docs.google.com/spreadsheets/d/1o-GIoYlZoEyW1F25kAwvvEXzbW4tLck0x3EGCC4_L_A/
 		reporters = append(reporters, reporter.NewHTTPMeasurementReporter("https://script.google.com/macros/s/AKfycbyoeFrEXsrkjWOCCjsLOGY5a31Fsv5RTUvgqQP0E5vPo3YvDGE/exec"))
 	}
-
 	RunSpecsWithDefaultAndCustomReporters(t, "odo benchmark tests", reporters)
 }
