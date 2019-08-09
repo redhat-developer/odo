@@ -3,6 +3,7 @@ package reporter
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -36,6 +37,7 @@ func (r *HTTPMeasurementReporter) SpecDidComplete(specSummary *types.SpecSummary
 			output := map[string]string{}
 			output["Number of Samples"] = strconv.Itoa(specSummary.NumberOfSamples)
 			output["Measurement"] = k
+			output["PR"] = os.Getenv("PULL_NUMBER")
 			output[v.SmallestLabel] = strconv.FormatFloat(v.Smallest, 'f', -1, 64)
 			output[v.LargestLabel] = strconv.FormatFloat(v.Largest, 'f', -1, 64)
 			output[v.AverageLabel] = strconv.FormatFloat(v.Average, 'f', -1, 64)
