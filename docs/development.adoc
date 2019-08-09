@@ -363,24 +363,24 @@ Entire integration tests suite can be run in parallel and sequentially separatel
 * To run entire integration tests spec in parallel (default: 2 ginkgo test node), on a test cluster:
 +
 ----
-$ make test-integration-all-service-catalog
+$ make test-integration-service-catalog
 ----
 +
 
 ----
-$ make test-integration-all
+$ make test-integration
 ----
 +
 
 * To run entire integration tests spec sequentially or on single ginkgo test node use enviornment variable `TEST_EXEC_NODES`:
 +
 ----
-$ TEST_EXEC_NODES=1 make test-integration-all-service-catalog
+$ TEST_EXEC_NODES=1 make test-integration-service-catalog
 ----
 +
 
 ----
-$ TEST_EXEC_NODES=1 make test-integration-all
+$ TEST_EXEC_NODES=1 make test-integration
 ----
 +
 
