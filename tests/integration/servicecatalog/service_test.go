@@ -140,8 +140,20 @@ var _ = Describe("odoServiceE2e", func() {
 			Expect(stdOut).To(ContainSubstring(serviceName))
 
 			// now check if deleting the service using --context works
-			stdOut = helper.CmdShouldPass("odo", "service", "delete", "--context", context)
+			stdOut = helper.CmdShouldPass("odo", "service", "delete", "-f", "serviceName", "--context", context)
 			Expect(stdOut).To(ContainSubstring(serviceName))
+		})
+
+		It("should fail to create a service when given directory doesn't contain a context", func() {
+			// cd to the originalDir to create service using --context
+			helper.Chdir(originalDir)
+			stdOut := helper.CmdShouldFail("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
+				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", serviceName,
+				"--context", context,
+			)
+
+			Expect(stdOut).To(ContainSubstring("The current directory does not represent an odo component"))
 		})
 
 		It("should be able to list services in a given app and project combination", func() {
