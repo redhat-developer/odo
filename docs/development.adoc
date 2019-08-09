@@ -384,7 +384,7 @@ $ TEST_EXEC_NODES=1 make test-integration-all
 ----
 +
 
-NOTE: `make test-integration-service-catalog` includes only service and link tests and can be successfully validated only if the cluster has service catalog enabled. Whereas `make test-integration` includes tests except service and link tests and runs rest of the tests irrespective of service catalog status in the cluster.
+NOTE: `make test-integration-service-catalog` includes only service and link tests and can be successfully validated only if the cluster has service catalog enabled. Whereas `make test-integration` includes tests except service, link, login tests and runs rest of the tests irrespective of service catalog status in the cluster.
 
 Similarly e2e (end to end) tests can be run in parallel and sequentially separately.
 

@@ -18,6 +18,7 @@ var _ = Describe("odoLinkE2e", func() {
 	var project string
 	var context, context1, context2 string
 	var originalDir string
+	var oc helper.OcRunner
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
