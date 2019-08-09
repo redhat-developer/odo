@@ -17,6 +17,7 @@ var _ = Describe("odoServiceE2e", func() {
 	var project string
 	var context string
 	var app string
+	var serviceName string
 
 	//  current directory and project (before eny test is run) so it can restored  after all testing is done
 	var originalDir string
@@ -107,6 +108,7 @@ var _ = Describe("odoServiceE2e", func() {
 			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
 			app = helper.RandString(7)
+			serviceName = "odo-postgres-service"
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
 		})
@@ -116,24 +118,30 @@ var _ = Describe("odoServiceE2e", func() {
 			helper.Chdir(originalDir)
 		})
 
-		It("should be able to create service using a given value for --context", func() {
+		It("should be able to create, list and delete a service using a given value for --context", func() {
 			// create a component by copying the example
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--app", app, "--project", project)
 
 			// cd to the originalDir to create service using --context
 			helper.Chdir(originalDir)
-			helper.CmdShouldPass("odo", "service", "create", "dh-prometheus-apb", "--plan", "ephemeral",
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
+				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", serviceName,
 				"--context", context,
 			)
 
-			// now check if listing the service using app & project used above passes
+			// now check if listing the service using --context works
 			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "dh-prometheus-apb")
+				return strings.Contains(output, serviceName)
 			})
-			stdOut := helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project)
-			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
+			stdOut := helper.CmdShouldPass("odo", "service", "list", "--context", context)
+			Expect(stdOut).To(ContainSubstring(serviceName))
+
+			// now check if deleting the service using --context works
+			stdOut = helper.CmdShouldPass("odo", "service", "delete", "--context", context)
+			Expect(stdOut).To(ContainSubstring(serviceName))
 		})
 
 		It("should be able to list services in a given app and project combination", func() {
