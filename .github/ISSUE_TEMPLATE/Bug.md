@@ -9,9 +9,9 @@ about: Report a problem with odo to help us resolve it and improve
 Welcome! - We kindly ask you to:
 
   1. Fill out the issue template below 
-  2. Use the chat and talk to us if you have a question rather than a bug or feature request.
+  2. Use the google group if you have a question rather than a bug or feature request.
 
-The chat room is at: https://chat.openshift.io/developers/channels/odo
+The group is at: https://groups.google.com/a/redhat.com/forum/#!forum/devtools-odo
 
 Thanks for understanding, and for contributing to the project!
 
