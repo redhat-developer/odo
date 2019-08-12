@@ -59,11 +59,13 @@ func resolveFilePath(directory string) (string, error) {
 	return directory, nil
 }
 
-// Run walks the given directory and finds the files which have changed and which were deleted/renamed
+// RunIndexer walks the given directory and finds the files which have changed and which were deleted/renamed
 // it reads the odo index file from the .odo folder
 // if no such file is present, it means it's the first time the folder is being walked and thus returns a empty list
 // after the walk, it stores the list of walked files with some information in a odo index file in the .odo folder
-func Run(directory string, ignoreRules []string) (filesChanged []string, filesDeleted []string, err error) {
+// The filemap stores the values as "relative filepath" => FileData but it the filesChanged and filesDeleted are absolute paths
+// to the files
+func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, filesDeleted []string, err error) {
 	resolvedPath, err := resolveFilePath(directory)
 	if err != nil {
 		return filesChanged, filesDeleted, err
@@ -99,18 +101,23 @@ func Run(directory string, ignoreRules []string) (filesChanged []string, filesDe
 			}
 		}
 
-		if _, ok := readData[fn]; !ok {
+		relFn, err := filepath.Rel(directory, fn)
+		if err != nil {
+			return err
+		}
+
+		if _, ok := readData[relFn]; !ok {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("file added: %s", fn)
-		} else if !fi.ModTime().Equal(readData[fn].LastModifiedDate) {
+		} else if !fi.ModTime().Equal(readData[relFn].LastModifiedDate) {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("last modified date changed: %s", fn)
-		} else if fi.Size() != readData[fn].Size {
+		} else if fi.Size() != readData[relFn].Size {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("size changed: %s", fn)
 		}
 
-		filesMap[fn] = FileData{
+		filesMap[relFn] = FileData{
 			Size:             fi.Size(),
 			LastModifiedDate: fi.ModTime(),
 		}
@@ -126,7 +133,8 @@ func Run(directory string, ignoreRules []string) (filesChanged []string, filesDe
 	for fileName := range readData {
 		if _, ok := filesMap[fileName]; !ok {
 			glog.V(4).Infof("file deleted: %s", fileName)
-			filesDeleted = append(filesDeleted, fileName)
+			// we return the absolute path of the files eventhough we store relative
+			filesDeleted = append(filesDeleted, filepath.Join(directory, fileName))
 		}
 
 	}
