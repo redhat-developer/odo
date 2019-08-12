@@ -1,10 +1,14 @@
 # odo debug support proposal
+odo debug command is meant for debugging code running as odo component.
+First implementation in odo will just support Java and NodeJS components.
+
 
 Table of Contents:
 - [odo debug support proposal](#odo-debug-support-proposal)
   - [Design overview](#design-overview)
     - [New odo commands](#new-odo-commands)
       - [`odo debug start`](#odo-debug-start)
+    - [port-forward.json format](#port-forwardjson-format)
       - [`odo debug stop`](#odo-debug-stop)
       - [`odo debug status`](#odo-debug-status)
     - [`odo debug port-forward LOCAL_PORT:REMOTE_PORT`](#odo-debug-port-forward-localportremoteport)
@@ -29,7 +33,21 @@ Enables debug mode for the component. It does this by adding `DEBUG_MODE = true`
 
 After adding environment variables the component (Deployment Config) is restarted.
 Once the pod is in running state `odo debug start` executes `odo debug port-forward $DEBUG_PORT:$DEBUG_PORT`.
-This process is executed in the background and PID of the process is recorded in `~/.odo/port-forward.pid` file.
+This process is executed in the background and PID of the process is recorded in `~/.odo/port-forward.json` file.
+
+### port-forward.json format
+```json
+[
+  {
+     "directory": "/path/to/component/",
+     "port-forward-pid": 344
+  },
+  {
+     "directory": "/path/to/another/component/",
+     "port-forward-pid": 332
+  }
+]
+```
 
 
 Flags:
@@ -41,7 +59,7 @@ Flags:
 Stop port-forward process if running and remove `DEBUG_PORT` and `DEBUG_MODE` environment variables from Deployment Config.
 
 First, terminate and cleanup port-forwarding.
-If `~/.odo/port-forward.pid` exists and process with PID is running terminate the process and remove the file.
+If `~/.odo/port-forward.json` exists and process with PID is running terminate the process and remove the file.
 If the process is not running just remove the file (warn the user).
 If the file doesn't exist it is ok, as `odo debug start --no-port-forward` might have been used.
 
