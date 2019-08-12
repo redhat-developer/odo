@@ -1,7 +1,6 @@
 package benchmark
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -15,8 +14,6 @@ func TestBenchmark(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	reporters := []Reporter{}
-
-	fmt.Printf("os.Getenv(PULL_NUMBER) = %#v\n", os.Getenv("PULL_NUMBER"))
 
 	// only when executed on OpenShift CI
 	if os.Getenv("CI") == "openshift" {
