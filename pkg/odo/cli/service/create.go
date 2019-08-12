@@ -3,11 +3,12 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"strings"
+	"text/template"
+
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/pkg/errors"
-	"strings"
-	"text/template"
 
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
@@ -208,6 +209,9 @@ func (o *ServiceCreateOptions) Run() (err error) {
 	s := log.Spinner("Creating service")
 	defer s.End(false)
 	err = svc.CreateService(o.Client, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
+	if err != nil {
+		return err
+	}
 	s.End(true)
 
 	if o.wait {
