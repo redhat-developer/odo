@@ -58,7 +58,7 @@ func readFileIndex(filePath string) (*FileIndex, error) {
 		// read a very old version of the index and hence we can just
 		// ignore it and reset index
 		// TODO: we need to remove this later
-		return NewFileIndex(), err
+		return NewFileIndex(), nil
 	}
 	return &fi, nil
 }
