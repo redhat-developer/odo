@@ -161,7 +161,7 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		if fcc.Name() == "logout" {
 			return lci, nil
 		}
-		// Case 8: Check if fss is service and command is create or delete. Allow it if that's the case
+		// Case 8: Check if fcc is service and command is create or delete. Allow it if that's the case
 		if fcc.Name() == "service" && (command.Name() == "create" || command.Name() == "delete") {
 			return lci, nil
 		}
