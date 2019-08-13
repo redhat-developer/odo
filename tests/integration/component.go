@@ -524,17 +524,19 @@ func componentTests(args ...string) {
 			appName := helper.RandString(6)
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", componentName, "--app", appName, "--project", project, "--context", context)...)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
 
 			helper.Chdir(context)
 			helper.CmdShouldPass("odo", "config", "set", "--env", "FOO=BAR")
-			helper.CmdShouldPass("odo", "push")
+
+			helper.CmdShouldPass("odo", "push", "-v", "4")
+			helper.CmdShouldPass("oc", "project", project)
 
 			dcName := oc.GetDcName(componentName, project)
 			stdOut := helper.CmdShouldPass("oc", "get", "dc/"+dcName, "-n", project, "-o", "go-template={{ .spec.template.spec }}{{.env}}")
 			Expect(stdOut).To(ContainSubstring("FOO"))
 
-			helper.CmdShouldPass("odo", "push")
+			helper.CmdShouldPass("odo", "push", "-v", "4")
 			stdOut = oc.DescribeDc(dcName, project)
 			Expect(stdOut).To(ContainSubstring("FOO"))
 		})

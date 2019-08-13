@@ -1,10 +1,8 @@
 package integration
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -42,10 +40,10 @@ var _ = Describe("odo url command tests", func() {
 		It("should list appropriate URLs and push message", func() {
 			var stdout string
 			url1 := helper.RandString(5)
-			//url2 := helper.RandString(5)
+			url2 := helper.RandString(5)
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
 			stdout = helper.CmdShouldFail("odo", "url", "list", "--context", context)
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 
@@ -53,7 +51,7 @@ var _ = Describe("odo url command tests", func() {
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
 
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "8")
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
 			helper.DontMatchAllInOutput(stdout, []string{"Not Pushed", "odo push"})
@@ -64,36 +62,13 @@ var _ = Describe("odo url command tests", func() {
 
 			// Uncomment once https://github.com/openshift/odo/issues/1832 is fixed
 
-			// helper.CmdShouldPass("odo", "url", "create", url2, "--port", "8000", "--context", context)
-			// stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			// helper.MatchAllInOutput(stdout, []string{url1, "Absent", url2, "Present", "create/delete URLs", "odo push"})
-			// helper.CmdShouldPass("odo", "push", "--context", context)
-			// stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			// helper.MatchAllInOutput(stdout, []string{url2, "Present"})
-			// helper.DontMatchAllInOutput(stdout, []string{url1, "Absent", "odo push"})
-		})
-	})
-
-	Context("when listing urls using -o json flag", func() {
-		JustBeforeEach(func() {
-			originalDir = helper.Getwd()
-			helper.Chdir(context)
-		})
-
-		JustAfterEach(func() {
-			helper.Chdir(originalDir)
-		})
-		It("should be able to list url in machine readable json format", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
-			helper.CmdShouldPass("odo", "url", "create", "myurl")
-			helper.CmdShouldPass("odo", "push")
-
-			// odo url list -o json
-			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
-			fullURLPath := helper.DetermineRouteURL("")
-			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
-			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
-			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
+			helper.CmdShouldPass("odo", "url", "create", url2, "--port", "8000", "--context", context)
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.MatchAllInOutput(stdout, []string{url1, "Absent", url2, "Present", "create/delete URLs", "odo push"})
+			helper.CmdShouldPass("odo", "push", "--context", context, "-v", "4")
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.MatchAllInOutput(stdout, []string{url2, "Present"})
+			helper.DontMatchAllInOutput(stdout, []string{url1, "Absent", "odo push"})
 		})
 	})
 })

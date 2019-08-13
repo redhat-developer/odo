@@ -280,9 +280,6 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 			},
 			Triggers: []appsv1.DeploymentTriggerPolicy{
 				{
-					Type: "ConfigChange",
-				},
-				{
 					Type: "ImageChange",
 					ImageChangeParams: &appsv1.DeploymentTriggerImageChangeParams{
 						// setting automatic to false so that the trigger is disabled and a new image doesn't trigger deployment

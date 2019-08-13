@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -1373,15 +1374,15 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 		// inspired from https://github.com/openshift/origin/blob/bb1b9b5223dd37e63790d99095eec04bfd52b848/pkg/apps/controller/deploymentconfig/deploymentconfig_controller.go#L609
 		if reflect.DeepEqual(updatedDc.Spec.Template, currentDC.Spec.Template) {
 			return nil
-		} else {
-			currentDCBytes, err := json.Marshal(currentDC.Spec.Template)
-			updatedDCBytes, err := json.Marshal(updatedDc.Spec.Template)
-			if err != nil {
-				return errors.Wrapf(err, "unable to unmarshal dc")
-			}
-			glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
 		}
 	}
+
+	currentDCBytes, err := json.Marshal(currentDC.Spec.Template)
+	updatedDCBytes, err := json.Marshal(updatedDc.Spec.Template)
+	if err != nil {
+		return errors.Wrapf(err, "unable to unmarshal dc")
+	}
+	glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
 
 	// We use the currentDC + 1 for the next revision.. We do NOT use the updated DC (see above code)
 	// as the "Update" function will not update the Status.LatestVersion quick enough... so we wait until
@@ -3235,10 +3236,16 @@ func (c *Client) StartDeployment(deploymentName string) (string, error) {
 		Latest: true,
 		Force:  true,
 	}
+	cmd, _ := exec.Command("oc", "get", "rc").CombinedOutput()
+	fmt.Println(string(cmd))
+
 	result, err := c.appsClient.DeploymentConfigs(c.Namespace).Instantiate(deploymentName, &deploymentRequest)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate Deployment for %s", deploymentName)
 	}
+	cmd, _ = exec.Command("oc", "get", "rc").CombinedOutput()
+	fmt.Println(string(cmd))
+
 	glog.V(4).Infof("Deployment %s for DeploymentConfig %s triggered.", deploymentName, result.Name)
 
 	return result.Name, nil
