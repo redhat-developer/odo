@@ -139,5 +139,29 @@ var _ = Describe("odoServiceE2e", func() {
 			stdOut = helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project)
 			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
 		})
+
+		It("should be able to create, list and delete services without a context and using --app and --project flags instaed", func() {
+			// create a service using only app and project flags
+			// we do Chdir first because originalDir doesn't have a context
+			helper.Chdir(originalDir)
+
+			// create the service
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
+				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6",
+				"--app", app, "--project", project)
+
+			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "dh-postgresql-apb")
+			})
+
+			// list the service using app and project flags
+			stdOut := helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project)
+			Expect(stdOut).To(ContainSubstring("dh-postgresql-apb"))
+
+			// delete the service using app and project flags
+			helper.CmdShouldPass("odo", "delete", "-f", "dh-postgresql-apb", "--app", app, "--project", project)
+		})
 	})
 })
