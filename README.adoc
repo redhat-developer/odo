@@ -154,7 +154,7 @@ Guide]
 [[contributing]]
 == Community, discussion, contribution, and support
 
-*Discussions:* For any discussions or help with `odo`, open a link:https://github.com/openshift/odo/issues[GitHub issue].
+*Discussions:* For any discussions or help with `odo`, you can use our link:https://groups.google.com/forum/#!forum/odo-users[Google group] or open a link:https://github.com/openshift/odo/issues[GitHub issue].
 
 *Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
 
