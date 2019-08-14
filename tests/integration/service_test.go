@@ -124,9 +124,11 @@ var _ = Describe("odoServiceE2e", func() {
 			helper.CmdShouldPass("odo", "service", "create", "dh-prometheus-apb", "--plan", "ephemeral",
 				"--app", app, "--project", project,
 			)
-			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "ProvisionedAndBound")
+
+			odoArgs := []string{"service", "list"}
+			helper.WaitForCmdOut("odo", odoArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "dh-prometheus-apb") &&
+					strings.Contains(output, "ProvisionedAndBound")
 			})
 
 			// Listing the services should work as expected from within the component directory.
@@ -151,9 +153,10 @@ var _ = Describe("odoServiceE2e", func() {
 				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6",
 				"--app", app, "--project", project)
 
-			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "ProvisionedAndBound")
+			odoArgs := []string{"service", "list"}
+			helper.WaitForCmdOut("odo", odoArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "dh-postgresql-apb") &&
+					strings.Contains(output, "ProvisionedAndBound")
 			})
 
 			// list the service using app and project flags
