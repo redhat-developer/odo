@@ -161,7 +161,7 @@ var _ = Describe("odoServiceE2e", func() {
 			Expect(stdOut).To(ContainSubstring("dh-postgresql-apb"))
 
 			// delete the service using app and project flags
-			helper.CmdShouldPass("odo", "delete", "-f", "dh-postgresql-apb", "--app", app, "--project", project)
+			helper.CmdShouldPass("odo", "service", "delete", "-f", "dh-postgresql-apb", "--app", app, "--project", project)
 		})
 	})
 })
