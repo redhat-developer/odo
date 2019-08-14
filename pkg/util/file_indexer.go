@@ -17,7 +17,7 @@ const fileIndexName = "odo-file-index.json"
 // FileIndex holds the file index used for storing local file state change
 type FileIndex struct {
 	metav1.TypeMeta
-	FileMap map[string]FileData
+	Files map[string]FileData
 }
 
 // NewFileIndex returns a fileIndex
@@ -28,7 +28,7 @@ func NewFileIndex() *FileIndex {
 			Kind:       "FileIndex",
 			APIVersion: "v1",
 		},
-		FileMap: make(map[string]FileData),
+		Files: make(map[string]FileData),
 	}
 }
 
@@ -130,13 +130,13 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 			return err
 		}
 
-		if _, ok := existingFileIndex.FileMap[relFn]; !ok {
+		if _, ok := existingFileIndex.Files[relFn]; !ok {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("file added: %s", fn)
-		} else if !fi.ModTime().Equal(existingFileIndex.FileMap[relFn].LastModifiedDate) {
+		} else if !fi.ModTime().Equal(existingFileIndex.Files[relFn].LastModifiedDate) {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("last modified date changed: %s", fn)
-		} else if fi.Size() != existingFileIndex.FileMap[relFn].Size {
+		} else if fi.Size() != existingFileIndex.Files[relFn].Size {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("size changed: %s", fn)
 		}
@@ -154,7 +154,7 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	}
 
 	// find files which are deleted/renamed
-	for fileName := range existingFileIndex.FileMap {
+	for fileName := range existingFileIndex.Files {
 		if _, ok := newFileMap[fileName]; !ok {
 			glog.V(4).Infof("file deleted: %s", fileName)
 			// we return the absolute path of the files eventhough we store relative
@@ -166,7 +166,7 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	// if there are added/deleted/modified/renamed files or folders, write it to the odo index file
 	if len(filesChanged) > 0 || len(filesDeleted) > 0 {
 		newfi := NewFileIndex()
-		newfi.FileMap = newFileMap
+		newfi.Files = newFileMap
 		err = write(resolvedPath, newfi)
 		if err != nil {
 			return filesChanged, filesDeleted, err
