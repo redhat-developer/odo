@@ -153,15 +153,12 @@ var _ = Describe("odoServiceE2e", func() {
 				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6",
 				"--app", app, "--project", project)
 
-			odoArgs := []string{"service", "list"}
+			// list the service using app and project flags
+			odoArgs := []string{"service", "list", "--app", app, "--project", project}
 			helper.WaitForCmdOut("odo", odoArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "dh-postgresql-apb") &&
 					strings.Contains(output, "ProvisionedAndBound")
 			})
-
-			// list the service using app and project flags
-			stdOut := helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project)
-			Expect(stdOut).To(ContainSubstring("dh-postgresql-apb"))
 
 			// delete the service using app and project flags
 			helper.CmdShouldPass("odo", "delete", "-f", "dh-postgresql-apb", "--app", app, "--project", project)
