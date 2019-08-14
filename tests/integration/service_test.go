@@ -126,7 +126,7 @@ var _ = Describe("odoServiceE2e", func() {
 			)
 			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "Provisioned")
+				return strings.Contains(output, "ProvisionedAndBound")
 			})
 
 			// Listing the services should work as expected from within the component directory.
@@ -153,7 +153,7 @@ var _ = Describe("odoServiceE2e", func() {
 
 			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "Provisioned")
+				return strings.Contains(output, "ProvisionedAndBound")
 			})
 
 			// list the service using app and project flags
