@@ -173,7 +173,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.Run(cpo.componentContext, absIgnoreRules)
+		filesChanged, filesDeleted, err := util.RunIndexer(cpo.componentContext, absIgnoreRules)
 		spinner.End(true)
 
 		if err != nil {
