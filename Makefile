@@ -5,7 +5,7 @@ COMMON_FLAGS := -X $(PROJECT)/pkg/odo/cli/version.GITCOMMIT=$(GITCOMMIT)
 BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
 DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
-TIMEOUT ?= 1800s
+TIMEOUT ?= 7200s
 
 # Env variable TEST_EXEC_NODES is used to pass spec execution type
 # (parallel or sequential) for ginkgo tests. To run the specs sequentially use
@@ -195,14 +195,14 @@ test-odo-config:
 .PHONY: test-integration
 test-integration:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout 7200s
+	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run command's integration tests which are depend on service catalog enabled cluster.
 # Only service and link command tests are the part of this test run
 .PHONY: test-integration-service-catalog
 test-integration-service-catalog:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/servicecatalog -timeout 7200s
+	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/servicecatalog -timeout $(TIMEOUT)
 
 # Run url integreation tests
 .PHONY: test-odo-url-int
