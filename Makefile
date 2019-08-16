@@ -205,7 +205,7 @@ test-integration-service-catalog:
 # Run core beta flow e2e tests
 .PHONY: test-e2e-beta
 test-e2e-beta:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) --ginkgo.focus="odo core beta flow" \
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo core beta flow" \
 	-randomizeAllSpecs slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) tests/e2escenarios/ -timeout $(TIMEOUT)
 
 # Run java e2e tests
