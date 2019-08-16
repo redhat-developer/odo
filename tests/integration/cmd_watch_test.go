@@ -21,9 +21,9 @@ var _ = Describe("odoWatchE2e", func() {
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
-		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		project = helper.CreateRandProject()
 	})
 
 	// Clean up after the test

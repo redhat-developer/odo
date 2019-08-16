@@ -75,13 +75,9 @@ var _ = Describe("odojsonoutput", func() {
 			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
 
 			// odo list -o json --path .
-			pwd := helper.Getwd()
-
-			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null,"namespace":"%s"},"spec":{"type":"nodejs","app": "myapp","source":"https://github.com/openshift/nodejs-ex","ports": ["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}]}`, project, strings.TrimSpace(pwd))
-			helper.Chdir(context)
-			actual := helper.CmdShouldPass("odo", "list", "-o", "json", "--path", pwd)
-			helper.Chdir(pwd)
-			Expect(desired).Should(MatchJSON(actual))
+			desiredJSONPathFlag := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null,"namespace":"%s"},"spec":{"type":"nodejs","app": "myapp","source":"https://github.com/openshift/nodejs-ex","ports": ["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}]}`, project, strings.TrimSpace(context))
+			actualJSONPathFlag := helper.CmdShouldPass("odo", "list", "-o", "json", "--path", context)
+			Expect(desiredJSONPathFlag).Should(MatchJSON(actualJSONPathFlag))
 
 		})
 	})

@@ -25,9 +25,9 @@ func componentTests(args ...string) {
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
-		oc = helper.NewOcRunner("oc")
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		oc = helper.NewOcRunner("oc")
 	})
 
 	// Clean up after the test
@@ -114,7 +114,6 @@ func componentTests(args ...string) {
 	})
 
 	Context("Test odo push with --source and --config flags", func() {
-		var originalDir string
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
@@ -249,12 +248,10 @@ func componentTests(args ...string) {
 	Context("Creating Component even in new project", func() {
 		var project string
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
 			project = helper.RandString(10)
 		})
 
 		JustAfterEach(func() {
-			os.RemoveAll(context)
 			helper.DeleteProject(project)
 		})
 		It("should create component", func() {
@@ -267,16 +264,6 @@ func componentTests(args ...string) {
 	})
 
 	Context("Test odo push with --now flag during creation", func() {
-		var originalDir string
-		BeforeEach(func() {
-			context = helper.CreateNewContext()
-		})
-
-		AfterEach(func() {
-			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-		})
-
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
@@ -286,12 +273,10 @@ func componentTests(args ...string) {
 		JustAfterEach(func() {
 			helper.Chdir(originalDir)
 		})
-
 		It("should successfully create config and push code in one create command with --now", func() {
 			appName := "nodejs-create-now-test"
 			cmpName := "nodejs-push-atonce"
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--now")...)
 
 			oc.VerifyCmpExists(cmpName, appName, project)
@@ -317,7 +302,6 @@ func componentTests(args ...string) {
 		componentName := "my-component"
 
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
 			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
@@ -326,7 +310,6 @@ func componentTests(args ...string) {
 		JustAfterEach(func() {
 			helper.Chdir(originalDir)
 			helper.DeleteProject(project)
-			os.RemoveAll(context)
 		})
 
 		It("create local nodejs component twice and fail", func() {
@@ -366,12 +349,10 @@ func componentTests(args ...string) {
 				Context("odo component updating", func() {
 					JustBeforeEach(func() {
 						project = helper.CreateRandProject()
-						context = helper.CreateNewContext()
 					})
 
 					JustAfterEach(func() {
 						helper.DeleteProject(project)
-						os.RemoveAll(context)
 					})
 
 					It("should be able to create a git component and update it from local to git", func() {
@@ -444,14 +425,12 @@ func componentTests(args ...string) {
 
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
 			originalDir = helper.Getwd()
 		})
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			os.RemoveAll(context)
+			helper.Chdir(originalDir)
 		})
 
 		It("should pass inside a odo directory without component name as parameter", func() {
@@ -465,7 +444,6 @@ func componentTests(args ...string) {
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
 			helper.CmdShouldPass("odo", "describe")
 			helper.CmdShouldPass("odo", "delete", "-f")
-			helper.Chdir(originalDir)
 		})
 
 		It("should fail outside a odo directory without component name as parameter", func() {
@@ -495,14 +473,12 @@ func componentTests(args ...string) {
 	Context("when running odo push multiple times, check for existence of environment variables", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
 			originalDir = helper.Getwd()
 		})
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			os.RemoveAll(context)
+			helper.Chdir(originalDir)
 		})
 
 		It("should should retain the same environment variable on multiple push", func() {
@@ -515,7 +491,6 @@ func componentTests(args ...string) {
 			helper.Chdir(context)
 			helper.CmdShouldPass("odo", "config", "set", "--env", "FOO=BAR")
 			helper.CmdShouldPass("odo", "push")
-			helper.CmdShouldPass("oc", "project", project)
 
 			dcName := oc.GetDcName(componentName, project)
 			stdOut := helper.CmdShouldPass("oc", "get", "dc/"+dcName, "-n", project, "-o", "go-template={{ .spec.template.spec }}{{.env}}")
@@ -524,30 +499,30 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "push")
 			stdOut = oc.DescribeDc(dcName, project)
 			Expect(stdOut).To(ContainSubstring("FOO"))
-
-			helper.Chdir(originalDir)
 		})
 	})
 
 	Context("Creating component with numeric named context", func() {
-		var context string
+		var contextNumeric string
 		JustBeforeEach(func() {
 			var err error
 			ts := time.Now().UnixNano()
-			context, err = ioutil.TempDir("", fmt.Sprint(ts))
+			contextNumeric, err = ioutil.TempDir("", fmt.Sprint(ts))
 			Expect(err).ToNot(HaveOccurred())
 			os.Mkdir(context, 0750)
 			project = helper.CreateRandProject()
-			helper.Chdir(context)
+			helper.Chdir(contextNumeric)
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
+			helper.DeleteDir(contextNumeric)
 		})
 
 		It("should create default named component in a directory with numeric name", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", context, "--app", "testing")...)
-			helper.CmdShouldPass("odo", "push", "--context", context, "-v4")
+			helper.CopyExample(filepath.Join("source", "nodejs"), contextNumeric)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", contextNumeric, "--app", "testing")...)
+			helper.CmdShouldPass("odo", "push", "--context", contextNumeric, "-v4")
 		})
 	})
 

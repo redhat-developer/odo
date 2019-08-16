@@ -112,18 +112,18 @@ func NewPreference() Preference {
 // NewPreferenceInfo gets the PreferenceInfo from preference file and creates the preference file in case it's
 // not present
 func NewPreferenceInfo() (*PreferenceInfo, error) {
-	configFile, err := getPreferenceFile()
-	glog.V(4).Infof("The configFile is %+v", configFile)
+	preferenceFile, err := getPreferenceFile()
+	glog.V(4).Infof("The preference file is %+v", preferenceFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get odo config file")
+		return nil, errors.Wrap(err, "unable to get odo preference file")
 	}
 
 	c := PreferenceInfo{
 		Preference: NewPreference(),
-		Filename:   configFile,
+		Filename:   preferenceFile,
 	}
-	// if the config file doesn't exist then we dont worry about it and return
-	if _, err = os.Stat(configFile); os.IsNotExist(err) {
+	// if the preference file doesn't exist then we dont worry about it and return
+	if _, err = os.Stat(preferenceFile); os.IsNotExist(err) {
 		return &c, nil
 	}
 

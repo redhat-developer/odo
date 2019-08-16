@@ -18,16 +18,17 @@ var _ = Describe("odoLinkE2e", func() {
 	var project string
 	var context, context1, context2 string
 	var originalDir string
+	var oc helper.OcRunner
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		oc = helper.NewOcRunner("oc")
-		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		oc = helper.NewOcRunner("oc")
+		project = helper.CreateRandProject()
 	})
 
 	// Clean up after the test

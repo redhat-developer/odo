@@ -23,9 +23,9 @@ var _ = Describe("odoCmdApp", func() {
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
-		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		project = helper.CreateRandProject()
 		originalDir = helper.Getwd()
 	})
 
@@ -61,6 +61,11 @@ var _ = Describe("odoCmdApp", func() {
 		})
 
 		Context("when running app command without app parameter in directory that contains .odo config directory", func() {
+
+			JustAfterEach(func() {
+				helper.Chdir(originalDir)
+			})
+
 			It("should successfuly execute list, describe and delete along with machine readable output", func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), context)
 				helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
@@ -80,7 +85,6 @@ var _ = Describe("odoCmdApp", func() {
 				Expect(desiredDesAppJSON).Should(MatchJSON(actualDesAppJSON))
 
 				helper.CmdShouldPass("odo", "app", "delete", "-f")
-				helper.Chdir(originalDir)
 			})
 		})
 

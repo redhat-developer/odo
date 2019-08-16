@@ -33,9 +33,9 @@ var _ = Describe("Core beta flow", func() {
 		oc = helper.NewOcRunner("oc")
 		odo = "odo"
 
-		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		project = helper.CreateRandProject()
 	})
 
 	AfterEach(func() {
