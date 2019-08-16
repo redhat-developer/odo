@@ -15,7 +15,6 @@ export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR="/tmp/artifacts"
 make test-generic
 make test-cmd-login-logout
-make test-json-format-output
 make test-cmd-cmp
 make test-cmd-cmp-sub
 make test-cmd-pref-config
