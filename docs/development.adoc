@@ -195,46 +195,63 @@ Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/te
 
 Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`].
 
-* Protocols (Integration/e2e test):
-+
-
-Before writing tests (Integration/e2e) scenario make sure that
-Identify the test (Integration or e2e) properly.
-+
-----
-For example:
-In storage feature test, storage command will be tested properly includes positive, negative and corner cases whereas in e2e scenario only one or two storage command will be tested in e2e scenario like `login -> create component -> link -> add storage -> certain operation -> delete storage -> unlink -> delete component ->logout`. For e2e test no need to create a test file. You can update those scenarios what ever e2e test file is available for a particular version of release.
-----
-+
-
-Create a new test file for a new feature. If the feature test file is already present then update the same test file with new scenario. Also make sure that the feature file name should add proper sense.
+* Before writing tests (Integration/e2e) scenario make sure that the test scenario (Integration or e2e) is identified properly.
 +
 
 ----
 For example:
-For storage feature, a new storage test file is created. If new functionality is added to the storage feature then same file will be updated with new scenario. Naming of the test file should follow a common format like cmd_<feature name>_test. So the storage feature test file name will be `cmd_storage_test.go`. Same naming convention can be used for e2e test too like `e2e_<release name>_test`.
+In storage feature test, storage command will be tested properly includes positive, negative and corner cases whereas in e2e scenario only one or two storage command will be tested in e2e scenario like `create component -> link -> add storage -> certain operation -> delete storage -> unlink -> delete component`.
 ----
 +
 
-Don’t create new test file for issues(bug) and try to add some scenario for each bug fix if Applicable
+* Create a new test file for a new feature and make sure that the feature file name should add proper sense. If the feature test file is already present then update the same test file with new scenario.
 +
 
-Don’t use unnecessary functionality validation for a specific scenario
+----
+For example:
+For storage feature, a new storage test file is created. If new functionality is added to the storage feature then same file will be updated with new scenario. Naming of the test file should follow a common format like `cmd_<feature name>_test`. So the storage feature test file name will be `cmd_storage_test.go`. Same naming convention can be used for e2e test like `e2e_<release name>_test` or `e2e_<full scenario name>_test`.
+----
 +
 
-Not to use unnecessary text validation
+* Test description should make sense of what it implements in the specs. Use proper test description in `Describe` block
 +
 
-If oc, odo or generic library you are looking for is not present in helper package then create a new function in the same package as per scenario requirement
+----
+For example:
+For storage feature, the appropriate test description would be `odo storage command tests`.
+
+var _ = Describe("odo storage command tests", func() {
+    [...]
+})
+----
 +
 
-The test spec should run in parallel (Default) or sequentially as per choice. Check test template for reference.
+* For a better understanding of what a spec does, use proper description in `Context` and `it` block
 +
 
-Spec description should make sense of what it implements in the spec
+----
+For example:
+Context("when running help for storage command", func() {
+	It("should display the help", func() {
+		[...]
+	})
+})
+----
 +
 
-Try to run tests on local env as much as possible before pushing PRs
+* Don’t create new test file for issues(bug) and try to add some scenario for each bug fix if applicable
++
+
+* Don’t use unnecessary text validation in `Expect` of certain command output.
++
+
+* If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement.
++
+
+* The test spec should run in parallel (Default) or sequentially as per choice. Check test template for reference.
++
+
+* Run tests on local env before pushing PRs
 
 .Running integration tests:
 

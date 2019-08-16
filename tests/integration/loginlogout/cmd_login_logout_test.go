@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("odo login command tests", func() {
+var _ = Describe("odo login and logout command tests", func() {
 	// user related constants
 	const loginTestUserForNoProject = "odologinnoproject"
 	const loginTestUserForSingleProject1 = "odologinsingleproject1"
