@@ -311,6 +311,8 @@ _________________
 Modifies odo specific configuration settings within the config file.
 
 
+[literal]
+....
 Available Local Parameters:
 Application - Application is the name of application the component needs to be part of
 CPU - The minimum and maximum CPU a component can consume
@@ -329,6 +331,7 @@ SourceType - Type of component source - git/binary/local
 Storage - Storage of the component
 Type - The type of component
 Url - URL to access the component
+....
 
 
 [[create]]
@@ -392,9 +395,9 @@ Create a configuration describing a component to be deployed on OpenShift.
 
 If a component name is not provided, it'll be auto-generated.
 
-By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest will be chosen as the version.
+By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: `odo create namespace/name:version`. If version is not specified by default, latest will be chosen as the version.
 
-A full list of component types that can be deployed is available using: 'odo catalog list'
+A full list of component types that can be deployed is available using: `odo catalog list`
 
 [[delete]]
 delete
@@ -470,34 +473,54 @@ _________________
   odo link backend --port 8080
 ----
 
-Link component to a service or component
+Link component to a service or component.
 
 If the source component is not provided, the current active component is assumed.
 In both use cases, link adds the appropriate secret to the environment of the source component.
 The source component can then consume the entries of the secret as environment variables.
 
-For example:
+==== Example usage:
 
-We have created a frontend application called 'frontend' using:
+We have created a frontend application called 'frontend':
+----
 odo create nodejs frontend
+----
 
 We've also created a backend application called 'backend' with port 8080 exposed:
+----
 odo create nodejs backend --port 8080
+----
 
 We can now link the two applications:
+----
 odo link backend --component frontend
+----
+
+We've also created a backend application called 'backend' with port 8080 exposed:
+----
+odo create nodejs backend --port 8080
+----
+
+We can now link the two applications:
+----
+odo link backend --component frontend
+----
 
 Now the frontend has 2 ENV variables it can use:
-COMPONENT_BACKEND_HOST=backend-app
-COMPONENT_BACKEND_PORT=8080
+
+* `COMPONENT_BACKEND_HOST=backend-app`
+* `COMPONENT_BACKEND_PORT=8080`
 
 If you wish to use a database, we can use the Service Catalog and link it to our backend:
+----
 odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret
 odo link dh-postgresql-apb
+----
 
 Now backend has 2 ENV variables it can use:
-DB_USER=luke
-DB_PASSWORD=secret
+
+* `DB_USER=luke`
+* `DB_PASSWORD=secret`
 
 [[list]]
 list
@@ -633,7 +656,8 @@ By default the path to the global preference file is `~/.odo/preferece.yaml`, it
 
 Run `echo "$GLOBALODOCONFIG"` to display the current value of the variable. 
 ====
-
+[literal]
+.....
 Available Parameters:
 
 NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.
@@ -641,6 +665,7 @@ NamePrefix - Default prefix is the current directory name. Use this value to set
 Timeout - Timeout (in seconds) for OpenShift server connection check.
 
 UpdateNotification - Controls if an update notification is shown or not (true or false).
+.....
 
 [[project]]
 project
@@ -790,7 +815,7 @@ _________________
 ----
 
 Unlink component or service from a component.
-For this command to be successful, the service or component needs to have been linked prior to the invocation using 'odo link'
+For this command to be successful, the service or component needs to have been linked prior to the invocation using `odo link`
 
 [[update]]
 update
