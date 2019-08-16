@@ -311,27 +311,26 @@ _________________
 Modifies odo specific configuration settings within the config file.
 
 
-[literal]
-....
-Available Local Parameters:
-Application - Application is the name of application the component needs to be part of
-CPU - The minimum and maximum CPU a component can consume
-Ignore - Consider the .odoignore file for push and watch
-MaxCPU - The maximum CPU a component can consume
-MaxMemory - The maximum memory a component can consume
-Memory - The minimum and maximum memory a component can consume
-MinCPU - The minimum CPU a component can consume
-MinMemory - The minimum memory a component is provided
-Name - The name of the component
-Ports - Ports to be opened in the component
-Project - Project is the name of the project the component is part of
-Ref - Git ref to use for creating component from git source
-SourceLocation - The path indicates the location of binary file or git source
-SourceType - Type of component source - git/binary/local
-Storage - Storage of the component
-Type - The type of component
-Url - URL to access the component
-....
+
+.Available Local Parameters:
+* Application - Application is the name of application the component needs to be part of
+* CPU - The minimum and maximum CPU a component can consume
+* Ignore - Consider the .odoignore file for push and watch
+* MaxCPU - The maximum CPU a component can consume
+* MaxMemory - The maximum memory a component can consume
+* Memory - The minimum and maximum memory a component can consume
+* MinCPU - The minimum CPU a component can consume
+* MinMemory - The minimum memory a component is provided
+* Name - The name of the component
+* Ports - Ports to be opened in the component
+* Project - Project is the name of the project the component is part of
+* Ref - Git ref to use for creating component from git source
+* SourceLocation - The path indicates the location of binary file or git source
+* SourceType - Type of component source - git/binary/local
+* Storage - Storage of the component
+* Type - The type of component
+* Url - URL to access the component
+
 
 
 [[create]]
@@ -656,16 +655,11 @@ By default the path to the global preference file is `~/.odo/preferece.yaml`, it
 
 Run `echo "$GLOBALODOCONFIG"` to display the current value of the variable. 
 ====
-[literal]
-.....
-Available Parameters:
 
-NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.
-
-Timeout - Timeout (in seconds) for OpenShift server connection check.
-
-UpdateNotification - Controls if an update notification is shown or not (true or false).
-.....
+.Available Parameters:
+* NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix.
+* Timeout - Timeout (in seconds) for OpenShift server connection check.
+* UpdateNotification - Controls if an update notification is shown or not (true or false).
 
 [[project]]
 project
