@@ -239,6 +239,44 @@ Context("when running help for storage command", func() {
 ----
 +
 
+* Due to parallel test run support make sure that the should run in isolation, otherwise the test result will lead to race condition. To achieve this ginkgo provides some in build functions `BeforeEach`, `AfterEach` etc.
++
+
+----
+For example:
+var _ = Describe("odo generic", func() {
+    var project string
+	var context string
+	var oc helper.OcRunner
+    BeforeEach(func() {
+	    oc = helper.NewOcRunner("oc")
+	    SetDefaultEventuallyTimeout(10 * time.Minute)
+	    context = helper.CreateNewContext()
+    })
+    AfterEach(func() {
+	    os.RemoveAll(context)
+    })
+    Context("deploying a component with a specific image name", func() {
+        JustBeforeEach(func() {
+            os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+            project = helper.CreateRandProject()
+        })
+
+        JustAfterEach(func() {
+            helper.DeleteProject(project)
+            os.Unsetenv("GLOBALODOCONFIG")
+        })
+        It("should deploy the component", func() {
+            helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
+            helper.CmdShouldPass("odo", "create", "nodejs:latest", "testversioncmp", "--project", project, "--context", context+"/nodejs-ex")
+            helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+            helper.CmdShouldPass("odo", "delete", "-f", "--context", context+"/nodejs-ex")
+        })
+    })
+})
+----
++
+
 * Don’t create new test file for issues(bug) and try to add some scenario for each bug fix if applicable
 +
 

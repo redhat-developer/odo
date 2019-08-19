@@ -10,8 +10,6 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-const javaFiles = "examples/binary/java/"
-
 var _ = Describe("odo java e2e tests", func() {
 	var project string
 	var context string
