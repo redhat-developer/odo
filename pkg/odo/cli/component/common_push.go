@@ -188,14 +188,13 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			// and ignore the files on which the rules apply and filter them out
 			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
 
-			glog.V(4).Infof("List of files which have been deleted: +%v", filesDeletedFiltered)
-
-			// Remove the relative file directory
-			deletedFiles, err = removePathFromFiles(filesDeletedFiltered, cpo.sourcePath)
+			// Remove the relative file directory from the list of deleted files
+			// in order to make the changes correctly within the OpenShift pod
+			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, cpo.sourcePath)
 			if err != nil {
 				return err
 			}
-			glog.V(4).Infof("List of files to be deleted: +%v", filesDeletedFiltered)
+			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
 
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
 				// no file was modified/added/deleted/renamed, thus return without building
@@ -287,19 +286,4 @@ func filterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 		}
 	}
 	return filesChangedFiltered, filesDeletedFiltered
-}
-
-// removePathFromFiles removes a specified path from a file
-func removePathFromFiles(files []string, path string) ([]string, error) {
-
-	removedRelativePathFiles := []string{}
-	for _, file := range files {
-		rel, err := filepath.Rel(path, file)
-		if err != nil {
-			return []string{}, err
-		}
-		removedRelativePathFiles = append(removedRelativePathFiles, rel)
-	}
-
-	return removedRelativePathFiles, nil
 }

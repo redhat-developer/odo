@@ -1077,3 +1077,54 @@ func TestRemoveDuplicate(t *testing.T) {
 		})
 	}
 }
+
+func TestRemoveRelativePathFromFiles(t *testing.T) {
+	type args struct {
+		path    string
+		input   []string
+		output  []string
+		wantErr bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Case 1 - Remove the relative path from a list of files",
+			args: args{
+				path:   "/foo/bar",
+				input:  []string{"/foo/bar/1", "/foo/bar/2", "/foo/bar/3/", "/foo/bar/4/5/foo/bar"},
+				output: []string{"1", "2", "3", "4/5/foo/bar"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case 2 - Fail on purpose with an invalid path",
+			args: args{
+				path:   `..`,
+				input:  []string{"foo", "bar"},
+				output: []string{},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Run function RemoveRelativePathFromFiles
+			output, err := RemoveRelativePathFromFiles(tt.args.input, tt.args.path)
+
+			// Check for error
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !(reflect.DeepEqual(output, tt.args.output)) {
+				t.Errorf("expected %v, got %v", tt.args.output, output)
+			}
+
+		})
+	}
+}

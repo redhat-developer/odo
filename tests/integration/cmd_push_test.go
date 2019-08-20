@@ -53,6 +53,40 @@ var _ = Describe("odo push command tests", func() {
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 		})
 
+		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/ruby-ex", context+"/ruby-ex")
+			helper.CmdShouldPass("odo", "component", "create", "ruby", cmpName, "--project", project, "--context", context+"/ruby-ex", "--app", appName)
+
+			// Create a new file that we plan on deleting later...
+			newFilePath := filepath.Join(context, "ruby-ex", "foobar.txt")
+			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
+				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+			}
+
+			// Create a new directory
+			newDirPath := filepath.Join(context, "ruby-ex", "testdir")
+			helper.MakeDir(newDirPath)
+
+			// Push
+			helper.CmdShouldPass("odo", "push", "--context", context+"/ruby-ex")
+
+			// Check to see if it's been pushed (foobar.txt abd directory testdir)
+			podName := oc.GetRunningPodNameOfComp(cmpName, project)
+			stdOut := oc.ExecListDir(podName, project)
+			Expect(stdOut).To(ContainSubstring(("foobar.txt")))
+			Expect(stdOut).To(ContainSubstring(("testdir")))
+
+			// Now we delete the file and dir and push
+			helper.DeleteDir(newFilePath)
+			helper.DeleteDir(newDirPath)
+			helper.CmdShouldPass("odo", "push", "--context", context+"/ruby-ex", "-v4")
+
+			// Then check to see if it's truly been deleted
+			stdOut = oc.ExecListDir(podName, project)
+			Expect(stdOut).To(Not(ContainSubstring(("foobar.txt"))))
+			Expect(stdOut).To(Not(ContainSubstring(("testdir"))))
+		})
+
 		It("should build when a new file and a new folder is added in the directory", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
@@ -63,7 +97,7 @@ var _ = Describe("odo push command tests", func() {
 
 			newFilePath := filepath.Join(context, "nodejs-ex", "new-example.html")
 			if err := helper.CreateFileWithContent(newFilePath, "<html>Hello</html>"); err != nil {
-				fmt.Printf("the .odoignore file was not created, reason %v", err.Error())
+				fmt.Printf("the new-example.html file was not created, reason %v", err.Error())
 			}
 
 			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
@@ -85,30 +119,6 @@ var _ = Describe("odo push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("exampleDir")))
 		})
 
-		/* TODO uncomment once https://github.com/openshift/odo/issues/1354 is resolved
-
-		It("should build when a file is deleted from the directory", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-
-			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-
-			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
-
-			helper.DeleteDir(filepath.Join(context, "/nodejs-ex", "/tests"))
-
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-
-			// get the name of running pod
-			podName := oc.GetRunningPodNameOfComp(cmpName, project)
-
-			// verify that the new file was pushed
-			stdOut := oc.ExecListDir(podName, project)
-			Expect(stdOut).To(Not(ContainSubstring(("tests"))))
-		})
-		*/
-
 		It("should build when a file and a folder is renamed in the directory", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
@@ -118,7 +128,7 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// rename a file and push
-			helper.RenameFile(filepath.Join(context, "/nodejs-ex", "README.md"), filepath.Join(context, "/nodejs-ex", "NEW-README.md"))
+			helper.RenameFile(filepath.Join(context, "/nodejs-ex", "README.md"), filepath.Join(context, "/nodejs-ex", "NEW-FILE.md"))
 			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
@@ -128,10 +138,9 @@ var _ = Describe("odo push command tests", func() {
 			// verify that the new file was pushed
 			stdOut := oc.ExecListDir(podName, project)
 
-			// TODO enable once https://github.com/openshift/odo/issues/1354 is resolve
-			//Expect(stdOut).To(Not(ContainSubstring("README.md")))
+			Expect(stdOut).To(Not(ContainSubstring("README.md")))
 
-			Expect(stdOut).To(ContainSubstring("NEW-README.md"))
+			Expect(stdOut).To(ContainSubstring("NEW-FILE.md"))
 
 			// rename a folder and push
 			helper.RenameFile(filepath.Join(context, "/nodejs-ex", "/tests"), filepath.Join(context, "/nodejs-ex", "/testing"))
@@ -141,8 +150,7 @@ var _ = Describe("odo push command tests", func() {
 			// verify that the new file was pushed
 			stdOut = oc.ExecListDir(podName, project)
 
-			// TODO enable once https://github.com/openshift/odo/issues/1354 is resolve
-			//Expect(stdOut).To(Not(ContainSubstring("tests")))
+			Expect(stdOut).To(Not(ContainSubstring("tests")))
 
 			Expect(stdOut).To(ContainSubstring("testing"))
 		})
