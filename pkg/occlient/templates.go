@@ -83,20 +83,20 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 							Ports: commonImageMeta.Ports,
 							// Run the actual supervisord binary that has been mounted into the container
 							Command: []string{
-								"/var/lib/supervisord/bin/dumb-init",
+								"/opt/odo/bin/dumb-init",
 								"--",
 							},
 							// Using the appropriate configuration file that contains the "run" script for the component.
 							// either from: /usr/libexec/s2i/assemble or /opt/app-root/src/.s2i/bin/assemble
 							Args: []string{
-								"/var/lib/supervisord/bin/supervisord",
+								"/opt/odo/bin/supervisord",
 								"-c",
-								"/var/lib/supervisord/conf/supervisor.conf",
+								"/opt/odo/conf/supervisor.conf",
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      supervisordVolumeName,
-									MountPath: "/var/lib/supervisord",
+									MountPath: "/opt/odo/",
 								},
 							},
 							Env:     envVar,
@@ -415,7 +415,7 @@ func addBootstrapSupervisordInitContainer(dc *appsv1.DeploymentConfig, dcName st
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      supervisordVolumeName,
-					MountPath: "/var/lib/supervisord",
+					MountPath: "/opt/odo/",
 				},
 			},
 			Command: []string{
@@ -423,8 +423,8 @@ func addBootstrapSupervisordInitContainer(dc *appsv1.DeploymentConfig, dcName st
 			},
 			Args: []string{
 				"-r",
-				"/opt/supervisord",
-				"/var/lib/",
+				"/opt/odo-init/.",
+				"/opt/odo/",
 			},
 		})
 }
