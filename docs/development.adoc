@@ -280,7 +280,17 @@ var _ = Describe("odo generic", func() {
 * Don’t create new test file for issues(bug) and try to add some scenario for each bug fix if applicable
 +
 
-* Don’t use unnecessary text validation in `Expect` of certain command output.
+* Don’t use unnecessary text validation in `Expect` of certain command output. Only validation of key text specific to that scenario would be enough.
++
+
+----
+For example:
+While running multiple push on same component without changing any source file.
+
+helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+output := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context+"/nodejs-ex")
+Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
+----
 +
 
 * If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement.
