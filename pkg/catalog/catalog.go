@@ -15,11 +15,12 @@ type CatalogImage struct {
 	Namespace     string
 	AllTags       []string
 	NonHiddenTags []string
+
+	imageStreamRef imagev1.ImageStream
 }
 
 // List lists all the available component types
 func List(client *occlient.Client) ([]CatalogImage, error) {
-
 	catalogList, err := getDefaultBuilderImages(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get image streams")
@@ -129,8 +130,64 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 		imageStreamTagMap[imageStreamTag.Name] = imageStreamTag
 	}
 
-	var builderImages []CatalogImage
+	builderImages := getBuildersFromImageStreams(imageStreams, imageStreamTagMap)
 
+	return builderImages, nil
+}
+
+// SpliceSupportedTags splits the tags in to fully supported and unsupported tags
+func SpliceSupportedTags(catalogImage CatalogImage, tags []string) ([]string, []string) {
+
+	var supTag, nonSupTag []string
+	tagMap := createImageMap(catalogImage.imageStreamRef.Spec.Tags)
+
+	for _, tag := range catalogImage.NonHiddenTags {
+		imageName := tagMap[tag]
+		if isSupportedImage(imageName) {
+			supTag = append(supTag, tag)
+		} else {
+			nonSupTag = append(nonSupTag, tag)
+		}
+	}
+	return supTag, nonSupTag
+}
+
+func createImageMap(tagRefs []imagev1.TagReference) map[string]string {
+	tagMap := make(map[string]string)
+	for _, tagRef := range tagRefs {
+
+		// TODO: the From here can be of multiple types so we need to handle that
+		imageName := tagRef.From.Name
+		if tagRef.From.Kind == "DockerImage" {
+			urlImageName := strings.SplitN(tagRef.From.Name, "/", 2)[1]
+			ns, img, _, _, _ := occlient.ParseImageName(urlImageName)
+			imageName = ns + "/" + img
+		}
+		tagMap[tagRef.Name] = imageName
+	}
+
+	return tagMap
+}
+
+func isSupportedImage(imgName string) bool {
+	supportedImages := []string{
+		"redhat-openjdk-18/openjdk18-openshift",
+		"openjdk/openjdk-11-rhel8",
+		"openjdk/openjdk-11-rhel7",
+		"rhscl/nodejs-8-rhel7",
+		"rhoar-nodejs/nodejs-8",
+		"rhoar-nodejs/nodejs-10",
+	}
+	for _, supImage := range supportedImages {
+		if supImage == imgName {
+			return true
+		}
+	}
+	return false
+}
+
+func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, ism map[string]imagev1.ImageStreamTag) []CatalogImage {
+	var builderImages []CatalogImage
 	// Get builder images from the available imagestreams
 	for _, imageStream := range imageStreams {
 		var allTags []string
@@ -139,7 +196,6 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 
 		for _, tagReference := range imageStream.Spec.Tags {
 			allTags = append(allTags, tagReference.Name)
-
 			// Check to see if it is a "builder" image
 			if _, ok := tagReference.Annotations["tags"]; ok {
 				for _, t := range strings.Split(tagReference.Annotations["tags"], ",") {
@@ -158,7 +214,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 			// the 'hidden' tag. If so, this builder image is deprecated and should not be offered to the user
 			// as candidate
 			for _, tag := range allTags {
-				imageStreamTag := imageStreamTagMap[imageStream.Name+":"+tag]
+				imageStreamTag := ism[imageStream.Name+":"+tag]
 				if _, ok := imageStreamTag.Annotations["tags"]; ok {
 					for _, t := range strings.Split(imageStreamTag.Annotations["tags"], ",") {
 						// If the tagReference has "builder" then we will add the image to the list
@@ -172,18 +228,18 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 			}
 
 			catalogImage := CatalogImage{
-				Name:          imageStream.Name,
-				Namespace:     imageStream.Namespace,
-				AllTags:       allTags,
-				NonHiddenTags: getAllNonHiddenTags(allTags, hiddenTags),
+				Name:           imageStream.Name,
+				Namespace:      imageStream.Namespace,
+				AllTags:        allTags,
+				NonHiddenTags:  getAllNonHiddenTags(allTags, hiddenTags),
+				imageStreamRef: imageStream,
 			}
 			builderImages = append(builderImages, catalogImage)
 			glog.V(5).Infof("Found builder image: %#v", catalogImage)
 		}
 
 	}
-
-	return builderImages, nil
+	return builderImages
 }
 
 func getAllNonHiddenTags(allTags []string, hiddenTags []string) []string {

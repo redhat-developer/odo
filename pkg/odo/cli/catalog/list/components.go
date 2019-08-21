@@ -2,13 +2,14 @@ package list
 
 import (
 	"fmt"
+	"os"
+	"strings"
+	"text/tabwriter"
+
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
-	"os"
-	"strings"
-	"text/tabwriter"
 )
 
 const componentsRecommendedCommandName = "components"
@@ -53,7 +54,11 @@ func (o *ListComponentsOptions) Validate() (err error) {
 // Run contains the logic for the command associated with ListComponentsOptions
 func (o *ListComponentsOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	w2 := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(w, "Types fully supported in odo (including debugging capabilities):")
 	fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS")
+	// we use this as a flag to not print the supported portion if there are not supported images
+	ignore := true
 	for _, component := range o.catalogList {
 		componentName := component.Name
 		if component.Namespace == o.Project {
@@ -69,9 +74,44 @@ func (o *ListComponentsOptions) Run() (err error) {
 				}
 			}
 		}
-		fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(component.NonHiddenTags, ","))
+		supTags, _ := catalog.SpliceSupportedTags(component, component.NonHiddenTags)
+		if len(supTags) != 0 {
+			ignore = false
+			fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(supTags, ","))
+		}
 	}
-	w.Flush()
+
+	fmt.Fprintln(w2, "Component types without full odo support:")
+	fmt.Fprintln(w2, "NAME", "\t", "PROJECT", "\t", "TAGS")
+
+	for _, component := range o.catalogList {
+		componentName := component.Name
+		if component.Namespace == o.Project {
+			/*
+				If current namespace is same as the current component namespace,
+				Loop through every other component,
+				If there exists a component with same name but in different namespaces,
+				mark the one from current namespace with (*)
+			*/
+			for _, comp := range o.catalogList {
+				if comp.Name == component.Name && component.Namespace != comp.Namespace {
+					componentName = fmt.Sprintf("%s (*)", component.Name)
+				}
+			}
+		}
+
+		_, nonSupTags := catalog.SpliceSupportedTags(component, component.NonHiddenTags)
+		if len(nonSupTags) != 0 {
+			fmt.Fprintln(w2, componentName, "\t", component.Namespace, "\t", strings.Join(nonSupTags, ","))
+		}
+
+	}
+
+	if !ignore {
+		fmt.Fprintln(w)
+		w.Flush()
+	}
+	w2.Flush()
 	return
 }
 
@@ -81,8 +121,8 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 
 	return &cobra.Command{
 		Use:     name,
-		Short:   "List all components available.",
-		Long:    "List all available component types from OpenShift's Image Builder.",
+		Short:   "List all components",
+		Long:    "List all available component types from OpenShift's Ima",
 		Example: fmt.Sprintf(componentsExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
