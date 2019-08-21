@@ -2,6 +2,7 @@ package project
 
 import (
 	"github.com/openshift/odo/pkg/application"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/log"
@@ -82,24 +83,43 @@ func Exists(client *occlient.Client, projectName string) (bool, error) {
 	return true, nil
 }
 
+// GetMachineReadableFormat gathers the readable format and output a Project struct
+// for json to marshal
 func GetMachineReadableFormat(projectName string, isActive bool, apps []string) Project {
-
 	return Project{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Project",
 			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: projectName,
+			Name:      projectName,
+			Namespace: projectName,
 		},
 		Spec: ProjectSpec{
 			Applications: apps,
 		},
 		Status: ProjectStatus{
-
 			Active: isActive,
 		},
 	}
+}
+
+// MachineReadableSuccessOutput outputs a success output that includes
+// project information and namespace
+func MachineReadableSuccessOutput(projectName string, message string) {
+	machineOutput := machineoutput.Success{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Project",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      projectName,
+			Namespace: projectName,
+		},
+		Message: message,
+	}
+
+	machineoutput.OutputSuccess(machineOutput)
 }
 
 // getMachineReadableFormatForList returns application list in machine readable format

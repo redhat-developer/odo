@@ -118,12 +118,16 @@ func (s *Status) Start(status string, debug bool) {
 	s.status = status
 
 	// If we are in debug mode, don't spin!
-	if !isTerm || debug {
-		fmt.Fprintf(s.writer, prefixSpacing+getSpacingString()+suffixSpacing+"%s  ...\n", s.status)
-	} else if !IsJSON() {
-		s.spinner.SetPrefix(prefixSpacing)
-		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
-		s.spinner.Start()
+	// In under no circumstances do we output if we're using -o json.. to
+	// to avoid parsing errors.
+	if !IsJSON() {
+		if !isTerm || debug {
+			fmt.Fprintf(s.writer, prefixSpacing+getSpacingString()+suffixSpacing+"%s  ...\n", s.status)
+		} else {
+			s.spinner.SetPrefix(prefixSpacing)
+			s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
+			s.spinner.Start()
+		}
 	}
 
 }
@@ -138,15 +142,19 @@ func (s *Status) End(success bool) {
 	isTerm := IsTerminal(s.writer)
 	if isTerm {
 		s.spinner.Stop()
-		fmt.Fprint(s.writer, "\r")
+		if !IsJSON() {
+			fmt.Fprint(s.writer, "\r")
+		}
 	}
 
-	if success {
-		green := color.New(color.FgGreen).SprintFunc()
-		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", green(getSuccessString()), s.status, s.spinner.TimeSpent())
-	} else {
-		red := color.New(color.FgRed).SprintFunc()
-		fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", red(getErrString()), s.status, s.spinner.TimeSpent())
+	if !IsJSON() {
+		if success {
+			green := color.New(color.FgGreen).SprintFunc()
+			fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", green(getSuccessString()), s.status, s.spinner.TimeSpent())
+		} else {
+			red := color.New(color.FgRed).SprintFunc()
+			fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", red(getErrString()), s.status, s.spinner.TimeSpent())
+		}
 	}
 
 	s.status = ""

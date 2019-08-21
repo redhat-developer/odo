@@ -2,10 +2,12 @@ package util
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/config"
 	"os"
 	"strings"
 	"unicode"
+
+	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/machineoutput"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
@@ -15,21 +17,45 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // LogErrorAndExit prints the cause of the given error and exits the code with an
 // exit code of 1.
 // If the context is provided, then that is printed, if not, then the cause is
 // detected using errors.Cause(err)
+// *If* we are using the global json parameter, we instead output the json output
 func LogErrorAndExit(err error, context string, a ...interface{}) {
+
 	if err != nil {
-		glog.V(4).Infof("Error:\n%v", err)
-		if context == "" {
-			log.Error(errors.Cause(err))
+
+		// If it's JSON, we'll output  the error
+		if log.IsJSON() {
+
+			// Machine readble error output
+			machineOutput := machineoutput.Error{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       machineoutput.Kind,
+					APIVersion: machineoutput.APIVersion,
+				},
+				Message: err.Error(),
+			}
+
+			// Output the error
+			machineoutput.OutputError(machineOutput)
+
 		} else {
-			log.Errorf(fmt.Sprintf("%s", strings.Title(context)), a...)
+			glog.V(4).Infof("Error:\n%v", err)
+			if context == "" {
+				log.Error(errors.Cause(err))
+			} else {
+				log.Errorf(fmt.Sprintf("%s", strings.Title(context)), a...)
+			}
 		}
+
+		// Always exit 1 anyways
 		os.Exit(1)
+
 	}
 }
 
