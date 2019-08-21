@@ -200,3 +200,22 @@ $ oc annotate istag/openjdk18:latest tags=builder
 ----
 $ odo create openjdk18 --git https://github.com/openshift-evangelists/Wild-West-Backend
 ----
+
+=== Managing enviroment variables in odo
+==== Setting and unsetting enviroment variables
+odo provides the `odo config` command to set or unset enviromental variables in local configurations.
+
+To set variables:
+----
+odo config set --env VARIABLE=value
+----
+
+To unset variables:
+----
+odo config unset --env VARIABLE
+----
+
+To list all enviroment variables in the current local configuration:
+----
+odo config view
+----
