@@ -1,10 +1,9 @@
 package url
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
-
-	"fmt"
 
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"

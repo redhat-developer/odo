@@ -6,8 +6,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions/printtemplates"
-
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -59,12 +57,10 @@ func (o *URLListOptions) Validate() (err error) {
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
 
-	urls, err := url.List(o.Client, o.Component(), o.Application)
+	urls, err := url.List(o.Client, o.localConfigInfo, o.Component(), o.Application)
 	if err != nil {
 		return err
 	}
-
-	localUrls := o.localConfigInfo.GetUrl()
 
 	if log.IsJSON() {
 		out, err := json.Marshal(urls)
@@ -73,60 +69,28 @@ func (o *URLListOptions) Run() (err error) {
 		}
 		fmt.Println(string(out))
 	} else {
-
-		if len(urls.Items) == 0 && len(localUrls) == 0 {
+		if len(urls.Items) == 0 {
 			return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
-		} else {
-			// cm=create message dm=delete message. If these flags are set then push message needs to be printed
-			var cm, dm bool
-			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
-			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			//create headers
-			fmt.Fprintln(tabWriterURL, "NAME", "\t", "IN CONFIG", "\t", "URL", "\t", "PORT")
-
-			// Check everything in config and match with URL
-			for _, i := range localUrls {
-				var present bool
-				for _, u := range urls.Items {
-					if i.Name == u.Name {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", "Present", "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
-						present = true
-					}
-				}
-				if !present {
-					cm = true
-					fmt.Fprintln(tabWriterURL, i.Name, "\t", "Present", "\t", "<not created on cluster>", "\t", i.Port)
-				}
-			}
-
-			// Now reverse, check urls not in config and print their information
-			// Hence need to be deleted
-			for _, u := range urls.Items {
-				// Search if url is present in local config
-				var found bool
-				for _, i := range localUrls {
-					if i.Name == u.Name {
-						found = true
-						break
-					}
-				}
-				// If not found then we need to print its info but say its not in config
-				if !found {
-					dm = true
-					fmt.Fprintln(tabWriterURL, u.Name, "\t", "Absent", "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
-				}
-			}
-			tabWriterURL.Flush()
-			if cm && dm {
-				fmt.Print(printtemplates.PushMessage("create/delete", "URLs"))
-			} else if cm {
-				fmt.Print(printtemplates.PushMessage("create", "URLs"))
-			} else if dm {
-				fmt.Print(printtemplates.PushMessage("delete", "URLs"))
-			}
 		}
 
+		log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
+		tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
+
+		outOfSync := false
+		for _, u := range urls.Items {
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
+			if u.Status.State != url.StateTypePushed {
+				outOfSync = true
+			}
+		}
+		tabWriterURL.Flush()
+		if outOfSync {
+			fmt.Fprintf(os.Stdout, "\n")
+			fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.")
+		}
 	}
+
 	return
 }
 

@@ -2513,6 +2513,7 @@ func (c *Client) DeleteRoute(name string) error {
 
 // ListRoutes lists all the routes based on the given label selector
 func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
+	glog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
 	routeList, err := c.routeClient.Routes(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})

@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/config"
 
 	"github.com/golang/glog"
@@ -108,7 +109,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 					log.Info("component named", componentDesc.Name)
 
 					if len(componentDesc.Spec.URL) != 0 {
-						ul, err := url.List(client, componentDesc.Name, app)
+						ul, err := url.ListPushed(client, componentDesc.Name, app)
 						if err != nil {
 							return errors.Wrap(err, "Could not get url list")
 						}

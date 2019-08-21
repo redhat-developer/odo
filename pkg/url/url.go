@@ -8,6 +8,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
@@ -65,10 +66,10 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 	return GetURLString(getProtocol(*route), route.Spec.Host), nil
 }
 
-// List lists the URLs in an application. The results can further be narrowed
+// ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
 // down if a component name is provided, which will only list URLs for the
 // given component
-func List(client *occlient.Client, componentName string, applicationName string) (UrlList, error) {
+func ListPushed(client *occlient.Client, componentName string, applicationName string) (UrlList, error) {
 
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
 
@@ -92,12 +93,88 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	return urlList, nil
 }
 
+// List returns all URLs for given component. The results can further be narrowed
+// down if a component name is provided, which will only list URLs for the
+// given component
+func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componentName string, applicationName string) (UrlList, error) {
+
+	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
+
+	if componentName != "" {
+		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
+	}
+
+	routes, err := client.ListRoutes(labelSelector)
+	if err != nil {
+		return UrlList{}, errors.Wrap(err, "unable to list route names")
+	}
+
+	localConfigUrls := localConfig.GetUrl()
+
+	var urls []Url
+
+	for _, r := range routes {
+		clusterUrl := getMachineReadableFormat(r)
+		var found bool = false
+		for _, configUrl := range localConfigUrls {
+			localUrl := ConvertConfigUrl(configUrl)
+			if localUrl.Name == clusterUrl.Name {
+				// Url is in both local config and cluster
+				clusterUrl.Status.State = StateTypePushed
+				urls = append(urls, clusterUrl)
+				found = true
+			}
+		}
+
+		if !found {
+			// Url is on the cluster but not in local config
+			clusterUrl.Status.State = StateTypeLocallyDeleted
+			urls = append(urls, clusterUrl)
+		}
+	}
+
+	for _, configUrl := range localConfigUrls {
+		localUrl := ConvertConfigUrl(configUrl)
+		var found bool = false
+		for _, r := range routes {
+			clusterUrl := getMachineReadableFormat(r)
+			if localUrl.Name == clusterUrl.Name {
+				found = true
+			}
+		}
+		if !found {
+			// Url is in the local config but not on the cluster
+			localUrl.Status.State = StateTypeNotPushed
+			urls = append(urls, localUrl)
+		}
+	}
+
+	urlList := getMachineReadableFormatForList(urls)
+	return urlList, nil
+}
+
 func getProtocol(route routev1.Route) string {
 	if route.Spec.TLS != nil {
 		return "https"
 	}
 	return "http"
 
+}
+
+// ConvertConfigUrl converts ConfigUrl to Url
+func ConvertConfigUrl(configUrl config.ConfigUrl) Url {
+	return Url{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "url",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: configUrl.Name,
+		},
+		Spec: UrlSpec{
+			Port: configUrl.Port,
+		},
+	}
 }
 
 // GetURLString returns a string representation of given url
@@ -110,7 +187,7 @@ func GetURLString(protocol, URL string) string {
 // componentName is the name of the component to which the url's existence is checked
 // applicationName is the name of the application to which the url's existence is checked
 func Exists(client *occlient.Client, urlName string, componentName string, applicationName string) (bool, error) {
-	urls, err := List(client, componentName, applicationName)
+	urls, err := ListPushed(client, componentName, applicationName)
 	if err != nil {
 		return false, errors.Wrap(err, "unable to list the urls")
 	}

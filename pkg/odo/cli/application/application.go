@@ -74,7 +74,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 			log.Info("component named", currentComponent.Name)
 
 			if len(componentDesc.Spec.URL) != 0 {
-				ul, err := url.List(client, componentDesc.Name, appName)
+				ul, err := url.ListPushed(client, componentDesc.Name, appName)
 				if err != nil {
 					return errors.Wrap(err, "Could not get url list")
 				}
