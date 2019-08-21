@@ -138,6 +138,9 @@ func (cpo *CommonPushOptions) SetSourceInfo() (err error) {
 
 // Push pushes changes as per set options
 func (cpo *CommonPushOptions) Push() (err error) {
+
+	deletedFiles := []string{}
+
 	stdout := color.Output
 
 	cmpName := cpo.localConfigInfo.GetName()
@@ -185,6 +188,14 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			// and ignore the files on which the rules apply and filter them out
 			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
 
+			// Remove the relative file directory from the list of deleted files
+			// in order to make the changes correctly within the OpenShift pod
+			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, cpo.sourcePath)
+			if err != nil {
+				return err
+			}
+			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
 				// no file was modified/added/deleted/renamed, thus return without building
 				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
@@ -209,7 +220,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			cpo.sourcePath,
 			os.Stdout,
 			[]string{},
-			[]string{},
+			deletedFiles,
 			true,
 			util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores),
 			cpo.show,
@@ -232,7 +243,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			binaryDirectory,
 			os.Stdout,
 			[]string{cpo.sourcePath},
-			[]string{},
+			deletedFiles,
 			true,
 			util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores),
 			cpo.show,

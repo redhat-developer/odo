@@ -615,3 +615,18 @@ func RemoveDuplicates(s []string) []string {
 	}
 	return result
 }
+
+// RemoveRelativePathFromFiles removes a specified path from a list of files
+func RemoveRelativePathFromFiles(files []string, path string) ([]string, error) {
+
+	removedRelativePathFiles := []string{}
+	for _, file := range files {
+		rel, err := filepath.Rel(path, file)
+		if err != nil {
+			return []string{}, err
+		}
+		removedRelativePathFiles = append(removedRelativePathFiles, rel)
+	}
+
+	return removedRelativePathFiles, nil
+}

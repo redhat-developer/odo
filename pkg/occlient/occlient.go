@@ -3217,7 +3217,7 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 			rmPaths = append(rmPaths, filepath.Join(s2iPath, delRelPath))
 		}
 	}
-	glog.V(4).Infof("s2ipaths marked  for deletion are %+v", rmPaths)
+	glog.V(4).Infof("s2ipaths marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 	cmdArr = append(cmdArr, rmPaths...)
 
