@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
@@ -297,11 +296,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 
 // FlagValueIfSet retrieves the value of the specified flag if it is set for the given command
 func FlagValueIfSet(cmd *cobra.Command, flagName string) string {
-	flag, err := cmd.Flags().GetString(flagName)
-
-	// log the error for debugging purposes though an error should only occur if the flag hadn't been added to the command or
-	// if the specified flag name doesn't match a string flag. This usually can be ignored.
-	ignoreButLog(err)
+	flag, _ := cmd.Flags().GetString(flagName)
 	return flag
 }
 
@@ -362,13 +357,6 @@ func (o *Context) checkComponentExistsOrFail(cmp string) {
 	if !exists {
 		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
 		os.Exit(1)
-	}
-}
-
-// ignoreButLog logs a potential error when trying to resolve a flag value.
-func ignoreButLog(err error) {
-	if err != nil {
-		glog.V(4).Infof("Ignoring error as it usually means flag wasn't set: %v", err)
 	}
 }
 
