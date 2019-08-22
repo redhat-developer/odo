@@ -34,6 +34,23 @@ var _ = Describe("odojsonoutput", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
+	Context("Delete the project and output json output", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
+
+		// odo project delete foobar -o json
+		It("should be able to delete project and show output in json format", func() {
+			helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
+
+			actual := helper.CmdShouldPass("odo", "project", "delete", projectName, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"message":"Deleted project : %s"}`, projectName, projectName, projectName)
+			Expect(desired).Should(MatchJSON(actual))
+		})
+
+	})
+
 	// Test machine readable output
 	Context("Pass on creation: odo project create $PROJECT -o json", func() {
 		var projectName string
