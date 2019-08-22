@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -114,7 +115,22 @@ func (o *commonLinkOptions) run() (err error) {
 		return err
 	}
 
-	log.Successf("%s %s has been successfully %sed from the component %s", linkType, o.suppliedName, o.operationName, o.Component())
+	log.Successf("%s %s has been successfully %sed from the component %s\n", linkType, o.suppliedName, o.operationName, o.Component())
+
+	secret, err := o.Client.GetSecret(o.secretName, o.Project)
+	if err != nil {
+		return err
+	}
+
+	if o.operationName == "link" {
+		fmt.Printf("Following environment variables were added to %s component:\n", o.Component())
+	} else {
+		fmt.Printf("Following environment variables were removed from %s component:\n", o.Component())
+	}
+
+	for i := range secret.Data {
+		fmt.Printf("- %v\n", i)
+	}
 
 	if o.wait {
 		if err := o.waitForLinkToComplete(); err != nil {
