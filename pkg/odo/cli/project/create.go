@@ -53,27 +53,38 @@ func (pco *ProjectCreateOptions) Validate() (err error) {
 
 // Run runs the project create command
 func (pco *ProjectCreateOptions) Run() (err error) {
+
+	successMessage := fmt.Sprintf(`Project '%s' is ready for use`, pco.projectName)
+
+	// Create the "spinner"
+	s := &log.Status{}
+
+	// If the --wait parameter has been passed, we add a spinner..
 	if pco.wait {
-		s := log.Spinner("Waiting for project to come up")
-		err = project.Create(pco.Client, pco.projectName, true)
-		if err != nil {
-			return err
-		} else {
-			s.End(true)
-			log.Successf(`Project '%s' is ready for use`, pco.projectName)
-		}
-	} else {
-		err = project.Create(pco.Client, pco.projectName, false)
-		if err != nil {
-			return err
-		}
+		s = log.Spinner("Waiting for project to come up")
+		defer s.End(false)
 	}
 
+	// Create the project & end the spinner (if there is any..)
+	err = project.Create(pco.Client, pco.projectName, pco.wait)
+	if err != nil {
+		return err
+	}
+	s.End(true)
+	log.Successf(successMessage)
+
+	// Set the current project when created. If it's json output, we output a json output error
 	err = project.SetCurrent(pco.Client, pco.projectName)
 	if err != nil {
 		return err
 	}
-	log.Successf("New project created and now using project : %v", pco.projectName)
+
+	// If -o json has been passed, let's output the approriate json output.
+	if log.IsJSON() {
+		project.MachineReadableSuccessOutput(pco.projectName, successMessage)
+	} else {
+		log.Successf("New project created and now using project : %v", pco.projectName)
+	}
 	return
 }
 
