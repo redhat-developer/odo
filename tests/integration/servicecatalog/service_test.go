@@ -52,7 +52,7 @@ var _ = Describe("odoServiceE2e", func() {
 
 		It("should be able to create postgresql with env", func() {
 			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--app", app,
-				"--plan", "dev", "-p", "postgresql_usero=lukecage", "-p", "postgresql_password=secret",
+				"--plan", "dev", "-p", "postgresql_user=lukecage", "-p", "postgresql_password=secret",
 				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
 			// there is only a single pod in the project
 			ocArgs := []string{"describe", "pod", "-n", project}
