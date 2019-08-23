@@ -127,6 +127,16 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		if len(args) == 2 {
 			o.ServiceName = args[1]
 		}
+
+		o.ParametersMap = make(map[string]string)
+		for _, kv := range o.parameters {
+			kvSlice := strings.Split(kv, "=")
+			// key value not provided in format of key=value
+			if len(kvSlice) != 2 {
+				return errors.New("parameters not provided in key=value format")
+			}
+			o.ParametersMap[kvSlice[0]] = kvSlice[1]
+		}
 	}
 
 	return

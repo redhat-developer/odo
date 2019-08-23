@@ -36,6 +36,40 @@ var _ = Describe("odoServiceE2e", func() {
 		})
 	})
 
+	Context("create service with Env non-interactively", func() {
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			context = helper.CreateNewContext()
+			app = helper.RandString(7)
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.DeleteDir(context)
+			helper.Chdir(originalDir)
+		})
+
+		It("should be able to create postgresql with env", func() {
+			oc.ImportJavaIsToNspace(project)
+			helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
+
+			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
+			helper.CmdShouldPass("odo", "create", "java", "sb-app", "--project", project)
+
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--plan", "dev",
+				"-p", "postgresql_user=lukecage", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
+			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "lukecage")
+			})
+
+			// Delete the service
+			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f")
+		})
+	})
+
 	Context("When creating with a spring boot application", func() {
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
