@@ -105,23 +105,26 @@ var _ = Describe("odoServiceE2e", func() {
 
 	Context("When working from outside a component dir", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
 			app = helper.RandString(7)
 			serviceName = "odo-postgres-service"
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
+			SetDefaultConsistentlyDuration(30 * time.Second)
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
 			helper.DeleteDir(context)
 			helper.Chdir(originalDir)
+			os.Unsetenv("GLOBALODOCONFIG")
 		})
 
 		It("should be able to create, list and delete a service using a given value for --context", func() {
 			// create a component by copying the example
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--app", app, "--project", project)
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			helper.CmdShouldPass("odo", "create", "python", "--app", app, "--project", project)
 
 			// cd to the originalDir to create service using --context
 			helper.Chdir(originalDir)
@@ -140,7 +143,7 @@ var _ = Describe("odoServiceE2e", func() {
 			Expect(stdOut).To(ContainSubstring(serviceName))
 
 			// now check if deleting the service using --context works
-			stdOut = helper.CmdShouldPass("odo", "service", "delete", "-f", "serviceName", "--context", context)
+			stdOut = helper.CmdShouldPass("odo", "service", "delete", "-f", serviceName, "--context", context)
 			Expect(stdOut).To(ContainSubstring(serviceName))
 		})
 
