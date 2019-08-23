@@ -72,7 +72,6 @@ func TestExtractComponentType(t *testing.T) {
 		testName      string
 		componentType string
 		want          string
-		wantErr       bool
 	}{
 		{
 			testName:      "Test namespacing and versioning",
@@ -657,6 +656,8 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ignores := []string{".git", ".odo", ".gitignore", ".odoignore"}
+
 	defer os.RemoveAll(testDir)
 	tests := []struct {
 		name             string
@@ -673,7 +674,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{""},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{".git"},
+			wantRules:        ignores,
 			wantErr:          false,
 		},
 		{
@@ -682,7 +683,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".gitignore"},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{".git"},
+			wantRules:        ignores,
 			wantErr:          false,
 		},
 		{
@@ -691,7 +692,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".gitignore"},
 			rulesOnGitIgnore: "*.js\n\n/openshift/**/*.json\n/tests",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{".git", "*.js", "/openshift/**/*.json", "/tests"},
+			wantRules:        append(ignores, "*.js", "/openshift/**/*.json", "/tests"),
 			wantErr:          false,
 		},
 		{
@@ -700,7 +701,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".odoignore"},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{".git"},
+			wantRules:        ignores,
 			wantErr:          false,
 		},
 		{
@@ -709,7 +710,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".odoignore"},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "*.json\n\n/openshift/**/*.js",
-			wantRules:        []string{".git", "*.json", "/openshift/**/*.js"},
+			wantRules:        append(ignores, "*.json", "/openshift/**/*.js"),
 			wantErr:          false,
 		},
 		{
@@ -718,7 +719,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".gitignore", ".odoignore"},
 			rulesOnGitIgnore: "/tests",
 			rulesOnOdoIgnore: "*.json\n\n/openshift/**/*.js",
-			wantRules:        []string{".git", "*.json", "/openshift/**/*.js"},
+			wantRules:        append(ignores, "*.json", "/openshift/**/*.js"),
 			wantErr:          false,
 		},
 		{
@@ -727,7 +728,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".gitignore"},
 			rulesOnGitIgnore: "*.js\n\n/openshift/**/*.json\n\n\n#/tests",
 			rulesOnOdoIgnore: "",
-			wantRules:        []string{".git", "*.js", "/openshift/**/*.json"},
+			wantRules:        append(ignores, "*.js", "/openshift/**/*.json"),
 			wantErr:          false,
 		},
 		{
@@ -736,7 +737,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			filesToCreate:    []string{".odoignore"},
 			rulesOnOdoIgnore: "*.js\n\n\n/openshift/**/*.json\n\n\n#/tests\n/bin",
 			rulesOnGitIgnore: "",
-			wantRules:        []string{".git", "*.js", "/openshift/**/*.json", "/bin"},
+			wantRules:        append(ignores, "*.js", "/openshift/**/*.json", "/bin"),
 			wantErr:          false,
 		},
 	}
@@ -1080,10 +1081,9 @@ func TestRemoveDuplicate(t *testing.T) {
 
 func TestRemoveRelativePathFromFiles(t *testing.T) {
 	type args struct {
-		path    string
-		input   []string
-		output  []string
-		wantErr bool
+		path   string
+		input  []string
+		output []string
 	}
 	tests := []struct {
 		name    string

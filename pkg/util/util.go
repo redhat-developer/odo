@@ -420,7 +420,7 @@ func GetHostWithPort(inputURL string) (string, error) {
 // directory is the name of the directory to look into for either of the files
 // rules is the array of rules (in string form)
 func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
-	rules := []string{".git"}
+	rules := []string{".git", ".odo", ".gitignore", ".odoignore"}
 	// checking for presence of .odoignore file
 	pathIgnore := filepath.Join(directory, ".odoignore")
 	if _, err := os.Stat(pathIgnore); os.IsNotExist(err) || err != nil {

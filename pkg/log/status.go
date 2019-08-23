@@ -283,6 +283,20 @@ func SpinnerNoSpin(status string) *Status {
 	return s
 }
 
+// WithSpinner calls f() inside Spinner(message).
+// If show==true use SpinnerNoSpin.
+func WithSpinner(message string, show bool, f func() error) error {
+	var s *Status
+	if show {
+		s = SpinnerNoSpin(message)
+	} else {
+		s = Spinner(message)
+	}
+	err := f()
+	s.End(err == nil)
+	return err
+}
+
 // IsJSON returns true if we are in machine output mode..
 // under NO circumstances should we output any logging.. as we are only outputting json
 func IsJSON() bool {

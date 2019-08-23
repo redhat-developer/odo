@@ -134,8 +134,6 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 //	out: io Writer instance
 // 	parameters: WatchParameters
 func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParameters) error {
-	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
-	// delayInterval int
 	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
 	// these variables must be accessed while holding the changeLock

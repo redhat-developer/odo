@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -131,10 +130,6 @@ func (cpo *CommonPushOptions) SetSourceInfo() (err error) {
 // Push pushes changes as per set options
 func (cpo *CommonPushOptions) Push() (err error) {
 
-	deletedFiles := []string{}
-	changedFiles := []string{}
-	isForcePush := false
-
 	stdout := color.Output
 
 	cmpName := cpo.localConfigInfo.GetName()
@@ -144,9 +139,12 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		cpo.componentContext = strings.Trim(filepath.Dir(cpo.localConfigInfo.Filename), ".odo")
 	}
 
-	err = cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)
-	if err != nil {
-		return
+	if err := cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout); err != nil {
+		return err
+	}
+	// Force the build if the component doesn't exist, we may have an out-of-date index.
+	if !cpo.isCmpExists {
+		cpo.forceBuild = true
 	}
 
 	if !cpo.pushSource {
@@ -154,54 +152,8 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		return nil
 	}
 
-	log.Infof("\nPushing to component %s of type %s", cmpName, cpo.sourceType)
-
-	if !cpo.forceBuild && cpo.sourceType != config.GIT {
-		absIgnoreRules := util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores)
-
-		spinner := log.NewStatus(log.GetStdout())
-		defer spinner.End(true)
-		if cpo.isCmpExists {
-			spinner.Start("Checking file changes for pushing", false)
-		} else {
-			// if the component doesn't exist, we don't check for changes in the files
-			// thus we show a different message
-			spinner.Start("Checking files for pushing", false)
-		}
-
-		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(cpo.componentContext, absIgnoreRules)
-		spinner.End(true)
-
-		if err != nil {
-			return err
-		}
-
-		if cpo.isCmpExists {
-			// apply the glob rules from the .gitignore/.odo file
-			// and ignore the files on which the rules apply and filter them out
-			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
-
-			// Remove the relative file directory from the list of deleted files
-			// in order to make the changes correctly within the OpenShift pod
-			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, cpo.sourcePath)
-			if err != nil {
-				return err
-			}
-			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
-			changedFiles = filesChangedFiltered
-
-			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
-				// no file was modified/added/deleted/renamed, thus return without building
-				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
-				return nil
-			}
-		}
-	}
-
-	if cpo.forceBuild || !cpo.isCmpExists {
-		isForcePush = true
-	}
+	log.Infof("\nPushing to component %s of type %s, force=%v",
+		cmpName, cpo.sourceType, cpo.forceBuild)
 
 	// Get SourceLocation here...
 	cpo.sourcePath, err = cpo.localConfigInfo.GetOSSourcePath()
@@ -209,57 +161,38 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		return errors.Wrap(err, "unable to retrieve OS source path to source location")
 	}
 
+	var (
+		path  string
+		files []string
+	)
 	switch cpo.sourceType {
 	case config.LOCAL:
 		glog.V(4).Infof("Copying directory %s to pod", cpo.sourcePath)
-		err = component.PushLocal(
-			cpo.Context.Client,
-			cmpName,
-			appName,
-			cpo.sourcePath,
-			os.Stdout,
-			changedFiles,
-			deletedFiles,
-			isForcePush,
-			util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores),
-			cpo.show,
-		)
-
-		if err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
-		}
-
+		path = cpo.sourcePath
+		files = nil
 	case config.BINARY:
-
-		// We will pass in the directory, NOT filepath since this is a binary..
-		binaryDirectory := filepath.Dir(cpo.sourcePath)
-
+		// We will pass in the directory, NOT filepath since this is a binary.
 		glog.V(4).Infof("Copying binary file %s to pod", cpo.sourcePath)
-		err = component.PushLocal(
-			cpo.Context.Client,
-			cmpName,
-			appName,
-			binaryDirectory,
-			os.Stdout,
-			[]string{cpo.sourcePath},
-			deletedFiles,
-			isForcePush,
-			util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores),
-			cpo.show,
-		)
-
-		if err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
-		}
-
+		path = filepath.Dir(cpo.sourcePath)
+		files = []string{cpo.sourcePath}
+	default:
 		// we don't need a case for building git components
 		// the build happens before deployment
-
-		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
+		return nil
 	}
-
-	log.Success("Changes successfully pushed to component")
-	return
+	err = component.PushLocal(
+		cpo.Context.Client,
+		cmpName,
+		appName,
+		path,
+		os.Stdout,
+		files, // files to copy
+		nil,   // deleted files, computed by PushLocal
+		cpo.forceBuild,
+		cpo.ignores,
+		cpo.show,
+	)
+	return nil
 }
 
 // filterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them

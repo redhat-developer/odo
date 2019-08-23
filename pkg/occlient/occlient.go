@@ -1,12 +1,10 @@
 package occlient
 
 import (
-	taro "archive/tar"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -18,12 +16,11 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
-
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
@@ -2715,221 +2712,6 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 	return &pods.Items[0], nil
 }
 
-// CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.
-// copyFiles is list of changed files captured during `odo watch` as well as binary file path
-// During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
-// During copying local source components, localPath represent base directory path whereas copyFiles is empty
-// During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func (c *Client) CopyFile(localPath string, targetPodName string, targetPath string, copyFiles []string, globExps []string) error {
-
-	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
-	// Linux based and thus: "\opt\app-root\src" would not work correctly.
-	dest := filepath.ToSlash(filepath.Join(targetPath, filepath.Base(localPath)))
-	targetPath = filepath.ToSlash(targetPath)
-
-	glog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, copyFiles %s, globalExps %s", localPath, dest, copyFiles, globExps)
-	reader, writer := io.Pipe()
-	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
-	go func() {
-		defer writer.Close()
-
-		var err error
-		err = makeTar(localPath, dest, writer, copyFiles, globExps)
-		if err != nil {
-			glog.Errorf("Error while creating tar: %#v", err)
-			os.Exit(1)
-		}
-
-	}()
-
-	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
-	err := c.ExecCMDInContainer(targetPodName, cmdArr, nil, nil, reader, false)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// checkFileExist check if given file exists or not
-func checkFileExist(fileName string) bool {
-	_, err := os.Stat(fileName)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
-// makeTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L309
-// srcPath is ignored if files is set
-func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExps []string) error {
-	// TODO: use compression here?
-	tarWriter := taro.NewWriter(writer)
-	defer tarWriter.Close()
-	srcPath = filepath.Clean(srcPath)
-
-	// "ToSlash" is used as all containers within OpenShisft are Linux based
-	// and thus \opt\app-root\src would be an invalid path. Backward slashes
-	// are converted to forward.
-	destPath = filepath.ToSlash(filepath.Clean(destPath))
-
-	glog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
-	if len(files) != 0 {
-		//watchTar
-		for _, fileName := range files {
-			if checkFileExist(fileName) {
-				// Fetch path of source file relative to that of source base path so that it can be passed to recursiveTar
-				// which uses path relative to base path for taro header to correctly identify file location when untarred
-				srcFile, err := filepath.Rel(srcPath, fileName)
-				if err != nil {
-					return err
-				}
-				srcFile = filepath.Join(filepath.Base(srcPath), srcFile)
-				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				err = recursiveTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), srcFile, tarWriter, globExps)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	} else {
-		return recursiveTar(filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), filepath.Base(destPath), tarWriter, globExps)
-	}
-
-	return nil
-}
-
-// Tar will be used to tar files using odo watch
-// inspired from https://gist.github.com/jonmorehouse/9060515
-func tar(tw *taro.Writer, fileName string, destFile string) error {
-	stat, _ := os.Lstat(fileName)
-
-	// now lets create the header as needed for this file within the tarball
-	hdr, err := taro.FileInfoHeader(stat, fileName)
-	if err != nil {
-		return err
-	}
-	splitFileName := strings.Split(fileName, destFile)[1]
-
-	// hdr.Name can have only '/' as path separator, next line makes sure there is no '\'
-	// in hdr.Name on Windows by replacing '\' to '/' in splitFileName. destFile is
-	// a result of path.Base() call and never have '\' in it.
-	hdr.Name = destFile + strings.Replace(splitFileName, "\\", "/", -1)
-	// write the header to the tarball archive
-	err = tw.WriteHeader(hdr)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Open(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// copy the file data to the tarball
-	_, err = io.Copy(tw, file)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
-func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, globExps []string) error {
-	glog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
-
-	// The destination is a LINUX container and thus we *must* use ToSlash in order
-	// to get the copying over done correctly..
-	destBase = filepath.ToSlash(destBase)
-	destFile = filepath.ToSlash(destFile)
-	glog.V(4).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
-
-	joinedPath := filepath.Join(srcBase, srcFile)
-	matchedPathsDir, err := filepath.Glob(joinedPath)
-	if err != nil {
-		return err
-	}
-
-	matchedPaths := []string{}
-
-	// checking the files which are allowed by glob matching
-	for _, path := range matchedPathsDir {
-		matched, err := util.IsGlobExpMatch(path, globExps)
-		if err != nil {
-			return err
-		}
-		if !matched {
-			matchedPaths = append(matchedPaths, path)
-		}
-	}
-
-	// adding the files for taring
-	for _, matchedPath := range matchedPaths {
-		stat, err := os.Lstat(matchedPath)
-		if err != nil {
-			return err
-		}
-		if stat.IsDir() {
-			files, err := ioutil.ReadDir(matchedPath)
-			if err != nil {
-				return err
-			}
-			if len(files) == 0 {
-				//case empty directory
-				hdr, _ := taro.FileInfoHeader(stat, matchedPath)
-				hdr.Name = destFile
-				if err := tw.WriteHeader(hdr); err != nil {
-					return err
-				}
-			}
-			for _, f := range files {
-				if err := recursiveTar(srcBase, filepath.Join(srcFile, f.Name()), destBase, filepath.Join(destFile, f.Name()), tw, globExps); err != nil {
-					return err
-				}
-			}
-			return nil
-		} else if stat.Mode()&os.ModeSymlink != 0 {
-			//case soft link
-			hdr, _ := taro.FileInfoHeader(stat, joinedPath)
-			target, err := os.Readlink(joinedPath)
-			if err != nil {
-				return err
-			}
-
-			hdr.Linkname = target
-			hdr.Name = destFile
-			if err := tw.WriteHeader(hdr); err != nil {
-				return err
-			}
-		} else {
-			//case regular file or other file type like pipe
-			hdr, err := taro.FileInfoHeader(stat, joinedPath)
-			if err != nil {
-				return err
-			}
-			hdr.Name = destFile
-
-			if err := tw.WriteHeader(hdr); err != nil {
-				return err
-			}
-
-			f, err := os.Open(joinedPath)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-
-			if _, err := io.Copy(tw, f); err != nil {
-				return err
-			}
-			return f.Close()
-		}
-	}
-	return nil
-}
-
 // GetOneServiceFromSelector returns the Service object associated with the
 // given selector.
 // An error is thrown when exactly one Service is not found for the selector
@@ -3192,33 +2974,6 @@ func (c *Client) GetEnvVarsFromDC(dcName string) ([]corev1.EnvVar, error) {
 	}
 
 	return dc.Spec.Template.Spec.Containers[0].Env, nil
-}
-
-// PropagateDeletes deletes the watch detected deleted files from remote component pod from each of the paths in passed s2iPaths
-// Parameters:
-//	targetPodName: Name of component pod
-//	delSrcRelPaths: Paths to be deleted on the remote pod relative to component source base path ex: Compoent src: /abc/src, file deleted: abc/src/foo.lang => relative path: foo.lang
-//	s2iPaths: Slice of all s2i paths -- deployment dir, destination dir, working dir, etc..
-func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string, s2iPaths []string) error {
-	reader, writer := io.Pipe()
-	var rmPaths []string
-	if len(s2iPaths) == 0 || len(delSrcRelPaths) == 0 {
-		return fmt.Errorf("Failed to propagate deletions: s2iPaths: %+v and delSrcRelPaths: %+v", s2iPaths, delSrcRelPaths)
-	}
-	for _, s2iPath := range s2iPaths {
-		for _, delRelPath := range delSrcRelPaths {
-			rmPaths = append(rmPaths, filepath.Join(s2iPath, delRelPath))
-		}
-	}
-	glog.V(4).Infof("s2ipaths marked for deletion are %+v", rmPaths)
-	cmdArr := []string{"rm", "-rf"}
-	cmdArr = append(cmdArr, rmPaths...)
-
-	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
-	if err != nil {
-		return err
-	}
-	return err
 }
 
 // StartDeployment instantiates a given deployment

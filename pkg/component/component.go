@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/push"
 	"github.com/openshift/odo/pkg/storage"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
@@ -642,6 +643,18 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		return errors.New(fmt.Sprintf("Directory / file %s is empty", path))
 	}
 
+	// Start reading local files concurrently, no changes yet.
+	fs, err := push.NewFileSet(path, globExps)
+	var pusher push.Pusher
+	switch {
+	case len(files) != 0 || len(delFiles) != 0:
+		pusher = push.ExactPusher(fs, files, delFiles)
+	case isForcePush:
+		pusher = push.ForcePusher(fs)
+	default:
+		pusher = push.IndexPusher(fs)
+	}
+
 	// Find DeploymentConfig for component
 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
@@ -665,91 +678,57 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	targetPath := fmt.Sprintf("%s/src", s2iSrcPath)
 
-	// Sync the files to the pod
-	s := log.Spinner("Syncing files to the component")
-	defer s.End(false)
-
-	// If there are files identified as deleted, propagate them to the component pod
-	if len(delFiles) > 0 {
-		glog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
-		/*
-			Delete files observed by watch to have been deleted from each of s2i directories like:
-				deployment dir: In interpreted runtimes like python, source is copied over to deployment dir so delete needs to happen here as well
-				destination dir: This is the directory where s2i expects source to be copied for it be built and deployed
-				working dir: Directory where, sources are copied over from deployment dir from where the s2i builds and deploys source.
-							 Deletes need to happen here as well otherwise, even if the latest source is copied over, the stale source files remain
-				source backup dir: Directory used for backing up source across multiple iterations of push and watch in component container
-								   In case of python, s2i image moves sources from destination dir to workingdir which means sources are deleted from destination dir
-								   So, during the subsequent watch pushing new diff to component pod, the source as a whole doesn't exist at destination dir and hence needs
-								   to be backed up.
-		*/
-		err := client.PropagateDeletes(pod.Name, delFiles, getS2IPaths(pod.Spec.Containers[0].Env))
-		if err != nil {
-			return errors.Wrapf(err, "unable to propagate file deletions %+v", delFiles)
-		}
+	// Set up a UnixRemote that calls ExecCMDInContainer to run commands.
+	cmdFunc := func(cmd []string, rin io.Reader, wout, werr io.Writer) error {
+		return errors.WithStack(
+			client.ExecCMDInContainer(pod.Name, cmd, wout, werr, rin, false))
 	}
-
-	if !isForcePush {
-		if len(files) == 0 && len(delFiles) == 0 {
-			// nothing to push
-			s.End(true)
-			return nil
-		}
-	}
-
-	if isForcePush || len(files) > 0 {
-		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = client.CopyFile(path, pod.Name, targetPath, files, globExps)
-		if err != nil {
-			s.End(false)
-			return errors.Wrap(err, "unable push files to pod")
-		}
-	}
-	s.End(true)
-
-	if show {
-		s = log.SpinnerNoSpin("Building component")
-	} else {
-		s = log.Spinner("Building component")
-	}
-
-	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
-	pipeReader, pipeWriter := io.Pipe()
-	var cmdOutput string
-
-	// This Go routine will automatically pipe the output from ExecCMDInContainer to
-	// our logger.
-	go func() {
-		scanner := bufio.NewScanner(pipeReader)
-		for scanner.Scan() {
-			line := scanner.Text()
-
-			if log.IsDebug() || show {
-				_, err := fmt.Fprintln(out, line)
-				if err != nil {
-					log.Errorf("Unable to print to stdout: %v", err)
-				}
-			}
-
-			cmdOutput += fmt.Sprintln(line)
-		}
-	}()
-
-	err = client.ExecCMDInContainer(pod.Name,
-		// We will use the assemble-and-restart script located within the supervisord container we've created
-		[]string{"/opt/odo/bin/assemble-and-restart"},
-		pipeWriter, pipeWriter, nil, false)
-
+	rmt, err := push.UnixRemote(cmdFunc, fs, targetPath, getS2IPaths(pod.Spec.Containers[0].Env)...)
 	if err != nil {
-		// If we fail, log the output
-		log.Errorf("Unable to build files\n%v", cmdOutput)
-		s.End(false)
-		return errors.Wrap(err, "unable to execute assemble script")
+		return errors.Wrapf(err, "Connecting to remote")
 	}
 
-	s.End(true)
+	// Synchronize (copy and remove) files on the pod.
+	var needBuild bool
+	err = log.WithSpinner("Synchronizing files with component", show,
+		func() error {
+			needBuild, err = pusher.Push(rmt)
+			return err
+		})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to synchronize with component")
+	}
+	if needBuild == false {
+		log.Success("No file changes detected, skipping build.")
+		return nil
+	}
 
-	return nil
+	err = log.WithSpinner("Building component", show,
+		func() error {
+			var cmdOut io.Writer // Writer for command output
+			var buf bytes.Buffer // Collect output in buf
+			if out != nil && (log.IsDebug() || show) {
+				cmdOut = io.MultiWriter(&buf, out) // Write to buf and out
+			} else {
+				cmdOut = &buf // Just buf
+			}
+			err := client.ExecCMDInContainer(pod.Name,
+				// We will use the assemble-and-restart script located within
+				// the supervisord container we've created
+				[]string{"/odo/odo/bin/assemble-and-restart"}, cmdOut, cmdOut, nil, false)
+			if err != nil {
+				// If we fail, log the output
+				log.Errorf("Unable to build files\n%s", buf.String())
+				return errors.Wrap(err, "unable to execute assemble script")
+			}
+			return nil
+		})
+	if err != nil {
+		return errors.Wrapf(err, "Push failed")
+	} else {
+		log.Success("Push complete")
+		return nil
+	}
 }
 
 // Build component from BuildConfig.

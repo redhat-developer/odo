@@ -91,6 +91,14 @@ func ReplaceString(filename string, oldString string, newString string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+// CopyAll copies dstDir to srcDir recursively.
+func CopyAll(srcDir, dstDir string) {
+	info, err := os.Lstat(srcDir)
+	Expect(err).NotTo(HaveOccurred())
+	err = copyDir(srcDir, dstDir, info)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 // copyDir copy one directory to the other
 // this function is called recursively info should start as os.Stat(src)
 func copyDir(src string, dst string, info os.FileInfo) error {
@@ -139,18 +147,7 @@ func copyDir(src string, dst string, info os.FileInfo) error {
 // path is the path to the required file
 // fileContent is the content to be written to the given file
 func CreateFileWithContent(path string, fileContent string) error {
-	// create and open file if not exists
-	var file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	// write to file
-	_, err = file.WriteString(fileContent)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ioutil.WriteFile(path, []byte(fileContent), 0600)
 }
 
 // ListFilesInDir lists all the files in the directory
