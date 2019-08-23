@@ -1,12 +1,12 @@
 package preference
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -38,7 +38,6 @@ const (
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
 var TimeoutSettingDescription = fmt.Sprintf("Timeout (in seconds) for OpenShift server connection check (Default: %d)", DefaultTimeout)
-
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
