@@ -136,11 +136,10 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 }
 
 // SpliceSupportedTags splits the tags in to fully supported and unsupported tags
-func SpliceSupportedTags(catalogImage CatalogImage, tags []string) ([]string, []string) {
+func SpliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
 
 	var supTag, nonSupTag []string
 	tagMap := createImageMap(catalogImage.imageStreamRef.Spec.Tags)
-
 	for _, tag := range catalogImage.NonHiddenTags {
 		imageName := tagMap[tag]
 		if isSupportedImage(imageName) {
@@ -155,17 +154,21 @@ func SpliceSupportedTags(catalogImage CatalogImage, tags []string) ([]string, []
 func createImageMap(tagRefs []imagev1.TagReference) map[string]string {
 	tagMap := make(map[string]string)
 	for _, tagRef := range tagRefs {
-
 		// TODO: the From here can be of multiple types so we need to handle that
 		imageName := tagRef.From.Name
 		if tagRef.From.Kind == "DockerImage" {
 			urlImageName := strings.SplitN(tagRef.From.Name, "/", 2)[1]
 			ns, img, _, _, _ := occlient.ParseImageName(urlImageName)
 			imageName = ns + "/" + img
+		} else if tagRef.From.Kind == "ImageStreamTag" {
+			tagList := strings.Split(tagRef.From.Name, ":")
+			tag := tagList[len(tagList)-1]
+			// if the kind is a image stream tag that means its pointing to an existing dockerImage or image stream image
+			// we just look it up from the tapMap we already have
+			imageName = tagMap[tag]
 		}
 		tagMap[tagRef.Name] = imageName
 	}
-
 	return tagMap
 }
 

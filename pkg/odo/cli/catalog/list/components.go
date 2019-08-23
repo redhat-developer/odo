@@ -2,6 +2,7 @@ package list
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -54,64 +55,34 @@ func (o *ListComponentsOptions) Validate() (err error) {
 // Run contains the logic for the command associated with ListComponentsOptions
 func (o *ListComponentsOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	w2 := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "Types fully supported in odo (including debugging capabilities):")
-	fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS")
-	// we use this as a flag to not print the supported portion if there are not supported images
-	ignore := true
-	for _, component := range o.catalogList {
-		componentName := component.Name
-		if component.Namespace == o.Project {
-			/*
-				If current namespace is same as the current component namespace,
-				Loop through every other component,
-				If there exists a component with same name but in different namespaces,
-				mark the one from current namespace with (*)
-			*/
-			for _, comp := range o.catalogList {
-				if comp.Name == component.Name && component.Namespace != comp.Namespace {
-					componentName = fmt.Sprintf("%s (*)", component.Name)
-				}
-			}
+	var supCatalogList, unsupCatalogList []catalog.CatalogImage
+
+	for _, image := range o.catalogList {
+		supported, unsupported := catalog.SpliceSupportedTags(image)
+
+		if len(supported) != 0 {
+			image.NonHiddenTags = supported
+			supCatalogList = append(supCatalogList, image)
 		}
-		supTags, _ := catalog.SpliceSupportedTags(component, component.NonHiddenTags)
-		if len(supTags) != 0 {
-			ignore = false
-			fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(supTags, ","))
+		if len(unsupported) != 0 {
+			image.NonHiddenTags = unsupported
+			unsupCatalogList = append(unsupCatalogList, image)
 		}
 	}
 
-	fmt.Fprintln(w2, "Component types without full odo support:")
-	fmt.Fprintln(w2, "NAME", "\t", "PROJECT", "\t", "TAGS")
-
-	for _, component := range o.catalogList {
-		componentName := component.Name
-		if component.Namespace == o.Project {
-			/*
-				If current namespace is same as the current component namespace,
-				Loop through every other component,
-				If there exists a component with same name but in different namespaces,
-				mark the one from current namespace with (*)
-			*/
-			for _, comp := range o.catalogList {
-				if comp.Name == component.Name && component.Namespace != comp.Namespace {
-					componentName = fmt.Sprintf("%s (*)", component.Name)
-				}
-			}
-		}
-
-		_, nonSupTags := catalog.SpliceSupportedTags(component, component.NonHiddenTags)
-		if len(nonSupTags) != 0 {
-			fmt.Fprintln(w2, componentName, "\t", component.Namespace, "\t", strings.Join(nonSupTags, ","))
-		}
-
-	}
-
-	if !ignore {
+	if len(supCatalogList) != 0 {
+		fmt.Fprintln(w, "Types fully supported in odo (including debugging capabilities):")
+		o.printCatalogList(w, supCatalogList)
 		fmt.Fprintln(w)
-		w.Flush()
+
 	}
-	w2.Flush()
+
+	if len(unsupCatalogList) != 0 {
+		fmt.Fprintln(w, "Component types without full odo support:")
+		o.printCatalogList(w, unsupCatalogList)
+	}
+
+	w.Flush()
 	return
 }
 
@@ -129,4 +100,26 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 		},
 	}
 
+}
+
+func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []catalog.CatalogImage) {
+	fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS")
+
+	for _, component := range catalogList {
+		componentName := component.Name
+		if component.Namespace == o.Project {
+			/*
+				If current namespace is same as the current component namespace,
+				Loop through every other component,
+				If there exists a component with same name but in different namespaces,
+				mark the one from current namespace with (*)
+			*/
+			for _, comp := range catalogList {
+				if comp.Name == component.Name && component.Namespace != comp.Namespace {
+					componentName = fmt.Sprintf("%s (*)", component.Name)
+				}
+			}
+		}
+		fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(component.NonHiddenTags, ","))
+	}
 }
