@@ -51,16 +51,11 @@ var _ = Describe("odoServiceE2e", func() {
 		})
 
 		It("should be able to create postgresql with env", func() {
-			oc.ImportJavaIsToNspace(project)
-			helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
-
-			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
-			helper.CmdShouldPass("odo", "create", "java", "sb-app", "--project", project)
-
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--plan", "dev",
-				"-p", "postgresql_user=lukecage", "-p", "postgresql_password=secret",
-				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
-			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--app", app,
+				"--plan", "dev", "-p", "postgresql_usero=lukecage", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
+			// there is only a single pod in the project
+			ocArgs := []string{"describe", "pod", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "lukecage")
 			})
