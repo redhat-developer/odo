@@ -249,11 +249,11 @@ Aborting now!
             ;;
 
             latest)
-                BINARY_URL="$GITHUB_RELEASES_URL/odo-$platform.gz"
+                BINARY_URL="$GITHUB_RELEASES_URL/odo-$platform.tar.gz"
                 echo "# Downloading odo from $BINARY_URL"
-                curl -Lo $TMP_DIR/odo.gz "$BINARY_URL"
-                echo "# Extracting odo.gz"
-                gunzip -d $TMP_DIR/odo.gz
+                curl -Lo $TMP_DIR/odo.tar.gz "$BINARY_URL"
+                echo "# Extracting odo.tar.gz"
+                tar -xvzf $TMP_DIR/odo.tar.gz
             ;;
 
             *)
