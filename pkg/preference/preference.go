@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -26,16 +27,18 @@ const (
 	// UpdateNotificationSetting is the name of the setting controlling update notification
 	UpdateNotificationSetting = "UpdateNotification"
 	// UpdateNotificationSettingDescription is human-readable description for the update notification setting
-	UpdateNotificationSettingDescription = "Controls if an update notification is shown or not (true or false)"
+	UpdateNotificationSettingDescription = "Flag to control if an update notification is shown or not (Default: true)"
 	// NamePrefixSetting is the name of the setting controlling name prefix
 	NamePrefixSetting = "NamePrefix"
 	// NamePrefixSettingDescription is human-readable description for the name prefix setting
-	NamePrefixSettingDescription = "Default prefix is the current directory name. Use this value to set a default name prefix"
+	NamePrefixSettingDescription = "Use this value to set a default name prefix (Default: current directory name)"
 	// TimeoutSetting is the name of the setting controlling timeout for connection check
 	TimeoutSetting = "Timeout"
-	// TimeoutSettingDescription is human-readable description for the timeout setting
-	TimeoutSettingDescription = "Timeout (in seconds) for OpenShift server connection check"
 )
+
+// TimeoutSettingDescription is human-readable description for the timeout setting
+var TimeoutSettingDescription = fmt.Sprintf("Timeout (in seconds) for OpenShift server connection check (Default: %d)", DefaultTimeout)
+
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -113,7 +116,7 @@ func NewPreference() Preference {
 // not present
 func NewPreferenceInfo() (*PreferenceInfo, error) {
 	preferenceFile, err := getPreferenceFile()
-	glog.V(4).Infof("The preference file is %+v", preferenceFile)
+	glog.V(4).Infof("The path for preference file is %+v", preferenceFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo preference file")
 	}
