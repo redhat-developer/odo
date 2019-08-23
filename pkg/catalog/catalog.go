@@ -16,6 +16,7 @@ type CatalogImage struct {
 	AllTags       []string
 	NonHiddenTags []string
 
+	// this is used to get metadata like image URL for each tag present in the image stream
 	imageStreamRef imagev1.ImageStream
 }
 
