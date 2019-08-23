@@ -70,7 +70,7 @@ For more installation options please refer the link:docs/installation.adoc[insta
 In order to correctly use `odo` you must download it and add it
 to your `PATH` environment variable:
 
-. Download the `odo-windows-amd64.exe.gz` file from the
+. Download the `odo-windows-amd64.exe.tar.gz` file from the
 link:https://github.com/openshift/odo/releases[GitHub releases page].
 . Extract the file.
 . Add the location of extracted binary to your `PATH` environment
