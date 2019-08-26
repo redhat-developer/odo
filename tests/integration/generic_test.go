@@ -57,11 +57,19 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	Context("Fail on double creation: odo project create $PROJECT -o json", func() {
+	Context("Creating same project twice with flag -o json", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(projectName)
+		})
 		// odo project create foobar -o json (x2)
-		It("should fail saying that there is already an existing project", func() {
-			actual := helper.CmdShouldFail("odo", "project", "create", project, "-o", "json")
-			desired := fmt.Sprintf(`{"kind":"Error","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"creationTimestamp":null},"message":"unable to create new project: unable to create new project %s: project.project.openshift.io \"%s\" already exists"}`, project, project)
+		It("should fail along with proper machine readable output", func() {
+			helper.CmdShouldPass("odo", "project", "create", projectName)
+			actual := helper.CmdShouldFail("odo", "project", "create", projectName, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Error","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"creationTimestamp":null},"message":"unable to create new project: unable to create new project %s: project.project.openshift.io \"%s\" already exists"}`, projectName, projectName)
 			Expect(desired).Should(MatchJSON(actual))
 		})
 	})
