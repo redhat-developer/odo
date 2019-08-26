@@ -79,27 +79,18 @@ goget-tools:
 test-coverage:
 	./scripts/generate-coverage.sh
 
-# compile for linux platform
-.PHONY: linux-amd64
-linux-amd64:
-	GOARCH=amd64 GOOS=linux go build $(BUILD_FLAGS) -o dist/bin/linux-amd64/odo ./cmd/odo/
-
-# compile for darwin platform
-.PHONY: darwin-amd64
-darwin-amd64:
-	GOARCH=amd64 GOOS=darwin go build $(BUILD_FLAGS) -o dist/bin/darwin-amd64/odo ./cmd/odo/
-
-# compile for windows platform
-.PHONY: windows-amd64
-windows-amd64:
-	GOARCH=amd64 GOOS=windows go build $(BUILD_FLAGS) -o dist/bin/windows-amd64/odo.exe ./cmd/odo/
-
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	make linux-amd64
-	make darwin-amd64
-	make windows-amd64
+	@for platform in linux darwin windows ; do \
+		if [ $$platform == "windows" ]; then \
+			echo "Cross compiling $$platform-amd64 and placing binary at dist/bin/$$platform-amd64/"; \
+			GOARCH=amd64 GOOS=$$platform go build -o dist/bin/$$platform-amd64/odo.exe $(BUILD_FLAGS) ./cmd/odo/; \
+		else \
+			echo "Cross compiling $$platform-amd64 and placing binary at dist/bin/$$platform-amd64/"; \
+			GOARCH=amd64 GOOS=$$platform go build -o dist/bin/$$platform-amd64/odo $(BUILD_FLAGS) ./cmd/odo/; \
+		fi \
+	done
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
