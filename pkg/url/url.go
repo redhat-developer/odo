@@ -93,9 +93,8 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 	return urlList, nil
 }
 
-// List returns all URLs for given component. The results can further be narrowed
-// down if a component name is provided, which will only list URLs for the
-// given component
+// List returns all URLs for given component.
+// If componentName is empty string, it lists all url in a given application.
 func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componentName string, applicationName string) (UrlList, error) {
 
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)

@@ -77,6 +77,7 @@ func (o *URLListOptions) Run() (err error) {
 		tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
 
+		// are there changes between local and cluster states?
 		outOfSync := false
 		for _, u := range urls.Items {
 			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
@@ -87,7 +88,7 @@ func (o *URLListOptions) Run() (err error) {
 		tabWriterURL.Flush()
 		if outOfSync {
 			fmt.Fprintf(os.Stdout, "\n")
-			fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.")
+			fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
 		}
 	}
 
