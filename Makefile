@@ -82,17 +82,17 @@ test-coverage:
 # compile for linux platform
 .PHONY: linux-amd64
 linux-amd64:
-	go build $(BUILD_FLAGS) -o dist/bin/linux-amd64/odo ./cmd/odo/
+	GOARCH=amd64 GOOS=linux go build $(BUILD_FLAGS) -o dist/bin/linux-amd64/odo ./cmd/odo/
 
 # compile for darwin platform
 .PHONY: darwin-amd64
 darwin-amd64:
-	go build $(BUILD_FLAGS) -o dist/bin/darwin-amd64/odo ./cmd/odo/
+	GOARCH=amd64 GOOS=darwin go build $(BUILD_FLAGS) -o dist/bin/darwin-amd64/odo ./cmd/odo/
 
 # compile for windows platform
 .PHONY: windows-amd64
 windows-amd64:
-	go build $(BUILD_FLAGS) -o dist/bin/windows-amd64/odo.exe ./cmd/odo/
+	GOARCH=amd64 GOOS=windows go build $(BUILD_FLAGS) -o dist/bin/windows-amd64/odo.exe ./cmd/odo/
 
 # compile for multiple platforms
 .PHONY: cross
