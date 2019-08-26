@@ -890,6 +890,36 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 
 	}
 
+	if len(components) == 0 {
+		localConfig, err := config.New()
+		if err != nil {
+			return ComponentList{}, errors.Wrapf(err, "unable to get the local config")
+		}
+		if localConfig.ConfigFileExists() && localConfig.GetApplication() == applicationName {
+			component := getMachineReadableFormat(localConfig.GetName(), localConfig.GetType())
+
+			component.Spec = ComponentSpec{
+				App:    localConfig.GetApplication(),
+				Type:   localConfig.GetType(),
+				Source: localConfig.GetSourceLocation(),
+				Ports:  localConfig.GetPorts(),
+			}
+
+			component.Status = ComponentStatus{
+				State: "Not Pushed",
+			}
+
+			for _, localEnv := range localConfig.GetEnvVars() {
+				component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: localEnv.Name, Value: localEnv.Value})
+			}
+
+			for _, localStorage := range localConfig.GetStorage() {
+				component.Spec.Storage = append(component.Spec.Storage, localStorage.Name)
+			}
+			components = append(components, component)
+		}
+	}
+
 	compoList := GetMachineReadableFormatForList(components)
 	return compoList, nil
 }

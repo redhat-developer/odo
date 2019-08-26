@@ -128,11 +128,11 @@ var _ = Describe("odo service command tests", func() {
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Spring Boot", 90, 1)
 
-			// Delete the component
-			helper.CmdShouldPass("odo", "delete", "sb-app", "-f")
-
 			// Delete the service
 			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f")
+
+			// Delete the component and the config
+			helper.CmdShouldPass("odo", "delete", "sb-app", "-f", "--all")
 		})
 	})
 
