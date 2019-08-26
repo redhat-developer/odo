@@ -92,7 +92,7 @@ darwin-amd64:
 # compile for windows platform
 .PHONY: windows-amd64
 windows-amd64:
-	go build $(BUILD_FLAGS) -o "dist/bin/windows-amd64/odo.exe" ./cmd/odo/
+	go build $(BUILD_FLAGS) -o dist/bin/windows-amd64/odo.exe ./cmd/odo/
 
 # compile for multiple platforms
 .PHONY: cross
