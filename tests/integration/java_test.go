@@ -104,7 +104,7 @@ var _ = Describe("odoJavaE2e", func() {
 			routeURL := helper.DetermineRouteURL(context)
 
 			// Ping said URL
-			helper.HttpWaitFor(routeURL, "HTTP Booster", 90, 1)
+			helper.HttpWaitFor(routeURL, "HTTP Booster", 120, 1)
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "sb-jar-test", "-f", "--context", context)
