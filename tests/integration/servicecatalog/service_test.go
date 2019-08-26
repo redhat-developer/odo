@@ -153,7 +153,6 @@ var _ = Describe("odoServiceE2e", func() {
 			stdOut := helper.CmdShouldFail("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
 				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
 				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", serviceName,
-				"--context", context,
 			)
 
 			Expect(stdOut).To(ContainSubstring("The current directory does not represent an odo component"))
