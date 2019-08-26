@@ -82,7 +82,12 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	gox -osarch="darwin/amd64 linux/amd64 windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS) ./cmd/odo/
+	@for platform in darwin linux windows ; do \
+		if [ $$platform == "windows" ]; then \
+		IS_EXE := .exe; \
+		fi \
+		go build -o dist/bin/$$platform-amd64/odo$(IS_EXE) $(BUILD_FLAGS) ./cmd/odo/ \
+	done
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
