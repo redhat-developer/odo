@@ -2,8 +2,8 @@
 
 # this script assumes that runs on linux
 
-BIN_DIR="./dist/bin/"
-RELEASE_DIR="./dist/release/"
+BIN_DIR="./dist/bin"
+RELEASE_DIR="./dist/release"
 
 mkdir -p $RELEASE_DIR
 
@@ -27,11 +27,13 @@ for arch in `ls -1 $BIN_DIR/`;do
         suffix=".exe"
     fi
     source_file=$BIN_DIR/$arch/odo$suffix
+    source_dir=$BIN_DIR/$arch
+    source_filename=odo$suffix
     target_file=$RELEASE_DIR/odo-$arch$suffix
 
-    # Create a gzip of the binary
+    # Create a tar.gz of the binary
     echo "gzipping binary $source_file as $target_file"
-    gzip --keep --to-stdout $source_file > $target_file.gz
+    tar -czvf $target_file.tar.gz --directory=$source_dir $source_filename
 
     # Move binaries to the release directory as well
     echo "copying binary $source_file to release directory"
@@ -42,7 +44,7 @@ function release_sha() {
     echo "generating SHA256_SUM for release packages"
     release_dir_files=`find $RELEASE_DIR -maxdepth 1 ! -name SHA256_SUM -type f -printf "%f\n"`
     for filename in $release_dir_files; do
-        sha_sum=`sha256sum $RELEASE_DIR${filename}|awk '{ print $1 }'`; echo $sha_sum  $filename;
+        sha_sum=`sha256sum $RELEASE_DIR/${filename}|awk '{ print $1 }'`; echo $sha_sum  $filename;
     done > ${RELEASE_DIR}SHA256_SUM
     echo "The SHA256 SUM for the release packages are:"
     cat ${RELEASE_DIR}SHA256_SUM
