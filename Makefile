@@ -69,7 +69,6 @@ clean:
 goget-tools:
 	go get -u github.com/Masterminds/glide
 	# go get -u golang.org/x/lint/golint
-	go get -u github.com/mitchellh/gox
 	go get github.com/frapposelli/wwhrd
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u github.com/securego/gosec/cmd/gosec
