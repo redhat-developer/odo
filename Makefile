@@ -83,11 +83,10 @@ test-coverage:
 .PHONY: cross
 cross:
 	@for platform in linux darwin windows ; do \
+		echo "Cross compiling $$platform-amd64 and placing binary at dist/bin/$$platform-amd64/"; \
 		if [ $$platform == "windows" ]; then \
-			echo "Cross compiling $$platform-amd64 and placing binary at dist/bin/$$platform-amd64/"; \
 			GOARCH=amd64 GOOS=$$platform go build -o dist/bin/$$platform-amd64/odo.exe $(BUILD_FLAGS) ./cmd/odo/; \
 		else \
-			echo "Cross compiling $$platform-amd64 and placing binary at dist/bin/$$platform-amd64/"; \
 			GOARCH=amd64 GOOS=$$platform go build -o dist/bin/$$platform-amd64/odo $(BUILD_FLAGS) ./cmd/odo/; \
 		fi \
 	done
