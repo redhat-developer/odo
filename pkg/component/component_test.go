@@ -147,6 +147,10 @@ func TestGetComponentPorts(t *testing.T) {
 				return true, testingutil.FakeDeploymentConfigs(), nil
 			})
 
+			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
+			})
+
 			// The function we are testing
 			output, err := GetComponentPorts(client, tt.args.componentName, tt.args.applicationName)
 
@@ -213,6 +217,11 @@ func TestGetComponentLinkedSecretNames(t *testing.T) {
 
 			// Fake the client with the appropriate arguments
 			client, fakeClientSet := occlient.FakeNew()
+
+			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
+			})
+
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, testingutil.FakeDeploymentConfigs(), nil
 			})
@@ -381,6 +390,11 @@ func TestList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client, fakeClientSet := occlient.FakeNew()
 			client.Namespace = "test"
+
+			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
+			})
+
 			//fake the dcs
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &tt.dcList, nil

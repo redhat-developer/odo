@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/openshift/odo/pkg/testingutil"
 	"reflect"
 	"testing"
 
@@ -110,6 +111,12 @@ func TestGetMachineReadableFormat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Fake the client with the appropriate arguments
 			client, fakeClientSet := occlient.FakeNew()
+
+			// fake the project
+			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
+			})
+
 			//fake the dcs
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &dcList, nil

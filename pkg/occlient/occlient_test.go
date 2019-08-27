@@ -2471,6 +2471,10 @@ func TestGetDeploymentConfigsFromSelector(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
+			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
+			})
+
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), tt.selector) {
 					return true, nil, fmt.Errorf("labels not matching with expected values, expected:%s, got:%s", tt.selector, action.(ktesting.ListAction).GetListRestrictions())

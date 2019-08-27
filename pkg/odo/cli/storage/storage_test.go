@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/testingutil"
 	"reflect"
 	"testing"
 
@@ -121,6 +122,11 @@ func Test_validateStoragePath(t *testing.T) {
 	labelSelector := "app.kubernetes.io/instance=nodejs,app.kubernetes.io/part-of=app"
 	storageSelector := "app.kubernetes.io/storage-name"
 	client, fakeClientSet := occlient.FakeNew()
+
+	fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
+	})
+
 	fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), labelSelector) {
 			return true, nil, fmt.Errorf("labels not matching with expected values, expected:%s, got:%s", labelSelector, action.(ktesting.ListAction).GetListRestrictions())

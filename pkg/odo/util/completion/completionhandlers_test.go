@@ -344,6 +344,10 @@ func TestLinkCompletionHandler(t *testing.T) {
 		}
 		context := genericclioptions.NewFakeContext("project", "app", tt.component, client)
 
+		fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
+		})
+
 		//fake the services
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
 			return true, &tt.serviceList, nil
@@ -543,6 +547,10 @@ func TestUnlinkCompletionHandler(t *testing.T) {
 		//fake the services
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {
 			return true, &tt.serviceList, nil
+		})
+
+		fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
 		})
 
 		//fake the dcs
