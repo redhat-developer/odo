@@ -73,7 +73,11 @@ var _ = Describe("odo push command tests", func() {
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameOfComp(cmpName, project)
-			stdOut := oc.ExecListDir(podName, project)
+
+			envs := oc.GetEnvs(cmpName, appName, project)
+			dir := fmt.Sprintf("%s/%s", envs["ODO_S2I_SRC_BIN_PATH"], "/src")
+
+			stdOut := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut).To(ContainSubstring(("foobar.txt")))
 			Expect(stdOut).To(ContainSubstring(("testdir")))
 
@@ -83,7 +87,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", context+"/ruby-ex", "-v4")
 
 			// Then check to see if it's truly been deleted
-			stdOut = oc.ExecListDir(podName, project)
+			stdOut = oc.ExecListDir(podName, project, dir)
 			Expect(stdOut).To(Not(ContainSubstring(("foobar.txt"))))
 			Expect(stdOut).To(Not(ContainSubstring(("testdir"))))
 		})
