@@ -207,3 +207,27 @@ You can edit `Environment Variables` faster using search as follows:
 
 . Left click on *Search* and type `env` or `environment`.
 . Select *Edit environment variables for your account* and follow steps 5 and 6 listed above.
+
+==== Uninstalling odo from your system
+
+To uninstall `odo` run the script `installer.sh` which is located in link:https://github.com/openshift/odo[`odo` repository on GitHub].
+
+. Run the script
+
+** If you don't have the scipt locally on your machine:
++
+----
+$ curl -L https://github.com/openshift/odo/raw/master/scripts/installer.sh | bash -s -- --uninstall
+----
+
+** If you have the scipt locally on your machine:
++
+----
+$ sh installer.sh --uninstall
+----
+
+. Delete local `odo` files: 
++
+----
+$ rm -rf ~/.odo
+----
