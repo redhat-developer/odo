@@ -91,7 +91,8 @@ var _ = Describe("odoJavaE2e", func() {
 			helper.CmdShouldPass("odo", "delete", "uberjar-git-test", "-f", "--context", context)
 		})
 
-		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
+		// Uncomment once https://github.com/openshift/odo/issues/2049 is fixed
+		/*It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
 			oc.ImportJavaIsToNspace(project)
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
 
@@ -108,7 +109,7 @@ var _ = Describe("odoJavaE2e", func() {
 
 			// Delete the component
 			helper.CmdShouldPass("odo", "delete", "sb-jar-test", "-f", "--context", context)
-		})
+		})*/
 
 	})
 })
