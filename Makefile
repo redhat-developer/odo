@@ -69,7 +69,6 @@ clean:
 goget-tools:
 	go get -u github.com/Masterminds/glide
 	# go get -u golang.org/x/lint/golint
-	go get -u github.com/mitchellh/gox
 	go get github.com/frapposelli/wwhrd
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u github.com/securego/gosec/cmd/gosec
@@ -82,7 +81,14 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	gox -osarch="darwin/amd64 linux/amd64 windows/amd64" -output="dist/bin/{{.OS}}-{{.Arch}}/odo" $(BUILD_FLAGS) ./cmd/odo/
+	@for platform in linux darwin windows ; do \
+		echo "Cross compiling $$platform-amd64 and placing binary at dist/bin/$$platform-amd64/"; \
+		if [ $$platform == "windows" ]; then \
+			GOARCH=amd64 GOOS=$$platform go build -o dist/bin/$$platform-amd64/odo.exe $(BUILD_FLAGS) ./cmd/odo/; \
+		else \
+			GOARCH=amd64 GOOS=$$platform go build -o dist/bin/$$platform-amd64/odo $(BUILD_FLAGS) ./cmd/odo/; \
+		fi \
+	done
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
