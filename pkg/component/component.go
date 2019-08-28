@@ -663,6 +663,10 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 	targetPath := fmt.Sprintf("%s/src", s2iSrcPath)
 
+	// Sync the files to the pod
+	s := log.Spinner("Syncing files to the component")
+	defer s.End(false)
+
 	// If there are files identified as deleted, propagate them to the component pod
 	if len(delFiles) > 0 {
 		glog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
@@ -683,13 +687,11 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		}
 	}
 
-	// Copy the files to the pod
-	s := log.Spinner("Copying files to component")
-	defer s.End(false)
-
 	if !isForcePush {
 		if len(files) == 0 && len(delFiles) == 0 {
-			return fmt.Errorf("pass files modifications/deletions to sync to component pod or force push")
+			// nothing to push
+			s.End(true)
+			return nil
 		}
 	}
 

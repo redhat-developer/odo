@@ -186,6 +186,70 @@ var _ = Describe("odo push command tests", func() {
 			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex", "-f")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 		})
+
+		It("should push only the modified files", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+
+			earlierCatServerFile := ""
+			oc.CheckCmdOpInRemoteCmpPod(
+				cmpName,
+				appName,
+				project,
+				[]string{"stat", "/tmp/src/server.js"},
+				func(cmdOp string, err error) bool {
+					earlierCatServerFile = cmdOp
+					return true
+				},
+			)
+
+			earlierCatViewFile := ""
+			oc.CheckCmdOpInRemoteCmpPod(
+				cmpName,
+				appName,
+				project,
+				[]string{"stat", "/tmp/src/views/index.html"},
+				func(cmdOp string, err error) bool {
+					earlierCatViewFile = cmdOp
+					return true
+				},
+			)
+
+			url := oc.GetFirstURL(cmpName, appName, project)
+			helper.ReplaceString(filepath.Join(context+"/nodejs-ex"+"/views/index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
+			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+
+			modifiedCatViewFile := ""
+			oc.CheckCmdOpInRemoteCmpPod(
+				cmpName,
+				appName,
+				project,
+				[]string{"stat", "/tmp/src/views/index.html"},
+				func(cmdOp string, err error) bool {
+					modifiedCatViewFile = cmdOp
+					return true
+				},
+			)
+
+			modifiedCatServerFile := ""
+			oc.CheckCmdOpInRemoteCmpPod(
+				cmpName,
+				appName,
+				project,
+				[]string{"stat", "/tmp/src/server.js"},
+				func(cmdOp string, err error) bool {
+					modifiedCatServerFile = cmdOp
+					return true
+				},
+			)
+
+			Expect(modifiedCatViewFile).NotTo(Equal(earlierCatViewFile))
+			Expect(modifiedCatServerFile).To(Equal(earlierCatServerFile))
+
+			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
+		})
 	})
 
 	Context("when .odoignore file exists", func() {

@@ -55,11 +55,11 @@ func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 	}
 }
 
-func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) (bool, error) {
+func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {
 	if !cpo.pushConfig {
 		// Not the case of component creation or updation(with new config)
 		// So nothing to do here and hence return from here
-		return false, nil
+		return nil
 	}
 
 	cmpName := cpo.localConfigInfo.GetName()
@@ -92,7 +92,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
 
-	return cpo.isCmpExists, nil
+	return nil
 }
 
 // ResolveProject completes the push options as needed
@@ -140,6 +140,8 @@ func (cpo *CommonPushOptions) SetSourceInfo() (err error) {
 func (cpo *CommonPushOptions) Push() (err error) {
 
 	deletedFiles := []string{}
+	changedFiles := []string{}
+	isForcePush := false
 
 	stdout := color.Output
 
@@ -150,7 +152,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		cpo.componentContext = strings.Trim(filepath.Dir(cpo.localConfigInfo.Filename), ".odo")
 	}
 
-	cmpExists, err := cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)
+	err = cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)
 	if err != nil {
 		return
 	}
@@ -167,7 +169,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 		spinner := log.NewStatus(log.GetStdout())
 		defer spinner.End(true)
-		if cmpExists {
+		if cpo.isCmpExists {
 			spinner.Start("Checking file changes for pushing", false)
 		} else {
 			// if the component doesn't exist, we don't check for changes in the files
@@ -183,7 +185,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			return err
 		}
 
-		if cmpExists {
+		if cpo.isCmpExists {
 			// apply the glob rules from the .gitignore/.odo file
 			// and ignore the files on which the rules apply and filter them out
 			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
@@ -195,6 +197,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 				return err
 			}
 			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+			changedFiles = filesChangedFiltered
 
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
 				// no file was modified/added/deleted/renamed, thus return without building
@@ -202,6 +205,10 @@ func (cpo *CommonPushOptions) Push() (err error) {
 				return nil
 			}
 		}
+	}
+
+	if cpo.forceBuild || !cpo.isCmpExists {
+		isForcePush = true
 	}
 
 	// Get SourceLocation here...
@@ -219,9 +226,9 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			appName,
 			cpo.sourcePath,
 			os.Stdout,
-			[]string{},
+			changedFiles,
 			deletedFiles,
-			true,
+			isForcePush,
 			util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores),
 			cpo.show,
 		)
@@ -244,7 +251,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			os.Stdout,
 			[]string{cpo.sourcePath},
 			deletedFiles,
-			true,
+			isForcePush,
 			util.GetAbsGlobExps(cpo.sourcePath, cpo.ignores),
 			cpo.show,
 		)
