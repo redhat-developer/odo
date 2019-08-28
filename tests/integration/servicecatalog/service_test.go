@@ -147,17 +147,6 @@ var _ = Describe("odoServiceE2e", func() {
 			Expect(stdOut).To(ContainSubstring(serviceName))
 		})
 
-		It("should fail to create a service when given directory doesn't contain a context", func() {
-			// cd to the originalDir to create service using --context
-			helper.Chdir(originalDir)
-			stdOut := helper.CmdShouldFail("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
-				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
-				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", serviceName,
-			)
-
-			Expect(stdOut).To(ContainSubstring("The current directory does not represent an odo component"))
-		})
-
 		It("should be able to list services in a given app and project combination", func() {
 			// create a component by copying the example
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
