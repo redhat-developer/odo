@@ -226,7 +226,7 @@ $ curl -L https://github.com/openshift/odo/raw/master/scripts/installer.sh | bas
 $ sh installer.sh --uninstall
 ----
 
-. Delete local `odo` files: 
+. Delete local configuration and preference files from your home directory: 
 +
 ----
 $ rm -rf ~/.odo
