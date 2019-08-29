@@ -61,22 +61,32 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
-	// this to set the project in the file and runtime
+
+	// This to set the project in the file and runtime
 	err = project.SetCurrent(pdo.Context.Client, pdo.projectName)
 	if err != nil {
 		return
 	}
+
+	// Prints out what will be deleted
 	err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
 	if err != nil {
 		return err
 	}
-	if pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+
+	if log.IsJSON() || (pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName))) {
+		successMessage := fmt.Sprintf("Deleted project : %v", pdo.projectName)
+
 		err := project.Delete(pdo.Context.Client, pdo.projectName)
 		if err != nil {
 			return err
 		}
 
-		log.Infof("Deleted project : %v", pdo.projectName)
+		if log.IsJSON() {
+			project.MachineReadableSuccessOutput(pdo.projectName, successMessage)
+		} else {
+			log.Success(successMessage)
+		}
 		return nil
 	}
 
