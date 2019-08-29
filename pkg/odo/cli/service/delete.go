@@ -2,8 +2,9 @@ package service
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"strings"
+
+	"github.com/openshift/odo/pkg/odo/cli/ui"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/log"
@@ -30,6 +31,8 @@ type ServiceDeleteOptions struct {
 	serviceForceDeleteFlag bool
 	serviceName            string
 	*genericclioptions.Context
+	// Context to use when listing service. This will use app and project values from the context
+	componentContext string
 }
 
 // NewServiceDeleteOptions creates a new ServiceDeleteOptions instance
@@ -86,6 +89,7 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 		},
 	}
 	serviceDeleteCmd.Flags().BoolVarP(&o.serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
+	genericclioptions.AddContextFlag(serviceDeleteCmd, &o.componentContext)
 	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 	return serviceDeleteCmd
 }

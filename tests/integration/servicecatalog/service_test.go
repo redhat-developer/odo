@@ -17,6 +17,7 @@ var _ = Describe("odoServiceE2e", func() {
 	var project string
 	var context string
 	var app string
+	var serviceName string
 
 	//  current directory and project (before eny test is run) so it can restored  after all testing is done
 	var originalDir string
@@ -104,17 +105,48 @@ var _ = Describe("odoServiceE2e", func() {
 
 	Context("When working from outside a component dir", func() {
 		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
 			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
 			app = helper.RandString(7)
+			serviceName = "odo-postgres-service"
 			originalDir = helper.Getwd()
 			helper.Chdir(context)
+			SetDefaultConsistentlyDuration(30 * time.Second)
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
 			helper.DeleteDir(context)
 			helper.Chdir(originalDir)
+			os.Unsetenv("GLOBALODOCONFIG")
 		})
+
+		It("should be able to create, list and delete a service using a given value for --context", func() {
+			// create a component by copying the example
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			helper.CmdShouldPass("odo", "create", "python", "--app", app, "--project", project)
+
+			// cd to the originalDir to create service using --context
+			helper.Chdir(originalDir)
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--plan", "dev",
+				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", serviceName,
+				"--context", context,
+			)
+
+			// now check if listing the service using --context works
+			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, serviceName)
+			})
+			stdOut := helper.CmdShouldPass("odo", "service", "list", "--context", context)
+			Expect(stdOut).To(ContainSubstring(serviceName))
+
+			// now check if deleting the service using --context works
+			stdOut = helper.CmdShouldPass("odo", "service", "delete", "-f", serviceName, "--context", context)
+			Expect(stdOut).To(ContainSubstring(serviceName))
+		})
+
 		It("should be able to list services in a given app and project combination", func() {
 			// create a component by copying the example
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
