@@ -9,12 +9,14 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/catalog"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/config"
+	"github.com/openshift/odo/pkg/odo/cli/experimental"
 	"github.com/openshift/odo/pkg/odo/cli/login"
 	"github.com/openshift/odo/pkg/odo/cli/logout"
 	"github.com/openshift/odo/pkg/odo/cli/preference"
 	"github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/cli/service"
 	"github.com/openshift/odo/pkg/odo/cli/storage"
+
 	"github.com/openshift/odo/pkg/odo/cli/url"
 	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/cli/version"
@@ -133,6 +135,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
 		config.NewCmdConfiguration(config.RecommendedCommandName, util.GetFullName(fullName, config.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
+		experimental.NewCmdExperimental(experimental.RecommendedCommandName, util.GetFullName(fullName, experimental.RecommendedCommandName)),
 	)
 
 	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
