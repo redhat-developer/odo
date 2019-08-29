@@ -871,31 +871,42 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	}
 
-	// retrieve all the deployment configs that are associated with this application
-	dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+	project, err := client.GetProject(client.Namespace)
 	if err != nil {
-		return ComponentList{}, errors.Wrapf(err, "unable to list components")
+		return ComponentList{}, err
 	}
 
 	var components []Component
 
-	// extract the labels we care about from each component
-	for _, elem := range dcList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+	if project != nil {
+		// retrieve all the deployment configs that are associated with this application
+		dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
 		if err != nil {
-			return ComponentList{}, errors.Wrap(err, "Unable to get component")
+			return ComponentList{}, errors.Wrapf(err, "unable to list components")
 		}
-		component.Status.State = "Pushed"
-		components = append(components, component)
 
+		// extract the labels we care about from each component
+		for _, elem := range dcList {
+			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+			if err != nil {
+				return ComponentList{}, errors.Wrap(err, "Unable to get component")
+			}
+			component.Status.State = "Pushed"
+			components = append(components, component)
+
+		}
 	}
 
 	if len(components) == 0 {
-		component, err := GetComponentFromConfig(applicationName)
+		localConfig, err := config.New()
 		if err != nil {
 			return ComponentList{}, err
 		}
-		if component.Name == "" {
+		component, err := GetComponentFromConfig(*localConfig)
+		if err != nil {
+			return ComponentList{}, err
+		}
+		if component.Name == "" || component.Spec.App != applicationName {
 			return ComponentList{}, nil
 		}
 		components = append(components, component)
@@ -906,12 +917,8 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 }
 
 // GetComponentFromConfig returns the component on the config if it exists
-func GetComponentFromConfig(applicationName string) (Component, error) {
-	localConfig, err := config.New()
-	if err != nil {
-		return Component{}, nil
-	}
-	if localConfig.ConfigFileExists() && localConfig.GetApplication() == applicationName {
+func GetComponentFromConfig(localConfig config.LocalConfigInfo) (Component, error) {
+	if localConfig.ConfigFileExists() {
 		component := getMachineReadableFormat(localConfig.GetName(), localConfig.GetType())
 
 		component.Spec = ComponentSpec{
@@ -923,6 +930,10 @@ func GetComponentFromConfig(applicationName string) (Component, error) {
 
 		component.Status = ComponentStatus{
 			State: "Not Pushed",
+		}
+
+		for _, localURL := range localConfig.GetUrl() {
+			component.Spec.URL = append(component.Spec.URL, localURL.Name)
 		}
 
 		for _, localEnv := range localConfig.GetEnvVars() {

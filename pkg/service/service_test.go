@@ -431,10 +431,6 @@ func TestListWithDetailedStatus(t *testing.T) {
 			return true, &tt.dcList, nil
 		})
 
-		fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-			return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
-		})
-
 		svcInstanceList, _ := ListWithDetailedStatus(client, "app")
 
 		if !reflect.DeepEqual(tt.output, svcInstanceList) {
@@ -562,10 +558,6 @@ func TestDeleteServiceAndUnlinkComponents(t *testing.T) {
 
 	for _, tt := range tests {
 		client, fakeClientSet := occlient.FakeNew()
-
-		fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-			return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
-		})
 
 		//fake the services listing
 		fakeClientSet.ServiceCatalogClientSet.PrependReactor("list", "serviceinstances", func(action ktesting.Action) (bool, runtime.Object, error) {

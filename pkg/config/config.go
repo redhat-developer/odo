@@ -29,7 +29,7 @@ type ComponentStorageSettings struct {
 	Path string `yaml:"Path,omitempty"`
 }
 
-// ComponentSettings holds all component related information
+// componentSettings holds all component related information
 type ComponentSettings struct {
 	// The builder image to use
 	Type *string `yaml:"Type,omitempty"`
@@ -476,6 +476,14 @@ func (lc *LocalConfig) GetStorage() []ComponentStorageSettings {
 		return []ComponentStorageSettings{}
 	}
 	return *lc.componentSettings.Storage
+}
+
+// GetEnvs returns the Envs, returns empty if nil
+func (lc *LocalConfig) GetEnvs() EnvVarList {
+	if lc.componentSettings.Envs == nil {
+		return EnvVarList{}
+	}
+	return lc.componentSettings.Envs
 }
 
 const (

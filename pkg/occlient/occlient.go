@@ -2607,14 +2607,6 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 	var dcList *appsv1.DeploymentConfigList
 	var err error
 
-	project, err := c.GetProject(c.Namespace)
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, nil
-	}
-
 	if selector != "" {
 		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
 			LabelSelector: selector,

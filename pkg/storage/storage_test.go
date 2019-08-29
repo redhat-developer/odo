@@ -449,10 +449,6 @@ func TestList(t *testing.T) {
 
 			dcTesting := testingutil.OneFakeDeploymentConfigWithMounts(tt.args.componentName, tt.componentType, tt.args.applicationName, tt.mountedMap)
 
-			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
-			})
-
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &v1.DeploymentConfigList{
 					Items: []v1.DeploymentConfig{
@@ -552,10 +548,6 @@ func TestListMounted(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := occlient.FakeNew()
-
-			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
-			})
 
 			dcTesting := testingutil.OneFakeDeploymentConfigWithMounts(tt.args.componentName, tt.componentType, tt.args.applicationName, tt.mountedMap)
 
@@ -771,10 +763,6 @@ func TestPush(t *testing.T) {
 			fakeClient, fakeClientSet := occlient.FakeNew()
 
 			dcTesting := testingutil.OneFakeDeploymentConfigWithMounts(tt.args.componentName, tt.componentType, tt.args.applicationName, tt.dcMountedMap)
-
-			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
-			})
 
 			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &v1.DeploymentConfigList{
