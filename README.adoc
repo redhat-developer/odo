@@ -12,7 +12,7 @@ toc::[]
 https://github.com/openshift/odo/releases/latest[image:https://img.shields.io/github/v/release/openshift/odo?style=for-the-badge[GitHub release]]
 https://travis-ci.com/openshift/odo[image:https://img.shields.io/travis/com/openshift/odo?style=for-the-badge[Build Status]]
 image:https://img.shields.io/github/license/openshift/odo?style=for-the-badge[License]
-
+https://coreos.slack.com/messages/CHS495NE9[image:https://img.shields.io/badge/Slack-Join%20Chat-yellowgreen?style=for-the-badge&logo=slack[Slack]]
 
 [[overview]]
 == Overview
@@ -161,6 +161,8 @@ Guide]
 
 *Contributing:* Want to become a contributor and submit your own code?
 Have a look at our link:https://github.com/openshift/odo/blob/master/docs/development.adoc[Development Guide].
+
+*Chat*: Join us in our link:https://coreos.slack.com/messages/CHS495NE9[Slack] channel
 
 [[projects-using-odo]]
 == Projects using odo
