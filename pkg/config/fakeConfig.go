@@ -1,8 +1,6 @@
 package config
 
-func GetOneExistingConfigInfo() LocalConfigInfo {
-	componentName := "comp-test-name"
-	applicationName := "app-test-name"
+func GetOneExistingConfigInfo(componentName, applicationName, projectName string) LocalConfigInfo {
 	componentType := "nodejs"
 	sourceLocation := "github.com/example"
 
@@ -43,6 +41,7 @@ func GetOneExistingConfigInfo() LocalConfigInfo {
 				Envs:           envVars,
 				Ports:          &portsValue,
 				Url:            &urlValue,
+				Project:        &projectName,
 			},
 		},
 	}

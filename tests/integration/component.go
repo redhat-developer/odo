@@ -126,6 +126,26 @@ func componentTests(args ...string) {
 			Expect(cmpList).To(ContainSubstring("Not Pushed"))
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
+
+		It("should list the component in the same app when one is pushed and the other one is not pushed", func() {
+			helper.Chdir(originalDir)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+
+			context2 := helper.CreateNewContext()
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git-2", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context2, "--app", "testing")...)
+
+			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context2)...)
+
+			Expect(cmpList).To(ContainSubstring("cmp-git"))
+			Expect(cmpList).To(ContainSubstring("cmp-git-2"))
+			Expect(cmpList).To(ContainSubstring("Not Pushed"))
+			Expect(cmpList).To(ContainSubstring("Pushed"))
+
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context2)...)
+			helper.DeleteDir(context2)
+		})
 	})
 
 	Context("Test odo push with --source and --config flags", func() {

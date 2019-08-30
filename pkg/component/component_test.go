@@ -243,12 +243,17 @@ func TestGetComponentLinkedSecretNames(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
+	componentConfig, err := GetComponentFromConfig(GetOneExistingConfigInfo("comp", "app", "test"))
+	if err != nil {
+		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
+	}
 	tests := []struct {
-		name          string
-		dcList        appsv1.DeploymentConfigList
-		projectExists bool
-		wantErr       bool
-		output        ComponentList
+		name                    string
+		dcList                  appsv1.DeploymentConfigList
+		projectExists           bool
+		wantErr                 bool
+		existingLocalConfigInfo LocalConfigInfo
+		output                  ComponentList
 	}{
 		{
 			name: "Case 1: Components are returned",
@@ -385,15 +390,147 @@ func TestList(t *testing.T) {
 			name:          "Case 2: projects doesn't exist",
 			wantErr:       false,
 			projectExists: false,
-			output:        ComponentList{},
+			output:        GetMachineReadableFormatForList([]Component{}),
 		},
 		{
 			name:          "Case 3: no component and no config exists",
 			wantErr:       false,
 			projectExists: true,
-			output:        ComponentList{},
+			output:        GetMachineReadableFormatForList([]Component{}),
 		},
-		// TODO write a test with existing config
+		{
+			name: "Case 4: Components are returned from the config plus and cluster",
+			dcList: appsv1.DeploymentConfigList{
+				Items: []appsv1.DeploymentConfig{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "frontend-app",
+							Namespace: "test",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "frontend",
+								componentlabels.ComponentTypeLabel: "nodejs",
+							},
+							Annotations: map[string]string{
+								ComponentSourceTypeAnnotation: "local",
+							},
+						},
+						Spec: appsv1.DeploymentConfigSpec{
+							Template: &corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name: "dummyContainer",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "backend-app",
+							Namespace: "project-testing",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "app",
+								componentlabels.ComponentLabel:     "backend",
+								componentlabels.ComponentTypeLabel: "java",
+							},
+							Annotations: map[string]string{
+								ComponentSourceTypeAnnotation: "local",
+							},
+						},
+						Spec: appsv1.DeploymentConfigSpec{
+							Template: &corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name: "dummyContainer",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-otherApp",
+							Namespace: "test",
+							Labels: map[string]string{
+								applabels.ApplicationLabel:         "otherApp",
+								componentlabels.ComponentLabel:     "test",
+								componentlabels.ComponentTypeLabel: "python",
+							},
+							Annotations: map[string]string{
+								ComponentSourceTypeAnnotation: "local",
+							},
+						},
+						Spec: appsv1.DeploymentConfigSpec{
+							Template: &corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name: "dummyContainer",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr:                 false,
+			projectExists:           true,
+			existingLocalConfigInfo: config.GetOneExistingConfigInfo("comp", "app", "test"),
+			output: ComponentList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.openshift.io/v1alpha1",
+				},
+				ListMeta: metav1.ListMeta{},
+				Items: []Component{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.openshift.io/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "frontend",
+							Namespace: "test",
+						},
+						Spec: ComponentSpec{
+							Type: "nodejs",
+							App:  "app",
+						},
+						Status: ComponentStatus{
+							State:            "Pushed",
+							LinkedServices:   []string{},
+							LinkedComponents: map[string][]string{},
+						},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.openshift.io/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "backend",
+							Namespace: "test",
+						},
+						Spec: ComponentSpec{
+							Type: "java",
+							App:  "app",
+						},
+						Status: ComponentStatus{
+							State:            "Pushed",
+							LinkedServices:   []string{},
+							LinkedComponents: map[string][]string{},
+						},
+					},
+					componentConfig,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -419,7 +556,7 @@ func TestList(t *testing.T) {
 				})
 			}
 
-			results, err := List(client, "app")
+			results, err := List(client, "app", tt.existingLocalConfigInfo)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
@@ -709,7 +846,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 	defer tempConfigFile.Close()
 	os.Setenv("LOCALODOCONFIG", tempConfigFile.Name())
 
-	localExistingConfigInfoValue := config.GetOneExistingConfigInfo()
+	localExistingConfigInfoValue := config.GetOneExistingConfigInfo("comp", "app", "project")
 	localNonExistingConfigInfoValue := config.GetOneNonExistingConfigInfo()
 
 	tests := []struct {

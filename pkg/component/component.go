@@ -864,7 +864,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
-func List(client *occlient.Client, applicationName string) (ComponentList, error) {
+func List(client *occlient.Client, applicationName string, localConfigInfo ...config.LocalConfigInfo) (ComponentList, error) {
 
 	var applicationSelector string
 	if applicationName != "" {
@@ -877,6 +877,7 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 	}
 
 	var components []Component
+	componentNamesMap := make(map[string]bool)
 
 	if project != nil {
 		// retrieve all the deployment configs that are associated with this application
@@ -893,23 +894,25 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 			}
 			component.Status.State = "Pushed"
 			components = append(components, component)
-
+			componentNamesMap[component.Name] = true
 		}
 	}
 
-	if len(components) == 0 {
-		localConfig, err := config.New()
+	if len(localConfigInfo) == 1 {
+		component, err := GetComponentFromConfig(localConfigInfo[0])
 		if err != nil {
-			return ComponentList{}, err
+			return GetMachineReadableFormatForList(components), err
 		}
-		component, err := GetComponentFromConfig(*localConfig)
-		if err != nil {
-			return ComponentList{}, err
+		_, ok := componentNamesMap[component.Name]
+		if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
+			components = append(components, component)
 		}
-		if component.Name == "" || component.Spec.App != applicationName {
-			return ComponentList{}, nil
+
+		if len(components) == 0 {
+			return GetMachineReadableFormatForList(components), nil
 		}
-		components = append(components, component)
+	} else if len(localConfigInfo) >= 2 {
+		return GetMachineReadableFormatForList(components), errors.New("only one config accepted")
 	}
 
 	compoList := GetMachineReadableFormatForList(components)
@@ -920,6 +923,8 @@ func List(client *occlient.Client, applicationName string) (ComponentList, error
 func GetComponentFromConfig(localConfig config.LocalConfigInfo) (Component, error) {
 	if localConfig.ConfigFileExists() {
 		component := getMachineReadableFormat(localConfig.GetName(), localConfig.GetType())
+
+		component.Namespace = localConfig.GetProject()
 
 		component.Spec = ComponentSpec{
 			App:    localConfig.GetApplication(),
