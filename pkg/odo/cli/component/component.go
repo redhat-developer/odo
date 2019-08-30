@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/storage"
 
 	"github.com/openshift/odo/pkg/component"
@@ -93,7 +94,7 @@ func printDeleteComponentInfo(client *occlient.Client, componentName string, app
 
 	if len(componentDesc.Spec.URL) != 0 {
 		log.Info("This component has following urls that will be deleted with component")
-		ul, err := url.List(client, componentDesc.Name, appName)
+		ul, err := url.ListPushed(client, componentDesc.Name, appName)
 		if err != nil {
 			return errors.Wrap(err, "Could not get url list")
 		}

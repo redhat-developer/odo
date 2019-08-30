@@ -6,14 +6,14 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/machineoutput"
-
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
 	urlPkg "github.com/openshift/odo/pkg/url"
+
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -101,7 +101,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	// URL
 	if componentDesc.Spec.URL != nil {
 		fmt.Println("\nURLs")
-		urls, err := urlPkg.List(client, currentComponentName, applicationName)
+		urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
 		LogErrorAndExit(err, "")
 		for _, componentURL := range componentDesc.Spec.URL {
 			url := urls.Get(componentURL)

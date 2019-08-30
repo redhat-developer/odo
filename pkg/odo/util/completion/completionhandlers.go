@@ -2,8 +2,9 @@ package completion
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/config"
 	"strings"
+
+	"github.com/openshift/odo/pkg/config"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/application"
@@ -187,7 +188,7 @@ var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	urls, err := url.List(context.Client, context.Component(), context.Application)
+	urls, err := url.ListPushed(context.Client, context.Component(), context.Application)
 	if err != nil {
 		return completions
 	}

@@ -47,16 +47,19 @@ var _ = Describe("odoURLIntegration", func() {
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			stdout = helper.CmdShouldFail("odo", "url", "list", "--context", context)
 			Expect(stdout).To(ContainSubstring("no URLs found"))
+
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "<not created on cluster>", "Present", "create URLs", "odo push"})
+			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
+
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Present"})
-			helper.DontMatchAllInOutput(stdout, []string{"<not created on cluster>", "odo push"})
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
+			helper.DontMatchAllInOutput(stdout, []string{"Not Pushed", "odo push"})
+
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f", "--context", context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Absent", "delete URLs", "odo push"})
+			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", url1, "odo push"})
 
 			// Uncomment once https://github.com/openshift/odo/issues/1832 is fixed
 

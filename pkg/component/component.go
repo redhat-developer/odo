@@ -565,7 +565,7 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 // ApplyConfigDeleteURL applies url config deletion onto component
 func applyConfigDeleteURL(client *occlient.Client, componentConfig config.LocalConfigInfo) (err error) {
 
-	urlList, err := urlpkg.List(client, componentConfig.GetName(), componentConfig.GetApplication())
+	urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
 	if err != nil {
 		return err
 	}
@@ -1232,7 +1232,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 		return component, errors.Wrap(err, "unable to get source path")
 	}
 	// URL
-	urlList, err := urlpkg.List(client, componentName, applicationName)
+	urlList, err := urlpkg.ListPushed(client, componentName, applicationName)
 	if err != nil {
 		return component, errors.Wrap(err, "unable to get url list")
 	}
@@ -1387,7 +1387,7 @@ func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageLi
 // to the URLs when deploying and returns a true / false
 func checkIfURLChangesWillBeMade(client *occlient.Client, componentConfig config.LocalConfigInfo) (bool, error) {
 
-	urlList, err := urlpkg.List(client, componentConfig.GetName(), componentConfig.GetApplication())
+	urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
 	if err != nil {
 		return false, err
 	}
