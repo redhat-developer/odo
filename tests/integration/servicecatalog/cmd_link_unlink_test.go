@@ -210,7 +210,7 @@ var _ = Describe("odoLinkE2e", func() {
 			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_PORT"))
 
 			// first create a service
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--plan", "dev",
+			helper.CmdShouldPass("odo", "service", "create", "-w", "dh-postgresql-apb", "--project", project, "--plan", "dev",
 				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
 				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
 			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
