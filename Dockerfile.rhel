@@ -6,12 +6,9 @@ FROM registry.svc.ci.openshift.org/openshift/release:golang-1.11 AS builder
 
 COPY . /go/src/github.com/openshift/odo
 WORKDIR /go/src/github.com/openshift/odo
-RUN go get github.com/mitchellh/gox &&\
-    make cross
+RUN make cross
 
-# For local testing use registry image registry.access.redhat.com/ubi7/ubi instead of
-# registry.svc.ci.openshift.org/ocp/4.2:cli
-FROM registry.svc.ci.openshift.org/ocp/4.2:cli
+FROM registry.access.redhat.com/ubi7/ubi
 LABEL com.redhat.component=atomic-openshift-odo-cli-artifacts
 
 COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/darwin-amd64/odo /usr/share/openshift/odo/mac/odo
