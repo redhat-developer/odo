@@ -128,6 +128,8 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 			o.ServiceName = args[1]
 		}
 
+		// we convert the param list provided in the format of key=value list
+		// to a map
 		o.ParametersMap = make(map[string]string)
 		for _, kv := range o.parameters {
 			kvSlice := strings.Split(kv, "=")

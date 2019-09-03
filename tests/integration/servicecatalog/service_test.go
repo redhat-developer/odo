@@ -58,6 +58,20 @@ var _ = Describe("odoServiceE2e", func() {
 			// Delete the service
 			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f", "--app", app, "--project", project)
 		})
+
+		It("should be able to create postgresql with env multiple times", func() {
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--app", app,
+				"--plan", "dev", "-p", "postgresql_user=lukecage", "-p", "postgresql_user=testworker", "-p", "postgresql_password=secret",
+				"-p", "postgresql_password=universe", "-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
+			// there is only a single pod in the project
+			ocArgs := []string{"describe", "pod", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "testworker")
+			})
+
+			// Delete the service
+			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f", "--app", app, "--project", project)
+		})
 	})
 
 	Context("When creating with a spring boot application", func() {
