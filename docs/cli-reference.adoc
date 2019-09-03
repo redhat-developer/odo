@@ -1,4 +1,4 @@
-= Overview of the odo (OpenShift Do) CLI Structure
+= Overview of the Odo (OpenShift Do) CLI Structure
 
 ___________________
 Example application
@@ -156,9 +156,9 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --o --skip-conn
         set --short : Set the current active project
     push --config --context --force-build --ignore --show-log --source : Push source code to a component
     service : Perform service catalog operations (create, delete, list)
-        create --app --parameters --plan --project --wait : Create a new service from service catalog using the plan defined and deploy it on OpenShift.
-        delete --app --force --project : Delete an existing service
-        list --app --project : List all services in the current application
+        create --app --context --parameters --plan --project --wait : Create a new service from service catalog using the plan defined and deploy it on OpenShift.
+        delete --app --context --force --project : Delete an existing service
+        list --app --context --project : List all services in the current application
     storage : Perform storage operations (create, delete, list)
         create --app --component --context --path --project --size : Create storage and mount to a component
         delete --app --component --context --force --project : Delete storage from component
@@ -629,17 +629,11 @@ _________________
 
 Modifies odo specific configuration settings within the global preference file. 
 
-[NOTE]
-====
-By default the path to the global preference file is `~/.odo/preferece.yaml`, it is stored in in the environment variable `GLOBALODOCONFIG`. You can set up a custom path by setting the value of the environment variable to a new preference path, for example `GLOBALODOCONFIG="new_path/preference.yaml"`
-
-Run `echo "$GLOBALODOCONFIG"` to display the current value of the variable. 
-====
 
 Available Parameters:
-NamePrefix - Default prefix is the current directory name. Use this value to set a default name prefix
-Timeout - Timeout (in seconds) for OpenShift server connection check
-UpdateNotification - Controls if an update notification is shown or not (true or false)
+NamePrefix - Use this value to set a default name prefix (Default: current directory name)
+Timeout - Timeout (in seconds) for OpenShift server connection check (Default: 1)
+UpdateNotification - Flag to control if an update notification is shown or not (Default: true)
 
 
 [[project]]
@@ -840,14 +834,14 @@ _________________
 
 [source,sh]
 ----
+  # Create a URL with a specific name by automatically detecting the port used by the component
+  odo url create example
+  
   # Create a URL for the current component with a specific port
   odo url create --port 8080
   
   # Create a URL with a specific name and port
   odo url create example --port 8080
-  
-  # Create a URL with a specific name by automatic detection of port (only for components which expose only one service port)
-  odo url create example
   
   # Create a URL with a specific name and port for component frontend
   odo url create example --port 8080 --component frontend
