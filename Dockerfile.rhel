@@ -1,6 +1,5 @@
-# This Dockerfile is used by CI to publish odo binary artifacts.
-# It builds an image containing the Mac, Win and Linux version of odo binary on the
-# OpenShift golang image.
+# This Dockerfile builds an image containing the Linux, Mac and Windows version of odo
+# layered on top of the ubi7/ubi image.
 
 FROM registry.svc.ci.openshift.org/openshift/release:golang-1.11 AS builder
 
