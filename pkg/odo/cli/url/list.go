@@ -83,30 +83,6 @@ func (o *URLListOptions) Run() (err error) {
 			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
 			if u.Status.State != url.StateTypePushed {
 				outOfSync = true
-			// Now reverse, check urls not in config and print their information
-			// Hence need to be deleted
-			for _, u := range urls.Items {
-				// Search if url is present in local config
-				var found bool
-				for _, i := range localUrls {
-					if i.Name == u.Name {
-						found = true
-						break
-					}
-				}
-				// If not found then we need to print its info but say its not in config
-				if !found {
-					dm = true
-					fmt.Fprintln(tabWriterURL, u.Name, "\t", "Absent", "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
-				}
-			}
-			tabWriterURL.Flush()
-			if cm && dm {
-				fmt.Print(printtemplates.PushMessage("create/delete", "URLs", false))
-			} else if cm {
-				fmt.Print(printtemplates.PushMessage("create", "URLs", false))
-			} else if dm {
-				fmt.Print(printtemplates.PushMessage("delete", "URLs", false))
 			}
 		}
 		tabWriterURL.Flush()

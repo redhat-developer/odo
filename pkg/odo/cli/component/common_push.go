@@ -75,7 +75,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	defer s.End(false)
 	isCmpExists, err := component.Exists(cpo.Context.Client, cmpName, appName)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
+		return errors.Wrapf(err, "failed to check if component %s exists or not", cmpName)
 	}
 	s.End(true)
 
