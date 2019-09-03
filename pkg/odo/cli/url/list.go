@@ -73,7 +73,6 @@ func (o *URLListOptions) Run() (err error) {
 			return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
 		}
 
-<<<<<<< HEAD
 		log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
 		tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
@@ -84,7 +83,6 @@ func (o *URLListOptions) Run() (err error) {
 			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host), "\t", u.Spec.Port)
 			if u.Status.State != url.StateTypePushed {
 				outOfSync = true
-=======
 			// Now reverse, check urls not in config and print their information
 			// Hence need to be deleted
 			for _, u := range urls.Items {
@@ -109,7 +107,6 @@ func (o *URLListOptions) Run() (err error) {
 				fmt.Print(printtemplates.PushMessage("create", "URLs", false))
 			} else if dm {
 				fmt.Print(printtemplates.PushMessage("delete", "URLs", false))
->>>>>>> Adding now flag to url operations and config set
 			}
 		}
 		tabWriterURL.Flush()
