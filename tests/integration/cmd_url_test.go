@@ -1,8 +1,10 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -24,7 +26,6 @@ var _ = Describe("odo url command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
-		helper.CopyExample(filepath.Join("source", "nodejs"), context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()
 	})
@@ -70,6 +71,29 @@ var _ = Describe("odo url command tests", func() {
 			// stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
 			// helper.MatchAllInOutput(stdout, []string{url2, "Present"})
 			// helper.DontMatchAllInOutput(stdout, []string{url1, "Absent", "odo push"})
+		})
+	})
+
+	Context("when listing urls using -o json flag", func() {
+		JustBeforeEach(func() {
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+
+		JustAfterEach(func() {
+			helper.Chdir(originalDir)
+		})
+		It("should be able to list url in machine readable json format", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
+			helper.CmdShouldPass("odo", "url", "create", "myurl")
+			helper.CmdShouldPass("odo", "push")
+
+			// odo url list -o json
+			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
+			fullURLPath := helper.DetermineRouteURL("")
+			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
+			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 		})
 	})
 })
