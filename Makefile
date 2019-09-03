@@ -231,7 +231,7 @@ test-e2e-scenarios:
 # this test shouldn't be in paralel -  it will effect the results
 .PHONY: test-benchmark
 test-benchmark:
-	go test -v github.com/openshift/odo/tests/benchmark -timeout $(TIMEOUT)
+	ginkgo -v tests/benchmark -timeout $(TIMEOUT)
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
