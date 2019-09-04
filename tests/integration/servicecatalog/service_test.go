@@ -37,6 +37,44 @@ var _ = Describe("odoServiceE2e", func() {
 		})
 	})
 
+	Context("create service with Env non-interactively", func() {
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			app = helper.RandString(7)
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+		})
+
+		It("should be able to create postgresql with env", func() {
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--app", app,
+				"--plan", "dev", "-p", "postgresql_user=lukecage", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
+			// there is only a single pod in the project
+			ocArgs := []string{"describe", "pod", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "lukecage")
+			})
+
+			// Delete the service
+			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f", "--app", app, "--project", project)
+		})
+
+		It("should be able to create postgresql with env multiple times", func() {
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--app", app,
+				"--plan", "dev", "-p", "postgresql_user=lukecage", "-p", "postgresql_user=testworker", "-p", "postgresql_password=secret",
+				"-p", "postgresql_password=universe", "-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
+			// there is only a single pod in the project
+			ocArgs := []string{"describe", "pod", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "testworker")
+			})
+
+			// Delete the service
+			helper.CmdShouldPass("odo", "service", "delete", "dh-postgresql-apb", "-f", "--app", app, "--project", project)
+		})
+	})
+
 	Context("When creating with a spring boot application", func() {
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
@@ -58,22 +96,19 @@ var _ = Describe("odoServiceE2e", func() {
 			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
 			helper.CmdShouldPass("odo", "create", "java", "sb-app", "--project", project)
 
-			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--plan", "dev",
-				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
-				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
-			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
-			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "dh-postgresql-apb")
-			})
-
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080")
 
-			// push removes link, this is why link needs to be run alaways after the push https://github.com/openshift/odo/issues/1596
-			helper.CmdShouldPass("odo", "push", "-v", "4")
+			// push
+			helper.CmdShouldPass("odo", "push")
 
-			helper.CmdShouldPass("odo", "link", "dh-postgresql-apb", "-w", "--wait-for-target")
+			// create the postgres service
+			helper.CmdShouldPass("odo", "service", "create", "dh-postgresql-apb", "--project", project, "--plan", "dev",
+				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6", "-w")
 
+			// link the service
+			helper.CmdShouldPass("odo", "link", "dh-postgresql-apb", "--project", project, "-w", "--wait-for-target")
 			odoArgs := []string{"service", "list"}
 			helper.WaitForCmdOut("odo", odoArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "dh-postgresql-apb") &&
