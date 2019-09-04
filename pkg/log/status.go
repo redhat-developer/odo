@@ -223,6 +223,14 @@ func Error(a ...interface{}) {
 	}
 }
 
+// Italic will simply print out information on a new italic line
+func Italic(a ...interface{}) {
+	italic := color.New(color.Italic).SprintFunc()
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s", italic(fmt.Sprintln(a...)))
+	}
+}
+
 // Info will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Info(a ...interface{}) {
