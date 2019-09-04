@@ -6,6 +6,7 @@ BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
 DEBUG_BUILD_FLAGS := -ldflags="$(COMMON_FLAGS)"
 FILES := odo dist
 TIMEOUT ?= 7200s
+SHELL := /bin/bash
 
 # Env variable TEST_EXEC_NODES is used to pass spec execution type
 # (parallel or sequential) for ginkgo tests. To run the specs sequentially use
