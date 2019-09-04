@@ -104,6 +104,7 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
 	}
 	if !isPrjExists {
+		log.Info("Project creation")
 		log.Successf("Creating project %s", prjName)
 		err = project.Create(cpo.Context.Client, prjName, true)
 		if err != nil {
@@ -114,7 +115,7 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 				prjName,
 			)
 		}
-		log.Successf("Successfully created project %s", prjName)
+		log.Successf("Successfully created project %s\n", prjName)
 	}
 	cpo.Context.Client.Namespace = prjName
 	return
