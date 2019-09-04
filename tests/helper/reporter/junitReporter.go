@@ -13,8 +13,8 @@ import (
 // JunitReport takes test object and filepath as argument, returns junitReporter object
 func JunitReport(t *testing.T, filePath string) *reporters.JUnitReporter {
 	time := time.Now()
-	if _, err := os.Stat("../../reports"); os.IsNotExist(err) {
-		os.Mkdir("../../reports", os.ModePerm)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		os.Mkdir(filePath, os.ModePerm)
 	}
 	xmlFileName := fmt.Sprintf(filepath.Join(filePath, "junit_%d-%d-%d_%02d-%02d-%02d.xml"), time.Year(), time.Month(),
 		time.Day(), time.Hour(), time.Minute(), time.Second())
