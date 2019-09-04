@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/odo/tests/helper/reporter"
 )
 
-func TestIntegration(t *testing.T) {
+func TestE2eScenarios(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, "odo e2e scenarios", []Reporter{reporter.JunitReport(t, "../../reports")})
 }

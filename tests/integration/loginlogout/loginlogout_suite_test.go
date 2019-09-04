@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/odo/tests/helper/reporter"
 )
 
-func TestIntegration(t *testing.T) {
+func TestLoginlogout(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, "Loginlogout Suite", []Reporter{reporter.JunitReport(t, "../../reports")})
 }

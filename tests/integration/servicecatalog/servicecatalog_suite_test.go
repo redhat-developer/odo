@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/odo/tests/helper/reporter"
 )
 
-func TestIntegration(t *testing.T) {
+func TestServicecatalog(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, "Servicecatalog Suite", []Reporter{reporter.JunitReport(t, "../../reports")})
 }
