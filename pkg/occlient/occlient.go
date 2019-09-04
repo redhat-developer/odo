@@ -289,15 +289,6 @@ func New(skipConnectionCheck bool) (*Client, error) {
 	}
 	client.Namespace = namespace
 
-	// if we're not skipping the connection check, check the connection :)
-	if !skipConnectionCheck {
-		if !isServerUp(config.Host) {
-			return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
-		}
-		if !client.isLoggedIn() {
-			return nil, errors.New("Please log in to the cluster")
-		}
-	}
 	return &client, nil
 }
 
