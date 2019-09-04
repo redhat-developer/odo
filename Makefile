@@ -81,14 +81,7 @@ test-coverage:
 # compile for multiple platforms
 .PHONY: cross
 cross:
-	@for platform in linux darwin windows ; do \
-		echo "Cross compiling $$platform-amd64 and placing binary at dist/bin/$$platform-amd64/"; \
-		if [ $$platform == "windows" ]; then \
-			GOARCH=amd64 GOOS=$$platform go build -o dist/bin/$$platform-amd64/odo.exe $(BUILD_FLAGS) ./cmd/odo/; \
-		else \
-			GOARCH=amd64 GOOS=$$platform go build -o dist/bin/$$platform-amd64/odo $(BUILD_FLAGS) ./cmd/odo/; \
-		fi \
-	done
+	./scripts/cross-compile.sh '$(COMMON_FLAGS)'
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
