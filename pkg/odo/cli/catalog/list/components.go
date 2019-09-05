@@ -58,7 +58,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 	var supCatalogList, unsupCatalogList []catalog.CatalogImage
 
 	for _, image := range o.catalogList {
-		supported, unsupported := catalog.SpliceSupportedTags(image)
+		supported, unsupported := catalog.SliceSupportedTags(image)
 
 		if len(supported) != 0 {
 			image.NonHiddenTags = supported

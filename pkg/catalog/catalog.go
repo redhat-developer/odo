@@ -136,8 +136,8 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 	return builderImages, nil
 }
 
-// SpliceSupportedTags splits the tags in to fully supported and unsupported tags
-func SpliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
+// SliceSupportedTags splits the tags in to fully supported and unsupported tags
+func SliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
 
 	var supTag, unSupTag []string
 	tagMap := createImageTagMap(catalogImage.imageStreamRef.Spec.Tags)
