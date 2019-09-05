@@ -123,7 +123,7 @@ $ odo push
 . Create a URL to access the application and visit it to test it.
 +
 ----
-$ odo url create --port <application port>
+$ odo url create
 $ curl <generated URL>
 ----
 . When finished, remove your component from `Minishift` and stop your `Minishift` cluster.
