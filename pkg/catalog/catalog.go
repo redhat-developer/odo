@@ -155,14 +155,15 @@ func SpliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
 func createImageMap(tagRefs []imagev1.TagReference) map[string]string {
 	tagMap := make(map[string]string)
 	for _, tagRef := range tagRefs {
-		// TODO: the From here can be of multiple types so we need to handle that
 		imageName := tagRef.From.Name
 		if tagRef.From.Kind == "DockerImage" {
-			urlImageName := strings.SplitN(tagRef.From.Name, "/", 2)[1]
+			// we get the image name from the repo url e.g. registry.redhat.com/openshift/nodejs:10 will give openshift/nodejs:10
+			urlImageName := strings.SplitN(imageName, "/", 2)[1]
+			// here we remove the tag and digest
 			ns, img, _, _, _ := occlient.ParseImageName(urlImageName)
 			imageName = ns + "/" + img
 		} else if tagRef.From.Kind == "ImageStreamTag" {
-			tagList := strings.Split(tagRef.From.Name, ":")
+			tagList := strings.Split(imageName, ":")
 			tag := tagList[len(tagList)-1]
 			// if the kind is a image stream tag that means its pointing to an existing dockerImage or image stream image
 			// we just look it up from the tapMap we already have
