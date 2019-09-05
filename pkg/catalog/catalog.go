@@ -140,7 +140,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 func SpliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
 
 	var supTag, unSupTag []string
-	tagMap := createImageMap(catalogImage.imageStreamRef.Spec.Tags)
+	tagMap := createImageTagMap(catalogImage.imageStreamRef.Spec.Tags)
 	for _, tag := range catalogImage.NonHiddenTags {
 		imageName := tagMap[tag]
 		if isSupportedImage(imageName) {
@@ -152,7 +152,7 @@ func SpliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
 	return supTag, unSupTag
 }
 
-func createImageMap(tagRefs []imagev1.TagReference) map[string]string {
+func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 	tagMap := make(map[string]string)
 	for _, tagRef := range tagRefs {
 		imageName := tagRef.From.Name
