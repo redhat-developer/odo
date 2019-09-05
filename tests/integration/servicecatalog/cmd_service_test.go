@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("odoServiceE2e", func() {
+var _ = Describe("odo service command tests", func() {
 	//new clean project and context for each test
 	var project string
 	var context string

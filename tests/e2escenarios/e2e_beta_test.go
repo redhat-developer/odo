@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("Core beta flow", func() {
+var _ = Describe("odo core beta flow", func() {
 	//new clean project and context for each test
 	var project string
 	var context string

@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -37,6 +38,76 @@ var _ = Describe("odo generic", func() {
 			Expect(stdOut).To(ContainSubstring("wildfly"))
 		})
 	})
+
+	// Test machine readable output
+	Context("when creating project -o json", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(projectName)
+		})
+
+		// odo project create foobar -o json
+		It("should be able to create project and show output in json format", func() {
+			actual := helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"message":"Project '%s' is ready for use"}`, projectName, projectName, projectName)
+			Expect(desired).Should(MatchJSON(actual))
+		})
+	})
+
+	Context("Creating same project twice with flag -o json", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(projectName)
+		})
+		// odo project create foobar -o json (x2)
+		It("should fail along with proper machine readable output", func() {
+			helper.CmdShouldPass("odo", "project", "create", projectName)
+			actual := helper.CmdShouldFail("odo", "project", "create", projectName, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Error","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"creationTimestamp":null},"message":"unable to create new project: unable to create new project %s: project.project.openshift.io \"%s\" already exists"}`, projectName, projectName)
+			Expect(desired).Should(MatchJSON(actual))
+		})
+	})
+
+	Context("Delete the project with flag -o json", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
+
+		// odo project delete foobar -o json
+		It("should be able to delete project and show output in json format", func() {
+			helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
+
+			actual := helper.CmdShouldPass("odo", "project", "delete", projectName, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"message":"Deleted project : %s"}`, projectName, projectName, projectName)
+			Expect(desired).Should(MatchJSON(actual))
+		})
+	})
+
+	// Uncomment once https://github.com/openshift/odo/issues/1708 is fixed
+	/*Context("odo machine readable output on empty project", func() {
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		})
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.DeleteDir(context)
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
+		It("should be able to return project list", func() {
+			actualProjectListJSON := helper.CmdShouldPass("odo", "project", "list", "-o", "json")
+			partOfProjectListJSON := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},`, project)
+			Expect(actualProjectListJSON).To(ContainSubstring(partOfProjectListJSON))
+		})
+	})*/
 
 	Context("creating component with an application and url", func() {
 		JustBeforeEach(func() {

@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("odoWatchE2e", func() {
+var _ = Describe("odo watch command tests", func() {
 	var project string
 	var context string
 

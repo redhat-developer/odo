@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -92,8 +93,11 @@ func componentTests(args ...string) {
 		})
 
 		It("create component twice fails from same directory", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project)...)
-			output := helper.CmdShouldFail("odo", append(args, "create", "nodejs", "--project", project)...)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "nodejs", "--project", project)...)
+			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Not Pushed"}}]}`, project, strings.TrimSpace(context))
+			actual := helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", context)...)
+			Expect(desired).Should(MatchJSON(actual))
+			output := helper.CmdShouldFail("odo", append(args, "create", "nodejs", "nodejs", "--project", project)...)
 			Expect(output).To(ContainSubstring("this directory already contains a component"))
 		})
 
@@ -105,8 +109,11 @@ func componentTests(args ...string) {
 		It("should list the component", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			cmpList := helper.CmdShouldPass("odo", append(args, "list")...)
+			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--project", project)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
+			actualCompListJSON := helper.CmdShouldPass("odo", append(args, "list", "--project", project, "-o", "json")...)
+			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"cmp-git","namespace":"%s","creationTimestamp":null},"spec":{"app":"testing","type":"nodejs","source":"https://github.com/openshift/nodejs-ex"},"status":{"state":"Pushed"}}]}`, project)
+			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 			cmpAllList := helper.CmdShouldPass("odo", append(args, "list", "--all")...)
 			Expect(cmpAllList).To(ContainSubstring("cmp-git"))
 			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
@@ -435,7 +442,7 @@ func componentTests(args ...string) {
 
 		It("should pass inside a odo directory without component name as parameter", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)...)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// changing directory to the context directory
@@ -448,7 +455,7 @@ func componentTests(args ...string) {
 
 		It("should fail outside a odo directory without component name as parameter", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)...)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// list command should fail as no app flag is given
@@ -460,13 +467,17 @@ func componentTests(args ...string) {
 
 		It("should pass outside a odo directory with component name as parameter", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)...)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 
-			cmpListOutput := helper.CmdShouldPass("odo", "list", "--app", appName, "--project", project)
+			cmpListOutput := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", project)...)
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
-			helper.CmdShouldPass("odo", "describe", cmpName, "--app", appName, "--project", project)
-			helper.CmdShouldPass("odo", "delete", cmpName, "--app", appName, "--project", project, "-f")
+
+			actualDesCompJSON := helper.CmdShouldPass("odo", append(args, "describe", cmpName, "--app", appName, "--project", project, "-o", "json")...)
+			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"file://./"},"status":{"state":"Pushed"}}`, project)
+			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
+
+			helper.CmdShouldPass("odo", append(args, "delete", cmpName, "--app", appName, "--project", project, "-f")...)
 		})
 	})
 

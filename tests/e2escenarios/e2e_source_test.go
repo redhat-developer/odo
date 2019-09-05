@@ -1,4 +1,4 @@
-package integration
+package e2escenarios
 
 import (
 	"os"
@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("odoSourceE2e", func() {
+var _ = Describe("odo source e2e tests", func() {
 	var project string
 	var context string
 	var oc helper.OcRunner

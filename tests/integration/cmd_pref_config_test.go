@@ -19,7 +19,7 @@ var project string
 var context string
 var originalDir string
 
-var _ = Describe("odo config test", func() {
+var _ = Describe("odo preference and config command tests", func() {
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		oc = helper.NewOcRunner("oc")
