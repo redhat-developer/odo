@@ -152,6 +152,7 @@ func SliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
 	return supTag, unSupTag
 }
 
+// createImageTagMap takes a list of image TagReferences and creates a map of type tag name => image name e.g. 1.11 => openshift/nodejs-11
 func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 	tagMap := make(map[string]string)
 	for _, tagRef := range tagRefs {
@@ -191,6 +192,8 @@ func isSupportedImage(imgName string) bool {
 	return false
 }
 
+// getBuildersFromImageStreams returns all the builder Images from the image streams provided and also hides the builder images
+// which have hidden annotation attached to it
 func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, ism map[string]imagev1.ImageStreamTag) []CatalogImage {
 	var builderImages []CatalogImage
 	// Get builder images from the available imagestreams
