@@ -203,6 +203,11 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
+			url := oc.GetFirstURL(cmpName, appName, project)
+			// Wait for running app before getting info about files.
+			// During the startup sequence there is something that will modify the access time of a source file.
+			helper.HttpWaitFor("http://"+url, "Welcome to your Node.js", 30, 1)
+
 			earlierCatServerFile := ""
 			oc.CheckCmdOpInRemoteCmpPod(
 				cmpName,
@@ -227,9 +232,9 @@ var _ = Describe("odo push command tests", func() {
 				},
 			)
 
-			url := oc.GetFirstURL(cmpName, appName, project)
 			helper.ReplaceString(filepath.Join(context+"/nodejs-ex"+"/views/index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 
 			modifiedCatViewFile := ""
 			oc.CheckCmdOpInRemoteCmpPod(
@@ -257,8 +262,6 @@ var _ = Describe("odo push command tests", func() {
 
 			Expect(modifiedCatViewFile).NotTo(Equal(earlierCatViewFile))
 			Expect(modifiedCatServerFile).To(Equal(earlierCatServerFile))
-
-			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 		})
 	})
 
