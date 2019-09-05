@@ -496,7 +496,7 @@ func (co *CreateOptions) Run() (err error) {
 			return errors.Wrapf(err, "failed to push the changes")
 		}
 	} else {
-		log.Infof("Please use `odo push` command to create the component with source deployed\n")
+		log.Infof("Please use `odo push` command to create the component with source deployed")
 	}
 	return
 }
