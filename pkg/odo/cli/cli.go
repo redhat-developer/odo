@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/url"
 	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/cli/version"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -86,8 +85,6 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
-
-	rootCmd.PersistentFlags().Bool(genericclioptions.SkipConnectionCheckFlagName, false, "Skip cluster check")
 
 	// Add the machine readable output flag to all commands
 	// We use "flag" in order to make this accessible throughtout ALL of odo, rather than the
