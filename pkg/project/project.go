@@ -1,7 +1,6 @@
 package project
 
 import (
-	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 
@@ -50,7 +49,7 @@ func Delete(client *occlient.Client, projectName string) error {
 	return nil
 }
 
-func DescribeProjects(client *occlient.Client) (ProjectList, error) {
+func List(client *occlient.Client) (ProjectList, error) {
 	currentProject := client.GetCurrentProjectName()
 	allProjects, err := client.GetProjectNames()
 	if err != nil {
@@ -63,8 +62,7 @@ func DescribeProjects(client *occlient.Client) (ProjectList, error) {
 		if project == currentProject {
 			isActive = true
 		}
-		apps, _ := application.ListInProject(client)
-		projects = append(projects, GetMachineReadableFormat(project, isActive, apps))
+		projects = append(projects, GetMachineReadableFormat(project, isActive))
 	}
 
 	return getMachineReadableFormatForList(projects), nil
@@ -85,7 +83,7 @@ func Exists(client *occlient.Client, projectName string) (bool, error) {
 
 // GetMachineReadableFormat gathers the readable format and output a Project struct
 // for json to marshal
-func GetMachineReadableFormat(projectName string, isActive bool, apps []string) Project {
+func GetMachineReadableFormat(projectName string, isActive bool) Project {
 	return Project{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Project",
@@ -95,9 +93,7 @@ func GetMachineReadableFormat(projectName string, isActive bool, apps []string) 
 			Name:      projectName,
 			Namespace: projectName,
 		},
-		Spec: ProjectSpec{
-			Applications: apps,
-		},
+		Spec: ProjectSpec{},
 		Status: ProjectStatus{
 			Active: isActive,
 		},
