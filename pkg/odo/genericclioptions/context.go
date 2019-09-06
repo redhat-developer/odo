@@ -40,9 +40,7 @@ func ClientWithConnectionCheck(command *cobra.Command, skipConnectionCheck bool)
 	return client(command)
 }
 
-// client creates an oc client based on the command flags, overriding the skip connection check flag with the optionally
-// specified shouldSkipConnectionCheck boolean.
-// We use varargs to denote the optional status of that boolean.
+// client creates an oc client based on the command flags
 func client(command *cobra.Command) *occlient.Client {
 	client, err := occlient.New()
 	util.LogErrorAndExit(err, "")
