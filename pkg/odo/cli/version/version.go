@@ -52,7 +52,7 @@ func NewVersionOptions() *VersionOptions {
 func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) error {
 	if !o.clientFlag {
 		// Let's fetch the info about the server, ignoring errors
-		client, err := occlient.New(true)
+		client, err := occlient.New()
 		if err == nil {
 			o.serverInfo, _ = client.GetServerVersion()
 		}

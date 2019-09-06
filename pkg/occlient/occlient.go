@@ -221,7 +221,7 @@ func getBootstrapperImage() string {
 }
 
 // New creates a new client
-func New(skipConnectionCheck bool) (*Client, error) {
+func New() (*Client, error) {
 	var client Client
 
 	// initialize client-go clients
