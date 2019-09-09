@@ -71,7 +71,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 	}
 
 	if len(supCatalogList) != 0 {
-		fmt.Fprintln(w, "Component types fully supported in odo (including debugging capabilities):")
+		fmt.Fprintln(w, "Component types with full odo support (including debugging capabilities):")
 		o.printCatalogList(w, supCatalogList)
 		fmt.Fprintln(w)
 

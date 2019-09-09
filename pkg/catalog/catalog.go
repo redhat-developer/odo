@@ -175,6 +175,8 @@ func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 	return tagMap
 }
 
+// isSupportedImages returns if the image is supported or not. the supported images have been provided here
+// https://github.com/openshift/odo-init-image/blob/master/language-scripts/image-mappings.json
 func isSupportedImage(imgName string) bool {
 	supportedImages := []string{
 		"redhat-openjdk-18/openjdk18-openshift",
@@ -194,7 +196,7 @@ func isSupportedImage(imgName string) bool {
 
 // getBuildersFromImageStreams returns all the builder Images from the image streams provided and also hides the builder images
 // which have hidden annotation attached to it
-func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, ism map[string]imagev1.ImageStreamTag) []CatalogImage {
+func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStreamTagMap map[string]imagev1.ImageStreamTag) []CatalogImage {
 	var builderImages []CatalogImage
 	// Get builder images from the available imagestreams
 	for _, imageStream := range imageStreams {
@@ -222,7 +224,7 @@ func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, ism map[str
 			// the 'hidden' tag. If so, this builder image is deprecated and should not be offered to the user
 			// as candidate
 			for _, tag := range allTags {
-				imageStreamTag := ism[imageStream.Name+":"+tag]
+				imageStreamTag := imageStreamTagMap[imageStream.Name+":"+tag]
 				if _, ok := imageStreamTag.Annotations["tags"]; ok {
 					for _, t := range strings.Split(imageStreamTag.Annotations["tags"], ",") {
 						// If the tagReference has "builder" then we will add the image to the list
