@@ -419,6 +419,7 @@ To release a new version:
 
 ** link:/pkg/odo/cli/version/version.go[`cmd/version.go`]
 ** link:/scripts/installer.sh[`scripts/installer.sh`]
+** link:/Dockerfile.rhel[`Dockerfile.rhel`]
 +
 There is a helper script link:../scripts/bump-version.sh[scripts/bump-version.sh] that changes version number in all the files listed above (except `odo.rb`).
 
