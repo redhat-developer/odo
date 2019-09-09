@@ -33,7 +33,7 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 		if log.IsJSON() {
 
 			// Machine readble error output
-			machineOutput := machineoutput.Error{
+			machineOutput := machineoutput.GenericError{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       machineoutput.Kind,
 					APIVersion: machineoutput.APIVersion,

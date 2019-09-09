@@ -37,6 +37,14 @@ var _ = Describe("odo service command tests", func() {
 		})
 	})
 
+	Context("checking machine readable output for service catalog", func() {
+		It("should succeed listing catalog components", func() {
+			// Since service catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
+			output := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
+			Expect(output).To(ContainSubstring("CatalogListServices"))
+		})
+	})
+
 	Context("create service with Env non-interactively", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()

@@ -2,6 +2,9 @@ package list
 
 import (
 	"fmt"
+
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -49,7 +52,15 @@ func (o *ListServicesOptions) Validate() (err error) {
 
 // Run contains the logic for the command associated with ListServicesOptions
 func (o *ListServicesOptions) Run() (err error) {
-	util.DisplayServices(o.services)
+	if log.IsJSON() {
+		services, err := svc.ListCatalog(o.Client)
+		if err != nil {
+			return fmt.Errorf("unable to list services because Service Catalog is not enabled in your cluster: %v", err)
+		}
+		machineoutput.CatalogListServices(services)
+	} else {
+		util.DisplayServices(o.services)
+	}
 	return
 }
 

@@ -2365,9 +2365,9 @@ func (c *Client) patchDCOfComponent(componentName, applicationName string, dcPat
 
 // Service struct holds the service name and its corresponding list of plans
 type Service struct {
-	Name     string
-	Hidden   bool
-	PlanList []string
+	Name     string   `json:"name"`
+	Hidden   bool     `json:"hidden"`
+	PlanList []string `json:"planList"`
 }
 
 // GetServiceClassesByCategory retrieves a map associating category name to ClusterServiceClasses matching the category

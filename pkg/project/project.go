@@ -107,7 +107,7 @@ func GetMachineReadableFormat(projectName string, isActive bool, apps []string) 
 // MachineReadableSuccessOutput outputs a success output that includes
 // project information and namespace
 func MachineReadableSuccessOutput(projectName string, message string) {
-	machineOutput := machineoutput.Success{
+	machineOutput := machineoutput.GenericSuccess{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Project",
 			APIVersion: "odo.openshift.io/v1alpha1",
