@@ -175,4 +175,60 @@ var _ = Describe("odo link and unlink command tests", func() {
 			Expect(envFromOutput).To(Equal("''"))
 		})
 	})
+
+	Context("When linking or unlinking a service or component", func() {
+		JustBeforeEach(func() {
+			context1 = helper.CreateNewContext()
+			context2 = helper.CreateNewContext()
+			originalDir = helper.Getwd()
+		})
+
+		JustAfterEach(func() {
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context1)
+			helper.DeleteDir(context2)
+		})
+
+		It("should print the environment variables being linked/unlinked", func() {
+			helper.CopyExample(filepath.Join("source", "python"), context1)
+			helper.CmdShouldPass("odo", "create", "python", "component1", "--context", context1, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", context1)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context2)
+			helper.CmdShouldPass("odo", "create", "nodejs", "component2", "--context", context2, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", context2)
+
+			// tests for linking a component to a component
+			stdOut := helper.CmdShouldPass("odo", "link", "component2", "--context", context1)
+			Expect(stdOut).To(ContainSubstring("Following environment variables were added"))
+			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_HOST"))
+			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_PORT"))
+
+			// tests for unlinking a component from a component
+			stdOut = helper.CmdShouldPass("odo", "unlink", "component2", "--context", context1)
+			Expect(stdOut).To(ContainSubstring("Following environment variables were removed"))
+			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_HOST"))
+			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_PORT"))
+
+			// first create a service
+			helper.CmdShouldPass("odo", "service", "create", "-w", "dh-postgresql-apb", "--project", project, "--plan", "dev",
+				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
+			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "dh-postgresql-apb")
+			})
+
+			// tests for linking a service to a component
+			stdOut = helper.CmdShouldPass("odo", "link", "dh-postgresql-apb", "--context", context1)
+			Expect(stdOut).To(ContainSubstring("Following environment variables were added"))
+			Expect(stdOut).To(ContainSubstring("DB_PORT"))
+			Expect(stdOut).To(ContainSubstring("DB_HOST"))
+
+			// tests for unlinking a service to a component
+			stdOut = helper.CmdShouldPass("odo", "unlink", "dh-postgresql-apb", "--context", context1)
+			Expect(stdOut).To(ContainSubstring("Following environment variables were removed"))
+			Expect(stdOut).To(ContainSubstring("DB_PORT"))
+			Expect(stdOut).To(ContainSubstring("DB_HOST"))
+		})
+	})
 })
