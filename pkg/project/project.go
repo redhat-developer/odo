@@ -2,7 +2,6 @@ package project
 
 import (
 	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/log"
@@ -102,24 +101,6 @@ func GetMachineReadableFormat(projectName string, isActive bool, apps []string) 
 			Active: isActive,
 		},
 	}
-}
-
-// MachineReadableSuccessOutput outputs a success output that includes
-// project information and namespace
-func MachineReadableSuccessOutput(projectName string, message string) {
-	machineOutput := machineoutput.GenericSuccess{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Project",
-			APIVersion: "odo.openshift.io/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      projectName,
-			Namespace: projectName,
-		},
-		Message: message,
-	}
-
-	machineoutput.OutputSuccess(machineOutput)
 }
 
 // getMachineReadableFormatForList returns application list in machine readable format

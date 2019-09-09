@@ -71,3 +71,21 @@ func CatalogListServices(services []occlient.Service) {
 
 	OutputSuccess(data)
 }
+
+// ProjectSuccess outputs a success output that includes
+// project information and namespace
+func ProjectSuccess(projectName string, message string) {
+	machineOutput := GenericSuccess{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Project",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      projectName,
+			Namespace: projectName,
+		},
+		Message: message,
+	}
+
+	OutputSuccess(machineOutput)
+}

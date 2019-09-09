@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -81,7 +82,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 
 	// If -o json has been passed, let's output the approriate json output.
 	if log.IsJSON() {
-		project.MachineReadableSuccessOutput(pco.projectName, successMessage)
+		machineoutput.ProjectSuccess(pco.projectName, successMessage)
 	} else {
 		log.Successf("New project created and now using project : %v", pco.projectName)
 	}

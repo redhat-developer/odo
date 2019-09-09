@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
@@ -83,7 +84,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 		}
 
 		if log.IsJSON() {
-			project.MachineReadableSuccessOutput(pdo.projectName, successMessage)
+			machineoutput.ProjectSuccess(pdo.projectName, successMessage)
 		} else {
 			log.Success(successMessage)
 		}
