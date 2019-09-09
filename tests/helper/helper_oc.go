@@ -1,8 +1,8 @@
 package helper
 
 import (
+	"bufio"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -228,20 +228,64 @@ func (oc *OcRunner) SourceLocationBC(componentName string, appName string, proje
 	return sourceLocation
 }
 
-// ImportJavaIsToNspace import the openjdk image which is used for jars
-func (oc *OcRunner) ImportJavaIsToNspace(project string) {
-	// do nothing if running on OpenShiftCI
-	// java image is already present
-	val, ok := os.LookupEnv("CI")
-	if ok && val == "openshift" {
+// checkForImageStream checks if there is a ImageStram with name and tag in openshift namespace
+func (oc *OcRunner) checkForImageStream(name string, tag string) bool {
+	// first check if there is ImageStream with given name
+	names := CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
+		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'")
+	scanner := bufio.NewScanner(strings.NewReader(names))
+	namePresent := false
+	for scanner.Scan() {
+		if scanner.Text() == name {
+			namePresent = true
+		}
+	}
+	tagPresent := false
+	// if there is a ImageStream check if there is a given tag
+	if namePresent {
+		tags := CmdShouldPass(oc.path, "get", "is", name, "-n", "openshift",
+			"-o", "jsonpath='{range .spec.tags[*]}{.name}{\"\\n\"}{end}'")
+		scanner := bufio.NewScanner(strings.NewReader(tags))
+		for scanner.Scan() {
+			if scanner.Text() == tag {
+				tagPresent = true
+			}
+		}
+	}
+
+	if tagPresent {
+		return true
+	}
+	return false
+}
+
+// ImportJavaIS import the openjdk image which is used for jars
+func (oc *OcRunner) ImportJavaIS(project string) {
+	// if ImageStram already exists, no need to do anything
+	if oc.checkForImageStream("java", "8") {
 		return
 	}
 
 	// we need to import the openjdk image which is used for jars because it's not available by default
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", "java",
+	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", "java:8",
 		"--namespace="+project, "--from=registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:1.5",
 		"--confirm")
-	CmdShouldPass(oc.path, "annotate", "istag/java:latest", "--namespace="+project,
+	CmdShouldPass(oc.path, "annotate", "istag/java:8", "--namespace="+project,
+		"tags=builder", "--overwrite")
+}
+
+// ImportDotnet20IS import the dotnet image
+func (oc *OcRunner) ImportDotnet20IS(project string) {
+	// if ImageStram already exists, no need to do anything
+	if oc.checkForImageStream("dotnet", "2.0") {
+		return
+	}
+
+	// we need to import the openjdk image which is used for jars because it's not available by default
+	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", "dotnet:2.0",
+		"--namespace="+project, "--from=registry.centos.org/dotnet/dotnet-20-centos7",
+		"--confirm")
+	CmdShouldPass(oc.path, "annotate", "istag/dotnet:2.0", "--namespace="+project,
 		"tags=builder", "--overwrite")
 }
 

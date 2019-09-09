@@ -54,9 +54,9 @@ var _ = Describe("odo source e2e tests", func() {
 		})
 
 		It("Should be able to deploy an openjdk source application", func() {
-			oc.ImportJavaIsToNspace(project)
+			oc.ImportJavaIS(project)
 			helper.CopyExample(filepath.Join("source", "openjdk"), context)
-			helper.CmdShouldPass("odo", "create", "java", "openjdk-app", "--project",
+			helper.CmdShouldPass("odo", "create", "java:8", "openjdk-app", "--project",
 				project, "--context", context)
 
 			// Push changes

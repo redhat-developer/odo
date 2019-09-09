@@ -90,11 +90,11 @@ var _ = Describe("odo service command tests", func() {
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
 		It("should be able to create postgresql and link it with springboot", func() {
-			oc.ImportJavaIsToNspace(project)
+			oc.ImportJavaIS(project)
 			helper.CopyExample(filepath.Join("source", "openjdk-sb-postgresql"), context)
 
 			// Local config needs to be present in order to create service https://github.com/openshift/odo/issues/1602
-			helper.CmdShouldPass("odo", "create", "java", "sb-app", "--project", project)
+			helper.CmdShouldPass("odo", "create", "java:8", "sb-app", "--project", project)
 
 			// Create a URL
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080")

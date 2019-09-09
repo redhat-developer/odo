@@ -41,8 +41,8 @@ var _ = Describe("odo storage command tests", func() {
 
 	Context("when running storage command without required flag(s)", func() {
 		It("should fail", func() {
-			helper.CopyExample(filepath.Join("source", "dotnet"), context)
-			helper.CmdShouldPass("odo", "component", "create", "dotnet", "dotnet", "--app", "dotnetapp", "--project", project, "--context", context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
 			stdErr := helper.CmdShouldFail("odo", "storage", "create", "pv1")
 			Expect(stdErr).To(ContainSubstring("Required flag"))
 			//helper.CmdShouldFail("odo", "storage", "create", "pv1", "-o", "json")
