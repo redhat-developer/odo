@@ -46,7 +46,7 @@ var _ = Describe("odo core beta flow", func() {
 
 	// abstract main test to the function, to allow running the same test in a different context (slightly different arguments)
 	TestBasicCreateConfigPush := func(extraArgs ...string) {
-		createSession := helper.CmdShouldPass(odo, append([]string{"component", "create", "java", "mycomponent", "--app", "myapp", "--project", project}, extraArgs...)...)
+		createSession := helper.CmdShouldPass(odo, append([]string{"component", "create", "java:8", "mycomponent", "--app", "myapp", "--project", project}, extraArgs...)...)
 		// output of the commands should point user to running "odo push"
 		Expect(createSession).Should(ContainSubstring("odo push"))
 		configFile := filepath.Join(context, ".odo", "config.yaml")
@@ -114,7 +114,7 @@ var _ = Describe("odo core beta flow", func() {
 		})
 
 		It("create local java component and push code", func() {
-			oc.ImportJavaIsToNspace(project)
+			oc.ImportJavaIS(project)
 			helper.CopyExample(filepath.Join("source", "openjdk"), context)
 			TestBasicCreateConfigPush()
 		})
@@ -131,7 +131,7 @@ var _ = Describe("odo core beta flow", func() {
 		})
 
 		It("create local java component and push code", func() {
-			oc.ImportJavaIsToNspace(project)
+			oc.ImportJavaIS(project)
 			helper.CopyExample(filepath.Join("source", "openjdk"), context)
 			TestBasicCreateConfigPush("--context", context)
 		})

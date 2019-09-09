@@ -56,10 +56,10 @@ var _ = Describe("Basic benchmark", func() {
 
 	Measure("Simple Java (Javalin) component", func(b Benchmarker) {
 		helper.CopyExample(filepath.Join("source", "openjdk"), context)
-		oc.ImportJavaIsToNspace(project)
+		oc.ImportJavaIS(project)
 
 		b.Time("create component", func() {
-			helper.CmdShouldPass(odo, "component", "create", "java", "javacomponent", "--app", "myapp")
+			helper.CmdShouldPass(odo, "component", "create", "java:8", "javacomponent", "--app", "myapp")
 		})
 		b.Time("crate url", func() {
 			helper.CmdShouldPass(odo, "url", "create", "--port", "8080")

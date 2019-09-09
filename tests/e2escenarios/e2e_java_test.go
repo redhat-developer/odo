@@ -73,10 +73,10 @@ var _ = Describe("odo java e2e tests", func() {
 		})
 
 		It("Should be able to deploy a git repo that contains a java uberjar application using openjdk", func() {
-			oc.ImportJavaIsToNspace(project)
+			oc.ImportJavaIS(project)
 
 			// Deploy the git repo / wildfly example
-			helper.CmdShouldPass("odo", "create", "java", "uberjar-git-test", "--project",
+			helper.CmdShouldPass("odo", "create", "java:8", "uberjar-git-test", "--project",
 				project, "--ref", "master", "--git", jarGitRepo, "--context", context)
 
 			// Create a URL
@@ -92,10 +92,10 @@ var _ = Describe("odo java e2e tests", func() {
 		})
 
 		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
-			oc.ImportJavaIsToNspace(project)
+			oc.ImportJavaIS(project)
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
 
-			helper.CmdShouldPass("odo", "create", "java", "sb-jar-test", "--project",
+			helper.CmdShouldPass("odo", "create", "java:8", "sb-jar-test", "--project",
 				project, "--binary", filepath.Join(context, "sb.jar"), "--context", context)
 
 			// Create a URL

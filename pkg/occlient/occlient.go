@@ -718,7 +718,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 		openshiftNSImageStream, e := c.imageClient.ImageStreams(OpenShiftNameSpace).Get(imageName, metav1.GetOptions{})
 		if e != nil {
 			// The image is not available in current Namespace.
-			err = errors.Wrapf(e, "%s\n.no match found for : %s in namespace %s", err.Error(), imageName, OpenShiftNameSpace)
+			err = errors.Wrapf(e, "no match found for : %s in namespace %s", imageName, OpenShiftNameSpace)
 		} else {
 			if isTagInImageStream(*openshiftNSImageStream, imageTag) {
 				return openshiftNSImageStream, nil
