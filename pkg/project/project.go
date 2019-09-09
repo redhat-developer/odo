@@ -49,6 +49,8 @@ func Delete(client *occlient.Client, projectName string) error {
 	return nil
 }
 
+// List lists all the projects on the cluster
+// returns a list of the projects or the error if any
 func List(client *occlient.Client) (ProjectList, error) {
 	currentProject := client.GetCurrentProjectName()
 	allProjects, err := client.GetProjectNames()
