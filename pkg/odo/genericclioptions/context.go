@@ -8,7 +8,6 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/project"
@@ -315,7 +314,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		// if we're not specifying a component to resolve, get the current one (resolved in NewContext as cmp)
 		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we exit with error
 		if !allowEmpty && len(o.cmp) == 0 {
-			log.Errorf("No component is set")
+			util.LogErrorAndExit(fmt.Errorf("No component is set"), "")
 			os.Exit(1)
 		}
 	case 1:
@@ -327,8 +326,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		}
 	default:
 		// safeguard: fail if more than one optional string is passed because it would be a programming error
-		log.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
-		os.Exit(1)
+		util.LogErrorAndExit(fmt.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent), "")
 	}
 
 	return o.cmp
@@ -339,8 +337,7 @@ func (o *Context) checkComponentExistsOrFail(cmp string) {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
 	util.LogErrorAndExit(err, "")
 	if !exists {
-		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
-		os.Exit(1)
+		util.LogErrorAndExit(fmt.Errorf("Component %v does not exist in application %s", cmp, o.Application), "")
 	}
 }
 

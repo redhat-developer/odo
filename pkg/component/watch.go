@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/occlient"
@@ -177,13 +178,13 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						// Some of the editors like vim and gedit, generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 						// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
 						// which will terminate the watch
-						glog.Errorf("Failed getting details of the changed file %s. Ignoring the change", event.Name)
+						log.Errorf("Failed getting details of the changed file %s. Ignoring the change", event.Name)
 					}
 					// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 					// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
 					// which will terminate the watch
 					if stat == nil {
-						glog.Errorf("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)
+						log.Errorf("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)
 						isIgnoreEvent = true
 					}
 

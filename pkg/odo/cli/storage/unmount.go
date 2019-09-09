@@ -2,17 +2,18 @@ package storage
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"strings"
 )
 
 const unMountRecommendedCommandName = "unmount"
@@ -76,8 +77,7 @@ func (o *StorageUnMountOptions) Validate() (err error) {
 			return fmt.Errorf("unable to check if storage is mounted or not, cause %v", err)
 		}
 		if !exists {
-			log.Errorf("Storage %v does not exist in component %v", o.storageName, o.Component())
-			os.Exit(1)
+			util.LogErrorAndExit(fmt.Errorf("Storage %v does not exist in component %v", o.storageName, o.Component()), "")
 		}
 	}
 	return

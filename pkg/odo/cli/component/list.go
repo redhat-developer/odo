@@ -122,8 +122,7 @@ func (lo *ListOptions) Run() (err error) {
 
 	} else {
 		if len(components.Items) == 0 {
-			log.Errorf("There are no components deployed.")
-			return
+			return errors.New("there are no components deployed")
 		}
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE")

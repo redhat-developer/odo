@@ -69,7 +69,7 @@ func (o *ServiceDeleteOptions) Run() (err error) {
 		}
 		log.Infof("Service %s from application %s has been deleted", o.serviceName, o.Application)
 	} else {
-		log.Errorf("Aborting deletion of service: %v", o.serviceName)
+		return fmt.Errorf("Aborting deletion of service: %v", o.serviceName)
 	}
 	return
 }

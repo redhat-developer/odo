@@ -516,12 +516,11 @@ func (co *CreateOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer)
 		log.Successf("Creating %s component with name %s", cmpType, cmpName)
 		// Classic case of component creation
 		if err = component.CreateComponent(co.Context.Client, *co.localConfigInfo, co.componentContext, stdout); err != nil {
-			log.Errorf(
+			odoutil.LogErrorAndExit(fmt.Errorf(
 				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
 				cmpName,
 				err,
-			)
-			os.Exit(1)
+			), "")
 		}
 		log.Successf("Successfully created component %s", cmpName)
 	}
@@ -540,16 +539,13 @@ func (co *CreateOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer)
 // when the only thing specified is the min or max value, we exit the application
 func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourceName string) {
 	if strings.HasPrefix(resourceMin, "-") {
-		log.Errorf("min-%s cannot be negative", resource)
-		os.Exit(1)
+		odoutil.LogErrorAndExit(fmt.Errorf("min-%s cannot be negative", resource), "")
 	}
 	if strings.HasPrefix(resourceMax, "-") {
-		log.Errorf("max-%s cannot be negative", resource)
-		os.Exit(1)
+		odoutil.LogErrorAndExit(fmt.Errorf("max-%s cannot be negative", resource), "")
 	}
 	if strings.HasPrefix(resource, "-") {
-		log.Errorf("%s cannot be negative", resource)
-		os.Exit(1)
+		odoutil.LogErrorAndExit(fmt.Errorf("%s cannot be negative", resource), "")
 	}
 	if resourceMin != "" && resourceMax != "" && resource != "" {
 		log.Infof("`--%s` will be ignored as `--min-%s` and `--max-%s` has been passed\n", resourceName, resourceName, resourceName)
@@ -558,8 +554,7 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 		log.Infof("Using `--%s` %s for min and max limits.\n", resourceName, resource)
 	}
 	if (resourceMin == "") != (resourceMax == "") && resource == "" {
-		log.Errorf("`--min-%s` should accompany `--max-%s` or pass `--%s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName)
-		os.Exit(1)
+		odoutil.LogErrorAndExit(fmt.Errorf("`--min-%s` should accompany `--max-%s` or pass `--%s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName), "")
 	}
 }
 

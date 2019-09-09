@@ -75,12 +75,11 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 
 		// Classic case of component creation
 		if err := component.CreateComponent(cpo.Context.Client, *cpo.localConfigInfo, cpo.componentContext, stdout); err != nil {
-			log.Errorf(
+			odoutil.LogErrorAndExit(fmt.Errorf(
 				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
 				cmpName,
 				err,
-			)
-			os.Exit(1)
+			), "")
 		}
 
 		s.End(true)
@@ -107,10 +106,9 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 		log.Successf("Creating project %s", prjName)
 		err = project.Create(cpo.Context.Client, prjName, true)
 		if err != nil {
-			log.Errorf("Failed creating project %s", prjName)
 			return errors.Wrapf(
 				err,
-				"project %s does not exist. Failed creating it.Please try after creating project using `odo project create <project_name>`",
+				"project %s does not exist. Failed creating it. Please try after creating project using `odo project create <project_name>`",
 				prjName,
 			)
 		}
