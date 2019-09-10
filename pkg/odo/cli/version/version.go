@@ -133,6 +133,6 @@ func GetLatestReleaseInfo(info chan<- string) {
 			"to update manually, or visit https://github.com/openshift/odo/releases\n" +
 			"---\n" +
 			"If you wish to disable the update notifications, you can disable it by running\n" +
-			"'odo preference set UpdateNotification false'\n"
+			"odo preference set UpdateNotification false"
 	}
 }

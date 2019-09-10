@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli"
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -65,7 +65,7 @@ func main() {
 		util.LogErrorAndExit(root.Execute(), "")
 		select {
 		case message := <-updateInfo:
-			fmt.Println(message)
+			log.Italic(message)
 		default:
 			glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
