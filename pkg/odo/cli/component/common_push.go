@@ -70,9 +70,6 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	// If the component does not exist, we will create it for the first time.
 	if !cpo.isCmpExists {
 
-		s := log.Spinner("Creating component")
-		defer s.End(false)
-
 		// Classic case of component creation
 		if err := component.CreateComponent(cpo.Context.Client, *cpo.localConfigInfo, cpo.componentContext, stdout); err != nil {
 			log.Errorf(
@@ -82,8 +79,6 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 			)
 			os.Exit(1)
 		}
-
-		s.End(true)
 	}
 
 	// Apply config
