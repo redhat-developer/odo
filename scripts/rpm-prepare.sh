@@ -38,7 +38,7 @@ mkdir -p $FINAL_OUT_DIR
 echo "Generating spec file $SPEC_DIR/atomic-openshift-odo-rpm.spec"
 envsubst <rpms/atomic-openshift-odo-rpm.spec > $SPEC_DIR/atomic-openshift-odo-rpm.spec
 
-echo "Generating taball $SOURCES_DIR/$NAME.tar.gz"
+echo "Generating tarball $SOURCES_DIR/$NAME.tar.gz"
 # Copy code for manipulation
 cp -arf ./* $SOURCES_DIR/$NAME
 pushd $SOURCES_DIR
