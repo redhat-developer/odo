@@ -1,6 +1,7 @@
 package experimental
 
 import (
+	"github.com/openshift/odo/pkg/odo/cli/experimental/debug"
 	"github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,8 @@ const RecommendedCommandName = "experimental"
 var ExperimentalLongDesc = `Contains all the experimental commands which are not yet perfectly stable`
 
 func NewCmdExperimental(name, fullName string) *cobra.Command {
+
+	debugCmd := debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName))
 	experimentalCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Experimental commands",
@@ -19,6 +22,7 @@ func NewCmdExperimental(name, fullName string) *cobra.Command {
 		Aliases: []string{"e"},
 	}
 
+	experimentalCmd.AddCommand(debugCmd)
 	experimentalCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	experimentalCmd.Annotations = map[string]string{"command": "main"}
 	return experimentalCmd

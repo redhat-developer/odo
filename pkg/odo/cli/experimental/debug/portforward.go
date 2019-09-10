@@ -6,38 +6,41 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"time"
 
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 
-	"k8s.io/kubernetes/pkg/kubectl/polymorphichelpers"
-	"k8s.io/kubernetes/pkg/kubectl/util"
 	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
 	// "k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 // PortForwardOptions contains all the options for running the port-forward cli command.
 type PortForwardOptions struct {
-	Namespace     string
-	PodName       string
-	Address       []string
-	Ports         []string
-	PortForwarder portForwarder
+	Namespace  string
+	Address    []string
+	Ports      []string
+	contextDir string
+
+	PortForwarder PortForwarder
 	StopChannel   chan struct{}
 	ReadyChannel  chan struct{}
+	*genericclioptions.Context
+	localConfigInfo *config.LocalConfigInfo
 }
 
 var (
@@ -80,7 +83,7 @@ const (
 
 func NewPortForwardOptions() *PortForwardOptions {
 	return &PortForwardOptions{
-		PortForwarder: &defaultPortForwarder{
+		PortForwarder: &DefaultPortForwarder{
 			IOStreams: streams,
 		},
 	}
@@ -94,13 +97,13 @@ type DefaultPortForwarder struct {
 	k8sgenclioptions.IOStreams
 }
 
-func (f *defaultPortForwarder) ForwardPorts(method string, url *url.URL, opts PortForwardOptions) error {
-	transport, upgrader, err := spdy.RoundTripperFor(opts.Config)
+func (f *DefaultPortForwarder) ForwardPorts(method string, url *url.URL, opts PortForwardOptions) error {
+	transport, upgrader, err := spdy.RoundTripperFor()
 	if err != nil {
 		return err
 	}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, method, url)
-	fw, err := portforward.NewOnAddresses(dialer, opts.Address, opts.Ports, opts.StopChannel, opts.ReadyChannel, f.Out, f.ErrOut)
+	fw, err := portforward.New(dialer, opts.Ports, opts.StopChannel, opts.ReadyChannel, f.Out, f.ErrOut)
 	if err != nil {
 		return err
 	}
@@ -118,136 +121,97 @@ func splitPort(port string) (local, remote string) {
 	return parts[0], parts[0]
 }
 
-// Translates service port to target port
-// It rewrites ports as needed if the Service port declares targetPort.
-// It returns an error when a named targetPort can't find a match in the pod, or the Service did not declare
-// the port.
-func translateServicePortToTargetPort(ports []string, svc corev1.Service, pod corev1.Pod) ([]string, error) {
-	var translated []string
-	for _, port := range ports {
-		localPort, remotePort := splitPort(port)
-
-		portnum, err := strconv.Atoi(remotePort)
-		if err != nil {
-			svcPort, err := util.LookupServicePortNumberByName(svc, remotePort)
-			if err != nil {
-				return nil, err
-			}
-			portnum = int(svcPort)
-
-			if localPort == remotePort {
-				localPort = strconv.Itoa(portnum)
-			}
-		}
-		containerPort, err := util.LookupContainerPortNumberByServicePort(svc, pod, int32(portnum))
-		if err != nil {
-			// can't resolve a named port, or Service did not declare this port, return an error
-			return nil, err
-		}
-
-		if int32(portnum) != containerPort {
-			translated = append(translated, fmt.Sprintf("%s:%d", localPort, containerPort))
-		} else {
-			translated = append(translated, port)
-		}
-	}
-	return translated, nil
-}
-
-// convertPodNamedPortToNumber converts named ports into port numbers
+// ConvertPodNamedPortToNumber converts named ports into port numbers
 // It returns an error when a named port can't be found in the pod containers
-func ConvertPodNamedPortToNumber(ports []string, pod corev1.Pod) ([]string, error) {
-	var converted []string
-	for _, port := range ports {
-		localPort, remotePort := splitPort(port)
+// func ConvertPodNamedPortToNumber(ports []string, pod corev1.Pod) ([]string, error) {
+// 	var converted []string
+// 	for _, port := range ports {
+// 		localPort, remotePort := splitPort(port)
 
-		containerPortStr := remotePort
-		_, err := strconv.Atoi(remotePort)
-		if err != nil {
-			containerPort, err := util.LookupContainerPortNumberByName(pod, remotePort)
-			if err != nil {
-				return nil, err
-			}
+// 		containerPortStr := remotePort
+// 		_, err := strconv.Atoi(remotePort)
+// 		if err != nil {
+// 			containerPort, err := util.LookupContainerPortNumberByName(pod, remotePort)
+// 			if err != nil {
+// 				return nil, err
+// 			}
 
-			containerPortStr = strconv.Itoa(int(containerPort))
-		}
+// 			containerPortStr = strconv.Itoa(int(containerPort))
+// 		}
 
-		if localPort != remotePort {
-			converted = append(converted, fmt.Sprintf("%s:%s", localPort, containerPortStr))
-		} else {
-			converted = append(converted, containerPortStr)
-		}
-	}
+// 		if localPort != remotePort {
+// 			converted = append(converted, fmt.Sprintf("%s:%s", localPort, containerPortStr))
+// 		} else {
+// 			converted = append(converted, containerPortStr)
+// 		}
+// 	}
 
-	return converted, nil
-}
+// 	return converted, nil
+// }
 
 // Complete completes all the required options for port-forward cmd.
-func (o *PortForwardOptions) Complete(f cmdutil.Factory, cmd *cobra.Command, args []string) error {
-	var err error
+func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if len(args) < 2 {
 		return cmdutil.UsageErrorf(cmd, "TYPE/NAME and list of ports are required for port-forward")
 	}
 
-	o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return err
-	}
+	o.Context = genericclioptions.NewContext(cmd)
+	cfg, err := config.NewLocalConfigInfo(o.contextDir)
+	o.localConfigInfo = cfg
 
-	builder := f.NewBuilder().
-		WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).
-		ContinueOnError().
-		NamespaceParam(o.Namespace).DefaultNamespace()
+	// o.Client.GetOnePodFromSelector
 
-	getPodTimeout, err := cmdutil.GetPodRunningTimeoutFlag(cmd)
-	if err != nil {
-		return cmdutil.UsageErrorf(cmd, err.Error())
-	}
+	// o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
+	// if err != nil {
+	// 	return err
+	// }
 
-	resourceName := args[0]
-	builder.ResourceNames("pods", resourceName)
+	// builder := f.NewBuilder().
+	// 	WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).
+	// 	ContinueOnError().
+	// 	NamespaceParam(o.Namespace).DefaultNamespace()
 
-	obj, err := builder.Do().Object()
-	if err != nil {
-		return err
-	}
+	// getPodTimeout, err := cmdutil.GetPodRunningTimeoutFlag(cmd)
+	// if err != nil {
+	// 	return cmdutil.UsageErrorf(cmd, err.Error())
+	// }
 
-	forwardablePod, err := polymorphichelpers.AttachablePodForObjectFn(f, obj, getPodTimeout)
-	if err != nil {
-		return err
-	}
+	// resourceName := args[0]
+	// builder.ResourceNames("pods", resourceName)
 
-	o.PodName = forwardablePod.Name
+	// obj, err := builder.Do().Object()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// forwardablePod, err := polymorphichelpers.AttachablePodForObjectFn(f, obj, getPodTimeout)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// o.PodName = pod.Name
 
 	// handle service port mapping to target port if needed
-	switch t := obj.(type) {
-	case *corev1.Service:
-		o.Ports, err = translateServicePortToTargetPort(args[1:], *t, *forwardablePod)
-		if err != nil {
-			return err
-		}
-	default:
-		o.Ports, err = convertPodNamedPortToNumber(args[1:], *forwardablePod)
-		if err != nil {
-			return err
-		}
-	}
 
-	clientset, err := f.KubernetesClientSet()
-	if err != nil {
-		return err
-	}
+	// o.Ports, err = ConvertPodNamedPortToNumber(args[1:], *forwardablePod)
+	// if err != nil {
+	// 	return err
+	// }
+	// clientset, err := f.KubernetesClientSet()
+	// if err != nil {
+	// 	return err
+	// }
 
-	o.PodClient = clientset.CoreV1()
+	// o.PodClient = clientset.CoreV1()
 
-	o.Config, err = f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-	o.RESTClient, err = f.RESTClient()
-	if err != nil {
-		return err
-	}
+	// o.Config, err = f.ToRESTConfig()
+	// if err != nil {
+	// 	return err
+	// }
+	// o.RESTClient, err = f.RESTClient()
+	// if err != nil {
+	// 	return err
+	// }
 
 	o.StopChannel = make(chan struct{}, 1)
 	o.ReadyChannel = make(chan struct{})
@@ -256,6 +220,7 @@ func (o *PortForwardOptions) Complete(f cmdutil.Factory, cmd *cobra.Command, arg
 
 // Validate validates all the required options for port-forward cmd.
 func (o PortForwardOptions) Validate() error {
+
 	if len(o.PodName) == 0 {
 		return fmt.Errorf("pod name or resource type/name must be specified")
 	}
@@ -264,7 +229,7 @@ func (o PortForwardOptions) Validate() error {
 		return fmt.Errorf("at least 1 PORT is required for port-forward")
 	}
 
-	if o.PortForwarder == nil || o.PodClient == nil || o.RESTClient == nil || o.Config == nil {
+	if o.PortForwarder == nil {
 		return fmt.Errorf("client, client config, restClient, and portforwarder must be provided")
 	}
 	return nil
@@ -272,7 +237,18 @@ func (o PortForwardOptions) Validate() error {
 
 // Run implements all the necessary functionality for port-forward cmd.
 func (o PortForwardOptions) Run() error {
-	pod, err := o.PodClient.Pods(o.Namespace).Get(o.PodName, metav1.GetOptions{})
+	componentName := o.localConfigInfo.GetName()
+	appName := o.localConfigInfo.GetApplication()
+	componentLabels := componentlabels.GetLabels(componentName, appName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+	dc, err := o.Client.GetOneDeploymentConfigFromSelector(componentSelector)
+	if err != nil {
+		return errors.Wrap(err, "unable to get deployment for component")
+	}
+	// Find Pod for component
+	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
+
+	pod, err := o.Client.GetOnePodFromSelector(podSelector)
 	if err != nil {
 		return err
 	}
@@ -301,20 +277,22 @@ func (o PortForwardOptions) Run() error {
 	return o.PortForwarder.ForwardPorts("POST", req.URL(), o)
 }
 
+// NewCmdPortForward implements the port-forward odo command
 func NewCmdPortForward(name, fullName string) *cobra.Command {
 
 	opts := NewPortForwardOptions()
 	cmd := &cobra.Command{
-		Use:                   name + "port-forward TYPE/NAME [options] [LOCAL_PORT:]REMOTE_PORT [...[LOCAL_PORT_N:]REMOTE_PORT_N]",
-		DisableFlagsInUseLine: true,
-		Short:                 "Forward one or more local ports to a pod",
-		Long:                  portforwardLong,
-		Example:               portforwardExample,
+		Use:     name + "port-forward TYPE/NAME [options] [LOCAL_PORT:]REMOTE_PORT [...[LOCAL_PORT_N:]REMOTE_PORT_N]",
+		Short:   "Forward one or more local ports to a pod",
+		Long:    portforwardLong,
+		Example: portforwardExample,
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(opts, cmd, args)
 		},
 	}
 	cmdutil.AddPodRunningTimeoutFlag(cmd, defaultPodPortForwardWaitTimeout)
+	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
+
 	cmd.Flags().StringSliceVar(&opts.Address, "address", []string{"localhost"}, "Addresses to listen on (comma separated). Only accepts IP addresses or localhost as a value. When localhost is supplied, odo will try to bind on both 127.0.0.1 and ::1 and will fail if neither of these addresses are available to bind.")
 	return cmd
 }
