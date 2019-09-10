@@ -10,4 +10,4 @@ cp -avrf dist/rpmbuild/SOURCES/* $HOME/rpmbuild/SOURCES/
 cp -avrf dist/rpmbuild/SPECS/* $HOME/rpmbuild/SPECS/
 
 echo "Building locally"
-rpmbuild -ba $HOME/rpmbuild/SPECS/atomic-openshift-odo-rpm.spec
+rpmbuild -ba $HOME/rpmbuild/SPECS/atomic-openshift-odo.spec
