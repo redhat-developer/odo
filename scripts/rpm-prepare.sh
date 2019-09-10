@@ -8,6 +8,13 @@ export ODO_RELEASE=${ODO_RELEASE:=1}
 export GIT_COMMIT=${GIT_COMMIT:=`git rev-parse --short HEAD 2>/dev/null`}
 export ODO_RPM_VERSION=${ODO_VERSION//-}
 
+# Print env for verifcation
+echo "Printing envs for verification"
+echo "ODO_VERSION=$ODO_VERSION"
+echo "ODO_RELEASE=$ODO_RELEASE"
+echo "GIT_COMMIT=$GIT_COMMIT"
+echo "ODO_RPM_VERSION=$ODO_RPM_VERSION"
+
 OUT_DIR=".rpmbuild"
 DIST_DIR="$(pwd)/dist"
 
