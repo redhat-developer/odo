@@ -28,6 +28,9 @@ var (
 // RecommendedCommandName is the recommended version command name
 const RecommendedCommandName = "version"
 
+// OdoReleasesPage is the GitHub page where we do all our releases
+const OdoReleasesPage = "https://github.com/openshift/odo/releases"
+
 var versionLongDesc = ktemplates.LongDesc("Print the client version information")
 
 var versionExample = ktemplates.Examples(`
@@ -126,13 +129,13 @@ func GetLatestReleaseInfo(info chan<- string) {
 		glog.V(4).Infof("Error checking if newer odo release is available: %v", err)
 	}
 	if len(newTag) > 0 {
-		info <- "---\n" +
-			"A newer version of odo (version: " + fmt.Sprint(newTag) + ") is available.\n" +
-			"Update using your package manager, or run\n" +
-			"curl " + notify.InstallScriptURL + " | sh\n" +
-			"to update manually, or visit https://github.com/openshift/odo/releases\n" +
-			"---\n" +
-			"If you wish to disable the update notifications, you can disable it by running\n" +
-			"odo preference set UpdateNotification false"
+		info <- fmt.Sprintf(`
+---
+A newer version of odo (%s) is available,
+visit %s to update.
+If you wish to disable this notification, run:
+odo preference set UpdateNotification false
+---`, fmt.Sprint(newTag), OdoReleasesPage)
+
 	}
 }
