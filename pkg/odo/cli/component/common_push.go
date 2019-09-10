@@ -104,17 +104,14 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
 	}
 	if !isPrjExists {
-		log.Successf("Creating project %s", prjName)
 		err = project.Create(cpo.Context.Client, prjName, true)
 		if err != nil {
-			log.Errorf("Failed creating project %s", prjName)
 			return errors.Wrapf(
 				err,
-				"project %s does not exist. Failed creating it.Please try after creating project using `odo project create <project_name>`",
+				"project %s does not exist. Failed creating it. Please try after creating project using `odo project create <project_name>`",
 				prjName,
 			)
 		}
-		log.Successf("Successfully created project %s", prjName)
 	}
 	cpo.Context.Client.Namespace = prjName
 	return
