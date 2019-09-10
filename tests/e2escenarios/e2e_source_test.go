@@ -121,6 +121,7 @@ var _ = Describe("odo source e2e tests", func() {
 		})
 
 		It("Should be able to deploy a dotnet source application", func() {
+			oc.ImportDotnet20IS(project)
 			helper.CopyExample(filepath.Join("source", "dotnet"), context)
 			helper.CmdShouldPass("odo", "create", "dotnet:2.0", "dotnet-app", "--project",
 				project, "--context", context)
