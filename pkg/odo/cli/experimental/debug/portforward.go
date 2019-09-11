@@ -20,8 +20,6 @@ import (
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-
-	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
 )
 
 // PortForwardOptions contains all the options for running the port-forward cli command.
@@ -39,16 +37,16 @@ type PortForwardOptions struct {
 }
 
 var (
-	portforwardLong = templates.LongDesc(i18n.T(`
+	portforwardLong = templates.LongDesc(`
                 Forward one or more local ports to a pod. This command requires the node to have 'socat' installed.
 
                 Use resource type/name such as deployment/mydeployment to select a pod. Resource type defaults to 'pod' if omitted.
 
                 If there are multiple pods matching the criteria, a pod will be selected automatically. The
                 forwarding session ends when the selected pod terminates, and rerun of the command is needed
-                to resume forwarding.`))
+                to resume forwarding.`)
 
-	portforwardExample = templates.Examples(i18n.T(`
+	portforwardExample = templates.Examples(`
 		# Listen on ports 5000 and 6000 locally, forwarding data to/from ports 5000 and 6000 in the pod
 		odo experimental port-forward pod/mypod 5000 6000
 
@@ -68,7 +66,7 @@ var (
 		odo experimental debug port-forward --address localhost,10.19.21.23 pod/mypod 8888:5000
 
 		# Listen on a random port locally, forwarding to 5000 in the pod
-		odo experimental debug port-forward pod/mypod :5000`))
+		odo experimental debug port-forward pod/mypod :5000`)
 )
 
 const (
