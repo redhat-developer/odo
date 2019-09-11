@@ -58,6 +58,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/util/retry"
@@ -3065,6 +3066,16 @@ func (c *Client) ExecCMDInContainer(podName string, cmd []string, stdout io.Writ
 	}
 
 	return nil
+}
+
+// BuildPortForwardReq builds a port forward request
+func (c *Client) BuildPortForwardReq(podName string) *rest.Request {
+	return c.kubeClient.CoreV1().RESTClient().
+		Post().
+		Resource("pods").
+		Namespace(c.Namespace).
+		Name(podName).
+		SubResource("portforward")
 }
 
 // GetVolumeMountsFromDC returns a list of all volume mounts in the given DC

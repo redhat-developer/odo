@@ -171,7 +171,6 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	// 	ContinueOnError().
 	// 	NamespaceParam(o.Namespace).DefaultNamespace()
 
-	// getPodTimeout, err := cmdutil.GetPodRunningTimeoutFlag(cmd)
 	// if err != nil {
 	// 	return cmdutil.UsageErrorf(cmd, err.Error())
 	// }
@@ -193,22 +192,13 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 	// handle service port mapping to target port if needed
 
+	// getPodTimeout, err := cmdutil.GetPodRunningTimeoutFlag(cmd)
+
+	// if err != nil {
+	// 	return err
+	// }
+
 	// o.Ports, err = ConvertPodNamedPortToNumber(args[1:], *forwardablePod)
-	// if err != nil {
-	// 	return err
-	// }
-	// clientset, err := f.KubernetesClientSet()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// o.PodClient = clientset.CoreV1()
-
-	// o.Config, err = f.ToRESTConfig()
-	// if err != nil {
-	// 	return err
-	// }
-	// o.RESTClient, err = f.RESTClient()
 	// if err != nil {
 	// 	return err
 	// }
@@ -220,10 +210,6 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 // Validate validates all the required options for port-forward cmd.
 func (o PortForwardOptions) Validate() error {
-
-	if len(o.PodName) == 0 {
-		return fmt.Errorf("pod name or resource type/name must be specified")
-	}
 
 	if len(o.Ports) < 1 {
 		return fmt.Errorf("at least 1 PORT is required for port-forward")
@@ -268,12 +254,7 @@ func (o PortForwardOptions) Run() error {
 		}
 	}()
 
-	req := o.RESTClient.Post().
-		Resource("pods").
-		Namespace(o.Namespace).
-		Name(pod.Name).
-		SubResource("portforward")
-
+	req := o.Client.BuildPortForwardReq(pod.Name)
 	return o.PortForwarder.ForwardPorts("POST", req.URL(), o)
 }
 
