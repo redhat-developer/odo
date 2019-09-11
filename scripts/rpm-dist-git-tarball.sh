@@ -8,8 +8,6 @@ ODO_RELEASE=`cat $VERSION_INFO_FILE | grep "ODO_RELEASE" | cut -d "=" -f2`
 NAME="atomic-openshift-odo-$ODO_VERSION-$ODO_RELEASE"
 echo "Preping dist-git tarball for $NAME"
 cp -arf $SPEC_FILE_SRC $SPEC_FILE
-pushd ..
 echo "Creating tarball at $(pwd)/$NAME.tar.gz"
-tar -czf $NAME.tar.gz odo/*
-popd
+tar -czf ../$NAME.tar.gz *
 rm -rf $SPEC_FILE
