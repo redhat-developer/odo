@@ -66,6 +66,13 @@ fi
 popd
 
 echo "Finalizing..."
+# Store version information in file for reference purposes
+echo "ODO_VERSION=$ODO_VERSION" > $OUT_DIR/version
+echo "ODO_RELEASE=$ODO_RELEASE" >> $OUT_DIR/version
+echo "GIT_COMMIT=$GIT_COMMIT" >> $OUT_DIR/version
+echo "ODO_RPM_VERSION=$ODO_RPM_VERSION" >> $OUT_DIR/version
+
+
 # After success copy stuff to actual location
 mv $OUT_DIR/* $FINAL_OUT_DIR
 # Remove out dir
