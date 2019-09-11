@@ -15,11 +15,13 @@ type CatalogImage struct {
 	Namespace     string
 	AllTags       []string
 	NonHiddenTags []string
+
+	// this is used to get metadata like image URL for each tag present in the image stream
+	imageStreamRef imagev1.ImageStream
 }
 
 // List lists all the available component types
 func List(client *occlient.Client) ([]CatalogImage, error) {
-
 	catalogList, err := getDefaultBuilderImages(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get image streams")
@@ -129,8 +131,73 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 		imageStreamTagMap[imageStreamTag.Name] = imageStreamTag
 	}
 
-	var builderImages []CatalogImage
+	builderImages := getBuildersFromImageStreams(imageStreams, imageStreamTagMap)
 
+	return builderImages, nil
+}
+
+// SliceSupportedTags splits the tags in to fully supported and unsupported tags
+func SliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
+
+	var supTag, unSupTag []string
+	tagMap := createImageTagMap(catalogImage.imageStreamRef.Spec.Tags)
+	for _, tag := range catalogImage.NonHiddenTags {
+		imageName := tagMap[tag]
+		if isSupportedImage(imageName) {
+			supTag = append(supTag, tag)
+		} else {
+			unSupTag = append(unSupTag, tag)
+		}
+	}
+	return supTag, unSupTag
+}
+
+// createImageTagMap takes a list of image TagReferences and creates a map of type tag name => image name e.g. 1.11 => openshift/nodejs-11
+func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
+	tagMap := make(map[string]string)
+	for _, tagRef := range tagRefs {
+		imageName := tagRef.From.Name
+		if tagRef.From.Kind == "DockerImage" {
+			// we get the image name from the repo url e.g. registry.redhat.com/openshift/nodejs:10 will give openshift/nodejs:10
+			urlImageName := strings.SplitN(imageName, "/", 2)[1]
+			// here we remove the tag and digest
+			ns, img, _, _, _ := occlient.ParseImageName(urlImageName)
+			imageName = ns + "/" + img
+		} else if tagRef.From.Kind == "ImageStreamTag" {
+			tagList := strings.Split(imageName, ":")
+			tag := tagList[len(tagList)-1]
+			// if the kind is a image stream tag that means its pointing to an existing dockerImage or image stream image
+			// we just look it up from the tapMap we already have
+			imageName = tagMap[tag]
+		}
+		tagMap[tagRef.Name] = imageName
+	}
+	return tagMap
+}
+
+// isSupportedImages returns if the image is supported or not. the supported images have been provided here
+// https://github.com/openshift/odo-init-image/blob/master/language-scripts/image-mappings.json
+func isSupportedImage(imgName string) bool {
+	supportedImages := []string{
+		"redhat-openjdk-18/openjdk18-openshift",
+		"openjdk/openjdk-11-rhel8",
+		"openjdk/openjdk-11-rhel7",
+		"rhscl/nodejs-8-rhel7",
+		"rhoar-nodejs/nodejs-8",
+		"rhoar-nodejs/nodejs-10",
+	}
+	for _, supImage := range supportedImages {
+		if supImage == imgName {
+			return true
+		}
+	}
+	return false
+}
+
+// getBuildersFromImageStreams returns all the builder Images from the image streams provided and also hides the builder images
+// which have hidden annotation attached to it
+func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStreamTagMap map[string]imagev1.ImageStreamTag) []CatalogImage {
+	var builderImages []CatalogImage
 	// Get builder images from the available imagestreams
 	for _, imageStream := range imageStreams {
 		var allTags []string
@@ -139,7 +206,6 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 
 		for _, tagReference := range imageStream.Spec.Tags {
 			allTags = append(allTags, tagReference.Name)
-
 			// Check to see if it is a "builder" image
 			if _, ok := tagReference.Annotations["tags"]; ok {
 				for _, t := range strings.Split(tagReference.Annotations["tags"], ",") {
@@ -172,18 +238,18 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 			}
 
 			catalogImage := CatalogImage{
-				Name:          imageStream.Name,
-				Namespace:     imageStream.Namespace,
-				AllTags:       allTags,
-				NonHiddenTags: getAllNonHiddenTags(allTags, hiddenTags),
+				Name:           imageStream.Name,
+				Namespace:      imageStream.Namespace,
+				AllTags:        allTags,
+				NonHiddenTags:  getAllNonHiddenTags(allTags, hiddenTags),
+				imageStreamRef: imageStream,
 			}
 			builderImages = append(builderImages, catalogImage)
 			glog.V(5).Infof("Found builder image: %#v", catalogImage)
 		}
 
 	}
-
-	return builderImages, nil
+	return builderImages
 }
 
 func getAllNonHiddenTags(allTags []string, hiddenTags []string) []string {

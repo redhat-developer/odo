@@ -28,7 +28,10 @@ func fakeImageStream(imageName string, namespace string, tags []string) *imagev1
 	}
 
 	for _, tag := range tags {
-		imageTag := imagev1.TagReference{Name: tag, Annotations: map[string]string{"tags": "builder"}}
+		imageTag := imagev1.TagReference{
+			Name:        tag,
+			Annotations: map[string]string{"tags": "builder"},
+		}
 		image.Spec.Tags = append(image.Spec.Tags, imageTag)
 	}
 

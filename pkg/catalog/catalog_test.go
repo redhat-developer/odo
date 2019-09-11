@@ -4,8 +4,11 @@ import (
 	"reflect"
 	"testing"
 
+	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -135,5 +138,59 @@ func TestList(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestSliceSupportedTags(t *testing.T) {
+
+	tags := map[string]string{
+		"10": "docker.io/rhoar-nodejs/nodejs-10",
+		"8":  "docker.io/rhoar-nodejs/nodejs-8",
+		"6":  "docker.io/centos/nodejs-6-centos7:latest",
+	}
+
+	imageStream := &imagev1.ImageStream{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nodejs",
+			Namespace: "openshift",
+		},
+	}
+
+	for tagName, imageName := range tags {
+		imageTag := imagev1.TagReference{
+			Name:        tagName,
+			Annotations: map[string]string{"tags": "builder"},
+			From: &corev1.ObjectReference{
+				Kind: "DockerImage",
+				Name: imageName,
+			},
+		}
+		imageStream.Spec.Tags = append(imageStream.Spec.Tags, imageTag)
+	}
+
+	imageStream.Spec.Tags = append(imageStream.Spec.Tags,
+		imagev1.TagReference{
+			Name:        "latest",
+			Annotations: map[string]string{"tags": "builder"},
+			From: &corev1.ObjectReference{
+				Kind: "ImageStreamTag",
+				Name: "10",
+			},
+		})
+
+	img := CatalogImage{
+		Name:      "nodejs",
+		Namespace: "openshift",
+		NonHiddenTags: []string{
+			"10", "8", "6", "latest",
+		},
+		imageStreamRef: *imageStream,
+	}
+
+	supTags, unSupTags := SliceSupportedTags(img)
+
+	if !reflect.DeepEqual(supTags, []string{"10", "8", "latest"}) ||
+		!reflect.DeepEqual(unSupTags, []string{"6"}) {
+		t.Fatal("supported or unsupported tags are not as expected")
 	}
 }
