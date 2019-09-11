@@ -74,6 +74,7 @@ var (
 const (
 	// Amount of time to wait until at least one pod is running
 	defaultPodPortForwardWaitTimeout = 60 * time.Second
+	portforwardCommandName           = "port-forward"
 )
 
 func NewPortForwardOptions() *PortForwardOptions {
@@ -153,7 +154,7 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 
 	opts := NewPortForwardOptions()
 	cmd := &cobra.Command{
-		Use:     name + "port-forward TYPE/NAME [options] [LOCAL_PORT:]REMOTE_PORT [...[LOCAL_PORT_N:]REMOTE_PORT_N]",
+		Use:     name + " [LOCAL_PORT:]REMOTE_PORT [...[LOCAL_PORT_N:]REMOTE_PORT_N]",
 		Short:   "Forward one or more local ports to a pod",
 		Long:    portforwardLong,
 		Example: portforwardExample,

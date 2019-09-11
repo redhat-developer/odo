@@ -22,8 +22,8 @@ func NewCmdExperimental(name, fullName string) *cobra.Command {
 		Aliases: []string{"e"},
 	}
 
-	experimentalCmd.AddCommand(debugCmd)
 	experimentalCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	experimentalCmd.AddCommand(debugCmd)
 	experimentalCmd.Annotations = map[string]string{"command": "main"}
 	return experimentalCmd
 }
