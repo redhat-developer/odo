@@ -48,9 +48,9 @@ mkdir -p %{buildroot}/%{_bindir}
 install -m 0755 dist/bin/linux-amd64/odo %{buildroot}/%{_bindir}/odo
 mkdir -p %{buildroot}%{_datadir}
 install -d %{buildroot}%{_datadir}/%{name}/{linux,macos,windows}
-install -p -m 755 dist/bin/linux-amd64/odo %{buildroot}%{_datadir}/%{name}/linux/odo-linux-amd64
-install -p -m 755 dist/bin/darwin-amd64/odo %{buildroot}%{_datadir}/%{name}/macos/odo-darwin-amd64
-install -p -m 755 dist/bin/windows-amd64/odo.exe %{buildroot}%{_datadir}/%{name}/windows/odo-windows-amd64.exe
+install -p -m 755 dist/bin/linux-amd64/odo %{buildroot}%{_datadir}/%{name}-redistributable/linux/odo-linux-amd64
+install -p -m 755 dist/bin/darwin-amd64/odo %{buildroot}%{_datadir}/%{name}-redistributable/macos/odo-darwin-amd64
+install -p -m 755 dist/bin/windows-amd64/odo.exe %{buildroot}%{_datadir}/%{name}-redistributable/windows/odo-windows-amd64.exe
 
 %files
 %license LICENSE
@@ -68,10 +68,10 @@ Obsoletes:      %{package_name}-redistributable
 
 %files redistributable
 %license LICENSE
-%dir %{_datadir}/%{name}/linux/
-%dir %{_datadir}/%{name}/macos/
-%dir %{_datadir}/%{name}/windows/
-%{_datadir}/%{name}/linux/odo-linux-amd64
-%{_datadir}/%{name}/macos/odo-darwin-amd64
-%{_datadir}/%{name}/windows/odo-windows-amd64.exe
+%dir %{_datadir}/%{name}-redistributable/linux/
+%dir %{_datadir}/%{name}-redistributable/macos/
+%dir %{_datadir}/%{name}-redistributable/windows/
+%{_datadir}/%{name}-redistributable/linux/odo-linux-amd64
+%{_datadir}/%{name}-redistributable/macos/odo-darwin-amd64
+%{_datadir}/%{name}-redistributable/windows/odo-windows-amd64.exe
 
