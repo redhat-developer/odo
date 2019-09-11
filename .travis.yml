@@ -66,7 +66,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "watch, storage, app and push command integration tests"
+      name: "watch, storage, app, project and push command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -76,6 +76,7 @@ jobs:
         - travis_wait make test-cmd-storage
         - travis_wait make test-cmd-app
         - travis_wait make test-cmd-push
+        - travis_wait make test-cmd-project
         - odo logout
 
     - <<: *base-test
