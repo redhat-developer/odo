@@ -2,16 +2,13 @@ package debug
 
 import (
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/openshift/odo/pkg/occlient"
-
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/openshift/odo/pkg/util"
@@ -20,14 +17,11 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 
 	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
-	// "k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 // PortForwardOptions contains all the options for running the port-forward cli command.
@@ -37,7 +31,7 @@ type PortForwardOptions struct {
 	Ports      []string
 	contextDir string
 
-	PortForwarder PortForwarder
+	PortForwarder debug.PortForwarder
 	StopChannel   chan struct{}
 	ReadyChannel  chan struct{}
 	*genericclioptions.Context
@@ -86,32 +80,6 @@ func NewPortForwardOptions() *PortForwardOptions {
 	return &PortForwardOptions{}
 }
 
-type PortForwarder interface {
-	ForwardPorts(method string, url *url.URL, opts PortForwardOptions) error
-}
-
-type DefaultPortForwarder struct {
-	client *occlient.Client
-	k8sgenclioptions.IOStreams
-}
-
-func (f *DefaultPortForwarder) ForwardPorts(method string, url *url.URL, opts PortForwardOptions) error {
-	conf, err := f.client.KubeConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-	transport, upgrader, err := spdy.RoundTripperFor(conf)
-	if err != nil {
-		return err
-	}
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, method, url)
-	fw, err := portforward.New(dialer, opts.Ports, opts.StopChannel, opts.ReadyChannel, f.Out, f.ErrOut)
-	if err != nil {
-		return err
-	}
-	return fw.ForwardPorts()
-}
-
 // Complete completes all the required options for port-forward cmd.
 func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if len(args) < 2 {
@@ -126,12 +94,9 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	o.Context = genericclioptions.NewContext(cmd)
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 	o.localConfigInfo = cfg
+	// TODO: change this to allow real logging
 
-	o.PortForwarder = &DefaultPortForwarder{
-		// TODO: change this to allow real logging
-		IOStreams: k8sgenclioptions.NewTestIOStreamsDiscard(),
-		client:    o.Context.Client,
-	}
+	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	o.StopChannel = make(chan struct{}, 1)
 	o.ReadyChannel = make(chan struct{})
@@ -185,7 +150,7 @@ func (o PortForwardOptions) Run() error {
 	}()
 
 	req := o.Client.BuildPortForwardReq(pod.Name)
-	return o.PortForwarder.ForwardPorts("POST", req.URL(), o)
+	return o.PortForwarder.ForwardPorts("POST", req.URL(), o.Ports, o.StopChannel, o.ReadyChannel)
 }
 
 // NewCmdPortForward implements the port-forward odo command
