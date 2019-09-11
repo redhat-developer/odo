@@ -95,7 +95,6 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 	o.localConfigInfo = cfg
 	// TODO: change this to allow real logging
-
 	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	o.StopChannel = make(chan struct{}, 1)
@@ -108,10 +107,6 @@ func (o PortForwardOptions) Validate() error {
 
 	if len(o.Ports) < 1 {
 		return fmt.Errorf("at least 1 PORT is required for port-forward")
-	}
-
-	if o.PortForwarder == nil {
-		return fmt.Errorf("client, client config, restClient, and portforwarder must be provided")
 	}
 	return nil
 }
