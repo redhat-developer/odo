@@ -6,8 +6,9 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/occlient"
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
@@ -82,11 +83,7 @@ const (
 )
 
 func NewPortForwardOptions() *PortForwardOptions {
-	return &PortForwardOptions{
-		PortForwarder: &DefaultPortForwarder{
-			IOStreams: streams,
-		},
-	}
+	return &PortForwardOptions{}
 }
 
 type PortForwarder interface {
@@ -94,11 +91,16 @@ type PortForwarder interface {
 }
 
 type DefaultPortForwarder struct {
+	client *occlient.Client
 	k8sgenclioptions.IOStreams
 }
 
 func (f *DefaultPortForwarder) ForwardPorts(method string, url *url.URL, opts PortForwardOptions) error {
-	transport, upgrader, err := spdy.RoundTripperFor()
+	conf, err := f.client.KubeConfig.ClientConfig()
+	if err != nil {
+		return err
+	}
+	transport, upgrader, err := spdy.RoundTripperFor(conf)
 	if err != nil {
 		return err
 	}
@@ -110,98 +112,26 @@ func (f *DefaultPortForwarder) ForwardPorts(method string, url *url.URL, opts Po
 	return fw.ForwardPorts()
 }
 
-// splitPort splits port string which is in form of [LOCAL PORT]:REMOTE PORT
-// and returns local and remote ports separately
-func splitPort(port string) (local, remote string) {
-	parts := strings.Split(port, ":")
-	if len(parts) == 2 {
-		return parts[0], parts[1]
-	}
-
-	return parts[0], parts[0]
-}
-
-// ConvertPodNamedPortToNumber converts named ports into port numbers
-// It returns an error when a named port can't be found in the pod containers
-// func ConvertPodNamedPortToNumber(ports []string, pod corev1.Pod) ([]string, error) {
-// 	var converted []string
-// 	for _, port := range ports {
-// 		localPort, remotePort := splitPort(port)
-
-// 		containerPortStr := remotePort
-// 		_, err := strconv.Atoi(remotePort)
-// 		if err != nil {
-// 			containerPort, err := util.LookupContainerPortNumberByName(pod, remotePort)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-
-// 			containerPortStr = strconv.Itoa(int(containerPort))
-// 		}
-
-// 		if localPort != remotePort {
-// 			converted = append(converted, fmt.Sprintf("%s:%s", localPort, containerPortStr))
-// 		} else {
-// 			converted = append(converted, containerPortStr)
-// 		}
-// 	}
-
-// 	return converted, nil
-// }
-
 // Complete completes all the required options for port-forward cmd.
 func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if len(args) < 2 {
 		return cmdutil.UsageErrorf(cmd, "TYPE/NAME and list of ports are required for port-forward")
 	}
 
+	// TODO:
+	// 1 - validate the port format
+	// 2 - provide support for named ports
+	o.Ports = args[1:]
+
 	o.Context = genericclioptions.NewContext(cmd)
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 	o.localConfigInfo = cfg
 
-	// o.Client.GetOnePodFromSelector
-
-	// o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// builder := f.NewBuilder().
-	// 	WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).
-	// 	ContinueOnError().
-	// 	NamespaceParam(o.Namespace).DefaultNamespace()
-
-	// if err != nil {
-	// 	return cmdutil.UsageErrorf(cmd, err.Error())
-	// }
-
-	// resourceName := args[0]
-	// builder.ResourceNames("pods", resourceName)
-
-	// obj, err := builder.Do().Object()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// forwardablePod, err := polymorphichelpers.AttachablePodForObjectFn(f, obj, getPodTimeout)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// o.PodName = pod.Name
-
-	// handle service port mapping to target port if needed
-
-	// getPodTimeout, err := cmdutil.GetPodRunningTimeoutFlag(cmd)
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	// o.Ports, err = ConvertPodNamedPortToNumber(args[1:], *forwardablePod)
-	// if err != nil {
-	// 	return err
-	// }
+	o.PortForwarder = &DefaultPortForwarder{
+		// TODO: change this to allow real logging
+		IOStreams: k8sgenclioptions.NewTestIOStreamsDiscard(),
+		client:    o.Context.Client,
+	}
 
 	o.StopChannel = make(chan struct{}, 1)
 	o.ReadyChannel = make(chan struct{})
