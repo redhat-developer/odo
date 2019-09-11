@@ -6,6 +6,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
@@ -60,16 +61,20 @@ func (o *ServiceListOptions) Run() (err error) {
 		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
 	}
 
-	if len(services) == 0 {
-		log.Error("There are no services deployed for this application")
-		return
+	if len(services.Items) == 0 {
+		return fmt.Errorf("There are no services deployed for this application")
 	}
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "STATUS")
-	for _, comp := range services {
-		fmt.Fprintln(w, comp.Name, "\t", comp.Type, "\t", comp.Status)
+
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(services)
+	} else {
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "PLAN", "\t", "STATUS")
+		for _, comp := range services.Items {
+			fmt.Fprintln(w, comp.Spec.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Plan, "\t", comp.Status.Status)
+		}
+		w.Flush()
 	}
-	w.Flush()
 	return
 }
 

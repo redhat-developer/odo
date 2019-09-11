@@ -213,7 +213,7 @@ func TestListWithDetailedStatus(t *testing.T) {
 		serviceList scv1beta1.ServiceInstanceList
 		secretList  corev1.SecretList
 		dcList      appsv1.DeploymentConfigList
-		output      []ServiceInfo
+		output      []Service
 	}{
 		{
 			name: "Case 1: services with various statuses, some bound and some linked",
@@ -388,26 +388,62 @@ func TestListWithDetailedStatus(t *testing.T) {
 					},
 				},
 			},
-			output: []ServiceInfo{
-				{
-					Name:   "mysql-persistent",
-					Status: "ProvisionedAndLinked",
-					Type:   "mysql-persistent",
+			output: []Service{
+				Service{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "odo.openshift.io/v1alpha1",
+					},
+					Spec: ServiceSpec{
+						Name: "mysql-persistent",
+						Type: "mysql-persistent",
+						Plan: "default",
+					},
+					Status: ServiceStatus{
+						Status: "ProvisionedSuccessfully",
+					},
 				},
-				{
-					Name:   "postgresql-ephemeral",
-					Status: "ProvisionedAndBound",
-					Type:   "postgresql-ephemeral",
+				Service{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "odo.openshift.io/v1alpha1",
+					},
+					Spec: ServiceSpec{
+						Name: "postgresql-ephemeral",
+						Type: "postgresql-ephemeral",
+						Plan: "default",
+					},
+					Status: ServiceStatus{
+						Status: "ProvisionedSuccessfully",
+					},
 				},
-				{
-					Name:   "mongodb",
-					Status: "ProvisionedSuccessfully",
-					Type:   "mongodb",
+				Service{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "odo.openshift.io/v1alpha1",
+					},
+					Spec: ServiceSpec{
+						Name: "mongodb",
+						Type: "mongodb",
+						Plan: "default",
+					},
+					Status: ServiceStatus{
+						Status: "ProvisionedSuccessfully",
+					},
 				},
-				{
-					Name:   "jenkins-persistent",
-					Status: "Provisioning",
-					Type:   "jenkins-persistent",
+				Service{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "odo.openshift.io/v1alpha1",
+					},
+					Spec: ServiceSpec{
+						Name: "jenkins-persistent",
+						Type: "jenkins-persistent",
+						Plan: "default",
+					},
+					Status: ServiceStatus{
+						Status: "Provisioning",
+					},
 				},
 			},
 		},
@@ -433,8 +469,8 @@ func TestListWithDetailedStatus(t *testing.T) {
 
 		svcInstanceList, _ := ListWithDetailedStatus(client, "app")
 
-		if !reflect.DeepEqual(tt.output, svcInstanceList) {
-			t.Errorf("expected output: %#v,got: %#v", tt.serviceList, svcInstanceList)
+		if !reflect.DeepEqual(tt.output, svcInstanceList.Items) {
+			t.Errorf("expected output: %#v,got: %#v", tt.output, svcInstanceList.Items)
 		}
 	}
 }

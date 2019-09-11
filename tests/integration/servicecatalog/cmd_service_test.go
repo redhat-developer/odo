@@ -45,6 +45,13 @@ var _ = Describe("odo service command tests", func() {
 		})
 	})
 
+	Context("checking machine readable output for service catalog", func() {
+		It("should succeed listing catalog components", func() {
+			// Since service catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
+			helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
+		})
+	})
+
 	Context("create service with Env non-interactively", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
@@ -190,7 +197,7 @@ var _ = Describe("odo service command tests", func() {
 			Expect(stdOut).To(ContainSubstring(serviceName))
 		})
 
-		It("should be able to list services in a given app and project combination", func() {
+		It("should be able to list services, as well as json list in a given app and project combination", func() {
 			// create a component by copying the example
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--app", app, "--project", project)
@@ -209,10 +216,22 @@ var _ = Describe("odo service command tests", func() {
 			stdOut := helper.CmdShouldPass("odo", "service", "list")
 			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
 
+			// Check json output
+			stdOut = helper.CmdShouldPass("odo", "service", "list", "-o", "json")
+			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
+			Expect(stdOut).To(ContainSubstring("ServiceList"))
+
 			// cd to a non-component directory and list services
 			helper.Chdir(originalDir)
 			stdOut = helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project)
 			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
+
+			// Check json output
+			helper.Chdir(originalDir)
+			stdOut = helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project, "-o", "json")
+			Expect(stdOut).To(ContainSubstring("dh-prometheus-apb"))
+			Expect(stdOut).To(ContainSubstring("ServiceList"))
+
 		})
 
 		It("should be able to create, list and delete services without a context and using --app and --project flags instaed", func() {

@@ -100,10 +100,10 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 			log.Info("No services / could not get services")
 			glog.V(4).Info(err.Error())
 		}
-		if len(serviceList) != 0 {
+		if len(serviceList.Items) != 0 {
 			log.Info("This application has following service that will be deleted")
-			for _, ser := range serviceList {
-				log.Info("service named", ser.Name, "of type", ser.Type)
+			for _, ser := range serviceList.Items {
+				log.Info("service named", ser.Spec.Name, "of type", ser.Spec.Type)
 			}
 		}
 

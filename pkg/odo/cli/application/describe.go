@@ -81,11 +81,11 @@ func (o *DescribeOptions) Run() (err error) {
 		//we ignore service errors here because it's entirely possible that the service catalog has not been installed
 		serviceList, _ := service.ListWithDetailedStatus(o.Client, o.appName)
 
-		if len(componentList.Items) == 0 && len(serviceList) == 0 {
+		if len(componentList.Items) == 0 && len(serviceList.Items) == 0 {
 			fmt.Printf("Application %s has no components or services deployed.", o.appName)
 		} else {
 			fmt.Printf("Application Name: %s has %v component(s) and %v service(s):\n--------------------------------------\n",
-				o.appName, len(componentList.Items), len(serviceList))
+				o.appName, len(componentList.Items), len(serviceList.Items))
 			if len(componentList.Items) > 0 {
 				for _, currentComponent := range componentList.Items {
 					componentDesc, err := component.GetComponent(o.Client, currentComponent.Name, o.appName, o.Project)
@@ -94,11 +94,11 @@ func (o *DescribeOptions) Run() (err error) {
 					fmt.Println("--------------------------------------")
 				}
 			}
-			if len(serviceList) > 0 {
-				for _, currentService := range serviceList {
-					fmt.Printf("Service Name: %s\n", currentService.Name)
-					fmt.Printf("Type: %s\n", currentService.Type)
-					fmt.Printf("Status: %s\n", currentService.Status)
+			if len(serviceList.Items) > 0 {
+				for _, currentService := range serviceList.Items {
+					fmt.Printf("Service Name: %s\n", currentService.Spec.Name)
+					fmt.Printf("Type: %s\n", currentService.Spec.Type)
+					fmt.Printf("Status: %s\n", currentService.Status.Status)
 					fmt.Println("--------------------------------------")
 				}
 			}
