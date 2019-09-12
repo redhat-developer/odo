@@ -11,7 +11,8 @@ make configure-installer-tests-cluster
 make bin
 go get -u github.com/onsi/ginkgo/ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
-export CUSTOM_HOMEDIR="/tmp/artifacts"
+export ARTIFACTS_DIR="/tmp/artifacts"
+export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 
 make test-e2e-beta
 make test-e2e-java
@@ -19,4 +20,4 @@ make test-e2e-source
 odo logout
 
 # upload the junit test reports
-cp -r reports $CUSTOM_HOMEDIR
+cp -r reports $ARTIFACTS_DIR
