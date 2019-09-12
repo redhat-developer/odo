@@ -34,6 +34,7 @@ var (
    %[1]s %[8]s
    %[1]s %[9]s
    %[1]s %[10]s
+   %[1]s %[11]s
 
    # Unset a env variable in the local config
     %[1]s --env KAFKA_HOST --env KAFKA_PORT
@@ -118,7 +119,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Short: "Unset a value in odo config file",
 		Long:  fmt.Sprintf(unsetLongDesc, config.FormatLocallySupportedParameters()),
 		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
-			config.Type, config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
+			config.Type, config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if o.envArray != nil {
 				// no args are needed

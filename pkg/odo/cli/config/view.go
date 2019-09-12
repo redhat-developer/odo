@@ -81,6 +81,7 @@ func (o *ViewOptions) Run() (err error) {
 	fmt.Fprintln(w, "Name", "\t", showBlankIfNil(cs.Name))
 	fmt.Fprintln(w, "MinMemory", "\t", showBlankIfNil(cs.MinMemory))
 	fmt.Fprintln(w, "MaxMemory", "\t", showBlankIfNil(cs.MaxMemory))
+	fmt.Fprintln(w, "DebugPort", "\t", showBlankIfNil(cs.DebugPort))
 	fmt.Fprintln(w, "Ignore", "\t", showBlankIfNil(cs.Ignore))
 	fmt.Fprintln(w, "MinCPU", "\t", showBlankIfNil(cs.MinCPU))
 	fmt.Fprintln(w, "MaxCPU", "\t", showBlankIfNil(cs.MaxCPU))
