@@ -5,9 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/tests/helper/reporter"
 )
 
 func TestLoginlogout(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Loginlogout Suite")
+	RunSpecsWithDefaultAndCustomReporters(t, "Loginlogout Suite", []Reporter{reporter.JunitReport(t, "../../reports")})
 }

@@ -12,7 +12,8 @@ make bin
 mkdir -p $GOPATH/bin
 go get -u github.com/onsi/ginkgo/ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
-export CUSTOM_HOMEDIR="/tmp/artifacts"
+export ARTIFACTS_DIR="/tmp/artifacts"
+export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 make test-generic
 make test-cmd-login-logout
 make test-cmd-cmp
@@ -24,3 +25,6 @@ make test-cmd-app
 make test-cmd-url
 make test-cmd-push
 odo logout
+
+# upload the junit test reports
+cp -r reports $ARTIFACTS_DIR

@@ -5,7 +5,7 @@ set -e
 # show commands
 set -x
 
-export ARTIFACTS_DIR=/tmp/artifacts
+export ARTIFACTS_DIR="/tmp/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 
 make test
