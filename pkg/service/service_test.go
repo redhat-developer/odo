@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/onsi/gomega/matchers"
 	"github.com/openshift/odo/pkg/testingutil"
 
@@ -478,7 +479,7 @@ func TestListWithDetailedStatus(t *testing.T) {
 		svcInstanceList, _ := ListWithDetailedStatus(client, "app")
 
 		if !reflect.DeepEqual(tt.output, svcInstanceList.Items) {
-			t.Errorf("expected output: %#v,got: %#v", tt.output, svcInstanceList.Items)
+			t.Error(fmt.Sprintf("Expected output: %v", pretty.Compare(tt.serviceList, svcInstanceList.Items)))
 		}
 	}
 }

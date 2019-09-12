@@ -11,6 +11,7 @@ import (
 	"time"
 
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	"github.com/kylelemons/godebug/pretty"
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	dockerapi "github.com/openshift/api/image/docker10"
@@ -987,7 +988,7 @@ func TestUpdateBuildConfig(t *testing.T) {
 				}
 
 				if !reflect.DeepEqual(updatedDc.Spec, tt.updatedBuildConfig.Spec) {
-					t.Errorf("deployment Config Spec not matching with expected values, expected: %v, got %v", tt.updatedBuildConfig.Spec, updatedDc.Spec)
+					t.Errorf("deployment Config Spec not matching with expected values: %v", pretty.Compare(tt.updatedBuildConfig.Spec, updatedDc.Spec))
 				}
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
@@ -2683,7 +2684,7 @@ func TestGetClusterServiceClass(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotServiceClass.Spec, tt.wantedServiceClass.Spec) {
-				t.Errorf("different service class spec value expected got: %v , expected: %v", gotServiceClass.Spec, tt.wantedServiceClass.Spec)
+				t.Errorf("different service class spec value expected: %v", pretty.Compare(gotServiceClass.Spec, tt.wantedServiceClass.Spec))
 			}
 			if !reflect.DeepEqual(gotServiceClass.Name, tt.wantedServiceClass.Name) {
 				t.Errorf("different service class name value expected got: %v , expected: %v", gotServiceClass.Name, tt.wantedServiceClass.Name)
@@ -2840,7 +2841,7 @@ func TestGetClusterPlansFromServiceName(t *testing.T) {
 						}
 
 						if !reflect.DeepEqual(wantedServicePlan.Spec, gotServicePlan.Spec) {
-							t.Errorf("different plan spec value expected got: %v , expected: %v", wantedServicePlan.Spec, gotServicePlan.Spec)
+							t.Errorf("different plan spec value expected: %v", pretty.Compare(wantedServicePlan.Spec, gotServicePlan.Spec))
 						}
 					}
 
