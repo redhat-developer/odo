@@ -741,7 +741,8 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	if err != nil {
 		// If we fail, log the output
 		s.End(false)
-		return errors.Wrapf(err, "unable to build files\n%v", cmdOutput)
+		log.Errorf("Unable to build files: %v", cmdOutput)
+		return errors.Wrapf(err, "unable to build files")
 	}
 
 	s.End(true)
