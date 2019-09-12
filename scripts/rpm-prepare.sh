@@ -52,11 +52,9 @@ pushd $SOURCES_DIR
 pushd $NAME
 # Remove bin if it exists, we dont need it in tarball
 if [[ -f ./odo  ]]; then
-        rm -rf ./odo
+    rm -rf ./odo
 fi
-# Replace version info
-sed -i "s/v[0-9]*.[0-9]*.[0-9]*-\w*/"${ODO_VERSION}"/g"  pkg/odo/cli/version/version.go
-popd
+
 # Create tarball
 tar -czf $NAME.tar.gz $NAME
 # Removed copied content
