@@ -24,9 +24,11 @@ import (
 
 // PortForwardOptions contains all the options for running the port-forward cli command.
 type PortForwardOptions struct {
-	Namespace  string
-	Address    []string
-	Ports      []string
+	Namespace string
+	Address   []string
+	PortPair  string
+
+	localPort  int
 	contextDir string
 
 	PortForwarder debug.PortForwarder
@@ -47,26 +49,13 @@ var (
                 to resume forwarding.`)
 
 	portforwardExample = templates.Examples(`
-		# Listen on ports 5000 and 6000 locally, forwarding data to/from ports 5000 and 6000 in the pod
-		odo experimental port-forward pod/mypod 5000 6000
+		# Listen on default port on all addresses, forwarding to the default port in the pod
+		odo experimental debug port-forward 
 
-		# Listen on ports 5000 and 6000 locally, forwarding data to/from ports 5000 and 6000 in a pod selected by the deployment
-		odo experimental debug port-forward deployment/mydeployment 5000 6000
-
-		# Listen on ports 5000 and 6000 locally, forwarding data to/from ports 5000 and 6000 in a pod selected by the service
-		odo experimental debug port-forward service/myservice 5000 6000
-
-		# Listen on port 8888 locally, forwarding to 5000 in the pod
-		odo experimental debug port-forward pod/mypod 8888:5000
-
-		# Listen on port 8888 on all addresses, forwarding to 5000 in the pod
-		odo experimental debug port-forward --address 0.0.0.0 pod/mypod 8888:5000
-
-		# Listen on port 8888 on localhost and selected IP, forwarding to 5000 in the pod
-		odo experimental debug port-forward --address localhost,10.19.21.23 pod/mypod 8888:5000
-
-		# Listen on a random port locally, forwarding to 5000 in the pod
-		odo experimental debug port-forward pod/mypod :5000`)
+		# Listen on the 5000 port locally, forwarding to default port in the pod
+		odo experimental debug port-forward --local-port 5000
+		
+		`)
 )
 
 const (
@@ -85,14 +74,13 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 		return cmdutil.UsageErrorf(cmd, "TYPE/NAME and list of ports are required for port-forward")
 	}
 
-	// TODO:
-	// 1 - validate the port format
-	// 2 - provide support for named ports
-	o.Ports = args[1:]
-
 	o.Context = genericclioptions.NewContext(cmd)
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
 	o.localConfigInfo = cfg
+
+	remotePort := cfg.GetDebugPort()
+	o.PortPair = fmt.Sprintf("%d:%d", o.localPort, remotePort)
+
 	// TODO: change this to allow real logging
 	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
 
@@ -104,8 +92,8 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 // Validate validates all the required options for port-forward cmd.
 func (o PortForwardOptions) Validate() error {
 
-	if len(o.Ports) < 1 {
-		return fmt.Errorf("at least 1 PORT is required for port-forward")
+	if len(o.PortPair) < 1 {
+		return fmt.Errorf("ports cannot be empty")
 	}
 	return nil
 }
@@ -144,7 +132,7 @@ func (o PortForwardOptions) Run() error {
 	}()
 
 	req := o.Client.BuildPortForwardReq(pod.Name)
-	return o.PortForwarder.ForwardPorts("POST", req.URL(), o.Ports, o.StopChannel, o.ReadyChannel)
+	return o.PortForwarder.ForwardPorts("POST", req.URL(), []string{o.PortPair}, o.StopChannel, o.ReadyChannel)
 }
 
 // NewCmdPortForward implements the port-forward odo command
@@ -162,7 +150,7 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 	}
 	cmdutil.AddPodRunningTimeoutFlag(cmd, defaultPodPortForwardWaitTimeout)
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
+	cmd.Flags().IntVarP(&opts.localPort, "local-port", "l", config.DefaultDebugPort, "Set the local port")
 
-	cmd.Flags().StringSliceVar(&opts.Address, "address", []string{"localhost"}, "Addresses to listen on (comma separated). Only accepts IP addresses or localhost as a value. When localhost is supplied, odo will try to bind on both 127.0.0.1 and ::1 and will fail if neither of these addresses are available to bind.")
 	return cmd
 }

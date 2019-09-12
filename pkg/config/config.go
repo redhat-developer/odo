@@ -21,7 +21,7 @@ const (
 	configFileName        = "config.yaml"
 	localConfigKind       = "LocalConfig"
 	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
-	defaultDebugPort      = 5858
+	DefaultDebugPort      = 5858
 )
 
 type ComponentStorageSettings struct {
@@ -450,7 +450,7 @@ func (lc *LocalConfig) GetMaxMemory() string {
 // GetDebugPort returns the DebugPort, returns default if nil
 func (lc *LocalConfig) GetDebugPort() int {
 	if lc.componentSettings.DebugPort == nil {
-		return defaultDebugPort
+		return DefaultDebugPort
 	}
 	return *lc.componentSettings.DebugPort
 }
