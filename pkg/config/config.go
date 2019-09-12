@@ -481,39 +481,39 @@ func (lc *LocalConfig) GetStorage() []ComponentStorageSettings {
 const (
 	// Type is the name of the setting controlling the component type i.e. builder image
 	Type = "Type"
-	// TypeDescription is human-readable description of the componentType setting
+	// TypeDescription is human-readable description of the Type setting
 	TypeDescription = "The type of component"
 	// Name is the name of the setting controlling the component name
 	Name = "Name"
-	// NameDescription is human-readable description of the componentType setting
+	// NameDescription is human-readable description of the Name setting
 	NameDescription = "The name of the component"
 	// MinMemory is the name of the setting controlling the min memory a component consumes
 	MinMemory = "MinMemory"
-	// MinMemoryDescription is the name of the setting controlling the minimum memory
+	// MinMemoryDescription is the description of the setting controlling the minimum memory
 	MinMemoryDescription = "The minimum memory a component is provided"
 	// MaxMemory is the name of the setting controlling the min memory a component consumes
 	MaxMemory = "MaxMemory"
-	// MaxMemoryDescription is the name of the setting controlling the maximum memory
+	// MaxMemoryDescription is the description of the setting controlling the maximum memory
 	MaxMemoryDescription = "The maximum memory a component can consume"
 	// Memory is the name of the setting controlling the memory a component consumes
 	Memory = "Memory"
-	// MemoryDescription is the name of the setting controlling the min and max memory to same value
+	// MemoryDescription is the description of the setting controlling the min and max memory to same value
 	MemoryDescription = "The minimum and maximum memory a component can consume"
 	// Ignore is the name of the setting controlling the min memory a component consumes
 	Ignore = "Ignore"
-	// IgnoreDescription is the name of the setting controlling the use of .odoignore file
+	// IgnoreDescription is the description of the setting controlling the use of .odoignore file
 	IgnoreDescription = "Consider the .odoignore file for push and watch"
 	// MinCPU is the name of the setting controlling minimum cpu
 	MinCPU = "MinCPU"
-	// MinCPUDescription is the name of the setting controlling the min CPU value
+	// MinCPUDescription is the description of the setting controlling the min CPU value
 	MinCPUDescription = "The minimum CPU a component can consume"
 	// MaxCPU is the name of the setting controlling the use of .odoignore file
 	MaxCPU = "MaxCPU"
-	//MaxCPUDescription is the name of the setting controlling the max CPU value
+	//MaxCPUDescription is the description of the setting controlling the max CPU value
 	MaxCPUDescription = "The maximum CPU a component can consume"
 	// CPU is the name of the setting controlling the cpu a component consumes
 	CPU = "CPU"
-	// CPUDescription is the name of the setting controlling the min and max CPU to same value
+	// CPUDescription is the description of the setting controlling the min and max CPU to same value
 	CPUDescription = "The minimum and maximum CPU a component can consume"
 	// SourceLocation indicates path of the source e.g. location of the git repo
 	SourceLocation = "SourceLocation"
