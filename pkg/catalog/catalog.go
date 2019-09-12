@@ -8,30 +8,28 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type CatalogImage struct {
-	Name          string
-	Namespace     string
-	AllTags       []string
-	NonHiddenTags []string
-
-	// this is used to get metadata like image URL for each tag present in the image stream
-	imageStreamRef imagev1.ImageStream
-}
-
 // List lists all the available component types
-func List(client *occlient.Client) ([]CatalogImage, error) {
+func List(client *occlient.Client) (CatalogImageList, error) {
+
 	catalogList, err := getDefaultBuilderImages(client)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get image streams")
+		return CatalogImageList{}, errors.Wrap(err, "unable to get image streams")
 	}
 
 	if len(catalogList) == 0 {
-		return nil, errors.New("unable to retrieve any catalog images from the OpenShift cluster")
+		return CatalogImageList{}, errors.New("unable to retrieve any catalog images from the OpenShift cluster")
 	}
 
-	return catalogList, nil
+	return CatalogImageList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "CatalogList",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		Items: catalogList,
+	}, nil
 }
 
 // Search searches for the component
@@ -43,11 +41,11 @@ func Search(client *occlient.Client, name string) ([]string, error) {
 	}
 
 	// do a partial search in all the components
-	for _, component := range componentList {
+	for _, component := range componentList.Items {
 		// we only show components that contain the search term and that have at least non-hidden tag
 		// since a component with all hidden tags is not shown in the odo catalog list components either
-		if strings.Contains(component.Name, name) && len(component.NonHiddenTags) > 0 {
-			result = append(result, component.Name)
+		if strings.Contains(component.ObjectMeta.Name, name) && len(component.Spec.NonHiddenTags) > 0 {
+			result = append(result, component.ObjectMeta.Name)
 		}
 	}
 
@@ -68,7 +66,7 @@ func Exists(client *occlient.Client, componentType string, componentVersion stri
 
 // getDefaultBuilderImages returns the default builder images available in the
 // openshift and the current namespaces
-func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
+func getDefaultBuilderImages(client *occlient.Client) ([]Catalog, error) {
 
 	var imageStreams []imagev1.ImageStream
 	currentNamespace := client.GetCurrentProjectName()
@@ -137,11 +135,11 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 }
 
 // SliceSupportedTags splits the tags in to fully supported and unsupported tags
-func SliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
+func SliceSupportedTags(catalogImage Catalog) ([]string, []string) {
 
 	var supTag, unSupTag []string
-	tagMap := createImageTagMap(catalogImage.imageStreamRef.Spec.Tags)
-	for _, tag := range catalogImage.NonHiddenTags {
+	tagMap := createImageTagMap(catalogImage.Spec.ImageStreamRef.Spec.Tags)
+	for _, tag := range catalogImage.Spec.NonHiddenTags {
 		imageName := tagMap[tag]
 		if isSupportedImage(imageName) {
 			supTag = append(supTag, tag)
@@ -196,8 +194,8 @@ func isSupportedImage(imgName string) bool {
 
 // getBuildersFromImageStreams returns all the builder Images from the image streams provided and also hides the builder images
 // which have hidden annotation attached to it
-func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStreamTagMap map[string]imagev1.ImageStreamTag) []CatalogImage {
-	var builderImages []CatalogImage
+func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStreamTagMap map[string]imagev1.ImageStreamTag) []Catalog {
+	var builderImages []Catalog
 	// Get builder images from the available imagestreams
 	for _, imageStream := range imageStreams {
 		var allTags []string
@@ -237,12 +235,19 @@ func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStream
 
 			}
 
-			catalogImage := CatalogImage{
-				Name:           imageStream.Name,
-				Namespace:      imageStream.Namespace,
-				AllTags:        allTags,
-				NonHiddenTags:  getAllNonHiddenTags(allTags, hiddenTags),
-				imageStreamRef: imageStream,
+			catalogImage := Catalog{
+				TypeMeta: metav1.TypeMeta{
+					Kind: "Catalog",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: imageStream.Name,
+				},
+				Spec: CatalogSpec{
+					Namespace:      imageStream.Namespace,
+					AllTags:        allTags,
+					NonHiddenTags:  getAllNonHiddenTags(allTags, hiddenTags),
+					ImageStreamRef: imageStream,
+				},
 			}
 			builderImages = append(builderImages, catalogImage)
 			glog.V(5).Infof("Found builder image: %#v", catalogImage)

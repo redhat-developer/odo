@@ -118,6 +118,13 @@ func componentTests(args ...string) {
 			Expect(cmpAllList).To(ContainSubstring("cmp-git"))
 			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
 		})
+
+		It("should succeed listing catalog components", func() {
+
+			// Since components catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			Expect(output).To(ContainSubstring("CatalogList"))
+		})
 	})
 
 	Context("Test odo push with --source and --config flags", func() {

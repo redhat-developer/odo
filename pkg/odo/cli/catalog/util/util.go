@@ -32,12 +32,12 @@ func FilterHiddenServices(input []occlient.Service) []occlient.Service {
 }
 
 // FilterHiddenComponents filters out components that should be hidden from the specified list
-func FilterHiddenComponents(input []catalog.CatalogImage) []catalog.CatalogImage {
+func FilterHiddenComponents(input []catalog.Catalog) []catalog.Catalog {
 	inputLength := len(input)
-	filteredComponents := make([]catalog.CatalogImage, 0, inputLength)
+	filteredComponents := make([]catalog.Catalog, 0, inputLength)
 	for _, component := range input {
 		// we keep the image if it has tags that are no hidden
-		if len(component.NonHiddenTags) > 0 {
+		if len(component.Spec.NonHiddenTags) > 0 {
 			filteredComponents = append(filteredComponents, component)
 		}
 	}

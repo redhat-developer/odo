@@ -3,6 +3,7 @@ package util
 import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/occlient"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
 	"testing"
 )
@@ -64,42 +65,66 @@ func TestFilterHiddenServices(t *testing.T) {
 func TestFilterHiddenComponents(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    []catalog.CatalogImage
-		expected []catalog.CatalogImage
+		input    []catalog.Catalog
+		expected []catalog.Catalog
 	}{
 		{
 			name:     "Case 1: empty input",
-			input:    []catalog.CatalogImage{},
-			expected: []catalog.CatalogImage{},
+			input:    []catalog.Catalog{},
+			expected: []catalog.Catalog{},
 		},
 		{
 			name: "Case 2: non empty input",
-			input: []catalog.CatalogImage{
+			input: []catalog.Catalog{
 				{
-					Name:          "n1",
-					NonHiddenTags: []string{"1", "latest"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n1",
+					},
+					Spec: catalog.CatalogSpec{
+						NonHiddenTags: []string{"1", "latest"},
+					},
 				},
 				{
-					Name:          "n2",
-					NonHiddenTags: []string{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n2",
+					},
+					Spec: catalog.CatalogSpec{
+						NonHiddenTags: []string{},
+					},
 				},
 				{
-					Name:          "n3",
-					NonHiddenTags: []string{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n3",
+					},
+					Spec: catalog.CatalogSpec{
+						NonHiddenTags: []string{},
+					},
 				},
 				{
-					Name:          "n4",
-					NonHiddenTags: []string{"10"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n4",
+					},
+					Spec: catalog.CatalogSpec{
+						NonHiddenTags: []string{"10"},
+					},
 				},
 			},
-			expected: []catalog.CatalogImage{
+			expected: []catalog.Catalog{
 				{
-					Name:          "n1",
-					NonHiddenTags: []string{"1", "latest"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n1",
+					},
+					Spec: catalog.CatalogSpec{
+						NonHiddenTags: []string{"1", "latest"},
+					},
 				},
 				{
-					Name:          "n4",
-					NonHiddenTags: []string{"10"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n4",
+					},
+					Spec: catalog.CatalogSpec{
+						NonHiddenTags: []string{"10"},
+					},
 				},
 			},
 		},

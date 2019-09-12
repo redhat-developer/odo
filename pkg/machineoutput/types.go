@@ -6,6 +6,7 @@ import (
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

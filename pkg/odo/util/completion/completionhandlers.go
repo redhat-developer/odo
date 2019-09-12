@@ -275,7 +275,7 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 		return completions
 	}
 
-	for _, builder := range catalogList {
+	for _, builder := range catalogList.Items {
 		// we found the builder name in the list which means
 		// that the builder name has been already selected by the user so no need to suggest more
 		if args.commands[builder.Name] {
