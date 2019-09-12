@@ -140,7 +140,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 			if len(serviceList.Items) != 0 {
 				log.Info("This application has following service that will be deleted")
 				for _, ser := range serviceList.Items {
-					log.Info("service named", ser.Spec.Name, "of type", ser.Spec.Type)
+					log.Info("service named", ser.ObjectMeta.Name, "of type", ser.Spec.Type)
 				}
 			}
 		}

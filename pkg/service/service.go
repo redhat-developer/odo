@@ -50,14 +50,6 @@ func (params servicePlanParameters) Swap(i, j int) {
 	params[i], params[j] = params[j], params[i]
 }
 
-// ServicePlan holds the information about service catalog plans associated to service classes
-type ServicePlan struct {
-	Name        string
-	DisplayName string
-	Description string
-	Parameters  servicePlanParameters
-}
-
 // ListCatalog lists all the available service types
 func ListCatalog(client *occlient.Client) ([]occlient.Service, error) {
 
@@ -170,13 +162,21 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 			status = conditions[0].Reason
 		}
 
+		// Check and make sure that "name" exists..
+		if elem.Labels[componentlabels.ComponentLabel] == "" {
+			return ServiceList{}, errors.New(fmt.Sprintf("element %v returned blank name", elem))
+		}
+
 		services = append(services,
 			Service{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Service",
 					APIVersion: "odo.openshift.io/v1alpha1",
 				},
-				Spec:   ServiceSpec{Name: elem.Labels[componentlabels.ComponentLabel], Type: elem.Labels[componentlabels.ComponentTypeLabel], Plan: elem.Spec.ClusterServicePlanExternalName},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: elem.Labels[componentlabels.ComponentLabel],
+				},
+				Spec:   ServiceSpec{Type: elem.Labels[componentlabels.ComponentTypeLabel], Plan: elem.Spec.ClusterServicePlanExternalName},
 				Status: ServiceStatus{Status: status},
 			})
 	}
@@ -224,7 +224,7 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 	// if so, update the status of the service
 	for i, service := range services.Items {
 		for _, secret := range secrets {
-			if secret.Name == service.Name {
+			if secret.Name == service.ObjectMeta.Name {
 				// this is the default status when the secret exists
 				services.Items[i].Status.Status = provisionedAndBoundStatus
 
@@ -246,8 +246,7 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 	}, nil
 }
 
-func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secretName string,
-	services []Service, index int) {
+func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secretName string, services []Service, index int) {
 
 	for _, dc := range dcs {
 		foundMatchingSecret := false
@@ -276,7 +275,7 @@ func SvcExists(client *occlient.Client, serviceName, applicationName string) (bo
 		return false, errors.Wrap(err, "unable to get the service list")
 	}
 	for _, service := range serviceList.Items {
-		if service.Name == serviceName {
+		if service.ObjectMeta.Name == serviceName {
 			return true, nil
 		}
 	}

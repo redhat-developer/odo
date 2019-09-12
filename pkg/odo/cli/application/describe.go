@@ -96,7 +96,7 @@ func (o *DescribeOptions) Run() (err error) {
 			}
 			if len(serviceList.Items) > 0 {
 				for _, currentService := range serviceList.Items {
-					fmt.Printf("Service Name: %s\n", currentService.Spec.Name)
+					fmt.Printf("Service Name: %s\n", currentService.ObjectMeta.Name)
 					fmt.Printf("Type: %s\n", currentService.Spec.Type)
 					fmt.Printf("Status: %s\n", currentService.Status.Status)
 					fmt.Println("--------------------------------------")

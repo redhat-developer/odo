@@ -71,7 +71,7 @@ func (o *ServiceListOptions) Run() (err error) {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "PLAN", "\t", "STATUS")
 		for _, comp := range services.Items {
-			fmt.Fprintln(w, comp.Spec.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Plan, "\t", comp.Status.Status)
+			fmt.Fprintln(w, comp.ObjectMeta.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Plan, "\t", comp.Status.Status)
 		}
 		w.Flush()
 	}

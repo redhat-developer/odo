@@ -394,13 +394,15 @@ func TestListWithDetailedStatus(t *testing.T) {
 						Kind:       "Service",
 						APIVersion: "odo.openshift.io/v1alpha1",
 					},
-					Spec: ServiceSpec{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "mysql-persistent",
+					},
+					Spec: ServiceSpec{
 						Type: "mysql-persistent",
 						Plan: "default",
 					},
 					Status: ServiceStatus{
-						Status: "ProvisionedSuccessfully",
+						Status: "ProvisionedAndLinked",
 					},
 				},
 				Service{
@@ -408,13 +410,15 @@ func TestListWithDetailedStatus(t *testing.T) {
 						Kind:       "Service",
 						APIVersion: "odo.openshift.io/v1alpha1",
 					},
-					Spec: ServiceSpec{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "postgresql-ephemeral",
+					},
+					Spec: ServiceSpec{
 						Type: "postgresql-ephemeral",
 						Plan: "default",
 					},
 					Status: ServiceStatus{
-						Status: "ProvisionedSuccessfully",
+						Status: "ProvisionedAndBound",
 					},
 				},
 				Service{
@@ -422,8 +426,10 @@ func TestListWithDetailedStatus(t *testing.T) {
 						Kind:       "Service",
 						APIVersion: "odo.openshift.io/v1alpha1",
 					},
-					Spec: ServiceSpec{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "mongodb",
+					},
+					Spec: ServiceSpec{
 						Type: "mongodb",
 						Plan: "default",
 					},
@@ -436,8 +442,10 @@ func TestListWithDetailedStatus(t *testing.T) {
 						Kind:       "Service",
 						APIVersion: "odo.openshift.io/v1alpha1",
 					},
-					Spec: ServiceSpec{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "jenkins-persistent",
+					},
+					Spec: ServiceSpec{
 						Type: "jenkins-persistent",
 						Plan: "default",
 					},

@@ -30,10 +30,10 @@ var ServiceCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context
 	}
 
 	for _, class := range services.Items {
-		if args.commands[class.Spec.Name] {
+		if args.commands[class.ObjectMeta.Name] {
 			return nil
 		}
-		completions = append(completions, class.Spec.Name)
+		completions = append(completions, class.ObjectMeta.Name)
 	}
 
 	return
@@ -316,10 +316,10 @@ var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 	for _, service := range services.Items {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[service.Spec.Name]; ok && val {
+		if val, ok := args.commands[service.ObjectMeta.Name]; ok && val {
 			return nil
 		}
-		completions = append(completions, service.Spec.Name)
+		completions = append(completions, service.ObjectMeta.Name)
 	}
 
 	return completions
@@ -367,13 +367,13 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	for _, service := range services.Items {
 		// we found the name in the list which means
 		// that the name has been already selected by the user so no need to suggest more
-		if val, ok := args.commands[service.Spec.Name]; ok && val {
+		if val, ok := args.commands[service.ObjectMeta.Name]; ok && val {
 			return nil
 		}
 		// we also need to make sure that this component has been linked to the current component
 		for _, envFromSourceName := range dcOfCurrentComponent.Spec.Template.Spec.Containers[0].EnvFrom {
-			if strings.Contains(envFromSourceName.SecretRef.Name, service.Spec.Name) {
-				completions = append(completions, service.Spec.Name)
+			if strings.Contains(envFromSourceName.SecretRef.Name, service.ObjectMeta.Name) {
+				completions = append(completions, service.ObjectMeta.Name)
 			}
 		}
 	}
