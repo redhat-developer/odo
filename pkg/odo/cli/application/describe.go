@@ -73,7 +73,7 @@ func (o *DescribeOptions) Run() (err error) {
 
 	} else {
 		// List of Component
-		componentList, err := component.List(o.Client, o.appName)
+		componentList, err := component.List(o.Client, o.appName, nil)
 		if err != nil {
 			return err
 		}

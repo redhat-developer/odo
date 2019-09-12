@@ -84,7 +84,7 @@ func Delete(client *occlient.Client, name string) error {
 
 // GetMachineReadableFormat returns resource information in machine readable format
 func GetMachineReadableFormat(client *occlient.Client, appName string, projectName string) App {
-	componentList, _ := component.List(client, appName)
+	componentList, _ := component.List(client, appName, nil)
 	var compList []string
 	for _, comp := range componentList.Items {
 		compList = append(compList, comp.Name)

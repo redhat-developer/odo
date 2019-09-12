@@ -94,7 +94,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 			log.Info("Application", app)
 
 			// List the components
-			componentList, err := component.List(client, app)
+			componentList, err := component.List(client, app, nil)
 			if err != nil {
 				return errors.Wrap(err, "failed to get Component list")
 			}

@@ -247,12 +247,15 @@ func TestList(t *testing.T) {
 	if err != nil {
 		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
 	}
+
+	existingSampleLocalConfig := config.GetOneExistingConfigInfo("comp", "app", "test")
+
 	tests := []struct {
 		name                    string
 		dcList                  appsv1.DeploymentConfigList
 		projectExists           bool
 		wantErr                 bool
-		existingLocalConfigInfo LocalConfigInfo
+		existingLocalConfigInfo *LocalConfigInfo
 		output                  ComponentList
 	}{
 		{
@@ -481,7 +484,7 @@ func TestList(t *testing.T) {
 			},
 			wantErr:                 false,
 			projectExists:           true,
-			existingLocalConfigInfo: config.GetOneExistingConfigInfo("comp", "app", "test"),
+			existingLocalConfigInfo: &existingSampleLocalConfig,
 			output: ComponentList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",

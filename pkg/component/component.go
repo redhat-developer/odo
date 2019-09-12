@@ -864,7 +864,7 @@ func GetComponentType(client *occlient.Client, componentName string, application
 }
 
 // List lists components in active application
-func List(client *occlient.Client, applicationName string, localConfigInfo ...config.LocalConfigInfo) (ComponentList, error) {
+func List(client *occlient.Client, applicationName string, localConfigInfo *config.LocalConfigInfo) (ComponentList, error) {
 
 	var applicationSelector string
 	if applicationName != "" {
@@ -898,8 +898,8 @@ func List(client *occlient.Client, applicationName string, localConfigInfo ...co
 		}
 	}
 
-	if len(localConfigInfo) == 1 {
-		component, err := GetComponentFromConfig(localConfigInfo[0])
+	if localConfigInfo != nil {
+		component, err := GetComponentFromConfig(*localConfigInfo)
 		if err != nil {
 			return GetMachineReadableFormatForList(components), err
 		}
@@ -911,8 +911,6 @@ func List(client *occlient.Client, applicationName string, localConfigInfo ...co
 		if len(components) == 0 {
 			return GetMachineReadableFormatForList(components), nil
 		}
-	} else if len(localConfigInfo) >= 2 {
-		return GetMachineReadableFormatForList(components), errors.New("only one config accepted")
 	}
 
 	compoList := GetMachineReadableFormatForList(components)
