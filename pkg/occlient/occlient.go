@@ -870,19 +870,29 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	if err != nil {
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
+	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
 
+	// we create a ownerReference struct so that we can set the DC created
+	// above as owner of the ImageStream created earlier, and Service, Secret
+	// to be created next.
+	ownerReference := metav1.OwnerReference{
+		APIVersion: "apps.openshift.io/v1",
+		Kind:       "DeploymentConfig",
+		Name:       dc.Name,
+		UID:        createdDC.UID,
+	}
+
 	// Create a service
-	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
+	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
 	// Create secret(s)
-	err = c.createSecrets(params.Name, commonObjectMeta, svc)
+	err = c.createSecrets(params.Name, commonObjectMeta, svc, ownerReference)
 
 	return err
 }
@@ -890,7 +900,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 // Create a secret for each port, containing the host and port of the component
 // This is done so other components can later inject the secret into the environment
 // and have the "coordinates" to communicate with this component
-func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.ObjectMeta, svc *corev1.Service) error {
+func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.ObjectMeta, svc *corev1.Service, ownerReference metav1.OwnerReference) error {
 	originalName := commonObjectMeta.Name
 	for _, svcPort := range svc.Spec.Ports {
 		portAsString := fmt.Sprintf("%v", svcPort.Port)
@@ -909,7 +919,8 @@ func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.Obj
 			map[string]string{
 				secretKeyName(componentName, "host"): svc.Name,
 				secretKeyName(componentName, "port"): portAsString,
-			})
+			},
+			ownerReference)
 
 		if err != nil {
 			return errors.Wrapf(err, "unable to create Secret for %s", commonObjectMeta.Name)
@@ -1178,18 +1189,28 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	jsonDC, _ = json.Marshal(createdDC)
 	glog.V(5).Infof("Created new DeploymentConfig:\n%s\n", string(jsonDC))
 
-	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
+	// we create a ownerReference struct so that we can set the DC created
+	// above as owner of the ImageStream created earlier, and Service, Secret
+	// to be created next.
+	ownerReference := metav1.OwnerReference{
+		APIVersion: "apps.openshift.io/v1",
+		Kind:       "DeploymentConfig",
+		Name:       dc.Name,
+		UID:        createdDC.UID,
+	}
+
+	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
-	err = c.createSecrets(params.Name, commonObjectMeta, svc)
+	err = c.createSecrets(params.Name, commonObjectMeta, svc, ownerReference)
 	if err != nil {
 		return err
 	}
 
 	// Setup PVC.
-	_, err = c.CreatePVC(getAppRootVolumeName(commonObjectMeta.Name), "1Gi", commonObjectMeta.Labels)
+	_, err = c.CreatePVC(getAppRootVolumeName(commonObjectMeta.Name), "1Gi", commonObjectMeta.Labels, ownerReference)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create PVC for %s", commonObjectMeta.Name)
 	}
@@ -1200,7 +1221,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 // CreateService generates and creates the service
 // commonObjectMeta is the ObjectMeta for the service
 // dc is the deploymentConfig to get the container ports
-func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort) (*corev1.Service, error) {
+func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort, ownerReference metav1.OwnerReference) (*corev1.Service, error) {
 	// generate and create Service
 	var svcPorts []corev1.ServicePort
 	for _, containerPort := range containerPorts {
@@ -1222,6 +1243,8 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 			},
 		},
 	}
+	svc.SetOwnerReferences(append(svc.GetOwnerReferences(), ownerReference))
+
 	createdSvc, err := c.kubeClient.CoreV1().Services(c.Namespace).Create(&svc)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
@@ -1231,13 +1254,14 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 
 // CreateSecret generates and creates the secret
 // commonObjectMeta is the ObjectMeta for the service
-func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]string) error {
+func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]string, ownerReference metav1.OwnerReference) error {
 
 	secret := corev1.Secret{
 		ObjectMeta: objectMeta,
 		Type:       corev1.SecretTypeOpaque,
 		StringData: data,
 	}
+	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
 	_, err := c.kubeClient.CoreV1().Secrets(c.Namespace).Create(&secret)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
@@ -1562,8 +1586,18 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 			addDeploymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
 		}
 
+		// we create a ownerReference struct so that we can set the DC created
+		// above as owner of the ImageStream created earlier, and Service, Secret
+		// to be created next.
+		ownerReference := metav1.OwnerReference{
+			APIVersion: "apps.openshift.io/v1",
+			Kind:       "DeploymentConfig",
+			Name:       dc.Name,
+			UID:        dc.UID,
+		}
+
 		// Setup PVC
-		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels)
+		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels, ownerReference)
 		if err != nil {
 			return errors.Wrapf(err, "unable to create PVC for %s", ucp.CommonObjectMeta.Name)
 		}
@@ -2403,6 +2437,26 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 			},
 		},
 	}
+
+	// since the serviceName is same as the DC name, we use that to get the DC
+	// to which this route belongs. A better way could be to get service from
+	// the name and set it as owner of the route
+	dc, err := c.GetDeploymentConfigFromName(serviceName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
+	}
+
+	// we create a ownerReference struct so that we can set the DC as owner of
+	// the route.
+	ownerReference := metav1.OwnerReference{
+		APIVersion: "apps.openshift.io/v1",
+		Kind:       "DeploymentConfig",
+		Name:       dc.Name,
+		UID:        dc.UID,
+	}
+
+	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
+
 	r, err := c.routeClient.Routes(c.Namespace).Create(route)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating route")
