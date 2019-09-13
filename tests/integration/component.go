@@ -92,7 +92,7 @@ func componentTests(args ...string) {
 		})
 	})
 
-	Context("when creating component with latest tag and --context falg", func() {
+	Context("when creating component with latest tag and --context flag", func() {
 		It("should create component successfully", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "php:latest", "--context", context, "--project", project)...)
 			cmpListOutput := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
@@ -303,34 +303,33 @@ func componentTests(args ...string) {
 		})
 	})
 
-	Context("when creating a new component with passing memory limits", func() {
-		It("should create component successfully", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nginx", "nginx", "--memory", "150Mi", "--context", context, "--project", project)...)
-			cmpListOutput := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
-			Expect(cmpListOutput).To(ContainSubstring("There are no components deployed."))
-			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
-			cmpListOutput = helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
-			Expect(cmpListOutput).To(ContainSubstring("nginx"))
-		})
-	})
+	// Context("when creating a new component with passing memory limits", func() {
+	// 	It("should create component successfully", func() {
+	// 		helper.CmdShouldPass("odo", append(args, "create", "nginx", "nginx", "--memory", "150Mi", "--context", context, "--project", project)...)
+	// 		cmpListOutput := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
+	// 		Expect(cmpListOutput).To(ContainSubstring("There are no components deployed."))
+	// 		helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+	// 		cmpListOutput = helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
+	// 		Expect(cmpListOutput).To(ContainSubstring("nginx"))
+	// 	})
+	// })
 
-	Context("when creating a new component with passing cpu limits", func() {
-		It("should create component successfully", func() {
-			helper.CmdShouldPass("odo", append(args, "create", "nginx", "nginx", "--cpu", "4", "--context", context, "--project", project)...)
-			cmpListOutput := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
-			Expect(cmpListOutput).To(ContainSubstring("There are no components deployed."))
-			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
-			cmpListOutput = helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
-			Expect(cmpListOutput).To(ContainSubstring("nginx"))
-		})
-	})
+	// Context("when creating a new component with passing cpu limits", func() {
+	// 	It("should create component successfully", func() {
+	// 		helper.CmdShouldPass("odo", append(args, "create", "nginx", "nginx", "--cpu", "4", "--context", context, "--project", project)...)
+	// 		cmpListOutput := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
+	// 		Expect(cmpListOutput).To(ContainSubstring("There are no components deployed."))
+	// 		helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+	// 		cmpListOutput = helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
+	// 		Expect(cmpListOutput).To(ContainSubstring("nginx"))
+	// 	})
+	// })
 
 	Context("when creating a new component using --project flag", func() {
 		It("should create a new project (if not created) and component", func() {
 			helper.CopyExample(filepath.Join("source", "dotnet"), context)
 			helper.CmdShouldPass("odo", append(args, "create", "dotnet", "dotnet", "--project", "newproject", "--context", context)...)
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
-			oc.SwitchProject("newproject")
 			projectList := helper.CmdShouldPass("odo", "project", "list")
 			Expect(projectList).To(ContainSubstring("newproject"))
 			helper.DeleteProject("newproject")
