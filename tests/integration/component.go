@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -418,7 +419,13 @@ func componentTests(args ...string) {
 
 						// check the source location and type in the deployment config
 						getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
-						Expect(getSourceLocation).To(ContainSubstring("file://./"))
+						var sourcePath string
+						if runtime.GOOS == "windows" {
+							sourcePath = "file:///./"
+						} else {
+							sourcePath = "file://./"
+						}
+						Expect(getSourceLocation).To(ContainSubstring(sourcePath))
 						getSourceType := oc.SourceTypeDC("cmp-git", "testing", project)
 						Expect(getSourceType).To(ContainSubstring("local"))
 					})
@@ -474,7 +481,13 @@ func componentTests(args ...string) {
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
 
 			actualDesCompJSON := helper.CmdShouldPass("odo", append(args, "describe", cmpName, "--app", appName, "--project", project, "-o", "json")...)
-			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"file://./"},"status":{"state":"Pushed"}}`, project)
+			var sourcePath string
+			if runtime.GOOS == "windows" {
+				sourcePath = "file:///./"
+			} else {
+				sourcePath = "file://./"
+			}
+			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"%s"},"status":{"state":"Pushed"}}`, project, sourcePath)
 			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
 
 			helper.CmdShouldPass("odo", append(args, "delete", cmpName, "--app", appName, "--project", project, "-f")...)
