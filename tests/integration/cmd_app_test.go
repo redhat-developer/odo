@@ -65,7 +65,7 @@ var _ = Describe("odo app command tests", func() {
 			helper.Chdir(originalDir)
 		})
 
-		It("should successfuly execute list, describe and delete along with machine readable output", func() {
+		It("should successfully execute list, describe and delete along with machine readable output", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
@@ -102,7 +102,7 @@ var _ = Describe("odo app command tests", func() {
 	})
 
 	Context("when running app command app parameter in directory that doesn't contain .odo config directory", func() {
-		It("should successfuly execute list, describe and delete along with machine readable output", func() {
+		It("should successfully execute list, describe and delete along with machine readable output", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
