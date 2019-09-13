@@ -63,7 +63,7 @@ $ brew install kadel/odo/odo
 ==== Tarball installation
 
 ----
-# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-darwin-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-darwin-amd64.tar.gz | tar -xvzf - -C /usr/local/bin; chmod +x /usr/local/bin/odo'
 ----
 
 
@@ -109,7 +109,7 @@ $ echo "deb https://dl.bintray.com/odo/odo-deb-releases stretch main" | sudo tee
 ==== Tarball installation
 
 ----
-# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64.tar.gz | tar -xvzf - -C /usr/local/bin; chmod +x /usr/local/bin/odo'
 ----
 
 
@@ -179,7 +179,7 @@ $ dnf install odo
 ==== Tarball installation
 
 ----
-# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64.gz | gzip -d > /usr/local/bin/odo; chmod +x /usr/local/bin/odo'
+# sh -c 'curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64.tar.gz | tar -xvzf - -C /usr/local/bin; chmod +x /usr/local/bin/odo'
 ----
 
 
