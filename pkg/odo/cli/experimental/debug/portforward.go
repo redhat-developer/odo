@@ -18,7 +18,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )
 
@@ -145,7 +144,6 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(opts, cmd, args)
 		},
 	}
-	cmdutil.AddPodRunningTimeoutFlag(cmd, defaultPodPortForwardWaitTimeout)
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
 	cmd.Flags().IntVarP(&opts.localPort, "local-port", "l", config.DefaultDebugPort, "Set the local port")
 
