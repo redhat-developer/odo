@@ -70,9 +70,6 @@ func NewPortForwardOptions() *PortForwardOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if len(args) < 2 {
-		return cmdutil.UsageErrorf(cmd, "TYPE/NAME and list of ports are required for port-forward")
-	}
 
 	o.Context = genericclioptions.NewContext(cmd)
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
@@ -140,7 +137,7 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 
 	opts := NewPortForwardOptions()
 	cmd := &cobra.Command{
-		Use:     name + " [LOCAL_PORT:]REMOTE_PORT [...[LOCAL_PORT_N:]REMOTE_PORT_N]",
+		Use:     name,
 		Short:   "Forward one or more local ports to a pod",
 		Long:    portforwardLong,
 		Example: portforwardExample,

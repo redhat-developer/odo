@@ -343,6 +343,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	cmpSrcRef := componentConfig.GetRef()
 	appName := componentConfig.GetApplication()
 	envVarsList := componentConfig.GetEnvVars()
+	addDebugPortToEnv(&envVarsList, componentConfig)
 
 	// create and get the storage to be created/mounted during the component creation
 	storageList := getStorageFromConfig(&componentConfig)
@@ -1018,29 +1019,30 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 // Update updates the requested component
 // Parameters:
 //	client: occlient instance
-//	componentSettings: Component configuration
+//	componentConfig: Component configuration
 //	newSource: Location of component source resolved to absolute path
 //	stdout: io pipe to write logs to
 // Returns:
 //	errors if any
-func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, newSource string, stdout io.Writer) error {
+func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, newSource string, stdout io.Writer) error {
 
 	retrievingSpinner := log.Spinner("Retrieving component data")
 	defer retrievingSpinner.End(false)
 
 	// STEP 1. Create the common Object Meta for updating.
 
-	componentName := componentSettings.GetName()
-	applicationName := componentSettings.GetApplication()
-	newSourceType := componentSettings.GetSourceType()
-	newSourceRef := componentSettings.GetRef()
-	componentImageType := componentSettings.GetType()
-	cmpPorts := componentSettings.GetPorts()
-	envVarsList := componentSettings.GetEnvVars()
+	componentName := componentConfig.GetName()
+	applicationName := componentConfig.GetApplication()
+	newSourceType := componentConfig.GetSourceType()
+	newSourceRef := componentConfig.GetRef()
+	componentImageType := componentConfig.GetType()
+	cmpPorts := componentConfig.GetPorts()
+	envVarsList := componentConfig.GetEnvVars()
+	addDebugPortToEnv(&envVarsList, componentConfig)
 
 	// retrieve the list of storages to create/mount and unmount
-	storageList := getStorageFromConfig(&componentSettings)
-	storageToMount, storageToUnMount, err := storage.Push(client, storageList, componentSettings.GetName(), componentSettings.GetApplication(), true)
+	storageList := getStorageFromConfig(&componentConfig)
+	storageToMount, storageToUnMount, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get storage to mount and unmount")
 	}
@@ -1096,7 +1098,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 	if len(cmpPorts) > 0 {
 		ports, err = util.GetContainerPortsFromStrings(cmpPorts)
 		if err != nil {
-			return errors.Wrapf(err, "failed to apply component config %+v to component %s", componentSettings, commonObjectMeta.Name)
+			return errors.Wrapf(err, "failed to apply component config %+v to component %s", componentConfig, commonObjectMeta.Name)
 		}
 	}
 
@@ -1109,7 +1111,7 @@ func Update(client *occlient.Client, componentSettings config.LocalConfigInfo, n
 
 	// Generate the new DeploymentConfig
 	resourceLimits := occlient.FetchContainerResourceLimits(foundCurrentDCContainer)
-	resLts, err := occlient.GetResourceRequirementsFromCmpSettings(componentSettings)
+	resLts, err := occlient.GetResourceRequirementsFromCmpSettings(componentConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to update component")
 	}
@@ -1486,4 +1488,12 @@ func checkIfURLChangesWillBeMade(client *occlient.Client, componentConfig config
 	}
 
 	return false, nil
+}
+
+func addDebugPortToEnv(envVarList *config.EnvVarList, componentConfig config.LocalConfigInfo) {
+	// adding the debug port as an env variable
+	*envVarList = append(*envVarList, config.EnvVar{
+		Name:  "DEBUG_PORT",
+		Value: string(componentConfig.GetDebugPort()),
+	})
 }
