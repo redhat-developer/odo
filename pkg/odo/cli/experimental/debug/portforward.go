@@ -39,13 +39,10 @@ type PortForwardOptions struct {
 
 var (
 	portforwardLong = templates.LongDesc(`
-                Forward one or more local ports to a pod. This command requires the node to have 'socat' installed.
-
-                Use resource type/name such as deployment/mydeployment to select a pod. Resource type defaults to 'pod' if omitted.
-
-                If there are multiple pods matching the criteria, a pod will be selected automatically. The
-                forwarding session ends when the selected pod terminates, and rerun of the command is needed
-                to resume forwarding.`)
+			Forward a local port to a remote port on the pod where the application is listening for a debugger.
+			
+			By default the local port and the remote port will be same but that can be changed using --local-port.  		  
+	`)
 
 	portforwardExample = templates.Examples(`
 		# Listen on default port on all addresses, forwarding to the default port in the pod
