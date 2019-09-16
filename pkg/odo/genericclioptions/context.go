@@ -128,8 +128,8 @@ func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
 		if fcc.Name() == "app" {
 			return lci, nil
 		}
-		// Case 5 : Check if fcc is catalog and request is to list
-		if fcc.Name() == "catalog" && p.Name() == "list" {
+		// Case 5 : Check if fcc is catalog and request is to list or search
+		if fcc.Name() == "catalog" && (p.Name() == "list" || p.Name() == "search") {
 			return lci, nil
 		}
 		// Check if fcc is component and  request is list
