@@ -95,11 +95,25 @@ func componentTests(args ...string) {
 
 		It("create component twice fails from same directory", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "nodejs", "--project", project)...)
-			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Not Pushed"}}]}`, project, strings.TrimSpace(context))
-			actual := helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", context)...)
-			Expect(desired).Should(MatchJSON(actual))
 			output := helper.CmdShouldFail("odo", append(args, "create", "nodejs", "nodejs", "--project", project)...)
 			Expect(output).To(ContainSubstring("this directory already contains a component"))
+		})
+
+		It("should list out component in json format along with path flag", func() {
+			var contextPath string
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "nodejs", "--project", project)...)
+			if runtime.GOOS == "windows" {
+				contextPath = strings.Replace(strings.TrimSpace(context), "\\", "\\\\", -1)
+			} else {
+				contextPath = strings.TrimSpace(context)
+			}
+			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},
+				"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1",
+				"metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},
+				"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},
+				"status":{"context":"%s","state":"Not Pushed"}}]}`, project, contextPath)
+			actual := helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", context)...)
+			Expect(desired).Should(MatchJSON(actual))
 		})
 
 		It("should create the component from the branch ref when provided", func() {
