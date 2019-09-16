@@ -1956,12 +1956,6 @@ func (c *Client) Delete(labels map[string]string) error {
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
 	}
-	// Delete Route
-	glog.V(4).Info("Deleting Routes")
-	err = c.routeClient.Routes(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to delete route")
-	}
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs")
 	err = c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
@@ -1973,30 +1967,6 @@ func (c *Client) Delete(labels map[string]string) error {
 	err = c.imageClient.ImageStreams(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete imagestream")
-	}
-	// Delete Services
-	glog.V(4).Info("Deleting Services")
-	svcList, err := c.kubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to list services")
-	}
-	for _, svc := range svcList.Items {
-		err = c.kubeClient.CoreV1().Services(c.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
-		if err != nil {
-			errorList = append(errorList, "unable to delete service")
-		}
-	}
-	// PersistentVolumeClaim
-	glog.V(4).Infof("Deleting PersistentVolumeClaims")
-	err = c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to delete volume")
-	}
-	// Secret
-	glog.V(4).Infof("Deleting Secret")
-	err = c.kubeClient.CoreV1().Secrets(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to delete secret")
 	}
 
 	// Error string
