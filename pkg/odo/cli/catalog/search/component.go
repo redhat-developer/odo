@@ -2,8 +2,9 @@ package search
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
@@ -46,10 +47,7 @@ func (o *SearchComponentOptions) Validate() (err error) {
 
 // Run contains the logic for the command associated with SearchComponentOptions
 func (o *SearchComponentOptions) Run() (err error) {
-	log.Infof("The following components were found:")
-	for _, component := range o.components {
-		fmt.Printf("- %v\n", component)
-	}
+	util.DisplayComponents(o.components)
 	return
 }
 
