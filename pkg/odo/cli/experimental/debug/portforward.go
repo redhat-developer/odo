@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
@@ -55,9 +54,7 @@ var (
 )
 
 const (
-	// Amount of time to wait until at least one pod is running
-	defaultPodPortForwardWaitTimeout = 60 * time.Second
-	portforwardCommandName           = "port-forward"
+	portforwardCommandName = "port-forward"
 )
 
 func NewPortForwardOptions() *PortForwardOptions {
@@ -74,7 +71,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	remotePort := cfg.GetDebugPort()
 	o.PortPair = fmt.Sprintf("%d:%d", o.localPort, remotePort)
 
-	// Using Discard streams because nothing import is logged
+	// Using Discard streams because nothing important is logged
 	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	o.StopChannel = make(chan struct{}, 1)
