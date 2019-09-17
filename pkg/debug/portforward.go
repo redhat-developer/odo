@@ -10,10 +10,12 @@ import (
 	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )
 
+// PortForwarder is the interface which is needed to be implemented by a port forwarding implementation
 type PortForwarder interface {
 	ForwardPorts(method string, url *url.URL, ports []string, stopChan, readyChan chan struct{}) error
 }
 
+// DefaultPortForwarder implements the SPDY based port forwarder
 type DefaultPortForwarder struct {
 	client *occlient.Client
 	k8sgenclioptions.IOStreams
@@ -26,6 +28,9 @@ func NewDefaultPortForwarder(client *occlient.Client, streams k8sgenclioptions.I
 	}
 }
 
+// ForwardPorts forwards the ports using the url for the remote pod.
+// stop Chan is used to stop port forwarding
+// ready Chan is used to signal failure to the channel receiver
 func (f *DefaultPortForwarder) ForwardPorts(method string, url *url.URL, ports []string, stopChan, readyChan chan struct{}) error {
 	conf, err := f.client.KubeConfig.ClientConfig()
 	if err != nil {
