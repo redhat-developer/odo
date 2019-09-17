@@ -34,7 +34,7 @@ func CmdShouldPass(program string, args ...string) string {
 	return string(session.Wait().Out.Contents())
 }
 
-// CmdShouldRunWithTimeout waits for a certain durations and then returns stdout
+// CmdShouldRunWithTimeout waits for a certain duration and then returns stdout
 func CmdShouldRunWithTimeout(timeout time.Duration, program string, args ...string) string {
 	session := CmdRunner(program, args...)
 	time.Sleep(timeout)
