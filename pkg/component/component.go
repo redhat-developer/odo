@@ -1494,6 +1494,6 @@ func addDebugPortToEnv(envVarList *config.EnvVarList, componentConfig config.Loc
 	// adding the debug port as an env variable
 	*envVarList = append(*envVarList, config.EnvVar{
 		Name:  "DEBUG_PORT",
-		Value: string(componentConfig.GetDebugPort()),
+		Value: fmt.Sprint(componentConfig.GetDebugPort()),
 	})
 }

@@ -40,7 +40,7 @@ type PortForwardOptions struct {
 var (
 	portforwardLong = templates.LongDesc(`
 			Forward a local port to a remote port on the pod where the application is listening for a debugger.
-			
+
 			By default the local port and the remote port will be same but that can be changed using --local-port.  		  
 	`)
 
@@ -125,6 +125,7 @@ func (o PortForwardOptions) Run() error {
 	}()
 
 	req := o.Client.BuildPortForwardReq(pod.Name)
+	fmt.Println("Started port forwarding at ports ", o.PortPair)
 	return o.PortForwarder.ForwardPorts("POST", req.URL(), []string{o.PortPair}, o.StopChannel, o.ReadyChannel)
 }
 
