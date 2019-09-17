@@ -448,6 +448,61 @@ in https://github.com/kadel/homebrew-odo[`kadel/homebrew-odo`].
 . Confirm the binaries are available in the GitHub release page.
 . Create a PR and update the file `build/VERSION` with the  latest version number.
 
+== Writing machine readable output code
+
+Here are some tips to consider when writing machine-readable output code.
+
+- Match similar Kubernetes / OpenShift API structures
+- Put as much information as possible within `Spec`
+- Use `json:"foobar"` within structs to rename the variables 
+
+
+Within odo, we unmarshal all information from a struct to json. Within this struct, we use `TypeMeta` and `ObjectMeta` in order to supply meta-data information coming from Kubernetes / OpenShift. 
+
+Below is working example of how we would implement a "HelloWorld" struct.
+
+
+[source,go]
+----
+  package main
+  
+  import (
+    "encoding/json"
+    "fmt"
+  
+    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  )
+  
+  // Create the struct. Here we use TypeMeta and ObjectMeta
+  // as require to create a "Kubernetes-like" API.
+  type GenericSuccess struct {
+    metav1.TypeMeta   `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty"`
+    Message           string `json:"message"`
+  }
+  
+  func main() {
+  
+    // Create the actual struct that we will use
+    // you will see that we supply a "Kind" and
+    // APIVersion. Name your "Kind" to what you are implementing
+    machineOutput := GenericSuccess{
+      TypeMeta: metav1.TypeMeta{
+        Kind:       "HelloWorldExample",
+        APIVersion: "odo.openshift.io/v1alpha1",
+      }, 
+      ObjectMeta: metav1.ObjectMeta{
+        Name: "MyProject",
+      }, 
+      Message: "Hello API!",
+    }
+  
+    // We then marshal the output and print it out
+    printableOutput, _ := json.Marshal(machineOutput)
+    fmt.Println(printableOutput)
+  }
+----
+
 == odo-bot
 
 https://github.com/odo-bot[odo-bot] is the GitHub user that provides automation for certain tasks in `odo`.
