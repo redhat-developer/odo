@@ -35,7 +35,7 @@ var _ = Describe("odo debug command tests", func() {
 		It("should expect a ws connection when tried to connect on debug port locally", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project, "--context", context)
-			helper.CmdShouldFail("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			go func() {
 				helper.CmdShouldRunWithTimeout(20*time.Second, "odo", "experimental", "debug", "port-forward", "--context", context)
