@@ -93,8 +93,8 @@ var _ = Describe("odo service command tests", func() {
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.DeleteDir(context)
 			helper.Chdir(originalDir)
+			helper.DeleteDir(context)
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
 		It("should be able to create postgresql and link it with springboot", func() {
@@ -159,8 +159,8 @@ var _ = Describe("odo service command tests", func() {
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.DeleteDir(context)
 			helper.Chdir(originalDir)
+			helper.DeleteDir(context)
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
 
