@@ -74,7 +74,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	remotePort := cfg.GetDebugPort()
 	o.PortPair = fmt.Sprintf("%d:%d", o.localPort, remotePort)
 
-	// TODO: change this to allow real logging
+	// Using Discard streams because nothing import is logged
 	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	o.StopChannel = make(chan struct{}, 1)

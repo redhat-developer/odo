@@ -181,6 +181,11 @@ test-cmd-watch:
 	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo watch command tests" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
+# Run odo debug command tests
+test-cmd-debug:
+	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo debug command tests" \
+	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+
 # Run command's integration tests irrespective of service catalog status in the cluster.
 # Service, link and login/logout command tests are not the part of this test run
 .PHONY: test-integration
