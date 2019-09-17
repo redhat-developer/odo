@@ -120,9 +120,9 @@ var _ = Describe("odo generic", func() {
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
 			helper.DeleteDir(context)
 			os.Unsetenv("GLOBALODOCONFIG")
-			helper.Chdir(originalDir)
 		})
 		It("should create the component in default application", func() {
 			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "e2e-xyzk", "--project", project, "--git", testPHPGitURL)

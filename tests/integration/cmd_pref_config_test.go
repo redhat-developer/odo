@@ -89,8 +89,8 @@ var _ = Describe("odo preference and config command tests", func() {
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
 			os.Unsetenv("GLOBALODOCONFIG")
-			helper.DeleteDir(context)
 			helper.Chdir(originalDir)
+			helper.DeleteDir(context)
 		})
 		It("should set, unset local config successfully", func() {
 			cases := []struct {
