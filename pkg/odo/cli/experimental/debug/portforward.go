@@ -125,7 +125,7 @@ func (o PortForwardOptions) Run() error {
 	}()
 
 	req := o.Client.BuildPortForwardReq(pod.Name)
-	fmt.Println("Started port forwarding at ports ", o.PortPair)
+	fmt.Println("Started port forwarding at ports -", o.PortPair)
 	return o.PortForwarder.ForwardPorts("POST", req.URL(), []string{o.PortPair}, o.StopChannel, o.ReadyChannel)
 }
 
