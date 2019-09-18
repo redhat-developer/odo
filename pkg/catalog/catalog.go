@@ -141,6 +141,7 @@ func SliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
 
 	var supTag, unSupTag []string
 	tagMap := createImageTagMap(catalogImage.imageStreamRef.Spec.Tags)
+
 	for _, tag := range catalogImage.NonHiddenTags {
 		imageName := tagMap[tag]
 		if isSupportedImage(imageName) {
@@ -161,8 +162,8 @@ func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 			// we get the image name from the repo url e.g. registry.redhat.com/openshift/nodejs:10 will give openshift/nodejs:10
 			urlImageName := strings.SplitN(imageName, "/", 2)[1]
 			// here we remove the tag and digest
-			ns, img, _, _, _ := occlient.ParseImageName(urlImageName)
-			imageName = ns + "/" + img
+			ns, img, tag, _, _ := occlient.ParseImageName(urlImageName)
+			imageName = ns + "/" + img + ":" + tag
 		} else if tagRef.From.Kind == "ImageStreamTag" {
 			tagList := strings.Split(imageName, ":")
 			tag := tagList[len(tagList)-1]
@@ -179,12 +180,15 @@ func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 // https://github.com/openshift/odo-init-image/blob/master/language-scripts/image-mappings.json
 func isSupportedImage(imgName string) bool {
 	supportedImages := []string{
-		"redhat-openjdk-18/openjdk18-openshift",
-		"openjdk/openjdk-11-rhel8",
-		"openjdk/openjdk-11-rhel7",
-		"rhscl/nodejs-8-rhel7",
-		"rhoar-nodejs/nodejs-8",
-		"rhoar-nodejs/nodejs-10",
+		"redhat-openjdk-18/openjdk18-openshift:latest",
+		"openjdk/openjdk-11-rhel8:latest",
+		"openjdk/openjdk-11-rhel7:latest",
+		"rhscl/nodejs-8-rhel7:latest",
+		"rhoar-nodejs/nodejs-8:latest",
+		"rhoar-nodejs/nodejs-10:latest",
+		"bucharestgold/centos7-s2i-nodejs:8.x",
+		"bucharestgold/centos7-s2i-nodejs:10.x",
+		"centos/nodejs-8-centos7:latest",
 	}
 	for _, supImage := range supportedImages {
 		if supImage == imgName {
