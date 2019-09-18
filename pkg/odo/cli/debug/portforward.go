@@ -45,10 +45,10 @@ var (
 
 	portforwardExample = templates.Examples(`
 		# Listen on default port on all addresses, forwarding to the default port in the pod
-		odo experimental debug port-forward 
+		odo debug port-forward 
 
 		# Listen on the 5000 port locally, forwarding to default port in the pod
-		odo experimental debug port-forward --local-port 5000
+		odo debug port-forward --local-port 5000
 		
 		`)
 )

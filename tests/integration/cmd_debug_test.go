@@ -38,11 +38,11 @@ var _ = Describe("odo debug command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			go func() {
-				helper.CmdShouldRunWithTimeout(20*time.Second, "odo", "experimental", "debug", "port-forward", "--context", context)
+				helper.CmdShouldRunWithTimeout(20*time.Second, "odo", "debug", "port-forward", "--local-port", "5050", "--context", context)
 			}()
 
 			// debug port
-			helper.HttpWaitForWithStatus("http://localhost:5858", "WebSockets request was expected", 10, 2, 400)
+			helper.HttpWaitForWithStatus("http://localhost:5050", "WebSockets request was expected", 10, 2, 400)
 		})
 	})
 })

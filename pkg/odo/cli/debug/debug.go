@@ -8,7 +8,9 @@ import (
 // RecommendedCommandName is the recommended debug command name
 const RecommendedCommandName = "debug"
 
-var DebugLongDesc = `Debugging related functions`
+var DebugLongDesc = `Warning - Debug is currently in tech preview and hence is subject to change in future.
+
+Debug allows you to remotely debug you application`
 
 func NewCmdDebug(name, fullName string) *cobra.Command {
 
@@ -23,5 +25,7 @@ func NewCmdDebug(name, fullName string) *cobra.Command {
 
 	debugCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	debugCmd.AddCommand(portforwardCmd)
+	debugCmd.Annotations = map[string]string{"command": "main"}
+
 	return debugCmd
 }
