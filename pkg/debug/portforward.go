@@ -29,6 +29,7 @@ func NewDefaultPortForwarder(client *occlient.Client, streams k8sgenclioptions.I
 }
 
 // ForwardPorts forwards the ports using the url for the remote pod.
+// ports are list of pair of ports in format "localPort:RemotePort" that are to be forwarded
 // stop Chan is used to stop port forwarding
 // ready Chan is used to signal failure to the channel receiver
 func (f *DefaultPortForwarder) ForwardPorts(method string, url *url.URL, ports []string, stopChan, readyChan chan struct{}) error {
