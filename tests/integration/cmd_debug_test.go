@@ -1,7 +1,9 @@
 package integration
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -36,13 +38,17 @@ var _ = Describe("odo debug command tests", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-
+			podName := helper.CmdShouldPass("oc", "get", "pods", "--no-headers=true", "-o", "custom-columns=:metadata.name", "-n", project)
+			fmt.Print(podName)
 			go func() {
-				helper.CmdShouldRunWithTimeout(20*time.Second, "odo", "debug", "port-forward", "--local-port", "5050", "--context", context)
+				helper.CmdShouldRunWithTimeout(60*time.Second, "odo", "debug", "port-forward", "--local-port", "5050", "--context", context)
 			}()
+			time.Sleep(5 * time.Second)
+			podName = strings.TrimSpace(podName)
+			fmt.Println(helper.CmdShouldPass("oc", "logs", podName))
 
 			// debug port
-			helper.HttpWaitForWithStatus("http://localhost:5050", "WebSockets request was expected", 10, 2, 400)
+			helper.HttpWaitForWithStatus("http://localhost:5050", "WebSockets request was expected", 12, 5, 400)
 		})
 	})
 })
