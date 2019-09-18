@@ -10,11 +10,6 @@ import (
 	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )
 
-// PortForwarder is the interface which is needed to be implemented by a port forwarding implementation
-type PortForwarder interface {
-	ForwardPorts(method string, url *url.URL, ports []string, stopChan, readyChan chan struct{}) error
-}
-
 // DefaultPortForwarder implements the SPDY based port forwarder
 type DefaultPortForwarder struct {
 	client *occlient.Client

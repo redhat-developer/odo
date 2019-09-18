@@ -8,6 +8,7 @@ import (
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/openshift/odo/pkg/util"
@@ -23,15 +24,17 @@ import (
 // PortForwardOptions contains all the options for running the port-forward cli command.
 type PortForwardOptions struct {
 	Namespace string
-	Address   []string
-	PortPair  string
+	// PortPair is the combination of local and remote port in the format "local:remote"
+	PortPair string
 
 	localPort  int
 	contextDir string
 
-	PortForwarder debug.PortForwarder
-	StopChannel   chan struct{}
-	ReadyChannel  chan struct{}
+	PortForwarder *debug.DefaultPortForwarder
+	// StopChannel is used to stop port forwarding
+	StopChannel chan struct{}
+	// ReadChannel is used to receive status of port forwarding ( ready or not ready )
+	ReadyChannel chan struct{}
 	*genericclioptions.Context
 	localConfigInfo *config.LocalConfigInfo
 }
@@ -40,11 +43,11 @@ var (
 	portforwardLong = templates.LongDesc(`
 			Forward a local port to a remote port on the pod where the application is listening for a debugger.
 
-			By default the local port and the remote port will be same but that can be changed using --local-port.  		  
+			By default the local port and the remote port will be same. To change the local port use can use --local-port argument and to change the remote port use "odo config set DebugPort <port>"   		  
 	`)
 
 	portforwardExample = templates.Examples(`
-		# Listen on default port on all addresses, forwarding to the default port in the pod
+		# Listen on default port and forwarding to the default port in the pod
 		odo debug port-forward 
 
 		# Listen on the 5000 port locally, forwarding to default port in the pod
@@ -122,7 +125,7 @@ func (o PortForwardOptions) Run() error {
 	}()
 
 	req := o.Client.BuildPortForwardReq(pod.Name)
-	fmt.Println("Started port forwarding at ports -", o.PortPair)
+	log.Info("Started port forwarding at ports -", o.PortPair)
 	return o.PortForwarder.ForwardPorts("POST", req.URL(), []string{o.PortPair}, o.StopChannel, o.ReadyChannel)
 }
 

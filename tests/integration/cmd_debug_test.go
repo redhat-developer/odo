@@ -1,9 +1,8 @@
 package integration
 
 import (
-	"fmt"
+	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -24,6 +23,7 @@ var _ = Describe("odo debug command tests", func() {
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
 		project = helper.CreateRandProject()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
 	// Clean up after the test
@@ -31,24 +31,36 @@ var _ = Describe("odo debug command tests", func() {
 	AfterEach(func() {
 		helper.DeleteProject(project)
 		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	Context("odo debug on a nodejs component", func() {
-		It("should expect a ws connection when tried to connect on debug port locally", func() {
+		It("should expect a ws connection when tried to connect on different debug port locally and remotely", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "--force", "DebugPort", "9292", "--context", context)
+			dbgPort := helper.GetConfigValueWithContext("DebugPort", context)
+			Expect(dbgPort).To(Equal("9292"))
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			podName := helper.CmdShouldPass("oc", "get", "pods", "--no-headers=true", "-o", "custom-columns=:metadata.name", "-n", project)
-			fmt.Print(podName)
 			go func() {
 				helper.CmdShouldRunWithTimeout(60*time.Second, "odo", "debug", "port-forward", "--local-port", "5050", "--context", context)
 			}()
-			time.Sleep(5 * time.Second)
-			podName = strings.TrimSpace(podName)
-			fmt.Println(helper.CmdShouldPass("oc", "logs", podName))
 
 			// debug port
 			helper.HttpWaitForWithStatus("http://localhost:5050", "WebSockets request was expected", 12, 5, 400)
 		})
+
+		It("should expect a ws connection when tried to connect on default debug port locally", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			go func() {
+				helper.CmdShouldRunWithTimeout(60*time.Second, "odo", "debug", "port-forward", "--context", context)
+			}()
+
+			// debug port
+			helper.HttpWaitForWithStatus("http://localhost:5858", "WebSockets request was expected", 12, 5, 400)
+		})
+
 	})
 })

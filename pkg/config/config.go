@@ -21,7 +21,8 @@ const (
 	configFileName        = "config.yaml"
 	localConfigKind       = "LocalConfig"
 	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
-	DefaultDebugPort      = 5858
+	// DefaultDebugPort is the default port used for debugging on remote pod
+	DefaultDebugPort = 5858
 )
 
 type ComponentStorageSettings struct {
@@ -59,6 +60,7 @@ type ComponentSettings struct {
 
 	MaxMemory *string `yaml:"MaxMemory,omitempty"`
 
+	// DebugPort controls the port used by the pod to run the debugging agent on
 	DebugPort *int `yaml:"DebugPort,omitempty"`
 
 	Storage *[]ComponentStorageSettings `yaml:"Storage,omitempty"`

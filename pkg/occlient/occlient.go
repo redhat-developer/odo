@@ -96,7 +96,7 @@ const (
 
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use getBoostrapperImage() function instead of this variable
-	defaultBootstrapperImage = "quay.io/openshiftdo/init:0.11.0"
+	defaultBootstrapperImage = "docker.io/gramnani/odo-init-image:latest"
 
 	// ENV variable to overwrite image used to bootstrap SupervisorD in S2I builder Image
 	bootstrapperImageEnvName = "ODO_BOOTSTRAPPER_IMAGE"

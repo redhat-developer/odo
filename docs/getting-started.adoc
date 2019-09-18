@@ -219,3 +219,70 @@ To list all enviroment variables in the current local configuration:
 ----
 odo config view
 ----
+
+== Using debug mode to interactively debug (Tech Preview)
+
+Odo allows the user to attach a debugger for remotely debugging your application. Currently this feature is only supported by nodejs and java.
+
+Components created using odo by default run in debug mode (kind of debug mode which doesn't break into debug session unless attached to). This means that a debugger agent is already running on the component side on a specific port. So user just needs to start the port forwarding using 
+----
+odo debug port-forward
+----
+and attach their local debugger (usually bundled in an IDE).
+
+Diagram to explain how it works - 
+----
+                                              Nodejs Component
+
+                               +-------------------------------------------+
+                               |                                           |
+                               |                                           |
+                               |      node --inspect server.js             |
+                               |                                           |
+                               |                                           |
+                               |    Runs a debugging agent on port 5858    |
+                               |                                           |
+                               |                                           |
+                               +-----------------------+-------------------+
+                                                       ^
+                                                       |
+                                                       |
+                                                       |
+                                                       |
+                                                       |
+                                                       |
++-------------------+                                  |
+|                   |  Connects to      +--------------+------------------+
+|                   |  localhost port   |                                 |
+|    VSCode/        |  5858             |                                 |
+|    Intellij/      |                   |  Odo debug port-forward         |
+|    Netbeans       +------------------->                                 |
+|                   |                   |  Forwards the localhost 5858    |
+|                   |                   |  port to the component's 5858   |
+|                   |                   |                                 |
+|                   |                   |                                 |
++-------------------+                   +---------------------------------+
+
+                                                  User's Machine
+----
+
+=== Odo provides you ways to configure some of parameters like
+
+To set remote port on which debugging agent should run:
+----
+odo config set DebugPort 9292
+----
+This value gets persisted in the local config and stays same between runs.
+Note - A re-deployment is needed for this value to be refected on the component
+
+
+To set the local port which would be port forwarded:
+----
+odo debug port-forward --local-port 9292
+----
+This value is not persisted and hence needs to provided whenever the port needs to be changed.
+
+=== References to attaching debugger for different IDEs
+
+- link:https://stackify.com/java-remote-debugging/[Java Debugging using CLI and VS Code]
+- link:https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_attaching-to-nodejs[NodeJs Debugging using VS Code]
