@@ -30,7 +30,7 @@ const OdoRecommendedName = "odo"
 
 var (
 	odoLong = ktemplates.LongDesc(`
-(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated matter. Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code.
+(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated manner. Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code.
 
 Find more information at https://github.com/openshift/odo`)
 	odoExample = ktemplates.Examples(`  # Creating and deploying a Node.js project
