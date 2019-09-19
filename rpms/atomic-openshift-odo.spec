@@ -39,15 +39,16 @@ mkdir -p %{gopath}/src/github.com/openshift
 ln -s "$(pwd)" %{gopath}/src/github.com/openshift/odo
 export GOPATH=%{gopath}
 cd %{gopath}/src/github.com/openshift/odo
+make test
 make cross
 unlink %{gopath}/src/github.com/openshift/odo
 rm -rf %{gopath}
 
 %install
 mkdir -p %{buildroot}/%{_bindir}
-install -m 0755 dist/bin/linux-amd64/odo %{buildroot}/%{_bindir}/odo
+install -m 0755 dist/bin/linux-amd64/odo %{buildroot}%{_bindir}/odo
 mkdir -p %{buildroot}%{_datadir}
-install -d %{buildroot}%{_datadir}/%{name}/{linux,macos,windows}
+install -d %{buildroot}%{_datadir}/%{name}-redistributable/{linux,macos,windows}
 install -p -m 755 dist/bin/linux-amd64/odo %{buildroot}%{_datadir}/%{name}-redistributable/linux/odo-linux-amd64
 install -p -m 755 dist/bin/darwin-amd64/odo %{buildroot}%{_datadir}/%{name}-redistributable/macos/odo-darwin-amd64
 install -p -m 755 dist/bin/windows-amd64/odo.exe %{buildroot}%{_datadir}/%{name}-redistributable/windows/odo-windows-amd64.exe
