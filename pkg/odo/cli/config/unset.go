@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/log"
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/pkg/errors"
@@ -96,9 +97,26 @@ func (o *UnsetOptions) Run() (err error) {
 		if err := o.LocalConfigInfo.SetEnvVars(newEnvList); err != nil {
 			return err
 		}
-
 		log.Info("Environment variables were successfully updated.")
-		return nil
+		if o.now {
+			o.Context, _, err = genericclioptions.UpdatedContext(o.Context)
+			if o.LocalConfigInfo == nil {
+				fmt.Println("Ooops local config is nil")
+			}
+			glog.V(4).Infof("Reloaded context info %#v", o)
+			if err != nil {
+				return errors.Wrap(err, "unable to retrieve updated local config")
+			}
+			err = o.SetSourceInfo()
+			if err != nil {
+				return errors.Wrap(err, "unable to set source information")
+			}
+			err = o.Push()
+			if err != nil {
+				return errors.Wrapf(err, "failed to push the changes")
+			}
+			return nil
+		}
 	}
 
 	if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
@@ -112,7 +130,25 @@ func (o *UnsetOptions) Run() (err error) {
 		}
 
 		fmt.Println("Local config was successfully updated.")
-
+		if o.now {
+			o.Context, _, err = genericclioptions.UpdatedContext(o.Context)
+			if o.LocalConfigInfo == nil {
+				fmt.Println("Ooops local config is nil")
+			}
+			glog.V(4).Infof("Reloaded context info %#v", o)
+			if err != nil {
+				return errors.Wrap(err, "unable to retrieve updated local config")
+			}
+			err = o.SetSourceInfo()
+			if err != nil {
+				return errors.Wrap(err, "unable to set source information")
+			}
+			err = o.Push()
+			if err != nil {
+				return errors.Wrapf(err, "failed to push the changes")
+			}
+			return nil
+		}
 		return nil
 	}
 	return errors.New("config already unset, cannot unset a configuration which is not set")
