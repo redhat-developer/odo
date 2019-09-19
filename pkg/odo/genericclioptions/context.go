@@ -261,11 +261,12 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 
 	// create the internal context representation based on calculated values
 	internalCxt := internalCxt{
-		Client:      client,
-		Project:     ns,
-		Application: app,
-		OutputFlag:  outputFlag,
-		command:     command,
+		Client:          client,
+		Project:         ns,
+		Application:     app,
+		OutputFlag:      outputFlag,
+		command:         command,
+		LocalConfigInfo: *lci,
 	}
 
 	// create a context from the internal representation
@@ -293,12 +294,13 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	Client      *occlient.Client
-	command     *cobra.Command
-	Project     string
-	Application string
-	cmp         string
-	OutputFlag  string
+	Client          *occlient.Client
+	command         *cobra.Command
+	Project         string
+	Application     string
+	cmp             string
+	OutputFlag      string
+	LocalConfigInfo config.LocalConfigInfo
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with

@@ -291,7 +291,7 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 // The function returns both components and services
 var LinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	components, err := component.List(context.Client, context.Application)
+	components, err := component.List(context.Client, context.Application, nil)
 	if err != nil {
 		return completions
 	}
@@ -336,7 +336,7 @@ var UnlinkCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 		return completions
 	}
 
-	components, err := component.List(context.Client, context.Application)
+	components, err := component.List(context.Client, context.Application, nil)
 	if err != nil {
 		return completions
 	}
@@ -390,7 +390,7 @@ func getDCOfComponent(context *genericclioptions.Context) (*appsv1.DeploymentCon
 // ComponentNameCompletionHandler provides component name completion
 var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	components, err := component.List(context.Client, context.Application)
+	components, err := component.List(context.Client, context.Application, nil)
 
 	if err != nil {
 		return completions

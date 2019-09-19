@@ -59,7 +59,7 @@ func AddApplicationFlag(cmd *cobra.Command) {
 
 // printDeleteAppInfo will print things which will be deleted
 func printDeleteAppInfo(client *occlient.Client, appName string, projectName string) error {
-	componentList, err := component.List(client, appName)
+	componentList, err := component.List(client, appName, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Component list")
 	}
@@ -113,7 +113,7 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 
 // getMachineReadableFormat returns resource information in machine readable format
 func getMachineReadableFormat(client *occlient.Client, appName string, projectName string, active bool) application.App {
-	componentList, _ := component.List(client, appName)
+	componentList, _ := component.List(client, appName, nil)
 	var compList []string
 	for _, component := range componentList.Items {
 		compList = append(compList, component.Name)

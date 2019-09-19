@@ -121,6 +121,7 @@ func Test_validateStoragePath(t *testing.T) {
 	labelSelector := "app.kubernetes.io/instance=nodejs,app.kubernetes.io/part-of=app"
 	storageSelector := "app.kubernetes.io/storage-name"
 	client, fakeClientSet := occlient.FakeNew()
+
 	fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), labelSelector) {
 			return true, nil, fmt.Errorf("labels not matching with expected values, expected:%s, got:%s", labelSelector, action.(ktesting.ListAction).GetListRestrictions())

@@ -2606,6 +2606,7 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.DeploymentConfig, error) {
 	var dcList *appsv1.DeploymentConfigList
 	var err error
+
 	if selector != "" {
 		dcList, err = c.appsClient.DeploymentConfigs(c.Namespace).List(metav1.ListOptions{
 			LabelSelector: selector,
