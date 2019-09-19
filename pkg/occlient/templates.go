@@ -83,15 +83,13 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 							Ports: commonImageMeta.Ports,
 							// Run the actual supervisord binary that has been mounted into the container
 							Command: []string{
-								"/opt/odo/bin/dumb-init",
-								"--",
+								"/opt/odo/bin/go-init",
 							},
 							// Using the appropriate configuration file that contains the "run" script for the component.
 							// either from: /usr/libexec/s2i/assemble or /opt/app-root/src/.s2i/bin/assemble
 							Args: []string{
-								"/opt/odo/bin/supervisord",
-								"-c",
-								"/opt/odo/conf/supervisor.conf",
+								"-main",
+								"/opt/odo/bin/supervisord -c /opt/odo/conf/supervisor.conf",
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
