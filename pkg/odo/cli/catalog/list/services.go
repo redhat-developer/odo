@@ -3,12 +3,11 @@ package list
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +19,7 @@ var servicesExample = `  # Get the supported services from service catalog
 // ListServicesOptions encapsulates the options for the odo catalog list services command
 type ListServicesOptions struct {
 	// list of known services
-	services []occlient.Service
+	services catalog.ServiceTypeList
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -33,7 +32,7 @@ func NewListServicesOptions() *ListServicesOptions {
 // Complete completes ListServicesOptions after they've been created
 func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	o.services, err = svc.ListCatalog(o.Client)
+	o.services, err = catalog.ListServices(o.Client)
 	if err != nil {
 		return fmt.Errorf("unable to list services because Service Catalog is not enabled in your cluster: %v", err)
 	}
@@ -44,7 +43,7 @@ func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []s
 
 // Validate validates the ListServicesOptions based on completed values
 func (o *ListServicesOptions) Validate() (err error) {
-	if len(o.services) == 0 {
+	if len(o.services.Items) == 0 {
 		return fmt.Errorf("no deployable services found")
 	}
 	return
@@ -53,11 +52,11 @@ func (o *ListServicesOptions) Validate() (err error) {
 // Run contains the logic for the command associated with ListServicesOptions
 func (o *ListServicesOptions) Run() (err error) {
 	if log.IsJSON() {
-		services, err := svc.ListCatalog(o.Client)
+		services, err := catalog.ListServices(o.Client)
 		if err != nil {
 			return fmt.Errorf("unable to list services because Service Catalog is not enabled in your cluster: %v", err)
 		}
-		machineoutput.CatalogListServices(services)
+		machineoutput.OutputSuccess(services)
 	} else {
 		util.DisplayServices(o.services)
 	}

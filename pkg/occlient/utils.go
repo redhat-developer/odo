@@ -7,7 +7,8 @@ import (
 	appsutil "github.com/openshift/origin/pkg/apps/util"
 )
 
-func hasTag(tags []string, requiredTag string) bool {
+// HasTag checks to see if there is a tag in a list of over tags..
+func HasTag(tags []string, requiredTag string) bool {
 	for _, tag := range tags {
 		if tag == requiredTag {
 			return true

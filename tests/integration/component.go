@@ -161,6 +161,14 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context2)...)
 			helper.DeleteDir(context2)
 		})
+
+		It("should succeed listing catalog components", func() {
+
+			// Since components catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			Expect(output).To(ContainSubstring("ComponentTypeList"))
+		})
+
 	})
 
 	Context("Test odo push with --source and --config flags", func() {

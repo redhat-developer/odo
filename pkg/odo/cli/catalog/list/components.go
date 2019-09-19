@@ -8,6 +8,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/catalog"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
@@ -21,7 +23,7 @@ var componentsExample = `  # Get the supported components
 // ListComponentsOptions encapsulates the options for the odo catalog list components command
 type ListComponentsOptions struct {
 	// list of known images
-	catalogList []catalog.CatalogImage
+	catalogList catalog.ComponentTypeList
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -34,18 +36,19 @@ func NewListComponentsOptions() *ListComponentsOptions {
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	o.catalogList, err = catalog.List(o.Client)
+	o.catalogList, err = catalog.ListComponents(o.Client)
+
 	if err != nil {
 		return err
 	}
-	o.catalogList = util.FilterHiddenComponents(o.catalogList)
+	o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
 
 	return
 }
 
 // Validate validates the ListComponentsOptions based on completed values
 func (o *ListComponentsOptions) Validate() (err error) {
-	if len(o.catalogList) == 0 {
+	if len(o.catalogList.Items) == 0 {
 		return fmt.Errorf("no deployable components found")
 	}
 
@@ -54,35 +57,39 @@ func (o *ListComponentsOptions) Validate() (err error) {
 
 // Run contains the logic for the command associated with ListComponentsOptions
 func (o *ListComponentsOptions) Run() (err error) {
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	var supCatalogList, unsupCatalogList []catalog.CatalogImage
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(o.catalogList)
+	} else {
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		var supCatalogList, unsupCatalogList []catalog.ComponentType
 
-	for _, image := range o.catalogList {
-		supported, unsupported := catalog.SliceSupportedTags(image)
+		for _, image := range o.catalogList.Items {
+			supported, unsupported := catalog.SliceSupportedTags(image)
 
-		if len(supported) != 0 {
-			image.NonHiddenTags = supported
-			supCatalogList = append(supCatalogList, image)
+			if len(supported) != 0 {
+				image.Spec.NonHiddenTags = supported
+				supCatalogList = append(supCatalogList, image)
+			}
+			if len(unsupported) != 0 {
+				image.Spec.NonHiddenTags = unsupported
+				unsupCatalogList = append(unsupCatalogList, image)
+			}
 		}
-		if len(unsupported) != 0 {
-			image.NonHiddenTags = unsupported
-			unsupCatalogList = append(unsupCatalogList, image)
+
+		if len(supCatalogList) != 0 {
+			fmt.Fprintln(w, "Odo Supported OpenShift Components:")
+			o.printCatalogList(w, supCatalogList)
+			fmt.Fprintln(w)
+
 		}
+
+		if len(unsupCatalogList) != 0 {
+			fmt.Fprintln(w, "OpenShift Components:")
+			o.printCatalogList(w, unsupCatalogList)
+		}
+
+		w.Flush()
 	}
-
-	if len(supCatalogList) != 0 {
-		fmt.Fprintln(w, "Odo Supported OpenShift Components:")
-		o.printCatalogList(w, supCatalogList)
-		fmt.Fprintln(w)
-
-	}
-
-	if len(unsupCatalogList) != 0 {
-		fmt.Fprintln(w, "OpenShift Components:")
-		o.printCatalogList(w, unsupCatalogList)
-	}
-
-	w.Flush()
 	return
 }
 
@@ -102,7 +109,7 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 
 }
 
-func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []catalog.CatalogImage) {
+func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []catalog.ComponentType) {
 	fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS")
 
 	for _, component := range catalogList {
@@ -115,11 +122,11 @@ func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []cata
 				mark the one from current namespace with (*)
 			*/
 			for _, comp := range catalogList {
-				if comp.Name == component.Name && component.Namespace != comp.Namespace {
-					componentName = fmt.Sprintf("%s (*)", component.Name)
+				if comp.ObjectMeta.Name == component.ObjectMeta.Name && component.Namespace != comp.Namespace {
+					componentName = fmt.Sprintf("%s (*)", component.ObjectMeta.Name)
 				}
 			}
 		}
-		fmt.Fprintln(w, componentName, "\t", component.Namespace, "\t", strings.Join(component.NonHiddenTags, ","))
+		fmt.Fprintln(w, componentName, "\t", component.ObjectMeta.Namespace, "\t", strings.Join(component.Spec.NonHiddenTags, ","))
 	}
 }

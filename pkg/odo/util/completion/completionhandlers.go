@@ -270,12 +270,12 @@ var StorageUnMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, 
 // CreateCompletionHandler provides component type completion in odo create command
 var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	catalogList, err := catalog.List(context.Client)
+	catalogList, err := catalog.ListComponents(context.Client)
 	if err != nil {
 		return completions
 	}
 
-	for _, builder := range catalogList {
+	for _, builder := range catalogList.Items {
 		// we found the builder name in the list which means
 		// that the builder name has been already selected by the user so no need to suggest more
 		if args.commands[builder.Name] {

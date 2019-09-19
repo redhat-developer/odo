@@ -9,8 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"sort"
-
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 
@@ -48,41 +46,6 @@ func (params servicePlanParameters) Less(i, j int) bool {
 
 func (params servicePlanParameters) Swap(i, j int) {
 	params[i], params[j] = params[j], params[i]
-}
-
-// ListCatalog lists all the available service types
-func ListCatalog(client *occlient.Client) ([]occlient.Service, error) {
-
-	clusterServiceClasses, err := client.GetClusterServiceClassExternalNamesAndPlans()
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get cluster serviceClassExternalName")
-	}
-
-	// Sorting service classes alphabetically
-	// Reference: https://golang.org/pkg/sort/#example_Slice
-	sort.Slice(clusterServiceClasses, func(i, j int) bool {
-		return clusterServiceClasses[i].Name < clusterServiceClasses[j].Name
-	})
-
-	return clusterServiceClasses, nil
-}
-
-// Search searches for the services
-func Search(client *occlient.Client, name string) ([]occlient.Service, error) {
-	var result []occlient.Service
-	serviceList, err := ListCatalog(client)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list services")
-	}
-
-	// do a partial search in all the services
-	for _, service := range serviceList {
-		if strings.Contains(service.Name, name) {
-			result = append(result, service)
-		}
-	}
-
-	return result, nil
 }
 
 // CreateService creates new service from serviceCatalog

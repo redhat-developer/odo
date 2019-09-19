@@ -2,10 +2,10 @@ package search
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/occlient"
+
+	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ var serviceExample = `  # Search for a service
 // SearchServiceOptions encapsulates the options for the odo catalog describe service command
 type SearchServiceOptions struct {
 	searchTerm string
-	services   []occlient.Service
+	services   catalog.ServiceTypeList
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -32,7 +32,7 @@ func (o *SearchServiceOptions) Complete(name string, cmd *cobra.Command, args []
 	o.Context = genericclioptions.NewContext(cmd)
 	o.searchTerm = args[0]
 
-	o.services, err = svc.Search(o.Client, o.searchTerm)
+	o.services, err = catalog.SearchService(o.Client, o.searchTerm)
 	if err != nil {
 		return fmt.Errorf("unable to list services because Service Catalog is not enabled in your cluster: %v", err)
 	}
@@ -43,7 +43,7 @@ func (o *SearchServiceOptions) Complete(name string, cmd *cobra.Command, args []
 
 // Validate validates the SearchServiceOptions based on completed values
 func (o *SearchServiceOptions) Validate() (err error) {
-	if len(o.services) == 0 {
+	if len(o.services.Items) == 0 {
 		return fmt.Errorf("no service matched the query: %s", o.searchTerm)
 	}
 

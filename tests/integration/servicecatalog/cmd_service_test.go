@@ -41,7 +41,7 @@ var _ = Describe("odo service command tests", func() {
 		It("should succeed listing catalog components", func() {
 			// Since service catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
 			output := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
-			Expect(output).To(ContainSubstring("CatalogListServices"))
+			Expect(output).To(ContainSubstring("ServiceTypeList"))
 		})
 	})
 
