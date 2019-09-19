@@ -22,6 +22,7 @@ make test-cmd-pref-config
 make test-cmd-watch
 make test-cmd-storage
 make test-cmd-app
+make test-cmd-project
 make test-cmd-url
 make test-cmd-push
 odo logout

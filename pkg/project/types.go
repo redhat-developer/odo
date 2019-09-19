@@ -11,9 +11,7 @@ type Project struct {
 	Status            ProjectStatus `json:"status,omitempty"`
 }
 
-type ProjectSpec struct {
-	Applications []string `json:"apps"`
-}
+type ProjectSpec struct{}
 
 type ProjectStatus struct {
 	Active bool `json:"active"`
