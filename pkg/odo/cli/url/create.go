@@ -2,11 +2,11 @@ package url
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions/printtemplates"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
-
+	"github.com/openshift/odo/pkg/odo/genericclioptions/printtemplates"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -115,7 +115,7 @@ func (o *URLCreateOptions) Run() (err error) {
 		if o.LocalConfigInfo == nil {
 			fmt.Println("Ooops local config is nil")
 		}
-		glog.V(4).Infof("Reloaded context info %#v" , o)
+		glog.V(4).Infof("Reloaded context info %#v", o)
 
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve updated local config")
@@ -150,7 +150,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	// Add `--now` flag
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
-	genericclioptions.AddOutputFlag(urlCreateCmd)
 	genericclioptions.AddContextFlag(urlCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 	return urlCreateCmd
