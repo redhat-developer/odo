@@ -21,10 +21,12 @@ TEST_EXEC_NODES ?= 2
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
 
-# Env variable VERBOSE is the verbose flag. Setting VERBOSE= turns off verbose output.
-VERBOSE=-v
+# Env variable GINKGO_VERBOSE_MODE is used to get control over enabling ginkgo
+# verbose mode against each test target run. By default ginkgo verbosity is not enabled.
+# To enable verbosity export or set env GINKGO_VERBOSE_MODE like "GINKGO_VERBOSE_MODE=-v"
+GINKGO_VERBOSE_MODE ?=
 
-GINKGO_FLAGS_ALL = $(VERBOSE) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
+GINKGO_FLAGS_ALL = $(GINKGO_VERBOSE_MODE) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
 
 # Flags for tests that must not be run in parallel.
 GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
@@ -201,7 +203,7 @@ test-integration:
 # Only service and link command tests are the part of this test run
 .PHONY: test-integration-service-catalog
 test-integration-service-catalog:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
+	ginkgo -nodes=$(TEST_EXEC_NODES) \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/servicecatalog/ -timeout $(TIMEOUT)
 
 # Run core beta flow e2e tests
