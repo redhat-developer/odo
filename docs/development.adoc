@@ -169,7 +169,7 @@ NOTE: Refer https://github.com/golang/go/wiki/LearnTesting for Go best practices
 
 === Integration and e2e tests
 
-.Prerequisites:
+*Prerequisites:*
 
 * A `minishift` or OpenShift environment with Service Catalog enabled:
 +
@@ -179,19 +179,19 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 
 * `odo` and `oc` binaries in `$PATH`.
 
-.Integration tests:
+*Integration tests:*
 
 Integration tests utilize link:https://github.com/onsi/ginkgo[`Ginkgo`] and it's preferred matcher library link:https://github.com/onsi/gomega[`Gomega`] which define sets of test cases (spec). As per ginkgo test file comprises specs and these test file are controlled by test suite. Test and test suite files are located in `tests/integration` directory and can be called using `.PHONY` within `makefile`. Integration tests validates and focuses on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
 
-.E2e tests:
+*E2e tests:*
 
 E2e (End to end) uses the same library as integration test. E2e tests and test suite files are located in `tests/e2escenarios` directory and can be called using `.PHONY` within `makefile`. Basically end to end (e2e) test contains user specific scenario that is combination of some features/commands in a single test file.
 
-.How to write:
+*How to write:*
 
 Refer to the odo clean test link:https://github.com/openshift/odo/blob/master/tests/template/template_cleantest_test.go[`template`].
 
-.Test guidelines:
+*Test guidelines:*
 
 Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/master/tests[`odo tests`].
 
@@ -301,7 +301,7 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 * Run tests on local env before pushing PRs
 
-.Running integration tests:
+*Running integration tests:*
 
 By default, tests are run against the `odo` binary placed in the PATH which is created by command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use environment variable `TEST_EXEC_NODES`. For example component test can be run
 
@@ -325,7 +325,7 @@ $ TEST_EXEC_NODES=1 make test-cmd-cmp
 
 NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-`. However there is a test file `generic_test.go` which handles certain test spec easily and can run the spec in parallel by calling `make test-generic`. By calling make `test-integration`, the whole suite can run all the spec in parallel on two ginkgo test node except `service` and `link` irrespective of service catalog status in the cluster. However `make test-integration-service-catalog` runs all spec of service and link tests successfully in parallel on cluster having service catalog enabled. `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
 
-.Running e2e tests:
+*Running e2e tests:*
 
 (E2e) End to end test run behaves in the similar way like integration test does. To see the number of available e2e test file for execution, press tab just after writing `make test-e2e-`. For e2e suite level execution of all e2e test spec use `make test-e2e-all`. For example
 
