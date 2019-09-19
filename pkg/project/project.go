@@ -2,7 +2,6 @@ package project
 
 import (
 	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/log"
@@ -51,23 +50,25 @@ func Delete(client *occlient.Client, projectName string) error {
 }
 
 func DescribeProjects(client *occlient.Client) (ProjectList, error) {
-	currentProject := client.GetCurrentProjectName()
 	allProjects, err := client.GetProjectNames()
 	if err != nil {
 		return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
 	}
-	// Get apps from project
+
+	// Go through each project
 	var projects []Project
 	for _, project := range allProjects {
-		isActive := false
-		if project == currentProject {
-			isActive = true
-		}
-		apps, _ := application.ListInProject(client)
-		projects = append(projects, GetMachineReadableFormat(project, isActive, apps))
+		projects = append(projects, GetMachineReadableFormat(client, project))
 	}
 
-	return getMachineReadableFormatForList(projects), nil
+	return ProjectList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ProjectList",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    projects,
+	}, nil
 }
 
 // Exists Checks whether a project with the given name exists or not
@@ -85,7 +86,18 @@ func Exists(client *occlient.Client, projectName string) (bool, error) {
 
 // GetMachineReadableFormat gathers the readable format and output a Project struct
 // for json to marshal
-func GetMachineReadableFormat(projectName string, isActive bool, apps []string) Project {
+func GetMachineReadableFormat(client *occlient.Client, projectName string) Project {
+	isActive := false
+
+	// Retrieve the current project
+	currentProject := client.GetCurrentProjectName()
+	if projectName == currentProject {
+		isActive = true
+	}
+
+	// Get a list of apps
+	apps, _ := application.ListInProject(client)
+
 	return Project{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Project",
@@ -101,35 +113,5 @@ func GetMachineReadableFormat(projectName string, isActive bool, apps []string) 
 		Status: ProjectStatus{
 			Active: isActive,
 		},
-	}
-}
-
-// MachineReadableSuccessOutput outputs a success output that includes
-// project information and namespace
-func MachineReadableSuccessOutput(projectName string, message string) {
-	machineOutput := machineoutput.GenericSuccess{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Project",
-			APIVersion: "odo.openshift.io/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      projectName,
-			Namespace: projectName,
-		},
-		Message: message,
-	}
-
-	machineoutput.OutputSuccess(machineOutput)
-}
-
-// getMachineReadableFormatForList returns application list in machine readable format
-func getMachineReadableFormatForList(projects []Project) ProjectList {
-	return ProjectList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
-		},
-		ListMeta: metav1.ListMeta{},
-		Items:    projects,
 	}
 }

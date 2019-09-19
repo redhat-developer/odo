@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/spf13/cobra"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
@@ -83,7 +85,18 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 		}
 
 		if log.IsJSON() {
-			project.MachineReadableSuccessOutput(pdo.projectName, successMessage)
+			// Output a generic success for delete
+			machineoutput.OutputSuccess(machineoutput.GenericSuccess{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Success",
+					APIVersion: machineoutput.APIVersion,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      pdo.projectName,
+					Namespace: pdo.projectName,
+				},
+				Message: successMessage,
+			})
 		} else {
 			log.Success(successMessage)
 		}

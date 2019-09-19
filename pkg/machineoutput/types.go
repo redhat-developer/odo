@@ -31,15 +31,16 @@ type GenericSuccess struct {
 }
 
 // OutputSuccess outputs a "successful" machine-readable output format in json
-func OutputSuccess(machineOutput interface{}) {
-	printableOutput, err := json.Marshal(machineOutput)
+func OutputSuccess(machineOutput interface{}) error {
 
-	// If we error out... there's no way to output it (since we disable logging when using -o json)
+	// Error out if unable to marshal
+	printableOutput, err := json.Marshal(machineOutput)
 	if err != nil {
-		fmt.Fprintf(log.GetStderr(), "Unable to unmarshal JSON: %s\n", err.Error())
-	} else {
-		fmt.Fprintf(log.GetStdout(), "%s\n", string(printableOutput))
+		return err
 	}
+
+	fmt.Fprintf(log.GetStdout(), "%s\n", string(printableOutput))
+	return nil
 }
 
 // OutputError outputs a "successful" machine-readable output format in json
