@@ -52,6 +52,19 @@ var _ = Describe("odo service command tests", func() {
 		})
 	})
 
+	Context("check search functionality", func() {
+
+		It("should pass with searching for part of a service name", func() {
+
+			// We just use "sql" as some catalogs only have postgresql-persistent and
+			// others dh-postgresql-db. So let's just see if there's "any" postgresql to begin
+			// with
+			output := helper.CmdShouldPass("odo", "catalog", "search", "service", "sql")
+			Expect(output).To(ContainSubstring("postgresql"))
+		})
+
+	})
+
 	Context("create service with Env non-interactively", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()

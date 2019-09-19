@@ -19,6 +19,16 @@ func DisplayServices(services []occlient.Service) {
 	w.Flush()
 }
 
+// DisplayComponents displays the specified  components
+func DisplayComponents(components []string) {
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(w, "NAME")
+	for _, component := range components {
+		fmt.Fprintln(w, component)
+	}
+	w.Flush()
+}
+
 // FilterHiddenServices filters out services that should be hidden from the specified list
 func FilterHiddenServices(input []occlient.Service) []occlient.Service {
 	inputLength := len(input)
