@@ -1,5 +1,5 @@
-hash: 9609a0d65ff7c6c3e7c5a70aa1f46aaffe4229aa698db538ea82d8f2de88e6a9
-updated: 2019-03-28T15:05:18.897257+01:00
+hash: 2a4a7092fc929cbbef57cdb21489e3227341304811fab15fd23874602aba9f83
+updated: 2019-09-12T13:40:15.826556286-04:00
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -7,6 +7,7 @@ imports:
   - negotiate
 - name: github.com/apcera/gssapi
   version: 5fb4217df13b8e6878046fe1e5c10e560e1b86dc
+  repo: https://github.com/openshift/gssapi.git
 - name: github.com/Azure/go-ansiterm
   version: 19f72df4d05d31cbe1c56bfc8045c96babff6c7e
   subpackages:
@@ -21,6 +22,8 @@ imports:
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
 - name: github.com/certifi/gocertifi
   version: deb3ae2ef2610fde3330947281941c562861188b
+- name: github.com/creack/pty
+  version: 2769f65a3a94eb8f876f44a0459d24ae7ad2e488
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -110,7 +113,7 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/google/btree
-  version: 20236160a414454a9c64b6c8829381c6f4bddcaa
+  version: be84af90a1f71c9eeac820a4cdacb863122396d6
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/googleapis/gnostic
@@ -126,7 +129,7 @@ imports:
 - name: github.com/hashicorp/errwrap
   version: 8a6fb523712970c966eefc6b39ed2c5e74880354
 - name: github.com/hashicorp/go-multierror
-  version: 886a7fbe3eb1c874d46f623bfa70af45f425b3d1
+  version: bdca7bb83f603b80ef756bb953fe1dafa9cd00a2
 - name: github.com/hashicorp/golang-lru
   version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
   subpackages:
@@ -149,7 +152,7 @@ imports:
 - name: github.com/kballard/go-shellquote
   version: 95032a82bc518f77982ea72343cc1ade730072f0
 - name: github.com/kr/pty
-  version: 521317be5ebc228a0f0ede099fa2a0b5ece22e49
+  version: 24b51915630e1d9d3c6adf15a3a96796bbc3cd43
 - name: github.com/kubernetes-incubator/service-catalog
   version: 9d82b390b96d565e9301fdfe4ac822311e765a3c
   subpackages:
@@ -165,6 +168,11 @@ imports:
   - pkg/client/clientset_generated/clientset/typed/settings/v1alpha1
   - pkg/client/clientset_generated/clientset/typed/settings/v1alpha1/fake
   - pkg/filter
+- name: github.com/kylelemons/godebug
+  version: fa7b53cdfc9105c70f134574002f406232921437
+  subpackages:
+  - diff
+  - pretty
 - name: github.com/mailru/easyjson
   version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
   subpackages:
@@ -176,7 +184,7 @@ imports:
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: c2a7a6ca930a4cd0bc33a3f298eb71960732a3a7
+  version: bf9a1dea1961e1d831824fb135332bfb8c10e8b8
 - name: github.com/mattn/go-runewidth
   version: 703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211
 - name: github.com/matttproud/golang_protobuf_extensions
@@ -192,7 +200,7 @@ imports:
 - name: github.com/modern-go/reflect2
   version: 05fbef0ca5da472bbf96c9322b84a53edc03c9fd
 - name: github.com/Netflix/go-expect
-  version: 9d1f4485533ba0665fa4ca2ef6f1210198f7eaae
+  version: 0e00d916866778d0c56bb09a9a7f2b861196221b
 - name: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - name: github.com/onsi/ginkgo
@@ -300,6 +308,7 @@ imports:
   - pkg/api/legacy
   - pkg/apps/apis/apps
   - pkg/apps/apis/apps/v1
+  - pkg/apps/util
   - pkg/authorization/apis/authorization
   - pkg/authorization/apis/authorization/install
   - pkg/authorization/apis/authorization/internal/serviceaccount
@@ -526,12 +535,12 @@ imports:
   - storage/v1alpha1
   - storage/v1beta1
 - name: k8s.io/apiextensions-apiserver
-  version: 45cb0b8537cf79d23914721e0bf41a3479769b22
+  version: 7e311602c75d6a2483b2928d99c44183e42a0136
   repo: https://github.com/openshift/kubernetes-apiextensions-apiserver.git
   subpackages:
   - pkg/features
 - name: k8s.io/apimachinery
-  version: 5f1ab6ad9104144e43c7e477938fd278ade27eb2
+  version: 5c0e7e0ce91a8083e170765a544def530b8ee4f0
   repo: https://github.com/openshift/kubernetes-apimachinery.git
   subpackages:
   - pkg/api/equality
@@ -588,7 +597,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 996cefeb14170756dc1626dde64fcfb63c8edb24
+  version: 6eafd6a7ccfb33517f1d852155d8862d8b5d3e93
   repo: https://github.com/openshift/kubernetes-apiserver.git
   subpackages:
   - pkg/apis/audit
@@ -601,7 +610,7 @@ imports:
   - pkg/features
   - pkg/util/feature
 - name: k8s.io/client-go
-  version: 7eaf7133bcfa11e19ebbbc76ff53e2cb32524683
+  version: 9feea9d4142fd23f46451ef4292787b85e2e0a52
   repo: https://github.com/openshift/kubernetes-client-go.git
   subpackages:
   - discovery
@@ -717,7 +726,7 @@ imports:
   - pkg/util/proto
   - pkg/util/proto/validation
 - name: k8s.io/kubernetes
-  version: d8b46d72a413981e6ea99605dcef3b8ca3f2223f
+  version: 84f203614d99ab73d7de2ae51bab61877eac7af6
   repo: https://github.com/openshift/kubernetes.git
   subpackages:
   - pkg/api/events
