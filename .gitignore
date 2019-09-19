@@ -13,6 +13,9 @@ bin
 # Ignore coverage report
 coverage.txt
 
+# Ignore test reports
+tests/reports/
+
 #
 # GO SPECIFIC
 #
