@@ -145,7 +145,7 @@ test-cmd-service:
 # Run odo project command tests
 .PHONY: test-cmd-project
 test-cmd-project:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo project command tests" \
+	ginkgo -nodes=$(TEST_EXEC_NODES) -focus="odo project command tests" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run odo app command tests
