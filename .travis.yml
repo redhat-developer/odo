@@ -18,6 +18,7 @@ jobs:
         - make goget-tools
       script:
         - export PATH="$PATH:$GOPATH/bin"
+        - export GINKGO_VERBOSE_MODE="-v"
         - make bin
         - make validate
         - make test-coverage
