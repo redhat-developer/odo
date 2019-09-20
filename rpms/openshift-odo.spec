@@ -1,14 +1,14 @@
 #this is a template spec and actual spec will be generated
 #debuginfo not supported with Go
 %global debug_package %{nil}
-%global package_name atomic-openshift-odo
+%global package_name openshift-odo
 %global product_name odo
 %global golang_version 1.11
 %global odo_version ${ODO_RPM_VERSION}
 %global odo_release ${ODO_RELEASE}
 %global git_commit  ${GIT_COMMIT}
 %global odo_cli_version v%{odo_version}
-%global source_dir atomic-openshift-odo-%{odo_version}-%{odo_release}
+%global source_dir openshift-odo-%{odo_version}-%{odo_release}
 %global source_tar %{source_dir}.tar.gz
 %global gopath  %{_builddir}/gocode
 

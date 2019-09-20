@@ -25,7 +25,7 @@ SPEC_DIR="$OUT_DIR/SPECS"
 SOURCES_DIR="$OUT_DIR/SOURCES"
 FINAL_OUT_DIR="$DIST_DIR/rpmbuild"
 
-NAME="atomic-openshift-odo-$ODO_RPM_VERSION-$ODO_RELEASE"
+NAME="openshift-odo-$ODO_RPM_VERSION-$ODO_RELEASE"
 
 echo "Making release for $NAME, git commit $GIT_COMMIT"
 
@@ -45,8 +45,8 @@ mkdir -p $SPEC_DIR
 mkdir -p $SOURCES_DIR/$NAME
 mkdir -p $FINAL_OUT_DIR
 
-echo "Generating spec file $SPEC_DIR/atomic-openshift-odo.spec"
-envsubst <rpms/atomic-openshift-odo.spec > $SPEC_DIR/atomic-openshift-odo.spec
+echo "Generating spec file $SPEC_DIR/openshift-odo.spec"
+envsubst <rpms/openshift-odo.spec > $SPEC_DIR/openshift-odo.spec
 
 echo "Generating tarball $SOURCES_DIR/$NAME.tar.gz"
 # Copy code for manipulation
