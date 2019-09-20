@@ -64,7 +64,7 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 	if err != nil {
 		return err
 	}
-	log.Info("Starting port forwarding at ports -", portPair)
+	log.Info("Started port forwarding at ports -", portPair)
 	return fw.ForwardPorts()
 }
 
