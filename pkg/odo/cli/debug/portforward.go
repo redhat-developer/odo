@@ -74,8 +74,12 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	remotePort := cfg.GetDebugPort()
 	o.PortPair = fmt.Sprintf("%d:%d", o.localPort, remotePort)
 
+	kubeConf, err := o.Context.Client.KubeConfig.ClientConfig()
+	if err != nil {
+		return err
+	}
 	// Using Discard streams because nothing important is logged
-	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
+	o.PortForwarder = debug.NewDefaultPortForwarder(kubeConf, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	o.StopChannel = make(chan struct{}, 1)
 	o.ReadyChannel = make(chan struct{})

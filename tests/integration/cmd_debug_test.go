@@ -46,7 +46,8 @@ var _ = Describe("odo debug command tests", func() {
 				helper.CmdShouldRunWithTimeout(60*time.Second, "odo", "debug", "port-forward", "--local-port", "5050", "--context", context)
 			}()
 
-			// debug port
+			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
+			// We are just using this to validate if nodejs agent is listening on the other side
 			helper.HttpWaitForWithStatus("http://localhost:5050", "WebSockets request was expected", 12, 5, 400)
 		})
 
@@ -58,7 +59,8 @@ var _ = Describe("odo debug command tests", func() {
 				helper.CmdShouldRunWithTimeout(60*time.Second, "odo", "debug", "port-forward", "--context", context)
 			}()
 
-			// debug port
+			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
+			// We are just using this to validate if nodejs agent is listening on the other side
 			helper.HttpWaitForWithStatus("http://localhost:5858", "WebSockets request was expected", 12, 5, 400)
 		})
 

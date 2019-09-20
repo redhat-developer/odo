@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/openshift/odo/pkg/occlient"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
@@ -12,13 +12,13 @@ import (
 
 // DefaultPortForwarder implements the SPDY based port forwarder
 type DefaultPortForwarder struct {
-	client *occlient.Client
+	config *restclient.Config
 	k8sgenclioptions.IOStreams
 }
 
-func NewDefaultPortForwarder(client *occlient.Client, streams k8sgenclioptions.IOStreams) *DefaultPortForwarder {
+func NewDefaultPortForwarder(config *restclient.Config, streams k8sgenclioptions.IOStreams) *DefaultPortForwarder {
 	return &DefaultPortForwarder{
-		client:    client,
+		config:    config,
 		IOStreams: streams,
 	}
 }
@@ -28,11 +28,8 @@ func NewDefaultPortForwarder(client *occlient.Client, streams k8sgenclioptions.I
 // stop Chan is used to stop port forwarding
 // ready Chan is used to signal failure to the channel receiver
 func (f *DefaultPortForwarder) ForwardPorts(method string, url *url.URL, ports []string, stopChan, readyChan chan struct{}) error {
-	conf, err := f.client.KubeConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-	transport, upgrader, err := spdy.RoundTripperFor(conf)
+
+	transport, upgrader, err := spdy.RoundTripperFor(f.config)
 	if err != nil {
 		return err
 	}
