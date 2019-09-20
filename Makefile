@@ -1,5 +1,9 @@
 PROJECT := github.com/openshift/odo
-GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifdef GITCOMMIT
+        GITCOMMIT := $(GITCOMMIT)
+else
+        GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
+endif
 PKGS := $(shell go list  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests )
 COMMON_FLAGS := -X $(PROJECT)/pkg/odo/cli/version.GITCOMMIT=$(GITCOMMIT)
 BUILD_FLAGS := -ldflags="-w $(COMMON_FLAGS)"
