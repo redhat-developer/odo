@@ -7,6 +7,7 @@ set -x
 
 export CI="openshift"
 export TIMEOUT="30m"
+export GINKGO_VERBOSE_MODE="-v"
 make configure-installer-tests-cluster
 make bin
 go get -u github.com/onsi/ginkgo/ginkgo

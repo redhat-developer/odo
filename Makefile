@@ -145,7 +145,7 @@ test-cmd-service:
 # Run odo project command tests
 .PHONY: test-cmd-project
 test-cmd-project:
-	ginkgo -nodes=$(TEST_EXEC_NODES) -focus="odo project command tests" \
+	ginkgo $(GINKGO_VERBOSE_MODE) -nodes=$(TEST_EXEC_NODES) -focus="odo project command tests" \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
 
 # Run odo app command tests
@@ -203,7 +203,7 @@ test-integration:
 # Only service and link command tests are the part of this test run
 .PHONY: test-integration-service-catalog
 test-integration-service-catalog:
-	ginkgo -nodes=$(TEST_EXEC_NODES) \
+	ginkgo $(GINKGO_VERBOSE_MODE) -nodes=$(TEST_EXEC_NODES) \
 	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/servicecatalog/ -timeout $(TIMEOUT)
 
 # Run core beta flow e2e tests
