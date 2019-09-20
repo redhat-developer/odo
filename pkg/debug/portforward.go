@@ -35,7 +35,7 @@ func NewDefaultPortForwarder(componentName, appName string, client *occlient.Cli
 	}
 }
 
-// ForwardPorts forwards the ports using the url for the remote pod.
+// ForwardPorts forwards the port using the url for the remote pod.
 // portPair is a pair of port in format "localPort:RemotePort" that is to be forwarded
 // stop Chan is used to stop port forwarding
 // ready Chan is used to signal failure to the channel receiver
