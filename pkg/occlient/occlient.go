@@ -2354,13 +2354,6 @@ func (c *Client) patchDCOfComponent(componentName, applicationName string, dcPat
 	return nil
 }
 
-// Service struct holds the service name and its corresponding list of plans
-type Service struct {
-	Name     string   `json:"name"`
-	Hidden   bool     `json:"hidden"`
-	PlanList []string `json:"planList"`
-}
-
 // GetServiceClassesByCategory retrieves a map associating category name to ClusterServiceClasses matching the category
 func (c *Client) GetServiceClassesByCategory() (categories map[string][]scv1beta1.ClusterServiceClass, err error) {
 	categories = make(map[string][]scv1beta1.ClusterServiceClass)
@@ -2397,33 +2390,6 @@ func (c *Client) GetMatchingPlans(class scv1beta1.ClusterServiceClass) (plans ma
 	return plans, err
 }
 
-// GetClusterServiceClassExternalNamesAndPlans returns the names of all the cluster service
-// classes in the cluster
-func (c *Client) GetClusterServiceClassExternalNamesAndPlans() ([]Service, error) {
-	var classNames []Service
-
-	classes, err := c.GetClusterServiceClasses()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get cluster service classes")
-	}
-
-	planListItems, err := c.GetAllClusterServicePlans()
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to get service plans")
-	}
-	for _, class := range classes {
-
-		var planList []string
-		for _, plan := range planListItems {
-			if plan.Spec.ClusterServiceClassRef.Name == class.Spec.ExternalID {
-				planList = append(planList, plan.Spec.ExternalName)
-			}
-		}
-		classNames = append(classNames, Service{Name: class.Spec.ExternalName, PlanList: planList, Hidden: hasTag(class.Spec.Tags, "hidden")})
-	}
-	return classNames, nil
-}
-
 // GetAllClusterServicePlans returns list of available plans
 func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, error) {
 	planList, err := c.serviceCatalogClient.ClusterServicePlans().List(metav1.ListOptions{})
@@ -2448,23 +2414,6 @@ func (c *Client) imageStreamExists(name string, namespace string) bool {
 			return true
 		}
 	}
-	return false
-}
-
-// clusterServiceClassExists returns true if the given external name of the
-// cluster service class exists in the cluster, and false otherwise
-func (c *Client) clusterServiceClassExists(name string) bool {
-	clusterServiceClasses, err := c.GetClusterServiceClassExternalNamesAndPlans()
-	if err != nil {
-		glog.V(4).Infof("unable to get cluster service classes' external names")
-	}
-
-	for _, class := range clusterServiceClasses {
-		if class.Name == name {
-			return true
-		}
-	}
-
 	return false
 }
 

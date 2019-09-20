@@ -2,60 +2,59 @@ package catalog
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type CatalogImage struct {
-	Name          string
-	Namespace     string
-	AllTags       []string
-	NonHiddenTags []string
+// ListComponents lists all the available component types
+func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
 
-	// this is used to get metadata like image URL for each tag present in the image stream
-	imageStreamRef imagev1.ImageStream
-}
-
-// List lists all the available component types
-func List(client *occlient.Client) ([]CatalogImage, error) {
 	catalogList, err := getDefaultBuilderImages(client)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get image streams")
+		return ComponentTypeList{}, errors.Wrap(err, "unable to get image streams")
 	}
 
 	if len(catalogList) == 0 {
-		return nil, errors.New("unable to retrieve any catalog images from the OpenShift cluster")
+		return ComponentTypeList{}, errors.New("unable to retrieve any catalog images from the OpenShift cluster")
 	}
 
-	return catalogList, nil
+	return ComponentTypeList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ComponentTypeList",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		Items: catalogList,
+	}, nil
 }
 
-// Search searches for the component
-func Search(client *occlient.Client, name string) ([]string, error) {
+// SearchComponent searches for the component
+func SearchComponent(client *occlient.Client, name string) ([]string, error) {
 	var result []string
-	componentList, err := List(client)
+	componentList, err := ListComponents(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list components")
 	}
 
 	// do a partial search in all the components
-	for _, component := range componentList {
+	for _, component := range componentList.Items {
 		// we only show components that contain the search term and that have at least non-hidden tag
 		// since a component with all hidden tags is not shown in the odo catalog list components either
-		if strings.Contains(component.Name, name) && len(component.NonHiddenTags) > 0 {
-			result = append(result, component.Name)
+		if strings.Contains(component.ObjectMeta.Name, name) && len(component.Spec.NonHiddenTags) > 0 {
+			result = append(result, component.ObjectMeta.Name)
 		}
 	}
 
 	return result, nil
 }
 
-// Exists returns true if the given component type and the version are valid, false if not
-func Exists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
+// ComponentExists returns true if the given component type and the version are valid, false if not
+func ComponentExists(client *occlient.Client, componentType string, componentVersion string) (bool, error) {
 	imageStream, err := client.GetImageStream("", componentType, componentVersion)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to get from catalog")
@@ -66,9 +65,95 @@ func Exists(client *occlient.Client, componentType string, componentVersion stri
 	return true, nil
 }
 
+// ListServices lists all the available service types
+func ListServices(client *occlient.Client) (ServiceTypeList, error) {
+
+	clusterServiceClasses, err := getClusterCatalogServices(client)
+	if err != nil {
+		return ServiceTypeList{}, errors.Wrapf(err, "unable to get cluster serviceClassExternalName")
+	}
+
+	// Sorting service classes alphabetically
+	// Reference: https://golang.org/pkg/sort/#example_Slice
+	sort.Slice(clusterServiceClasses, func(i, j int) bool {
+		return clusterServiceClasses[i].Name < clusterServiceClasses[j].Name
+	})
+
+	return ServiceTypeList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceTypeList",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		Items: clusterServiceClasses,
+	}, nil
+}
+
+// SearchService searches for the services
+func SearchService(client *occlient.Client, name string) (ServiceTypeList, error) {
+	var result []ServiceType
+	serviceList, err := ListServices(client)
+	if err != nil {
+		return ServiceTypeList{}, errors.Wrap(err, "unable to list services")
+	}
+
+	// do a partial search in all the services
+	for _, service := range serviceList.Items {
+		if strings.Contains(service.ObjectMeta.Name, name) {
+			result = append(result, service)
+		}
+	}
+
+	return ServiceTypeList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceTypeList",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		Items: result,
+	}, nil
+}
+
+// getClusterCatalogServices returns the names of all the cluster service
+// classes in the cluster
+func getClusterCatalogServices(client *occlient.Client) ([]ServiceType, error) {
+	var classNames []ServiceType
+
+	classes, err := client.GetClusterServiceClasses()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get cluster service classes")
+	}
+
+	planListItems, err := client.GetAllClusterServicePlans()
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to get service plans")
+	}
+	for _, class := range classes {
+
+		var planList []string
+		for _, plan := range planListItems {
+			if plan.Spec.ClusterServiceClassRef.Name == class.Spec.ExternalID {
+				planList = append(planList, plan.Spec.ExternalName)
+			}
+		}
+		classNames = append(classNames, ServiceType{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "ServiceType",
+				APIVersion: "odo.openshift.io/v1alpha1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: class.Spec.ExternalName,
+			},
+			Spec: ServiceSpec{
+				Hidden:   occlient.HasTag(class.Spec.Tags, "hidden"),
+				PlanList: planList,
+			},
+		})
+	}
+	return classNames, nil
+}
+
 // getDefaultBuilderImages returns the default builder images available in the
 // openshift and the current namespaces
-func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
+func getDefaultBuilderImages(client *occlient.Client) ([]ComponentType, error) {
 
 	var imageStreams []imagev1.ImageStream
 	currentNamespace := client.GetCurrentProjectName()
@@ -137,12 +222,11 @@ func getDefaultBuilderImages(client *occlient.Client) ([]CatalogImage, error) {
 }
 
 // SliceSupportedTags splits the tags in to fully supported and unsupported tags
-func SliceSupportedTags(catalogImage CatalogImage) ([]string, []string) {
+func SliceSupportedTags(component ComponentType) ([]string, []string) {
 
 	var supTag, unSupTag []string
-	tagMap := createImageTagMap(catalogImage.imageStreamRef.Spec.Tags)
-
-	for _, tag := range catalogImage.NonHiddenTags {
+	tagMap := createImageTagMap(component.Spec.ImageStreamRef.Spec.Tags)
+	for _, tag := range component.Spec.NonHiddenTags {
 		imageName := tagMap[tag]
 		if isSupportedImage(imageName) {
 			supTag = append(supTag, tag)
@@ -200,8 +284,8 @@ func isSupportedImage(imgName string) bool {
 
 // getBuildersFromImageStreams returns all the builder Images from the image streams provided and also hides the builder images
 // which have hidden annotation attached to it
-func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStreamTagMap map[string]imagev1.ImageStreamTag) []CatalogImage {
-	var builderImages []CatalogImage
+func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStreamTagMap map[string]imagev1.ImageStreamTag) []ComponentType {
+	var builderImages []ComponentType
 	// Get builder images from the available imagestreams
 	for _, imageStream := range imageStreams {
 		var allTags []string
@@ -241,12 +325,20 @@ func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStream
 
 			}
 
-			catalogImage := CatalogImage{
-				Name:           imageStream.Name,
-				Namespace:      imageStream.Namespace,
-				AllTags:        allTags,
-				NonHiddenTags:  getAllNonHiddenTags(allTags, hiddenTags),
-				imageStreamRef: imageStream,
+			catalogImage := ComponentType{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ComponentType",
+					APIVersion: "odo.openshift.io/v1alpha1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      imageStream.Name,
+					Namespace: imageStream.Namespace,
+				},
+				Spec: ComponentSpec{
+					AllTags:        allTags,
+					NonHiddenTags:  getAllNonHiddenTags(allTags, hiddenTags),
+					ImageStreamRef: imageStream,
+				},
 			}
 			builderImages = append(builderImages, catalogImage)
 			glog.V(5).Infof("Found builder image: %#v", catalogImage)

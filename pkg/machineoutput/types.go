@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -52,22 +52,4 @@ func OutputError(machineOutput interface{}) {
 	} else {
 		fmt.Fprintf(log.GetStderr(), "%s\n", string(printableOutput))
 	}
-}
-
-// CatalogListServices `odo catalog list services` standard machine readable output
-func CatalogListServices(services []occlient.Service) {
-
-	data := struct {
-		metav1.TypeMeta   `json:",inline"`
-		metav1.ObjectMeta `json:"metadata,omitempty"`
-		Items             []occlient.Service `json:"items"`
-	}{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "CatalogListServices",
-			APIVersion: "odo.openshift.io/v1alpha1",
-		},
-		Items: services,
-	}
-
-	OutputSuccess(data)
 }

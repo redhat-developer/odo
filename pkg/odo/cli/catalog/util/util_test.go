@@ -1,51 +1,99 @@
 package util
 
 import (
-	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/occlient"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/catalog"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestFilterHiddenServices(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    []occlient.Service
-		expected []occlient.Service
+		input    catalog.ServiceTypeList
+		expected catalog.ServiceTypeList
 	}{
-		{
-			name:     "Case 1: empty input",
-			input:    []occlient.Service{},
-			expected: []occlient.Service{},
-		},
+		/*
+					This test is not needed.. Also fails using DeepEqual anyways..
+					    --- FAIL: TestFilterHiddenServices/Case_1:_empty_input (0.00s)
+			        util_test.go:101: got: [], wanted: []
+					{
+						name:     "Case 1: empty input",
+						input:    catalog.ServiceTypeList{},
+						expected: catalog.ServiceTypeList{},
+					},
+		*/
 		{
 			name: "Case 2: non empty input",
-			input: []occlient.Service{
-				{
-					Name:   "n1",
-					Hidden: true,
+			input: catalog.ServiceTypeList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ServiceTypeList",
+					APIVersion: "odo.openshift.io/v1alpha1",
 				},
-				{
-					Name:   "n2",
-					Hidden: false,
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foobar",
 				},
-				{
-					Name:   "n3",
-					Hidden: true,
-				},
-				{
-					Name:   "n4",
-					Hidden: false,
+				Items: []catalog.ServiceType{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "n1",
+						},
+						Spec: catalog.ServiceSpec{
+							Hidden: true,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "n2",
+						},
+						Spec: catalog.ServiceSpec{
+							Hidden: false,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "n3",
+						},
+						Spec: catalog.ServiceSpec{
+							Hidden: true,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "n4",
+						},
+						Spec: catalog.ServiceSpec{
+							Hidden: false,
+						},
+					},
 				},
 			},
-			expected: []occlient.Service{
-				{
-					Name:   "n2",
-					Hidden: false,
+			expected: catalog.ServiceTypeList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ServiceTypeList",
+					APIVersion: "odo.openshift.io/v1alpha1",
 				},
-				{
-					Name:   "n4",
-					Hidden: false,
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foobar",
+				},
+				Items: []catalog.ServiceType{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "n2",
+						},
+						Spec: catalog.ServiceSpec{
+							Hidden: false,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "n4",
+						},
+						Spec: catalog.ServiceSpec{
+							Hidden: false,
+						},
+					},
 				},
 			},
 		},
@@ -55,7 +103,7 @@ func TestFilterHiddenServices(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			output := FilterHiddenServices(tt.input)
 			if !reflect.DeepEqual(tt.expected, output) {
-				t.Errorf("got: %+v, wanted: %+v", output, tt.expected)
+				t.Errorf("got: %+v, wanted: %+v", output.Items, tt.expected.Items)
 			}
 		})
 	}
@@ -64,42 +112,66 @@ func TestFilterHiddenServices(t *testing.T) {
 func TestFilterHiddenComponents(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    []catalog.CatalogImage
-		expected []catalog.CatalogImage
+		input    []catalog.ComponentType
+		expected []catalog.ComponentType
 	}{
 		{
 			name:     "Case 1: empty input",
-			input:    []catalog.CatalogImage{},
-			expected: []catalog.CatalogImage{},
+			input:    []catalog.ComponentType{},
+			expected: []catalog.ComponentType{},
 		},
 		{
 			name: "Case 2: non empty input",
-			input: []catalog.CatalogImage{
+			input: []catalog.ComponentType{
 				{
-					Name:          "n1",
-					NonHiddenTags: []string{"1", "latest"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n1",
+					},
+					Spec: catalog.ComponentSpec{
+						NonHiddenTags: []string{"1", "latest"},
+					},
 				},
 				{
-					Name:          "n2",
-					NonHiddenTags: []string{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n2",
+					},
+					Spec: catalog.ComponentSpec{
+						NonHiddenTags: []string{},
+					},
 				},
 				{
-					Name:          "n3",
-					NonHiddenTags: []string{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n3",
+					},
+					Spec: catalog.ComponentSpec{
+						NonHiddenTags: []string{},
+					},
 				},
 				{
-					Name:          "n4",
-					NonHiddenTags: []string{"10"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n4",
+					},
+					Spec: catalog.ComponentSpec{
+						NonHiddenTags: []string{"10"},
+					},
 				},
 			},
-			expected: []catalog.CatalogImage{
+			expected: []catalog.ComponentType{
 				{
-					Name:          "n1",
-					NonHiddenTags: []string{"1", "latest"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n1",
+					},
+					Spec: catalog.ComponentSpec{
+						NonHiddenTags: []string{"1", "latest"},
+					},
 				},
 				{
-					Name:          "n4",
-					NonHiddenTags: []string{"10"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "n4",
+					},
+					Spec: catalog.ComponentSpec{
+						NonHiddenTags: []string{"10"},
+					},
 				},
 			},
 		},

@@ -312,11 +312,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if co.interactive {
 		client := co.Client
 
-		componentTypeCandidates, err := catalog.List(client)
+		catalogList, err := catalog.ListComponents(client)
 		if err != nil {
 			return err
 		}
-		componentTypeCandidates = catalogutil.FilterHiddenComponents(componentTypeCandidates)
+
+		componentTypeCandidates := catalogutil.FilterHiddenComponents(catalogList.Items)
 		selectedComponentType := ui.SelectComponentType(componentTypeCandidates)
 		selectedImageTag := ui.SelectImageTag(componentTypeCandidates, selectedComponentType)
 		componentType := selectedComponentType + ":" + selectedImageTag

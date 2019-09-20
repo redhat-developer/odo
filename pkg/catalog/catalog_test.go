@@ -13,7 +13,7 @@ import (
 	ktesting "k8s.io/client-go/testing"
 )
 
-func TestList(t *testing.T) {
+func TestListComponents(t *testing.T) {
 	type args struct {
 		name       string
 		namespace  string
@@ -113,28 +113,28 @@ func TestList(t *testing.T) {
 			})
 
 			// The function we are testing
-			output, err := List(client)
+			output, err := ListComponents(client)
 
 			//Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("component List() unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("component ListComponents() unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			// 1 call for current project + 1 call from openshift project for each of the ImageStream and ImageStreamTag
 			if len(fakeClientSet.ImageClientset.Actions()) != 4 {
-				t.Errorf("expected 2 ImageClientset.Actions() in List, got: %v", fakeClientSet.ImageClientset.Actions())
+				t.Errorf("expected 2 ImageClientset.Actions() in ListComponents, got: %v", fakeClientSet.ImageClientset.Actions())
 			}
 
 			// Check if the output is the same as what's expected (for all tags)
 			// and only if output is more than 0 (something is actually returned)
-			if len(output) > 0 && !(reflect.DeepEqual(output[0].AllTags, tt.wantAllTags)) {
-				t.Errorf("expected all tags: %s, got: %s", tt.wantAllTags, output[0].AllTags)
+			if len(output.Items) > 0 && !(reflect.DeepEqual(output.Items[0].Spec.AllTags, tt.wantAllTags)) {
+				t.Errorf("expected all tags: %s, got: %s", tt.wantAllTags, output.Items[0].Spec.AllTags)
 			}
 
 			// Check if the output is the same as what's expected (for hidden tags)
 			// and only if output is more than 0 (something is actually returned)
-			if len(output) > 0 && !(reflect.DeepEqual(output[0].NonHiddenTags, tt.wantNonHiddenTags)) {
-				t.Errorf("expected non hidden tags: %s, got: %s", tt.wantNonHiddenTags, output[0].NonHiddenTags)
+			if len(output.Items) > 0 && !(reflect.DeepEqual(output.Items[0].Spec.NonHiddenTags, tt.wantNonHiddenTags)) {
+				t.Errorf("expected non hidden tags: %s, got: %s", tt.wantNonHiddenTags, output.Items[0].Spec.NonHiddenTags)
 			}
 
 		})
@@ -178,13 +178,17 @@ func TestSliceSupportedTags(t *testing.T) {
 			},
 		})
 
-	img := CatalogImage{
-		Name:      "nodejs",
-		Namespace: "openshift",
-		NonHiddenTags: []string{
-			"10", "8", "6", "latest",
+	img := ComponentType{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nodejs",
+			Namespace: "openshift",
 		},
-		imageStreamRef: *imageStream,
+		Spec: ComponentSpec{
+			NonHiddenTags: []string{
+				"10", "8", "6", "latest",
+			},
+			ImageStreamRef: *imageStream,
+		},
 	}
 
 	supTags, unSupTags := SliceSupportedTags(img)

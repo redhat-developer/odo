@@ -21,9 +21,9 @@ func TestHasTag(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		outcome := hasTag(testCase.list, testCase.inputTag)
+		outcome := HasTag(testCase.list, testCase.inputTag)
 		if outcome != testCase.expected {
-			t.Errorf("hasTag(%v, %v) returned %v, expected %v",
+			t.Errorf("HasTag(%v, %v) returned %v, expected %v",
 				testCase.list, testCase.inputTag, outcome, testCase.expected)
 
 		}

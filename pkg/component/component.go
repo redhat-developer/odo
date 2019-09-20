@@ -487,7 +487,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 	_, componentType, _, componentVersion := util.ParseComponentImageName(*componentSettings.Type)
 
 	// Check to see if the catalog type actually exists
-	exists, err := catalog.Exists(client, componentType, componentVersion)
+	exists, err := catalog.ComponentExists(client, componentType, componentVersion)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to check component of type %s", componentType)
 	}
