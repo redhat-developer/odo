@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -35,10 +36,10 @@ func NewDefaultPortForwarder(componentName, appName string, client *occlient.Cli
 }
 
 // ForwardPorts forwards the ports using the url for the remote pod.
-// ports are list of pair of ports in format "localPort:RemotePort" that are to be forwarded
+// portPair is a pair of port in format "localPort:RemotePort" that is to be forwarded
 // stop Chan is used to stop port forwarding
 // ready Chan is used to signal failure to the channel receiver
-func (f *DefaultPortForwarder) ForwardPorts(ports []string, stopChan, readyChan chan struct{}) error {
+func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan chan struct{}) error {
 	conf, err := f.client.KubeConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -59,10 +60,11 @@ func (f *DefaultPortForwarder) ForwardPorts(ports []string, stopChan, readyChan 
 	}
 	req := f.client.BuildPortForwardReq(pod.Name)
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
-	fw, err := portforward.New(dialer, ports, stopChan, readyChan, f.Out, f.ErrOut)
+	fw, err := portforward.New(dialer, []string{portPair}, stopChan, readyChan, f.Out, f.ErrOut)
 	if err != nil {
 		return err
 	}
+	log.Info("Starting port forwarding at ports -", portPair)
 	return fw.ForwardPorts()
 }
 

@@ -7,7 +7,6 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/spf13/cobra"
@@ -100,8 +99,7 @@ func (o PortForwardOptions) Run() error {
 		}
 	}()
 
-	log.Info("Started port forwarding at ports -", o.PortPair)
-	return o.PortForwarder.ForwardPorts([]string{o.PortPair}, o.StopChannel, o.ReadyChannel)
+	return o.PortForwarder.ForwardPorts(o.PortPair, o.StopChannel, o.ReadyChannel)
 }
 
 // NewCmdPortForward implements the port-forward odo command
