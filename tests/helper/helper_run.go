@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -31,6 +32,14 @@ func CmdShouldPass(program string, args ...string) string {
 	session := CmdRunner(program, args...)
 	Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
 	return string(session.Wait().Out.Contents())
+}
+
+// CmdShouldRunWithTimeout waits for a certain duration and then returns stdout
+func CmdShouldRunWithTimeout(timeout time.Duration, program string, args ...string) string {
+	session := CmdRunner(program, args...)
+	time.Sleep(timeout)
+	session.Terminate()
+	return string(session.Out.Contents())
 }
 
 // CmdShouldFail returns stderr if command fails

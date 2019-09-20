@@ -40,7 +40,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "preference, config and url command integration tests"
+      name: "preference, config, url and debug command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -48,6 +48,7 @@ jobs:
         - odo login -u developer
         - travis_wait make test-cmd-pref-config
         - travis_wait make test-cmd-url
+        - travis_wait make test-cmd-debug
         - odo logout
 
     # Run service-catalog e2e tests

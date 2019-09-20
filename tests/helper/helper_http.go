@@ -8,12 +8,11 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-// HttpWaitFor periodically (every interval) calls GET to given url
-// ends when result response contains match string, or after the maxRetry
-func HttpWaitFor(url string, match string, maxRetry int, interval int) {
+// HttpWaitForWithStatus periodically (every interval) calls GET to given url
+// ends when result response contains match string and status code, or after the maxRetry
+func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int, expectedCode int) {
 	fmt.Fprintf(GinkgoWriter, "Checking %s, for %s\n", url, match)
 
 	var body []byte
@@ -25,10 +24,13 @@ func HttpWaitFor(url string, match string, maxRetry int, interval int) {
 		// gosec:G107 -> This is safe since it's just used for testing.
 		resp, err := http.Get(url)
 		if err != nil {
-			Expect(err).NotTo(HaveOccurred())
+			// we log the error and sleep again because this could mean the component is not up yet
+			fmt.Fprintln(GinkgoWriter, "error while requesting:", err.Error())
+			time.Sleep(time.Duration(interval) * time.Second)
+			continue
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode == 200 {
+		if resp.StatusCode == expectedCode {
 			body, _ = ioutil.ReadAll(resp.Body)
 			if strings.Contains(string(body), match) {
 				return
@@ -39,4 +41,10 @@ func HttpWaitFor(url string, match string, maxRetry int, interval int) {
 	}
 	fmt.Fprintf(GinkgoWriter, "Last output from %s: %s\n", url, string(body))
 	Fail(fmt.Sprintf("Failed after %d retries. Content in %s doesn't include '%s'.", maxRetry, url, match))
+}
+
+// HttpWaitFor periodically (every interval) calls GET to given url
+// ends when a 200 HTTP result response contains match string, or after the maxRetry
+func HttpWaitFor(url string, match string, maxRetry int, interval int) {
+	HttpWaitForWithStatus(url, match, maxRetry, interval, 200)
 }

@@ -82,7 +82,7 @@ var _ = Describe("odo app command tests", func() {
 			} else {
 				sourcePath = "file://./"
 			}
-			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null, "namespace":"%s"},"spec":{"type":"nodejs","app":"app","source":"%s"},"status":{"state":"Pushed"}}]}`, project, sourcePath)
+			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","creationTimestamp":null, "namespace":"%s"},"spec":{"type":"nodejs","app":"app","source":"%s","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}]}`, project, sourcePath)
 			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 
 			helper.CmdShouldPass("odo", "app", "describe")

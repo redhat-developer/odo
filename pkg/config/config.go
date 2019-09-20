@@ -21,6 +21,8 @@ const (
 	configFileName        = "config.yaml"
 	localConfigKind       = "LocalConfig"
 	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
+	// DefaultDebugPort is the default port used for debugging on remote pod
+	DefaultDebugPort = 5858
 )
 
 type ComponentStorageSettings struct {
@@ -57,6 +59,9 @@ type ComponentSettings struct {
 	MinMemory *string `yaml:"MinMemory,omitempty"`
 
 	MaxMemory *string `yaml:"MaxMemory,omitempty"`
+
+	// DebugPort controls the port used by the pod to run the debugging agent on
+	DebugPort *int `yaml:"DebugPort,omitempty"`
 
 	Storage *[]ComponentStorageSettings `yaml:"Storage,omitempty"`
 
@@ -213,6 +218,12 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 		case "memory":
 			lci.componentSettings.MaxMemory = &strValue
 			lci.componentSettings.MinMemory = &strValue
+		case "debugport":
+			dbgPort, err := strconv.Atoi(strValue)
+			if err != nil {
+				return err
+			}
+			lci.componentSettings.DebugPort = &dbgPort
 		case "ignore":
 			val, err := strconv.ParseBool(strings.ToLower(strValue))
 			if err != nil {
@@ -438,6 +449,14 @@ func (lc *LocalConfig) GetMaxMemory() string {
 	return *lc.componentSettings.MaxMemory
 }
 
+// GetDebugPort returns the DebugPort, returns default if nil
+func (lc *LocalConfig) GetDebugPort() int {
+	if lc.componentSettings.DebugPort == nil {
+		return DefaultDebugPort
+	}
+	return *lc.componentSettings.DebugPort
+}
+
 // GetIgnore returns the Ignore, returns default if nil
 func (lc *LocalConfig) GetIgnore() bool {
 	if lc.componentSettings.Ignore == nil {
@@ -507,6 +526,10 @@ const (
 	Memory = "Memory"
 	// MemoryDescription is the description of the setting controlling the min and max memory to same value
 	MemoryDescription = "The minimum and maximum memory a component can consume"
+	// DebugPort is the port where the application is set to listen for debugger
+	DebugPort = "DebugPort"
+	// DebugPortDescription is the description for debug port
+	DebugPortDescription = "The port on which the debugger will listen on the component"
 	// Ignore is the name of the setting controlling the min memory a component consumes
 	Ignore = "Ignore"
 	// IgnoreDescription is the description of the setting controlling the use of .odoignore file
@@ -570,6 +593,7 @@ var (
 		MinMemory:      MinMemoryDescription,
 		MaxMemory:      MaxMemoryDescription,
 		Memory:         MemoryDescription,
+		DebugPort:      DebugPortDescription,
 		Ignore:         IgnoreDescription,
 		MinCPU:         MinCPUDescription,
 		MaxCPU:         MaxCPUDescription,
