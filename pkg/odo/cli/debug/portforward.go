@@ -5,17 +5,12 @@ import (
 	"os"
 	"os/signal"
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
@@ -74,12 +69,8 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	remotePort := cfg.GetDebugPort()
 	o.PortPair = fmt.Sprintf("%d:%d", o.localPort, remotePort)
 
-	kubeConf, err := o.Context.Client.KubeConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
 	// Using Discard streams because nothing important is logged
-	o.PortForwarder = debug.NewDefaultPortForwarder(kubeConf, k8sgenclioptions.NewTestIOStreamsDiscard())
+	o.PortForwarder = debug.NewDefaultPortForwarder(cfg.GetName(), cfg.GetApplication(), o.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	o.StopChannel = make(chan struct{}, 1)
 	o.ReadyChannel = make(chan struct{})
@@ -97,25 +88,6 @@ func (o PortForwardOptions) Validate() error {
 
 // Run implements all the necessary functionality for port-forward cmd.
 func (o PortForwardOptions) Run() error {
-	componentName := o.localConfigInfo.GetName()
-	appName := o.localConfigInfo.GetApplication()
-	componentLabels := componentlabels.GetLabels(componentName, appName, false)
-	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := o.Client.GetOneDeploymentConfigFromSelector(componentSelector)
-	if err != nil {
-		return errors.Wrap(err, "unable to get deployment for component")
-	}
-	// Find Pod for component
-	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
-
-	pod, err := o.Client.GetOnePodFromSelector(podSelector)
-	if err != nil {
-		return err
-	}
-
-	if pod.Status.Phase != corev1.PodRunning {
-		return fmt.Errorf("unable to forward port because pod is not running. Current status=%v", pod.Status.Phase)
-	}
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
@@ -128,9 +100,8 @@ func (o PortForwardOptions) Run() error {
 		}
 	}()
 
-	req := o.Client.BuildPortForwardReq(pod.Name)
 	log.Info("Started port forwarding at ports -", o.PortPair)
-	return o.PortForwarder.ForwardPorts("POST", req.URL(), []string{o.PortPair}, o.StopChannel, o.ReadyChannel)
+	return o.PortForwarder.ForwardPorts([]string{o.PortPair}, o.StopChannel, o.ReadyChannel)
 }
 
 // NewCmdPortForward implements the port-forward odo command
