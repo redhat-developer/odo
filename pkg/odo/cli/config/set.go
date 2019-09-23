@@ -131,7 +131,7 @@ func (o *SetOptions) Run() (err error) {
 		if o.LocalConfigInfo == nil {
 			fmt.Println("Ooops local config is nil")
 		}
-		glog.V(4).Infof("Reloaded context info %#v" , o)
+		glog.V(4).Infof("Reloaded context info %#v", o)
 
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve updated local config")

@@ -7,7 +7,7 @@ import (
 func Test_validatePushMessage(t *testing.T) {
 	type args struct {
 		action, what string
-		config  bool
+		config       bool
 	}
 	tests := []struct {
 		name     string
@@ -27,7 +27,7 @@ func Test_validatePushMessage(t *testing.T) {
 			name: "create config push message",
 			argl: args{
 				action: "apply",
-				what: "config changes",
+				what:   "config changes",
 				config: true,
 			},
 			expected: "To apply config changes on the OpenShift Cluster, please use `odo push --config` \n",

@@ -39,7 +39,7 @@ type DeleteOptions struct {
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, false, "", false,NewComponentOptionsWithPushOptions()}
+	return &DeleteOptions{false, false, false, "", false, NewComponentOptionsWithPushOptions()}
 }
 
 // Complete completes log args

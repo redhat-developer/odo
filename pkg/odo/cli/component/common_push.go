@@ -47,7 +47,7 @@ func NewCommonPushOptions() *CommonPushOptions {
 }
 
 //EnablePushConfig enables pushing of the config only
-func (cpo *CommonPushOptions) EnablePushConfig()  {
+func (cpo *CommonPushOptions) EnablePushConfig() {
 	cpo.pushConfig = true
 }
 
