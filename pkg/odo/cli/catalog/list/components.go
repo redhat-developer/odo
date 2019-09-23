@@ -100,7 +100,7 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 	return &cobra.Command{
 		Use:     name,
 		Short:   "List all components",
-		Long:    "List all available component types from OpenShift's Ima",
+		Long:    "List all available component types from OpenShift's Image Builder",
 		Example: fmt.Sprintf(componentsExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
