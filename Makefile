@@ -21,6 +21,17 @@ TEST_EXEC_NODES ?= 2
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
 
+# Env variable VERBOSE is the verbose flag. Setting VERBOSE= turns off verbose output.
+VERBOSE=-v
+
+GINKGO_FLAGS_ALL = $(VERBOSE) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
+
+# Flags for tests that must not be run in parallel.
+GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
+# Flags for tests that may be run in parallel
+GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
+
+
 default: bin
 
 .PHONY: debug
@@ -72,8 +83,7 @@ clean:
 .PHONY: goget-tools
 goget-tools:
 	go get -u github.com/Masterminds/glide
-	# go get -u golang.org/x/lint/golint
-	go get github.com/frapposelli/wwhrd
+	go get -u github.com/frapposelli/wwhrd
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u github.com/securego/gosec/cmd/gosec
 
@@ -110,32 +120,25 @@ configure-installer-tests-cluster:
 test:
 	go test -race $(PKGS)
 
-# -randomizeAllSpecs - If set, ginkgo will randomize all specs together.
-# By default, ginkgo only randomizes the top level Describe, Context and When groups.
-
 # Run generic integration tests
 .PHONY: test-generic
 test-generic:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo generic" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo generic" tests/integration/
 
 # Run odo login and logout tests
 .PHONY: test-cmd-login-logout
 test-cmd-login-logout:
-	ginkgo -v -nodes=1 -focus="odo login and logout command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/loginlogout/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo login and logout command tests" tests/integration/loginlogout/
 
 # Run link and unlink command tests
 .PHONY: test-cmd-link-unlink
 test-cmd-link-unlink:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo link and unlink command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/
 
 # Run odo service command tests
 .PHONY: test-cmd-service
 test-cmd-service:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo service command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/
 
 # Run odo project command tests
 .PHONY: test-cmd-project
@@ -146,50 +149,42 @@ test-cmd-project:
 # Run odo app command tests
 .PHONY: test-cmd-app
 test-cmd-app:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo app command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo app command tests" tests/integration/
 
 # Run odo component command tests
 .PHONY: test-cmd-cmp
 test-cmd-cmp:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo component command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo component command tests" tests/integration/
 
 # Run odo component subcommands tests
 .PHONY: test-cmd-cmp-sub
 test-cmd-cmp-sub:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo sub component command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo sub component command tests" tests/integration/
 
 # Run odo preference and config command tests
 .PHONY: test-cmd-pref-config
 test-cmd-pref-config:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo preference and config command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo preference and config command tests" tests/integration/
 
 # Run odo push command tests
 .PHONY: test-cmd-push
 test-cmd-push:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo push command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo push command tests" tests/integration/
 
 # Run odo storage command tests
 .PHONY: test-cmd-storage
 test-cmd-storage:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo storage command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo storage command tests" tests/integration/
 
 # Run odo url command tests
 .PHONY: test-cmd-url
 test-cmd-url:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo url command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo url command tests" tests/integration/
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch
 test-cmd-watch:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo watch command tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo watch command tests" tests/integration/
 
 # Run odo debug command tests
 test-cmd-debug:
@@ -200,8 +195,7 @@ test-cmd-debug:
 # Service, link and login/logout command tests are not the part of this test run
 .PHONY: test-integration
 test-integration:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/integration/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) tests/integration/
 
 # Run command's integration tests which are depend on service catalog enabled cluster.
 # Only service and link command tests are the part of this test run
@@ -213,32 +207,27 @@ test-integration-service-catalog:
 # Run core beta flow e2e tests
 .PHONY: test-e2e-beta
 test-e2e-beta:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo core beta flow" \
-	-randomizeAllSpecs slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) tests/e2escenarios/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo core beta flow" tests/e2escenarios/
 
 # Run java e2e tests
 .PHONY: test-e2e-java
 test-e2e-java:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo java e2e tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/e2escenarios/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo java e2e tests" tests/e2escenarios/
 
 # Run source e2e tests
 .PHONY: test-e2e-source
 test-e2e-source:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -focus="odo source e2e tests" \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -randomizeAllSpecs  tests/e2escenarios/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) -focus="odo source e2e tests" tests/e2escenarios/
 
 # Run all e2e test scenarios
 .PHONY: test-e2e-all
 test-e2e-all:
-	ginkgo -v -nodes=$(TEST_EXEC_NODES) -randomizeAllSpecs \
-	slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) tests/e2escenarios/ -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS) tests/e2escenarios/
 
 # this test shouldn't be in paralel -  it will effect the results
 .PHONY: test-benchmark
 test-benchmark:
-	ginkgo -v -nodes=1 slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) \
-	tests/benchmark -timeout $(TIMEOUT)
+	ginkgo $(GINKGO_FLAGS_SERIAL) tests/benchmark/
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
