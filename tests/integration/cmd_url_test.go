@@ -51,18 +51,19 @@ var _ = Describe("odo url command tests", func() {
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
+			helper.MatchAllInOutput(stdout, url1, "Not Pushed", url1, "odo push")
 
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
-			helper.DontMatchAllInOutput(stdout, []string{"Not Pushed", "odo push"})
+			helper.MatchAllInOutput(stdout, url1, "Pushed")
+			helper.DontMatchAllInOutput(stdout, "Not Pushed", "odo push")
 
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f", "--context", context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", url1, "odo push"})
 
 			helper.CmdShouldPass("odo", "url", "create", url2, "--port", "8000", "--context", context)
+			helper.MatchAllInOutput(stdout, url1, "Locally Deleted", url1, "odo push")
 			helper.MatchAllInOutput(stdout, "<not created on cluster>", "Present", "create URLs", "odo push")
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
