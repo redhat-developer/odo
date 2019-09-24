@@ -39,29 +39,27 @@ var _ = Describe("odo login and logout command tests", func() {
 		})
 	})
 
-	Context("Run login tests with no active projects, having default is also considered as not having active project", func() {
-		It("Should login successfully with username and password without any projects with appropriate message", func() {
+	Context("when running login tests", func() {
+		It("should successful with correct credentials and fails with incorrect token", func() {
 			currentUserToken1 = oc.GetToken()
+			// Login successful without any projects with appropriate message
 			session1 = helper.CmdShouldPass("odo", "login", "-u", loginTestUserForNoProject, "-p", loginTestUserPassword)
 			Expect(session1).To(ContainSubstring("Login successful"))
 			Expect(session1).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
 			Expect(session1).To(ContainSubstring("odo project create <project-name>"))
 			session1 = oc.GetLoginUser()
 			Expect(session1).To(ContainSubstring(loginTestUserForNoProject))
-			// One initialization needs one login, hence it happens here
-			testUserToken1 = oc.GetToken()
-		})
 
-		It("Should login successfully with token without any projects with appropriate message", func() {
+			// Login successful with token without any projects with appropriate message
+			testUserToken1 = oc.GetToken()
 			session1 = helper.CmdShouldPass("odo", "login", "-t", testUserToken1)
 			Expect(session1).To(ContainSubstring("Logged into"))
 			Expect(session1).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
 			Expect(session1).To(ContainSubstring("odo project create <project-name>"))
 			session1 = oc.GetLoginUser()
 			Expect(session1).To(ContainSubstring(loginTestUserForNoProject))
-		})
 
-		It("Should fail login on invalid token with appropriate message", func() {
+			// Login fails on invalid token with appropriate message
 			sessionErr := helper.CmdShouldFail("odo", "login", "-t", "verybadtoken")
 			Expect(sessionErr).To(ContainSubstring("The token provided is invalid or expired"))
 			helper.CmdShouldPass("odo", "login", "--token", currentUserToken1)

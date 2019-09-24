@@ -24,7 +24,7 @@ SLOW_SPEC_THRESHOLD := 120
 # Env variable VERBOSE is the verbose flag. Setting VERBOSE= turns off verbose output.
 VERBOSE=-v
 
-GINKGO_FLAGS_ALL = $(VERBOSE) -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
+GINKGO_FLAGS_ALL = $(VERBOSE) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
 
 # Flags for tests that must not be run in parallel.
 GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
