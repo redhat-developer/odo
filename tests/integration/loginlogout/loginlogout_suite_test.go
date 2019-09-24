@@ -10,5 +10,5 @@ import (
 
 func TestLoginlogout(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecsWithDefaultAndCustomReporters(t, "Loginlogout Suite", []Reporter{reporter.JunitReport(t, "../../reports")})
+	RunSpecsWithDefaultAndCustomReporters(t, "Loginlogout Suite", []Reporter{reporter.JunitReport(t, "../../../reports")})
 }
