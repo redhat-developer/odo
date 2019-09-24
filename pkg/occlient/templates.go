@@ -268,7 +268,9 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Image: image,
+							// image stream trigger and specifying an image at the same time are mutually exclusive options
+							// thus we put "" into image field as we are specifying an image stream trigger
+							Image: "",
 							Name:  commonObjectMeta.Name,
 							Ports: containerPorts,
 							Env:   envVars,
@@ -277,9 +279,6 @@ func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image strin
 				},
 			},
 			Triggers: []appsv1.DeploymentTriggerPolicy{
-				{
-					Type: "ConfigChange",
-				},
 				{
 					Type: "ImageChange",
 					ImageChangeParams: &appsv1.DeploymentTriggerImageChangeParams{
