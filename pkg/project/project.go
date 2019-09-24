@@ -124,7 +124,7 @@ func MachineReadableSuccessOutput(projectName string, message string) {
 func getMachineReadableFormatForList(projects []Project) ProjectList {
 	return ProjectList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
+			Kind:       "ProjectList",
 			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		ListMeta: metav1.ListMeta{},

@@ -205,7 +205,7 @@ This document outlines all the machine readable output options and examples.
  
 ```json
 {
-  "kind": "List",
+  "kind": "ProjectList",
   "apiVersion": "odo.openshift.io/v1alpha1",
   "metadata": {},
   "items": [
