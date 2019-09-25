@@ -96,7 +96,7 @@ const (
 
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use getBoostrapperImage() function instead of this variable
-	defaultBootstrapperImage = "quay.io/openshiftdo/init:0.12.0"
+	defaultBootstrapperImage = "quay.io/openshiftdo/init:0.13.0"
 
 	// ENV variable to overwrite image used to bootstrap SupervisorD in S2I builder Image
 	bootstrapperImageEnvName = "ODO_BOOTSTRAPPER_IMAGE"
@@ -2875,6 +2875,7 @@ func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, 
 			if _, err := io.Copy(tw, f); err != nil {
 				return err
 			}
+
 			return f.Close()
 		}
 	}
