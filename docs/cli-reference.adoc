@@ -44,6 +44,9 @@ Syntax
 | link:#create[create]
 | Create a new component
 
+| link:#debug[debug]
+| Debug commands (port-forward)
+
 | link:#delete[delete]
 | Delete an existing component
 
@@ -106,7 +109,7 @@ CLI Structure
 
 [source,sh]
 ----
-odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --o --skip-connection-check --stderrthreshold --v --vmodule : odo (OpenShift Do) (app, catalog, component, config, create, delete, describe, link, list, log, login, logout, preference, project, push, service, storage, unlink, update, url, utils, version, watch)
+odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --o --stderrthreshold --v --vmodule : odo (OpenShift Do) (app, catalog, component, config, create, debug, delete, describe, link, list, log, login, logout, preference, project, push, service, storage, unlink, update, url, utils, version, watch)
     app : Perform application operations (delete, describe, list)
         delete --force --project : Delete the given application
         describe --project : Describe the given application
@@ -115,7 +118,7 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --o --skip-conn
         describe : Describe catalog item (service)
             service : Describe a service
         list : List all available component & service types. (components, services)
-            components : List all components available.
+            components : List all components
             services : Lists all available services
         search : Search available component & service types. (component, service)
             component : Search component type in catalog
@@ -137,6 +140,8 @@ odo --alsologtostderr --log_backtrace_at --log_dir --logtostderr --o --skip-conn
         unset --context --env --force : Unset a value in odo config file
         view --context : View current configuration values
     create --app --binary --context --cpu --env --git --max-cpu --max-memory --memory --min-cpu --min-memory --now --port --project --ref : Create a new component
+    debug : Debug commands (port-forward)
+        port-forward --context --local-port : Forward one or more local ports to a pod
     delete --all --app --context --force --project : Delete an existing component
     describe --app --context --project : Describe the given component
     link --app --component --context --port --project --wait --wait-for-target : Link component to a service or component
@@ -287,6 +292,7 @@ _________________
   odo config set MinMemory 50M
   odo config set MaxMemory 500M
   odo config set Memory 250M
+  odo config set DebugPort 4040
   odo config set Ignore false
   odo config set MinCPU 0.5
   odo config set MaxCPU 2
@@ -301,6 +307,7 @@ _________________
   odo config unset MinMemory
   odo config unset MaxMemory
   odo config unset Memory
+  odo config unset DebugPort
   odo config unset Ignore
   odo config unset MinCPU
   odo config unset MaxCPU
@@ -316,6 +323,7 @@ Modifies odo specific configuration settings within the config file.
 Available Local Parameters:
 Application - Application is the name of application the component needs to be part of
 CPU - The minimum and maximum CPU a component can consume
+DebugPort - The port on which the debugger will listen on the component
 Ignore - Consider the .odoignore file for push and watch
 MaxCPU - The maximum CPU a component can consume
 MaxMemory - The maximum memory a component can consume
@@ -397,6 +405,28 @@ If a component name is not provided, it'll be auto-generated.
 By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version If version is not specified by default, latest will be chosen as the version. 
 
 A full list of component types that can be deployed is available using: 'odo catalog list'
+
+[[debug]]
+debug
+~~~~~
+
+[source,sh]
+----
+debug
+----
+
+_________________
+Example using debug
+_________________
+
+[source,sh]
+----
+
+----
+
+Warning - Debug is currently in tech preview and hence is subject to change in future.
+
+Debug allows you to remotely debug you application
 
 [[delete]]
 delete
