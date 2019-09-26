@@ -583,13 +583,10 @@ func componentTests(args ...string) {
 			ts := time.Now().UnixNano()
 			contextNumeric, err = ioutil.TempDir("", fmt.Sprint(ts))
 			Expect(err).ToNot(HaveOccurred())
-			os.Mkdir(context, 0750)
 			project = helper.CreateRandProject()
-			helper.Chdir(contextNumeric)
 		})
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.Chdir(originalDir)
 			helper.DeleteDir(contextNumeric)
 		})
 
