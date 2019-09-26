@@ -1187,10 +1187,15 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		}
 	}
 
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
+	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
+
+	var jsonDC []byte
+	jsonDC, _ = json.Marshal(createdDC)
+	glog.V(5).Infof("Created new DeploymentConfig:\n%s\n", string(jsonDC))
+
 	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
@@ -2695,8 +2700,14 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 
 	// cmdArr will run inside container
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
-	err := c.ExecCMDInContainer(targetPodName, cmdArr, nil, nil, reader, false)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := c.ExecCMDInContainer(targetPodName, cmdArr, &stdout, &stderr, reader, false)
 	if err != nil {
+		glog.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
+		glog.Errorf("stdout: %s\n", stdout.String())
+		glog.Errorf("stderr: %s\n", stderr.String())
+		glog.Errorf("err: %s\n", err.Error())
 		return err
 	}
 	return nil
