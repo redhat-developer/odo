@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -77,6 +78,7 @@ func (o *StorageDeleteOptions) Run() (err error) {
 		}
 
 		log.Infof("Deleted storage %v from %v", o.storageName, o.localConfig.GetName())
+		log.Infof("Please use `odo push` command to delete the storage from the cluster")
 	} else {
 		return fmt.Errorf("aborting deletion of storage: %v", o.storageName)
 	}
