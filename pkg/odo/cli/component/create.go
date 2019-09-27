@@ -337,12 +337,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if selectedSourceType == config.BINARY {
 
 			// We ask for the source of the component context
-			co.componentContext = ui.EnterInputTypePath("context", currentDirectory, currentDirectory)
+			co.componentContext = ui.EnterInputTypePath("context", currentDirectory, ".")
 			glog.V(4).Infof("Context: %s", co.componentContext)
 
 			// If it's a binary, we have to ask where the actual binary in relation
 			// to the context
-			selectedSourcePath = ui.EnterInputTypePath("binary", currentDirectory)
+			selectedSourcePath = ui.EnterInputTypePath("binary", ".")
 
 			// Get the correct source location
 			sourceLocation, err := getSourceLocation(selectedSourcePath, co.componentContext)
@@ -361,7 +361,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		} else if selectedSourceType == config.LOCAL {
 
 			// We ask for the source of the component, in this case the "path"!
-			co.componentContext = ui.EnterInputTypePath("path", currentDirectory, currentDirectory)
+			co.componentContext = ui.EnterInputTypePath("path", currentDirectory, ".")
 
 			// Get the correct source location
 			if co.componentContext == "" {
