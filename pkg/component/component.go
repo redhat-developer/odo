@@ -963,6 +963,12 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				if err != nil {
 					return err
 				}
+
+				if data.GetName() == "" || data.GetApplication() == "" || data.GetProject() == "" {
+					return nil
+				}
+
+				client.Namespace = data.GetProject()
 				exist, err := Exists(client, data.GetName(), data.GetApplication())
 				if err != nil {
 					return err
