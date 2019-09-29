@@ -19,7 +19,7 @@ image:https://img.shields.io/github/license/openshift/odo?style=for-the-badge[Li
 
 OpenShift Do (`odo`) is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
 
-Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. `odo` abstracts away complex Kubernetes and OpenShift concepts, thus allowing developers to focus on what is most important to them: code.
+Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. `odo` abstracts away complex Kubernetes and OpenShift concepts for the developer, thus allowing developers to focus on what is most important to them: code.
 
 [[key-features]]
 == Key features
@@ -91,43 +91,54 @@ https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicas
 After installing `odo`, follow these steps to build, push, and
 deploy a Node.js application. Examples for other supported languages and runtimes can be found link:https://github.com/openshift/odo/blob/master/docs/examples.adoc[here].
 
-These steps recommend using link:https://github.com/minishift/minishift[Minishift] for running an OpenShift 3.10.0 or above cluster locally. More information on how to install and use `Minishift` can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here].
+These steps recommend using link:https://github.com/minishift/minishift[Minishift] for running a OpenShift 3.x or link:https://github.com/code-ready/crc[CodeReady Containers] for a OpenShift 4.x cluster. 
 
-. Start a local OpenShift development cluster by using `Minishift`.
+More information on how to install and use `Minishift` can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here], for `CodeReady Containers` it can be found link:https://code-ready.github.io/crc/[here].
+
+. Start a local OpenShift development cluster by using `minishift` or `crc`.
 +
+[source,bash]
 ----
 $ minishift start
+$ # or
+$ crc start
 ----
 . Log into the OpenShift cluster.
 +
+[source,bash]
 ----
 $ odo login -u developer -p developer
 ----
 . Download the Node.js sample code and change directory to the
 location of the sample code.
 +
+[source,bash]
 ----
 $ git clone https://github.com/openshift/nodejs-ex
 $ cd nodejs-ex
 ----
 . Add a component of type `nodejs` to your application.
 +
+[source,bash]
 ----
 $ odo create nodejs
 ----
 . Deploy your application.
 +
+[source,bash]
 ----
 $ odo push
 ----
 . Create a URL to access the application and visit it to test it.
 +
+[source,bash]
 ----
 $ odo url create
 $ curl <generated URL>
 ----
 . When finished, remove your component from `Minishift` and stop your `Minishift` cluster.
 +
+[source,bash]
 ----
 $ odo delete <component>
 $ minishift stop
