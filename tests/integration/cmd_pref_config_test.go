@@ -293,7 +293,7 @@ var _ = Describe("odo preference and config command tests", func() {
 			helper.CmdShouldPass("odo", "config", "set", "--force", "--context", context, "Name", "foobar")
 			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", context)
 			Expect(configValue).To(ContainSubstring("foobar"))
-			helper.CmdShouldPass("odo", "config", "unset", "--context", context, "Name")
+			helper.CmdShouldPass("odo", "config", "unset", "--force", "--context", context, "Name")
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 	})
