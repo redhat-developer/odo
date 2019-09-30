@@ -57,57 +57,29 @@ const CreateRecommendedCommandName = "create"
 // since the application will always be in the same directory as `.odo`, we will always set this as: ./
 const LocalDirectoryDefaultLocation = "./"
 
-var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component to be deployed on OpenShift.
+var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
 
 If a component name is not provided, it'll be auto-generated.
 
-By default, builder images will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
-If version is not specified by default, latest will be chosen as the version.
+A full list of component types that can be deployed is available using: 'odo catalog list'
 
-A full list of component types that can be deployed is available using: 'odo catalog list'`)
+By default, builder images (component type) will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
+If version is not specified by default, latest will be chosen as the version.`)
 
 var createExample = ktemplates.Examples(`  # Create new Node.js component with the source in current directory.
 %[1]s nodejs
 
-# A specific image version may also be specified
-%[1]s nodejs:latest
-
 # Create new Node.js component named 'frontend' with the source in './frontend' directory
 %[1]s nodejs frontend --context ./frontend
 
-# Create a new Node.js component of version 6 from the 'openshift' namespace
-%[1]s openshift/nodejs:6 --context /nodejs-ex
-
-# Create new Wildfly component with binary named sample.war in './downloads' directory
-%[1]s wildfly wildfly --binary ./downloads/sample.war
+# Create new Java component with binary named sample.jar in './target' directory
+%[1]s java:8  --binary target/sample.jar
 
 # Create new Node.js component with source from remote git repository
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
 
-# Create new Node.js git component while specifying a branch, tag or commit ref
-%[1]s nodejs --git https://github.com/openshift/nodejs-ex.git --ref master
-
-# Create new Node.js git component while specifying a tag
-%[1]s nodejs --git https://github.com/openshift/nodejs-ex.git --ref v1.0.1
-
-# Create new Node.js component with the source in current directory and ports 8080-tcp,8100-tcp and 9100-udp exposed
-%[1]s nodejs --port 8080,8100/tcp,9100/udp
-
-# Create new Node.js component with the source in current directory and env variables key=value and key1=value1 exposed
-%[1]s nodejs --env key=value,key1=value1
-
-# For more examples, visit: https://github.com/openshift/odo/blob/master/docs/examples.adoc
-%[1]s python --git https://github.com/openshift/django-ex.git
-
-# Passing memory limits
-%[1]s nodejs --memory 150Mi
-%[1]s nodejs --min-memory 150Mi --max-memory 300 Mi
-
-# Passing cpu limits
-%[1]s nodejs --cpu 2
-%[1]s nodejs --min-cpu 200m --max-cpu 2
-
-  `)
+# Create new Node.js component with custom ports, additional environment variables and memory and cpu limits
+%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2`)
 
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
@@ -577,14 +549,14 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
 	}
-	componentCreateCmd.Flags().StringVarP(&co.componentBinary, "binary", "b", "", "Use a binary as the source file for the component")
-	componentCreateCmd.Flags().StringVarP(&co.componentGit, "git", "g", "", "Use a git repository as the source file for the component")
+	componentCreateCmd.Flags().StringVarP(&co.componentBinary, "binary", "b", "", "Create a binary file component component using given artifact. Works only with Java components. File needs to be in the context directory.")
+	componentCreateCmd.Flags().StringVarP(&co.componentGit, "git", "g", "", "Create a git component using this repository.")
 	componentCreateCmd.Flags().StringVarP(&co.componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
 	genericclioptions.AddContextFlag(componentCreateCmd, &co.componentContext)
-	componentCreateCmd.Flags().StringVar(&co.memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi")
+	componentCreateCmd.Flags().StringVar(&co.memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi (sets min-memory and max-memory to this value)")
 	componentCreateCmd.Flags().StringVar(&co.memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
 	componentCreateCmd.Flags().StringVar(&co.memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component. ex. 100Mi")
-	componentCreateCmd.Flags().StringVar(&co.cpu, "cpu", "", "Amount of cpu to be allocated to the component. ex. 100m or 0.1")
+	componentCreateCmd.Flags().StringVar(&co.cpu, "cpu", "", "Amount of cpu to be allocated to the component. ex. 100m or 0.1 (sets min-cpu and max-cpu to this value)")
 	componentCreateCmd.Flags().StringVar(&co.cpuMin, "min-cpu", "", "Limit minimum amount of cpu to be allocated to the component. ex. 100m")
 	componentCreateCmd.Flags().StringVar(&co.cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
 	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
