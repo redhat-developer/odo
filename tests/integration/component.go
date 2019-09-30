@@ -205,6 +205,19 @@ func componentTests(args ...string) {
 				project, "--binary", filepath.Join(context, "sb.jar"))
 		})
 
+		It("binary component should fail when --binary is not in --context folder", func() {
+			oc.ImportJavaIS(project)
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
+
+			newContext := helper.CreateNewContext()
+			defer helper.DeleteDir(newContext)
+
+			output := helper.CmdShouldFail("odo", "create", "java:8", "sb-jar-test", "--project",
+				project, "--binary", filepath.Join(context, "sb.jar"), "--context", newContext)
+			Expect(output).To(ContainSubstring("inside of the context folder"))
+
+		})
+
 	})
 
 	Context("Test odo push with --source and --config flags", func() {
