@@ -286,7 +286,7 @@ var _ = Describe("odo preference and config command tests", func() {
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 
-		It("should set config veriable without logging in", func() {
+		It("should set config variable without logging in", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
 			kubeconfigOld := os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
