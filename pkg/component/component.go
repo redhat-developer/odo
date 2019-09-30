@@ -964,10 +964,12 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 					return err
 				}
 
+				// if the .odo folder doesn't contain a proper config file
 				if data.GetName() == "" || data.GetApplication() == "" || data.GetProject() == "" {
 					return nil
 				}
 
+				// since the config file maybe belong to a component of a different project
 				client.Namespace = data.GetProject()
 				exist, err := Exists(client, data.GetName(), data.GetApplication())
 				if err != nil {
