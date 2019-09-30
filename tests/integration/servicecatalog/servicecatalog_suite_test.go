@@ -10,5 +10,5 @@ import (
 
 func TestServicecatalog(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecsWithDefaultAndCustomReporters(t, "Servicecatalog Suite", []Reporter{reporter.JunitReport(t, "../../reports")})
+	RunSpecsWithDefaultAndCustomReporters(t, "Servicecatalog Suite", []Reporter{reporter.JunitReport(t, "../../../reports")})
 }
