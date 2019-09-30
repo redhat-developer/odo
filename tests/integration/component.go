@@ -169,6 +169,14 @@ func componentTests(args ...string) {
 			Expect(output).To(ContainSubstring("ComponentTypeList"))
 		})
 
+		It("binary component should not fail when --context is not set", func() {
+			oc.ImportJavaIS(project)
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
+			// Was failing due to https://github.com/openshift/odo/issues/1969
+			helper.CmdShouldPass("odo", "create", "java:8", "sb-jar-test", "--project",
+				project, "--binary", filepath.Join(context, "sb.jar"))
+		})
+
 	})
 
 	Context("Test odo push with --source and --config flags", func() {
