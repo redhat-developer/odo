@@ -37,6 +37,14 @@ var _ = Describe("odo service command tests", func() {
 		})
 	})
 
+	Context("check catalog service search functionality", func() {
+		It("check that a service does not exist", func() {
+			serviceRandomName := helper.RandString(7)
+			output := helper.CmdShouldFail("odo", "catalog", "search", "service", serviceRandomName)
+			Expect(output).To(ContainSubstring("no service matched the query: " + serviceRandomName))
+		})
+	})
+
 	Context("checking machine readable output for service catalog", func() {
 		It("should succeed listing catalog components", func() {
 			// Since service catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
