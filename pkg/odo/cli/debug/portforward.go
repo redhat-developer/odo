@@ -37,7 +37,7 @@ var (
 	portforwardLong = templates.LongDesc(`
 			Forward a local port to a remote port on the pod where the application is listening for a debugger.
 
-			By default the local port and the remote port will be same. To change the local port use can use --local-port argument and to change the remote port use "odo config set DebugPort <port>"   		  
+			By default the local port and the remote port will be same. To change the local port you can use --local-port argument and to change the remote port use "odo config set DebugPort <port>"   		  
 	`)
 
 	portforwardExample = templates.Examples(`
