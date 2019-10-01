@@ -301,6 +301,16 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 * Run tests on local env before pushing PRs
 
+*Test variables:*
+
+There are some test environment variable that helps to get more control over the test run and it's results
+
+* TEST_EXEC_NODES: Env variable TEST_EXEC_NODES is used to pass spec execution type (parallel or sequential) for ginkgo tests. To run the specs sequentially use TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 2 ginkgo test node. Any TEST_EXEC_NODES value greater than one runs the spec in parallel on the same number of ginkgo test nodes.
+
+* SLOW_SPEC_THRESHOLD: Env variable SLOW_SPEC_THRESHOLD is used for ginkgo tests. After this time (in second), ginkgo marks test as slow. The default value is set to 120s.
+
+* GINKGO_VERBOSE_MODE: Env variable GINKGO_VERBOSE_MODE is used to get control over enabling ginkgo verbose mode against each test target run. By default ginkgo verbosity is not enabled. To enable verbosity export or set env GINKGO_VERBOSE_MODE like `GINKGO_VERBOSE_MODE=-v`.
+
 *Running integration tests:*
 
 By default, tests are run against the `odo` binary placed in the PATH which is created by command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use environment variable `TEST_EXEC_NODES`. For example component test can be run
