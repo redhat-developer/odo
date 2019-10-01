@@ -107,13 +107,41 @@ func componentTests(args ...string) {
 			} else {
 				contextPath = strings.TrimSpace(context)
 			}
-			desired := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},
-				"items":[{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1",
-				"metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},
-				"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},
-				"status":{"context":"%s","state":"Not Pushed"}}]}`, project, contextPath)
-			actual := helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", context)...)
-			Expect(desired).Should(MatchJSON(actual))
+			desired := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Not Pushed"}}`, project, contextPath)
+			actual := helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", filepath.Dir(context))...)
+			// since the tests are run parallel, there might be many odo component directories in the root folder
+			// so we only check for the presence of the current one
+			Expect(actual).Should(ContainSubstring(desired))
+		})
+
+		It("should list out pushed components of different projects in json format along with path flag", func() {
+			var contextPath string
+			var contextPath2 string
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "nodejs", "--project", project)...)
+			helper.CmdShouldPass("odo", append(args, "push")...)
+
+			project2 := helper.CreateRandProject()
+			context2 := helper.CreateNewContext()
+			helper.Chdir(context2)
+			helper.CopyExample(filepath.Join("source", "python"), context2)
+			helper.CmdShouldPass("odo", append(args, "create", "python", "python", "--project", project2)...)
+			helper.CmdShouldPass("odo", append(args, "push")...)
+
+			if runtime.GOOS == "windows" {
+				contextPath = strings.Replace(strings.TrimSpace(context), "\\", "\\\\", -1)
+				contextPath2 = strings.Replace(strings.TrimSpace(context2), "\\", "\\\\", -1)
+			} else {
+				contextPath = strings.TrimSpace(context)
+				contextPath2 = strings.TrimSpace(context2)
+			}
+
+			actual := helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", filepath.Dir(context))...)
+			helper.Chdir(context)
+			helper.DeleteDir(context2)
+			helper.DeleteProject(project2)
+			Expect(actual).Should(ContainSubstring(fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}`, project, contextPath)))
+			Expect(actual).Should(ContainSubstring(fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"python","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"python","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}`, project2, contextPath2)))
 		})
 
 		It("should create the component from the branch ref when provided", func() {
