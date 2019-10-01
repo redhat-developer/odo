@@ -98,7 +98,7 @@ func NewCmdTerminal(name, fullName string) *cobra.Command {
 	o := NewTerminalOptions()
 	terminalCmd := &cobra.Command{
 		Use:     name,
-		Short:   "Add Odo terminal support to your development environment",
+		Short:   "Add odo terminal support to your development environment",
 		Long:    terminalLongDesc,
 		Example: fmt.Sprintf(terminalExample, fullName),
 		Args:    cobra.ExactArgs(1),
