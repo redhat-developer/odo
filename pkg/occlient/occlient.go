@@ -523,8 +523,9 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 	// If watched is created after the project it can lead to situation when the project is created before the watcher.
 	// When this happens, it gets stuck waiting for event that already happened.
 	var watcher watch.Interface
+	var err error
 	if wait {
-		watcher, err := c.projectClient.Projects().Watch(metav1.ListOptions{
+		watcher, err = c.projectClient.Projects().Watch(metav1.ListOptions{
 			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
 		})
 		if err != nil {
@@ -538,7 +539,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			Name: projectName,
 		},
 	}
-	_, err := c.projectClient.ProjectRequests().Create(projectRequest)
+	_, err = c.projectClient.ProjectRequests().Create(projectRequest)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}
