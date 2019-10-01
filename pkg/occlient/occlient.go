@@ -3180,7 +3180,9 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 	}
 	for _, s2iPath := range s2iPaths {
 		for _, delRelPath := range delSrcRelPaths {
-			rmPaths = append(rmPaths, filepath.Join(s2iPath, delRelPath))
+			// since the paths inside the container are linux oriented
+			// so we convert the paths accordingly
+			rmPaths = append(rmPaths, filepath.ToSlash(filepath.Join(s2iPath, delRelPath)))
 		}
 	}
 	glog.V(4).Infof("s2ipaths marked for deletion are %+v", rmPaths)
