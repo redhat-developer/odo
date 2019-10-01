@@ -490,10 +490,10 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 	// Check to see if the catalog type actually exists
 	exists, err := catalog.ComponentExists(client, componentType, componentVersion)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to check component of type %s", componentType)
+		return errors.Wrapf(err, "failed to check component of type %s", componentType)
 	}
 	if !exists {
-		return fmt.Errorf("Failed to find component of type %s and version%s", componentType, componentVersion)
+		return fmt.Errorf("failed to find component of type %s and version %s", componentType, componentVersion)
 	}
 
 	// Validate component name

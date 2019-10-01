@@ -113,8 +113,14 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 		if err != nil {
 			return err
 		}
+		// Convert componentContext to absolute path, so it can be safely used in filepath.Rel
+		// even when it is not set (empty). In this case filepath.Abs will return current directory.
+		absContext, err := filepath.Abs(co.componentContext)
+		if err != nil {
+			return errors.Wrapf(err, "unable to convert \"%s\" to absolute path", co.componentContext)
+		}
 		// we need to store the SourceLocation relative to the componentContext
-		relativePathToSource, err := filepath.Rel(co.componentContext, cPath)
+		relativePathToSource, err := filepath.Rel(absContext, cPath)
 		if err != nil {
 			return err
 		}
