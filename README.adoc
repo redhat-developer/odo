@@ -91,16 +91,16 @@ https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicas
 After installing `odo`, follow these steps to build, push, and
 deploy a Node.js application. Examples for other supported languages and runtimes can be found link:https://github.com/openshift/odo/blob/master/docs/examples.adoc[here].
 
-These steps recommend using link:https://github.com/minishift/minishift[Minishift] for running a OpenShift 3.x or link:https://github.com/code-ready/crc[CodeReady Containers] for a OpenShift 4.x cluster. 
+These steps recommend using link:https://github.com/minishift/minishift[Minishift] for running an OpenShift 3.x cluster or link:https://github.com/code-ready/crc[CodeReady Containers] for an OpenShift 4.x cluster.
 
-More information on how to install and use `Minishift` can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here], for `CodeReady Containers` it can be found link:https://code-ready.github.io/crc/[here].
+More information on how to install and use `Minishift` can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here]. For `CodeReady Containers`, information can be found link:https://code-ready.github.io/crc/[here].
 
 . Start a local OpenShift development cluster by using `minishift` or `crc`.
 +
 [source,bash]
 ----
 $ minishift start
-$ # or
+# or
 $ crc start
 ----
 . Log into the OpenShift cluster.
