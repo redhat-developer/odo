@@ -81,7 +81,7 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 
 	return ServiceTypeList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceTypeList",
+			Kind:       "List",
 			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		Items: clusterServiceClasses,
@@ -105,7 +105,7 @@ func SearchService(client *occlient.Client, name string) (ServiceTypeList, error
 
 	return ServiceTypeList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceTypeList",
+			Kind:       "List",
 			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		Items: result,
