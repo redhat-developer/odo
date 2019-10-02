@@ -160,7 +160,7 @@ Started Guide]
 Examples for Other Languages and Runtimes]
 * link:https://github.com/openshift/odo/blob/master/docs/cli-reference.adoc[CLI
 Reference]
-* link:https://github.com/openshift/odo/blob/master/docs/development.adoc[Development
+* link:https://github.com/openshift/odo/blob/master/docs/dev/development.adoc[Development
 Guide]
 
 [[contributing]]
@@ -171,7 +171,7 @@ Guide]
 *Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
 
 *Contributing:* Want to become a contributor and submit your own code?
-Have a look at our link:https://github.com/openshift/odo/blob/master/docs/development.adoc[Development Guide].
+Have a look at our link:https://github.com/openshift/odo/blob/master/docs/dev/development.adoc[Development Guide].
 
 [[projects-using-odo]]
 == Projects using odo
