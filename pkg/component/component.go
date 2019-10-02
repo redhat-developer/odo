@@ -471,13 +471,9 @@ func CheckComponentMandatoryParams(componentSettings config.ComponentSettings) e
 }
 
 // ValidateComponentCreateRequest validates request for component creation and returns errors if any
-// Parameters:
-//	componentSettings: Component settings
-//	isCmpExistsCheck: boolean to indicate whether or not error out if component with same name already exists
 // Returns:
 //	errors if any
-func ValidateComponentCreateRequest(client *occlient.Client, componentSettings config.ComponentSettings, isCmpExists bool, isCmpExistsCheck bool) (err error) {
-
+func ValidateComponentCreateRequest(client *occlient.Client, componentSettings config.ComponentSettings, contextDir string) (err error) {
 	// Check the mandatory parameters first
 	err = CheckComponentMandatoryParams(componentSettings)
 	if err != nil {
@@ -502,13 +498,6 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 		return errors.Wrapf(err, "failed to check component of name %s", *componentSettings.Name)
 	}
 
-	// If component does not exist, create it
-	if isCmpExistsCheck {
-		if isCmpExists {
-			return fmt.Errorf("component with name %s already exists in application %s", *componentSettings.Name, *componentSettings.Application)
-		}
-	}
-
 	// If component is of type local, check if the source path is valid
 	if *componentSettings.SourceType == config.LOCAL {
 		glog.V(4).Infof("Checking source location: %s", *(componentSettings.SourceLocation))
@@ -518,6 +507,13 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 		}
 		if !srcLocInfo.IsDir() {
 			return fmt.Errorf("source path for component created for local source needs to be a directory")
+		}
+	}
+
+	if *componentSettings.SourceType == config.BINARY {
+		// if relative path starts with ../ (or windows equivalent), it means that binary file is not inside the context
+		if strings.HasPrefix(*(componentSettings.SourceLocation), fmt.Sprintf("..%c", filepath.Separator)) {
+			return fmt.Errorf("%s binary needs to be inside of the context directory (%s)", *(componentSettings.SourceLocation), contextDir)
 		}
 	}
 

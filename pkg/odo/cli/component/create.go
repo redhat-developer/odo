@@ -117,10 +117,14 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 		// even when it is not set (empty). In this case filepath.Abs will return current directory.
 		absContext, err := filepath.Abs(co.componentContext)
 		if err != nil {
-			return errors.Wrapf(err, "unable to convert \"%s\" to absolute path", co.componentContext)
+			return err
+		}
+		absPath, err := filepath.Abs(cPath)
+		if err != nil {
+			return err
 		}
 		// we need to store the SourceLocation relative to the componentContext
-		relativePathToSource, err := filepath.Rel(absContext, cPath)
+		relativePathToSource, err := filepath.Rel(absContext, absPath)
 		if err != nil {
 			return err
 		}
@@ -446,7 +450,7 @@ func (co *CreateOptions) Validate() (err error) {
 	s := log.Spinner("Validating component")
 	defer s.End(false)
 
-	if err := component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, false, false); err != nil {
+	if err := component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, co.componentContext); err != nil {
 		return err
 	}
 
