@@ -90,7 +90,7 @@ func (o *DescribeOptions) Run() (err error) {
 				for _, currentComponent := range componentList.Items {
 					componentDesc, err := component.GetComponent(o.Client, currentComponent.Name, o.appName, o.Project)
 					util.LogErrorAndExit(err, "")
-					util.PrintComponentInfo(o.Client, currentComponent.Name, componentDesc, o.Application)
+					util.PrintComponentInfo(o.Client, currentComponent.Name, componentDesc, o.Application, o.Project)
 					fmt.Println("--------------------------------------")
 				}
 			}
