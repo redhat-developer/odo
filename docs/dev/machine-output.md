@@ -25,7 +25,7 @@ This document outlines all the machine readable output options and examples.
  
 ```json
 {
-  "kind": "ApplicationList",
+  "kind": "List",
   "apiVersion": "odo.openshift.io/v1alpha1",
   "metadata": {},
   "items": [
@@ -55,7 +55,7 @@ This document outlines all the machine readable output options and examples.
  
 ```json
 {
-  "kind": "ApplicationList",
+  "kind": "List",
   "apiVersion": "odo.openshift.io/v1alpha1",
   "metadata": {},
   "items": [

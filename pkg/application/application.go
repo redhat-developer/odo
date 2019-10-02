@@ -17,7 +17,7 @@ const (
 	appNameMaxRetries = 3
 	appAPIVersion     = "odo.openshift.io/v1alpha1"
 	appKind           = "Application"
-	appList           = "ApplicationList"
+	appList           = "List"
 )
 
 // List all applications in current project
