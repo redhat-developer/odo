@@ -122,14 +122,36 @@ func (o *commonLinkOptions) run() (err error) {
 		return err
 	}
 
-	if o.operationName == "link" {
-		fmt.Printf("Following environment variables were added to %s component:\n", o.Component())
+	if len(secret.Data) == 0 {
+		log.Infof("There are no secret environment variables to expose within the %s service", o.suppliedName)
 	} else {
-		fmt.Printf("Following environment variables were removed from %s component:\n", o.Component())
-	}
+		if o.operationName == "link" {
+			log.Infof("The below secret environment variables were added to the '%s' component:\n", o.Component())
+		} else {
+			log.Infof("The below secret environment variables were removed from the '%s' component:\n", o.Component())
+		}
 
-	for i := range secret.Data {
-		fmt.Printf("- %v\n", i)
+		// Output the environment variables
+		for i := range secret.Data {
+			fmt.Printf("· %v\n", i)
+		}
+
+		// Retrieve the first variable to use as an example.
+		// Have to use a range to access the map
+		var exampleEnv string
+		for i := range secret.Data {
+			exampleEnv = i
+			break
+		}
+
+		// Output what to do next if first linking...
+		// TODO: Retrieve the podName to add to the example?
+		if o.operationName == "link" {
+			log.Infof(`
+You can now access the environment variables from within the component pod, for example:
+oc rsc <pod-name>
+echo $%s`, exampleEnv)
+		}
 	}
 
 	if o.wait {
