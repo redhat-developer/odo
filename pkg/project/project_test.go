@@ -2,7 +2,10 @@ package project
 
 import (
 	"os"
+	"reflect"
 	"testing"
+
+	v1 "github.com/openshift/api/project/v1"
 
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -90,6 +93,96 @@ func TestDelete(t *testing.T) {
 			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("project Delete() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestList(t *testing.T) {
+	tests := []struct {
+		name             string
+		wantErr          bool
+		returnedProjects *v1.ProjectList
+		expectedProjects ProjectList
+	}{
+		{
+			name:             "Case 1: Multiple projects returned",
+			wantErr:          false,
+			returnedProjects: testingutil.FakeProjects(),
+			expectedProjects: getMachineReadableFormatForList(
+				[]Project{
+					GetMachineReadableFormat("testing", false),
+					GetMachineReadableFormat("prj1", false),
+					GetMachineReadableFormat("prj2", false),
+				},
+			),
+		},
+		{
+			name:             "Case 2: Single project returned",
+			wantErr:          false,
+			returnedProjects: testingutil.FakeOnlyOneExistingProjects(),
+			expectedProjects: getMachineReadableFormatForList(
+				[]Project{
+					GetMachineReadableFormat("testing", false),
+				},
+			),
+		},
+		{
+			name:             "Case 3: No project returned",
+			wantErr:          false,
+			returnedProjects: &v1.ProjectList{},
+			expectedProjects: getMachineReadableFormatForList(
+				nil,
+			),
+		},
+	}
+
+	odoConfigFile, kubeConfigFile, err := testingutil.SetUp(
+		testingutil.ConfigDetails{
+			FileName:      "odo-test-config",
+			Config:        testingutil.FakeOdoConfig("odo-test-config", false, ""),
+			ConfigPathEnv: "GLOBALODOCONFIG",
+		}, testingutil.ConfigDetails{
+			FileName:      "kube-test-config",
+			Config:        testingutil.FakeKubeClientConfig(),
+			ConfigPathEnv: "KUBECONFIG",
+		},
+	)
+	defer testingutil.CleanupEnv([]*os.File{odoConfigFile, kubeConfigFile}, t)
+	if err != nil {
+		t.Errorf("failed to create mock odo and kube config files. Error %v", err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Fake the client with the appropriate arguments
+			client, fakeClientSet := occlient.FakeNew()
+
+			loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+			configOverrides := &clientcmd.ConfigOverrides{}
+			client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+
+			fakeClientSet.ProjClientset.PrependReactor("list", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, tt.returnedProjects, nil
+			})
+
+			// The function we are testing
+			projects, err := List(client)
+
+			if !reflect.DeepEqual(projects, tt.expectedProjects) {
+				t.Errorf("Expected project output is not equal, expected: %v, actual: %v", tt.expectedProjects, projects)
+			}
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.ProjClientset.Actions()) != 1 {
+					t.Errorf("expected 1 ProjClientSet.Actions() in Project List, got: %v", len(fakeClientSet.ProjClientset.Actions()))
+				}
+			}
+
+			// Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("project List() unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
