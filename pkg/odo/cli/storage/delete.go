@@ -29,6 +29,7 @@ type StorageDeleteOptions struct {
 	storageName            string
 	storageForceDeleteFlag bool
 	componentContext       string
+	wait                   bool
 	localConfig            *config.LocalConfigInfo
 	*genericclioptions.Context
 }
@@ -99,6 +100,7 @@ func NewCmdStorageDelete(name, fullName string) *cobra.Command {
 
 	storageDeleteCmd.Flags().BoolVarP(&o.storageForceDeleteFlag, "force", "f", false, "Delete storage without prompting")
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
+	storageDeleteCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the storage is gone")
 
 	genericclioptions.AddContextFlag(storageDeleteCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageDeleteCmd, "context", completion.FileCompletionHandler)
