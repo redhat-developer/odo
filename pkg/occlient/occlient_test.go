@@ -3701,8 +3701,8 @@ func TestUpdateDCToGit(t *testing.T) {
 				}
 
 				// Check that the new patch actually has the new "image"
-				if !tt.wantErr == (dc.Spec.Template.Spec.Containers[0].Image != tt.args.newImage) {
-					return true, nil, fmt.Errorf("got %s image, suppose to get %s", dc.Spec.Template.Spec.Containers[0].Image, tt.args.newImage)
+				if !tt.wantErr == (dc.Spec.Template.Spec.Containers[0].Image != "") {
+					return true, nil, fmt.Errorf("got %s image, suppose to get %s", dc.Spec.Template.Spec.Containers[0].Image, "")
 				}
 
 				return true, dc, nil
