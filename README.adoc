@@ -136,12 +136,14 @@ $ odo push
 $ odo url create
 $ curl <generated URL>
 ----
-. When finished, remove your component from `Minishift` and stop your `Minishift` cluster.
+. When finished, remove your component from `Minishift` or `CodeReady Containers`, and stop your cluster if you are finished with it.
 +
 [source,bash]
 ----
 $ odo delete <component>
 $ minishift stop
+# or
+$ crc stop
 ----
 
 For more in-depth information and advanced use-cases such as adding storage to a component or linking components, see the
