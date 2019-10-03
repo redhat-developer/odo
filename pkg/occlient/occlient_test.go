@@ -2304,7 +2304,7 @@ func TestCreateNewProject(t *testing.T) {
 						},
 					})
 				}()
-				fkclientset.ProjClientset.AddWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				fkclientset.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 					if len(tt.projName) == 0 {
 						return true, nil, fmt.Errorf("error watching project")
 					}

@@ -145,7 +145,7 @@ test-cmd-service:
 # Run odo project command tests
 .PHONY: test-cmd-project
 test-cmd-project:
-	ginkgo $(GINKGO_FLAGS) -focus="odo project command tests" tests/integration/
+	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo project command tests" tests/integration/project/
 
 # Run odo app command tests
 .PHONY: test-cmd-app
