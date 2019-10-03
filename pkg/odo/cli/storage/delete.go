@@ -5,9 +5,6 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -102,10 +99,6 @@ func NewCmdStorageDelete(name, fullName string) *cobra.Command {
 
 	storageDeleteCmd.Flags().BoolVarP(&o.storageForceDeleteFlag, "force", "f", false, "Delete storage without prompting")
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
-
-	projectCmd.AddProjectFlag(storageDeleteCmd)
-	appCmd.AddApplicationFlag(storageDeleteCmd)
-	componentCmd.AddComponentFlag(storageDeleteCmd)
 
 	genericclioptions.AddContextFlag(storageDeleteCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageDeleteCmd, "context", completion.FileCompletionHandler)

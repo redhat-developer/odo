@@ -92,7 +92,7 @@ var _ = Describe("odo storage command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context)
 			helper.CmdShouldPass("odo", "component", "create", "python", "python", "--app", "pyapp", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--component", "python", "--app", "pyapp", "--project", project, "--path", "/mnt/pv1", "--size", "5Gi", "--context", context)
+			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "5Gi", "--context", context)
 			Expect(storAdd).To(ContainSubstring("python"))
 			helper.CmdShouldPass("odo", "push", "--context", context)
 

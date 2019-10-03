@@ -3,9 +3,6 @@ package storage
 import (
 	"fmt"
 	"github.com/openshift/odo/pkg/log"
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
@@ -108,10 +105,6 @@ func NewCmdStorageUnMount(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
-	projectCmd.AddProjectFlag(storageUnMountCmd)
-	appCmd.AddApplicationFlag(storageUnMountCmd)
-	componentCmd.AddComponentFlag(storageUnMountCmd)
 
 	completion.RegisterCommandHandler(storageUnMountCmd, completion.StorageUnMountCompletionHandler)
 
