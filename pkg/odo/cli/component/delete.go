@@ -120,8 +120,8 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 
 	var componentDeleteCmd = &cobra.Command{
 		Use:     fmt.Sprintf("%s <component_name>", name),
-		Short:   "Delete an existing component",
-		Long:    "Delete an existing component.",
+		Short:   "Delete component",
+		Long:    "Delete component.",
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {

@@ -89,8 +89,8 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 
 	var describeCmd = &cobra.Command{
 		Use:     fmt.Sprintf("%s [component_name]", name),
-		Short:   "Describe the given component",
-		Long:    `Describe the given component.`,
+		Short:   "Describe component",
+		Long:    `Describe component.`,
 		Example: fmt.Sprintf(describeExample, fullName),
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {

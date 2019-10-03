@@ -58,7 +58,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	// componentCmd represents the component command
 	var componentCmd = &cobra.Command{
 		Use:   name,
-		Short: "Components of an application",
+		Short: "Manage components",
 		Example: fmt.Sprintf("%s\n%s\n\n  See sub-commands individually for more examples",
 			fullName, CreateRecommendedCommandName),
 		// `odo component set/get` and `odo get/set` are respectively deprecated as per the new workflow

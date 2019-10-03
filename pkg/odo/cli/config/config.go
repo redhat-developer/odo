@@ -25,7 +25,7 @@ func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationUnsetCmd := NewCmdUnset(unsetCommandName, util.GetFullName(fullName, unsetCommandName))
 	configurationCmd := &cobra.Command{
 		Use:   name,
-		Short: "Modifies configuration settings",
+		Short: "Change or view configuration",
 		Long:  fmt.Sprintf(configLongDesc, config.FormatLocallySupportedParameters()),
 		Example: fmt.Sprintf("%s\n%s\n%s",
 			configurationViewCmd.Example,
