@@ -4,9 +4,6 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
@@ -89,10 +86,6 @@ func NewCmdStorageMount(name, fullName string) *cobra.Command {
 
 	storageMountCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
 	_ = storageMountCmd.MarkFlagRequired("path")
-
-	projectCmd.AddProjectFlag(storageMountCmd)
-	appCmd.AddApplicationFlag(storageMountCmd)
-	componentCmd.AddComponentFlag(storageMountCmd)
 
 	completion.RegisterCommandHandler(storageMountCmd, completion.StorageMountCompletionHandler)
 

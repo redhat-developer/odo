@@ -12,9 +12,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/log"
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
@@ -114,10 +111,6 @@ func NewCmdStorageList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
-	projectCmd.AddProjectFlag(storageListCmd)
-	appCmd.AddApplicationFlag(storageListCmd)
-	componentCmd.AddComponentFlag(storageListCmd)
 
 	genericclioptions.AddContextFlag(storageListCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageListCmd, "context", completion.FileCompletionHandler)

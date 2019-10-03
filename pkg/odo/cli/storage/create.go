@@ -12,10 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 )
 
 const createRecommendedCommandName = "create"
@@ -104,10 +100,6 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
 	_ = storageCreateCmd.MarkFlagRequired("path")
 	_ = storageCreateCmd.MarkFlagRequired("size")
-
-	projectCmd.AddProjectFlag(storageCreateCmd)
-	appCmd.AddApplicationFlag(storageCreateCmd)
-	componentCmd.AddComponentFlag(storageCreateCmd)
 
 	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)
