@@ -1,5 +1,5 @@
-hash: 2a4a7092fc929cbbef57cdb21489e3227341304811fab15fd23874602aba9f83
-updated: 2019-09-12T13:40:15.826556286-04:00
+hash: c3599bd2e8b4611173eceec6dd5a626eb68647f50cabb73a98c40b56d0fc3f70
+updated: 2019-10-03T16:01:28.730295+02:00
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -23,7 +23,7 @@ imports:
 - name: github.com/certifi/gocertifi
   version: deb3ae2ef2610fde3330947281941c562861188b
 - name: github.com/creack/pty
-  version: 2769f65a3a94eb8f876f44a0459d24ae7ad2e488
+  version: 3a6a957789163cacdfe0e291617a1c8e80612c11
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -72,7 +72,7 @@ imports:
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/getsentry/raven-go
-  version: ""
+  version: 32a13797442ccb601b11761d74232773c1402d14
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-openapi/jsonpointer
@@ -188,7 +188,7 @@ imports:
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: bf9a1dea1961e1d831824fb135332bfb8c10e8b8
+  version: 62f712808a2a54a0f220e557074b33f99af9440b
 - name: github.com/mattn/go-runewidth
   version: 703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211
 - name: github.com/matttproud/golang_protobuf_extensions
@@ -710,6 +710,7 @@ imports:
   - tools/clientcmd/api/v1
   - tools/metrics
   - tools/pager
+  - tools/portforward
   - tools/record
   - tools/reference
   - tools/remotecommand
@@ -730,7 +731,7 @@ imports:
   - pkg/util/proto
   - pkg/util/proto/validation
 - name: k8s.io/kubernetes
-  version: 84f203614d99ab73d7de2ae51bab61877eac7af6
+  version: 9d481282d3b40044bd43704bbbaf68b480603063
   repo: https://github.com/openshift/kubernetes.git
   subpackages:
   - pkg/api/events
