@@ -10,7 +10,7 @@ const RecommendedCommandName = "debug"
 
 var DebugLongDesc = `Warning - Debug is currently in tech preview and hence is subject to change in future.
 
-Debug allows you to remotely debug you application`
+Debug allows you to remotely debug your application`
 
 func NewCmdDebug(name, fullName string) *cobra.Command {
 
