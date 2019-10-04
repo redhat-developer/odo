@@ -19,9 +19,6 @@ var (
 	storageDeleteLongDesc  = ktemplates.LongDesc(`Delete storage from component`)
 	storageDeleteExample   = ktemplates.Examples(`  # Delete storage mystorage from the currently active component
   %[1]s mystorage
-
-  # Delete storage mystorage from component 'mongodb'
-  %[1]s mystorage --component mongodb
 `)
 )
 
