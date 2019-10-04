@@ -1,0 +1,242 @@
+=== Deploying a database
+
+This module describes how to deploy a database, connecting to a frontend application.
+
+= Creating a project
+
+.Prerequisites
+
+* {odo-title} is installed.
+* `oc` client.
+* A running OpenShift cluster.
+** Developers can use link:https://cloud.redhat.com/openshift/install/crc/installer-provisioned?intcmp=7013a000002CtetAAC[CodeReady Containers (CRC)] to deploy a local {product-title} cluster quickly.
+* Service Catalog enabled 
+[Yana please insert link here.. there is one for 3.11 here: but nothing for 4.1 as it's being deprecated, but we still believe Service Catalog to be important https://docs.openshift.com/container-platform/3.11/architecture/service_catalog/index.html]
+
+.Procedure
+
+. Log into an OpenShift cluster:
++
+----
+$ odo login -u developer -p developer
+----
+
+. Download the example frontend applications:
++
+----
+$ git clone https://github.com/openshift/nodejs-ex
+----
+
+. Create a new project / OpenShift namespace:
++
+----
+$ odo project create myproject
+ ✓  Project 'myproject' is ready for use
+ ✓  New project created and now using project : myproject
+----
+
+= Deploying the frontend component
+
+.Procedure
+
+. Change the current directory to the frontend directory:
++
+----
+$ cd ~/nodejs-ex
+---- 
+
+. List the contents of the directory to see that frontend is a Node.js application.
++
+----
+$ ls
+assets  bin  index.html  kwww-frontend.iml  package.json  package-lock.json  playfield.png  README.md  server.js
+---- 
++
+[NOTE]
+====
+The frontend component is written in an interpreted language (Node.js), it does no need to be built.
+====
+
+. Create a component configuration of Node.js component-type named "frontend":
++
+----
+$ odo create nodejs frontend
+ ✓  Validating component [5ms]
+Please use `odo push` command to create the component with source deployed
+----
+
+. Create a URL to access the frontend interface.
++
+----
+$ odo url create myurl
+ ✓  URL myurl created for component: nodejs-nodejs-ex-pmdp
+
+To create URL on the OpenShift Cluster, please use `odo push`
+----
+
+. Push the component to a running container. 
++
+----
+$ odo push
+Validation
+ ✓  Checking component [7ms]
+
+Configuration changes
+ ✓  Initializing component
+ ✓  Creating component [134ms]
+
+Applying URL changes
+ ✓  URL myurl: http://myurl-app-myproject.192.168.42.79.nip.io created
+
+Pushing to component nodejs-nodejs-ex-mhbb of type local
+ ✓  Checking files for pushing [657850ns]
+ ✓  Waiting for component to start [6s]
+ ✓  Syncing files to the component [408ms]
+ ✓  Building component [7s]
+ ✓  Changes successfully pushed to component
+----
+
+. Open the URL in a browser to view the application. You will notice in the bottom right that it says: "No database configured".
+
+[yana, maybe you can find a better way to show this? Unsure how to do a proper paragraph when doing "steps", step 1, step 2, etc.]
+
+
+
+= Deploying the database
+
+The main advantage of odo is simplifying your deployment. There are two methods, using the _interactive mode_ or _manually_ deploying your service.
+
+We will be using MongoDB as our database.
+
+.Prerequisites
+* Service Catalog is enabled in your cluster
+
+.Procedure
+
+Using interactive mode to deploy your database:
+
+**NOTE:** Do not worry what you set as your password or username as those secrets will be passed to the frontend container as environment variables.
+
+----
+$ odo service create
+? Which kind of service do you wish to create database
+? Which database service class should we use mongodb-persistent
+? Enter a value for string property DATABASE_SERVICE_NAME (Database Service Name): mongodb
+? Enter a value for string property MEMORY_LIMIT (Memory Limit): 512Mi
+? Enter a value for string property MONGODB_DATABASE (MongoDB Database Name): sampledb
+? Enter a value for string property MONGODB_VERSION (Version of MongoDB Image): 3.2
+? Enter a value for string property VOLUME_CAPACITY (Volume Capacity): 1Gi
+? Provide values for non-required properties No
+? How should we name your service  mongodb-persistent
+? Output the non-interactive version of the selected options No
+? Wait for the service to be ready No
+ ✓  Creating service [32ms]
+ ✓  Service 'mongodb-persistent' was created
+Progress of the provisioning will not be reported and might take a long time.
+You can see the current status by executing 'odo service list'
+----
+
+
+_or_
+
+Deploying the database manually:
+
+. First, let's check what services are avaiable to us:
++
+----
+$ odo catalog list services
+NAME                         PLANS
+django-psql-persistent       default
+jenkins-ephemeral            default
+jenkins-pipeline-example     default
+mariadb-persistent           default
+mongodb-persistent           default
+mysql-persistent             default
+nodejs-mongo-persistent      default
+postgresql-persistent        default
+rails-pgsql-persistent       default
+----
+
+. Next, we will pick `mongodb-persistent` and check what parameters are required to be passed
++
+----
+$ odo catalog describe service mongodb-persistent
+  ***********************        | *****************************************************
+  Name                           | default
+  -----------------              | -----------------
+  Display Name                   |
+  -----------------              | -----------------
+  Short Description              | Default plan
+  -----------------              | -----------------
+  Required Params without a      |
+  default value                  |
+  -----------------              | -----------------
+  Required Params with a default | DATABASE_SERVICE_NAME
+  value                          | (default: 'mongodb'),
+                                 | MEMORY_LIMIT (default:
+                                 | '512Mi'), MONGODB_VERSION
+                                 | (default: '3.2'),
+                                 | MONGODB_DATABASE (default:
+                                 | 'sampledb'), VOLUME_CAPACITY
+                                 | (default: '1Gi')
+  -----------------              | -----------------
+  Optional Params                | MONGODB_ADMIN_PASSWORD,
+                                 | NAMESPACE, MONGODB_PASSWORD,
+                                 | MONGODB_USER
+----
+
+. Pass in the required parameters and wait for the database to be deployed
++
+----
+$ odo service create mongodb-persistent --plan default --wait -p DATABASE_SERVICE_NAME=mongodb -p MEMORY_LIMIT=512Mi -p MONGODB_DATABASE=sampledb -p VOLUME_CAPACITY=1Gi
+----
+
+
+= Connecting the database to the frontend service
+
+. Let's link the database to the frontend service:
++
+----
+$ odo link mongodb-persistent
+ ✓  Service mongodb-persistent has been successfully linked from the component nodejs-nodejs-ex-mhbb
+
+Following environment variables were added to nodejs-nodejs-ex-mhbb component:
+- database_name
+- password
+- uri
+- username
+- admin_password
+----
+
+. The service is now linked to the frontend and you can now see the environment variables from within the pod:
++
+----
+$ oc get pods
+NAME                                READY     STATUS    RESTARTS   AGE
+mongodb-1-gsznc                     1/1       Running   0          28m
+nodejs-nodejs-ex-mhbb-app-4-vkn9l   1/1       Running   0          1m
+
+$ oc rsh nodejs-nodejs-ex-mhbb-app-4-vkn9l
+sh-4.2$ env
+uri=mongodb://172.30.126.3:27017
+password=dHIOpYneSkX3rTLn
+database_name=sampledb
+username=user43U
+admin_password=NCn41tqmx7RIqmfv
+sh-4.2$
+----
+
+3. Visit the URL via and you will now see that the database is configured on the bottom right:
++
+----
+$ odo url list
+----
++
+----
+Request information
+Page view count: 24
+
+DB Connection Info:
+Type:	MongoDB
+URL:	mongodb://172.30.126.3:27017/sampledb
+----
