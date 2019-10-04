@@ -18,9 +18,7 @@ var (
 	storageMountLongDesc  = ktemplates.LongDesc(`mount storage to a component`)
 	storageMountExample   = ktemplates.Examples(` # Mount storage 'dbstorage' to current component
   %[1]s dbstorage --path /data
-
-  # Mount storage 'database' to component 'mongodb'
-  %[1]s database --component mongodb --path /data`)
+`)
 )
 
 type StorageMountOptions struct {

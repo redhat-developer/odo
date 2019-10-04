@@ -2,14 +2,15 @@ package storage
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"os"
-	"strings"
 )
 
 const unMountRecommendedCommandName = "unmount"
@@ -22,14 +23,8 @@ var (
 	storageUnMountExample = ktemplates.Examples(`  # Unmount storage 'dbstorage' from current component
   %[1]s dbstorage
 
-  # Unmount storage 'database' from component 'mongodb'
-  %[1]s database --component mongodb
-
   # Unmount storage mounted to path '/data' from current component
   %[1]s /data
-
-  # Unmount storage mounted to path '/data' from component 'mongodb'
-  %[1]s /data --component mongodb
 `)
 )
 
