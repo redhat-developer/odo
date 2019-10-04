@@ -3,9 +3,6 @@ package url
 import (
 	"fmt"
 
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	componentCmd "github.com/openshift/odo/pkg/odo/cli/component"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -41,21 +38,6 @@ func NewCmdURL(name, fullName string) *cobra.Command {
 	urlCmd.Annotations = map[string]string{"command": "main"}
 	urlCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	urlCmd.AddCommand(urlCreateCmd, urlDeleteCmd, urlListCmd)
-
-	//Adding `--project` flag
-	projectCmd.AddProjectFlag(urlListCmd)
-	projectCmd.AddProjectFlag(urlCreateCmd)
-	projectCmd.AddProjectFlag(urlDeleteCmd)
-
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(urlListCmd)
-	appCmd.AddApplicationFlag(urlDeleteCmd)
-	appCmd.AddApplicationFlag(urlCreateCmd)
-
-	//Adding `--component` flag
-	componentCmd.AddComponentFlag(urlDeleteCmd)
-	componentCmd.AddComponentFlag(urlListCmd)
-	componentCmd.AddComponentFlag(urlCreateCmd)
 
 	return urlCmd
 }

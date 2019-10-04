@@ -32,9 +32,6 @@ var (
   
 	# Create a URL with a specific name and port
 	%[1]s example --port 8080
-  
-	# Create a URL with a specific name and port for component frontend
-	%[1]s example --port 8080 --component frontend
 	  `)
 )
 
