@@ -28,6 +28,25 @@ var _ = Describe("odo generic", func() {
 		SetDefaultConsistentlyDuration(30 * time.Second)
 	})
 
+	Context("Check the help usage for odo", func() {
+
+		It("Makes sure that we have the long-description when running odo and we dont error", func() {
+			output := helper.CmdShouldPass("odo")
+			Expect(output).To(ContainSubstring("To see a full list of commands, run 'odo --help'"))
+		})
+
+		It("Make sure we have the full description when performing odo --help", func() {
+			output := helper.CmdShouldPass("odo", "--help")
+			Expect(output).To(ContainSubstring("Use \"odo [command] --help\" for more information about a command."))
+		})
+
+		It("Fail when entering an incorrect name for a component", func() {
+			output := helper.CmdShouldFail("odo", "component", "foobar")
+			Expect(output).To(ContainSubstring("Subcommand not found, use one of the available commands"))
+		})
+
+	})
+
 	Context("When executing catalog list without component directory", func() {
 		It("should list all component catalogs", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "components")
