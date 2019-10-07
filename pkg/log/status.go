@@ -249,6 +249,16 @@ func Infof(format string, a ...interface{}) {
 	}
 }
 
+// Describef will print out the first variable as BOLD and then the second not..
+// this is intended to be used with `odo describe` and other outputs that list
+// a lot of information
+func Describef(title string, format string, a ...interface{}) {
+	bold := color.New(color.Bold).SprintFunc()
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s%s\n", bold(title), fmt.Sprintf(format, a...))
+	}
+}
+
 // Askf will print out information, but in an "Ask" way (without newline)
 func Askf(format string, a ...interface{}) {
 	bold := color.New(color.Bold).SprintFunc()

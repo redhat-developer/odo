@@ -76,53 +76,101 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	if err != nil {
 		LogErrorAndExit(err, "")
 	}
-	fmt.Printf("Component Name: %v\nType: %v\n", currentComponentName, componentDesc.Spec.Type)
+
+	log.Describef("Component Name: ", currentComponentName)
+	log.Describef("Type: ", componentDesc.Spec.Type)
+
 	// Source
 	if componentDesc.Spec.Source != "" {
-		fmt.Printf("Source: %v\n", componentDesc.Spec.Source)
+		log.Describef("Source: ", componentDesc.Spec.Source)
 	}
 
 	// Env
 	if componentDesc.Spec.Env != nil {
-		fmt.Println("\nEnvironment variables:")
+
+		// Retrieve all the environment variables
+		var output string
 		for _, env := range componentDesc.Spec.Env {
-			fmt.Printf(" - %v=%v\n", env.Name, env.Value)
-		}
-	}
-	// Storage
-	if len(componentDesc.Spec.Storage) > 0 {
-		fmt.Println("\nStorage:")
-		storages, err := localConfig.StorageList()
-		LogErrorAndExit(err, "")
-		for _, store := range storages {
-			fmt.Printf(" - %v of size %v mounted to %v\n", store.Name, store.Size, store.Path)
-		}
-	}
-	// URL
-	if componentDesc.Spec.URL != nil {
-		fmt.Println("\nURLs")
-		urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
-		LogErrorAndExit(err, "")
-		for _, componentURL := range componentDesc.Spec.URL {
-			url := urls.Get(componentURL)
-			fmt.Printf(" - %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host), url.Spec.Port)
+			output += fmt.Sprintf(" · %v=%v\n", env.Name, env.Value)
 		}
 
+		// Cut off the last newline and output
+		output = output[:len(output)-1]
+		log.Describef("Environment Variables:\n", output)
 	}
-	// Linked services
-	if len(componentDesc.Status.LinkedServices) > 0 {
-		fmt.Print("Linked Services: ")
-		fmt.Printf("%v\n", strings.Join(componentDesc.Status.LinkedServices, ","))
+
+	// Storage
+	if len(componentDesc.Spec.Storage) > 0 {
+
+		// Retrieve the storage list
+		storages, err := localConfig.StorageList()
+		LogErrorAndExit(err, "")
+
+		// Gather the output
+		var output string
+		for _, store := range storages {
+			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Size, store.Path)
+		}
+
+		// Cut off the last newline and output
+		output = output[:len(output)-1]
+		log.Describef("Storage:\n", output)
 	}
+
+	// URL
+	if componentDesc.Spec.URL != nil {
+
+		// Retrieve the URLs
+		urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
+		LogErrorAndExit(err, "")
+
+		// Gather the output
+		var output string
+		for _, componentURL := range componentDesc.Spec.URL {
+			url := urls.Get(componentURL)
+			output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host), url.Spec.Port)
+		}
+
+		// Cut off the last newline and output
+		output = output[:len(output)-1]
+		log.Describef("URLs:\n", output)
+
+	}
+
 	// Linked components
 	if len(componentDesc.Status.LinkedComponents) > 0 {
-		fmt.Println("Linked Components")
+
+		// Gather the output
+		var output string
 		for name, ports := range componentDesc.Status.LinkedComponents {
 			if len(ports) > 0 {
-				fmt.Printf("Name: %v - Port(s): %v\n", name, strings.Join(ports, ","))
+				output += fmt.Sprintf(" · %v - Port(s): %v\n", name, strings.Join(ports, ","))
+			} else {
+				output += fmt.Sprintf(" · %v\n", name)
 			}
 		}
+
+		// Cut off the last newline and output
+		output = output[:len(output)-1]
+		log.Describef("Linked Components:\n", output)
+
 	}
+
+	// Linked services
+	if len(componentDesc.Status.LinkedServices) > 0 {
+
+		// Gather the output
+		var output string
+		for _, linkedService := range componentDesc.Status.LinkedServices {
+			output += fmt.Sprintf(" · %s\n", linkedService)
+		}
+
+		// Cut off the last newline and output
+		output = output[:len(output)-1]
+		log.Describef("Linked Services:\n", output)
+
+	}
+
 }
 
 // GetFullName generates a command's full name based on its parent's full name and its own name
