@@ -185,7 +185,7 @@ func resolveProject(command *cobra.Command, client *occlient.Client, lci *config
 		// check that the specified project exists
 		_, err = project.Exists(client, ns)
 		if err != nil {
-			e1 := fmt.Sprintf("You dont have permission to project '%s' or it doesnt exist. Please create or set a different project\n\t", ns)
+			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", ns)
 			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
