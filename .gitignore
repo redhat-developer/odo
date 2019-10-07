@@ -14,7 +14,7 @@ bin
 coverage.txt
 
 # Ignore test reports
-tests/reports/
+reports/
 
 #
 # GO SPECIFIC
@@ -75,4 +75,3 @@ tags
 
 # VSCode specific
 .vscode
-
