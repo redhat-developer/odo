@@ -26,7 +26,7 @@ func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
 
 	return ComponentTypeList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "ComponentTypeList",
+			Kind:       "List",
 			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		Items: catalogList,
