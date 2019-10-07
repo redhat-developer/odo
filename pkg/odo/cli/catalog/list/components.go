@@ -77,14 +77,14 @@ func (o *ListComponentsOptions) Run() (err error) {
 		}
 
 		if len(supCatalogList) != 0 {
-			fmt.Fprintln(w, "odo Supported OpenShift Components:")
+			fmt.Fprintln(w, "Odo Supported OpenShift Components:")
 			o.printCatalogList(w, supCatalogList)
 			fmt.Fprintln(w)
 
 		}
 
 		if len(unsupCatalogList) != 0 {
-			fmt.Fprintln(w, "OpenShift Components:")
+			fmt.Fprintln(w, "Odo Unsupported OpenShift Components:")
 			o.printCatalogList(w, unsupCatalogList)
 		}
 
