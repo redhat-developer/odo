@@ -50,7 +50,7 @@ var _ = Describe("odo app command tests", func() {
 			appList := helper.CmdShouldPass("odo", "app", "list", "--project", project)
 			Expect(appList).To(ContainSubstring("There are no applications deployed"))
 			actual := helper.CmdShouldPass("odo", "app", "list", "-o", "json", "--project", project)
-			desired := `{"kind":"ApplicationList","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[]}`
+			desired := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[]}`
 			Expect(desired).Should(MatchJSON(actual))
 
 			appDelete := helper.CmdShouldFail("odo", "app", "delete", "test", "--project", project, "-f")
@@ -118,7 +118,7 @@ var _ = Describe("odo app command tests", func() {
 			Expect(appListOutput).To(ContainSubstring(appName))
 			actualCompListJSON := helper.CmdShouldPass("odo", "app", "list", "-o", "json", "--project", project)
 			//desiredCompListJSON := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[]}`
-			desiredCompListJSON := fmt.Sprintf(`{"kind":"ApplicationList","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Application","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"app","namespace":"%s","creationTimestamp":null},"spec":{"components":["%s"]}}]}`, project, cmpName)
+			desiredCompListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"Application","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"app","namespace":"%s","creationTimestamp":null},"spec":{"components":["%s"]}}]}`, project, cmpName)
 			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 
 			helper.CmdShouldPass("odo", "app", "describe", appName, "--project", project)
