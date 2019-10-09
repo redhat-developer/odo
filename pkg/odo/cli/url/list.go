@@ -1,13 +1,13 @@
 package url
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -63,7 +63,7 @@ func (o *URLListOptions) Run() (err error) {
 	}
 
 	if log.IsJSON() {
-		out, err := json.Marshal(urls)
+		out, err := machineoutput.MarshalJSONIndented(urls)
 		if err != nil {
 			return err
 		}

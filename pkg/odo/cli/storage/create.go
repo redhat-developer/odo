@@ -1,11 +1,11 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
@@ -70,7 +70,7 @@ func (o *StorageCreateOptions) Run() (err error) {
 	storageResultMachineReadable := storage.GetMachineReadableFormat(storageResult.Name, storageResult.Size, storageResult.Path)
 
 	if log.IsJSON() {
-		out, err := json.Marshal(storageResultMachineReadable)
+		out, err := machineoutput.MarshalJSONIndented(storageResultMachineReadable)
 		if err != nil {
 			return err
 		}

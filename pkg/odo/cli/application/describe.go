@@ -1,12 +1,12 @@
 package application
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -65,7 +65,7 @@ func (o *DescribeOptions) Validate() (err error) {
 func (o *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
 		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
-		out, err := json.Marshal(appDef)
+		out, err := machineoutput.MarshalJSONIndented(appDef)
 		if err != nil {
 			return err
 		}
