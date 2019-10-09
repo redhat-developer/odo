@@ -85,7 +85,7 @@ func (o *URLDeleteOptions) Run() (err error) {
 func NewCmdURLDelete(name, fullName string) *cobra.Command {
 	o := NewURLDeleteOptions()
 	urlDeleteCmd := &cobra.Command{
-		Use:   name + " [component name]",
+		Use:   name + " [url name]",
 		Short: urlDeleteShortDesc,
 		Long:  urlDeleteLongDesc,
 		Args:  cobra.ExactArgs(1),
