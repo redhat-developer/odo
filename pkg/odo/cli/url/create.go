@@ -110,7 +110,7 @@ func (o *URLCreateOptions) Run() (err error) {
 func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	o := NewURLCreateOptions()
 	urlCreateCmd := &cobra.Command{
-		Use:     name + " [component name]",
+		Use:     name + " [url name]",
 		Short:   urlCreateShortDesc,
 		Long:    urlCreateLongDesc,
 		Example: fmt.Sprintf(urlCreateExample, fullName),
