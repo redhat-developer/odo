@@ -135,12 +135,12 @@ test-cmd-login-logout:
 # Run link and unlink command tests
 .PHONY: test-cmd-link-unlink
 test-cmd-link-unlink:
-	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/
+	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/servicecatalog/
 
 # Run odo service command tests
 .PHONY: test-cmd-service
 test-cmd-service:
-	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/
+	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/servicecatalog/
 
 # Run odo project command tests
 .PHONY: test-cmd-project
