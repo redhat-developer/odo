@@ -149,17 +149,17 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	o := NewListOptions()
 
 	var componentListCmd = &cobra.Command{
-		Use:     name,
-		Short:   "List all components in the current application",
-		Long:    "List all components in the current application.",
-		Example: fmt.Sprintf(listExample, fullName),
-		Args:    cobra.NoArgs,
+		Use:         name,
+		Short:       "List all components in the current application",
+		Long:        "List all components in the current application.",
+		Example:     fmt.Sprintf(listExample, fullName),
+		Args:        cobra.NoArgs,
+		Annotations: map[string]string{"machineoutput": "json", "command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	// Add a defined annotation in order to appear in the help menu
-	componentListCmd.Annotations = map[string]string{"command": "component"}
 	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
 	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path of the directory to scan for odo component directories")
 	componentListCmd.Flags().BoolVar(&o.allFlag, "all", false, "lists all components")

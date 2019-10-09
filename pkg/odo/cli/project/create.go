@@ -93,11 +93,12 @@ func NewCmdProjectCreate(name, fullName string) *cobra.Command {
 	o := NewProjectCreateOptions()
 
 	projectCreateCmd := &cobra.Command{
-		Use:     name,
-		Short:   createShortDesc,
-		Long:    createLongDesc,
-		Example: fmt.Sprintf(createExample, fullName),
-		Args:    cobra.ExactArgs(1),
+		Use:         name,
+		Short:       createShortDesc,
+		Long:        createLongDesc,
+		Example:     fmt.Sprintf(createExample, fullName),
+		Args:        cobra.ExactArgs(1),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

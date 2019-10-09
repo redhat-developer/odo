@@ -571,11 +571,12 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 func NewCmdCreate(name, fullName string) *cobra.Command {
 	co := NewCreateOptions()
 	var componentCreateCmd = &cobra.Command{
-		Use:     fmt.Sprintf("%s <component_type> [component_name] [flags]", name),
-		Short:   "Create a new component",
-		Long:    createLongDesc,
-		Example: fmt.Sprintf(createExample, fullName),
-		Args:    cobra.RangeArgs(0, 2),
+		Use:         fmt.Sprintf("%s <component_type> [component_name] [flags]", name),
+		Short:       "Create a new component",
+		Long:        createLongDesc,
+		Example:     fmt.Sprintf(createExample, fullName),
+		Args:        cobra.RangeArgs(0, 2),
+		Annotations: map[string]string{"machineoutput": "json", "component": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
@@ -593,7 +594,6 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 	// Add a defined annotation in order to appear in the help menu
-	componentCreateCmd.Annotations = map[string]string{"command": "component"}
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// Adding `--now` flag

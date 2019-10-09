@@ -110,11 +110,12 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	po := NewPushOptions()
 
 	var pushCmd = &cobra.Command{
-		Use:     fmt.Sprintf("%s [component name]", name),
-		Short:   "Push source code to a component",
-		Long:    `Push source code to a component.`,
-		Example: fmt.Sprintf(pushCmdExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Use:         fmt.Sprintf("%s [component name]", name),
+		Short:       "Push source code to a component",
+		Long:        `Push source code to a component.`,
+		Example:     fmt.Sprintf(pushCmdExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(po, cmd, args)
 		},
@@ -127,7 +128,6 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to force building the component")
 
 	// Add a defined annotation in order to appear in the help menu
-	pushCmd.Annotations = map[string]string{"command": "component"}
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)
 	completion.RegisterCommandFlagHandler(pushCmd, "context", completion.FileCompletionHandler)

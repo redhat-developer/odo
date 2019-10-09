@@ -119,11 +119,12 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	do := NewDeleteOptions()
 
 	var componentDeleteCmd = &cobra.Command{
-		Use:     fmt.Sprintf("%s <component_name>", name),
-		Short:   "Delete component",
-		Long:    "Delete component.",
-		Example: fmt.Sprintf(deleteExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Use:         fmt.Sprintf("%s <component_name>", name),
+		Short:       "Delete component",
+		Long:        "Delete component.",
+		Example:     fmt.Sprintf(deleteExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(do, cmd, args)
 		},
@@ -133,7 +134,6 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteAllFlag, "all", "a", false, "Delete component and local config")
 
 	// Add a defined annotation in order to appear in the help menu
-	componentDeleteCmd.Annotations = map[string]string{"command": "component"}
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
 	//Adding `--context` flag

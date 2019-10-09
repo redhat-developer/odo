@@ -17,10 +17,14 @@ type Runnable interface {
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
+	//flag.CommandLine.MarkHidden("o")
+
+	//flag.CommandLine.Lookup("o").Hidden = true
+	cmd.Flag("o").Hidden = true
 
 	// CheckMachineReadableOutput
 	// fixes / checks all related machine readable output functions
-	CheckMachineReadableOutputCommand()
+	CheckMachineReadableOutputCommand(cmd)
 
 	// Run completion, validation and run.
 	util.LogErrorAndExit(o.Complete(cmd.Name(), cmd, args), "")
@@ -30,12 +34,27 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 // CheckMachineReadableOutputCommand performs machine-readable output functions required to
 // have it work correctly
-func CheckMachineReadableOutputCommand() {
+func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 
-	// Check that the -o flag has been correctly set as json.
+	// Get the needed values
 	outputFlag := pflag.Lookup("o")
-	if outputFlag != nil && outputFlag.Changed && outputFlag.Value.String() != "json" {
+	hasFlagChanged := outputFlag != nil && outputFlag.Changed
+	machineOutput := cmd.Annotations["machineoutput"]
+
+	// Check the valid output
+	if hasFlagChanged && outputFlag.Value.String() != "json" {
 		log.Error("Please input a valid output format for -o, available format: json")
+		os.Exit(1)
+	}
+
+	// Check that if -o json has been passed, that the command actually USES json.. if not, error out.
+	if hasFlagChanged && outputFlag.Value.String() == "json" && machineOutput == "" {
+
+		// By default we "disable" logging, so undisable it so that the below error can be shown.
+		flag.Set("o", "")
+
+		// Output the error
+		log.Error("Machine readable output is not yet implemented for this command")
 		os.Exit(1)
 	}
 

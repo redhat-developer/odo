@@ -112,17 +112,19 @@ func (o *DescribeOptions) Run() (err error) {
 func NewCmdDescribe(name, fullName string) *cobra.Command {
 	o := NewDescribeOptions()
 	command := &cobra.Command{
-		Use:     fmt.Sprintf("%s [application_name]", name),
-		Short:   "Describe the given application",
-		Long:    "Describe the given application",
-		Example: fmt.Sprintf(describeExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Use:         fmt.Sprintf("%s [application_name]", name),
+		Short:       "Describe the given application",
+		Long:        "Describe the given application",
+		Example:     fmt.Sprintf(describeExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 
 	completion.RegisterCommandHandler(command, completion.AppCompletionHandler)
+
 	project.AddProjectFlag(command)
 	return command
 }

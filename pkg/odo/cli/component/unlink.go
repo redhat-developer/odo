@@ -73,11 +73,12 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	o := NewUnlinkOptions()
 
 	unlinkCmd := &cobra.Command{
-		Use:     fmt.Sprintf("%s <service> --component [component] OR %s <component> --component [component]", name, name),
-		Short:   "Unlink component to a service or component",
-		Long:    unlinkLongDesc,
-		Example: fmt.Sprintf(unlinkExample, fullName),
-		Args:    cobra.ExactArgs(1),
+		Use:         fmt.Sprintf("%s <service> --component [component] OR %s <component> --component [component]", name, name),
+		Short:       "Unlink component to a service or component",
+		Long:        unlinkLongDesc,
+		Example:     fmt.Sprintf(unlinkExample, fullName),
+		Args:        cobra.ExactArgs(1),
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
@@ -87,7 +88,6 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	unlinkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is deleted")
 
 	// Add a defined annotation in order to appear in the help menu
-	unlinkCmd.Annotations = map[string]string{"command": "component"}
 	unlinkCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(unlinkCmd)

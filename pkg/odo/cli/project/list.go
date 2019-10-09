@@ -81,11 +81,12 @@ func (plo *ProjectListOptions) Run() (err error) {
 func NewCmdProjectList(name, fullName string) *cobra.Command {
 	o := NewProjectListOptions()
 	projectListCmd := &cobra.Command{
-		Use:     name,
-		Short:   listLongDesc,
-		Long:    listLongDesc,
-		Example: fmt.Sprintf(listExample, fullName),
-		Args:    cobra.ExactArgs(0),
+		Use:         name,
+		Short:       listLongDesc,
+		Long:        listLongDesc,
+		Example:     fmt.Sprintf(listExample, fullName),
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

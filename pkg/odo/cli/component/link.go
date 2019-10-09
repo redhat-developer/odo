@@ -119,11 +119,12 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	o := NewLinkOptions()
 
 	linkCmd := &cobra.Command{
-		Use:     fmt.Sprintf("%s <service> --component [component] OR %s <component> --component [component]", name, name),
-		Short:   "Link component to a service or component",
-		Long:    linkLongDesc,
-		Example: fmt.Sprintf(linkExample, fullName),
-		Args:    cobra.ExactArgs(1),
+		Use:         fmt.Sprintf("%s <service> --component [component] OR %s <component> --component [component]", name, name),
+		Short:       "Link component to a service or component",
+		Long:        linkLongDesc,
+		Example:     fmt.Sprintf(linkExample, fullName),
+		Args:        cobra.ExactArgs(1),
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
@@ -134,7 +135,6 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
 
 	// Add a defined annotation in order to appear in the help menu
-	linkCmd.Annotations = map[string]string{"command": "component"}
 	linkCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(linkCmd)

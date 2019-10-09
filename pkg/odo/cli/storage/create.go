@@ -86,11 +86,12 @@ func (o *StorageCreateOptions) Run() (err error) {
 func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	o := NewStorageCreateOptions()
 	storageCreateCmd := &cobra.Command{
-		Use:     name,
-		Short:   urlCreateShortDesc,
-		Long:    urlCreateLongDesc,
-		Example: fmt.Sprintf(urlCreateExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Use:         name,
+		Short:       urlCreateShortDesc,
+		Long:        urlCreateLongDesc,
+		Example:     fmt.Sprintf(urlCreateExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

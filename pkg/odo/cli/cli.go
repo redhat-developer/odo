@@ -140,6 +140,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", odoutil.CapitalizeFlagDescriptions)
+	cobra.AddTemplateFunc("ModifyAdditionalFlags", odoutil.ModifyAdditionalFlags)
 
 	rootCmd.AddCommand(
 		application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),
