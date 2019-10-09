@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -392,4 +393,16 @@ func (oc *OcRunner) GetEnvs(componentName string, appName string, projectName st
 		mapOutput[name] = value
 	}
 	return mapOutput
+}
+
+// WaitForDCRollout wait for DeploymentConfig to finish active rollout
+// timeout is a maximum wait time in seconds
+func (oc *OcRunner) WaitForDCRollout(dcName string, project string, timeout time.Duration) {
+	session := CmdRunner(oc.path, "rollout", "status",
+		"-w",
+		"-n", project,
+		"dc", dcName)
+
+	Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
+	session.Wait(timeout)
 }

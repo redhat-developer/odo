@@ -74,7 +74,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 		})
 	})
 
-	Context("When handiling link/unlink between components", func() {
+	Context("When handling link/unlink between components", func() {
 		JustBeforeEach(func() {
 			context1 = helper.CreateNewContext()
 			context2 = helper.CreateNewContext()
@@ -86,14 +86,24 @@ var _ = Describe("odo link and unlink command tests", func() {
 		It("should link the frontend application to the backend and then unlink successfully", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
 			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context1)
 			helper.CmdShouldPass("odo", "push", "--context", context1)
+			frontendUrl := helper.DetermineRouteURL(context1)
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
+			helper.CmdShouldPass("odo", "url", "create", "--context", context2)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
+
 			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
+
+			dcName := oc.GetDcName("frontend", project)
+			// wait for DeploymentConfig rollout to finish, so we can check if application is successfully running
+			oc.WaitForDCRollout(dcName, project, 20*time.Second)
+			helper.HttpWaitFor(frontendUrl, "Hello world from node.js!", 20, 1)
+
 			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
 			Expect(outputErr).To(ContainSubstring("been linked"))
 			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project, "--context", context2)
