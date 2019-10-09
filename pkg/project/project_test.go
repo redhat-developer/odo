@@ -16,6 +16,83 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+func TestCreate(t *testing.T) {
+	tests := []struct {
+		name        string
+		wantErr     bool
+		projectName string
+	}{
+		{
+			name:        "Case 1: project name is given",
+			wantErr:     false,
+			projectName: "project1",
+		},
+		{
+			name:        "Case 2: no project name given",
+			wantErr:     true,
+			projectName: "",
+		},
+	}
+
+	odoConfigFile, kubeConfigFile, err := testingutil.SetUp(
+		testingutil.ConfigDetails{
+			FileName:      "odo-test-config",
+			Config:        testingutil.FakeOdoConfig("odo-test-config", false, ""),
+			ConfigPathEnv: "GLOBALODOCONFIG",
+		}, testingutil.ConfigDetails{
+			FileName:      "kube-test-config",
+			Config:        testingutil.FakeKubeClientConfig(),
+			ConfigPathEnv: "KUBECONFIG",
+		},
+	)
+	defer testingutil.CleanupEnv([]*os.File{odoConfigFile, kubeConfigFile}, t)
+	if err != nil {
+		t.Errorf("failed to create mock odo and kube config files. Error %v", err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Fake the client with the appropriate arguments
+			client, fakeClientSet := occlient.FakeNew()
+
+			loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+			configOverrides := &clientcmd.ConfigOverrides{}
+			client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+			fkWatch := watch.NewFake()
+
+			fakeClientSet.ProjClientset.PrependReactor("create", "projectrequests", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if action.(ktesting.CreateAction).GetNamespace() == "project2" {
+					return true, nil, nil
+				}
+				return true, nil, nil
+			})
+
+			go func() {
+				fkWatch.Add(testingutil.FakeProjectStatus(corev1.NamespacePhase(""), tt.projectName))
+			}()
+			fakeClientSet.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			// The function we are testing
+			err := Create(client, tt.projectName, true)
+
+			if err == nil && !tt.wantErr {
+				if len(fakeClientSet.ProjClientset.Actions()) != 2 {
+					t.Errorf("expected 2 ProjClientSet.Actions() in Project Create, got: %v", len(fakeClientSet.ProjClientset.Actions()))
+				}
+			}
+
+			// Checks for error in positive cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("project Create() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+
+}
+
 func TestDelete(t *testing.T) {
 	tests := []struct {
 		name        string
