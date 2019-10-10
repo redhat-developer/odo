@@ -409,8 +409,6 @@ func addBootstrapSupervisordInitContainer(dc *appsv1.DeploymentConfig, dcName st
 		corev1.Container{
 			Name:  "copy-supervisord",
 			Image: getBootstrapperImage(),
-			//TODO(kadel): remove PullAlways, just for testing
-			ImagePullPolicy: corev1.PullAlways,
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      supervisordVolumeName,
