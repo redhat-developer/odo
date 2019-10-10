@@ -85,6 +85,8 @@ func NewEnvVarListFromSlice(envList []string) (EnvVarList, error) {
 // RemoveEnvVarsFromList removes the env variables based on the keys provided
 // and returns a new EnvVarList
 func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) EnvVarList {
+	removeEqualsFromEnvList(&keys)
+
 	newEnvVarList := EnvVarList{}
 	for _, envVar := range envVarList {
 		// if the env is in the keys we skip it
@@ -95,4 +97,16 @@ func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) EnvVarList {
 		newEnvVarList = append(newEnvVarList, envVar)
 	}
 	return newEnvVarList
+}
+
+// removeEqualsFromEnvList removes the equal sign from the list of environment variables
+// if (for example) foo=bar was passed in. Since we're only interested in the actual variable name
+// we don't care if foo=bar=foobar has been passed in.. Only the first value.
+func removeEqualsFromEnvList(keys *[]string) {
+
+	// Iterate through, if key contains "=", split it.
+	for index, key := range *keys {
+		(*keys)[index] = strings.Split(key, "=")[0]
+	}
+
 }

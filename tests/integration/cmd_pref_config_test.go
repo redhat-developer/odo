@@ -248,6 +248,7 @@ var _ = Describe("odo preference and config command tests", func() {
 			os.Unsetenv("GLOBALODOCONFIG")
 			helper.DeleteDir(context)
 		})
+
 		It("should set and unset env variables", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "config", "set", "--env", "PORT=4000", "--env", "PORT=1234", "--context", context)
@@ -262,6 +263,23 @@ var _ = Describe("odo preference and config command tests", func() {
 			Expect(configValue).To(Not(ContainSubstring(("PORT"))))
 			Expect(configValue).To(Not(ContainSubstring(("SECRET_KEY"))))
 		})
+
+		It("should be able to unset an environment variable with foo=bar", func() {
+
+			// Create the project
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
+
+			// Test out passing in with an equals sign
+			helper.CmdShouldPass("odo", "config", "set", "--env", "FOOBAR=foobar", "--context", context)
+			output := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			Expect(output).To(ContainSubstring("FOOBAR"))
+
+			// Check that we can remove it
+			helper.CmdShouldPass("odo", "config", "unset", "--env", "FOOBAR=foobar", "--context", context)
+			output = helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			Expect(output).NotTo(ContainSubstring("FOOBAR"))
+		})
+
 	})
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {

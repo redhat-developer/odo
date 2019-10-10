@@ -80,9 +80,8 @@ func (o *UnsetOptions) Validate() (err error) {
 // Run contains the logic for the command
 func (o *UnsetOptions) Run() (err error) {
 
-	// env variables have been provided
+	// Update the environment variables
 	if o.envArray != nil {
-
 		envList := o.lci.GetEnvVars()
 		newEnvList := config.RemoveEnvVarsFromList(envList, o.envArray)
 		if err := o.lci.SetEnvVars(newEnvList); err != nil {
@@ -93,6 +92,7 @@ func (o *UnsetOptions) Run() (err error) {
 		return nil
 	}
 
+	// Update the parameters
 	if isSet := o.lci.IsSet(o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the config", o.paramName)) {
 			fmt.Println("Aborted by the user.")
