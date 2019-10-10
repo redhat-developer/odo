@@ -44,8 +44,10 @@ var _ = Describe("odo project command tests", func() {
 			Expect(listOutput).To(ContainSubstring(project))
 
 			// project deletion doesn't happen immediately, so we test subset of the string
-			listOutputJson := helper.CmdShouldPass("odo", "project", "list", "-o", "json")
-			Expect(listOutputJson).To(ContainSubstring(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`))
+			listOutputJSON, err := helper.Unindented(helper.CmdShouldPass("odo", "project", "list", "-o", "json"))
+			Expect(err).Should(BeNil())
+			expected := `{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`
+			Expect(listOutputJSON).To(ContainSubstring(expected))
 		})
 	})
 })
