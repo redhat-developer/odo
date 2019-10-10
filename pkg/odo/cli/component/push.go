@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -85,7 +86,7 @@ func (po *PushOptions) Validate() (err error) {
 		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
 	}
 
-	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfigInfo.GetComponentSettings(), po.isCmpExists, false); err != nil {
+	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.localConfigInfo.GetComponentSettings(), po.componentContext); err != nil {
 		s.End(false)
 		log.Info("Run 'odo catalog list components' for a list of supported component types")
 		return fmt.Errorf("Invalid component type %s, %v", *po.localConfigInfo.GetComponentSettings().Type, errors.Cause(err))
