@@ -363,11 +363,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		co.componentSettings.Name = &componentName
 
+		var ports []string
+
 		if commonui.Proceed("Do you wish to set advanced options") {
-			ports := ui.EnterPorts()
-			if len(ports) > 0 {
-				co.componentSettings.Ports = &ports
-			}
+			// if the user doesn't opt for advanced options, ports field would remain unpopulated
+			// we then set it at the end of this function
+			ports = ui.EnterPorts()
+
 			co.componentEnvVars = ui.EnterEnvVars()
 
 			if commonui.Proceed("Do you wish to set resource limits") {
@@ -394,6 +396,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 			}
 		}
+
+		// if user didn't opt for advanced options, "ports" value remains empty which panics the "odo push"
+		// so we set the ports here
+		if len(ports) == 0 {
+			ports, err = co.Client.GetPortsFromBuilderImage(*co.componentSettings.Type)
+			if err != nil {
+				return err
+			}
+		}
+
+		co.componentSettings.Ports = &ports
 		// Above code is for INTERACTIVE mode
 
 	} else {
