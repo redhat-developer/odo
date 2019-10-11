@@ -135,6 +135,7 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 		envVarList EnvVarList
 		expected   EnvVarList
 		keys       []string
+		wantErr    bool
 	}{
 		{
 			envVarList: EnvVarList{
@@ -205,15 +206,29 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 			expected: EnvVarList{},
 			keys:     []string{"foo"},
 		},
+		{
+			envVarList: EnvVarList{},
+			expected:   nil,
+			keys:       []string{"nosuchenv"},
+			wantErr:    true,
+		},
 	}
 
 	for _, testCase := range cases {
 
-		envVarList := RemoveEnvVarsFromList(testCase.envVarList, testCase.keys)
+		envVarList, err := RemoveEnvVarsFromList(testCase.envVarList, testCase.keys)
 		// expected an error
-
-		if !reflect.DeepEqual(envVarList, testCase.expected) {
-			t.Errorf("the %+v and %+v are not equal", envVarList, testCase.expected)
+		if testCase.wantErr {
+			if envVarList != nil || err == nil {
+				t.Errorf("expected error for %s", testCase.envVarList)
+			}
+		} else {
+			if err != nil {
+				t.Error(err)
+			}
+			if !reflect.DeepEqual(envVarList, testCase.expected) {
+				t.Errorf("the %+v and %+v are not equal", envVarList, testCase.expected)
+			}
 		}
 	}
 
