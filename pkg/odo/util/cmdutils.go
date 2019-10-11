@@ -71,7 +71,7 @@ func CheckOutputFlag(outputFlag string) error {
 }
 
 // PrintComponentInfo prints Component Information like path, URL & storage
-func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string) {
+func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string, project string) {
 	localConfig, err := config.New()
 	if err != nil {
 		LogErrorAndExit(err, "")
@@ -162,7 +162,24 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		// Gather the output
 		var output string
 		for _, linkedService := range componentDesc.Status.LinkedServices {
-			output += fmt.Sprintf(" · %s\n", linkedService)
+
+			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
+			secrets, err := client.GetSecret(linkedService, project)
+			LogErrorAndExit(err, "")
+
+			if len(secrets.Data) > 0 {
+				// Iterate through the secrets to throw in a string
+				var secretOutput string
+				for i := range secrets.Data {
+					secretOutput += fmt.Sprintf("    · %v\n", i)
+				}
+				// Cut off the last newline
+				secretOutput = secretOutput[:len(secretOutput)-1]
+				output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService, secretOutput)
+			} else {
+				output += fmt.Sprintf(" · %s\n", linkedService)
+			}
+
 		}
 
 		// Cut off the last newline and output
