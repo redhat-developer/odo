@@ -85,6 +85,11 @@ func NewEnvVarListFromSlice(envList []string) (EnvVarList, error) {
 // RemoveEnvVarsFromList removes the env variables based on the keys provided
 // and returns a new EnvVarList
 func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) (EnvVarList, error) {
+	// if no keys are to be removed, just return the existing list without any errors
+	if len(keys) == 0 {
+		return envVarList, nil
+	}
+
 	envVarInList := false
 	newEnvVarList := EnvVarList{}
 	for _, envVar := range envVarList {
