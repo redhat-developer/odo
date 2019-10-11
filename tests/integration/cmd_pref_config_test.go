@@ -267,10 +267,10 @@ var _ = Describe("odo preference and config command tests", func() {
 			helper.CmdShouldPass("odo", "config", "set", "--env", "PORT=4000", "--env", "PORT=1234", "--context", context)
 
 			// unset a valid env var
-			helper.CmdShouldPass("odo", "config", "unset", "--env", "PORT")
+			helper.CmdShouldPass("odo", "config", "unset", "--env", "PORT", "--context", context)
 
 			// try to unset an env var that doesn't exist
-			stdOut := helper.CmdShouldFail("odo", "config", "unset", "--env", "nosuchenv")
+			stdOut := helper.CmdShouldFail("odo", "config", "unset", "--env", "nosuchenv", "--context", context)
 			Expect(stdOut).To(ContainSubstring("Cannot find environment variable in the component's configuration"))
 		})
 	})
