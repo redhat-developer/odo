@@ -84,15 +84,20 @@ func NewEnvVarListFromSlice(envList []string) (EnvVarList, error) {
 
 // RemoveEnvVarsFromList removes the env variables based on the keys provided
 // and returns a new EnvVarList
-func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) EnvVarList {
+func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) (EnvVarList, error) {
+	envVarInList := false
 	newEnvVarList := EnvVarList{}
 	for _, envVar := range envVarList {
 		// if the env is in the keys we skip it
 		if util.In(keys, envVar.Name) {
+			envVarInList = true
 			continue
 		}
 
 		newEnvVarList = append(newEnvVarList, envVar)
 	}
-	return newEnvVarList
+	if envVarInList {
+		return newEnvVarList, nil
+	}
+	return nil, errors.New(fmt.Sprintf("Cannot find environment variable in the component's configuration.\nCheck `odo config view` to confirm it exists."))
 }

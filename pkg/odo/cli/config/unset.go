@@ -84,12 +84,17 @@ func (o *UnsetOptions) Run() (err error) {
 	if o.envArray != nil {
 
 		envList := o.lci.GetEnvVars()
-		newEnvList := config.RemoveEnvVarsFromList(envList, o.envArray)
-		if err := o.lci.SetEnvVars(newEnvList); err != nil {
+		newEnvList, err := config.RemoveEnvVarsFromList(envList, o.envArray)
+		if err != nil {
+			return err
+		}
+
+		if err = o.lci.SetEnvVars(newEnvList); err != nil {
 			return err
 		}
 
 		log.Info("Environment variables were successfully updated.")
+		log.Info("Run `odo push --config` command to apply changes to the cluster.")
 		return nil
 	}
 
