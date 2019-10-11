@@ -1,7 +1,6 @@
 package component
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/application"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -67,7 +67,7 @@ func (lo *ListOptions) Run() (err error) {
 			return err
 		}
 		if log.IsJSON() {
-			out, err := json.Marshal(components)
+			out, err := machineoutput.MarshalJSONIndented(components)
 			if err != nil {
 				return err
 			}
@@ -123,7 +123,7 @@ func (lo *ListOptions) Run() (err error) {
 
 	if log.IsJSON() {
 
-		out, err := json.Marshal(components)
+		out, err := machineoutput.MarshalJSONIndented(components)
 		if err != nil {
 			return err
 		}

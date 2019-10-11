@@ -2,7 +2,6 @@ package util
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -590,7 +590,7 @@ func MachineOutput(outputFlag string, resource interface{}) (string, error) {
 	switch outputFlag {
 	case "json":
 		// If `-o json` is provided
-		out, err = json.Marshal(resource)
+		out, err = machineoutput.MarshalJSONIndented(resource)
 	}
 
 	return string(out), err

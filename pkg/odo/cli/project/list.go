@@ -1,12 +1,12 @@
 package project
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -53,7 +53,7 @@ func (plo *ProjectListOptions) Run() (err error) {
 		return err
 	}
 	if log.IsJSON() {
-		out, err := json.Marshal(projects)
+		out, err := machineoutput.MarshalJSONIndented(projects)
 		if err != nil {
 			return err
 		}

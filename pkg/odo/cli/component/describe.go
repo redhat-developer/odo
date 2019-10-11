@@ -1,11 +1,11 @@
 package component
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/openshift/odo/pkg/component"
@@ -70,7 +70,7 @@ func (do *DescribeOptions) Run() (err error) {
 	}
 	if log.IsJSON() {
 		componentDesc.Spec.Ports = do.localConfigInfo.GetPorts()
-		out, err := json.Marshal(componentDesc)
+		out, err := machineoutput.MarshalJSONIndented(componentDesc)
 		if err != nil {
 			return err
 		}

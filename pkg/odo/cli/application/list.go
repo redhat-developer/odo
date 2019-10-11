@@ -1,13 +1,13 @@
 package application
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -68,7 +68,7 @@ func (o *ListOptions) Run() (err error) {
 			}
 
 			appListDef := application.GetMachineReadableFormatForList(appList)
-			out, err := json.Marshal(appListDef)
+			out, err := machineoutput.MarshalJSONIndented(appListDef)
 			if err != nil {
 				return err
 			}
@@ -91,7 +91,7 @@ func (o *ListOptions) Run() (err error) {
 		}
 	} else {
 		if log.IsJSON() {
-			out, err := json.Marshal(application.GetMachineReadableFormatForList([]application.App{}))
+			out, err := machineoutput.MarshalJSONIndented(application.GetMachineReadableFormatForList([]application.App{}))
 			if err != nil {
 				return err
 			}

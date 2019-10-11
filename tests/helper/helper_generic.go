@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -62,4 +63,19 @@ func DontMatchAllInOutput(output string, tonotmatch []string) {
 	for _, i := range tonotmatch {
 		Expect(output).ToNot(ContainSubstring(i))
 	}
+}
+
+// Unindented returns the unindented version of the jsonStr passed to it
+func Unindented(jsonStr string) (string, error) {
+	var tmpMap map[string]interface{}
+	err := json.Unmarshal([]byte(jsonStr), &tmpMap)
+	if err != nil {
+		return "", err
+	}
+
+	obj, err := json.Marshal(tmpMap)
+	if err != nil {
+		return "", err
+	}
+	return string(obj), err
 }

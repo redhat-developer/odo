@@ -39,13 +39,16 @@ var _ = Describe("odo project command tests", func() {
 	})
 
 	Context("when running project command app parameter in directory that doesn't contain .odo config directory", func() {
-		It("should successfully execute list along with machine readable output", func() {
+		FIt("should successfully execute list along with machine readable output", func() {
 			listOutput := helper.CmdShouldPass("odo", "project", "list")
 			Expect(listOutput).To(ContainSubstring(project))
 
 			// project deletion doesn't happen immediately, so we test subset of the string
-			listOutputJson := helper.CmdShouldPass("odo", "project", "list", "-o", "json")
-			Expect(listOutputJson).To(ContainSubstring(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`))
+			listOutputJSON, err := helper.Unindented(helper.CmdShouldPass("odo", "project", "list", "-o", "json"))
+			Expect(err).Should(BeNil())
+			expected, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
+			Expect(err).Should(BeNil())
+			Expect(listOutputJSON).To(ContainSubstring(expected))
 		})
 	})
 })

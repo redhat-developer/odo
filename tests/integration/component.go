@@ -107,8 +107,12 @@ func componentTests(args ...string) {
 			} else {
 				contextPath = strings.TrimSpace(context)
 			}
-			desired := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Not Pushed"}}`, project, contextPath)
-			actual := helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", filepath.Dir(context))...)
+			// this orders the json
+			desired, err := helper.Unindented(fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Not Pushed"}}`, project, contextPath))
+			Expect(err).Should(BeNil())
+
+			actual, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", filepath.Dir(context))...))
+			Expect(err).Should(BeNil())
 			// since the tests are run parallel, there might be many odo component directories in the root folder
 			// so we only check for the presence of the current one
 			Expect(actual).Should(ContainSubstring(desired))
@@ -136,12 +140,20 @@ func componentTests(args ...string) {
 				contextPath2 = strings.TrimSpace(context2)
 			}
 
-			actual := helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", filepath.Dir(context))...)
+			actual, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "list", "-o", "json", "--path", filepath.Dir(context))...))
+			Expect(err).Should(BeNil())
 			helper.Chdir(context)
 			helper.DeleteDir(context2)
 			helper.DeleteProject(project2)
-			Expect(actual).Should(ContainSubstring(fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}`, project, contextPath)))
-			Expect(actual).Should(ContainSubstring(fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"python","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"python","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}`, project2, contextPath2)))
+			// this orders the json
+			expected, err := helper.Unindented(fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}`, project, contextPath))
+			Expect(err).Should(BeNil())
+			Expect(actual).Should(ContainSubstring(expected))
+			// this orders the json
+			expected, err = helper.Unindented(fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"python","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"python","source":"./","ports":["8080/TCP"]},"status":{"context":"%s","state":"Pushed"}}`, project2, contextPath2))
+			Expect(err).Should(BeNil())
+			Expect(actual).Should(ContainSubstring(expected))
+
 		})
 
 		It("should create the component from the branch ref when provided", func() {

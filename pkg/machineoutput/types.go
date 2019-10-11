@@ -32,7 +32,7 @@ type GenericSuccess struct {
 
 // OutputSuccess outputs a "successful" machine-readable output format in json
 func OutputSuccess(machineOutput interface{}) {
-	printableOutput, err := json.Marshal(machineOutput)
+	printableOutput, err := MarshalJSONIndented(machineOutput)
 
 	// If we error out... there's no way to output it (since we disable logging when using -o json)
 	if err != nil {
@@ -44,7 +44,7 @@ func OutputSuccess(machineOutput interface{}) {
 
 // OutputError outputs a "successful" machine-readable output format in json
 func OutputError(machineOutput interface{}) {
-	printableOutput, err := json.Marshal(machineOutput)
+	printableOutput, err := MarshalJSONIndented(machineOutput)
 
 	// If we error out... there's no way to output it (since we disable logging when using -o json)
 	if err != nil {
@@ -52,4 +52,9 @@ func OutputError(machineOutput interface{}) {
 	} else {
 		fmt.Fprintf(log.GetStderr(), "%s\n", string(printableOutput))
 	}
+}
+
+// MarshalJSONIndented returns indented json representation of obj
+func MarshalJSONIndented(obj interface{}) ([]byte, error) {
+	return json.MarshalIndent(obj, "", "    ")
 }
