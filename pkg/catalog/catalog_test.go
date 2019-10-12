@@ -143,6 +143,31 @@ func TestListComponents(t *testing.T) {
 
 func TestSliceSupportedTags(t *testing.T) {
 
+	imageStream := MockImageStream()
+
+	img := ComponentType{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nodejs",
+			Namespace: "openshift",
+		},
+		Spec: ComponentSpec{
+			NonHiddenTags: []string{
+				"10", "8", "6", "latest",
+			},
+			ImageStreamRef: *imageStream,
+		},
+	}
+
+	supTags, unSupTags := SliceSupportedTags(img)
+
+	if !reflect.DeepEqual(supTags, []string{"10", "8", "latest"}) ||
+		!reflect.DeepEqual(unSupTags, []string{"6"}) {
+		t.Fatal("supported or unsupported tags are not as expected")
+	}
+}
+
+func MockImageStream() *imagev1.ImageStream {
+
 	tags := map[string]string{
 		"10": "docker.io/rhoar-nodejs/nodejs-10",
 		"8":  "docker.io/rhoar-nodejs/nodejs-8",
@@ -178,23 +203,5 @@ func TestSliceSupportedTags(t *testing.T) {
 			},
 		})
 
-	img := ComponentType{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nodejs",
-			Namespace: "openshift",
-		},
-		Spec: ComponentSpec{
-			NonHiddenTags: []string{
-				"10", "8", "6", "latest",
-			},
-			ImageStreamRef: *imageStream,
-		},
-	}
-
-	supTags, unSupTags := SliceSupportedTags(img)
-
-	if !reflect.DeepEqual(supTags, []string{"10", "8", "latest"}) ||
-		!reflect.DeepEqual(unSupTags, []string{"6"}) {
-		t.Fatal("supported or unsupported tags are not as expected")
-	}
+	return imageStream
 }
