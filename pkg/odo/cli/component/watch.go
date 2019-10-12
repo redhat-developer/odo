@@ -86,16 +86,16 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 // Validate validates the watch parameters
 func (wo *WatchOptions) Validate() (err error) {
 
-	// Validate component path existence and accessibility permissions for odo
-	if _, err := os.Stat(wo.sourcePath); err != nil {
-		return errors.Wrapf(err, "Cannot watch %s", wo.sourcePath)
-	}
-
 	// Validate source of component is either local source or binary path until git watch is supported
 	if wo.sourceType != "binary" && wo.sourceType != "local" {
 		return fmt.Errorf("Watch is supported by binary and local components only and source type of component %s is %s",
 			wo.localConfig.GetName(),
 			wo.sourceType)
+	}
+
+	// Validate component path existence and accessibility permissions for odo
+	if _, err := os.Stat(wo.sourcePath); err != nil {
+		return errors.Wrapf(err, "Cannot watch %s", wo.sourcePath)
 	}
 
 	// Delay interval cannot be -ve

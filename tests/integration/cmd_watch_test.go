@@ -49,4 +49,12 @@ var _ = Describe("odo watch command tests", func() {
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create you component"))
 		})
 	})
+
+	Context("when executing watch on a git source type component", func() {
+		It("should fail", func() {
+			helper.CmdShouldPass("odo", "create", "--context", context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git")
+			output := helper.CmdShouldFail("odo", "watch", "--context", context)
+			Expect(output).To(ContainSubstring("Watch is supported by binary and local components only"))
+		})
+	})
 })
