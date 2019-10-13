@@ -48,6 +48,7 @@ func NewUpdateOptions() *UpdateOptions {
 		CommonPushOptions: &CommonPushOptions{
 			pushConfig: true, // we assume if someone updates then the config is only pushed
 			show:       false,
+			forceBuild: false,
 		}}
 }
 
@@ -120,17 +121,6 @@ func (uo *UpdateOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (uo *UpdateOptions) Run() (err error) {
-	if err = uo.Push(); err != nil {
-		return errors.Wrap(err, "error while updating")
-	}
-
-	cmpSrcType := uo.localConfigInfo.GetSourceType()
-	cmpName := uo.localConfigInfo.GetName()
-	if cmpSrcType == config.GIT {
-		log.Successf("The component %s was updated successfully", cmpName)
-	} else {
-		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", cmpName)
-	}
 
 	compSettings := uo.localConfigInfo.GetComponentSettings()
 	compSettings.SourceLocation = &uo.sourcePath
@@ -139,7 +129,22 @@ func (uo *UpdateOptions) Run() (err error) {
 		compSettings.Ref = &uo.ref
 	}
 
-	return uo.localConfigInfo.SetComponentSettings(compSettings)
+	err = uo.localConfigInfo.SetComponentSettings(compSettings)
+	if err != nil {
+		return err
+	}
+
+	if err = uo.Push(); err != nil {
+		return errors.Wrap(err, "error while updating")
+	}
+
+	cmpName := uo.localConfigInfo.GetName()
+	if uo.sourceType == config.GIT {
+		log.Successf("The component %s was updated successfully", cmpName)
+	} else {
+		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", cmpName)
+	}
+	return
 }
 
 // NewCmdUpdate implements the Update odo command
@@ -157,6 +162,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddContextFlag(updateCmd, &uo.componentContext)
+	updateCmd.Flags().BoolVar(&uo.show, "show-log", false, "If enabled, logs will be shown when built")
 	updateCmd.Flags().StringVarP(&uo.git, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&uo.local, "local", "l", "", "Use local directory as a source for component.")
 	updateCmd.Flags().StringVarP(&uo.ref, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
