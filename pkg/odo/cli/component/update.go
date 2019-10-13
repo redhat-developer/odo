@@ -60,16 +60,24 @@ func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return errors.Wrapf(err, "failed to update component")
 	}
 
-	uo.doesComponentExist, err = component.Exists(uo.Context.Client, uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
-	if err != nil {
-		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
-	}
-
 	return
 }
 
 // Validate validates the update parameters
 func (uo *UpdateOptions) Validate() (err error) {
+
+	log.Info("Validation")
+
+	// First off, we check to see if the component exists. This is ran each time we do `odo push`
+	s := log.Spinner("Checking component")
+
+	uo.isCmpExists, err = component.Exists(uo.Context.Client, uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
+	}
+
+	defer s.End(false)
+
 	checkFlag := 0
 
 	if len(uo.binary) != 0 {
