@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	pkgUtil "github.com/openshift/odo/pkg/util"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -26,46 +24,44 @@ const UpdateRecommendedCommandName = "update"
 
 // UpdateOptions encapsulates the update command options
 type UpdateOptions struct {
-	binary        string
-	git           string
-	local         string
-	ref           string
-	cmpCfgContext string
-	cmpConfig     *config.LocalConfigInfo
-	*ComponentOptions
+	binary string
+	git    string
+	local  string
+	ref    string
+
+	*CommonPushOptions
 }
 
-var updateCmdExample = ktemplates.Examples(`  # Change the source code path of a currently active component to local (use the current directory as a source)
-	  %[1]s --local
+var updateCmdExample = ktemplates.Examples(`  # Change the source code path of currently active component to local with source in ./frontend directory
+	  %[1]s --local ./frontend
 	
-	  # Change the source code path of the frontend component to local with source in ./frontend directory
-	  %[1]s frontend --local ./frontend
-	
-	  # Change the source code path of a currently active component to git 
+	  # Change the source code path of currently active component to git 
 	  %[1]s --git https://github.com/openshift/nodejs-ex.git
-	
-	  # Change the source code path of the component named node-ex to git
-	  %[1]s node-ex --git https://github.com/openshift/nodejs-ex.git
-	
-	  # Change the source code path of the component named wildfly to a binary named sample.war in ./downloads directory
+		
+	  # Change the source code path of of currently active component to a binary named sample.war in ./downloads directory
 	  %[1]s wildfly --binary ./downloads/sample.war
 		`)
 
 // NewUpdateOptions returns new instance of UpdateOptions
 func NewUpdateOptions() *UpdateOptions {
-	return &UpdateOptions{ComponentOptions: &ComponentOptions{}}
+	return &UpdateOptions{
+		CommonPushOptions: &CommonPushOptions{
+			pushConfig: true, // we assume if someone updates then the config is only pushed
+			show:       false,
+		}}
 }
 
 // Complete completes update args
 func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	err = uo.ComponentOptions.Complete(name, cmd, args)
+	uo.Context = genericclioptions.NewContext(cmd)
+	uo.localConfigInfo, err = config.NewLocalConfigInfo(uo.componentContext)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update component")
 	}
 
-	uo.cmpConfig, err = config.NewLocalConfigInfo(uo.cmpCfgContext)
+	uo.doesComponentExist, err = component.Exists(uo.Context.Client, uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
 	if err != nil {
-		return errors.Wrapf(err, "failed to update component")
+		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
 	}
 
 	return
@@ -77,12 +73,33 @@ func (uo *UpdateOptions) Validate() (err error) {
 
 	if len(uo.binary) != 0 {
 		checkFlag++
+		uo.sourceType = config.BINARY
+		uo.sourcePath = uo.binary
 	}
 	if len(uo.git) != 0 {
 		checkFlag++
+		uo.sourceType = config.GIT
+		uo.sourcePath = uo.git
 	}
 	if len(uo.local) != 0 {
 		checkFlag++
+		uo.sourceType = config.LOCAL
+		uo.sourcePath = uo.local
+	}
+
+	if len(uo.componentContext) == 0 {
+		dir, err := os.Getwd()
+		if err != nil {
+			return errors.Wrapf(err, "failed to update component %s", uo.LocalConfigInfo.GetName())
+		}
+		uo.componentContext = dir
+	}
+	fileInfo, err := os.Stat(uo.componentContext)
+	if err != nil {
+		return err
+	}
+	if !fileInfo.IsDir() {
+		return fmt.Errorf("Please provide a path to the directory as --context")
 	}
 
 	if checkFlag != 1 {
@@ -103,49 +120,26 @@ func (uo *UpdateOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (uo *UpdateOptions) Run() (err error) {
-	stdout := color.Output
-
-	cmpSrcType := uo.cmpConfig.GetSourceType()
-	cmpName := uo.cmpConfig.GetName()
-
-	if cmpSrcType == config.GIT {
-		if err := component.Update(uo.Context.Client, *uo.cmpConfig, uo.cmpConfig.GetSourceLocation(), stdout); err != nil {
-			return err
-		}
-		log.Successf("The component %s was updated successfully", uo.componentName)
-	} else if cmpSrcType == config.LOCAL {
-		var cmpPath string
-		if len(uo.cmpCfgContext) > 0 {
-			cmpPath = uo.cmpCfgContext
-		} else {
-			dir, err := os.Getwd()
-			if err != nil {
-				return errors.Wrapf(err, "failed to update component %s", cmpName)
-			}
-			cmpPath = dir
-		}
-		fileInfo, err := os.Stat(cmpPath)
-		if err != nil {
-			return err
-		}
-		if !fileInfo.IsDir() {
-			return fmt.Errorf("Please provide a path to the directory")
-		}
-		if err = component.Update(uo.Context.Client, *uo.cmpConfig, cmpPath, stdout); err != nil {
-			return err
-		}
-		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", uo.componentName)
-	} else if cmpSrcType == config.BINARY {
-		path, err := pkgUtil.GetAbsPath(uo.binary)
-		if err != nil {
-			return err
-		}
-		if err = component.Update(uo.Context.Client, *uo.cmpConfig, path, stdout); err != nil {
-			return err
-		}
-		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", uo.componentName)
+	if err = uo.Push(); err != nil {
+		return errors.Wrap(err, "error while updating")
 	}
-	return
+
+	cmpSrcType := uo.localConfigInfo.GetSourceType()
+	cmpName := uo.localConfigInfo.GetName()
+	if cmpSrcType == config.GIT {
+		log.Successf("The component %s was updated successfully", cmpName)
+	} else {
+		log.Successf("The component %s was updated successfully, please use 'odo push' to push your local changes", cmpName)
+	}
+
+	compSettings := uo.localConfigInfo.GetComponentSettings()
+	compSettings.SourceLocation = &uo.sourcePath
+	compSettings.SourceType = &uo.sourceType
+	if len(uo.ref) != 0 {
+		compSettings.Ref = &uo.ref
+	}
+
+	return uo.localConfigInfo.SetComponentSettings(compSettings)
 }
 
 // NewCmdUpdate implements the Update odo command
@@ -153,21 +147,21 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 	uo := NewUpdateOptions()
 
 	var updateCmd = &cobra.Command{
-		Use:         name,
-		Short:       "Update the source code path of a component",
-		Long:        "Update the source code path of a component",
-		Example:     fmt.Sprintf(updateCmdExample, fullName),
-		Args:        cobra.MaximumNArgs(1),
-		Annotations: map[string]string{"command": "component"},
+		Use:     name,
+		Args:    cobra.MaximumNArgs(0),
+		Short:   "Update the source code path of a component",
+		Long:    "Update the source code path of a component",
+		Example: fmt.Sprintf(updateCmdExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(uo, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(updateCmd, &uo.cmpCfgContext)
+	genericclioptions.AddContextFlag(updateCmd, &uo.componentContext)
 	updateCmd.Flags().StringVarP(&uo.git, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&uo.local, "local", "l", "", "Use local directory as a source for component.")
 	updateCmd.Flags().StringVarP(&uo.ref, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
 
+	updateCmd.Annotations = map[string]string{"command": "component"}
 	updateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--application` flag
