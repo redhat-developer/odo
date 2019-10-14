@@ -470,6 +470,18 @@ func componentTests(args ...string) {
 			files := helper.ListFilesInDir(context)
 			Expect(files).NotTo(ContainElement(".odo"))
 		})
+
+		It("creates a local python component and check for unsupported warning", func() {
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			output := helper.CmdShouldPass("odo", append(args, "create", "python", componentName, "--app", appName, "--project", project, "--context", context)...)
+			Expect(output).To(ContainSubstring("Warning: python is not fully supported by odo, and it is not guaranteed to work."))
+		})
+
+		It("creates a local nodejs component and check unsupported warning hasn't occured", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			output := helper.CmdShouldPass("odo", append(args, "create", "nodejs", componentName, "--app", appName, "--project", project, "--context", context)...)
+			Expect(output).NotTo(ContainSubstring("Warning"))
+		})
 	})
 
 	/*

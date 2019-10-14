@@ -460,9 +460,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
+	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
+	if err != nil {
+		return err
+	}
+
+	if !supported {
+		log.Infof("Warning: %s is not fully supported by odo, and it is not guaranteed to work.", *co.componentSettings.Type)
+	}
+
 	s := log.Spinner("Validating component")
 	defer s.End(false)
-
 	if err := component.ValidateComponentCreateRequest(co.Context.Client, co.componentSettings, co.componentContext); err != nil {
 		return err
 	}

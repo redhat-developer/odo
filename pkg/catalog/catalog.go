@@ -8,6 +8,7 @@ import (
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -235,6 +236,20 @@ func SliceSupportedTags(component ComponentType) ([]string, []string) {
 		}
 	}
 	return supTag, unSupTag
+}
+
+// IsComponentTypeSupported takes the componentType e.g. java:8 and return true if
+// it is fully supported i.e. debug mode and more.
+func IsComponentTypeSupported(client *occlient.Client, componentType string) (bool, error) {
+
+	_, componentType, _, componentVersion := util.ParseComponentImageName(componentType)
+
+	imageStream, err := client.GetImageStream("", componentType, componentVersion)
+	if err != nil {
+		return false, err
+	}
+	tagMap := createImageTagMap(imageStream.Spec.Tags)
+	return isSupportedImage(tagMap[componentVersion]), nil
 }
 
 // createImageTagMap takes a list of image TagReferences and creates a map of type tag name => image name e.g. 1.11 => openshift/nodejs-11
