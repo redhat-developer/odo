@@ -81,7 +81,7 @@ func referencePrinter(command *cobra.Command, level int) string {
 	}
 
 	// The main markdown "template" for everything
-	return fmt.Sprintf(`= Overview of the Odo (OpenShift Do) CLI Structure
+	return fmt.Sprintf(`= Overview of the OpenShift Do (odo) CLI Structure
 
 ___________________
 Example application
@@ -89,7 +89,7 @@ ___________________
 
 [source,sh]
 ----
-%s 
+%s
 ----
 
 %s
@@ -157,7 +157,7 @@ func commandPrinter(command *cobra.Command, level int) string {
 func main() {
 	var clidoc = &cobra.Command{
 		Use:   "cli-doc",
-		Short: "Generate CLI reference for Odo",
+		Short: "Generate CLI reference for odo",
 
 		Example: `  # Generate a markdown-formatted CLI reference page for Odo
   cli-doc reference > docs/cli-reference.md
