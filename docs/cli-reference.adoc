@@ -1,4 +1,4 @@
-= Overview of the Odo (OpenShift Do) CLI Structure
+= Overview of the OpenShift Do (odo) CLI Structure
 
 ___________________
 Example application
