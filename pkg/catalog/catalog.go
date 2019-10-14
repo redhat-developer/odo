@@ -238,6 +238,8 @@ func SliceSupportedTags(component ComponentType) ([]string, []string) {
 	return supTag, unSupTag
 }
 
+// IsComponentTypeSupported takes the componentType e.g. java:8 and return true if
+// it is fully supported i.e. debug mode and more.
 func IsComponentTypeSupported(client *occlient.Client, componentType string) (bool, error) {
 
 	_, componentType, _, componentVersion := util.ParseComponentImageName(componentType)
