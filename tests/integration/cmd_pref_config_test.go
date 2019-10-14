@@ -262,7 +262,7 @@ var _ = Describe("odo preference and config command tests", func() {
 			Expect(configValue).To(Not(ContainSubstring(("PORT"))))
 			Expect(configValue).To(Not(ContainSubstring(("SECRET_KEY"))))
 		})
-		It("should check for existence of environment variable in config before unset'ing it", func() {
+		It("should check for existence of environment variable in config before unsetting it", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "config", "set", "--env", "PORT=4000", "--env", "PORT=1234", "--context", context)
 
