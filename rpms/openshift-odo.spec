@@ -40,7 +40,7 @@ ln -s "$(pwd)" %{gopath}/src/github.com/openshift/odo
 export GOPATH=%{gopath}
 cd %{gopath}/src/github.com/openshift/odo
 make test
-make cross
+make prepare-release
 unlink %{gopath}/src/github.com/openshift/odo
 rm -rf %{gopath}
 
@@ -48,10 +48,13 @@ rm -rf %{gopath}
 mkdir -p %{buildroot}/%{_bindir}
 install -m 0755 dist/bin/linux-amd64/odo %{buildroot}%{_bindir}/odo
 mkdir -p %{buildroot}%{_datadir}
-install -d %{buildroot}%{_datadir}/%{name}-redistributable/{linux,macos,windows}
-install -p -m 755 dist/bin/linux-amd64/odo %{buildroot}%{_datadir}/%{name}-redistributable/linux/odo-linux-amd64
-install -p -m 755 dist/bin/darwin-amd64/odo %{buildroot}%{_datadir}/%{name}-redistributable/macos/odo-darwin-amd64
-install -p -m 755 dist/bin/windows-amd64/odo.exe %{buildroot}%{_datadir}/%{name}-redistributable/windows/odo-windows-amd64.exe
+install -d %{buildroot}%{_datadir}/%{name}-redistributable
+install -p -m 755 dist/release/odo-linux-amd64 %{buildroot}%{_datadir}/%{name}-redistributable/odo-linux-amd64
+install -p -m 755 dist/release/odo-darwin-amd64 %{buildroot}%{_datadir}/%{name}-redistributable/odo-darwin-amd64
+install -p -m 755 dist/release/odo-windows-amd64.exe %{buildroot}%{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
+cp -avrf dist/release/odo*.tar.gz %{buildroot}%{_datadir}/%{name}-redistributable
+cp -avrf dist/release/SHA256_SUM %{buildroot}%{_datadir}/%{name}-redistributable
+
 
 %files
 %license LICENSE
@@ -69,10 +72,12 @@ Obsoletes:      %{package_name}-redistributable
 
 %files redistributable
 %license LICENSE
-%dir %{_datadir}/%{name}-redistributable/linux/
-%dir %{_datadir}/%{name}-redistributable/macos/
-%dir %{_datadir}/%{name}-redistributable/windows/
-%{_datadir}/%{name}-redistributable/linux/odo-linux-amd64
-%{_datadir}/%{name}-redistributable/macos/odo-darwin-amd64
-%{_datadir}/%{name}-redistributable/windows/odo-windows-amd64.exe
+%dir %{_datadir}/%{name}-redistributable
+%{_datadir}/%{name}-redistributable/odo-linux-amd64
+%{_datadir}/%{name}-redistributable/odo-linux-amd64.tar.gz
+%{_datadir}/%{name}-redistributable/odo-darwin-amd64
+%{_datadir}/%{name}-redistributable/odo-darwin-amd64.tar.gz
+%{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
+%{_datadir}/%{name}-redistributable/odo-windows-amd64.exe.tar.gz
+%{_datadir}/%{name}-redistributable/SHA256_SUM
 
