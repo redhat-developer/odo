@@ -68,7 +68,7 @@ func (do *DescribeOptions) Run() (err error) {
 		return err
 	}
 	if log.IsJSON() {
-		componentDesc.Spec.Ports = do.localConfigInfo.GetPorts()
+		componentDesc.Spec.Ports = do.LocalConfigInfo.GetPorts()
 		out, err := machineoutput.MarshalJSONIndented(componentDesc)
 		if err != nil {
 			return err
