@@ -262,6 +262,19 @@ var _ = Describe("odo preference and config command tests", func() {
 			Expect(configValue).To(Not(ContainSubstring(("PORT"))))
 			Expect(configValue).To(Not(ContainSubstring(("SECRET_KEY"))))
 		})
+
+		It("fail when unsetting a variable that isn't there", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldFail("odo", "config", "unset", "--env", helper.RandString(7), "--context", context)
+		})
+
+		It("fail when unsetting a variable that is there, but using key=value, which is incorrect..", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
+			env := helper.RandString(7) + "=value"
+			helper.CmdShouldPass("odo", "config", "set", "--env", env, "--context", context)
+			helper.CmdShouldFail("odo", "config", "unset", "--env", env, "--context", context)
+		})
+
 	})
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {

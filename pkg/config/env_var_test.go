@@ -131,12 +131,15 @@ func TestNewEnvVarListFromSlice(t *testing.T) {
 }
 
 func TestRemoveEnvVarsFromList(t *testing.T) {
-	cases := []struct {
+	tests := []struct {
+		name       string
 		envVarList EnvVarList
 		expected   EnvVarList
 		keys       []string
+		wantErr    bool
 	}{
 		{
+			name: "Case 1: Check removing one environment variable",
 			envVarList: EnvVarList{
 				EnvVar{
 					Name:  "foo",
@@ -153,9 +156,11 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 					Value: "bar",
 				},
 			},
-			keys: []string{"fizz"},
+			keys:    []string{"fizz"},
+			wantErr: false,
 		},
 		{
+			name: "Case 2: Check removing two environment variables",
 			envVarList: EnvVarList{
 				EnvVar{
 					Name:  "foo",
@@ -168,8 +173,10 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 			},
 			expected: EnvVarList{},
 			keys:     []string{"fizz", "foo"},
+			wantErr:  false,
 		},
 		{
+			name: "Case 3: Check passing in nothing",
 			envVarList: EnvVarList{
 				EnvVar{
 					Name:  "foo",
@@ -192,6 +199,7 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 			},
 		},
 		{
+			name: "Case 4: Check failing with foo=bar (invalid variable.. should error out)",
 			envVarList: EnvVarList{
 				EnvVar{
 					Name:  "foo",
@@ -203,18 +211,56 @@ func TestRemoveEnvVarsFromList(t *testing.T) {
 				},
 			},
 			expected: EnvVarList{},
-			keys:     []string{"foo"},
+			keys:     []string{"foo=bar", "hi=hello"},
+			wantErr:  true,
+		},
+		{
+			name: "Case 5: Check failing when passing in multiple vals but one is valid",
+			envVarList: EnvVarList{
+				EnvVar{
+					Name:  "foo",
+					Value: "bar",
+				},
+				EnvVar{
+					Name:  "hi",
+					Value: "hello",
+				},
+			},
+			expected: EnvVarList{},
+			keys:     []string{"foo=bar", "hi"},
+			wantErr:  true,
+		},
+		{
+			name: "Case 6: Check failing when passing in nothing",
+			envVarList: EnvVarList{
+				EnvVar{
+					Name:  "foo",
+					Value: "bar",
+				},
+				EnvVar{
+					Name:  "hi",
+					Value: "hello",
+				},
+			},
+			expected: EnvVarList{},
+			keys:     []string{""},
+			wantErr:  true,
 		},
 	}
 
-	for _, testCase := range cases {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-		envVarList := RemoveEnvVarsFromList(testCase.envVarList, testCase.keys)
-		// expected an error
+			envVarList, err := RemoveEnvVarsFromList(tt.envVarList, tt.keys)
 
-		if !reflect.DeepEqual(envVarList, testCase.expected) {
-			t.Errorf("the %+v and %+v are not equal", envVarList, testCase.expected)
-		}
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error for %s", tt.envVarList)
+			} else if !tt.wantErr && err != nil {
+				t.Error(err)
+				t.Errorf("the %+v and %+v are not equal", envVarList, tt.expected)
+			}
+
+		})
 	}
 
 }

@@ -84,15 +84,30 @@ func NewEnvVarListFromSlice(envList []string) (EnvVarList, error) {
 
 // RemoveEnvVarsFromList removes the env variables based on the keys provided
 // and returns a new EnvVarList
-func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) EnvVarList {
+func RemoveEnvVarsFromList(envVarList EnvVarList, envKeysToRemove []string) (EnvVarList, error) {
+
+	// Convert map to list of array for an easier way to search for env names
+	envVarListArray := []string{}
+	for _, env := range envVarList {
+		envVarListArray = append(envVarListArray, env.Name)
+	}
+
+	// Before anything, we check to see if the environment variable actually exists to unset..
+	for _, key := range envKeysToRemove {
+		if !util.In(envVarListArray, key) {
+			return EnvVarList{}, fmt.Errorf("unable to find %s environment variable to unset", key)
+		}
+	}
+
+	// Below we check to see if any of the keys we are removing
+	// match and them remove them.
 	newEnvVarList := EnvVarList{}
 	for _, envVar := range envVarList {
-		// if the env is in the keys we skip it
-		if util.In(keys, envVar.Name) {
+		if util.In(envKeysToRemove, envVar.Name) {
 			continue
 		}
-
 		newEnvVarList = append(newEnvVarList, envVar)
 	}
-	return newEnvVarList
+
+	return newEnvVarList, nil
 }
