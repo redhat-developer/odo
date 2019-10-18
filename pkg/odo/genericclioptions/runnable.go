@@ -17,10 +17,6 @@ type Runnable interface {
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
-	//flag.CommandLine.MarkHidden("o")
-
-	//flag.CommandLine.Lookup("o").Hidden = true
-	cmd.Flag("o").Hidden = true
 
 	// CheckMachineReadableOutput
 	// fixes / checks all related machine readable output functions

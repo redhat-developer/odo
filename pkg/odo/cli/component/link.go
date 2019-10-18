@@ -134,7 +134,6 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
 
-	// Add a defined annotation in order to appear in the help menu
 	linkCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(linkCmd)

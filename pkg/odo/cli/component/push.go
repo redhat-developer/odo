@@ -127,7 +127,6 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().BoolVar(&po.pushSource, "source", false, "Use source flag to only push latest source on to cluster")
 	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to force building the component")
 
-	// Add a defined annotation in order to appear in the help menu
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)
 	completion.RegisterCommandFlagHandler(pushCmd, "context", completion.FileCompletionHandler)

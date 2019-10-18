@@ -99,7 +99,6 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 		},
 	}
 
-	// Add a defined annotation in order to appear in the help menu
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
 	// Adding --context flag

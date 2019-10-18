@@ -74,7 +74,6 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 
 	logCmd.Flags().BoolVarP(&o.logFollow, "follow", "f", false, "Follow logs")
 
-	// Add a defined annotation in order to appear in the help menu
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
 	// Adding `--context` flag

@@ -218,8 +218,8 @@ func ModifyAdditionalFlags(cmd *cobra.Command) string {
 
 	f.VisitAll(func(f *pflag.Flag) {
 		// Remove json flag if machineoutput has not been passed in
-		if f.Name == "o" && machineOutput == "" {
-			f.Hidden = true
+		if f.Name == "o" && machineOutput == "json" {
+			f.Hidden = false
 		}
 	})
 
