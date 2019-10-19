@@ -7,8 +7,6 @@
 :toc-title:
 :toclevels: 1
 
-toc::[]
-
 https://github.com/openshift/odo/releases/latest[image:https://img.shields.io/github/v/release/openshift/odo?style=for-the-badge[GitHub release]]
 https://travis-ci.com/openshift/odo[image:https://img.shields.io/travis/com/openshift/odo?style=for-the-badge[Build Status]]
 image:https://img.shields.io/github/license/openshift/odo?style=for-the-badge[License]
@@ -32,138 +30,33 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 * Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real-time.
 * Lists all available components and services from the OpenShift cluster.
 
+[[official-documentation]]
+== Official documentation
+
+* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/installing-odo.html[Installing odo]
+* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
+* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-multicomponent-application-with-odo.html[Creating a multicomponent application with odo]
+* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-an-application-with-a-database.html[Creating an application with a database]
+* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/configuring-the-odo-cli.html[Configuring the odo CLI]
+* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/odo-cli-reference.html[odo CLI reference]
+* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/odo-release-notes.html[odo release notes]
+
 [[installing-odo]]
+
 == Installing `odo`
 
-=== Prerequisites:
+To install on Linux / Windows / macOS follow our guide located on link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/installing-odo.html[docs.openshift.com]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
 
-OpenShift 3.10.0 or above is required.
+[[deploying-your-first-application]]
+== Deploying your first application
 
-=== Procedure:
+Click on the tutorial below to deploy your first `odo` application:
 
-==== Mac and Linux
-
-===== OS-independent automated installation for Mac and Linux systems
-
-Use this link:./scripts/installer.sh[bash script] to quickly install `odo`. It will automatically detect your operating system and install `odo` accordingly.
-
-----
-$ curl -L https://github.com/openshift/odo/raw/master/scripts/installer.sh | bash
-----
-
-===== Binary installation for Mac OS
-
-----
-# curl -L https://github.com/openshift/odo/releases/latest/download/odo-darwin-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
-----
-
-===== Binary installation for Linux
-
-----
-# curl -L https://github.com/openshift/odo/releases/latest/download/odo-linux-amd64 -o /usr/local/bin/odo && chmod +x /usr/local/bin/odo
-----
-
-For more installation options please refer the link:docs/installation.adoc[installation page].
-
-==== Windows
-
-In order to correctly use `odo` you must download it and add it
-to your `PATH` environment variable:
-
-. Download the `odo-windows-amd64.exe.tar.gz` file from the
-link:https://github.com/openshift/odo/releases[GitHub releases page].
-. Extract the file.
-. Add the location of extracted binary to your `PATH` environment
-variable by following the steps listed in this link:https://github.com/openshift/odo/wiki/Setting-PATH-variable-on-Windows[Wiki page].
-
-Visit the link:docs/installation.adoc#windows[installation page] for instructions to set the `PATH` environment variable on Windows 7, 8 or 10.
-
-[[demonstration]]
-== Demonstration
+link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
 
 The following demonstration provides an overview of `odo`:
 
 https://asciinema.org/a/225717[image:https://asciinema.org/a/225717.svg[asciicast]]
-
-[[deploying-an-application]]
-== Deploying an application using `odo`
-
-After installing `odo`, follow these steps to build, push, and
-deploy a Node.js application. Examples for other supported languages and runtimes can be found link:https://github.com/openshift/odo/blob/master/docs/examples.adoc[here].
-
-These steps recommend using link:https://github.com/minishift/minishift[Minishift] for running an OpenShift 3.x cluster or link:https://github.com/code-ready/crc[CodeReady Containers] for an OpenShift 4.x cluster.
-
-More information on how to install and use `Minishift` can be found link:https://docs.okd.io/latest/minishift/getting-started/index.html[here]. For `CodeReady Containers`, information can be found link:https://code-ready.github.io/crc/[here].
-
-. Start a local OpenShift development cluster by using `minishift` or `crc`.
-+
-[source,bash]
-----
-$ minishift start
-# or
-$ crc start
-----
-. Log into the OpenShift cluster.
-+
-[source,bash]
-----
-$ odo login -u developer -p developer
-----
-. Download the Node.js sample code and change directory to the
-location of the sample code.
-+
-[source,bash]
-----
-$ git clone https://github.com/openshift/nodejs-ex
-$ cd nodejs-ex
-----
-. Add a component of type `nodejs` to your application.
-+
-[source,bash]
-----
-$ odo create nodejs
-----
-. Deploy your application.
-+
-[source,bash]
-----
-$ odo push
-----
-. Create a URL to access the application and visit it to test it.
-+
-[source,bash]
-----
-$ odo url create
-$ curl <generated URL>
-----
-. When finished, remove your component from `Minishift` or `CodeReady Containers`, and stop your cluster if you are finished with it.
-+
-[source,bash]
-----
-$ odo delete <component>
-$ minishift stop
-# or
-$ crc stop
-----
-
-For more in-depth information and advanced use-cases such as adding storage to a component or linking components, see the
-link:https://learn.openshift.com/introduction/developing-with-odo/[interactive tutorial] or the link:/docs/getting-started.adoc[Getting Started Guide].
-
-[[additional-documentation]]
-== Additional documentation
-
-Additional documentation can be found below:
-
-* link:https://github.com/openshift/odo/blob/master/docs/installation.adoc[Detailed
-Installation Guide]
-* link:https://github.com/openshift/odo/blob/master/docs/getting-started.adoc[Getting
-Started Guide]
-* link:https://github.com/openshift/odo/blob/master/docs/examples.adoc[Usage
-Examples for Other Languages and Runtimes]
-* link:https://github.com/openshift/odo/blob/master/docs/cli-reference.adoc[CLI
-Reference]
-* link:https://github.com/openshift/odo/blob/master/docs/dev/development.adoc[Development
-Guide]
 
 [[contributing]]
 == Community, discussion, contribution, and support
@@ -171,6 +64,8 @@ Guide]
 *Discussions:* For any discussions or help with `odo`, you can use our link:https://groups.google.com/forum/#!forum/odo-users[Google group] or open a link:https://github.com/openshift/odo/issues[GitHub issue].
 
 *Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
+
+*Documentation Issues*: If you have any documentation issues related to the link:https://docs.openshift.com[docs.openshift.com] site, file an issue in link:https://bugzilla.redhat.com/[Bugzilla]. Choose the OpenShift Container Platform product type and the Documentation component type.
 
 *Contributing:* Want to become a contributor and submit your own code?
 Have a look at our link:https://github.com/openshift/odo/blob/master/docs/dev/development.adoc[Development Guide].
