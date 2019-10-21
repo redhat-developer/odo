@@ -98,11 +98,12 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 	o := NewProjectDeleteOptions()
 
 	projectDeleteCmd := &cobra.Command{
-		Use:     name,
-		Short:   deleteShortDesc,
-		Long:    deleteLongDesc,
-		Example: fmt.Sprintf(deleteExample, fullName),
-		Args:    cobra.ExactArgs(1),
+		Use:         name,
+		Short:       deleteShortDesc,
+		Long:        deleteLongDesc,
+		Example:     fmt.Sprintf(deleteExample, fullName),
+		Args:        cobra.ExactArgs(1),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

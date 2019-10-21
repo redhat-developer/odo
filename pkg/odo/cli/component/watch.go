@@ -147,11 +147,12 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	wo := NewWatchOptions()
 
 	var watchCmd = &cobra.Command{
-		Use:     fmt.Sprintf("%s [component name]", name),
-		Short:   "Watch for changes, update component on change",
-		Long:    watchLongDesc,
-		Example: fmt.Sprintf(watchExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Use:         fmt.Sprintf("%s [component name]", name),
+		Short:       "Watch for changes, update component on change",
+		Long:        watchLongDesc,
+		Example:     fmt.Sprintf(watchExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(wo, cmd, args)
 		},
@@ -161,8 +162,6 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	watchCmd.Flags().StringSliceVar(&wo.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	watchCmd.Flags().IntVar(&wo.delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 
-	// Add a defined annotation in order to appear in the help menu
-	watchCmd.Annotations = map[string]string{"command": "component"}
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	// Adding context flag
 	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)

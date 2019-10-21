@@ -61,11 +61,12 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 	o := NewLogOptions()
 
 	var logCmd = &cobra.Command{
-		Use:     fmt.Sprintf("%s [component_name]", name),
-		Short:   "Retrieve the log for the given component",
-		Long:    `Retrieve the log for the given component`,
-		Example: fmt.Sprintf(logExample, fullName),
-		Args:    cobra.RangeArgs(0, 1),
+		Use:         fmt.Sprintf("%s [component_name]", name),
+		Short:       "Retrieve the log for the given component",
+		Long:        `Retrieve the log for the given component`,
+		Example:     fmt.Sprintf(logExample, fullName),
+		Args:        cobra.RangeArgs(0, 1),
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
@@ -73,8 +74,6 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 
 	logCmd.Flags().BoolVarP(&o.logFollow, "follow", "f", false, "Follow logs")
 
-	// Add a defined annotation in order to appear in the help menu
-	logCmd.Annotations = map[string]string{"command": "component"}
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
 	// Adding `--context` flag

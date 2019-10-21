@@ -153,11 +153,12 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 	uo := NewUpdateOptions()
 
 	var updateCmd = &cobra.Command{
-		Use:     name,
-		Args:    cobra.MaximumNArgs(1),
-		Short:   "Update the source code path of a component",
-		Long:    "Update the source code path of a component",
-		Example: fmt.Sprintf(updateCmdExample, fullName),
+		Use:         name,
+		Short:       "Update the source code path of a component",
+		Long:        "Update the source code path of a component",
+		Example:     fmt.Sprintf(updateCmdExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(uo, cmd, args)
 		},
@@ -166,8 +167,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 	updateCmd.Flags().StringVarP(&uo.git, "git", "g", "", "git source")
 	updateCmd.Flags().StringVarP(&uo.local, "local", "l", "", "Use local directory as a source for component.")
 	updateCmd.Flags().StringVarP(&uo.ref, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
-	// Add a defined annotation in order to appear in the help menu
-	updateCmd.Annotations = map[string]string{"command": "component"}
+
 	updateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--application` flag

@@ -134,12 +134,17 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	pflag.CommandLine.MarkHidden("logtostderr")
 	pflag.CommandLine.MarkHidden("stderrthreshold")
 
+	// We will mark the command as hidden and then re-enable if the command
+	// supports json output
+	pflag.CommandLine.MarkHidden("o")
+
 	// Override the verbosity flag description
 	verbosity := pflag.Lookup("v")
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", odoutil.CapitalizeFlagDescriptions)
+	cobra.AddTemplateFunc("ModifyAdditionalFlags", odoutil.ModifyAdditionalFlags)
 
 	rootCmd.AddCommand(
 		application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),

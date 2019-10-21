@@ -67,11 +67,12 @@ func (o *ListServicesOptions) Run() (err error) {
 func NewCmdCatalogListServices(name, fullName string) *cobra.Command {
 	o := NewListServicesOptions()
 	return &cobra.Command{
-		Use:     name,
-		Short:   "Lists all available services",
-		Long:    "Lists all available services",
-		Example: fmt.Sprintf(servicesExample, fullName),
-		Args:    cobra.ExactArgs(0),
+		Use:         name,
+		Short:       "Lists all available services",
+		Long:        "Lists all available services",
+		Example:     fmt.Sprintf(servicesExample, fullName),
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

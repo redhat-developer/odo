@@ -39,6 +39,25 @@ func componentTests(args ...string) {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
+	Context("Generic machine readable output tests", func() {
+
+		It("Command should fail if json is non-existent for a command", func() {
+			output := helper.CmdShouldFail("odo", "version", "-o", "json")
+			Expect(output).To(ContainSubstring("Machine readable output is not yet implemented for this command"))
+		})
+
+		It("Help for odo version should not contain machine output", func() {
+			output := helper.CmdShouldPass("odo", "version", "--help")
+			Expect(output).NotTo(ContainSubstring("Specify output format, supported format: json"))
+		})
+
+		It("Help for odo create should contain machine output", func() {
+			output := helper.CmdShouldPass("odo", "create", "--help")
+			Expect(output).To(ContainSubstring("Specify output format, supported format: json"))
+		})
+
+	})
+
 	Context("Creating component", func() {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()

@@ -102,11 +102,12 @@ func (o *StorageListOptions) Run() (err error) {
 func NewCmdStorageList(name, fullName string) *cobra.Command {
 	o := NewStorageListOptions()
 	storageListCmd := &cobra.Command{
-		Use:     name,
-		Short:   storageListShortDesc,
-		Long:    storageListLongDesc,
-		Example: fmt.Sprintf(storageListExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Use:         name,
+		Short:       storageListShortDesc,
+		Long:        storageListLongDesc,
+		Example:     fmt.Sprintf(storageListExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

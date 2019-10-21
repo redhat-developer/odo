@@ -99,11 +99,12 @@ func (o *URLListOptions) Run() (err error) {
 func NewCmdURLList(name, fullName string) *cobra.Command {
 	o := NewURLListOptions()
 	urlListCmd := &cobra.Command{
-		Use:     name,
-		Short:   urlListShortDesc,
-		Long:    urlListLongDesc,
-		Example: fmt.Sprintf(urlListExample, fullName),
-		Args:    cobra.NoArgs,
+		Use:         name,
+		Short:       urlListShortDesc,
+		Long:        urlListLongDesc,
+		Example:     fmt.Sprintf(urlListExample, fullName),
+		Args:        cobra.NoArgs,
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

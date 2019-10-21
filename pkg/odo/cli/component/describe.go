@@ -88,18 +88,17 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	do := NewDescribeOptions()
 
 	var describeCmd = &cobra.Command{
-		Use:     fmt.Sprintf("%s [component_name]", name),
-		Short:   "Describe component",
-		Long:    `Describe component.`,
-		Example: fmt.Sprintf(describeExample, fullName),
-		Args:    cobra.RangeArgs(0, 1),
+		Use:         fmt.Sprintf("%s [component_name]", name),
+		Short:       "Describe component",
+		Long:        `Describe component.`,
+		Example:     fmt.Sprintf(describeExample, fullName),
+		Args:        cobra.RangeArgs(0, 1),
+		Annotations: map[string]string{"machineoutput": "json", "command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(do, cmd, args)
 		},
 	}
 
-	// Add a defined annotation in order to appear in the help menu
-	describeCmd.Annotations = map[string]string{"command": "component"}
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
 	// Adding --context flag

@@ -204,6 +204,28 @@ func VisitCommands(cmd *cobra.Command, f func(*cobra.Command)) {
 	}
 }
 
+// ModifyAdditionalFlags modifies the flags and updates the descriptions
+// as well as changes whether or not machine readable output
+// has been passed in..
+//
+// Return the flag usages for the help outout
+func ModifyAdditionalFlags(cmd *cobra.Command) string {
+
+	// Hide the machine readable output if the command
+	// does not have the annotation.
+	machineOutput := cmd.Annotations["machineoutput"]
+	f := cmd.InheritedFlags()
+
+	f.VisitAll(func(f *pflag.Flag) {
+		// Remove json flag if machineoutput has not been passed in
+		if f.Name == "o" && machineOutput == "json" {
+			f.Hidden = false
+		}
+	})
+
+	return CapitalizeFlagDescriptions(f)
+}
+
 // CapitalizeFlagDescriptions adds capitalizations
 func CapitalizeFlagDescriptions(f *pflag.FlagSet) string {
 	f.VisitAll(func(f *pflag.Flag) {
@@ -231,8 +253,8 @@ Available Commands:{{range .Commands}}{{if .IsAvailableCommand}}
 Flags:
 {{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace}}{{end}}{{ if .HasAvailableInheritedFlags}}
 
-Global Flags:
-{{CapitalizeFlagDescriptions .InheritedFlags | trimRightSpace}}{{end}}{{if .HasHelpSubCommands}}
+Additional Flags:
+{{ModifyAdditionalFlags . | trimRightSpace}}{{end}}{{if .HasHelpSubCommands}}
 
 Additional help topics:{{range .Commands}}{{if .IsHelpCommand}}
   {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableSubCommands }}
