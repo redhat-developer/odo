@@ -185,7 +185,7 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	_, err = os.Stat(filepath.Join(filepath.Dir(directory), ".gitignore"))
 
 	if err == nil {
-		file, err := os.OpenFile(filepath.Join(filepath.Dir(directory), ".gitignore"), os.O_APPEND|os.O_RDWR,0600)
+		file, err := os.OpenFile(filepath.Join(filepath.Dir(directory), ".gitignore"), os.O_APPEND|os.O_RDWR, 0600)
 		if err != nil {
 			log.Fatalf("failed opening file: %s", err)
 		}
@@ -194,15 +194,16 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 		data, err := ioutil.ReadFile(filepath.Join(filepath.Dir(directory), ".gitignore"))
 		if err != nil {
 			log.Panicf("failed reading data from file: %s", err)
-		}else {
+		} else {
 			s := string(data)
-			if strings.Contains(s, resolvedPath){}else {
+			if strings.Contains(s, resolvedPath) {
+			} else {
 				if _, err = file.WriteString("\n" + resolvedPath); err != nil {
 					log.Panicf("failed writing string to file: %s", err)
 				}
 			}
 		}
-	}else if os.IsNotExist(err){
+	} else if os.IsNotExist(err) {
 		file, err := os.OpenFile(filepath.Join(filepath.Dir(directory), ".gitignore"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatalf("failed opening file: %s", err)
@@ -212,7 +213,8 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 		if _, err = file.WriteString("\n" + resolvedPath); err != nil {
 			log.Panicf("failed writing string to file: %s", err)
 		}
-	}else{}
+	} else {
+	}
 
 	return filesChanged, filesDeleted, nil
 }
