@@ -282,7 +282,7 @@ func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 	_, err = f.Readdir(1)
 	// if directory is empty we can remove it
 	if err == io.EOF {
-		glog.V(4).Info("Deleting the config dir as its empty")
+		glog.V(4).Info("Deleting the config directory as well because its empty")
 
 		return os.Remove(configDir)
 	}
