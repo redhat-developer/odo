@@ -104,5 +104,5 @@ func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) (EnvVarList, er
 	if envVarInList {
 		return newEnvVarList, nil
 	}
-	return nil, errors.New(fmt.Sprintf("Cannot find environment variable in the component's configuration.\nCheck `odo config view` to confirm it exists."))
+	return nil, fmt.Errorf("Cannot find environment variable in the component's configuration.\nCheck `odo config view` to confirm it exists.")
 }
