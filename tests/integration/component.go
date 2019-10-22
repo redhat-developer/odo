@@ -23,6 +23,7 @@ func componentTests(args ...string) {
 	var project string
 	var context string
 	var originalDir string
+	var symLinkPath string
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
@@ -710,6 +711,54 @@ func componentTests(args ...string) {
 			stdError := helper.CmdShouldFail("odo", append(args, "create", "java:8", "backend", "--memory", "1GB", "--project", project, "--context", context)...)
 			Expect(stdError).ToNot(ContainSubstring("panic: cannot parse"))
 			Expect(stdError).To(ContainSubstring("quantities must match the regular expression"))
+		})
+	})
+
+	Context("Creating component using symlink", func() {
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+		JustAfterEach(func() {
+			// remove the symlink
+			err := os.Remove(symLinkPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
+		})
+
+		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
+			oc.ImportJavaIS(project)
+
+			// change to the parent of the context
+			helper.Chdir(filepath.Dir(context))
+
+			// create a symlink
+			symLinkName := "symLink"
+			helper.SymLink(filepath.Base(context), symLinkName)
+			symLinkPath = filepath.Join(filepath.Dir(context), symLinkName)
+
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
+
+			// create the component using symlink
+			helper.CmdShouldPass("odo", "create", "java:8", "sb-jar-test", "--project",
+				project, "--binary", filepath.Join(symLinkPath, "sb.jar"), "--context", symLinkPath)
+
+			// Create a URL and push without using the symlink
+			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			routeURL := helper.DetermineRouteURL(context)
+
+			// Ping said URL
+			helper.HttpWaitFor(routeURL, "HTTP Booster", 90, 1)
+
+			// Delete the component
+			helper.CmdShouldPass("odo", "delete", "sb-jar-test", "-f", "--context", context)
+
+			// change back to the context directory
+			helper.Chdir(context)
 		})
 	})
 }

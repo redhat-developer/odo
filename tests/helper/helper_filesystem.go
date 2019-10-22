@@ -165,3 +165,9 @@ func ListFilesInDir(directoryName string) []string {
 	}
 	return filesInDirectory
 }
+
+// SymLink creates a symlink between the oldFile and the newFile
+func SymLink(oldFileName, newFileName string) {
+	err := os.Symlink(oldFileName, newFileName)
+	Expect(err).NotTo(HaveOccurred())
+}

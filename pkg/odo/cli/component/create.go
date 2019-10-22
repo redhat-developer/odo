@@ -109,17 +109,13 @@ func (co *CreateOptions) setComponentSourceAttributes() (err error) {
 
 	// --binary
 	case config.BINARY:
-		cPath, err := filepath.EvalSymlinks(co.componentBinary)
-		if err != nil {
-			return err
-		}
 		// Convert componentContext to absolute path, so it can be safely used in filepath.Rel
 		// even when it is not set (empty). In this case filepath.Abs will return current directory.
 		absContext, err := filepath.Abs(co.componentContext)
 		if err != nil {
 			return err
 		}
-		absPath, err := filepath.Abs(cPath)
+		absPath, err := filepath.Abs(co.componentBinary)
 		if err != nil {
 			return err
 		}
