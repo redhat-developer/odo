@@ -23,7 +23,7 @@ func componentTests(args ...string) {
 	var project string
 	var context string
 	var originalDir string
-	var symLinkPath string
+	var symLinkPaths []string
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
@@ -718,27 +718,27 @@ func componentTests(args ...string) {
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
 			originalDir = helper.Getwd()
-			helper.Chdir(context)
+			helper.Chdir(filepath.Dir(context))
 		})
 		JustAfterEach(func() {
-			// remove the symlink
-			err := os.Remove(symLinkPath)
-			Expect(err).NotTo(HaveOccurred())
+			// remove the symlinks
+			for _, symLinkPath := range symLinkPaths {
+				err := os.Remove(symLinkPath)
+				Expect(err).NotTo(HaveOccurred())
+			}
 
 			helper.DeleteProject(project)
 			helper.Chdir(originalDir)
 		})
 
-		It("Should be able to deploy a spring boot uberjar file using openjdk", func() {
+		It("Should be able to deploy a spring boot uberjar file using symlinks in all odo commands", func() {
 			oc.ImportJavaIS(project)
 
-			// change to the parent of the context
-			helper.Chdir(filepath.Dir(context))
-
 			// create a symlink
-			symLinkName := "symLink"
+			symLinkName := helper.RandString(10)
 			helper.SymLink(filepath.Base(context), symLinkName)
-			symLinkPath = filepath.Join(filepath.Dir(context), symLinkName)
+			symLinkPath := filepath.Join(filepath.Dir(context), symLinkName)
+			symLinkPaths = append(symLinkPaths, symLinkPath)
 
 			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
 
@@ -747,18 +747,38 @@ func componentTests(args ...string) {
 				project, "--binary", filepath.Join(symLinkPath, "sb.jar"), "--context", symLinkPath)
 
 			// Create a URL and push without using the symlink
-			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", context)
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			routeURL := helper.DetermineRouteURL(context)
+			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", symLinkPath)
+			helper.CmdShouldPass("odo", "push", "--context", symLinkPath)
+			routeURL := helper.DetermineRouteURL(symLinkPath)
 
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "HTTP Booster", 90, 1)
 
 			// Delete the component
-			helper.CmdShouldPass("odo", "delete", "sb-jar-test", "-f", "--context", context)
+			helper.CmdShouldPass("odo", "delete", "sb-jar-test", "-f", "--context", symLinkPath)
+		})
 
-			// change back to the context directory
-			helper.Chdir(context)
+		It("Should be able to deploy a wildfly war file using symlinks in some odo commands", func() {
+			// create a symlink
+			symLinkName := helper.RandString(10)
+			helper.SymLink(filepath.Base(context), symLinkName)
+			symLinkPath := filepath.Join(filepath.Dir(context), symLinkName)
+			symLinkPaths = append(symLinkPaths, symLinkPath)
+
+			helper.CopyExample(filepath.Join("binary", "java", "wildfly"), context)
+			helper.CmdShouldPass("odo", "create", "wildfly", "javaee-war-test", "--project",
+				project, "--binary", filepath.Join(symLinkPath, "ROOT.war"), "--context", symLinkPath)
+
+			// Create a URL
+			helper.CmdShouldPass("odo", "url", "create", "warfile", "--port", "8080", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			routeURL := helper.DetermineRouteURL(context)
+
+			// Ping said URL
+			helper.HttpWaitFor(routeURL, "Sample", 90, 1)
+
+			// Delete the component
+			helper.CmdShouldPass("odo", "delete", "javaee-war-test", "-f", "--context", context)
 		})
 	})
 }
