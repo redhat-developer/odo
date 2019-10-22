@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -260,9 +261,37 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 
 }
 
-// DeleteConfigDir Deletes the config directory with the config file
-func (lci *LocalConfigInfo) DeleteConfigDir() error {
-	return os.RemoveAll(filepath.Dir(lci.Filename))
+// DeleteConfigDirIfEmpty Deletes the config directory if its empty
+func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
+	configDir := filepath.Dir(lci.Filename)
+	_, err := os.Stat(configDir)
+	if os.IsNotExist(err) {
+		// if the config dir doesn't exist then we dont mind
+		return nil
+	} else if err != nil {
+		// possible to not have permission to the dir
+		return err
+	}
+
+	f, err := os.Open(configDir)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Readdir(1)
+	// if directory is empty we can remove it
+	if err == io.EOF {
+		glog.V(4).Info("Deleting the config dir as its empty")
+
+		return os.Remove(configDir)
+	}
+	return nil
+}
+
+// DeleteConfigFile deletes the odo-config.yaml file if it exists
+func (lci *LocalConfigInfo) DeleteConfigFile() error {
+	return util.DeletePath(lci.Filename)
 }
 
 // IsSet uses reflection to get the parameter from the localconfig struct, currently

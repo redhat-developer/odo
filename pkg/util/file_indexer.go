@@ -66,8 +66,8 @@ func readFileIndex(filePath string) (*FileIndex, error) {
 	return &fi, nil
 }
 
-// resolveFilePath resolves the filepath of the odo index file in the .odo folder
-func resolveFilePath(directory string) (string, error) {
+// resolveIndexFilePath resolves the filepath of the odo index file in the .odo folder
+func resolveIndexFilePath(directory string) (string, error) {
 	directoryFi, err := os.Stat(filepath.Join(directory))
 	if err != nil {
 		return "", err
@@ -135,6 +135,18 @@ func checkGitIgnoreFile(directory string) (string, error) {
 	return gitIgnoreFile, nil
 }
 
+// DeleteIndexFile deletes the index file. It doesn't throw error if it doesn't exist
+func DeleteIndexFile(directory string) error {
+	indexFile, err := resolveIndexFilePath(directory)
+
+	if os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return DeletePath(indexFile)
+}
+
 // RunIndexer walks the given directory and finds the files which have changed and which were deleted/renamed
 // it reads the odo index file from the .odo folder
 // if no such file is present, it means it's the first time the folder is being walked and thus returns a empty list
@@ -142,7 +154,7 @@ func checkGitIgnoreFile(directory string) (string, error) {
 // The filemap stores the values as "relative filepath" => FileData but it the filesChanged and filesDeleted are absolute paths
 // to the files
 func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, filesDeleted []string, err error) {
-	resolvedPath, err := resolveFilePath(directory)
+	resolvedPath, err := resolveIndexFilePath(directory)
 	if err != nil {
 		return filesChanged, filesDeleted, err
 	}

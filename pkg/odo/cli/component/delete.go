@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/util"
+
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
@@ -95,12 +97,16 @@ func (do *DeleteOptions) Run() (err error) {
 				return err
 			}
 
-			if !cfg.ConfigFileExists() {
-				return nil
+			if err = util.DeleteIndexFile(do.componentContext); err != nil {
+				return err
 			}
 
-			err = cfg.DeleteConfigDir()
-			if err != nil {
+			// this checks if the config file exists or not
+			if err = cfg.DeleteConfigFile(); err != nil {
+				return err
+			}
+
+			if err = cfg.DeleteConfigDirIfEmpty(); err != nil {
 				return err
 			}
 
