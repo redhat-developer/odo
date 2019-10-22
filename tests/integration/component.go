@@ -88,11 +88,6 @@ func componentTests(args ...string) {
 			applicationName := helper.GetConfigValue("Application")
 			Expect(applicationName).To(Equal("app"))
 
-			// clean up
-			helper.CmdShouldPass("odo", "app", "delete", "app", "-f")
-			helper.CmdShouldFail("odo", "app", "delete", "app", "-f")
-			helper.CmdShouldFail("odo", "component", "delete", componentName, "-f")
-
 		})
 
 		It("should create default named component when passed same context differently", func() {
@@ -190,7 +185,6 @@ func componentTests(args ...string) {
 			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 			cmpAllList := helper.CmdShouldPass("odo", append(args, "list", "--all")...)
 			Expect(cmpAllList).To(ContainSubstring("cmp-git"))
-			helper.CmdShouldPass("odo", append(args, "delete", "cmp-git", "-f")...)
 		})
 
 		It("should list the component when it is not pushed", func() {
@@ -198,7 +192,6 @@ func componentTests(args ...string) {
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			Expect(cmpList).To(ContainSubstring("Not Pushed"))
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 
 		It("should list the component in the same app when one is pushed and the other one is not pushed", func() {
@@ -215,10 +208,9 @@ func componentTests(args ...string) {
 			Expect(cmpList).To(ContainSubstring("cmp-git-2"))
 			Expect(cmpList).To(ContainSubstring("Not Pushed"))
 			Expect(cmpList).To(ContainSubstring("Pushed"))
-
-			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context2)...)
 			helper.DeleteDir(context2)
+
 		})
 
 		It("should succeed listing catalog components", func() {
