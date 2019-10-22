@@ -203,6 +203,8 @@ imports:
   version: 0e00d916866778d0c56bb09a9a7f2b861196221b
 - name: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
+- name: github.com/AlecAivazis/survey
+  version: 4de88574e78145bdcfa6627ed766564231588b31
 - name: github.com/onsi/ginkgo
   version: eea6ad008b96acdaa524f5b409513bf062b500ad
   subpackages:
