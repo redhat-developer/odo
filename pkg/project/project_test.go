@@ -62,9 +62,6 @@ func TestCreate(t *testing.T) {
 			fkWatch := watch.NewFake()
 
 			fakeClientSet.ProjClientset.PrependReactor("create", "projectrequests", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if action.(ktesting.CreateAction).GetNamespace() == "project2" {
-					return true, nil, nil
-				}
 				return true, nil, nil
 			})
 
