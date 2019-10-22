@@ -204,14 +204,20 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 			}
 		}
 	} else if os.IsNotExist(err) {
-		file, err := os.OpenFile(filepath.Join(filepath.Dir(directory), ".gitignore"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		files, err := ioutil.ReadDir(filepath.Join(directory))
 		if err != nil {
-			log.Fatalf("failed opening file: %s", err)
+			log.Fatalf("No such directory: %s", err)
 		}
-		defer file.Close()
+		if len(files) > 1 {
+			file, err := os.OpenFile(filepath.Join(filepath.Dir(directory), ".gitignore"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+			if err != nil {
+				log.Fatalf("failed opening file: %s", err)
+			}
+			defer file.Close()
 
-		if _, err = file.WriteString("\n" + resolvedPath); err != nil {
-			log.Panicf("failed writing string to file: %s", err)
+			if _, err = file.WriteString("\n" + resolvedPath); err != nil {
+				log.Panicf("failed writing string to file: %s", err)
+			}
 		}
 	} else {
 	}
