@@ -86,6 +86,26 @@ func resolveFilePath(directory string) (string, error) {
 	return directory, nil
 }
 
+// gitignoreFilePath gives the filepath of the .gitignore file in the contex
+func gitignoreFilePath(directory string) (string, error) {
+	directoryFi, err := os.Stat(filepath.Join(directory))
+	if err != nil {
+		return "", err
+	}
+
+	switch mode := directoryFi.Mode(); {
+	case mode.IsDir():
+		// do directory stuff
+		return filepath.Join(directory, ".gitignore"), nil
+	case mode.IsRegular():
+		// do file stuff
+		// for binary files
+		return filepath.Join(filepath.Dir(directory), ".gitignore"), nil
+	}
+
+	return directory, nil
+}
+
 // RunIndexer walks the given directory and finds the files which have changed and which were deleted/renamed
 // it reads the odo index file from the .odo folder
 // if no such file is present, it means it's the first time the folder is being walked and thus returns a empty list
@@ -182,23 +202,28 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	// Check .gitignore file exists or not
 	// Add odo-file-index.json entry to .gitignore
 
-	_, err = os.Stat(filepath.Join(filepath.Dir(directory), ".gitignore"))
+	ignoreFile, err := gitignoreFilePath(directory)
+	if err != nil {
+		log.Fatalf("file does not exist: %s", err)
+	}
+
+	_, err = os.Stat(ignoreFile)
 
 	if err == nil {
-		file, err := os.OpenFile(filepath.Join(filepath.Dir(directory), ".gitignore"), os.O_APPEND|os.O_RDWR, 0600)
+		file, err := os.OpenFile(ignoreFile, os.O_APPEND|os.O_RDWR, 0600)
 		if err != nil {
 			log.Fatalf("failed opening file: %s", err)
 		}
 		defer file.Close()
 
-		data, err := ioutil.ReadFile(filepath.Join(filepath.Dir(directory), ".gitignore"))
+		data, err := ioutil.ReadFile(ignoreFile)
 		if err != nil {
 			log.Panicf("failed reading data from file: %s", err)
 		} else {
 			s := string(data)
-			if strings.Contains(s, resolvedPath) {
+			if strings.Contains(s, ".odo/odo-file-index.json") {
 			} else {
-				if _, err = file.WriteString("\n" + resolvedPath); err != nil {
+				if _, err = file.WriteString("\n" + ".odo/odo-file-index.json"); err != nil {
 					log.Panicf("failed writing string to file: %s", err)
 				}
 			}
@@ -209,13 +234,13 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 			log.Fatalf("No such directory: %s", err)
 		}
 		if len(files) > 1 {
-			file, err := os.OpenFile(filepath.Join(filepath.Dir(directory), ".gitignore"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+			file, err := os.OpenFile(ignoreFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 			if err != nil {
 				log.Fatalf("failed opening file: %s", err)
 			}
 			defer file.Close()
 
-			if _, err = file.WriteString("\n" + resolvedPath); err != nil {
+			if _, err = file.WriteString("\n" + ".odo/odo-file-index.json"); err != nil {
 				log.Panicf("failed writing string to file: %s", err)
 			}
 		}
