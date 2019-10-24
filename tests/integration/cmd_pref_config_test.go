@@ -271,7 +271,7 @@ var _ = Describe("odo preference and config command tests", func() {
 
 			// try to unset an env var that doesn't exist
 			stdOut := helper.CmdShouldFail("odo", "config", "unset", "--env", "nosuchenv", "--context", context)
-			Expect(stdOut).To(ContainSubstring("Cannot find environment variable in the component's configuration"))
+			Expect(stdOut).To(ContainSubstring("unable to find environment variable nosuchenv in the component"))
 		})
 	})
 
