@@ -328,7 +328,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 
 			// push and include the odo-file-index.json path to .gitignore file
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(context,"nodejs-ex"))
 			ignoreFilePath := filepath.Join(context, "nodejs-ex", ".gitignore")
 			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "odo-file-index.json"))
 
