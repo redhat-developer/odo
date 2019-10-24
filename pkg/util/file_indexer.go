@@ -108,7 +108,7 @@ func gitignoreFilePath(directory string) (string, error) {
 
 // Check .gitignore file exists or not
 // Add odo-file-index.json entry to .gitignore
-func checkGitignoreFile(directory string)  {
+func checkGitignoreFile(directory string) {
 
 	ignoreFile, err := gitignoreFilePath(directory)
 	if err != nil {
