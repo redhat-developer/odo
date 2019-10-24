@@ -26,6 +26,9 @@ func SetCurrent(client *occlient.Client, projectName string) error {
 }
 
 func Create(client *occlient.Client, projectName string, wait bool) error {
+	if projectName == "" {
+		return errors.Errorf("no project name given")
+	}
 	err := client.CreateNewProject(projectName, wait)
 	if err != nil {
 		return errors.Wrap(err, "unable to create new project")
