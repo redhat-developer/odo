@@ -1,9 +1,21 @@
-## What is the purpose of this change? What does it change?
-<!-- Describe the changes here, as detailed as needed. -->
+**What kind of PR is this?**
+<!--
+DELETE the kind(s) which are not applicable before opening the PR.
+-->
 
-## Was the change discussed in an issue?
-fixes #???
-<!-- Please do Link issues here. -->
+/kind api-change
+/kind bug
+/kind cleanup
+/kind code refactorting
+/kind docs
+/kind enhancement
+/kind feature
+/kind flake
 
-## How to test changes?
-<!-- Please describe the steps to test the PR -->
+**What does does this PR do / why we need it**:
+
+**Which issue(s) this PR fixes**:
+
+Fixes #?
+
+**How to test changes / Special notes to the reviewer**:
