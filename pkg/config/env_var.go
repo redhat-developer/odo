@@ -84,15 +84,30 @@ func NewEnvVarListFromSlice(envList []string) (EnvVarList, error) {
 
 // RemoveEnvVarsFromList removes the env variables based on the keys provided
 // and returns a new EnvVarList
-func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) EnvVarList {
+func RemoveEnvVarsFromList(envVarList EnvVarList, keys []string) (EnvVarList, error) {
+	// convert the envVarList map to an array to easily search for env var(s)
+	// to remove from the component
+	envVarListArray := []string{}
+	for _, env := range envVarList {
+		envVarListArray = append(envVarListArray, env.Name)
+	}
+
+	// now check if the environment variable(s) requested for removal exists in
+	// the env vars set for the component by odo
+	for _, key := range keys {
+		if !util.In(envVarListArray, key) {
+			return nil, fmt.Errorf("unable to find environment variable %s in the component", key)
+		}
+	}
+
+	// finally, let's remove the environment variables(s) requested by the user
 	newEnvVarList := EnvVarList{}
 	for _, envVar := range envVarList {
 		// if the env is in the keys we skip it
 		if util.In(keys, envVar.Name) {
 			continue
 		}
-
 		newEnvVarList = append(newEnvVarList, envVar)
 	}
-	return newEnvVarList
+	return newEnvVarList, nil
 }

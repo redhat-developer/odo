@@ -262,6 +262,17 @@ var _ = Describe("odo preference and config command tests", func() {
 			Expect(configValue).To(Not(ContainSubstring(("PORT"))))
 			Expect(configValue).To(Not(ContainSubstring(("SECRET_KEY"))))
 		})
+		It("should check for existence of environment variable in config before unsetting it", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "--env", "PORT=4000", "--env", "PORT=1234", "--context", context)
+
+			// unset a valid env var
+			helper.CmdShouldPass("odo", "config", "unset", "--env", "PORT", "--context", context)
+
+			// try to unset an env var that doesn't exist
+			stdOut := helper.CmdShouldFail("odo", "config", "unset", "--env", "nosuchenv", "--context", context)
+			Expect(stdOut).To(ContainSubstring("unable to find environment variable nosuchenv in the component"))
+		})
 	})
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {
