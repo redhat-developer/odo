@@ -236,7 +236,6 @@ var _ = Describe("odo push command tests", func() {
 				appName,
 				project,
 				[]string{"stat", "/tmp/src/server.js"},
-
 				func(cmdOp string, err error) bool {
 					earlierCatServerFile = cmdOp
 					return true
@@ -277,7 +276,6 @@ var _ = Describe("odo push command tests", func() {
 				appName,
 				project,
 				[]string{"stat", "/tmp/src/server.js"},
-
 				func(cmdOp string, err error) bool {
 					modifiedCatServerFile = cmdOp
 					return true
