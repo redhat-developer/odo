@@ -16,6 +16,7 @@ import (
 var _ = Describe("odo push command tests", func() {
 	var project string
 	var context string
+	var currentWorkingDirectory string
 
 	appName := "app"
 	cmpName := "nodejs"
@@ -27,6 +28,7 @@ var _ = Describe("odo push command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
+		currentWorkingDirectory = helper.Getwd()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
@@ -35,6 +37,7 @@ var _ = Describe("odo push command tests", func() {
 	var _ = AfterEach(func() {
 		helper.DeleteProject(project)
 		helper.DeleteDir(context)
+		helper.Chdir(currentWorkingDirectory)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
@@ -67,6 +70,34 @@ var _ = Describe("odo push command tests", func() {
 			re := regexp.MustCompile(`v[0-9]\S*`)
 			odoVersionString := re.FindStringSubmatch(versionInfo)
 			oc.VerifyLabelExistsOfComponent(cmpName, project, "app.kubernetes.io/managed-by-version:"+odoVersionString[0])
+		})
+	})
+
+	Context("Test push outside of the current working direcory", func() {
+
+		It("Push, modify a file and then push outside of the working directory", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+
+			// Change to the context directory to make sure we push *outside* of the current directory
+			helper.Chdir(context)
+
+			helper.CmdShouldPass("odo", "push", "--context", "nodejs-ex")
+
+			// Create a new file to test propagating changes
+			newFilePath := filepath.Join(context, "nodejs-ex", "foobar.txt")
+			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
+				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+			}
+
+			// Test propagating changes
+			helper.CmdShouldPass("odo", "push", "--context", "nodejs-ex")
+
+			// Delete the file and check that the file is deleted
+			helper.DeleteDir(newFilePath)
+
+			// Test propagating deletions
+			helper.CmdShouldPass("odo", "push", "--context", "nodejs-ex")
 		})
 
 	})

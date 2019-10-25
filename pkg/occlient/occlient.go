@@ -2687,7 +2687,7 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 	defer tarWriter.Close()
 	srcPath = filepath.Clean(srcPath)
 
-	// "ToSlash" is used as all containers within OpenShisft are Linux based
+	// "ToSlash" is used as all containers within OpenShift are Linux based
 	// and thus \opt\app-root\src would be an invalid path. Backward slashes
 	// are converted to forward.
 	destPath = filepath.ToSlash(filepath.Clean(destPath))
@@ -2699,11 +2699,26 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 			if checkFileExist(fileName) {
 				// Fetch path of source file relative to that of source base path so that it can be passed to recursiveTar
 				// which uses path relative to base path for taro header to correctly identify file location when untarred
-				srcFile, err := filepath.Rel(srcPath, fileName)
+
+				// Yes, now that the file exists, now we need to get the absolute path.. if we don't, then when we pass in:
+				// 'odo push --context foobar' instead of 'odo push --context ~/foobar' it will NOT work..
+				fileAbsolutePath, err := util.GetAbsPath(fileName)
 				if err != nil {
 					return err
 				}
+				glog.V(4).Infof("Got abs path: %s", fileAbsolutePath)
+				glog.V(4).Infof("Making %s relative to %s", srcPath, fileAbsolutePath)
+
+				// We use "FromSlash" to make this OS-based (Windows uses \, Linux & macOS use /)
+				// we get the relative path by joining the two
+				srcFile, err := filepath.Rel(filepath.FromSlash(srcPath), filepath.FromSlash(fileAbsolutePath))
+				if err != nil {
+					return err
+				}
+
+				// Now we get the source file and join it to the base directory.
 				srcFile = filepath.Join(filepath.Base(srcPath), srcFile)
+
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
 				err = recursiveTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), srcFile, tarWriter, globExps)
 				if err != nil {

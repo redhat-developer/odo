@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -153,6 +152,7 @@ func DeleteIndexFile(directory string) error {
 // The filemap stores the values as "relative filepath" => FileData but it the filesChanged and filesDeleted are absolute paths
 // to the files
 func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, filesDeleted []string, err error) {
+	directory = filepath.FromSlash(directory)
 	resolvedPath, err := resolveIndexFilePath(directory)
 	if err != nil {
 		return filesChanged, filesDeleted, err
@@ -203,23 +203,27 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 			}
 		}
 
-		relFn, err := filepath.Rel(directory, fn)
+		relativeFilename, err := filepath.Rel(directory, fn)
 		if err != nil {
 			return err
 		}
 
-		if _, ok := existingFileIndex.Files[relFn]; !ok {
+		// Use "ToSlash" to always store the index relative filename in ONE way to be compatible
+		// accross multiple platforms
+		relativeFilename = filepath.ToSlash(relativeFilename)
+
+		if _, ok := existingFileIndex.Files[relativeFilename]; !ok {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("file added: %s", fn)
-		} else if !fi.ModTime().Equal(existingFileIndex.Files[relFn].LastModifiedDate) {
+		} else if !fi.ModTime().Equal(existingFileIndex.Files[relativeFilename].LastModifiedDate) {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("last modified date changed: %s", fn)
-		} else if fi.Size() != existingFileIndex.Files[relFn].Size {
+		} else if fi.Size() != existingFileIndex.Files[relativeFilename].Size {
 			filesChanged = append(filesChanged, fn)
 			glog.V(4).Infof("size changed: %s", fn)
 		}
 
-		newFileMap[relFn] = FileData{
+		newFileMap[relativeFilename] = FileData{
 			Size:             fi.Size(),
 			LastModifiedDate: fi.ModTime(),
 		}
@@ -234,9 +238,14 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	// find files which are deleted/renamed
 	for fileName := range existingFileIndex.Files {
 		if _, ok := newFileMap[fileName]; !ok {
-			glog.V(4).Infof("file deleted: %s", fileName)
-			// we return the absolute path of the files eventhough we store relative
-			filesDeleted = append(filesDeleted, filepath.Join(directory, fileName))
+			glog.V(4).Infof("Deleting file: %s", fileName)
+
+			// Return the *absolute* path to the file)
+			fileAbsolutePath, err := GetAbsPath(filepath.Join(directory, fileName))
+			if err != nil {
+				return filesChanged, filesDeleted, errors.Wrapf(err, "unable to retrieve absolute path of file %s", fileName)
+			}
+			filesDeleted = append(filesDeleted, fileAbsolutePath)
 		}
 
 	}
