@@ -26,13 +26,33 @@ const (
 	DefaultDebugPort = 5858
 )
 
+type fs interface {
+	Open(name string) (file, error)
+	Stat(name string) (os.FileInfo, error)
+}
+
+// we need this file interface to mock the file system
+type file interface {
+	io.Closer
+	io.Reader
+	io.ReaderAt
+	io.Seeker
+	Stat() (os.FileInfo, error)
+	Readdir(n int) ([]os.FileInfo, error)
+}
+
+type localFS struct{}
+
+func (localFS) Open(name string) (file, error)        { return os.Open(name) }
+func (localFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
+
 type ComponentStorageSettings struct {
 	Name string `yaml:"Name,omitempty"`
 	Size string `yaml:"Size,omitempty"`
 	Path string `yaml:"Path,omitempty"`
 }
 
-// componentSettings holds all component related information
+// ComponentSettings holds all component related information
 type ComponentSettings struct {
 	// The builder image to use
 	Type *string `yaml:"Type,omitempty"`
@@ -103,6 +123,7 @@ type proxyLocalConfig struct {
 // serialize it.
 type LocalConfigInfo struct {
 	Filename         string `yaml:"FileName,omitempty"`
+	fs               fs
 	LocalConfig      `yaml:",omitempty"`
 	configFileExists bool
 }
@@ -139,6 +160,7 @@ func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 		LocalConfig:      NewLocalConfig(),
 		Filename:         configFile,
 		configFileExists: true,
+		fs:               localFS{},
 	}
 
 	// if the config file doesn't exist then we dont worry about it and return
@@ -273,7 +295,7 @@ func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 		return err
 	}
 
-	f, err := os.Open(configDir)
+	f, err := lci.fs.Open(configDir)
 	if err != nil {
 		return err
 	}
