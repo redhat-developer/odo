@@ -34,9 +34,6 @@ type fs interface {
 // we need this file interface to mock the file system
 type file interface {
 	io.Closer
-	io.Reader
-	io.ReaderAt
-	io.Seeker
 	Stat() (os.FileInfo, error)
 	Readdir(n int) ([]os.FileInfo, error)
 }
