@@ -164,7 +164,7 @@ func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 	}
 
 	// if the config file doesn't exist then we dont worry about it and return
-	if _, err = os.Stat(configFile); os.IsNotExist(err) {
+	if _, err = c.fs.Stat(configFile); os.IsNotExist(err) {
 		c.configFileExists = false
 		return &c, nil
 	}
@@ -286,7 +286,7 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 // DeleteConfigDirIfEmpty Deletes the config directory if its empty
 func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 	configDir := filepath.Dir(lci.Filename)
-	_, err := os.Stat(configDir)
+	_, err := lci.fs.Stat(configDir)
 	if os.IsNotExist(err) {
 		// if the config dir doesn't exist then we dont mind
 		return nil
