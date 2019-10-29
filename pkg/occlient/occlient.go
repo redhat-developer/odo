@@ -532,9 +532,19 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			if !ok {
 				break
 			}
-			if e, ok := val.Object.(*projectv1.Project); ok {
-				glog.V(4).Infof("Project %s now exists", e.Name)
-				return nil
+			if prj, ok := val.Object.(*projectv1.Project); ok {
+				glog.V(4).Infof("Status of creation of project %s is %s", prj.Name, prj.Status.Phase)
+				switch prj.Status.Phase {
+				//prj.Status.Phase can only be "Terminating" or "Active" or ""
+				case "Active":
+					if val.Type == watch.Added {
+						glog.V(4).Infof("Project %s now exists", prj.Name)
+						return nil
+					}
+					if val.Type == watch.Error {
+						return fmt.Errorf("failed watching the deletion of project %s", prj.Name)
+					}
+				}
 			}
 		}
 	}
