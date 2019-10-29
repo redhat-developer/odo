@@ -66,7 +66,7 @@ func TestCreate(t *testing.T) {
 			})
 
 			go func() {
-				fkWatch.Add(testingutil.FakeProjectStatus(corev1.NamespacePhase(""), tt.projectName))
+				fkWatch.Add(testingutil.FakeProjectStatus(corev1.NamespacePhase("Active"), tt.projectName))
 			}()
 			fakeClientSet.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil

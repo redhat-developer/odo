@@ -2367,10 +2367,11 @@ func TestCreateNewProject(t *testing.T) {
 				fkWatch := watch.NewFake()
 				// Change the status
 				go func() {
-					fkWatch.Modify(&projectv1.Project{
+					fkWatch.Add(&projectv1.Project{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: tt.projName,
 						},
+						Status: projectv1.ProjectStatus{Phase: "Active"},
 					})
 				}()
 				fkclientset.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {

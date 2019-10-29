@@ -26,6 +26,8 @@ var _ = Describe("odo project command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
+		// remove later
+		helper.CmdRunner("odo", "project", "list", "-o", "json")
 		helper.DeleteProject(project)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
