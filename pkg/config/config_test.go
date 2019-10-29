@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -438,4 +439,134 @@ func TestGetOSSourcePath(t *testing.T) {
 
 		})
 	}
+}
+
+type mockFS struct {
+	statCalled bool
+	statFn     func(name string) (os.FileInfo, error)
+
+	openCalled bool
+	openFn     func(name string) (file, error)
+
+	removeCalled bool
+}
+
+func (mfs *mockFS) Open(name string) (file, error) {
+	mfs.openCalled = true
+	return mfs.openFn(name)
+}
+func (mfs *mockFS) Stat(name string) (os.FileInfo, error) {
+	mfs.statCalled = true
+	return mfs.statFn(name)
+}
+func (mfs *mockFS) Remove(name string) error {
+	mfs.removeCalled = true
+	return nil
+}
+
+type mockEmptyDir struct{}
+
+func (med *mockEmptyDir) Close() error {
+	return nil
+}
+
+func (med *mockEmptyDir) Readdir(n int) ([]os.FileInfo, error) {
+	return nil, io.EOF
+}
+
+type mockDir struct{}
+
+func (med *mockDir) Close() error {
+	return nil
+}
+
+func (med *mockDir) Readdir(n int) ([]os.FileInfo, error) {
+	return nil, nil
+}
+
+func TestDeleteConfigDirIfEmpty(t *testing.T) {
+
+	tests := []struct {
+		name         string
+		mockFS       mockFS
+		wantErr      bool
+		openCalled   bool
+		removeCalled bool
+		statCalled   bool
+	}{
+		{
+			name:       "non existent config dir",
+			statCalled: true,
+			mockFS: mockFS{
+				openFn: func(name string) (file, error) {
+					return nil, nil
+				},
+				statFn: func(name string) (os.FileInfo, error) {
+					return nil, os.ErrNotExist
+				},
+			},
+		},
+		{
+			name:       "permission denied on config dir",
+			statCalled: true,
+			openCalled: true,
+			mockFS: mockFS{
+				openFn: func(name string) (file, error) {
+					return nil, os.ErrPermission
+				},
+				statFn: func(name string) (os.FileInfo, error) {
+					return nil, nil
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:         "empty config dir",
+			statCalled:   true,
+			openCalled:   true,
+			removeCalled: true,
+			mockFS: mockFS{
+				openFn: func(name string) (file, error) {
+					return &mockEmptyDir{}, nil
+				},
+				statFn: func(name string) (os.FileInfo, error) {
+					return nil, nil
+				},
+			},
+		},
+		{
+			name:       "non empty config dir",
+			statCalled: true,
+			openCalled: true,
+			mockFS: mockFS{
+				openFn: func(name string) (file, error) {
+					return &mockDir{}, nil
+				},
+				statFn: func(name string) (os.FileInfo, error) {
+					return nil, nil
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			lci := LocalConfigInfo{
+				fs: &tt.mockFS,
+			}
+			err := lci.DeleteConfigDirIfEmpty()
+
+			if tt.openCalled != tt.mockFS.openCalled || tt.removeCalled != tt.mockFS.removeCalled || tt.statCalled != tt.mockFS.statCalled {
+				t.Errorf("fs method call flags incorrect for %s", tt.name)
+			}
+
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error for %s", t.Name())
+			} else if !tt.wantErr && err != nil {
+				t.Error(err)
+			}
+		})
+	}
+
 }

@@ -29,12 +29,12 @@ const (
 type fs interface {
 	Open(name string) (file, error)
 	Stat(name string) (os.FileInfo, error)
+	Remove(name string) error
 }
 
 // we need this file interface to mock the file system
 type file interface {
 	io.Closer
-	Stat() (os.FileInfo, error)
 	Readdir(n int) ([]os.FileInfo, error)
 }
 
@@ -42,6 +42,7 @@ type localFS struct{}
 
 func (localFS) Open(name string) (file, error)        { return os.Open(name) }
 func (localFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
+func (localFS) Remove(name string) error              { return os.Remove(name) }
 
 type ComponentStorageSettings struct {
 	Name string `yaml:"Name,omitempty"`
@@ -303,7 +304,7 @@ func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 	if err == io.EOF {
 		glog.V(4).Info("Deleting the config directory as well because its empty")
 
-		return os.Remove(configDir)
+		return lci.fs.Remove(configDir)
 	}
 	return nil
 }
