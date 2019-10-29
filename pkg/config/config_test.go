@@ -470,6 +470,7 @@ func (med *mockEmptyDir) Close() error {
 	return nil
 }
 
+// Readdir for an emptyDir returns EOF as that is what is returned by an empty directory
 func (med *mockEmptyDir) Readdir(n int) ([]os.FileInfo, error) {
 	return nil, io.EOF
 }
@@ -480,6 +481,8 @@ func (med *mockDir) Close() error {
 	return nil
 }
 
+// Readdir returns nil as we dont currently care about the content of the directory, just that its not empty
+// and for that EOF error is not returned
 func (med *mockDir) Readdir(n int) ([]os.FileInfo, error) {
 	return nil, nil
 }
