@@ -108,7 +108,7 @@ func getCommandFlagCompletionHandlerKey(command *cobra.Command, flag string) han
 func newHandler(cmd *cobra.Command, predictor ContextualizedPredictor) completionHandler {
 	return completionHandler{
 		cmd:       cmd,
-		ctxLoader: genericclioptions.NewContext,
+		ctxLoader: genericclioptions.NewContextCompletion,
 		predictor: predictor,
 	}
 }

@@ -145,6 +145,7 @@ func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 		c.configFileExists = false
 		return &c, nil
 	}
+
 	err = getFromFile(&c.LocalConfig, c.Filename)
 	if err != nil {
 		return nil, err

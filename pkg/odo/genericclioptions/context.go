@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
@@ -20,13 +21,19 @@ const DefaultAppName = "app"
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
 func NewContext(command *cobra.Command) *Context {
-	return newContext(command, false)
+	return newContext(command, false, false)
 }
 
 // NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
 // provided command, creating the application if none already exists
 func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
-	return newContext(command, true)
+	return newContext(command, true, false)
+}
+
+// NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
+// couldn't care less if there was a configuriation. We only need to check the parameters.
+func NewContextCompletion(command *cobra.Command) *Context {
+	return newContext(command, false, true)
 }
 
 // Client returns an oc client configured for this command's options
@@ -62,146 +69,158 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 	// If command does not have a parent no point checking
 	if command.HasParent() {
 		// Get the root command and set current command and its parent
-		r := command.Root()
-		p := command.Parent()
-		c := command
+		rootCommand := command.Root()
+		parentCommand := command.Parent()
+		mainCommand := command
 		for {
 			// if parent is root, then we have our first child in c
-			if p == r {
-				return c
+			if parentCommand == rootCommand {
+				return mainCommand
 			}
 			// Traverse backwards making current command as the parent and parent as the grandparent
-			c = p
-			p = c.Parent()
+			mainCommand = parentCommand
+			parentCommand = mainCommand.Parent()
 		}
 	}
 	return nil
 }
 
-func getValidConfig(command *cobra.Command) (*config.LocalConfigInfo, error) {
+func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*config.LocalConfigInfo, error) {
 
-	// Get details from config file
+	// Get details from the local config file
 	configFileName := FlagValueIfSet(command, ContextFlagName)
+
+	// Grab the absolute path of the configuration
 	if configFileName != "" {
 		fAbs, err := pkgUtil.GetAbsPath(configFileName)
 		util.LogErrorAndExit(err, "")
 		configFileName = fAbs
 	}
-	lci, err := config.NewLocalConfigInfo(configFileName)
-	// if we could not create local config for some reason, return it
+
+	// Access the local configuration
+	localConfiguration, err := config.NewLocalConfigInfo(configFileName)
 	if err != nil {
 		return nil, err
 	}
 
-	// Now we need to ensure that local config exists and not allow specific commands
-	// if that is the case This block contains cases where the non existence of local
-	// config is ignored
-	// Only if command has parent as if it is just root command then cobra handles it
+	// Here we will check for parent commands, if the match a certain criteria, we will skip
+	// using the configuration.
+	//
+	// For example, `odo create` should NOT check to see if there is actually a configuration yet.
 	if command.HasParent() {
-		// Gather nessasary info
-		p := command.Parent()
-		r := command.Root()
-		afs := FlagValueIfSet(command, ApplicationFlagName)
-		// Find the first child of the command. As some groups are allowed even with non existent config
-		fcc := getFirstChildOfCommand(command)
+
+		// Gather necessary preliminary information
+		parentCommand := command.Parent()
+		rootCommand := command.Root()
+		flagValue := FlagValueIfSet(command, ApplicationFlagName)
+
+		// Find the first child of the command, as some groups are allowed even with non existent configuration
+		firstChildCommand := getFirstChildOfCommand(command)
+
 		// This should not happen but just to be safe
-		if fcc == nil {
+		if firstChildCommand == nil {
 			return nil, fmt.Errorf("Unable to get first child of command")
 		}
 		// Case 1 : if command is create operation just allow it
-		if command.Name() == "create" && (p.Name() == "component" || p.Name() == r.Name()) {
-			return lci, nil
+		if command.Name() == "create" && (parentCommand.Name() == "component" || parentCommand.Name() == rootCommand.Name()) {
+			return localConfiguration, nil
 		}
 		// Case 2 : if command is describe or delete and app flag is used just allow it
-		if (fcc.Name() == "describe" || fcc.Name() == "delete") && len(afs) > 0 {
-			return lci, nil
+		if (firstChildCommand.Name() == "describe" || firstChildCommand.Name() == "delete") && len(flagValue) > 0 {
+			return localConfiguration, nil
 		}
 		// Case 2 : if command is list, just allow it
-		if fcc.Name() == "list" {
-			return lci, nil
+		if firstChildCommand.Name() == "list" {
+			return localConfiguration, nil
 		}
-		// Case 3 : Check if fcc is project. If so, skip validation of context
-		if fcc.Name() == "project" {
-			return lci, nil
+		// Case 3 : Check if firstChildCommand is project. If so, skip validation of context
+		if firstChildCommand.Name() == "project" {
+			return localConfiguration, nil
 		}
 		// Case 4 : Check if specific flags are set for specific first child commands
-		if fcc.Name() == "app" {
-			return lci, nil
+		if firstChildCommand.Name() == "app" {
+			return localConfiguration, nil
 		}
-		// Case 5 : Check if fcc is catalog and request is to list or search
-		if fcc.Name() == "catalog" && (p.Name() == "list" || p.Name() == "search") {
-			return lci, nil
+		// Case 5 : Check if firstChildCommand is catalog and request is to list or search
+		if firstChildCommand.Name() == "catalog" && (parentCommand.Name() == "list" || parentCommand.Name() == "search") {
+			return localConfiguration, nil
 		}
-		// Check if fcc is component and  request is list
-		if (fcc.Name() == "component" || fcc.Name() == "service") && command.Name() == "list" {
-			return lci, nil
+		// Check if firstChildCommand is component and  request is list
+		if (firstChildCommand.Name() == "component" || firstChildCommand.Name() == "service") && command.Name() == "list" {
+			return localConfiguration, nil
 		}
-		// Case 6 : Check if fcc is component and app flag is used
-		if fcc.Name() == "component" && len(afs) > 0 {
-			return lci, nil
+		// Case 6 : Check if firstChildCommand is component and app flag is used
+		if firstChildCommand.Name() == "component" && len(flagValue) > 0 {
+			return localConfiguration, nil
 		}
-		// Case 7 : Check if fcc is logout and app flag is used
-		if fcc.Name() == "logout" {
-			return lci, nil
+		// Case 7 : Check if firstChildCommand is logout and app flag is used
+		if firstChildCommand.Name() == "logout" {
+			return localConfiguration, nil
 		}
-		// Case 8: Check if fcc is service and command is create or delete. Allow it if that's the case
-		if fcc.Name() == "service" && (command.Name() == "create" || command.Name() == "delete") {
-			return lci, nil
+		// Case 8: Check if firstChildCommand is service and command is create or delete. Allow it if that's the case
+		if firstChildCommand.Name() == "service" && (command.Name() == "create" || command.Name() == "delete") {
+			return localConfiguration, nil
 		}
 
 	} else {
-		return lci, nil
+		return localConfiguration, nil
 	}
+
 	// * Ignore error block ends
 
 	// If file does not exist at this point, raise an error
-	if !lci.ConfigFileExists() {
+	// HOWEVER..
+	// When using auto-completion, we should NOT error out, just ignore the fact that there is no configuration
+	if !localConfiguration.ConfigFileExists() && ignoreMissingConfiguration {
+		glog.V(4).Info("There is NO config file that exists, we are however ignoring this as the ignoreMissingConfiguration flag has been passed in as true")
+	} else if !localConfiguration.ConfigFileExists() {
 		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
 	}
+
 	// else simply return the local config info
-	return lci, nil
+	return localConfiguration, nil
 }
 
 // resolveProject resolves project
-func resolveProject(command *cobra.Command, client *occlient.Client, lci *config.LocalConfigInfo) string {
-	var ns string
+func resolveProject(command *cobra.Command, client *occlient.Client, localConfiguration *config.LocalConfigInfo) string {
+	var namespace string
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	var err error
 	if len(projectFlag) > 0 {
 		// if project flag was set, check that the specified project exists and use it
 		_, err := project.Exists(client, projectFlag)
 		util.LogErrorAndExit(err, "")
-		ns = projectFlag
+		namespace = projectFlag
 	} else {
-		ns = lci.GetProject()
-		if ns == "" {
-			ns = project.GetCurrent(client)
-			if len(ns) <= 0 {
+		namespace = localConfiguration.GetProject()
+		if namespace == "" {
+			namespace = project.GetCurrent(client)
+			if len(namespace) <= 0 {
 				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
 				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 			}
 		}
 
 		// check that the specified project exists
-		_, err = project.Exists(client, ns)
+		_, err = project.Exists(client, namespace)
 		if err != nil {
-			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", ns)
+			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
 			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
-	client.Namespace = ns
-	return ns
+	client.Namespace = namespace
+	return namespace
 }
 
 // resolveApp resolves the app
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, lci *config.LocalConfigInfo) string {
+func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration *config.LocalConfigInfo) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
 		app = appFlag
 	} else {
-		app = lci.GetApplication()
+		app = localConfiguration.GetApplication()
 		if app == "" {
 			if createAppIfNeeded {
 				return DefaultAppName
@@ -212,12 +231,12 @@ func resolveApp(command *cobra.Command, createAppIfNeeded bool, lci *config.Loca
 }
 
 // resolveComponent resolves component
-func resolveComponent(command *cobra.Command, lci *config.LocalConfigInfo, context *Context) string {
+func resolveComponent(command *cobra.Command, localConfiguration *config.LocalConfigInfo, context *Context) string {
 	var cmp string
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {
 		// retrieve the current component if it exists if we didn't set the component flag
-		cmp = lci.GetName()
+		cmp = localConfiguration.GetName()
 	} else {
 		// if flag is set, check that the specified component exists
 		context.checkComponentExistsOrFail(cmpFlag)
@@ -228,12 +247,12 @@ func resolveComponent(command *cobra.Command, lci *config.LocalConfigInfo, conte
 
 // UpdatedContext returns a new context updated from config file
 func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error) {
-	lci, err := getValidConfig(context.command)
-	return newContext(context.command, true), lci, err
+	localConfiguration, err := getValidConfig(context.command, false)
+	return newContext(context.command, true, false), localConfiguration, err
 }
 
 // newContext creates a new context based on the command flags, creating missing app when requested
-func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
+func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	client := client(command)
 
 	// Get details from config file
@@ -245,16 +264,16 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	}
 
 	// Check for valid config
-	lci, err := getValidConfig(command)
+	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
 
 	// resolve project
-	ns := resolveProject(command, client, lci)
+	namespace := resolveProject(command, client, localConfiguration)
 
 	// resolve application
-	app := resolveApp(command, createAppIfNeeded, lci)
+	app := resolveApp(command, createAppIfNeeded, localConfiguration)
 
 	// resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -262,11 +281,11 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	// create the internal context representation based on calculated values
 	internalCxt := internalCxt{
 		Client:          client,
-		Project:         ns,
+		Project:         namespace,
 		Application:     app,
 		OutputFlag:      outputFlag,
 		command:         command,
-		LocalConfigInfo: *lci,
+		LocalConfigInfo: *localConfiguration,
 	}
 
 	// create a context from the internal representation
@@ -274,7 +293,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 		internalCxt: internalCxt,
 	}
 	// once the component is resolved, add it to the context
-	context.cmp = resolveComponent(command, lci, context)
+	context.cmp = resolveComponent(command, localConfiguration, context)
 
 	return context
 }
