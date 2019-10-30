@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/version"
 )
 
 func TestGetLabels(t *testing.T) {
@@ -37,9 +38,11 @@ func TestGetLabels(t *testing.T) {
 				additional:      true,
 			},
 			want: map[string]string{
-				applabels.ApplicationLabel:               "applicationame",
-				applabels.AdditionalApplicationLabels[0]: "applicationame",
-				ComponentLabel:                           "componentname",
+				applabels.ApplicationLabel: "applicationame",
+				applabels.App:              "applicationame",
+				applabels.OdoManagedBy:     "odo",
+				applabels.OdoVersion:       version.VERSION,
+				ComponentLabel:             "componentname",
 			},
 		},
 	}

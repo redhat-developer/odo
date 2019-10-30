@@ -127,6 +127,7 @@ func validateSourceType(sourceType string) bool {
 // envVars is the array containing the environment variables
 func CreateFromGit(client *occlient.Client, params occlient.CreateArgs) error {
 
+	// Create the labels
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Parse componentImageType before adding to labels
@@ -206,6 +207,8 @@ func GetComponentLinkedSecretNames(client *occlient.Client, componentName string
 // sourceType indicates the source type of the component and can be either local or binary
 // envVars is the array containing the environment variables
 func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
+
+	// Create the labels to be used
 	labels := componentlabels.GetLabels(params.Name, params.ApplicationName, true)
 
 	// Parse componentImageType before adding to labels
@@ -1073,7 +1076,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 		return errors.Wrap(err, "unable to parse image name")
 	}
 
-	// Retrieve labels
+	// Create labels for the component
 	// Save component type as label
 	labels := componentlabels.GetLabels(componentName, applicationName, true)
 	labels[componentlabels.ComponentTypeLabel] = imageName

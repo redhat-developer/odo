@@ -1,14 +1,16 @@
 package storage
 
 import (
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
 	"reflect"
 	"testing"
 
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/pkg/version"
+
 	v1 "github.com/openshift/api/apps/v1"
-	appLabels "github.com/openshift/odo/pkg/application/labels"
+	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentLabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/storage/labels"
 	storageLabels "github.com/openshift/odo/pkg/storage/labels"
@@ -275,7 +277,7 @@ func TestCreate(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name: "case 1: with valid values",
+			name: "Case 1: With valid values",
 			args: args{
 				name:            "storage-0",
 				size:            "100Mi",
@@ -285,7 +287,9 @@ func TestCreate(t *testing.T) {
 			wantLabels: map[string]string{
 				"app":                          "app-ex",
 				labels.StorageLabel:            "storage-0",
-				appLabels.ApplicationLabel:     "app-ex",
+				applabels.ApplicationLabel:     "app-ex",
+				applabels.OdoManagedBy:         "odo",
+				applabels.OdoVersion:           version.VERSION,
 				componentLabels.ComponentLabel: "nodejs-ex",
 			},
 			wantErr: false,

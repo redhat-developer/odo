@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/openshift/odo/tests/helper"
@@ -35,6 +36,27 @@ var _ = Describe("odo push command tests", func() {
 		helper.DeleteProject(project)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
+	})
+
+	Context("Check for label propagation after pushing", func() {
+
+		It("Check for labels", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+
+			// Check for all the labels
+			oc.VerifyLabelExistsOfComponent(cmpName, project, "app:"+appName)
+			oc.VerifyLabelExistsOfComponent(cmpName, project, "app.kubernetes.io/part-of:"+appName)
+			oc.VerifyLabelExistsOfComponent(cmpName, project, "app.kubernetes.io/managed-by:odo")
+
+			// Check for the version
+			versionInfo := helper.CmdShouldPass("odo", "version")
+			re := regexp.MustCompile(`v[0-9]\S*`)
+			odoVersionString := re.FindStringSubmatch(versionInfo)
+			oc.VerifyLabelExistsOfComponent(cmpName, project, "app.kubernetes.io/managed-by-version:"+odoVersionString[0])
+		})
+
 	})
 
 	Context("when push command is executed", func() {
