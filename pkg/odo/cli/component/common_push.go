@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/project"
@@ -28,7 +27,6 @@ type CommonPushOptions struct {
 	sourceType       config.SrcType
 	sourcePath       string
 	componentContext string
-	client           *occlient.Client
 	localConfigInfo  *config.LocalConfigInfo
 
 	pushConfig  bool
@@ -141,7 +139,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	appName := cpo.localConfigInfo.GetApplication()
 
 	if cpo.componentContext == "" {
-		cpo.componentContext = strings.Trim(filepath.Dir(cpo.localConfigInfo.Filename), ".odo")
+		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.localConfigInfo.Filename), ".odo")
 	}
 
 	err = cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)

@@ -899,11 +899,11 @@ func TestGetComponentFromConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewLocalConfigInfo("")
+			_, err := NewLocalConfigInfo("")
 			if err != nil {
 				t.Error(err)
 			}
-			cfg = &tt.existingConfig
+			cfg := &tt.existingConfig
 
 			got, _ := GetComponentFromConfig(*cfg)
 

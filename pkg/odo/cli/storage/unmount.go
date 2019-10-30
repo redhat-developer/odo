@@ -13,7 +13,7 @@ import (
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
 
-const unMountRecommendedCommandName = "unmount"
+//const unMountRecommendedCommandName = "unmount"
 
 var (
 	storageUnMountShortDesc = `Unmount storage from the given path or identified by its name, from the current component`

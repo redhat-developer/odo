@@ -23,7 +23,6 @@ import (
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -133,23 +132,6 @@ func fakeResourceRequirements() *corev1.ResourceRequirements {
 	resReq.Requests = requests
 
 	return &resReq
-}
-
-func fakeResourceConsumption() []util.ResourceRequirementInfo {
-	memoryQuantity, err := util.FetchResourceQuantity(corev1.ResourceMemory, "100Mi", "350Mi", "")
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	cpuQuantity, err := util.FetchResourceQuantity(corev1.ResourceCPU, "100m", "350m", "")
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	return []util.ResourceRequirementInfo{
-		*memoryQuantity,
-		*cpuQuantity,
-	}
 }
 
 // fakeImageStream gets imagestream for the reactor

@@ -393,20 +393,6 @@ func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error
 	return portList, nil
 }
 
-// isLoggedIn checks whether user is logged in or not and returns boolean output
-func (c *Client) isLoggedIn() bool {
-	// ~ indicates current user
-	// Reference: https://github.com/openshift/origin/blob/master/pkg/oc/cli/cmd/whoami.go#L55
-	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
-	glog.V(4).Infof("isLoggedIn err:  %#v \n output: %#v", err, output.Name)
-	if err != nil {
-		glog.V(4).Info(errors.Wrap(err, "error running command"))
-		glog.V(4).Infof("Output is: %v", output)
-		return false
-	}
-	return true
-}
-
 // RunLogout logs out the current user from cluster
 func (c *Client) RunLogout(stdout io.Writer) error {
 	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
@@ -597,7 +583,7 @@ func addLabelsToArgs(labels map[string]string, args []string) []string {
 // getExposedPortsFromISI parse ImageStreamImage definition and return all exposed ports in form of ContainerPorts structs
 func getExposedPortsFromISI(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
 	// file DockerImageMetadata
-	imageWithMetadata(&image.Image)
+	_ = imageWithMetadata(&image.Image)
 
 	var ports []corev1.ContainerPort
 
@@ -755,12 +741,9 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 	imageNS := imageStream.ObjectMeta.Namespace
 	imageName := imageStream.ObjectMeta.Name
 
-	tagFound := false
-
 	for _, tag := range imageStream.Status.Tags {
 		// look for matching tag
 		if tag.Tag == imageTag {
-			tagFound = true
 			glog.V(4).Infof("Found exact image tag match for %s:%s", imageName, imageTag)
 
 			if len(tag.Items) > 0 {
@@ -778,10 +761,6 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 			return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
 
 		}
-	}
-
-	if !tagFound {
-		return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
 	}
 
 	// return error since its an unhandled case if code reaches here
@@ -851,7 +830,6 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 		if err != nil {
 			return errors.Wrapf(err, "unable to create s2i app for %s", commonObjectMeta.Name)
 		}
-		imageNS = imageStream.ObjectMeta.Namespace
 		containerPorts, err = util.GetContainerPortsFromStrings(params.Ports)
 		if err != nil {
 			return errors.Wrapf(err, "unable to get container ports from %v", params.Ports)
@@ -1288,9 +1266,7 @@ func (c *Client) UpdateBuildConfig(buildConfigName string, gitURL string, annota
 	}
 
 	// generate BuildConfig
-	buildSource := buildv1.BuildSource{}
-
-	buildSource = buildv1.BuildSource{
+	buildSource := buildv1.BuildSource{
 		Git: &buildv1.GitBuildSource{
 			URI: gitURL,
 		},
@@ -1381,9 +1357,9 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 		if reflect.DeepEqual(updatedDc.Spec.Template, currentDC.Spec.Template) {
 			return nil
 		} else {
-			currentDCBytes, err := json.Marshal(currentDC.Spec.Template)
-			updatedDCBytes, err := json.Marshal(updatedDc.Spec.Template)
-			if err != nil {
+			currentDCBytes, errCurrent := json.Marshal(currentDC.Spec.Template)
+			updatedDCBytes, errUpdated := json.Marshal(updatedDc.Spec.Template)
+			if errCurrent != nil || errUpdated != nil {
 				return errors.Wrapf(err, "unable to unmarshal dc")
 			}
 			glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
@@ -1471,9 +1447,7 @@ func (c *Client) UpdateDCToGit(ucp UpdateComponentParams, isDeleteSupervisordVol
 		return errors.New("UpdateDCToGit imageName cannot be blank")
 	}
 
-	var dc appsv1.DeploymentConfig
-
-	dc = generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
+	dc := generateGitDeploymentConfig(ucp.CommonObjectMeta, ucp.ImageMeta.Name, ucp.ImageMeta.Ports, ucp.EnvVars, &ucp.ResourceLimits)
 
 	if isDeleteSupervisordVolumes {
 		// Patch the current DC
@@ -2407,23 +2381,6 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 	return planList.Items, nil
 }
 
-// imageStreamExists returns true if the given image stream exists in the given
-// namespace
-func (c *Client) imageStreamExists(name string, namespace string) bool {
-	imageStreams, err := c.GetImageStreamsNames(namespace)
-	if err != nil {
-		glog.V(4).Infof("unable to get image streams in the namespace: %v", namespace)
-		return false
-	}
-
-	for _, is := range imageStreams {
-		if is == name {
-			return true
-		}
-	}
-	return false
-}
-
 // CreateRoute creates a route object for the given service and with the given labels
 // serviceName is the name of the service for the target reference
 // portNumber is the target port of the route
@@ -2690,8 +2647,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 	go func() {
 		defer writer.Close()
 
-		var err error
-		err = makeTar(localPath, dest, writer, copyFiles, globExps)
+		err := makeTar(localPath, dest, writer, copyFiles, globExps)
 		if err != nil {
 			glog.Errorf("Error while creating tar: %#v", err)
 			os.Exit(1)
@@ -2717,10 +2673,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetPath str
 // checkFileExist check if given file exists or not
 func checkFileExist(fileName string) bool {
 	_, err := os.Stat(fileName)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return !os.IsNotExist(err)
 }
 
 // makeTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L309
@@ -2757,43 +2710,6 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 		}
 	} else {
 		return recursiveTar(filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), filepath.Base(destPath), tarWriter, globExps)
-	}
-
-	return nil
-}
-
-// Tar will be used to tar files using odo watch
-// inspired from https://gist.github.com/jonmorehouse/9060515
-func tar(tw *taro.Writer, fileName string, destFile string) error {
-	stat, _ := os.Lstat(fileName)
-
-	// now lets create the header as needed for this file within the tarball
-	hdr, err := taro.FileInfoHeader(stat, fileName)
-	if err != nil {
-		return err
-	}
-	splitFileName := strings.Split(fileName, destFile)[1]
-
-	// hdr.Name can have only '/' as path separator, next line makes sure there is no '\'
-	// in hdr.Name on Windows by replacing '\' to '/' in splitFileName. destFile is
-	// a result of path.Base() call and never have '\' in it.
-	hdr.Name = destFile + strings.Replace(splitFileName, "\\", "/", -1)
-	// write the header to the tarball archive
-	err = tw.WriteHeader(hdr)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Open(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// copy the file data to the tarball
-	_, err = io.Copy(tw, file)
-	if err != nil {
-		return err
 	}
 
 	return nil

@@ -36,6 +36,8 @@ func RandString(n int) string {
 // expected output  within the timeout period.
 func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, check func(output string) bool) bool {
 	pingTimeout := time.After(time.Duration(timeout) * time.Minute)
+	// this is a test package so time.Tick() is acceptable
+	// nolint
 	tick := time.Tick(time.Second)
 	for {
 		select {

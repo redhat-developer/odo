@@ -239,9 +239,8 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) *Context {
 	// Get details from config file
 	configFileName := FlagValueIfSet(command, ContextFlagName)
 	if configFileName != "" {
-		fAbs, err := pkgUtil.GetAbsPath(configFileName)
+		_, err := pkgUtil.GetAbsPath(configFileName)
 		util.LogErrorAndExit(err, "")
-		configFileName = fAbs
 	}
 
 	// Check for valid config

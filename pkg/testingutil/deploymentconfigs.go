@@ -10,14 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getContainerPort(containerPort int32, containerProtocol corev1.Protocol) (container corev1.ContainerPort) {
-	return corev1.ContainerPort{
-		Name:          fmt.Sprintf("%v/%v", containerPort, containerProtocol),
-		ContainerPort: containerPort,
-		Protocol:      containerProtocol,
-	}
-}
-
 func getContainer(componentName string, applicationName string, ports []corev1.ContainerPort,
 	envFromSources []corev1.EnvFromSource) corev1.Container {
 	return corev1.Container{

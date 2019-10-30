@@ -664,7 +664,7 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 
 	// Get the component context folder
 	// ".odo" is removed as lci.Filename will always return the '.odo' folder.. we don't need that!
-	componentContext := strings.Trim(filepath.Dir(lci.Filename), ".odo")
+	componentContext := strings.TrimSuffix(filepath.Dir(lci.Filename), ".odo")
 
 	if sourceLocation == "" {
 		return "", fmt.Errorf("Blank source location, does the .odo directory exist?")
@@ -688,5 +688,5 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 
 	sourceOSPath := filepath.FromSlash(absPath)
 
-	return sourceOSPath, nil
+	return sourceOSPath, err
 }
