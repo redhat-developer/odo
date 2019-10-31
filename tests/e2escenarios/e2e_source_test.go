@@ -72,6 +72,15 @@ var _ = Describe("odo source e2e tests", func() {
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Javalin", 30, 1)
 
+			// Updating config
+			helper.CmdShouldPass("odo", "config", "set", "--env", "FOO=BAR", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--config", "--context", context)
+
+			// Updating message in source
+			helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello World from Javalin!", "Hello world message updated!")
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.HttpWaitFor(routeURL, "Hello world message updated!", 30, 1)
+
 			// Delete the component
 			helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")
 		})
