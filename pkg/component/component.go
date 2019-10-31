@@ -571,9 +571,9 @@ func applyConfigDeleteURL(client *occlient.Client, componentConfig config.LocalC
 	if err != nil {
 		return err
 	}
-	localUrlList := componentConfig.GetUrl()
+	localURLList := componentConfig.GetURL()
 	for _, u := range urlList.Items {
-		if !checkIfUrlPresentInConfig(localUrlList, u.Name) {
+		if !checkIfURLPresentInConfig(localURLList, u.Name) {
 			err = urlpkg.Delete(client, u.Name, componentConfig.GetApplication())
 			if err != nil {
 				return err
@@ -584,8 +584,8 @@ func applyConfigDeleteURL(client *occlient.Client, componentConfig config.LocalC
 	return nil
 }
 
-func checkIfUrlPresentInConfig(localUrl []config.ConfigUrl, url string) bool {
-	for _, u := range localUrl {
+func checkIfURLPresentInConfig(localURL []config.ConfigURL, url string) bool {
+	for _, u := range localURL {
 		if u.Name == url {
 			return true
 		}
@@ -596,7 +596,7 @@ func checkIfUrlPresentInConfig(localUrl []config.ConfigUrl, url string) bool {
 // ApplyConfigCreateURL applies url config onto component
 func ApplyConfigCreateURL(client *occlient.Client, componentConfig config.LocalConfigInfo) error {
 
-	urls := componentConfig.GetUrl()
+	urls := componentConfig.GetURL()
 	for _, urlo := range urls {
 		exist, err := urlpkg.Exists(client, urlo.Name, componentConfig.GetName(), componentConfig.GetApplication())
 		if err != nil {
@@ -935,7 +935,7 @@ func GetComponentFromConfig(localConfig config.LocalConfigInfo) (Component, erro
 			State: "Not Pushed",
 		}
 
-		for _, localURL := range localConfig.GetUrl() {
+		for _, localURL := range localConfig.GetURL() {
 			component.Spec.URL = append(component.Spec.URL, localURL.Name)
 		}
 
@@ -1490,7 +1490,7 @@ func checkIfURLChangesWillBeMade(client *occlient.Client, componentConfig config
 
 	// If config has URL(s) (since we check) or if the cluster has URL's but
 	// componentConfig does not (deleting)
-	if len(componentConfig.GetUrl()) > 0 || len(componentConfig.GetUrl()) == 0 && (len(urlList.Items) > 0) {
+	if len(componentConfig.GetURL()) > 0 || len(componentConfig.GetURL()) == 0 && (len(urlList.Items) > 0) {
 		return true, nil
 	}
 

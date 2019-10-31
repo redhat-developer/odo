@@ -20,13 +20,13 @@ import (
 )
 
 // Get returns URL defination for given URL name
-func (urls UrlList) Get(urlName string) Url {
+func (urls URLList) Get(urlName string) URL {
 	for _, url := range urls.Items {
 		if url.Name == urlName {
 			return url
 		}
 	}
-	return Url{}
+	return URL{}
 
 }
 
@@ -69,7 +69,7 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 // ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
 // down if a component name is provided, which will only list URLs for the
 // given component
-func ListPushed(client *occlient.Client, componentName string, applicationName string) (UrlList, error) {
+func ListPushed(client *occlient.Client, componentName string, applicationName string) (URLList, error) {
 
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
 
@@ -80,10 +80,10 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 	glog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
 	routes, err := client.ListRoutes(labelSelector)
 	if err != nil {
-		return UrlList{}, errors.Wrap(err, "unable to list route names")
+		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
 
-	var urls []Url
+	var urls []URL
 	for _, r := range routes {
 		a := getMachineReadableFormat(r)
 		urls = append(urls, a)
@@ -95,7 +95,7 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 
 // List returns all URLs for given component.
 // If componentName is empty string, it lists all url in a given application.
-func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componentName string, applicationName string) (UrlList, error) {
+func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componentName string, applicationName string) (URLList, error) {
 
 	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
 
@@ -105,46 +105,46 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 
 	routes, err := client.ListRoutes(labelSelector)
 	if err != nil {
-		return UrlList{}, errors.Wrap(err, "unable to list route names")
+		return URLList{}, errors.Wrap(err, "unable to list route names")
 	}
 
-	localConfigUrls := localConfig.GetUrl()
+	localConfigURLs := localConfig.GetURL()
 
-	var urls []Url
+	var urls []URL
 
 	for _, r := range routes {
-		clusterUrl := getMachineReadableFormat(r)
+		clusterURL := getMachineReadableFormat(r)
 		var found bool = false
-		for _, configUrl := range localConfigUrls {
-			localUrl := ConvertConfigUrl(configUrl)
-			if localUrl.Name == clusterUrl.Name {
-				// Url is in both local config and cluster
-				clusterUrl.Status.State = StateTypePushed
-				urls = append(urls, clusterUrl)
+		for _, configURL := range localConfigURLs {
+			localURL := ConvertConfigURL(configURL)
+			if localURL.Name == clusterURL.Name {
+				// URL is in both local config and cluster
+				clusterURL.Status.State = StateTypePushed
+				urls = append(urls, clusterURL)
 				found = true
 			}
 		}
 
 		if !found {
-			// Url is on the cluster but not in local config
-			clusterUrl.Status.State = StateTypeLocallyDeleted
-			urls = append(urls, clusterUrl)
+			// URL is on the cluster but not in local config
+			clusterURL.Status.State = StateTypeLocallyDeleted
+			urls = append(urls, clusterURL)
 		}
 	}
 
-	for _, configUrl := range localConfigUrls {
-		localUrl := ConvertConfigUrl(configUrl)
+	for _, configURL := range localConfigURLs {
+		localURL := ConvertConfigURL(configURL)
 		var found bool = false
 		for _, r := range routes {
-			clusterUrl := getMachineReadableFormat(r)
-			if localUrl.Name == clusterUrl.Name {
+			clusterURL := getMachineReadableFormat(r)
+			if localURL.Name == clusterURL.Name {
 				found = true
 			}
 		}
 		if !found {
-			// Url is in the local config but not on the cluster
-			localUrl.Status.State = StateTypeNotPushed
-			urls = append(urls, localUrl)
+			// URL is in the local config but not on the cluster
+			localURL.Status.State = StateTypeNotPushed
+			urls = append(urls, localURL)
 		}
 	}
 
@@ -160,18 +160,18 @@ func getProtocol(route routev1.Route) string {
 
 }
 
-// ConvertConfigUrl converts ConfigUrl to Url
-func ConvertConfigUrl(configUrl config.ConfigUrl) Url {
-	return Url{
+// ConvertConfigURL converts ConfigURL to URL
+func ConvertConfigURL(configURL config.ConfigURL) URL {
+	return URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
 			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: configUrl.Name,
+			Name: configURL.Name,
 		},
-		Spec: UrlSpec{
-			Port: configUrl.Port,
+		Spec: URLSpec{
+			Port: configURL.Port,
 		},
 	}
 }
@@ -241,17 +241,17 @@ func GetValidPortNumber(componentName string, portNumber int, portList []string)
 }
 
 // getMachineReadableFormat gives machine readable URL definition
-func getMachineReadableFormat(r routev1.Route) Url {
-	return Url{
+func getMachineReadableFormat(r routev1.Route) URL {
+	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       UrlSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: getProtocol(r)},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: getProtocol(r)},
 	}
 
 }
 
-func getMachineReadableFormatForList(urls []Url) UrlList {
-	return UrlList{
+func getMachineReadableFormatForList(urls []URL) URLList {
+	return URLList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
 			APIVersion: "odo.openshift.io/v1alpha1",

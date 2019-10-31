@@ -5,29 +5,29 @@ import (
 )
 
 // URL is
-type Url struct {
+type URL struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              UrlSpec   `json:"spec,omitempty"`
-	Status            UrlStatus `json:"status,omitempty"`
+	Spec              URLSpec   `json:"spec,omitempty"`
+	Status            URLStatus `json:"status,omitempty"`
 }
 
-// UrlSpec is
-type UrlSpec struct {
+// URLSpec is
+type URLSpec struct {
 	Host     string `json:"host,omitempty"`
 	Protocol string `json:"protocol,omitempty"`
 	Port     int    `json:"port,omitempty"`
 }
 
 // AppList is a list of applications
-type UrlList struct {
+type URLList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Url `json:"items"`
+	Items           []URL `json:"items"`
 }
 
-// UrlStatus is Status of url
-type UrlStatus struct {
+// URLStatus is Status of url
+type URLStatus struct {
 	// "Pushed" or "Not Pushed" or "Locally Delted"
 	State StateType `json:"state"`
 }
@@ -35,10 +35,10 @@ type UrlStatus struct {
 type StateType string
 
 const (
-	// StateTypePushed means that Url is present both locally and on cluster
+	// StateTypePushed means that URL is present both locally and on cluster
 	StateTypePushed = "Pushed"
-	// StateTypeNotPushed means that Url is only in local config, but not on the cluster
+	// StateTypeNotPushed means that URL is only in local config, but not on the cluster
 	StateTypeNotPushed = "Not Pushed"
-	// StateTypeLocallyDeleted means that Url was deleted from the local config, but it is still present on the cluster
+	// StateTypeLocallyDeleted means that URL was deleted from the local config, but it is still present on the cluster
 	StateTypeLocallyDeleted = "Locally Deleted"
 )

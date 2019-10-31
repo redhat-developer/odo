@@ -15,7 +15,7 @@ func GetOneExistingConfigInfo(componentName, applicationName, projectName string
 
 	portsValue := []string{"8080/TCP,45/UDP"}
 
-	urlValue := []ConfigUrl{
+	urlValue := []ConfigURL{
 		{
 			Name: "example-url-0",
 		},
@@ -40,7 +40,7 @@ func GetOneExistingConfigInfo(componentName, applicationName, projectName string
 				Storage:        &storageValue,
 				Envs:           envVars,
 				Ports:          &portsValue,
-				Url:            &urlValue,
+				URL:            &urlValue,
 				Project:        &projectName,
 			},
 		},

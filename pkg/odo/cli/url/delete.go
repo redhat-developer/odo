@@ -31,7 +31,7 @@ type URLDeleteOptions struct {
 	*genericclioptions.Context
 }
 
-// NewURLDeleteOptions creates a new UrlDeleteOptions instance
+// NewURLDeleteOptions creates a new URLDeleteOptions instance
 func NewURLDeleteOptions() *URLDeleteOptions {
 	return &URLDeleteOptions{}
 }
@@ -52,7 +52,7 @@ func (o *URLDeleteOptions) Validate() (err error) {
 	//	return err
 	//}
 	var exists bool
-	urls := o.localConfigInfo.GetUrl()
+	urls := o.localConfigInfo.GetURL()
 
 	for _, url := range urls {
 		if url.Name == o.urlName {
@@ -69,7 +69,7 @@ func (o *URLDeleteOptions) Validate() (err error) {
 func (o *URLDeleteOptions) Run() (err error) {
 
 	if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
-		err = o.localConfigInfo.DeleteUrl(o.urlName)
+		err = o.localConfigInfo.DeleteURL(o.urlName)
 		if err != nil {
 			return err
 		}

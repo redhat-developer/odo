@@ -45,12 +45,12 @@ type URLCreateOptions struct {
 	*genericclioptions.Context
 }
 
-// NewURLCreateOptions creates a new UrlCreateOptions instance
+// NewURLCreateOptions creates a new URLCreateOptions instance
 func NewURLCreateOptions() *URLCreateOptions {
 	return &URLCreateOptions{}
 }
 
-// Complete completes UrlCreateOptions after they've been Created
+// Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
@@ -70,12 +70,12 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 	return
 }
 
-// Validate validates the UrlCreateOptions based on completed values
+// Validate validates the URLCreateOptions based on completed values
 func (o *URLCreateOptions) Validate() (err error) {
 
 	// Check if exist
-	for _, localUrl := range o.localConfigInfo.GetUrl() {
-		if o.urlName == localUrl.Name {
+	for _, localURL := range o.localConfigInfo.GetURL() {
+		if o.urlName == localURL.Name {
 			return fmt.Errorf("the url %s already exists in the application: %s", o.urlName, o.Application)
 		}
 	}
@@ -94,7 +94,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
-	err = o.localConfigInfo.SetConfiguration("url", config.ConfigUrl{Name: o.urlName, Port: o.componentPort})
+	err = o.localConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort})
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}

@@ -74,11 +74,11 @@ type ComponentSettings struct {
 
 	Envs EnvVarList `yaml:"Envs,omitempty"`
 
-	Url *[]ConfigUrl `yaml:"Url,omitempty"`
+	URL *[]ConfigURL `yaml:"Url,omitempty"`
 }
 
-// ConfigUrl holds URL related information
-type ConfigUrl struct {
+// ConfigURL holds URL related information
+type ConfigURL struct {
 	// Name of the URL
 	Name string `yaml:"Name,omitempty"`
 	// Port number for the url of the component, required in case of components which expose more than one service port
@@ -245,11 +245,11 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 			lci.componentSettings.MinCPU = &strValue
 			lci.componentSettings.MaxCPU = &strValue
 		case "url":
-			urlValue := value.(ConfigUrl)
-			if lci.componentSettings.Url != nil {
-				*lci.componentSettings.Url = append(*lci.componentSettings.Url, urlValue)
+			urlValue := value.(ConfigURL)
+			if lci.componentSettings.URL != nil {
+				*lci.componentSettings.URL = append(*lci.componentSettings.URL, urlValue)
 			} else {
-				lci.componentSettings.Url = &[]ConfigUrl{urlValue}
+				lci.componentSettings.URL = &[]ConfigURL{urlValue}
 			}
 		}
 
@@ -307,13 +307,13 @@ func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
 
 }
 
-// DeleteUrl is used to delete config from local odo config
-func (lci *LocalConfigInfo) DeleteUrl(parameter string) error {
-	for i, url := range *lci.componentSettings.Url {
+// DeleteURL is used to delete config from local odo config
+func (lci *LocalConfigInfo) DeleteURL(parameter string) error {
+	for i, url := range *lci.componentSettings.URL {
 		if url.Name == parameter {
-			s := *lci.componentSettings.Url
+			s := *lci.componentSettings.URL
 			s = append(s[:i], s[i+1:]...)
-			lci.componentSettings.Url = &s
+			lci.componentSettings.URL = &s
 		}
 	}
 	return lci.writeToFile()
@@ -481,12 +481,12 @@ func (lc *LocalConfig) GetMaxCPU() string {
 	return *lc.componentSettings.MaxCPU
 }
 
-// GetUrl returns the ConfigUrl, returns default if nil
-func (lc *LocalConfig) GetUrl() []ConfigUrl {
-	if lc.componentSettings.Url == nil {
-		return []ConfigUrl{}
+// GetURL returns the ConfigURL, returns default if nil
+func (lc *LocalConfig) GetURL() []ConfigURL {
+	if lc.componentSettings.URL == nil {
+		return []ConfigURL{}
 	}
-	return *lc.componentSettings.Url
+	return *lc.componentSettings.URL
 }
 
 // GetStorage returns the Storage, returns empty if nil
@@ -574,10 +574,10 @@ const (
 	StorageDescription = "Storage of the component"
 	// SourceLocationDescription is the human-readable description of path setting
 	SourceLocationDescription = "The path indicates the location of binary file or git source"
-	// Url
-	Url = "Url"
-	// UrlDescription is the description of URL
-	UrlDescription = "URL to access the component"
+	// URL
+	URL = "URL"
+	// URLDescription is the description of URL
+	URLDescription = "URL to access the component"
 )
 
 var (
@@ -599,7 +599,7 @@ var (
 		MaxCPU:         MaxCPUDescription,
 		Storage:        StorageDescription,
 		CPU:            CPUDescription,
-		Url:            UrlDescription,
+		URL:            URLDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())
