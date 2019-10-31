@@ -127,10 +127,8 @@ func checkGitIgnoreFile(directory string) error {
 		if err != nil {
 			return errors.Wrap(err, "failed reading data from file")
 		} else {
-			s := string(data)
 			// check whether .odo/odo-file-index.json is already in the .gitignore file
-			if strings.Contains(s, ".odo/odo-file-index.json") {
-			} else {
+			if !strings.Contains(string(data), ".odo/odo-file-index.json") {
 				if _, err := file.WriteString("\n" + ".odo/odo-file-index.json"); err != nil {
 					return errors.Wrap(err, "failed writing string to file")
 				}
@@ -152,7 +150,6 @@ func checkGitIgnoreFile(directory string) error {
 				return errors.Wrap(err, "failed writing string to file")
 			}
 		}
-	} else {
 	}
 	return nil
 }

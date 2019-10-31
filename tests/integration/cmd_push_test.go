@@ -320,7 +320,7 @@ var _ = Describe("odo push command tests", func() {
 		})
 	})
 
-	Context("when .gitignore file exists", func() {
+	Context("when .gitignore file exists or not", func() {
 		It("should create and push the contents of a named component and include odo-file-index.json path to .gitignore file to exclude the contents", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
