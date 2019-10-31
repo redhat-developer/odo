@@ -69,7 +69,7 @@ var _ = Describe("odo core beta flow", func() {
 		urlCreateSession := helper.CmdShouldPass(odo, append([]string{"url", "create", "--port", "8080"}, extraArgs...)...)
 		// output of the commands should point user to running "odo push"
 		Eventually(urlCreateSession).Should(ContainSubstring("odo push"))
-		helper.FileShouldContainSubstring(configFile, "URL:")
+		helper.FileShouldContainSubstring(configFile, "Url:")
 		helper.FileShouldContainSubstring(configFile, "Port: 8080")
 
 		helper.CmdShouldPass(odo, append([]string{"push"}, extraArgs...)...)
