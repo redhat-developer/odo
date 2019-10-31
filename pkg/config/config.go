@@ -286,10 +286,10 @@ func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 	configDir := filepath.Dir(lci.Filename)
 	_, err := lci.fs.Stat(configDir)
 	if os.IsNotExist(err) {
-		// if the config dir doesn't exist then we dont mind
+		// If the config dir doesn't exist then we dont mind
 		return nil
 	} else if err != nil {
-		// possible to not have permission to the dir
+		// Possible to not have permission to the dir
 		return err
 	}
 
@@ -300,7 +300,7 @@ func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 	defer f.Close()
 
 	_, err = f.Readdir(1)
-	// if directory is empty we can remove it
+	// If directory is empty we can remove it
 	if err == io.EOF {
 		glog.V(4).Info("Deleting the config directory as well because its empty")
 

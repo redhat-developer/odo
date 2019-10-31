@@ -43,7 +43,7 @@ type FileData struct {
 // read tries to read the odo index file from the given location and returns the data from the file
 // if no such file is present, it means the folder hasn't been walked and thus returns a empty list
 func readFileIndex(filePath string) (*FileIndex, error) {
-	// read operation
+	// Read operation
 	var fi FileIndex
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return NewFileIndex(), nil
@@ -53,7 +53,7 @@ func readFileIndex(filePath string) (*FileIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	// unmarshals the byte values and fill up the file read map
+	// Unmarshals the byte values and fill up the file read map
 	err = json.Unmarshal(byteValue, &fi)
 	if err != nil {
 		// This is added here for backward compatibility because
