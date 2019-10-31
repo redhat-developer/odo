@@ -33,6 +33,12 @@ func Create(client *occlient.Client, projectName string, wait bool) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to create new project")
 	}
+	if wait {
+		err = client.WaitForDefaultServiceAccountInNamespace(projectName, "default")
+		if err != nil {
+			return errors.Wrap(err, "unable to wait for service account")
+		}
+	}
 	return nil
 }
 

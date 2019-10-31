@@ -33,6 +33,7 @@ import (
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
+	KCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	// api resource types
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
@@ -208,6 +209,7 @@ type Client struct {
 	userClient           userclientset.UserV1Interface
 	KubeConfig           clientcmd.ClientConfig
 	Namespace            string
+	kubernetesCoreV1     KCorev1.CoreV1Interface
 }
 
 func getBootstrapperImage() string {
@@ -285,6 +287,12 @@ func New() (*Client, error) {
 		return nil, err
 	}
 	client.Namespace = namespace
+
+	coreV1Client, err := KCorev1.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.kubernetesCoreV1 = coreV1Client
 
 	return &client, nil
 }
@@ -536,7 +544,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 				glog.V(4).Infof("Status of creation of project %s is %s", prj.Name, prj.Status.Phase)
 				switch prj.Status.Phase {
 				//prj.Status.Phase can only be "Terminating" or "Active" or ""
-				case "Active":
+				case corev1.NamespaceActive:
 					if val.Type == watch.Added {
 						glog.V(4).Infof("Project %s now exists", prj.Name)
 						return nil
@@ -549,6 +557,30 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 		}
 	}
 
+	return nil
+}
+
+func (c *Client) WaitForDefaultServiceAccountInNamespace(namespace, serviceAccountName string) error {
+	watcher, err := c.kubernetesCoreV1.ServiceAccounts(namespace).Watch(metav1.SingleObject(metav1.ObjectMeta{Name: serviceAccountName}))
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+
+	if watcher != nil {
+		for {
+			val, ok := <-watcher.ResultChan()
+			if !ok {
+				break
+			}
+			if serviceAccount, ok := val.Object.(*corev1.ServiceAccount); ok {
+				if serviceAccount.Name == serviceAccountName {
+					glog.V(4).Infof("Status of creation of service account %s is ready", serviceAccount)
+					return nil
+				}
+			}
+		}
+	}
 	return nil
 }
 
