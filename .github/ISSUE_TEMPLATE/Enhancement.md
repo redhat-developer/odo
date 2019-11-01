@@ -2,7 +2,9 @@
 name: Enhancement
 about: Suggest an enhancement for existing odo functionality
 ---
-[kind/Enhancement]
+
+/kind enhancement
+
 <!--
 
 Welcome! - We kindly ask you to:
