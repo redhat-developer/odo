@@ -115,7 +115,14 @@ func (o *commonLinkOptions) run() (err error) {
 		return err
 	}
 
-	log.Successf("%s %s has been successfully %sed from the component %s\n", linkType, o.suppliedName, o.operationName, o.Component())
+	switch o.operationName {
+	case "link":
+		log.Successf("%s %s has been successfully linked to the component %s\n", linkType, o.suppliedName, o.Component())
+	case "unlink":
+		log.Successf("%s %s has been successfully unlinked from the component %s\n", linkType, o.suppliedName, o.Component())
+	default:
+		return fmt.Errorf("unknown operation %s", o.operationName)
+	}
 
 	secret, err := o.Client.GetSecret(o.secretName, o.Project)
 	if err != nil {
