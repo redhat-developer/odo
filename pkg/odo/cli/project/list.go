@@ -53,11 +53,7 @@ func (plo *ProjectListOptions) Run() (err error) {
 		return err
 	}
 	if log.IsJSON() {
-		out, err := machineoutput.MarshalJSONIndented(projects)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
+		machineoutput.OutputSuccess(projects)
 	} else {
 
 		if len(projects.Items) == 0 {

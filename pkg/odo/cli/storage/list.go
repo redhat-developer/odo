@@ -70,11 +70,7 @@ func (o *StorageListOptions) Run() (err error) {
 	storageListResultMachineReadable := storage.GetMachineReadableFormatForList(storageListMachineReadable)
 
 	if log.IsJSON() {
-		out, err := machineoutput.MarshalJSONIndented(storageListResultMachineReadable)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
+		machineoutput.OutputSuccess(storageListResultMachineReadable)
 	} else {
 		// defining the column structure of the table
 		tabWriterMounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)

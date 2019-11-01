@@ -68,11 +68,7 @@ func (o *ListOptions) Run() (err error) {
 			}
 
 			appListDef := application.GetMachineReadableFormatForList(appList)
-			out, err := machineoutput.MarshalJSONIndented(appListDef)
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(out))
+			machineoutput.OutputSuccess(appListDef)
 
 		} else {
 			log.Infof("The project '%v' has the following applications:", o.Project)
@@ -91,13 +87,9 @@ func (o *ListOptions) Run() (err error) {
 		}
 	} else {
 		if log.IsJSON() {
-			out, err := machineoutput.MarshalJSONIndented(application.GetMachineReadableFormatForList([]application.App{}))
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(out))
+			apps := application.GetMachineReadableFormatForList([]application.App{})
+			machineoutput.OutputSuccess(apps)
 		} else {
-
 			log.Infof("There are no applications deployed in the project '%v'.", o.Project)
 		}
 	}

@@ -63,11 +63,7 @@ func (o *URLListOptions) Run() (err error) {
 	}
 
 	if log.IsJSON() {
-		out, err := machineoutput.MarshalJSONIndented(urls)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
+		machineoutput.OutputSuccess(urls)
 	} else {
 		if len(urls.Items) == 0 {
 			return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
