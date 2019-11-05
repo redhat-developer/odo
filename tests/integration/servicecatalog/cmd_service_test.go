@@ -30,6 +30,24 @@ var _ = Describe("odo service command tests", func() {
 		oc = helper.NewOcRunner("oc")
 	})
 
+	setup := func() {
+		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		project = helper.CreateRandProject()
+		context1 = helper.CreateNewContext()
+		context2 = helper.CreateNewContext()
+		originalDir = helper.Getwd()
+	}
+
+	removeSetup := func() {
+		helper.Chdir(originalDir)
+		helper.DeleteProject(project)
+		helper.DeleteDir(context)
+		helper.DeleteDir(context1)
+		helper.DeleteDir(context2)
+		os.Unsetenv("GLOBALODOCONFIG")
+	}
+
 	Context("when running help for service command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "service", "-h")
@@ -282,20 +300,10 @@ var _ = Describe("odo service command tests", func() {
 
 	Context("When link backend between component and service", func() {
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-			context1 = helper.CreateNewContext()
-			context2 = helper.CreateNewContext()
-			originalDir = helper.Getwd()
+			setup()
 		})
 		JustAfterEach(func() {
-			helper.Chdir(originalDir)
-			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			helper.DeleteDir(context1)
-			helper.DeleteDir(context2)
-			os.Unsetenv("GLOBALODOCONFIG")
+			removeSetup()
 		})
 		It("should link backend to service successfully", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
@@ -324,20 +332,10 @@ var _ = Describe("odo service command tests", func() {
 
 	Context("When deleting service and unlink the backend from the frontend", func() {
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-			context1 = helper.CreateNewContext()
-			context2 = helper.CreateNewContext()
-			originalDir = helper.Getwd()
+			setup()
 		})
 		JustAfterEach(func() {
-			helper.Chdir(originalDir)
-			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			helper.DeleteDir(context1)
-			helper.DeleteDir(context2)
-			os.Unsetenv("GLOBALODOCONFIG")
+			removeSetup()
 		})
 		It("should pass", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
@@ -370,20 +368,10 @@ var _ = Describe("odo service command tests", func() {
 
 	Context("When linking or unlinking a service or component", func() {
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-			context1 = helper.CreateNewContext()
-			context2 = helper.CreateNewContext()
-			originalDir = helper.Getwd()
+			setup()
 		})
 		JustAfterEach(func() {
-			helper.Chdir(originalDir)
-			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			helper.DeleteDir(context1)
-			helper.DeleteDir(context2)
-			os.Unsetenv("GLOBALODOCONFIG")
+			removeSetup()
 		})
 
 		It("should print the environment variables being linked/unlinked", func() {
