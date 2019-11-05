@@ -293,7 +293,7 @@ func componentTests(args ...string) {
 					cmpName,
 					appName,
 					project,
-					[]string{"ls", "-la", "/tmp/src/package.json"},
+					[]string{"sh", "-c", "ls -la $ODO_S2I_DEPLOYMENT_DIR/package.json"},
 					func(cmdOp string, err error) bool {
 						if err != nil {
 							return false
@@ -318,7 +318,7 @@ func componentTests(args ...string) {
 					cmpName,
 					appName,
 					project,
-					[]string{"ls", "-la", "/tmp/src/package.json"},
+					[]string{"sh", "-c", "ls -la $ODO_S2I_DEPLOYMENT_DIR/package.json"},
 					func(cmdOp string, err error) bool {
 						if err != nil {
 							return false
@@ -355,7 +355,7 @@ func componentTests(args ...string) {
 					cmpName,
 					appName,
 					project,
-					[]string{"ls", "-la", "/tmp/src/package.json"},
+					[]string{"sh", "-c", "ls -la $ODO_S2I_DEPLOYMENT_DIR/package.json"},
 					func(cmdOp string, err error) bool {
 						if err != nil {
 							return false
@@ -380,7 +380,7 @@ func componentTests(args ...string) {
 					cmpName,
 					appName,
 					project,
-					[]string{"ls", "-la", "/tmp/src/package.json"},
+					[]string{"sh", "-c", "ls -la $ODO_S2I_DEPLOYMENT_DIR/package.json"},
 					func(cmdOp string, err error) bool {
 						if err != nil {
 							return false
@@ -432,7 +432,7 @@ func componentTests(args ...string) {
 				cmpName,
 				appName,
 				project,
-				[]string{"ls", "-la", "/tmp/src/package.json"},
+				[]string{"sh", "-c", "ls -la $ODO_S2I_DEPLOYMENT_DIR/package.json"},
 				func(cmdOp string, err error) bool {
 					if err != nil {
 						return false

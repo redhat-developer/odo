@@ -75,7 +75,7 @@ var _ = Describe("odo push command tests", func() {
 			podName := oc.GetRunningPodNameOfComp(cmpName, project)
 
 			envs := oc.GetEnvs(cmpName, appName, project)
-			dir := fmt.Sprintf("%s/%s", envs["ODO_S2I_SRC_BIN_PATH"], "/src")
+			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 
 			stdOut := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut).To(ContainSubstring(("foobar.txt")))
@@ -113,7 +113,7 @@ var _ = Describe("odo push command tests", func() {
 
 			// verify that the new file was pushed
 			envs := oc.GetEnvs(cmpName, appName, project)
-			dir := fmt.Sprintf("%s/%s", envs["ODO_S2I_SRC_BIN_PATH"], "/src")
+			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 			stdOut := oc.ExecListDir(podName, project, dir)
 			Expect(stdOut).To(ContainSubstring(("README.md")))
 
@@ -143,7 +143,7 @@ var _ = Describe("odo push command tests", func() {
 			podName := oc.GetRunningPodNameOfComp(cmpName, project)
 
 			envs := oc.GetEnvs(cmpName, appName, project)
-			dir := fmt.Sprintf("%s/%s", envs["ODO_S2I_SRC_BIN_PATH"], "/src")
+			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 
 			// verify that the new file was pushed
 			stdOut := oc.ExecListDir(podName, project, dir)
@@ -213,7 +213,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/server.js"},
+				[]string{"sh", "-c", "stat $ODO_S2I_DEPLOYMENT_DIR/server.js"},
 				func(cmdOp string, err error) bool {
 					earlierCatServerFile = cmdOp
 					return true
@@ -225,7 +225,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/views/index.html"},
+				[]string{"sh", "-c", "stat $ODO_S2I_DEPLOYMENT_DIR/views/index.html"},
 				func(cmdOp string, err error) bool {
 					earlierCatViewFile = cmdOp
 					return true
@@ -241,7 +241,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/views/index.html"},
+				[]string{"sh", "-c", "stat $ODO_S2I_DEPLOYMENT_DIR/views/index.html"},
 				func(cmdOp string, err error) bool {
 					modifiedCatViewFile = cmdOp
 					return true
@@ -253,7 +253,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/server.js"},
+				[]string{"sh", "-c", "stat $ODO_S2I_DEPLOYMENT_DIR/server.js"},
 				func(cmdOp string, err error) bool {
 					modifiedCatServerFile = cmdOp
 					return true
@@ -281,7 +281,7 @@ var _ = Describe("odo push command tests", func() {
 			podName := oc.GetRunningPodNameOfComp("nodejs", project)
 
 			envs := oc.GetEnvs(cmpName, appName, project)
-			dir := fmt.Sprintf("%s/%s", envs["ODO_S2I_SRC_BIN_PATH"], "/src")
+			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 
 			// verify that the views folder got pushed
 			stdOut1 := oc.ExecListDir(podName, project, dir)
