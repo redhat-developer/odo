@@ -272,7 +272,7 @@ func componentTests(args ...string) {
 			helper.Chdir(originalDir)
 		})
 		Context("Using project flag(--project) and current directory", func() {
-			It("create local nodejs component and push source and code separately", func() {
+			FIt("create local nodejs component and push source and code separately", func() {
 				appName := "nodejs-push-test"
 				cmpName := "nodejs"
 				helper.CopyExample(filepath.Join("source", "nodejs"), context)
@@ -293,8 +293,9 @@ func componentTests(args ...string) {
 					cmpName,
 					appName,
 					project,
-					[]string{"ls", "-la", "/tmp/src/package.json"},
+					[]string{"env"},
 					func(cmdOp string, err error) bool {
+						fmt.Println("GIRISH", cmdOp)
 						if err != nil {
 							return false
 						}
