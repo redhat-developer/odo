@@ -40,6 +40,7 @@ var _ = Describe("odo project command tests", func() {
 
 	Context("when running project command app parameter in directory that doesn't contain .odo config directory", func() {
 		It("should successfully execute list along with machine readable output", func() {
+			time.Sleep(1 * time.Second)
 			listOutput := helper.CmdShouldPass("odo", "project", "list")
 			Expect(listOutput).To(ContainSubstring(project))
 
