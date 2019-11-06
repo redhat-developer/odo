@@ -2,10 +2,12 @@ package component
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -90,7 +92,7 @@ func mockPushLocal(client *occlient.Client, componentName string, applicationNam
 		}
 	}
 	ExtChan <- true
-	return nil
+	return fmt.Errorf("received %+v which is not same as expected list %+v", files, ExpectedChangedFiles)
 }
 
 func TestWatchAndPush(t *testing.T) {
@@ -227,37 +229,44 @@ func TestWatchAndPush(t *testing.T) {
 			go func() {
 				t.Logf("Starting file simulations \n%+v\n", tt.fileModifications)
 				// Simulating file modifications for watch to observe
-				startMsg := <-StartChan
-				if startMsg {
-					for _, fileModification := range tt.fileModifications {
+				pingTimeout := time.After(time.Duration(1) * time.Minute)
+				for {
+					select {
+					case startMsg := <-StartChan:
+						if startMsg {
+							for _, fileModification := range tt.fileModifications {
 
-						intendedFileRelPath := fileModification.FilePath
-						if fileModification.FileParent != "" {
-							intendedFileRelPath = filepath.Join(fileModification.FileParent, fileModification.FilePath)
-						}
+								intendedFileRelPath := fileModification.FilePath
+								if fileModification.FileParent != "" {
+									intendedFileRelPath = filepath.Join(fileModification.FileParent, fileModification.FilePath)
+								}
 
-						fileModification.FileParent = CompDirStructure[fileModification.FileParent].FilePath
-						if _, ok := CompDirStructure[intendedFileRelPath]; ok {
-							fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
-						}
+								fileModification.FileParent = CompDirStructure[fileModification.FileParent].FilePath
+								if _, ok := CompDirStructure[intendedFileRelPath]; ok {
+									fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
+								}
 
-						newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
-						if err != nil {
-							t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
-						}
+								newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
+								if err != nil {
+									t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
+								}
 
-						// If file operation is create, store even such modifications in dir structure for future references
-						if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
-							CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
-								FilePath:         filepath.Base(newFilePath),
-								FileParent:       filepath.Dir(newFilePath),
-								FileType:         testingutil.Directory,
-								ModificationType: testingutil.CREATE,
+								// If file operation is create, store even such modifications in dir structure for future references
+								if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
+									CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
+										FilePath:         filepath.Base(newFilePath),
+										FileParent:       filepath.Dir(newFilePath),
+										FileType:         testingutil.Directory,
+										ModificationType: testingutil.CREATE,
+									}
+								}
 							}
 						}
+						t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
+					case <-pingTimeout:
+						break
 					}
 				}
-				t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
 			}()
 
 			// Start WatchAndPush, the unit tested function

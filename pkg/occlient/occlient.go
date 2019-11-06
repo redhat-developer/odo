@@ -583,7 +583,10 @@ func addLabelsToArgs(labels map[string]string, args []string) []string {
 // getExposedPortsFromISI parse ImageStreamImage definition and return all exposed ports in form of ContainerPorts structs
 func getExposedPortsFromISI(image *imagev1.ImageStreamImage) ([]corev1.ContainerPort, error) {
 	// file DockerImageMetadata
-	_ = imageWithMetadata(&image.Image)
+	err := imageWithMetadata(&image.Image)
+	if err != nil {
+		return nil, err
+	}
 
 	var ports []corev1.ContainerPort
 
@@ -764,7 +767,7 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 	}
 
 	// return error since its an unhandled case if code reaches here
-	return nil, fmt.Errorf("unable to fetch image with tag %s corresponding to imagestream %+v", imageTag, imageStream)
+	return nil, fmt.Errorf("unable to find tag %s for image %s", imageTag, imageName)
 }
 
 // GetImageStreamTags returns all the ImageStreamTag objects in the given namespace
