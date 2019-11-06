@@ -6,6 +6,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -68,31 +73,86 @@ func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []test
 	return srcPath, retVal, nil
 }
 
-// ExpectedChangedFiles is required so that the mockPushLocal below can validate obrtained change set against the test expected changes
+// ExpectedChangedFiles is required so that the mockPushLocal below can validate obtained changes set against the test expected changes
 var ExpectedChangedFiles []string
 
+// DeleteFiles is required to validate deleted changes set against the test expected changes
+var DeleteFiles []string
+
 // CompDirStructure is required to hold the directory structure of mock component created by the test which can be accessed by mockPushLocal
-var CompDirStructure map[string]testingutil.FileProperties
+var (
+	muLock           sync.Mutex
+	CompDirStructure map[string]testingutil.FileProperties
+)
 
 // ExtChan is used to return from otherwise non-terminating(without SIGINT) end of ever running watch function
 var ExtChan = make(chan bool)
 var StartChan = make(chan bool)
 
+type mockPushParameters struct {
+	componentName   string
+	applicationName string
+	path            string
+	isForcePush     bool
+	globExps        []string
+	show            bool
+}
+
+var mockPush mockPushParameters
+
 // Mock PushLocal to collect changed files and compare against expected changed files
 func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isPushForce bool, globExps []string, show bool) error {
-	for _, gotChangedFile := range files {
+	muLock.Lock()
+	defer muLock.Unlock()
+	if componentName != mockPush.componentName || applicationName != mockPush.applicationName || isPushForce != mockPush.isForcePush || show != mockPush.show {
+		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush, []string{
+			componentName, applicationName, "isPushForce:" + strconv.FormatBool(isPushForce), "show:" + strconv.FormatBool(show),
+		})
+		os.Exit(1)
+	}
+	sort.Strings(globExps)
+	sort.Strings(mockPush.globExps)
+	if !reflect.DeepEqual(globExps, mockPush.globExps) {
+		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush.globExps, globExps)
+		os.Exit(1)
+	}
+
+	for _, expChangedFile := range ExpectedChangedFiles {
+		found := false
 		// Verify every file in expected file changes to be actually observed to be changed
 		// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
-		for _, expChangedFile := range ExpectedChangedFiles {
+		for _, gotChangedFile := range files {
 			wantedFileDetail := CompDirStructure[expChangedFile]
 			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == gotChangedFile {
-				ExtChan <- true
-				return nil
+				found = true
 			}
 		}
+		if !found {
+			ExtChan <- true
+			fmt.Printf("received %+v which is not same as expected list %+v", files, strings.Join(ExpectedChangedFiles, ","))
+			os.Exit(1)
+		}
 	}
+
+	for _, deletedFile := range DeleteFiles {
+		found := false
+		// Verify every file in expected deleted file changes to be actually observed to be changed
+		// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
+		for _, gotChangedFile := range delFiles {
+			wantedFileDetail := CompDirStructure[deletedFile]
+			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == filepath.Join(wantedFileDetail.FileParent, filepath.Base(gotChangedFile)) {
+				found = true
+			}
+		}
+		if !found {
+			ExtChan <- true
+			fmt.Printf("received deleted files: %+v which is not same as expected list %+v", delFiles, strings.Join(DeleteFiles, ","))
+			os.Exit(1)
+		}
+	}
+
 	ExtChan <- true
-	return fmt.Errorf("received %+v which is not same as expected list %+v", files, ExpectedChangedFiles)
+	return nil
 }
 
 func TestWatchAndPush(t *testing.T) {
@@ -102,21 +162,26 @@ func TestWatchAndPush(t *testing.T) {
 		applicationName   string
 		path              string
 		ignores           []string
+		show              bool
+		forcePush         bool
 		delayInterval     int
 		wantErr           bool
 		want              []string
+		wantDeleted       []string
 		fileModifications []testingutil.FileProperties
 		requiredFilePaths []testingutil.FileProperties
 		setupEnv          func(componentName string, requiredFilePaths []testingutil.FileProperties) (string, map[string]testingutil.FileProperties, error)
 	}{
 		{
-			name:            "Case: Valid watch with list of files to be ignored",
+			name:            "Case 1: Valid watch with list of files to be ignored with a append event",
 			componentName:   "license-analysis",
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
-			ignores:         []string{".git", "tests/", "LICENSE", "__init__.py"},
+			ignores:         []string{".git", "tests/", "LICENSE"},
 			delayInterval:   1,
 			wantErr:         false,
+			show:            false,
+			forcePush:       false,
 			requiredFilePaths: []testingutil.FileProperties{
 				{
 					FilePath:         "src",
@@ -205,17 +270,439 @@ func TestWatchAndPush(t *testing.T) {
 					ModificationType: testingutil.DELETE,
 				},
 			},
-			want:     []string{"src/read_licenses.py"},
-			setupEnv: setUpF8AnalyticsComponentSrc,
+			want:        []string{"src/read_licenses.py", "__init__.py"},
+			wantDeleted: []string{},
+			setupEnv:    setUpF8AnalyticsComponentSrc,
+		},
+		{
+			name:            "Case 2: Valid watch with list of files to be ignored with a append and a delete event",
+			componentName:   "license-analysis",
+			applicationName: "fabric8-analytics",
+			path:            "fabric8-analytics-license-analysis",
+			ignores:         []string{".git", "tests/", "LICENSE"},
+			delayInterval:   1,
+			wantErr:         false,
+			show:            false,
+			forcePush:       false,
+			requiredFilePaths: []testingutil.FileProperties{
+				{
+					FilePath:         "src",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "tests",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         ".git",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "LICENSE",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "main.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "test1.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "read_licenses.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+			},
+			fileModifications: []testingutil.FileProperties{
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.APPEND,
+				},
+				{
+					FilePath:         "read_licenses.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.DELETE,
+				},
+				{
+					FilePath:         "test_read_licenses.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "tests",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.DELETE,
+				},
+			},
+			want:        []string{"__init__.py"},
+			wantDeleted: []string{"src/read_licenses.py"},
+			setupEnv:    setUpF8AnalyticsComponentSrc,
+		},
+		{
+			name:            "Case 3: Valid watch with list of files to be ignored with a create and a delete event",
+			componentName:   "license-analysis",
+			applicationName: "fabric8-analytics",
+			path:            "fabric8-analytics-license-analysis",
+			ignores:         []string{".git", "tests/", "LICENSE"},
+			delayInterval:   1,
+			wantErr:         false,
+			show:            false,
+			forcePush:       false,
+			requiredFilePaths: []testingutil.FileProperties{
+				{
+					FilePath:         "src",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "tests",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         ".git",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "LICENSE",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "main.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "test1.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "read_licenses.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+			},
+			fileModifications: []testingutil.FileProperties{
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "read_licenses.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.DELETE,
+				},
+				{
+					FilePath:         "test_read_licenses.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "tests",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.DELETE,
+				},
+			},
+			want:        []string{"__init__.py"},
+			wantDeleted: []string{"src/read_licenses.py"},
+			setupEnv:    setUpF8AnalyticsComponentSrc,
+		},
+		{
+			name:            "Case 4: Valid watch with list of files to be ignored with a folder create event",
+			componentName:   "license-analysis",
+			applicationName: "fabric8-analytics",
+			path:            "fabric8-analytics-license-analysis",
+			ignores:         []string{".git", "tests/", "LICENSE"},
+			delayInterval:   1,
+			wantErr:         false,
+			show:            false,
+			forcePush:       false,
+			requiredFilePaths: []testingutil.FileProperties{
+				{
+					FilePath:         "src",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "tests",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         ".git",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "LICENSE",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "main.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "test1.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "read_licenses.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+			},
+			fileModifications: []testingutil.FileProperties{
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "read_licenses.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.DELETE,
+				},
+				{
+					FilePath:         "test_read_licenses.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "tests",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.DELETE,
+				},
+				{
+					FilePath:         "bin",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+			},
+			want:        []string{"__init__.py"},
+			wantDeleted: []string{"src/read_licenses.py"},
+			setupEnv:    setUpF8AnalyticsComponentSrc,
+		},
+		{
+			name:            "Case 5: Valid watch with list of files to be ignored with a folder delete event",
+			componentName:   "license-analysis",
+			applicationName: "fabric8-analytics",
+			path:            "fabric8-analytics-license-analysis",
+			ignores:         []string{".git", "tests/", "LICENSE"},
+			delayInterval:   1,
+			wantErr:         false,
+			show:            false,
+			forcePush:       false,
+			requiredFilePaths: []testingutil.FileProperties{
+				{
+					FilePath:         "src",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "tests",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         ".git",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "LICENSE",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "main.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "test1.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "read_licenses.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "bin",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.CREATE,
+				},
+			},
+			fileModifications: []testingutil.FileProperties{
+				{
+					FilePath:         "__init__.py",
+					FileParent:       "",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "read_licenses.py",
+					FileParent:       "src",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.DELETE,
+				},
+				{
+					FilePath:         "test_read_licenses.py",
+					FileParent:       "tests",
+					FileType:         testingutil.RegularFile,
+					ModificationType: testingutil.CREATE,
+				},
+				{
+					FilePath:         "tests",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.DELETE,
+				},
+				{
+					FilePath:         "bin",
+					FileParent:       "",
+					FileType:         testingutil.Directory,
+					ModificationType: testingutil.DELETE,
+				},
+			},
+			want:        []string{"__init__.py"},
+			wantDeleted: []string{"src/read_licenses.py"},
+			setupEnv:    setUpF8AnalyticsComponentSrc,
 		},
 	}
 
 	for _, tt := range tests {
+		ExtChan = make(chan bool)
+		StartChan = make(chan bool)
 		t.Log("Running test: ", tt.name)
 		t.Run(tt.name, func(t *testing.T) {
+			mockPush = mockPushParameters{
+				componentName:   tt.componentName,
+				applicationName: tt.applicationName,
+				path:            tt.path,
+				isForcePush:     tt.forcePush,
+				globExps:        tt.ignores,
+				show:            tt.show,
+			}
+
 			ExpectedChangedFiles = tt.want
+			DeleteFiles = tt.wantDeleted
 			// Create mock component source
-			basePath, CompDirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
+			basePath, dirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
+			CompDirStructure = dirStructure
 			if err != nil {
 				t.Errorf("failed to setup test environment. Error %v", err)
 			}
@@ -253,16 +740,19 @@ func TestWatchAndPush(t *testing.T) {
 
 								// If file operation is create, store even such modifications in dir structure for future references
 								if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
+									muLock.Lock()
 									CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
 										FilePath:         filepath.Base(newFilePath),
 										FileParent:       filepath.Dir(newFilePath),
 										FileType:         testingutil.Directory,
 										ModificationType: testingutil.CREATE,
 									}
+									muLock.Unlock()
 								}
 							}
 						}
 						t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
+						return
 					case <-pingTimeout:
 						break
 					}
@@ -282,7 +772,7 @@ func TestWatchAndPush(t *testing.T) {
 					PushDiffDelay:   tt.delayInterval,
 					StartChan:       StartChan,
 					ExtChan:         ExtChan,
-					Show:            false,
+					Show:            tt.show,
 					WatchHandler:    mockPushLocal,
 				},
 			)
