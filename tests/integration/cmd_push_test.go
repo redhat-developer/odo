@@ -197,7 +197,7 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 		})
 
-		FIt("should push only the modified files", func() {
+		It("should push only the modified files", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "component", "create", "nodejs:8", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
