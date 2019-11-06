@@ -56,7 +56,7 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "ruby", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 
 			// Create a new file that we plan on deleting later...
 			newFilePath := filepath.Join(context, "nodejs-ex", "foobar.txt")
@@ -197,9 +197,9 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 		})
 
-		It("should push only the modified files", func() {
+		FIt("should push only the modified files", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs:8", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
