@@ -55,21 +55,21 @@ var _ = Describe("odo push command tests", func() {
 		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/ruby-ex", context+"/ruby-ex")
-			helper.CmdShouldPass("odo", "component", "create", "ruby", cmpName, "--project", project, "--context", context+"/ruby-ex", "--app", appName)
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "component", "create", "ruby", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 
 			// Create a new file that we plan on deleting later...
-			newFilePath := filepath.Join(context, "ruby-ex", "foobar.txt")
+			newFilePath := filepath.Join(context, "nodejs-ex", "foobar.txt")
 			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
 				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
 			}
 
 			// Create a new directory
-			newDirPath := filepath.Join(context, "ruby-ex", "testdir")
+			newDirPath := filepath.Join(context, "nodejs-ex", "testdir")
 			helper.MakeDir(newDirPath)
 
 			// Push
-			helper.CmdShouldPass("odo", "push", "--context", context+"/ruby-ex")
+			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameOfComp(cmpName, project)
@@ -84,7 +84,7 @@ var _ = Describe("odo push command tests", func() {
 			// Now we delete the file and dir and push
 			helper.DeleteDir(newFilePath)
 			helper.DeleteDir(newDirPath)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/ruby-ex", "-v4")
+			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex", "-v4")
 
 			// Then check to see if it's truly been deleted
 			stdOut = oc.ExecListDir(podName, project, dir)
