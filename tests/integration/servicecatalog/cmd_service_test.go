@@ -30,7 +30,7 @@ var _ = Describe("odo service command tests", func() {
 		oc = helper.NewOcRunner("oc")
 	})
 
-	setup := func() {
+	preSetup := func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()
@@ -39,7 +39,7 @@ var _ = Describe("odo service command tests", func() {
 		originalDir = helper.Getwd()
 	}
 
-	removeSetup := func() {
+	cleanPreSetup := func() {
 		helper.Chdir(originalDir)
 		helper.DeleteProject(project)
 		helper.DeleteDir(context)
@@ -300,10 +300,10 @@ var _ = Describe("odo service command tests", func() {
 
 	Context("When link backend between component and service", func() {
 		JustBeforeEach(func() {
-			setup()
+			preSetup()
 		})
 		JustAfterEach(func() {
-			removeSetup()
+			cleanPreSetup()
 		})
 		It("should link backend to service successfully", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
@@ -332,10 +332,10 @@ var _ = Describe("odo service command tests", func() {
 
 	Context("When deleting service and unlink the backend from the frontend", func() {
 		JustBeforeEach(func() {
-			setup()
+			preSetup()
 		})
 		JustAfterEach(func() {
-			removeSetup()
+			cleanPreSetup()
 		})
 		It("should pass", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
@@ -368,10 +368,10 @@ var _ = Describe("odo service command tests", func() {
 
 	Context("When linking or unlinking a service or component", func() {
 		JustBeforeEach(func() {
-			setup()
+			preSetup()
 		})
 		JustAfterEach(func() {
-			removeSetup()
+			cleanPreSetup()
 		})
 
 		It("should print the environment variables being linked/unlinked", func() {
