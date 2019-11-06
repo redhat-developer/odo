@@ -119,7 +119,9 @@ func addOdoFileIndex(ignoreFile string) error {
 func checkGitIgnoreFile(directory string) error {
 
 	ignoreFile, err := gitIgnoreFilePath(directory)
+	// err checks the existence of .gitignore and then creates if does not exists
 	_, err = os.Stat(ignoreFile)
+	// As the directory already exists it means it already has one file i.e .odo file in it so ignore err
 	files, _ := ioutil.ReadDir(filepath.Join(directory))
 
 	if len(files) > 1 {

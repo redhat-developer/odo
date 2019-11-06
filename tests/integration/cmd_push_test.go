@@ -320,7 +320,7 @@ var _ = Describe("odo push command tests", func() {
 		})
 	})
 
-	Context("when .gitignore file exists or not", func() {
+	Context("when .gitignore file exists", func() {
 		It("should create and push the contents of a named component and include odo-file-index.json path to .gitignore file to exclude the contents", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
@@ -328,6 +328,19 @@ var _ = Describe("odo push command tests", func() {
 			// push and include the odo-file-index.json path to .gitignore file
 			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(context, "nodejs-ex"))
 			ignoreFilePath := filepath.Join(context, "nodejs-ex", ".gitignore")
+			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "odo-file-index.json"))
+
+		})
+	})
+
+	Context("when .gitignore file does not exist", func() {
+		It("should create and push the contents of a named component and also create .gitignore then include odo-file-index.json path to .gitignore file to exclude the contents", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+
+			// push and include the odo-file-index.json path to .gitignore file
+			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(context))
+			ignoreFilePath := filepath.Join(context, ".gitignore")
 			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "odo-file-index.json"))
 
 		})
