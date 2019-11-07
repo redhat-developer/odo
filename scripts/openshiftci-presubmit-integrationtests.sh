@@ -27,6 +27,7 @@ make test-cmd-app
 make test-cmd-project
 make test-cmd-url
 make test-cmd-push
+make test-cmd-link-unlink
 odo logout
 
 # upload the junit test reports
