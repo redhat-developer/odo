@@ -65,12 +65,7 @@ func (o *DescribeOptions) Validate() (err error) {
 func (o *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
 		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
-		out, err := machineoutput.MarshalJSONIndented(appDef)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
-
+		machineoutput.OutputSuccess(appDef)
 	} else {
 		// List of Component
 		componentList, err := component.List(o.Client, o.appName, nil)

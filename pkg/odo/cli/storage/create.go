@@ -70,11 +70,7 @@ func (o *StorageCreateOptions) Run() (err error) {
 	storageResultMachineReadable := storage.GetMachineReadableFormat(storageResult.Name, storageResult.Size, storageResult.Path)
 
 	if log.IsJSON() {
-		out, err := machineoutput.MarshalJSONIndented(storageResultMachineReadable)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
+		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
 		log.Successf("Added storage %v to %v", o.storageName, o.localConfig.GetName())
 		log.Infof("Please use `odo push` command to make the storage accessible to the component")

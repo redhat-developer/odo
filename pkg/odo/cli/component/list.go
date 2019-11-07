@@ -67,11 +67,7 @@ func (lo *ListOptions) Run() (err error) {
 			return err
 		}
 		if log.IsJSON() {
-			out, err := machineoutput.MarshalJSONIndented(components)
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(out))
+			machineoutput.OutputSuccess(components)
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
@@ -122,13 +118,7 @@ func (lo *ListOptions) Run() (err error) {
 	glog.V(4).Infof("the components are %+v", components)
 
 	if log.IsJSON() {
-
-		out, err := machineoutput.MarshalJSONIndented(components)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
-
+		machineoutput.OutputSuccess(components)
 	} else {
 		if len(components.Items) == 0 {
 			log.Errorf("There are no components deployed.")

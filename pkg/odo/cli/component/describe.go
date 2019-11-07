@@ -70,11 +70,7 @@ func (do *DescribeOptions) Run() (err error) {
 	}
 	if log.IsJSON() {
 		componentDesc.Spec.Ports = do.localConfigInfo.GetPorts()
-		out, err := machineoutput.MarshalJSONIndented(componentDesc)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
+		machineoutput.OutputSuccess(componentDesc)
 	} else {
 
 		odoutil.PrintComponentInfo(do.Context.Client, do.componentName, componentDesc, do.Context.Application, do.Context.Project)

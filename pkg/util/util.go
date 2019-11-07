@@ -20,7 +20,6 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/golang/glog"
-	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -580,20 +579,6 @@ func CheckOutputFlag(outputFlag string) bool {
 		return true
 	}
 	return false
-}
-
-// MachineOutput provides string output and error if any
-// In future if we support any new format, we just need to add case in following switch case
-func MachineOutput(outputFlag string, resource interface{}) (string, error) {
-	var out []byte
-	var err error
-	switch outputFlag {
-	case "json":
-		// If `-o json` is provided
-		out, err = machineoutput.MarshalJSONIndented(resource)
-	}
-
-	return string(out), err
 }
 
 // RemoveDuplicates goes through a string slice and removes all duplicates.
