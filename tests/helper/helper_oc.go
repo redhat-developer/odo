@@ -141,6 +141,14 @@ func (oc *OcRunner) VerifyCmpExists(cmpName string, appName string, prjName stri
 	CmdShouldPass(oc.path, "get", "dc", cmpDCName, "--namespace", prjName)
 }
 
+// VerifyLabelExistsOfComponent verifies app name of component
+func (oc *OcRunner) VerifyLabelExistsOfComponent(cmpName string, namespace string, labelName string) {
+	dcName := oc.GetDcName(cmpName, namespace)
+	session := CmdShouldPass(oc.path, "get", "dc", dcName, "--namespace", namespace,
+		"--template={{.metadata.labels}}")
+	Expect(session).To(ContainSubstring(labelName))
+}
+
 // VerifyAppNameOfComponent verifies app name of component
 func (oc *OcRunner) VerifyAppNameOfComponent(cmpName string, appName string, namespace string) {
 	session := CmdShouldPass(oc.path, "get", "dc", cmpName+"-"+appName, "--namespace", namespace,

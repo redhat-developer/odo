@@ -1,15 +1,23 @@
 package labels
 
+import "github.com/openshift/odo/pkg/version"
+
 // ApplicationLabel is label key that is used to group all object that belong to one application
 // It should be save to use just this label to filter application
 const ApplicationLabel = "app.kubernetes.io/part-of"
 
-// AdditionalApplicationLabels additional labels that are applied to all objects belonging to one application
-// Those labels are not used for filtering or grouping, they are used just when creating and they are mend to be used by other tools
-var AdditionalApplicationLabels = []string{
-	// OpenShift Web console uses this label for grouping
-	"app",
-}
+//////////////////////////////
+// ADDITIONALLY USED LABELS
+//////////////////////////////
+
+// App is the default name used when labeling
+const App = "app"
+
+// OdoManagedBy notes that this is managed by odo
+const OdoManagedBy = "app.kubernetes.io/managed-by"
+
+// OdoVersion is a Kubernetes label that adds what version of odo is being ran.
+const OdoVersion = "app.kubernetes.io/managed-by-version"
 
 // GetLabels return labels that identifies given application
 // additional labels are used only when creating object
@@ -21,9 +29,9 @@ func GetLabels(application string, additional bool) map[string]string {
 	}
 
 	if additional {
-		for _, additionalLabel := range AdditionalApplicationLabels {
-			labels[additionalLabel] = application
-		}
+		labels[App] = application
+		labels[OdoVersion] = version.VERSION
+		labels[OdoManagedBy] = "odo"
 	}
 
 	return labels

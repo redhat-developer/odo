@@ -1,9 +1,11 @@
 package application
 
 import (
-	"github.com/openshift/odo/pkg/testingutil"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/version"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -62,6 +64,8 @@ func TestGetMachineReadableFormat(t *testing.T) {
 						applabels.ApplicationLabel:         "myapp",
 						componentlabels.ComponentLabel:     "frontend",
 						componentlabels.ComponentTypeLabel: "nodejs",
+						applabels.OdoManagedBy:             "odo",
+						applabels.OdoVersion:               version.VERSION,
 					},
 					Annotations: map[string]string{
 						component.ComponentSourceTypeAnnotation: "local",
@@ -87,6 +91,8 @@ func TestGetMachineReadableFormat(t *testing.T) {
 						applabels.ApplicationLabel:         "app",
 						componentlabels.ComponentLabel:     "backend",
 						componentlabels.ComponentTypeLabel: "java",
+						applabels.OdoManagedBy:             "odo",
+						applabels.OdoVersion:               version.VERSION,
 					},
 					Annotations: map[string]string{
 						component.ComponentSourceTypeAnnotation: "local",

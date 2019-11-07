@@ -7,22 +7,13 @@ import (
 
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoversion "github.com/openshift/odo/pkg/version"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/notify"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-)
-
-var (
-	// VERSION  is version number that will be displayed when running ./odo version
-	VERSION = "v1.0.0"
-
-	// GITCOMMIT is hash of the commit that will be displayed when running ./odo version
-	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/openshift/odo/cmd.GITCOMMIT=$(GITCOMMIT)"
-	// HEAD is default indicating that this was not set during build
-	GITCOMMIT = "HEAD"
 )
 
 // RecommendedCommandName is the recommended version command name
@@ -78,7 +69,7 @@ func (o *VersionOptions) Run() (err error) {
 		}
 	}
 
-	fmt.Println("odo " + VERSION + " (" + GITCOMMIT + ")")
+	fmt.Println("odo " + odoversion.VERSION + " (" + odoversion.GITCOMMIT + ")")
 
 	if !o.clientFlag && o.serverInfo != nil {
 		// make sure we only include OpenShift info if we actually have it
@@ -122,7 +113,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 
 // GetLatestReleaseInfo Gets information about the latest release
 func GetLatestReleaseInfo(info chan<- string) {
-	newTag, err := notify.CheckLatestReleaseTag(VERSION)
+	newTag, err := notify.CheckLatestReleaseTag(odoversion.VERSION)
 	if err != nil {
 		// The error is intentionally not being handled because we don't want
 		// to stop the execution of the program because of this failure

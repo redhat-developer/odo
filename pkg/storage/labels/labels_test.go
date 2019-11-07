@@ -6,6 +6,7 @@ import (
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/version"
 )
 
 func TestGetLabels(t *testing.T) {
@@ -21,7 +22,7 @@ func TestGetLabels(t *testing.T) {
 		want map[string]string
 	}{
 		{
-			name: "everything filled",
+			name: "Case 1: Everything filled",
 			args: args{
 				storageName:     "storagename",
 				componentName:   "componentname",
@@ -34,7 +35,7 @@ func TestGetLabels(t *testing.T) {
 				StorageLabel:                   "storagename",
 			},
 		}, {
-			name: "no storage name",
+			name: "Case 2: No storage name",
 			args: args{
 				storageName:     "",
 				componentName:   "componentname",
@@ -47,7 +48,7 @@ func TestGetLabels(t *testing.T) {
 				StorageLabel:                   "",
 			},
 		}, {
-			name: "everything with additional",
+			name: "Case 3: Everything with additional",
 			args: args{
 				storageName:     "storagename",
 				componentName:   "componentname",
@@ -55,10 +56,12 @@ func TestGetLabels(t *testing.T) {
 				additional:      true,
 			},
 			want: map[string]string{
-				applabels.ApplicationLabel:               "applicationame",
-				applabels.AdditionalApplicationLabels[0]: "applicationame",
-				componentlabels.ComponentLabel:           "componentname",
-				StorageLabel:                             "storagename",
+				applabels.ApplicationLabel:     "applicationame",
+				applabels.App:                  "applicationame",
+				applabels.OdoManagedBy:         "odo",
+				applabels.OdoVersion:           version.VERSION,
+				componentlabels.ComponentLabel: "componentname",
+				StorageLabel:                   "storagename",
 			},
 		},
 	}

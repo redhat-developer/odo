@@ -23,8 +23,8 @@ check_version(){
 
 
 echo "* Bumping version in pkg/odo/cli/version/version.go"
-sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSION}\"/g" pkg/odo/cli/version/version.go
-check_version pkg/odo/cli/version/version.go
+sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSION}\"/g" pkg/version/version.go
+check_version pkg/version/version.go
 
 echo "* Bumping version in scripts/installer.sh"
 sed -i "s/\(LATEST_VERSION=\)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSION}\"/g" scripts/installer.sh

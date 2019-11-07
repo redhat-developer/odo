@@ -5,11 +5,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/kylelemons/godebug/pretty"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/url/labels"
+	"github.com/openshift/odo/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -31,7 +33,7 @@ func TestCreate(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name: "case 1: component name same as urlName",
+			name: "Case 1: Component name same as urlName",
 			args: args{
 				componentName:   "nodejs",
 				applicationName: "app",
@@ -44,6 +46,9 @@ func TestCreate(t *testing.T) {
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
+						applabels.App:                "app",
+						applabels.OdoManagedBy:       "odo",
+						applabels.OdoVersion:         version.VERSION,
 						"odo.openshift.io/url-name":  "nodejs",
 					},
 				},
@@ -61,7 +66,7 @@ func TestCreate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "case 2: component name different than urlName",
+			name: "Case 2: Component name different than urlName",
 			args: args{
 				componentName:   "nodejs",
 				applicationName: "app",
@@ -74,6 +79,9 @@ func TestCreate(t *testing.T) {
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
+						applabels.App:                "app",
+						applabels.OdoManagedBy:       "odo",
+						applabels.OdoVersion:         version.VERSION,
 						"odo.openshift.io/url-name":  "example-url",
 					},
 				},
@@ -113,7 +121,7 @@ func TestCreate(t *testing.T) {
 					t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Name, createdRoute.Name)
 				}
 				if !reflect.DeepEqual(createdRoute.Labels, tt.returnedRoute.Labels) {
-					t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Labels, createdRoute.Labels)
+					t.Errorf("route name not matching, %v", pretty.Compare(tt.returnedRoute.Labels, createdRoute.Labels))
 				}
 				if !reflect.DeepEqual(createdRoute.Spec.Port, tt.returnedRoute.Spec.Port) {
 					t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Spec.Port, createdRoute.Spec.Port)
@@ -200,6 +208,8 @@ func TestExists(t *testing.T) {
 							Labels: map[string]string{
 								applabels.ApplicationLabel:     "app",
 								componentlabels.ComponentLabel: "nodejs",
+								applabels.OdoManagedBy:         "odo",
+								applabels.OdoVersion:           version.VERSION,
 								labels.URLLabel:                "nodejs",
 							},
 						},
@@ -219,6 +229,8 @@ func TestExists(t *testing.T) {
 							Labels: map[string]string{
 								applabels.ApplicationLabel:     "app",
 								componentlabels.ComponentLabel: "wildfly",
+								applabels.OdoManagedBy:         "odo",
+								applabels.OdoVersion:           version.VERSION,
 								labels.URLLabel:                "wildfly",
 							},
 						},
@@ -251,6 +263,8 @@ func TestExists(t *testing.T) {
 							Labels: map[string]string{
 								applabels.ApplicationLabel:     "app",
 								componentlabels.ComponentLabel: "nodejs",
+								applabels.OdoManagedBy:         "odo",
+								applabels.OdoVersion:           version.VERSION,
 								labels.URLLabel:                "nodejs",
 							},
 						},
@@ -270,6 +284,8 @@ func TestExists(t *testing.T) {
 							Labels: map[string]string{
 								applabels.ApplicationLabel:     "app",
 								componentlabels.ComponentLabel: "wildfly",
+								applabels.OdoManagedBy:         "odo",
+								applabels.OdoVersion:           version.VERSION,
 								labels.URLLabel:                "wildfly",
 							},
 						},

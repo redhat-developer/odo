@@ -3,6 +3,8 @@ package labels
 import (
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/version"
 )
 
 func TestGetLabels(t *testing.T) {
@@ -16,7 +18,7 @@ func TestGetLabels(t *testing.T) {
 		want map[string]string
 	}{
 		{
-			name: "everything",
+			name: "Case 1: All labels",
 			args: args{
 				applicationName: "applicationame",
 				additional:      false,
@@ -26,15 +28,17 @@ func TestGetLabels(t *testing.T) {
 			},
 		},
 		{
-			name: "everything with additional",
+			name: "Case 2: All labels including all additional labels",
 			args: args{
 
 				applicationName: "applicationame",
 				additional:      true,
 			},
 			want: map[string]string{
-				ApplicationLabel:               "applicationame",
-				AdditionalApplicationLabels[0]: "applicationame",
+				ApplicationLabel: "applicationame",
+				App:              "applicationame",
+				OdoManagedBy:     "odo",
+				OdoVersion:       version.VERSION,
 			},
 		},
 	}
