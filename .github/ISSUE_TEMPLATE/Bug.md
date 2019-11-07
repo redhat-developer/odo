@@ -1,8 +1,9 @@
 ---
 name: Bug report
-about: Report a problem with odo to help us resolve it and improve
+about: Report a bug with odo
 ---
-[kind/bug]
+
+/kind bug
 
 <!--
 
@@ -18,9 +19,10 @@ Thanks for understanding, and for contributing to the project!
 -->
 
 ## What versions of software are you using?
-- Operating System:
-- Output of `odo version`:
 
+**Operating System:**
+
+**Output of `odo version`:**
 
 ## How did you run odo exactly?
 
@@ -32,4 +34,5 @@ Thanks for understanding, and for contributing to the project!
 
 
 ## Any logs, error output, etc?
+
 
