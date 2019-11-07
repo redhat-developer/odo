@@ -98,6 +98,9 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 	for _, folder := range folders {
 
 		if matched, _ := util.IsGlobExpMatch(folder, ignores); matched {

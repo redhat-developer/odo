@@ -73,7 +73,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 	o.StopChannel = make(chan struct{}, 1)
 	o.ReadyChannel = make(chan struct{})
-	return nil
+	return err
 }
 
 // Validate validates all the required options for port-forward cmd.

@@ -1080,10 +1080,9 @@ func TestRemoveDuplicate(t *testing.T) {
 
 func TestRemoveRelativePathFromFiles(t *testing.T) {
 	type args struct {
-		path    string
-		input   []string
-		output  []string
-		wantErr bool
+		path   string
+		input  []string
+		output []string
 	}
 	tests := []struct {
 		name    string

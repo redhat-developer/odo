@@ -13,11 +13,9 @@ import (
 )
 
 const (
-	appPrefixMaxLen   = 12
-	appNameMaxRetries = 3
-	appAPIVersion     = "odo.openshift.io/v1alpha1"
-	appKind           = "Application"
-	appList           = "List"
+	appAPIVersion = "odo.openshift.io/v1alpha1"
+	appKind       = "Application"
+	appList       = "List"
 )
 
 // List all applications in current project

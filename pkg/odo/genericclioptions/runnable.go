@@ -47,7 +47,7 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 	if hasFlagChanged && outputFlag.Value.String() == "json" && machineOutput == "" {
 
 		// By default we "disable" logging, so undisable it so that the below error can be shown.
-		flag.Set("o", "")
+		_ = flag.Set("o", "")
 
 		// Output the error
 		log.Error("Machine readable output is not yet implemented for this command")
@@ -59,6 +59,6 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 	// in order to have NO verbose output when combining both `-o json` and `-v 4` so json output
 	// is not malformed / mixed in with normal logging
 	if log.IsJSON() {
-		flag.Set("v", "0")
+		_ = flag.Set("v", "0")
 	}
 }

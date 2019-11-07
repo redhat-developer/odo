@@ -17,11 +17,14 @@ jobs:
       go: "1.11.2"
       install:
         - make goget-tools
+        # binary will be $(go env GOPATH)/bin/golangci-lint
+        - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.21.0
       script:
         - export PATH="$PATH:$GOPATH/bin"
         - make bin
         - make validate
         - make test-coverage
+        - make golint
       after_success:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)

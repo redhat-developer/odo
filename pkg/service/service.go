@@ -290,7 +290,7 @@ func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (Servi
 	for _, result := range planResults {
 		plan, err := NewServicePlan(result)
 		if err != nil {
-
+			return ServiceClass{}, nil, err
 		}
 
 		plans = append(plans, plan)

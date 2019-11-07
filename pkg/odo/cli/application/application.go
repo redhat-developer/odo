@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -17,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // RecommendedCommandName is the recommended app command name
@@ -109,27 +107,4 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 
 	}
 	return nil
-}
-
-// getMachineReadableFormat returns resource information in machine readable format
-func getMachineReadableFormat(client *occlient.Client, appName string, projectName string, active bool) application.App {
-	componentList, _ := component.List(client, appName, nil)
-	var compList []string
-	for _, component := range componentList.Items {
-		compList = append(compList, component.Name)
-	}
-	appDef := application.App{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "app",
-			APIVersion: "odo.openshift.io/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      appName,
-			Namespace: projectName,
-		},
-		Spec: application.AppSpec{
-			Components: compList,
-		},
-	}
-	return appDef
 }

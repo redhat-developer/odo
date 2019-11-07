@@ -110,7 +110,10 @@ func getPRNumber() (int, error) {
 	}
 
 	var data clonerefsOptions
-	json.Unmarshal([]byte(jsonData), &data)
+	err := json.Unmarshal([]byte(jsonData), &data)
+	if err != nil {
+		return 0, fmt.Errorf("error in unmarshalling json")
+	}
 
 	if len(data.Refs) < 1 {
 		return 0, fmt.Errorf("no refs in the input json")

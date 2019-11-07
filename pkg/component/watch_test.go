@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -80,23 +81,18 @@ var StartChan = make(chan bool)
 // Mock PushLocal to collect changed files and compare against expected changed files
 func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isPushForce bool, globExps []string, show bool) error {
 	for _, gotChangedFile := range files {
-		found := false
 		// Verify every file in expected file changes to be actually observed to be changed
 		// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
 		for _, expChangedFile := range ExpectedChangedFiles {
 			wantedFileDetail := CompDirStructure[expChangedFile]
 			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == gotChangedFile {
-				found = true
 				ExtChan <- true
 				return nil
 			}
 		}
-		if !found {
-			ExtChan <- true
-			return fmt.Errorf("received %+v which is not same as expected list %+v", files, ExpectedChangedFiles)
-		}
 	}
-	return nil
+	ExtChan <- true
+	return fmt.Errorf("received %+v which is not same as expected list %+v", files, ExpectedChangedFiles)
 }
 
 func TestWatchAndPush(t *testing.T) {
@@ -233,6 +229,7 @@ func TestWatchAndPush(t *testing.T) {
 			go func() {
 				t.Logf("Starting file simulations \n%+v\n", tt.fileModifications)
 				// Simulating file modifications for watch to observe
+				pingTimeout := time.After(time.Duration(1) * time.Minute)
 				for {
 					select {
 					case startMsg := <-StartChan:
@@ -266,7 +263,8 @@ func TestWatchAndPush(t *testing.T) {
 							}
 						}
 						t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
-						return
+					case <-pingTimeout:
+						break
 					}
 				}
 			}()

@@ -103,6 +103,9 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 
 	newFileMap := make(map[string]FileData)
 	walk := func(fn string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if fi.IsDir() {
 
 			// if folder is the root folder, don't add it

@@ -63,6 +63,11 @@ check-vendor:
 .PHONY: validate-vendor-licenses
 validate-vendor-licenses:
 	wwhrd check -q
+
+.PHONY: golint
+golint:
+	golangci-lint run ./... --timeout 5m
+
 # golint errors are only recommendations
 .PHONY: lint
 lint:

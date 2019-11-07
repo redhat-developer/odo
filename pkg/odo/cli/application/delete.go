@@ -59,7 +59,7 @@ func (o *DeleteOptions) Validate() (err error) {
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
-	return nil
+	return err
 }
 
 // Run contains the logic for the odo command
