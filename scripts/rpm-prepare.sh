@@ -3,9 +3,17 @@
 set +ex
 
 echo "Reading ODO_VERSION, ODO_RELEASE and GIT_COMMIT env, if they are set"
+
+# We use the first variable as the next version
+if [ -z "$1" ]
+then    
+  echo -e "Must provide a version when running the script, ex: ./rpm-prepare.sh 1.0.1"
+  exit 1    
+fi    
+ODO_VERSION=$1
+
 # Change version as needed. In most cases ODO_RELEASE would not be touched unless
 # we want to do a re-lease of same version as we are not backporting
-export ODO_VERSION=${ODO_VERSION:=1.0.0}
 export ODO_RELEASE=${ODO_RELEASE:=1}
 
 export GIT_COMMIT=${GIT_COMMIT:=`git rev-parse --short HEAD 2>/dev/null`}
