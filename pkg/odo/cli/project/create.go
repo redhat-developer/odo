@@ -83,7 +83,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 	if log.IsJSON() {
 		project.MachineReadableSuccessOutput(pco.projectName, successMessage)
 	} else {
-		log.Successf("New project created and now using project : %v", pco.projectName)
+		log.Successf("New project created and now using project: %v", pco.projectName)
 	}
 	return
 }
