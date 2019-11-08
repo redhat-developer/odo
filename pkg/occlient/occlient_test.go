@@ -533,6 +533,7 @@ func TestCreateRoute(t *testing.T) {
 		portNumber intstr.IntOrString
 		labels     map[string]string
 		wantErr    bool
+		existingDC appsv1.DeploymentConfig
 	}{
 		{
 			name:       "Case : mailserver",
@@ -545,6 +546,7 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/name":     "python",
 			},
 			wantErr: false,
+			existingDC: *fakeDeploymentConfig("mailserver", "", nil, nil, t),,
 		},
 
 		{
@@ -558,6 +560,7 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/name":     "golang",
 			},
 			wantErr: false,
+			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),,
 		},
 	}
 	for _, tt := range tests {
