@@ -875,15 +875,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
 
-	// we create a ownerReference struct so that we can set the DC created
-	// above as owner of the ImageStream created earlier, and Service, Secret
-	// to be created next.
-	ownerReference := metav1.OwnerReference{
-		APIVersion: "apps.openshift.io/v1",
-		Kind:       "DeploymentConfig",
-		Name:       dc.Name,
-		UID:        createdDC.UID,
-	}
+	ownerReference := generateOwnerReference(createdDC)
 
 	// Create a service
 	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
@@ -1189,15 +1181,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	jsonDC, _ = json.Marshal(createdDC)
 	glog.V(5).Infof("Created new DeploymentConfig:\n%s\n", string(jsonDC))
 
-	// we create a ownerReference struct so that we can set the DC created
-	// above as owner of the ImageStream created earlier, and Service, Secret
-	// to be created next.
-	ownerReference := metav1.OwnerReference{
-		APIVersion: "apps.openshift.io/v1",
-		Kind:       "DeploymentConfig",
-		Name:       dc.Name,
-		UID:        createdDC.UID,
-	}
+	ownerReference := generateOwnerReference(createdDC)
 
 	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
 	if err != nil {
@@ -1586,15 +1570,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 			addDeploymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
 		}
 
-		// we create a ownerReference struct so that we can set the DC created
-		// above as owner of the ImageStream created earlier, and Service, Secret
-		// to be created next.
-		ownerReference := metav1.OwnerReference{
-			APIVersion: "apps.openshift.io/v1",
-			Kind:       "DeploymentConfig",
-			Name:       dc.Name,
-			UID:        dc.UID,
-		}
+		ownerReference := generateOwnerReference(&dc)
 
 		// Setup PVC
 		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels, ownerReference)
@@ -2416,14 +2392,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
 	}
 
-	// we create a ownerReference struct so that we can set the DC as owner of
-	// the route.
-	ownerReference := metav1.OwnerReference{
-		APIVersion: "apps.openshift.io/v1",
-		Kind:       "DeploymentConfig",
-		Name:       dc.Name,
-		UID:        dc.UID,
-	}
+	ownerReference := generateOwnerReference(dc)
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 
@@ -3202,4 +3171,20 @@ func isSubDir(baseDir, otherDir string) bool {
 	}
 	matches, _ := filepath.Match(fmt.Sprintf("%s/*", cleanedBaseDir), cleanedOtherDir)
 	return matches
+}
+
+// generateOwnerReference genertes an ownerReference which can then be set as
+// owner for various OpenShift objects and ensure that when the owner object is
+// deleted from the cluster, all other objects are automatically removed by
+// OpenShift garbage collector
+func generateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
+
+	ownerReference := metav1.OwnerReference{
+		APIVersion: "apps.openshift.io/v1",
+		Kind:       "DeploymentConfig",
+		Name:       dc.Name,
+		UID:        dc.UID,
+	}
+
+	return ownerReference
 }
