@@ -2,12 +2,13 @@ package util
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,30 +116,22 @@ func addOdoFileIndex(ignoreFile string) error {
 	return nil
 }
 
-// Check .gitignore file exists or not
-func checkGitIgnoreFile(directory string) error {
+// Check .gitignore file exists or not, if not then create it
+func checkGitIgnoreFile(directory string) (string, error) {
 
 	ignoreFile, err := gitIgnoreFilePath(directory)
 	// err checks the existence of .gitignore and then creates if does not exists
 	_, err = os.Stat(ignoreFile)
-	// As the directory already exists it means it already has one file i.e .odo file in it so ignore err
-	files, _ := ioutil.ReadDir(filepath.Join(directory))
 
-	if len(files) > 1 {
+	if err != nil {
+		file, err := os.OpenFile(ignoreFile, os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			file, err := os.OpenFile(ignoreFile, os.O_WRONLY|os.O_CREATE, 0600)
-			if err != nil {
-				return errors.Wrap(err, "failed to create .gitignore file")
-			}
-			file.Close()
+			return ignoreFile, errors.Wrap(err, "failed to create .gitignore file")
 		}
-		err = addOdoFileIndex(ignoreFile)
-		if err != nil {
-			return err
-		}
+		file.Close()
 	}
 
-	return nil
+	return ignoreFile, nil
 }
 
 // RunIndexer walks the given directory and finds the files which have changed and which were deleted/renamed
@@ -154,7 +147,13 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	}
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore
-	err = checkGitIgnoreFile(directory)
+	ignoreFile, err := checkGitIgnoreFile(directory)
+	if err != nil {
+		return filesChanged, filesDeleted, err
+	}
+
+	// add odo-file-index.json path to .gitignore
+	err = addOdoFileIndex(ignoreFile)
 	if err != nil {
 		return filesChanged, filesDeleted, err
 	}
