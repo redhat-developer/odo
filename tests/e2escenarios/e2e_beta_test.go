@@ -15,7 +15,7 @@ var _ = Describe("odo core beta flow", func() {
 	var project string
 	var context string
 
-	//  current directory and project (before eny test is run) so it can restored  after all testing is done
+	//  current directory and project (before any test is run) so it can restored  after all testing is done
 	var originalDir string
 
 	var oc helper.OcRunner
