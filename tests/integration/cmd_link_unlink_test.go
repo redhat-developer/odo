@@ -23,6 +23,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 	// This is before every spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
+		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		oc = helper.NewOcRunner("oc")
@@ -87,12 +88,13 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context1)
 			helper.CmdShouldPass("odo", "push", "--context", context1)
 			frontendURL := helper.DetermineRouteURL(context1)
-			helper.CopyExample(filepath.Join("source", "python"), context2)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
-			helper.CmdShouldPass("odo", "url", "create", "--context", context2)
+			oc.ImportJavaIS(project)
+			helper.CopyExample(filepath.Join("source", "openjdk"), context2)
+			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context2)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
 
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", context2)
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
@@ -102,9 +104,9 @@ var _ = Describe("odo link and unlink command tests", func() {
 			oc.WaitForDCRollout(dcName, project, 20*time.Second)
 			helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 
-			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", context2)
 			Expect(outputErr).To(ContainSubstring("been linked"))
-			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", context2)
 		})
 	})
 })
