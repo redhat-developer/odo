@@ -120,6 +120,9 @@ func addOdoFileIndex(ignoreFile string) error {
 func checkGitIgnoreFile(directory string) (string, error) {
 
 	ignoreFile, err := gitIgnoreFilePath(directory)
+	if err != nil {
+		return "", err
+	}
 	// err checks the existence of .gitignore and then creates if does not exists
 	_, err = os.Stat(ignoreFile)
 
