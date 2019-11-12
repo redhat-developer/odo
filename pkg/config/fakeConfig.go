@@ -2,7 +2,7 @@ package config
 
 func GetOneExistingConfigInfo(componentName, applicationName, projectName string) LocalConfigInfo {
 	componentType := "nodejs"
-	sourceLocation := "github.com/example"
+	sourceLocation := "./"
 
 	storageValue := []ComponentStorageSettings{
 		{
@@ -29,6 +29,8 @@ func GetOneExistingConfigInfo(componentName, applicationName, projectName string
 		EnvVar{Name: "env-1", Value: "value-1"},
 	}
 
+	localVar := LOCAL
+
 	return LocalConfigInfo{
 		configFileExists: true,
 		LocalConfig: LocalConfig{
@@ -42,9 +44,19 @@ func GetOneExistingConfigInfo(componentName, applicationName, projectName string
 				Ports:          &portsValue,
 				URL:            &urlValue,
 				Project:        &projectName,
+				SourceType:     &localVar,
 			},
 		},
 	}
+}
+
+func GetOneGitExistingConfigInfo(componentName, applicationName, projectName string) LocalConfigInfo {
+	localConfigInfo := GetOneExistingConfigInfo(componentName, applicationName, projectName)
+	git := GIT
+	location := "https://example.com"
+	localConfigInfo.LocalConfig.componentSettings.SourceType = &git
+	localConfigInfo.LocalConfig.componentSettings.SourceLocation = &location
+	return localConfigInfo
 }
 
 func GetOneNonExistingConfigInfo() LocalConfigInfo {

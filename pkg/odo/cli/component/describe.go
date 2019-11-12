@@ -30,12 +30,13 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component,
 type DescribeOptions struct {
 	localConfigInfo  *config.LocalConfigInfo
 	componentContext string
+	isPushed         bool
 	*ComponentOptions
 }
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{nil, "", &ComponentOptions{}}
+	return &DescribeOptions{nil, "", false, &ComponentOptions{}}
 }
 
 // Complete completes describe args
@@ -58,8 +59,8 @@ func (do *DescribeOptions) Validate() (err error) {
 	if err != nil {
 		return err
 	}
-	if !existsInCluster {
-		return fmt.Errorf("component %s not pushed to the OpenShift cluster, use `odo push` to deploy the component", do.componentName)
+	if existsInCluster {
+		do.isPushed = true
 	}
 
 	return nil
@@ -67,10 +68,19 @@ func (do *DescribeOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
-	componentDesc, err := component.GetComponent(do.Context.Client, do.componentName, do.Context.Application, do.Context.Project)
-	if err != nil {
-		return err
+	var componentDesc component.Component
+	if !do.isPushed {
+		componentDesc, err = component.GetComponentFromConfig(do.LocalConfigInfo)
+		if err != nil {
+			return err
+		}
+	} else {
+		componentDesc, err = component.GetComponent(do.Context.Client, do.componentName, do.Context.Application, do.Context.Project)
+		if err != nil {
+			return err
+		}
 	}
+
 	if log.IsJSON() {
 		componentDesc.Spec.Ports = do.localConfigInfo.GetPorts()
 		machineoutput.OutputSuccess(componentDesc)

@@ -192,6 +192,24 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 
+		It("should describe the component when it is not pushed", func() {
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", "url", "create", "url-1", "--context", context)
+			cmpDescribe := helper.CmdShouldPass("odo", append(args, "describe", "--context", context)...)
+
+			Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
+			Expect(cmpDescribe).To(ContainSubstring("nodejs"))
+			Expect(cmpDescribe).To(ContainSubstring("url-1"))
+			Expect(cmpDescribe).To(ContainSubstring("https://github.com/openshift/nodejs-ex"))
+
+			cmpDescribeJson, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "describe", "-o", "json", "--context", context)...))
+			Expect(err).Should(BeNil())
+			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.openshift.io/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","url": ["url-1"],"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
+			Expect(err).Should(BeNil())
+			Expect(cmpDescribeJson).To(Equal(expected))
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
+		})
+
 		It("should list the component in the same app when one is pushed and the other one is not pushed", func() {
 			helper.Chdir(originalDir)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
@@ -578,13 +596,25 @@ func componentTests(args ...string) {
 		It("should pass inside a odo directory without component name as parameter", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)...)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// changing directory to the context directory
 			helper.Chdir(context)
 			cmpListOutput := helper.CmdShouldPass("odo", "list")
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
-			helper.CmdShouldPass("odo", "describe")
+			cmpDescribe := helper.CmdShouldPass("odo", "describe")
+
+			Expect(cmpDescribe).To(ContainSubstring(cmpName))
+			Expect(cmpDescribe).To(ContainSubstring("nodejs"))
+			if runtime.GOOS == "windows" {
+				Expect(cmpDescribe).To(ContainSubstring("file:///./"))
+			} else {
+				Expect(cmpDescribe).To(ContainSubstring("file://./"))
+			}
+			url := helper.DetermineRouteURL(context)
+			Expect(cmpDescribe).To(ContainSubstring(url))
+
 			helper.CmdShouldPass("odo", "delete", "-f")
 		})
 

@@ -931,6 +931,10 @@ func GetComponentFromConfig(localConfig config.LocalConfigInfo) (Component, erro
 			Ports:  localConfig.GetPorts(),
 		}
 
+		if localConfig.GetSourceType() == "local" || localConfig.GetSourceType() == "binary" {
+			component.Spec.Source = util.GenFileURL(localConfig.GetSourceLocation())
+		}
+
 		component.Status = ComponentStatus{
 			State: "Not Pushed",
 		}
