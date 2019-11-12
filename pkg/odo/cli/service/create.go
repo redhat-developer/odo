@@ -241,8 +241,7 @@ func (o *ServiceCreateOptions) Run() (err error) {
 		}
 	} else {
 		log.Successf(`Service '%s' was created`, o.ServiceName)
-		log.Info(`Progress of the provisioning will not be reported and might take a long time.
-You can see the current status by executing 'odo service list'`)
+		log.Italic("\nProgress of the provisioning will not be reported and might take a long time\nYou can see the current status by executing 'odo service list'")
 	}
 	equivalent := o.outputNonInteractiveEquivalent()
 	if len(equivalent) > 0 {

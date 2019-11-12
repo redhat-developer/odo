@@ -90,7 +90,7 @@ func (o *ListOptions) Run() (err error) {
 			apps := application.GetMachineReadableFormatForList([]application.App{})
 			machineoutput.OutputSuccess(apps)
 		} else {
-			log.Infof("There are no applications deployed in the project '%v'.", o.Project)
+			log.Infof("There are no applications deployed in the project '%v'", o.Project)
 		}
 	}
 	return

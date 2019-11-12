@@ -65,7 +65,7 @@ func (o *UnsetOptions) Run() (err error) {
 
 		if isSet := cfg.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
-				log.Infof("Aborted by the user.")
+				log.Infof("Aborted by the user")
 				return nil
 			}
 		} else {
@@ -78,7 +78,7 @@ func (o *UnsetOptions) Run() (err error) {
 		return err
 	}
 
-	log.Info("Global preference was successfully updated.")
+	log.Info("Global preference was successfully updated")
 	return nil
 
 }

@@ -65,7 +65,7 @@ func (o *SetOptions) Run() (err error) {
 	if !o.configForceFlag {
 		if isSet := cfg.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
-				log.Info("Aborted by the user.")
+				log.Info("Aborted by the user")
 				return nil
 			}
 		}
@@ -76,7 +76,7 @@ func (o *SetOptions) Run() (err error) {
 		return err
 	}
 
-	log.Info("Global preference was successfully updated.")
+	log.Info("Global preference was successfully updated")
 	return nil
 }
 

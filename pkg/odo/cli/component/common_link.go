@@ -153,7 +153,7 @@ func (o *commonLinkOptions) run() (err error) {
 
 		// Output what to do next if first linking...
 		if o.operationName == "link" {
-			log.Infof(`
+			log.Italicf(`
 You can now access the environment variables from within the component pod, for example:
 $%s is now available as a variable within component %s`, exampleEnv, o.Component())
 		}

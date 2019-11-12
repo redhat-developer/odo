@@ -231,6 +231,15 @@ func Italic(a ...interface{}) {
 	}
 }
 
+// Italicf will simply print out information on a new italic line
+// this is **normally** used as a way to describe what's next within odo.
+func Italicf(format string, a ...interface{}) {
+	italic := color.New(color.Italic).SprintFunc()
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s\n", italic(fmt.Sprintf(format, a...)))
+	}
+}
+
 // Info will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 func Info(a ...interface{}) {

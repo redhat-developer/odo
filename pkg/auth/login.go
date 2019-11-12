@@ -89,7 +89,7 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 	// If a new file has been created, we output what to do next (obviously odo help). This is taken from:
 	// https://github.com/openshift/origin/blob/4c293b86b111d9aaeba7bb1e72ee57410652ae9d/pkg/oc/cli/login/login.go#L184
 	if newFileCreated {
-		odolog.Infof("Welcome! See '%s help' to get started.", a.CommandName)
+		odolog.Italicf("\nWelcome! See '%s help' to get started.", a.CommandName)
 	}
 
 	return nil

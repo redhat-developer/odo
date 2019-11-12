@@ -464,7 +464,7 @@ func (co *CreateOptions) Validate() (err error) {
 	}
 
 	if !supported {
-		log.Infof("Warning: %s is not fully supported by odo, and it is not guaranteed to work.", *co.componentSettings.Type)
+		log.Infof("Warning: %s is not fully supported by odo, and it is not guaranteed to work", *co.componentSettings.Type)
 	}
 
 	s := log.Spinner("Validating component")
@@ -498,7 +498,7 @@ func (co *CreateOptions) Run() (err error) {
 			return errors.Wrapf(err, "failed to push the changes")
 		}
 	} else {
-		log.Infof("Please use `odo push` command to create the component with source deployed")
+		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
 	}
 	return
 }
