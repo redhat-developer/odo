@@ -31,6 +31,15 @@ var _ = Describe("odo project command tests", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
+	Context("Machine readable output tests", func() {
+
+		It("Help for odo project list should contain machine output", func() {
+			output := helper.CmdShouldPass("odo", "project", "list", "--help")
+			Expect(output).To(ContainSubstring("Specify output format, supported format: json"))
+		})
+
+	})
+
 	Context("when running help for project command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "project", "-h")

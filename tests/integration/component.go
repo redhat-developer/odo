@@ -47,11 +47,6 @@ func componentTests(args ...string) {
 			Expect(output).NotTo(ContainSubstring("Specify output format, supported format: json"))
 		})
 
-		It("Help for odo create should contain machine output", func() {
-			output := helper.CmdShouldPass("odo", "create", "--help")
-			Expect(output).To(ContainSubstring("Specify output format, supported format: json"))
-		})
-
 	})
 
 	Context("Creating component", func() {
