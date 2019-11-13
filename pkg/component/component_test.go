@@ -869,7 +869,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 					Type:   localExistingConfigInfoValue.GetType(),
 					Source: localExistingConfigInfoValue.GetSourceLocation(),
 					URL: []string{
-						localExistingConfigInfoValue.LocalConfig.GetUrl()[0].Name, localExistingConfigInfoValue.LocalConfig.GetUrl()[1].Name,
+						localExistingConfigInfoValue.LocalConfig.GetURL()[0].Name, localExistingConfigInfoValue.LocalConfig.GetURL()[1].Name,
 					},
 					Storage: []string{
 						localExistingConfigInfoValue.LocalConfig.GetStorage()[0].Name, localExistingConfigInfoValue.LocalConfig.GetStorage()[1].Name,

@@ -34,12 +34,12 @@ type URLListOptions struct {
 	*genericclioptions.Context
 }
 
-// NewURLListOptions creates a new UrlCreateOptions instance
+// NewURLListOptions creates a new URLCreateOptions instance
 func NewURLListOptions() *URLListOptions {
 	return &URLListOptions{}
 }
 
-// Complete completes UrlListOptions after they've been Listed
+// Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
@@ -49,7 +49,7 @@ func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string
 	return
 }
 
-// Validate validates the UrlListOptions based on completed values
+// Validate validates the URLListOptions based on completed values
 func (o *URLListOptions) Validate() (err error) {
 	return util.CheckOutputFlag(o.OutputFlag)
 }
