@@ -693,4 +693,67 @@ func componentTests(args ...string) {
 			Expect(stdError).To(ContainSubstring("quantities must match the regular expression"))
 		})
 	})
+
+	Context("Creating component using symlink", func() {
+		var symLinkPath string
+
+		JustBeforeEach(func() {
+			if runtime.GOOS == "windows" {
+				Skip("Skipping test because for symlink creation on platform like Windows, go library needs elevated privileges.")
+			}
+			// create a symlink
+			symLinkName := helper.RandString(10)
+			helper.CreateSymLink(context, filepath.Join(filepath.Dir(context), symLinkName))
+			symLinkPath = filepath.Join(filepath.Dir(context), symLinkName)
+
+			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
+		})
+		JustAfterEach(func() {
+			// remove the symlink
+			err := os.Remove(symLinkPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
+		})
+
+		It("Should be able to deploy a spring boot uberjar file using symlinks in all odo commands", func() {
+			oc.ImportJavaIS(project)
+
+			helper.CopyExample(filepath.Join("binary", "java", "openjdk"), context)
+
+			// create the component using symlink
+			helper.CmdShouldPass("odo", append(args, "create", "java:8", "sb-jar-test", "--project",
+				project, "--binary", filepath.Join(symLinkPath, "sb.jar"), "--context", symLinkPath)...)
+
+			// Create a URL and push without using the symlink
+			helper.CmdShouldPass("odo", "url", "create", "uberjaropenjdk", "--port", "8080", "--context", symLinkPath)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", symLinkPath)...)
+			routeURL := helper.DetermineRouteURL(symLinkPath)
+
+			// Ping said URL
+			helper.HttpWaitFor(routeURL, "HTTP Booster", 90, 1)
+
+			// Delete the component
+			helper.CmdShouldPass("odo", append(args, "delete", "sb-jar-test", "-f", "--context", symLinkPath)...)
+		})
+
+		It("Should be able to deploy a wildfly war file using symlinks in some odo commands", func() {
+			helper.CopyExample(filepath.Join("binary", "java", "wildfly"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "wildfly", "javaee-war-test", "--project",
+				project, "--binary", filepath.Join(symLinkPath, "ROOT.war"), "--context", symLinkPath)...)
+
+			// Create a URL
+			helper.CmdShouldPass("odo", "url", "create", "warfile", "--port", "8080", "--context", context)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+			routeURL := helper.DetermineRouteURL(context)
+
+			// Ping said URL
+			helper.HttpWaitFor(routeURL, "Sample", 90, 1)
+
+			// Delete the component
+			helper.CmdShouldPass("odo", append(args, "delete", "javaee-war-test", "-f", "--context", context)...)
+		})
+	})
 }
