@@ -96,20 +96,20 @@ func gitIgnoreFilePath(directory string) (string, error) {
 }
 
 // addOdoFileIndex adds odo-file-index.json to .gitignore
-func addOdoFileIndex(ignoreFile string) error {
+func addOdoFileIndex(gitIgnoreFile string) error {
 	var data []byte
-	file, err := os.OpenFile(ignoreFile, os.O_APPEND|os.O_RDWR, 0600)
+	file, err := os.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		return errors.Wrap(err, "failed to open .gitignore file")
 	}
 	defer file.Close()
 
-	if data, err = ioutil.ReadFile(ignoreFile); err != nil {
+	if data, err = ioutil.ReadFile(gitIgnoreFile); err != nil {
 		return errors.Wrap(err, "failed reading data from .gitignore file")
 	}
 	// check whether .odo/odo-file-index.json is already in the .gitignore file
-	if !strings.Contains(string(data), ".odo/odo-file-index.json") {
-		if _, err := file.WriteString("\n" + ".odo/odo-file-index.json"); err != nil {
+	if !strings.Contains(string(data), filepath.Join(fileIndexDirectory, fileIndexName)) {
+		if _, err := file.WriteString("\n" + filepath.Join(fileIndexDirectory, fileIndexName)); err != nil {
 			return errors.Wrap(err, "failed to Add odo-file-index.json to .gitignore file")
 		}
 	}
@@ -119,22 +119,22 @@ func addOdoFileIndex(ignoreFile string) error {
 // Check .gitignore file exists or not, if not then create it
 func checkGitIgnoreFile(directory string) (string, error) {
 
-	ignoreFile, err := gitIgnoreFilePath(directory)
+	gitIgnoreFile, err := gitIgnoreFilePath(directory)
 	if err != nil {
 		return "", err
 	}
 	// err checks the existence of .gitignore and then creates if does not exists
-	_, err = os.Stat(ignoreFile)
+	_, err = os.Stat(gitIgnoreFile)
 
 	if err != nil {
-		file, err := os.OpenFile(ignoreFile, os.O_WRONLY|os.O_CREATE, 0600)
+		file, err := os.OpenFile(gitIgnoreFile, os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			return ignoreFile, errors.Wrap(err, "failed to create .gitignore file")
+			return gitIgnoreFile, errors.Wrap(err, "failed to create .gitignore file")
 		}
 		file.Close()
 	}
 
-	return ignoreFile, nil
+	return gitIgnoreFile, nil
 }
 
 // RunIndexer walks the given directory and finds the files which have changed and which were deleted/renamed
@@ -150,13 +150,13 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	}
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore
-	ignoreFile, err := checkGitIgnoreFile(directory)
+	gitIgnoreFile, err := checkGitIgnoreFile(directory)
 	if err != nil {
 		return filesChanged, filesDeleted, err
 	}
 
 	// add odo-file-index.json path to .gitignore
-	err = addOdoFileIndex(ignoreFile)
+	err = addOdoFileIndex(gitIgnoreFile)
 	if err != nil {
 		return filesChanged, filesDeleted, err
 	}
