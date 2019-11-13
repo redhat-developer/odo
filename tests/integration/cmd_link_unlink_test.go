@@ -108,5 +108,30 @@ var _ = Describe("odo link and unlink command tests", func() {
 			Expect(outputErr).To(ContainSubstring("been linked"))
 			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", context2)
 		})
+
+		It("Wait till frontend dc rollout properly after linking the frontend application to the backend", func() {
+			appName := helper.RandString(7)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--app", appName, "--context", context1, "--project", project)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context1)
+			helper.CmdShouldPass("odo", "push", "--context", context1)
+			frontendURL := helper.DetermineRouteURL(context1)
+
+			oc.ImportJavaIS(project)
+			helper.CopyExample(filepath.Join("source", "openjdk"), context2)
+			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--app", appName, "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context2)
+			helper.CmdShouldPass("odo", "push", "--context", context2)
+
+			// link both component and wait till frontend dc rollout properly
+			helper.CmdShouldPass("odo", "link", "backend", "--port", "8080", "--wait", "--context", context2)
+			helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
+
+			// ensure that the proper envFrom entry was created
+			envFromOutput := oc.GetEnvFromEntry("frontend", appName, project)
+			Expect(envFromOutput).To(ContainSubstring("backend"))
+
+			helper.CmdShouldPass("odo", "unlink", "backend", "--app", appName, "--port", "8080", "--context", context2)
+		})
 	})
 })
