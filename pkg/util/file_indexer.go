@@ -88,7 +88,7 @@ func resolveFilePath(directory string) (string, error) {
 
 // gitignoreFilePath gives the filepath of the .gitignore file in the context
 func gitIgnoreFilePath(directory string) (string, error) {
-	_, err := os.Stat(filepath.Join(directory))
+	_, err := os.Stat(directory)
 	if err != nil {
 		return "", err
 	}
@@ -110,7 +110,7 @@ func addOdoFileIndex(gitIgnoreFile string) error {
 	// check whether .odo/odo-file-index.json is already in the .gitignore file
 	if !strings.Contains(string(data), filepath.Join(fileIndexDirectory, fileIndexName)) {
 		if _, err := file.WriteString("\n" + filepath.Join(fileIndexDirectory, fileIndexName)); err != nil {
-			return errors.Wrap(err, "failed to Add odo-file-index.json to .gitignore file")
+			return errors.Wrapf(err, "failed to Add %v to .gitignore file", fileIndexName)
 		}
 	}
 	return nil
@@ -124,9 +124,7 @@ func checkGitIgnoreFile(directory string) (string, error) {
 		return "", err
 	}
 	// err checks the existence of .gitignore and then creates if does not exists
-	_, err = os.Stat(gitIgnoreFile)
-
-	if err != nil {
+	if _, err := os.Stat(gitIgnoreFile); os.IsNotExist(err) {
 		file, err := os.OpenFile(gitIgnoreFile, os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			return gitIgnoreFile, errors.Wrap(err, "failed to create .gitignore file")
