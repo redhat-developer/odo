@@ -535,7 +535,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		Long:        createLongDesc,
 		Example:     fmt.Sprintf(createExample, fullName),
 		Args:        cobra.RangeArgs(0, 2),
-		Annotations: map[string]string{"machineoutput": "json", "command": "component"},
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
