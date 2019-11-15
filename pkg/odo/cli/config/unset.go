@@ -93,8 +93,8 @@ func (o *UnsetOptions) Run() (err error) {
 			return err
 		}
 
-		log.Info("Environment variables were successfully updated.")
-		log.Info("Run `odo push --config` command to apply changes to the cluster.")
+		log.Success("Environment variables were successfully updated")
+		log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
 		return nil
 	}
 

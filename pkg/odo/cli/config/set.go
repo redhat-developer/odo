@@ -93,9 +93,8 @@ func (o *SetOptions) Run() (err error) {
 		if err := o.lci.SetEnvVars(newEnvVarList); err != nil {
 			return err
 		}
-
-		log.Info("Environment variables were successfully updated.")
-		log.Info("Run `odo push --config` command to apply changes to the cluster.")
+		log.Success("Environment variables were successfully updated")
+		log.Italic("\nRun `odo push --config` command to apply changes to the cluster.")
 
 		return nil
 	}
@@ -114,8 +113,8 @@ func (o *SetOptions) Run() (err error) {
 		return err
 	}
 
-	log.Info("Local config was successfully updated.")
-	log.Info("Run `odo push --config` command to apply changes to the cluster.")
+	log.Success("Local config successfully updated")
+	log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
 
 	return nil
 }

@@ -73,7 +73,7 @@ func (o *StorageCreateOptions) Run() (err error) {
 		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
 		log.Successf("Added storage %v to %v", o.storageName, o.localConfig.GetName())
-		log.Infof("Please use `odo push` command to make the storage accessible to the component")
+		log.Italic("\nPlease use `odo push` command to make the storage accessible to the component")
 	}
 	return
 }

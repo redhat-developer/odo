@@ -98,8 +98,8 @@ func (o *URLCreateOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
-	log.Successf("URL %s created for component: %v\n", o.urlName, o.Component())
-	log.Info("To create URL on the OpenShift Cluster, please use `odo push`")
+	log.Successf("URL %s created for component: %v", o.urlName, o.Component())
+	log.Italic("\nTo create URL on the OpenShift Cluster, please use `odo push`")
 	return
 }
 

@@ -72,7 +72,7 @@ func (o *StorageDeleteOptions) Run() (err error) {
 		}
 
 		log.Infof("Deleted storage %v from %v", o.storageName, o.localConfig.GetName())
-		log.Infof("Please use `odo push` command to delete the storage from the cluster")
+		log.Italic("\nPlease use `odo push` command to delete the storage from the cluster")
 	} else {
 		return fmt.Errorf("aborting deletion of storage: %v", o.storageName)
 	}
