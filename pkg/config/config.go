@@ -286,13 +286,14 @@ func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 	}
 	defer f.Close()
 	_, err = f.Readdir(1)
+
 	// If directory is empty we can remove it
 	if err == io.EOF {
 		glog.V(4).Info("Deleting the config directory as well because its empty")
 
 		return lci.fs.Remove(configDir)
 	}
-	return nil
+	return err
 }
 
 // DeleteConfigFile deletes the odo-config.yaml file if it exists
