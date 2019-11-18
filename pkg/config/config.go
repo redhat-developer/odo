@@ -280,13 +280,11 @@ func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 		// Possible to not have permission to the dir
 		return err
 	}
-
 	f, err := lci.fs.Open(configDir)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-
 	_, err = f.Readdir(1)
 	// If directory is empty we can remove it
 	if err == io.EOF {

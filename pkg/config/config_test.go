@@ -446,20 +446,19 @@ func TestGetOSSourcePath(t *testing.T) {
 func TestDeleteConfigDirIfEmpty(t *testing.T) {
 
 	t.Run("empty config dir", func(t *testing.T) {
-		configDir, err := os.UserHomeDir()
+		fs := filesystem.NewFakeFs()
+		configDir, err := fs.TempDir(os.TempDir(), "odo")
 		if err != nil {
 			t.Error(err)
 		}
-		fs, lci, err := mockFsAndLocalConfigInfo(configDir)
+		lci, err := mockLocalConfigInfo(configDir, fs)
 		if err != nil {
 			t.Error(err)
 		}
 		odoDir := filepath.Join(configDir, ".odo")
-
 		if _, err = fs.Stat(odoDir); os.IsNotExist(err) {
 			t.Error("config directory doesn't exist")
 		}
-
 		err = lci.DeleteConfigDirIfEmpty()
 		if err != nil {
 			t.Error(err)
@@ -473,11 +472,13 @@ func TestDeleteConfigDirIfEmpty(t *testing.T) {
 	})
 
 	t.Run("config dir with test file", func(t *testing.T) {
-		configDir, err := os.UserHomeDir()
+		fs := filesystem.NewFakeFs()
+		configDir, err := fs.TempDir(os.TempDir(), "odo")
+
 		if err != nil {
 			t.Error(err)
 		}
-		fs, lci, err := mockFsAndLocalConfigInfo(configDir)
+		lci, err := mockLocalConfigInfo(configDir, fs)
 		if err != nil {
 			t.Error(err)
 		}
@@ -503,17 +504,17 @@ func TestDeleteConfigDirIfEmpty(t *testing.T) {
 
 }
 
-func mockFsAndLocalConfigInfo(configDir string) (filesystem.Filesystem, *LocalConfigInfo, error) {
-	fs := filesystem.NewFakeFs()
-	lci, err := newLocalConfigInfo(configDir, fs)
-	if err != nil {
-		return nil, nil, err
+func mockLocalConfigInfo(configDir string, fs filesystem.Filesystem) (*LocalConfigInfo, error) {
+
+	lci := &LocalConfigInfo{
+		Filename: filepath.Join(configDir, ".odo", "config.yaml"),
+		fs:       fs,
 	}
-	err = fs.MkdirAll(filepath.Join(configDir, ".odo"), os.ModePerm)
+	err := fs.MkdirAll(filepath.Join(configDir, ".odo"), os.ModePerm)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return fs, lci, nil
+	return lci, nil
 
 }
