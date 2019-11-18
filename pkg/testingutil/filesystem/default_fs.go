@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/*
+	This package is a FORK of https://github.com/kubernetes/kubernetes/blob/master/pkg/util/filesystem/defaultfs.go
+	See above license
+*/
+
 package filesystem
 
 import (
