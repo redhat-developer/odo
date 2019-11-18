@@ -224,7 +224,9 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
-	s := log.Spinner("Creating service")
+	log.Infof("Deploying service %s of type: %s", o.ServiceName, o.ServiceType)
+
+	s := log.Spinner("Deploying service")
 	defer s.End(false)
 	err = svc.CreateService(o.Client, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
 	if err != nil {
@@ -243,6 +245,10 @@ func (o *ServiceCreateOptions) Run() (err error) {
 		log.Successf(`Service '%s' was created`, o.ServiceName)
 		log.Italic("\nProgress of the provisioning will not be reported and might take a long time\nYou can see the current status by executing 'odo service list'")
 	}
+
+	// Information on what to do next
+	log.Infof("Optionally, link %s to your component by running: 'odo link <component-name>'", o.ServiceType)
+
 	equivalent := o.outputNonInteractiveEquivalent()
 	if len(equivalent) > 0 {
 		log.Info("Equivalent command:\n" + ui.StyledOutput(equivalent, "cyan"))
