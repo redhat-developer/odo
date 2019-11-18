@@ -485,6 +485,9 @@ func TestDeleteConfigDirIfEmpty(t *testing.T) {
 		odoDir := filepath.Join(configDir, ".odo")
 
 		file, err := fs.Create(filepath.Join(odoDir, "testfile"))
+		if err != nil {
+			t.Error(err)
+		}
 		_, err = file.Write([]byte("hello world"))
 		if err != nil {
 			t.Error(err)
