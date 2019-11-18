@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
@@ -25,24 +27,6 @@ const (
 	// DefaultDebugPort is the default port used for debugging on remote pod
 	DefaultDebugPort = 5858
 )
-
-type fs interface {
-	Open(name string) (file, error)
-	Stat(name string) (os.FileInfo, error)
-	Remove(name string) error
-}
-
-// we need this file interface to mock the file system
-type file interface {
-	io.Closer
-	Readdir(n int) ([]os.FileInfo, error)
-}
-
-type localFS struct{}
-
-func (localFS) Open(name string) (file, error)        { return os.Open(name) }
-func (localFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
-func (localFS) Remove(name string) error              { return os.Remove(name) }
 
 type ComponentStorageSettings struct {
 	Name string `yaml:"Name,omitempty"`
@@ -121,7 +105,7 @@ type proxyLocalConfig struct {
 // serialize it.
 type LocalConfigInfo struct {
 	Filename         string `yaml:"FileName,omitempty"`
-	fs               fs
+	fs               filesystem.Filesystem
 	LocalConfig      `yaml:",omitempty"`
 	configFileExists bool
 }
@@ -150,6 +134,10 @@ func New() (*LocalConfigInfo, error) {
 // NewLocalConfigInfo gets the LocalConfigInfo from local config file and creates the local config file in case it's
 // not present then it
 func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
+	return newLocalConfigInfo(cfgDir, filesystem.DefaultFs{})
+}
+
+func newLocalConfigInfo(cfgDir string, fs filesystem.Filesystem) (*LocalConfigInfo, error) {
 	configFile, err := getLocalConfigFile(cfgDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
@@ -158,7 +146,7 @@ func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 		LocalConfig:      NewLocalConfig(),
 		Filename:         configFile,
 		configFileExists: true,
-		fs:               localFS{},
+		fs:               fs,
 	}
 
 	// if the config file doesn't exist then we dont worry about it and return
@@ -416,6 +404,7 @@ func (lci *LocalConfigInfo) writeToFile() error {
 	plc := newProxyLocalConfig()
 	plc.TypeMeta = lci.typeMeta
 	plc.ComponentSettings = lci.componentSettings
+
 	return util.WriteToFile(&plc, lci.Filename)
 }
 

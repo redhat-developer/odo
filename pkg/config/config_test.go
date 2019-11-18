@@ -2,11 +2,13 @@ package config
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/openshift/odo/pkg/util"
 )
@@ -441,135 +443,77 @@ func TestGetOSSourcePath(t *testing.T) {
 	}
 }
 
-type mockFS struct {
-	statCalled bool
-	statFn     func(name string) (os.FileInfo, error)
-
-	openCalled bool
-	openFn     func(name string) (file, error)
-
-	removeCalled bool
-}
-
-func (mfs *mockFS) Open(name string) (file, error) {
-	mfs.openCalled = true
-	return mfs.openFn(name)
-}
-func (mfs *mockFS) Stat(name string) (os.FileInfo, error) {
-	mfs.statCalled = true
-	return mfs.statFn(name)
-}
-func (mfs *mockFS) Remove(name string) error {
-	mfs.removeCalled = true
-	return nil
-}
-
-type mockEmptyDir struct{}
-
-func (med *mockEmptyDir) Close() error {
-	return nil
-}
-
-// Readdir for an emptyDir returns EOF as that is what is returned by an empty directory
-func (med *mockEmptyDir) Readdir(n int) ([]os.FileInfo, error) {
-	return nil, io.EOF
-}
-
-type mockDir struct{}
-
-func (med *mockDir) Close() error {
-	return nil
-}
-
-// Readdir returns nil as we dont currently care about the content of the directory, just that its not empty
-// and for that EOF error is not returned
-func (med *mockDir) Readdir(n int) ([]os.FileInfo, error) {
-	return nil, nil
-}
-
 func TestDeleteConfigDirIfEmpty(t *testing.T) {
 
-	tests := []struct {
-		name         string
-		mockFS       mockFS
-		wantErr      bool
-		openCalled   bool
-		removeCalled bool
-		statCalled   bool
-	}{
-		{
-			name:       "non existent config dir",
-			statCalled: true,
-			mockFS: mockFS{
-				openFn: func(name string) (file, error) {
-					return nil, nil
-				},
-				statFn: func(name string) (os.FileInfo, error) {
-					return nil, os.ErrNotExist
-				},
-			},
-		},
-		{
-			name:       "permission denied on config dir",
-			statCalled: true,
-			openCalled: true,
-			mockFS: mockFS{
-				openFn: func(name string) (file, error) {
-					return nil, os.ErrPermission
-				},
-				statFn: func(name string) (os.FileInfo, error) {
-					return nil, nil
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:         "empty config dir",
-			statCalled:   true,
-			openCalled:   true,
-			removeCalled: true,
-			mockFS: mockFS{
-				openFn: func(name string) (file, error) {
-					return &mockEmptyDir{}, nil
-				},
-				statFn: func(name string) (os.FileInfo, error) {
-					return nil, nil
-				},
-			},
-		},
-		{
-			name:       "non empty config dir",
-			statCalled: true,
-			openCalled: true,
-			mockFS: mockFS{
-				openFn: func(name string) (file, error) {
-					return &mockDir{}, nil
-				},
-				statFn: func(name string) (os.FileInfo, error) {
-					return nil, nil
-				},
-			},
-		},
+	t.Run("empty config dir", func(t *testing.T) {
+		configDir, err := os.UserHomeDir()
+		if err != nil {
+			t.Error(err)
+		}
+		fs, lci, err := mockFsAndLocalConfigInfo(configDir)
+		if err != nil {
+			t.Error(err)
+		}
+		odoDir := filepath.Join(configDir, ".odo")
+
+		if _, err = fs.Stat(odoDir); os.IsNotExist(err) {
+			t.Error("config directory doesn't exist")
+		}
+
+		err = lci.DeleteConfigDirIfEmpty()
+		if err != nil {
+			t.Error(err)
+		}
+
+		// read isExists
+		if _, err := fs.Stat(odoDir); !os.IsNotExist(err) {
+			t.Error("odo config directory exists even after deleting it")
+		}
+
+	})
+
+	t.Run("config dir with test file", func(t *testing.T) {
+		configDir, err := os.UserHomeDir()
+		if err != nil {
+			t.Error(err)
+		}
+		fs, lci, err := mockFsAndLocalConfigInfo(configDir)
+		if err != nil {
+			t.Error(err)
+		}
+		odoDir := filepath.Join(configDir, ".odo")
+
+		file, err := fs.Create(filepath.Join(odoDir, "testfile"))
+		file.Write([]byte("hello world"))
+		file.Close()
+		if err != nil {
+			t.Fatal("error while setting up test file systems -", err.Error())
+		}
+
+		err = lci.DeleteConfigDirIfEmpty()
+		if err != nil {
+			t.Error(err)
+		}
+
+		if _, err := fs.Stat(odoDir); os.IsNotExist(err) {
+			t.Error("odo config directory doesn't exist even when it wasn't empty")
+		}
+
+	})
+
+}
+
+func mockFsAndLocalConfigInfo(configDir string) (filesystem.Filesystem, *LocalConfigInfo, error) {
+	fs := filesystem.NewFakeFs()
+	lci, err := newLocalConfigInfo(configDir, fs)
+	if err != nil {
+		return nil, nil, err
+	}
+	err = fs.MkdirAll(filepath.Join(configDir, ".odo"), os.ModePerm)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			lci := LocalConfigInfo{
-				fs: &tt.mockFS,
-			}
-			err := lci.DeleteConfigDirIfEmpty()
-
-			if tt.openCalled != tt.mockFS.openCalled || tt.removeCalled != tt.mockFS.removeCalled || tt.statCalled != tt.mockFS.statCalled {
-				t.Errorf("fs method call flags incorrect for %s", tt.name)
-			}
-
-			if tt.wantErr && err == nil {
-				t.Errorf("expected error for %s", t.Name())
-			} else if !tt.wantErr && err != nil {
-				t.Error(err)
-			}
-		})
-	}
+	return fs, lci, nil
 
 }

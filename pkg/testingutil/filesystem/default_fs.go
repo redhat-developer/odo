@@ -42,6 +42,16 @@ func (DefaultFs) Create(name string) (File, error) {
 	return &defaultFile{file}, nil
 }
 
+// Open via os.Open
+func (DefaultFs) Open(name string) (File, error) {
+	file, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &defaultFile{file}, nil
+}
+
 // Rename via os.Rename
 func (DefaultFs) Rename(oldpath, newpath string) error {
 	return os.Rename(oldpath, newpath)
@@ -119,4 +129,8 @@ func (file *defaultFile) Sync() error {
 // Close via os.File.Close
 func (file *defaultFile) Close() error {
 	return file.file.Close()
+}
+
+func (file *defaultFile) Readdir(n int) ([]os.FileInfo, error) {
+	return file.file.Readdir(n)
 }

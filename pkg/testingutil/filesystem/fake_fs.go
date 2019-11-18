@@ -48,6 +48,15 @@ func (fs *fakeFs) Create(name string) (File, error) {
 	return &fakeFile{file}, nil
 }
 
+// Open via afero.Fs.Open
+func (fs *fakeFs) Open(name string) (File, error) {
+	file, err := fs.a.Fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	return &fakeFile{file}, nil
+}
+
 // Rename via afero.Fs.Rename
 func (fs *fakeFs) Rename(oldpath, newpath string) error {
 	return fs.a.Fs.Rename(oldpath, newpath)
@@ -125,4 +134,8 @@ func (file *fakeFile) Sync() error {
 // Close via afero.File.Close
 func (file *fakeFile) Close() error {
 	return file.file.Close()
+}
+
+func (file *fakeFile) Readdir(n int) ([]os.FileInfo, error) {
+	return file.file.Readdir(n)
 }
