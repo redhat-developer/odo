@@ -37,10 +37,8 @@ func (c *Client) CreatePVC(name string, size string, labels map[string]string, o
 		},
 	}
 
-	if ownerReference != nil {
-		for _, owRf := range ownerReference {
-			pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
-		}
+	for _, owRf := range ownerReference {
+		pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
 
 	createdPvc, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(pvc)
