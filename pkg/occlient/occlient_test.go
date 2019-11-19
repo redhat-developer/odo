@@ -545,8 +545,8 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/instance": "backend",
 				"app.kubernetes.io/name":     "python",
 			},
-			wantErr: false,
-			existingDC: *fakeDeploymentConfig("mailserver", "", nil, nil, t),,
+			wantErr:    false,
+			existingDC: *fakeDeploymentConfig("mailserver", "", nil, nil, t),
 		},
 
 		{
@@ -559,14 +559,20 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/instance": "backend",
 				"app.kubernetes.io/name":     "golang",
 			},
-			wantErr: false,
-			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),,
+			wantErr:    false,
+			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// initialising the fakeclient
 			fkclient, fkclientset := FakeNew()
+
+			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := &appsv1.DeploymentConfig{}
+				dc.Name = tt.service
+				return true, dc, nil
+			})
 
 			_, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.portNumber, tt.labels)
 

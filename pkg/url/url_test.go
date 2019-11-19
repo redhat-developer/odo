@@ -6,11 +6,13 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
+	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/url/labels"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -107,6 +109,17 @@ func TestCreate(t *testing.T) {
 				route := action.(ktesting.CreateAction).GetObject().(*routev1.Route)
 				route.Spec.Host = "host"
 				return true, route, nil
+			})
+
+			serviceName, err := util.NamespaceOpenShiftObject(tt.args.componentName, tt.args.applicationName)
+			if err != nil {
+				t.Error(err)
+			}
+
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := &appsv1.DeploymentConfig{}
+				dc.Name = serviceName
+				return true, dc, nil
 			})
 
 			got, err := Create(client, tt.args.urlName, tt.args.portNumber, tt.args.componentName, tt.args.applicationName)
