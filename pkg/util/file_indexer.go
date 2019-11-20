@@ -5,7 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,6 +86,55 @@ func resolveFilePath(directory string) (string, error) {
 	return directory, nil
 }
 
+// gitignoreFilePath gives the filepath of the .gitignore file in the context
+func gitIgnoreFilePath(directory string) (string, error) {
+	_, err := os.Stat(directory)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(directory, ".gitignore"), nil
+}
+
+// addOdoFileIndex adds odo-file-index.json to .gitignore
+func addOdoFileIndex(gitIgnoreFile string) error {
+	var data []byte
+	file, err := os.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, 0600)
+	if err != nil {
+		return errors.Wrap(err, "failed to open .gitignore file")
+	}
+	defer file.Close()
+
+	if data, err = ioutil.ReadFile(gitIgnoreFile); err != nil {
+		return errors.Wrap(err, "failed reading data from .gitignore file")
+	}
+	// check whether .odo/odo-file-index.json is already in the .gitignore file
+	if !strings.Contains(string(data), filepath.Join(fileIndexDirectory, fileIndexName)) {
+		if _, err := file.WriteString("\n" + filepath.Join(fileIndexDirectory, fileIndexName)); err != nil {
+			return errors.Wrapf(err, "failed to Add %v to .gitignore file", fileIndexName)
+		}
+	}
+	return nil
+}
+
+// Check .gitignore file exists or not, if not then create it
+func checkGitIgnoreFile(directory string) (string, error) {
+
+	gitIgnoreFile, err := gitIgnoreFilePath(directory)
+	if err != nil {
+		return "", err
+	}
+	// err checks the existence of .gitignore and then creates if does not exists
+	if _, err := os.Stat(gitIgnoreFile); os.IsNotExist(err) {
+		file, err := os.OpenFile(gitIgnoreFile, os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			return gitIgnoreFile, errors.Wrap(err, "failed to create .gitignore file")
+		}
+		file.Close()
+	}
+
+	return gitIgnoreFile, nil
+}
+
 // RunIndexer walks the given directory and finds the files which have changed and which were deleted/renamed
 // it reads the odo index file from the .odo folder
 // if no such file is present, it means it's the first time the folder is being walked and thus returns a empty list
@@ -91,6 +143,18 @@ func resolveFilePath(directory string) (string, error) {
 // to the files
 func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, filesDeleted []string, err error) {
 	resolvedPath, err := resolveFilePath(directory)
+	if err != nil {
+		return filesChanged, filesDeleted, err
+	}
+
+	// check for .gitignore file and add odo-file-index.json to .gitignore
+	gitIgnoreFile, err := checkGitIgnoreFile(directory)
+	if err != nil {
+		return filesChanged, filesDeleted, err
+	}
+
+	// add odo-file-index.json path to .gitignore
+	err = addOdoFileIndex(gitIgnoreFile)
 	if err != nil {
 		return filesChanged, filesDeleted, err
 	}
