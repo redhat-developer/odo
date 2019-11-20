@@ -329,7 +329,7 @@ var _ = Describe("odo generic", func() {
 
 			// Delete the deployment config using oc delete
 			dc := oc.GetDcName(componentRandomName, project)
-			helper.CmdShouldPass("oc", "delete", "--wait", "dc", dc)
+			helper.CmdShouldPass("oc", "delete", "--wait", "dc", dc, "--namespace", project)
 
 			// insert sleep because it takes a few seconds to delete *all*
 			// objects owned by DC but we should be able to check if a service
@@ -338,11 +338,11 @@ var _ = Describe("odo generic", func() {
 
 			// now check if the service owned by the DC exists. Service name is
 			// same as DC name for a given component.
-			stdOut := helper.CmdShouldFail("oc", "get", "svc", dc)
+			stdOut := helper.CmdShouldFail("oc", "get", "svc", dc, "--namespace", project)
 			Expect(stdOut).To(ContainSubstring("NotFound"))
 
 			// ensure that the image stream still exists
-			helper.CmdShouldPass("oc", "get", "is", dc)
+			helper.CmdShouldPass("oc", "get", "is", dc, "--namespace", project)
 		})
 	})
 })
