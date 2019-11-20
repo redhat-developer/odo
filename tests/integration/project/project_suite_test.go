@@ -5,10 +5,11 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/tests/helper/reporter"
 )
 
 func TestProject(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecsWithDefaultAndCustomReporters(t, "Project Suite", []Reporter{reporter.JunitReport(t, "../../../reports")})
+	RunSpecs(t, "Project Suite")
+	// Keep CustomReporters commented till https://github.com/onsi/ginkgo/issues/628 is fixed
+	// RunSpecsWithDefaultAndCustomReporters(t, "Project Suite", []Reporter{reporter.JunitReport(t, "../../../reports")})
 }
