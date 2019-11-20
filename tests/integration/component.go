@@ -466,6 +466,18 @@ func componentTests(args ...string) {
 			Expect(files).NotTo(ContainElement(".odo"))
 		})
 
+		It("creates a local python component, pushes it and then deletes it using --all flag in local directory", func() {
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "python", componentName, "--app", appName, "--project", project)...)
+			helper.CmdShouldPass("odo", append(args, "push")...)
+			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f")...)
+			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", project)...)
+			Expect(componentList).NotTo(ContainSubstring(componentName))
+			files := helper.ListFilesInDir(context)
+			fmt.Println(files)
+			Expect(files).NotTo(ContainElement(".odo"))
+		})
+
 		It("creates a local python component and check for unsupported warning", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context)
 			output := helper.CmdShouldPass("odo", append(args, "create", "python", componentName, "--app", appName, "--project", project, "--context", context)...)

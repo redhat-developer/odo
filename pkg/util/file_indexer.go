@@ -138,7 +138,6 @@ func checkGitIgnoreFile(directory string) (string, error) {
 // DeleteIndexFile deletes the index file. It doesn't throw error if it doesn't exist
 func DeleteIndexFile(directory string) error {
 	indexFile, err := resolveIndexFilePath(directory)
-
 	if os.IsNotExist(err) {
 		return nil
 	} else if err != nil {

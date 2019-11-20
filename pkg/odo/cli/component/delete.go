@@ -47,6 +47,10 @@ func NewDeleteOptions() *DeleteOptions {
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	do.Context = genericclioptions.NewContext(cmd)
 	err = do.ComponentOptions.Complete(name, cmd, args)
+
+	if do.componentContext == "" {
+		do.componentContext = LocalDirectoryDefaultLocation
+	}
 	return
 }
 
@@ -96,7 +100,6 @@ func (do *DeleteOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-
 			if err = util.DeleteIndexFile(do.componentContext); err != nil {
 				return err
 			}
