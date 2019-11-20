@@ -305,4 +305,44 @@ var _ = Describe("odo generic", func() {
 			Expect(stdOut).To(ContainSubstring("url name must be shorter than 63 characters"))
 		})
 	})
+
+	Context("when component's deployment config is deleted with oc", func() {
+		var componentRandomName string
+
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			componentRandomName = helper.RandString(6)
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
+			helper.Chdir(context)
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			os.RemoveAll(context)
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
+		It("should delete all OpenShift objects except the component's imagestream", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "create", "nodejs", componentRandomName, "--project", project)
+			helper.CmdShouldPass("odo", "push")
+
+			// Delete the deployment config using oc delete
+			dc := oc.GetDcName(componentRandomName, project)
+			helper.CmdShouldPass("oc", "delete", "--wait", "dc", dc)
+
+			// insert sleep because it takes a few seconds to delete *all*
+			// objects owned by DC but we should be able to check if a service
+			// got deleted in a second.
+			time.Sleep(1 * time.Second)
+
+			// now check if the service owned by the DC exists. Service name is
+			// same as DC name for a given component.
+			stdOut := helper.CmdShouldFail("oc", "get", "svc", dc)
+			Expect(stdOut).To(ContainSubstring("NotFound"))
+
+			// ensure that the image stream still exists
+			helper.CmdShouldPass("oc", "get", "is", dc)
+		})
+	})
 })
