@@ -88,8 +88,10 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 							// Using the appropriate configuration file that contains the "run" script for the component.
 							// either from: /usr/libexec/s2i/assemble or /opt/app-root/src/.s2i/bin/assemble
 							Args: []string{
+								"-pre",
+								"/opt/odo/bin/s2i-setup",
 								"-main",
-								"/opt/odo/bin/supervisord -c /opt/odo/conf/supervisor.conf",
+								"/opt/odo/bin/supervisord -c /opt/app-root/conf/supervisor.conf",
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
