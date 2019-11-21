@@ -1672,7 +1672,8 @@ func (c *Client) StartBuild(name string) (string, error) {
 }
 
 // WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
-func (c *Client) WaitForBuildToFinish(buildName string) error {
+func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error {
+	following := false
 	glog.V(4).Infof("Waiting for %s  build to finish", buildName)
 
 	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
@@ -1682,23 +1683,36 @@ func (c *Client) WaitForBuildToFinish(buildName string) error {
 		return errors.Wrapf(err, "unable to watch build")
 	}
 	defer w.Stop()
+	timeout := time.After(5 * time.Minute)
 	for {
-		val, ok := <-w.ResultChan()
-		if !ok {
-			break
-		}
-		if e, ok := val.Object.(*buildv1.Build); ok {
-			glog.V(4).Infof("Status of %s build is %s", e.Name, e.Status.Phase)
-			switch e.Status.Phase {
-			case buildv1.BuildPhaseComplete:
-				glog.V(4).Infof("Build %s completed.", e.Name)
-				return nil
-			case buildv1.BuildPhaseFailed, buildv1.BuildPhaseCancelled, buildv1.BuildPhaseError:
-				return errors.Errorf("build %s status %s", e.Name, e.Status.Phase)
+		select {
+		case val, ok := <-w.ResultChan():
+			if !ok {
+				break
 			}
+			if e, ok := val.Object.(*buildv1.Build); ok {
+				glog.V(4).Infof("Status of %s build is %s", e.Name, e.Status.Phase)
+				switch e.Status.Phase {
+				case buildv1.BuildPhaseComplete:
+					glog.V(4).Infof("Build %s completed.", e.Name)
+					return nil
+				case buildv1.BuildPhaseFailed, buildv1.BuildPhaseCancelled, buildv1.BuildPhaseError:
+					return errors.Errorf("build %s status %s", e.Name, e.Status.Phase)
+				case buildv1.BuildPhaseRunning:
+					// since the pod is ready and the build is now running, start following the logs
+					if !following {
+						following = true
+						err := c.FollowBuildLog(buildName, stdout)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		case <-timeout:
+			return errors.Errorf("timeout waiting for build %s to start", buildName)
 		}
 	}
-	return nil
 }
 
 // WaitAndGetDC block and waits until the DeploymentConfig has updated it's annotation
@@ -1845,6 +1859,7 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 	}
 
 	rd, err := c.buildClient.RESTClient().Get().
+		Timeout(5*time.Minute).
 		Namespace(c.Namespace).
 		Resource("builds").
 		Name(buildName).
