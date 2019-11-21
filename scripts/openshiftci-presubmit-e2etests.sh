@@ -19,6 +19,3 @@ make test-e2e-beta
 make test-e2e-java
 make test-e2e-source
 odo logout
-
-# upload the junit test reports
-cp -r reports $ARTIFACTS_DIR

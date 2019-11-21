@@ -27,6 +27,3 @@ make test-e2e-all
 make test-benchmark
 
 odo logout
-
-# upload the junit test reports
-cp -r reports $ARTIFACTS_DIR

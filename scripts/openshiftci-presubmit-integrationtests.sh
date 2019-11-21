@@ -29,6 +29,3 @@ make test-cmd-url
 make test-cmd-push
 make test-cmd-link-unlink
 odo logout
-
-# upload the junit test reports
-cp -r reports $ARTIFACTS_DIR

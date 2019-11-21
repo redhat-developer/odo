@@ -5,10 +5,11 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/tests/helper/reporter"
 )
 
 func TestServicecatalog(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecsWithDefaultAndCustomReporters(t, "Servicecatalog Suite", []Reporter{reporter.JunitReport(t, "../../../reports")})
+	RunSpecs(t, "Servicecatalog Suite")
+	// Keep CustomReporters commented till https://github.com/onsi/ginkgo/issues/628 is fixed
+	// RunSpecsWithDefaultAndCustomReporters(t, "Servicecatalog Suite", []Reporter{reporter.JunitReport(t, "../../../reports")})
 }
