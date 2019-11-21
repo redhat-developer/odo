@@ -615,3 +615,14 @@ func RemoveRelativePathFromFiles(files []string, path string) ([]string, error) 
 
 	return removedRelativePathFiles, nil
 }
+
+// DeletePath deletes a file/directory if it exists and doesn't throw error if it doesn't exist
+func DeletePath(path string) error {
+	_, err := os.Stat(path)
+
+	// reason for double negative is os.IsExist() would be blind to EMPTY FILE.
+	if !os.IsNotExist(err) {
+		return os.Remove(path)
+	}
+	return nil
+}

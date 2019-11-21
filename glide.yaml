@@ -62,3 +62,5 @@ import:
   repo: https://github.com/openshift/gssapi.git
 - package: github.com/kylelemons/godebug
   version: fa7b53cdfc9105c70f134574002f406232921437
+- package: github.com/spf13/afero
+  version: v1.2.2

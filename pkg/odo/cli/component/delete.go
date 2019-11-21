@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/util"
+
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
@@ -45,6 +47,10 @@ func NewDeleteOptions() *DeleteOptions {
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	do.Context = genericclioptions.NewContext(cmd)
 	err = do.ComponentOptions.Complete(name, cmd, args)
+
+	if do.componentContext == "" {
+		do.componentContext = LocalDirectoryDefaultLocation
+	}
 	return
 }
 
@@ -94,13 +100,16 @@ func (do *DeleteOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-
-			if !cfg.ConfigFileExists() {
-				return nil
+			if err = util.DeleteIndexFile(do.componentContext); err != nil {
+				return err
 			}
 
-			err = cfg.DeleteConfigDir()
-			if err != nil {
+			// this checks if the config file exists or not
+			if err = cfg.DeleteConfigFile(); err != nil {
+				return err
+			}
+
+			if err = cfg.DeleteConfigDirIfEmpty(); err != nil {
 				return err
 			}
 

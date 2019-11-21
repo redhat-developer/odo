@@ -2,11 +2,14 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -31,7 +34,7 @@ type ComponentStorageSettings struct {
 	Path string `yaml:"Path,omitempty"`
 }
 
-// componentSettings holds all component related information
+// ComponentSettings holds all component related information
 type ComponentSettings struct {
 	// The builder image to use
 	Type *string `yaml:"Type,omitempty"`
@@ -102,6 +105,7 @@ type proxyLocalConfig struct {
 // serialize it.
 type LocalConfigInfo struct {
 	Filename         string `yaml:"FileName,omitempty"`
+	fs               filesystem.Filesystem
 	LocalConfig      `yaml:",omitempty"`
 	configFileExists bool
 }
@@ -130,6 +134,10 @@ func New() (*LocalConfigInfo, error) {
 // NewLocalConfigInfo gets the LocalConfigInfo from local config file and creates the local config file in case it's
 // not present then it
 func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
+	return newLocalConfigInfo(cfgDir, filesystem.DefaultFs{})
+}
+
+func newLocalConfigInfo(cfgDir string, fs filesystem.Filesystem) (*LocalConfigInfo, error) {
 	configFile, err := getLocalConfigFile(cfgDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo config file")
@@ -138,10 +146,11 @@ func NewLocalConfigInfo(cfgDir string) (*LocalConfigInfo, error) {
 		LocalConfig:      NewLocalConfig(),
 		Filename:         configFile,
 		configFileExists: true,
+		fs:               fs,
 	}
 
 	// if the config file doesn't exist then we dont worry about it and return
-	if _, err = os.Stat(configFile); os.IsNotExist(err) {
+	if _, err = c.fs.Stat(configFile); os.IsNotExist(err) {
 		c.configFileExists = false
 		return &c, nil
 	}
@@ -260,9 +269,36 @@ func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}
 
 }
 
-// DeleteConfigDir Deletes the config directory with the config file
-func (lci *LocalConfigInfo) DeleteConfigDir() error {
-	return os.RemoveAll(filepath.Dir(lci.Filename))
+// DeleteConfigDirIfEmpty Deletes the config directory if its empty
+func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
+	configDir := filepath.Dir(lci.Filename)
+	_, err := lci.fs.Stat(configDir)
+	if os.IsNotExist(err) {
+		// If the config dir doesn't exist then we dont mind
+		return nil
+	} else if err != nil {
+		// Possible to not have permission to the dir
+		return err
+	}
+	f, err := lci.fs.Open(configDir)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Readdir(1)
+
+	// If directory is empty we can remove it
+	if err == io.EOF {
+		glog.V(4).Info("Deleting the config directory as well because its empty")
+
+		return lci.fs.Remove(configDir)
+	}
+	return err
+}
+
+// DeleteConfigFile deletes the odo-config.yaml file if it exists
+func (lci *LocalConfigInfo) DeleteConfigFile() error {
+	return util.DeletePath(lci.Filename)
 }
 
 // IsSet uses reflection to get the parameter from the localconfig struct, currently
@@ -367,6 +403,7 @@ func (lci *LocalConfigInfo) writeToFile() error {
 	plc := newProxyLocalConfig()
 	plc.TypeMeta = lci.typeMeta
 	plc.ComponentSettings = lci.componentSettings
+
 	return util.WriteToFile(&plc, lci.Filename)
 }
 

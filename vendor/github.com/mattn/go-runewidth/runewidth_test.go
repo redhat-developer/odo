@@ -42,7 +42,7 @@ var tables = []table{
 }
 
 func TestTableChecksums(t *testing.T) {
-	check := func(tbl table, wantN int, wantSHA string) {
+	check := func(name string, tbl table, wantN int, wantSHA string) {
 		gotN := 0
 		buf := make([]byte, utf8.MaxRune+1)
 		for r := rune(0); r <= utf8.MaxRune; r++ {
@@ -53,18 +53,18 @@ func TestTableChecksums(t *testing.T) {
 		}
 		gotSHA := fmt.Sprintf("%x", sha256.Sum256(buf))
 		if gotN != wantN || gotSHA != wantSHA {
-			t.Errorf("n = %d want %d, sha256 = %s want %s", gotN, wantN, gotSHA, wantSHA)
+			t.Errorf("table = %s,\n\tn = %d want %d,\n\tsha256 = %s want %s", name, gotN, wantN, gotSHA, wantSHA)
 		}
 	}
 
-	check(private, 137468, "a4a641206dc8c5de80bd9f03515a54a706a5a4904c7684dc6a33d65c967a51b2")
-	check(nonprint, 2143, "288904683eb225e7c4c0bd3ee481b53e8dace404ec31d443afdbc4d13729fe95")
-	check(combining, 2097, "b1dabe5f35b7ccf868999bf6df6134f346ae14a4eb16f22e1dc8a98240ba1b53")
-	check(doublewidth, 180993, "06f5d5d5ebb8b9ee74fdf6003ecfbb313f9c042eb3cb4fce2a9e06089eb68dda")
-	check(ambiguous, 138739, "d05e339a10f296de6547ff3d6c5aee32f627f6555477afebd4a3b7e3cf74c9e3")
-	check(emoji, 1236, "9b2d75cf8ca48c5075c525a92ce5cf2608fa451c589f33d7d153e9df93f4e2f7")
-	check(notassigned, 846357, "b06b7acc03725de394d92b09306aa7a9c0c0b53f36884db4c835cbb04971e421")
-	check(neutral, 25561, "87fffca79a3a6d413d23adf1c591bdcc1ea5d906d0d466b12a76357bbbb74607")
+	check("private", private, 137468, "a4a641206dc8c5de80bd9f03515a54a706a5a4904c7684dc6a33d65c967a51b2")
+	check("notprint", nonprint, 2143, "288904683eb225e7c4c0bd3ee481b53e8dace404ec31d443afdbc4d13729fe95")
+	check("combining", combining, 461, "ef1839ee99b2707da7d5592949bd9b40d434fa6462c6da61477bae923389e263")
+	check("doublewidth", doublewidth, 181783, "3237ce320ce2b16f26e43c1b0e93f242566ffee50a7f360b51f3b41d5ecb0e7e")
+	check("ambiguous", ambiguous, 138739, "d05e339a10f296de6547ff3d6c5aee32f627f6555477afebd4a3b7e3cf74c9e3")
+	check("emoji", emoji, 3791, "bf02b49f5cbee8df150053574d20125164e7f16b5f62aa5971abca3b2f39a8e6")
+	check("notassigned", notassigned, 10, "68441e98eca1450efbe857ac051fcc872eed347054dfd0bc662d1c4ee021d69f")
+	check("neutral", neutral, 26925, "d79d8558f3cc35c633e5025c9b29c005b853589c8f71b4a72507b5c31d8a6829")
 }
 
 func isCompact(t *testing.T, tbl table) bool {

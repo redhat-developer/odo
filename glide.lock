@@ -1,5 +1,5 @@
-hash: 2a4a7092fc929cbbef57cdb21489e3227341304811fab15fd23874602aba9f83
-updated: 2019-09-12T13:40:15.826556286-04:00
+hash: 659433dc0ee1e4220509fa3496d3d4f84cc6ec7c2b8b62792aa5bdcf22d7fd01
+updated: 2019-10-31T11:21:22.247018012+05:30
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -23,7 +23,7 @@ imports:
 - name: github.com/certifi/gocertifi
   version: deb3ae2ef2610fde3330947281941c562861188b
 - name: github.com/creack/pty
-  version: 2769f65a3a94eb8f876f44a0459d24ae7ad2e488
+  version: 3a6a957789163cacdfe0e291617a1c8e80612c11
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -113,7 +113,7 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/google/btree
-  version: be84af90a1f71c9eeac820a4cdacb863122396d6
+  version: 479b5e81b0a93ec038d201b0b33d17db599531d3
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/googleapis/gnostic
@@ -184,9 +184,9 @@ imports:
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: bf9a1dea1961e1d831824fb135332bfb8c10e8b8
+  version: 0e9ddb7c0c0aef74fa25eaba4141e6b5ab7aca2a
 - name: github.com/mattn/go-runewidth
-  version: 703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211
+  version: 9d4e0701ab53d89eeb2f46b282d1cd71f458f0bf
 - name: github.com/matttproud/golang_protobuf_extensions
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
@@ -419,6 +419,10 @@ imports:
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/sirupsen/logrus
   version: 89742aefa4b206dcf400792f3bd35b542998eb3b
+- name: github.com/spf13/afero
+  version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
+  subpackages:
+  - mem
 - name: github.com/spf13/cobra
   version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
 - name: github.com/spf13/pflag
@@ -535,12 +539,12 @@ imports:
   - storage/v1alpha1
   - storage/v1beta1
 - name: k8s.io/apiextensions-apiserver
-  version: 7e311602c75d6a2483b2928d99c44183e42a0136
+  version: 832cfda86122b2a2649270d9ca578bb6d9466308
   repo: https://github.com/openshift/kubernetes-apiextensions-apiserver.git
   subpackages:
   - pkg/features
 - name: k8s.io/apimachinery
-  version: 5c0e7e0ce91a8083e170765a544def530b8ee4f0
+  version: 9e973fa2370e738e9c6ff94b061efa45c2c3bfa1
   repo: https://github.com/openshift/kubernetes-apimachinery.git
   subpackages:
   - pkg/api/equality
@@ -597,7 +601,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 6eafd6a7ccfb33517f1d852155d8862d8b5d3e93
+  version: c6aca565d348e53b6bd4cceb0c9fb3a67ccf6b2e
   repo: https://github.com/openshift/kubernetes-apiserver.git
   subpackages:
   - pkg/apis/audit
@@ -610,7 +614,7 @@ imports:
   - pkg/features
   - pkg/util/feature
 - name: k8s.io/client-go
-  version: 9feea9d4142fd23f46451ef4292787b85e2e0a52
+  version: b1dc64b0ec03df0ed50b7400fd3f4017d4b083f4
   repo: https://github.com/openshift/kubernetes-client-go.git
   subpackages:
   - discovery
@@ -706,6 +710,7 @@ imports:
   - tools/clientcmd/api/v1
   - tools/metrics
   - tools/pager
+  - tools/portforward
   - tools/record
   - tools/reference
   - tools/remotecommand
@@ -726,7 +731,7 @@ imports:
   - pkg/util/proto
   - pkg/util/proto/validation
 - name: k8s.io/kubernetes
-  version: 84f203614d99ab73d7de2ae51bab61877eac7af6
+  version: 37c7789154ed2a309a1ac0c1675757600f245e7d
   repo: https://github.com/openshift/kubernetes.git
   subpackages:
   - pkg/api/events

@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
 	"github.com/openshift/odo/pkg/util"
 )
@@ -438,4 +441,86 @@ func TestGetOSSourcePath(t *testing.T) {
 
 		})
 	}
+}
+
+func TestDeleteConfigDirIfEmpty(t *testing.T) {
+
+	t.Run("empty config dir", func(t *testing.T) {
+		fs := filesystem.NewFakeFs()
+		configDir, err := fs.TempDir(os.TempDir(), "odo")
+		if err != nil {
+			t.Error(err)
+		}
+		lci, err := mockLocalConfigInfo(configDir, fs)
+		if err != nil {
+			t.Error(err)
+		}
+		odoDir := filepath.Join(configDir, ".odo")
+		if _, err = fs.Stat(odoDir); os.IsNotExist(err) {
+			t.Error("config directory doesn't exist")
+		}
+		err = lci.DeleteConfigDirIfEmpty()
+		if err != nil {
+			t.Error(err)
+		}
+
+		// read isExists
+		if _, err := fs.Stat(odoDir); !os.IsNotExist(err) {
+			t.Error("odo config directory exists even after deleting it")
+		}
+
+	})
+
+	t.Run("config dir with test file", func(t *testing.T) {
+		fs := filesystem.NewFakeFs()
+		configDir, err := fs.TempDir(os.TempDir(), "odo")
+
+		if err != nil {
+			t.Error(err)
+		}
+		lci, err := mockLocalConfigInfo(configDir, fs)
+		if err != nil {
+			t.Error(err)
+		}
+		odoDir := filepath.Join(configDir, ".odo")
+
+		file, err := fs.Create(filepath.Join(odoDir, "testfile"))
+		if err != nil {
+			t.Error(err)
+		}
+		_, err = file.Write([]byte("hello world"))
+		if err != nil {
+			t.Error(err)
+		}
+		file.Close()
+		if err != nil {
+			t.Fatal("error while setting up test file systems -", err.Error())
+		}
+
+		err = lci.DeleteConfigDirIfEmpty()
+		if err != nil {
+			t.Error(err)
+		}
+
+		if _, err := fs.Stat(odoDir); os.IsNotExist(err) {
+			t.Error("odo config directory doesn't exist even when it wasn't empty")
+		}
+
+	})
+
+}
+
+func mockLocalConfigInfo(configDir string, fs filesystem.Filesystem) (*LocalConfigInfo, error) {
+
+	lci := &LocalConfigInfo{
+		Filename: filepath.Join(configDir, ".odo", "config.yaml"),
+		fs:       fs,
+	}
+	err := fs.MkdirAll(filepath.Join(configDir, ".odo"), os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
+	return lci, nil
+
 }
