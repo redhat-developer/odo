@@ -314,11 +314,13 @@ var _ = Describe("odo generic", func() {
 			componentRandomName = helper.RandString(6)
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
 			helper.Chdir(context)
 		})
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
 			os.RemoveAll(context)
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
