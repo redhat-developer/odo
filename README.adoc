@@ -24,11 +24,26 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 
 `odo` is designed to be simple and concise with the following key features:
 
-* Simple syntax and design centered around concepts familiar to developers, such as project, application, and component.
+* Simple syntax and design centered around concepts familiar to developers, such as projects, applications, and components.
 * Completely client based. No server is required within the OpenShift cluster for deployment.
-* Supports multiple languages and frameworks such as Node.js, Java, Ruby, Perl, PHP, and Python.
-* Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real-time.
-* Lists all available components and services from the OpenShift cluster.
+* Official full support of Node.js and Java components.
+* Partial compatibility with languages and frameworks such as Ruby, Perl, PHP, and Python. 
+* Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real time.
+* Lists all the available components and services from the OpenShift cluster.
+
+=== Supported languages and corresponding container images
+Run `odo catalog list components` to list the supported languages and corresponding container images present on your cluster.
+
+.Supported container images
+[options="header"]
+|====
+|Node.js|Java
+|`centos/nodejs-8-centos7`|`redhat-openjdk-18/openjdk18-openshift`
+|`rhoar-nodejs/nodejs-8`|`openjdk/openjdk-11-rhel8`
+|`rhoar-nodejs/nodejs-10`|`openjdk/openjdk-11-rhel7`
+|`bucharestgold/centos7-s2i-nodejs`|
+|`rhscl/nodejs-8-rhel7`|
+|====
 
 [[official-documentation]]
 == Official documentation
