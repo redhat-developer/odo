@@ -444,70 +444,92 @@ func TestGetOSSourcePath(t *testing.T) {
 }
 
 func TestDeleteConfigDirIfEmpty(t *testing.T) {
+	// create a fake fs in memory
+	fs := filesystem.NewFakeFs()
+	// create a odo config directory on fake fs
+	configDir, err := fs.TempDir(os.TempDir(), "odo")
+	if err != nil {
+		t.Error(err)
+	}
+	// create a mock local configuration from above fake fs & dir
+	lci, err := mockLocalConfigInfo(configDir, fs)
+	if err != nil {
+		t.Error(err)
+	}
 
-	t.Run("empty config dir", func(t *testing.T) {
-		fs := filesystem.NewFakeFs()
-		configDir, err := fs.TempDir(os.TempDir(), "odo")
+	odoDir := filepath.Join(configDir, ".odo")
+	if _, err = fs.Stat(odoDir); os.IsNotExist(err) {
+		t.Error("config directory doesn't exist")
+	}
+
+	tests := []struct {
+		name string
+		// create indicates if a file is supposed to be created in the odo config dir
+		create     bool
+		setupEnv   func(create bool, fs filesystem.Filesystem, odoDir string) error
+		wantOdoDir bool
+		wantErr    bool
+	}{
+		{
+			name:       "Case 1: Empty config dir",
+			create:     false,
+			setupEnv:   createDirectoryAndFile,
+			wantOdoDir: false,
+		},
+		{
+			name:       "Case 2: Config dir with test file",
+			create:     true,
+			setupEnv:   createDirectoryAndFile,
+			wantOdoDir: true,
+		},
+	}
+
+	for _, tt := range tests {
+
+		err := tt.setupEnv(tt.create, fs, odoDir)
 		if err != nil {
 			t.Error(err)
 		}
-		lci, err := mockLocalConfigInfo(configDir, fs)
-		if err != nil {
-			t.Error(err)
-		}
-		odoDir := filepath.Join(configDir, ".odo")
-		if _, err = fs.Stat(odoDir); os.IsNotExist(err) {
-			t.Error("config directory doesn't exist")
-		}
+
 		err = lci.DeleteConfigDirIfEmpty()
 		if err != nil {
 			t.Error(err)
 		}
 
-		// read isExists
-		if _, err := fs.Stat(odoDir); !os.IsNotExist(err) {
+		file, err := fs.Stat(odoDir)
+		if !tt.wantOdoDir && !os.IsNotExist(err) {
+			// we don't want odo dir but odo dir exists
+			fmt.Println(file.Size())
 			t.Error("odo config directory exists even after deleting it")
+			t.Errorf("Error in test %q", tt.name)
+		} else if tt.wantOdoDir && os.IsNotExist(err) {
+			// we want odo dir to exist after odo delete --all but it does not exist
+			t.Error("wanted odo directory to exist after odo delete --all")
+			t.Errorf("Error in test %q", tt.name)
 		}
+	}
+}
 
-	})
+func createDirectoryAndFile(create bool, fs filesystem.Filesystem, odoDir string) error {
+	if !create {
+		return nil
+	}
 
-	t.Run("config dir with test file", func(t *testing.T) {
-		fs := filesystem.NewFakeFs()
-		configDir, err := fs.TempDir(os.TempDir(), "odo")
+	file, err := fs.Create(filepath.Join(odoDir, "testfile"))
+	if err != nil {
+		return err
+	}
 
-		if err != nil {
-			t.Error(err)
-		}
-		lci, err := mockLocalConfigInfo(configDir, fs)
-		if err != nil {
-			t.Error(err)
-		}
-		odoDir := filepath.Join(configDir, ".odo")
+	_, err = file.Write([]byte("hello world"))
+	if err != nil {
+		return err
+	}
 
-		file, err := fs.Create(filepath.Join(odoDir, "testfile"))
-		if err != nil {
-			t.Error(err)
-		}
-		_, err = file.Write([]byte("hello world"))
-		if err != nil {
-			t.Error(err)
-		}
-		file.Close()
-		if err != nil {
-			t.Fatal("error while setting up test file systems -", err.Error())
-		}
-
-		err = lci.DeleteConfigDirIfEmpty()
-		if err != nil {
-			t.Error(err)
-		}
-
-		if _, err := fs.Stat(odoDir); os.IsNotExist(err) {
-			t.Error("odo config directory doesn't exist even when it wasn't empty")
-		}
-
-	})
-
+	file.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func mockLocalConfigInfo(configDir string, fs filesystem.Filesystem) (*LocalConfigInfo, error) {
