@@ -15,7 +15,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 
 	//new clean project and context for each test
 	var project string
-	var context, context1, context2 string
+	var context, frontendContext, backendContext string
 	var oc helper.OcRunner
 
 	// Setup up state for each test spec
@@ -54,47 +54,47 @@ var _ = Describe("odo link and unlink command tests", func() {
 
 	Context("When link between components using wrong port", func() {
 		JustBeforeEach(func() {
-			context1 = helper.CreateNewContext()
-			context2 = helper.CreateNewContext()
+			frontendContext = helper.CreateNewContext()
+			backendContext = helper.CreateNewContext()
 		})
 		JustAfterEach(func() {
-			helper.DeleteDir(context1)
-			helper.DeleteDir(context2)
+			helper.DeleteDir(frontendContext)
+			helper.DeleteDir(backendContext)
 		})
 		It("should fail", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
-			helper.CmdShouldPass("odo", "push", "--context", context1)
-			helper.CopyExample(filepath.Join("source", "python"), context2)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
-			helper.CmdShouldPass("odo", "push", "--context", context2)
-			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2, "--port", "1234")
+			helper.CopyExample(filepath.Join("source", "nodejs"), frontendContext)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", frontendContext)
+			helper.CopyExample(filepath.Join("source", "python"), backendContext)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", backendContext, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", backendContext)
+			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", backendContext, "--port", "1234")
 			Expect(stdErr).To(ContainSubstring("Unable to properly link to component backend using port 1234"))
 		})
 	})
 
 	Context("When handling link/unlink between components", func() {
 		JustBeforeEach(func() {
-			context1 = helper.CreateNewContext()
-			context2 = helper.CreateNewContext()
+			frontendContext = helper.CreateNewContext()
+			backendContext = helper.CreateNewContext()
 		})
 		JustAfterEach(func() {
-			helper.DeleteDir(context1)
-			helper.DeleteDir(context2)
+			helper.DeleteDir(frontendContext)
+			helper.DeleteDir(backendContext)
 		})
 		It("should link the frontend application to the backend and then unlink successfully", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", context1, "--project", project)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context1)
-			helper.CmdShouldPass("odo", "push", "--context", context1)
-			frontendURL := helper.DetermineRouteURL(context1)
+			helper.CopyExample(filepath.Join("source", "nodejs"), frontendContext)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", project)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", frontendContext)
+			helper.CmdShouldPass("odo", "push", "--context", frontendContext)
+			frontendURL := helper.DetermineRouteURL(frontendContext)
 			oc.ImportJavaIS(project)
-			helper.CopyExample(filepath.Join("source", "openjdk"), context2)
-			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", project, "--context", context2)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context2)
-			helper.CmdShouldPass("odo", "push", "--context", context2)
+			helper.CopyExample(filepath.Join("source", "openjdk"), backendContext)
+			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", project, "--context", backendContext)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", backendContext)
+			helper.CmdShouldPass("odo", "push", "--context", backendContext)
 
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", backendContext)
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
@@ -104,34 +104,34 @@ var _ = Describe("odo link and unlink command tests", func() {
 			oc.WaitForDCRollout(dcName, project, 20*time.Second)
 			helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 
-			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", context2)
+			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", backendContext)
 			Expect(outputErr).To(ContainSubstring("been linked"))
-			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", context2)
+			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", backendContext)
 		})
 
 		It("Wait till frontend dc rollout properly after linking the frontend application to the backend", func() {
 			appName := helper.RandString(7)
-			helper.CopyExample(filepath.Join("source", "nodejs"), context1)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--app", appName, "--context", context1, "--project", project)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context1)
-			helper.CmdShouldPass("odo", "push", "--context", context1)
-			frontendURL := helper.DetermineRouteURL(context1)
+			helper.CopyExample(filepath.Join("source", "nodejs"), frontendContext)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--app", appName, "--context", frontendContext, "--project", project)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", frontendContext)
+			helper.CmdShouldPass("odo", "push", "--context", frontendContext)
+			frontendURL := helper.DetermineRouteURL(frontendContext)
 
 			oc.ImportJavaIS(project)
-			helper.CopyExample(filepath.Join("source", "openjdk"), context2)
-			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--app", appName, "--project", project, "--context", context2)
-			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context2)
-			helper.CmdShouldPass("odo", "push", "--context", context2)
+			helper.CopyExample(filepath.Join("source", "openjdk"), backendContext)
+			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--app", appName, "--project", project, "--context", backendContext)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", backendContext)
+			helper.CmdShouldPass("odo", "push", "--context", backendContext)
 
 			// link both component and wait till frontend dc rollout properly
-			helper.CmdShouldPass("odo", "link", "backend", "--port", "8080", "--wait", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--port", "8080", "--wait", "--context", frontendContext)
 			helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("frontend", appName, project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
 
-			helper.CmdShouldPass("odo", "unlink", "backend", "--app", appName, "--port", "8080", "--context", context2)
+			helper.CmdShouldPass("odo", "unlink", "backend", "--app", appName, "--port", "8080", "--context", frontendContext)
 		})
 	})
 })
