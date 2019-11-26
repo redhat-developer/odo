@@ -281,6 +281,13 @@ func (oc *OcRunner) ImportSupportedImage(image, cmpType, project string) {
 
 }
 
+// ImportDockerHubImage import all the supported images
+func (oc *OcRunner) ImportDockerHubImage(image, cmpType, project string) {
+	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from=docker.io/"+image, "--confirm")
+	CmdShouldPass(oc.path, "annotate", "istag/"+cmpType, "--namespace="+project, "tags=builder", "--overwrite")
+
+}
+
 // ImportJavaIS import the openjdk image which is used for jars
 func (oc *OcRunner) ImportJavaIS(project string) {
 	// if ImageStram already exists, no need to do anything

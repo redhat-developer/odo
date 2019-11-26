@@ -104,19 +104,19 @@ var _ = Describe("odo supported images e2e tests", func() {
 			verifySupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs", "nodejs:8", project)
 		})
 
-		// It("Should be able to verify the centos7-s2i-nodejs image", func() {
-		// 	oc.ImportSupportedImage("bucharestgold/centos7-s2i-nodejs", "nodejs:8", project)
-		// 	verifySupportedImage("bucharestgold/centos7-s2i-nodejs", "nodejs", "nodejs:8", project)
-		// })
+		It("Should be able to verify the centos7-s2i-nodejs image", func() {
+			oc.ImportDockerHubImage("bucharestgold/centos7-s2i-nodejs", "nodejs:8", project)
+			verifySupportedImage("bucharestgold/centos7-s2i-nodejs", "nodejs", "nodejs:8", project)
+		})
 
-		// It("Should be able to verify the centos7-s2i-nodejs:10.x image", func() {
-		// 	oc.ImportSupportedImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs:8", project)
-		// 	verifySupportedImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs", "nodejs:8", project)
-		// })
+		It("Should be able to verify the centos7-s2i-nodejs:10.x image", func() {
+			oc.ImportDockerHubImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs:8", project)
+			verifySupportedImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs", "nodejs:8", project)
+		})
 
-		// It("Should be able to verify the nodejs-8-centos7 image", func() {
-		// 	oc.ImportSupportedImage("centos/nodejs-8-centos7:latest", "nodejs:8", project)
-		// 	verifySupportedImage("centos/nodejs-8-centos7:latest", "nodejs", "nodejs:8", project)
-		// })
+		It("Should be able to verify the nodejs-8-centos7 image", func() {
+			oc.ImportDockerHubImage("centos/nodejs-8-centos7:latest", "nodejs:8", project)
+			verifySupportedImage("centos/nodejs-8-centos7:latest", "nodejs", "nodejs:8", project)
+		})
 	})
 })
