@@ -533,6 +533,7 @@ func TestCreateRoute(t *testing.T) {
 		portNumber intstr.IntOrString
 		labels     map[string]string
 		wantErr    bool
+		existingDC appsv1.DeploymentConfig
 	}{
 		{
 			name:       "Case : mailserver",
@@ -544,7 +545,8 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/instance": "backend",
 				"app.kubernetes.io/name":     "python",
 			},
-			wantErr: false,
+			wantErr:    false,
+			existingDC: *fakeDeploymentConfig("mailserver", "", nil, nil, t),
 		},
 
 		{
@@ -557,13 +559,20 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/instance": "backend",
 				"app.kubernetes.io/name":     "golang",
 			},
-			wantErr: false,
+			wantErr:    false,
+			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// initialising the fakeclient
 			fkclient, fkclientset := FakeNew()
+
+			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				dc := &appsv1.DeploymentConfig{}
+				dc.Name = tt.service
+				return true, dc, nil
+			})
 
 			_, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.portNumber, tt.labels)
 
@@ -2335,9 +2344,11 @@ func TestCreateService(t *testing.T) {
 		commonObjectMeta metav1.ObjectMeta
 		containerPorts   []corev1.ContainerPort
 		wantErr          bool
+		existingDC       appsv1.DeploymentConfig
 	}{
 		{
-			name: "Test case: with valid commonObjectName and containerPorts",
+			name:       "Test case: with valid commonObjectName and containerPorts",
+			existingDC: *fakeDeploymentConfig("foo", "", nil, nil, t),
 			commonObjectMeta: metav1.ObjectMeta{
 				Name: "nodejs",
 				Labels: map[string]string{
@@ -2370,7 +2381,16 @@ func TestCreateService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 
-			_, err := fkclient.CreateService(tt.commonObjectMeta, tt.containerPorts)
+			ownerReference := metav1.OwnerReference{
+				APIVersion: "apps.openshift.io/v1",
+				Kind:       "DeploymentConfig",
+				Name:       tt.existingDC.Name,
+				UID:        tt.existingDC.UID,
+			}
+
+			_, err := fkclient.CreateService(tt.commonObjectMeta, tt.containerPorts, ownerReference)
+
+			tt.commonObjectMeta.SetOwnerReferences(append(tt.commonObjectMeta.GetOwnerReferences(), ownerReference))
 
 			if err == nil && !tt.wantErr {
 				if len(fkclientset.Kubernetes.Actions()) != 1 {

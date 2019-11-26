@@ -870,19 +870,21 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	if err != nil {
 		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
-	_, err = c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
+	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
 
+	ownerReference := generateOwnerReference(createdDC)
+
 	// Create a service
-	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
+	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
 	// Create secret(s)
-	err = c.createSecrets(params.Name, commonObjectMeta, svc)
+	err = c.createSecrets(params.Name, commonObjectMeta, svc, ownerReference)
 
 	return err
 }
@@ -890,7 +892,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 // Create a secret for each port, containing the host and port of the component
 // This is done so other components can later inject the secret into the environment
 // and have the "coordinates" to communicate with this component
-func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.ObjectMeta, svc *corev1.Service) error {
+func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.ObjectMeta, svc *corev1.Service, ownerReference metav1.OwnerReference) error {
 	originalName := commonObjectMeta.Name
 	for _, svcPort := range svc.Spec.Ports {
 		portAsString := fmt.Sprintf("%v", svcPort.Port)
@@ -909,7 +911,8 @@ func (c *Client) createSecrets(componentName string, commonObjectMeta metav1.Obj
 			map[string]string{
 				secretKeyName(componentName, "host"): svc.Name,
 				secretKeyName(componentName, "port"): portAsString,
-			})
+			},
+			ownerReference)
 
 		if err != nil {
 			return errors.Wrapf(err, "unable to create Secret for %s", commonObjectMeta.Name)
@@ -1178,18 +1181,20 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	jsonDC, _ = json.Marshal(createdDC)
 	glog.V(5).Infof("Created new DeploymentConfig:\n%s\n", string(jsonDC))
 
-	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports)
+	ownerReference := generateOwnerReference(createdDC)
+
+	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
 	}
 
-	err = c.createSecrets(params.Name, commonObjectMeta, svc)
+	err = c.createSecrets(params.Name, commonObjectMeta, svc, ownerReference)
 	if err != nil {
 		return err
 	}
 
 	// Setup PVC.
-	_, err = c.CreatePVC(getAppRootVolumeName(commonObjectMeta.Name), "1Gi", commonObjectMeta.Labels)
+	_, err = c.CreatePVC(getAppRootVolumeName(commonObjectMeta.Name), "1Gi", commonObjectMeta.Labels, ownerReference)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create PVC for %s", commonObjectMeta.Name)
 	}
@@ -1200,7 +1205,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 // CreateService generates and creates the service
 // commonObjectMeta is the ObjectMeta for the service
 // dc is the deploymentConfig to get the container ports
-func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort) (*corev1.Service, error) {
+func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPorts []corev1.ContainerPort, ownerReference metav1.OwnerReference) (*corev1.Service, error) {
 	// generate and create Service
 	var svcPorts []corev1.ServicePort
 	for _, containerPort := range containerPorts {
@@ -1222,6 +1227,8 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 			},
 		},
 	}
+	svc.SetOwnerReferences(append(svc.GetOwnerReferences(), ownerReference))
+
 	createdSvc, err := c.kubeClient.CoreV1().Services(c.Namespace).Create(&svc)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
@@ -1231,13 +1238,14 @@ func (c *Client) CreateService(commonObjectMeta metav1.ObjectMeta, containerPort
 
 // CreateSecret generates and creates the secret
 // commonObjectMeta is the ObjectMeta for the service
-func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]string) error {
+func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]string, ownerReference metav1.OwnerReference) error {
 
 	secret := corev1.Secret{
 		ObjectMeta: objectMeta,
 		Type:       corev1.SecretTypeOpaque,
 		StringData: data,
 	}
+	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
 	_, err := c.kubeClient.CoreV1().Secrets(c.Namespace).Create(&secret)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
@@ -1562,8 +1570,10 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 			addDeploymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
 		}
 
+		ownerReference := generateOwnerReference(&dc)
+
 		// Setup PVC
-		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels)
+		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels, ownerReference)
 		if err != nil {
 			return errors.Wrapf(err, "unable to create PVC for %s", ucp.CommonObjectMeta.Name)
 		}
@@ -1922,12 +1932,6 @@ func (c *Client) Delete(labels map[string]string) error {
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
 	}
-	// Delete Route
-	glog.V(4).Info("Deleting Routes")
-	err = c.routeClient.Routes(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to delete route")
-	}
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs")
 	err = c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
@@ -1939,30 +1943,6 @@ func (c *Client) Delete(labels map[string]string) error {
 	err = c.imageClient.ImageStreams(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete imagestream")
-	}
-	// Delete Services
-	glog.V(4).Info("Deleting Services")
-	svcList, err := c.kubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to list services")
-	}
-	for _, svc := range svcList.Items {
-		err = c.kubeClient.CoreV1().Services(c.Namespace).Delete(svc.Name, &metav1.DeleteOptions{})
-		if err != nil {
-			errorList = append(errorList, "unable to delete service")
-		}
-	}
-	// PersistentVolumeClaim
-	glog.V(4).Infof("Deleting PersistentVolumeClaims")
-	err = c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to delete volume")
-	}
-	// Secret
-	glog.V(4).Infof("Deleting Secret")
-	err = c.kubeClient.CoreV1().Secrets(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to delete secret")
 	}
 
 	// Error string
@@ -2403,6 +2383,19 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 			},
 		},
 	}
+
+	// since the serviceName is same as the DC name, we use that to get the DC
+	// to which this route belongs. A better way could be to get service from
+	// the name and set it as owner of the route
+	dc, err := c.GetDeploymentConfigFromName(serviceName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
+	}
+
+	ownerReference := generateOwnerReference(dc)
+
+	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
+
 	r, err := c.routeClient.Routes(c.Namespace).Create(route)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating route")
@@ -3178,4 +3171,20 @@ func isSubDir(baseDir, otherDir string) bool {
 	}
 	matches, _ := filepath.Match(fmt.Sprintf("%s/*", cleanedBaseDir), cleanedOtherDir)
 	return matches
+}
+
+// generateOwnerReference genertes an ownerReference which can then be set as
+// owner for various OpenShift objects and ensure that when the owner object is
+// deleted from the cluster, all other objects are automatically removed by
+// OpenShift garbage collector
+func generateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
+
+	ownerReference := metav1.OwnerReference{
+		APIVersion: "apps.openshift.io/v1",
+		Kind:       "DeploymentConfig",
+		Name:       dc.Name,
+		UID:        dc.UID,
+	}
+
+	return ownerReference
 }

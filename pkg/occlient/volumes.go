@@ -14,7 +14,7 @@ import (
 
 // CreatePVC creates a PVC resource in the cluster with the given name, size and
 // labels
-func (c *Client) CreatePVC(name string, size string, labels map[string]string) (*corev1.PersistentVolumeClaim, error) {
+func (c *Client) CreatePVC(name string, size string, labels map[string]string, ownerReference ...metav1.OwnerReference) (*corev1.PersistentVolumeClaim, error) {
 	quantity, err := resource.ParseQuantity(size)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse size: %v", size)
@@ -35,6 +35,10 @@ func (c *Client) CreatePVC(name string, size string, labels map[string]string) (
 				corev1.ReadWriteOnce,
 			},
 		},
+	}
+
+	for _, owRf := range ownerReference {
+		pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
 
 	createdPvc, err := c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(pvc)
