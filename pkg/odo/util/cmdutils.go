@@ -119,22 +119,27 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 
 	// URL
 	if componentDesc.Spec.URL != nil {
-
-		// Retrieve the URLs
-		urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
-		LogErrorAndExit(err, "")
-
-		// Gather the output
 		var output string
-		for _, componentURL := range componentDesc.Spec.URL {
-			url := urls.Get(componentURL)
-			output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host), url.Spec.Port)
-		}
+		// if the component is not pushed
+		if componentDesc.Status.State == "Not Pushed" {
+			// Gather the output
+			for i, componentURL := range componentDesc.Spec.URL {
+				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL, componentDesc.Spec.Ports[i])
+			}
+		} else {
+			// Retrieve the URLs
+			urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
+			LogErrorAndExit(err, "")
 
+			// Gather the output
+			for _, componentURL := range componentDesc.Spec.URL {
+				url := urls.Get(componentURL)
+				output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host), url.Spec.Port)
+			}
+		}
 		// Cut off the last newline and output
 		output = output[:len(output)-1]
 		log.Describef("URLs:\n", output)
-
 	}
 
 	// Linked components

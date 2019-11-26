@@ -1,6 +1,7 @@
 package component
 
 import (
+	"github.com/openshift/odo/pkg/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -851,6 +852,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 
 	localExistingConfigInfoValue := config.GetOneExistingConfigInfo("comp", "app", "project")
 	localNonExistingConfigInfoValue := config.GetOneNonExistingConfigInfo()
+	localGitExistingConfigInfoValue := config.GetOneGitExistingConfigInfo("comp", "app", "project")
 
 	tests := []struct {
 		name            string
@@ -867,7 +869,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 				Spec: ComponentSpec{
 					App:    localExistingConfigInfoValue.GetApplication(),
 					Type:   localExistingConfigInfoValue.GetType(),
-					Source: localExistingConfigInfoValue.GetSourceLocation(),
+					Source: util.GenFileURL(localExistingConfigInfoValue.GetSourceLocation()),
 					URL: []string{
 						localExistingConfigInfoValue.LocalConfig.GetURL()[0].Name, localExistingConfigInfoValue.LocalConfig.GetURL()[1].Name,
 					},
@@ -894,6 +896,36 @@ func TestGetComponentFromConfig(t *testing.T) {
 			isConfigExists: false,
 			existingConfig: localNonExistingConfigInfoValue,
 			wantSpec:       Component{},
+		},
+		{
+			name:           "case 3: config file exists",
+			isConfigExists: true,
+			existingConfig: localGitExistingConfigInfoValue,
+			wantSpec: Component{
+				Spec: ComponentSpec{
+					App:    localGitExistingConfigInfoValue.GetApplication(),
+					Type:   localGitExistingConfigInfoValue.GetType(),
+					Source: localGitExistingConfigInfoValue.GetSourceLocation(),
+					URL: []string{
+						localGitExistingConfigInfoValue.LocalConfig.GetURL()[0].Name, localGitExistingConfigInfoValue.LocalConfig.GetURL()[1].Name,
+					},
+					Storage: []string{
+						localGitExistingConfigInfoValue.LocalConfig.GetStorage()[0].Name, localExistingConfigInfoValue.LocalConfig.GetStorage()[1].Name,
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  localGitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Name,
+							Value: localGitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Value,
+						},
+						{
+							Name:  localGitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Name,
+							Value: localGitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Value,
+						},
+					},
+					Ports: localGitExistingConfigInfoValue.LocalConfig.GetPorts(),
+				},
+			},
+			wantPushedState: "Not Pushed",
 		},
 	}
 
