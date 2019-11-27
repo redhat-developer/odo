@@ -24,20 +24,33 @@ const (
 	//DefaultTimeout for openshift server connection check
 	DefaultTimeout = 1
 
+	// DefaultPushTimeout is the default timeout for pods
+	DefaultPushTimeout = 240
+
 	// UpdateNotificationSetting is the name of the setting controlling update notification
 	UpdateNotificationSetting = "UpdateNotification"
+
 	// UpdateNotificationSettingDescription is human-readable description for the update notification setting
 	UpdateNotificationSettingDescription = "Flag to control if an update notification is shown or not (Default: true)"
+
 	// NamePrefixSetting is the name of the setting controlling name prefix
 	NamePrefixSetting = "NamePrefix"
+
 	// NamePrefixSettingDescription is human-readable description for the name prefix setting
 	NamePrefixSettingDescription = "Use this value to set a default name prefix (Default: current directory name)"
+
 	// TimeoutSetting is the name of the setting controlling timeout for connection check
 	TimeoutSetting = "Timeout"
+
+	// PushTimeoutSetting is the name of the setting controlling PushTimeout
+	PushTimeoutSetting = "PushTimeout"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
 var TimeoutSettingDescription = fmt.Sprintf("Timeout (in seconds) for OpenShift server connection check (Default: %d)", DefaultTimeout)
+
+//
+var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in seconds) for waiting for a Pod to come up (Default: %d)", DefaultPushTimeout)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -49,6 +62,7 @@ var (
 		UpdateNotificationSetting: UpdateNotificationSettingDescription,
 		NamePrefixSetting:         NamePrefixSettingDescription,
 		TimeoutSetting:            TimeoutSettingDescription,
+		PushTimeoutSetting:        PushTimeoutSettingDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported
@@ -66,10 +80,15 @@ type PreferenceInfo struct {
 type OdoSettings struct {
 	// Controls if an update notification is shown or not
 	UpdateNotification *bool `yaml:"UpdateNotification,omitempty"`
+
 	// Holds the prefix part of generated random application name
 	NamePrefix *string `yaml:"NamePrefix,omitempty"`
-	// Timeout for openshift server connection check
+
+	// Timeout for OpenShift server connection check
 	Timeout *int `yaml:"Timeout,omitempty"`
+
+	// PushTimeout for OpenShift pod timeout check
+	PushTimeout *int `yaml:"PushTimeout,omitempty"`
 }
 
 // Preference stores all the preferences related to odo
@@ -153,6 +172,17 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 				return errors.Errorf("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.Timeout = &typedval
+
+		case "pushtimeout":
+			typedval, err := strconv.Atoi(value)
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			if typedval < 0 {
+				return errors.Errorf("cannot set timeout to less than 0")
+			}
+			c.OdoSettings.PushTimeout = &typedval
+
 		case "updatenotification":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
@@ -207,6 +237,15 @@ func (c *PreferenceInfo) GetTimeout() int {
 		return DefaultTimeout
 	}
 	return *c.OdoSettings.Timeout
+}
+
+// GetPushTimeout gets the value set by PushTimeout
+func (c *PreferenceInfo) GetPushTimeout() int {
+	// default timeout value is 1
+	if c.OdoSettings.PushTimeout == nil {
+		return DefaultPushTimeout
+	}
+	return *c.OdoSettings.PushTimeout
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from config

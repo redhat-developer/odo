@@ -56,6 +56,62 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestGetPushTimeout(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
+	zeroValue := 0
+	nonzeroValue := 5
+	tests := []struct {
+		name           string
+		existingConfig Preference
+		want           int
+	}{
+		{
+			name:           "Case 1: Validating default value from test case",
+			existingConfig: Preference{},
+			want:           240,
+		},
+
+		{
+			name: "Case 2: Validating value 0 from configuration",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					PushTimeout: &zeroValue,
+				},
+			},
+			want: 0,
+		},
+
+		{
+			name: "Case 3: Validating value 5 from configuration",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					PushTimeout: &nonzeroValue,
+				},
+			},
+			want: 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := NewPreferenceInfo()
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.Preference = tt.existingConfig
+
+			output := cfg.GetPushTimeout()
+			if output != tt.want {
+				t.Errorf("GetPushTimeout returned unexpeced value expected \ngot: %d \nexpected: %d\n", output, tt.want)
+			}
+		})
+	}
+}
+
 func TestGetTimeout(t *testing.T) {
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
@@ -336,9 +392,11 @@ Available Parameters:
 %s - %s
 %s - %s
 %s - %s
+%s - %s
 `
 	expected = fmt.Sprintf(expected,
 		NamePrefixSetting, NamePrefixSettingDescription,
+		PushTimeoutSetting, PushTimeoutSettingDescription,
 		TimeoutSetting, TimeoutSettingDescription,
 		UpdateNotificationSetting, UpdateNotificationSettingDescription)
 	actual := FormatSupportedParameters()
@@ -348,7 +406,7 @@ Available Parameters:
 }
 
 func TestLowerCaseParameters(t *testing.T) {
-	expected := map[string]bool{"nameprefix": true, "timeout": true, "updatenotification": true}
+	expected := map[string]bool{"nameprefix": true, "pushtimeout": true, "timeout": true, "updatenotification": true}
 	actual := util.GetLowerCaseParameters(GetSupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)

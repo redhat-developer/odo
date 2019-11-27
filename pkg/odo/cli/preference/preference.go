@@ -15,8 +15,7 @@ const RecommendedCommandName = "preference"
 
 var preferenceLongDesc = ktemplates.LongDesc(`Modifies odo specific configuration settings within the global preference file.
 
-%[1]s
-`)
+%[1]s`)
 
 // NewCmdPreference implements the utils config odo command
 func NewCmdPreference(name, fullName string) *cobra.Command {
