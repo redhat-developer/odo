@@ -26,13 +26,15 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 
 * Simple syntax and design centered around concepts familiar to developers, such as projects, applications, and components.
 * Completely client based. No server is required within the OpenShift cluster for deployment.
-* Official full support of Node.js and Java components.
+* Official support for Node.js and Java components.
 * Partial compatibility with languages and frameworks such as Ruby, Perl, PHP, and Python. 
 * Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real time.
 * Lists all the available components and services from the OpenShift cluster.
 
 === Supported languages and corresponding container images
 Run `odo catalog list components` to list the supported languages and corresponding container images present on your cluster.
+
+=== Officially supported languages and corresponding container images
 
 .Supported container images
 [options="header"]
@@ -43,7 +45,32 @@ Run `odo catalog list components` to list the supported languages and correspond
 |`rhoar-nodejs/nodejs-10`|`openjdk/openjdk-11-rhel7`
 |`bucharestgold/centos7-s2i-nodejs`|
 |`rhscl/nodejs-8-rhel7`|
+|`rhscl/nodejs-10-rhel7`|
 |====
+
+.Listing available container images
+. Log in to the OpenShift cluster with `odo`:
++
+----
+$ odo login -u developer -p developer
+----
+
+. List the languages and corresponding container images available for your cluster with `odo catalog list components`.
++
+----------------------------------------------------
+$ odo catalog list components
+Odo Supported OpenShift Components:
+NAME        PROJECT      TAGS      
+java       openshift     8,latest
+nodejs     openshift     10,8,8-RHOAR,latest
+
+Odo Unsupported OpenShift Components:
+NAME                      PROJECT       TAGS
+dotnet                    openshift     1.0,1.1,2.1,2.2,latest
+fuse7-eap-openshift       openshift     1.3
+----------------------------------------------------
++
+The command lists the components and the languages in two sections - supported and unsupported by Red Hat. `TAGS` column represents the image version, for example `10` represents `rhoar-nodejs/nodejs-10`.
 
 [[official-documentation]]
 == Official documentation
