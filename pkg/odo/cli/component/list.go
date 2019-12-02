@@ -152,6 +152,8 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
 	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path of the directory to scan for odo component directories")
 	componentListCmd.Flags().BoolVar(&o.allFlag, "all", false, "lists all components")
+	componentListCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)
 	//Adding `--application` flag
