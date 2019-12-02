@@ -20,8 +20,8 @@ Table of Contents:
 
 ## Design overview
 
-The debug mode inside the container is controlled by `DEBUG_MODE` and `DEBUG_PORT` environment variables.
-- by default supported component (Java and NodeJS) are started with debug enabled. This can be optionaly disabled by setting `DEBUG_MODE=false`
+The debug mode inside the container is controlled by `DEV_MODE` and `DEBUG_PORT` environment variables.
+- by default supported component (Java and NodeJS) are started with debug enabled. This can be optionaly disabled by setting `DEV_MODE=false`
 - `DEBUG_PORT` is optional and controls the port of the remote debugger.
 
 Odo sets up port-forwarding to allow a debugger to connect to the running process. 
