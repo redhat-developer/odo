@@ -287,6 +287,14 @@ func TestSetConfiguration(t *testing.T) {
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
+		{
+			name:           fmt.Sprintf("Case 12: %s set to 300 with mixed case in parameter name", TimeoutSetting),
+			parameter:      "PushTimeout",
+			value:          "99",
+			existingConfig: Preference{},
+			want:           99,
+			wantErr:        false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -21,10 +21,10 @@ const (
 	preferenceKind       = "Preference"
 	preferenceAPIVersion = "odo.openshift.io/v1alpha1"
 
-	//DefaultTimeout for openshift server connection check
+	//DefaultTimeout for openshift server connection check (in seconds)
 	DefaultTimeout = 1
 
-	// DefaultPushTimeout is the default timeout for pods
+	// DefaultPushTimeout is the default timeout for pods (in seconds)
 	DefaultPushTimeout = 240
 
 	// UpdateNotificationSetting is the name of the setting controlling update notification
@@ -49,7 +49,7 @@ const (
 // TimeoutSettingDescription is human-readable description for the timeout setting
 var TimeoutSettingDescription = fmt.Sprintf("Timeout (in seconds) for OpenShift server connection check (Default: %d)", DefaultTimeout)
 
-//
+// PushTimeoutSettingDescription adds a description for PushTimeout
 var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in seconds) for waiting for a Pod to come up (Default: %d)", DefaultPushTimeout)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
