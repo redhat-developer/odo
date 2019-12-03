@@ -38,6 +38,18 @@ var _ = Describe("odo push command tests", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
+	Context("Check pod timeout", func() {
+
+		It("Check that pod timeout works and we time out immediately..", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
+			helper.CmdShouldPass("odo", "preference", "set", "PushTimeout", "1")
+			output := helper.CmdShouldFail("odo", "push", "--context", context+"/nodejs-ex")
+			Expect(output).To(ContainSubstring("waited 1s but couldn't find running pod matching selector"))
+		})
+
+	})
+
 	Context("Check for label propagation after pushing", func() {
 
 		It("Check for labels", func() {

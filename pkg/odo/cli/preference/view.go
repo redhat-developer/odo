@@ -54,6 +54,7 @@ func (o *ViewOptions) Run() (err error) {
 	fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(cfg.OdoSettings.UpdateNotification))
 	fmt.Fprintln(w, "NamePrefix", "\t", showBlankIfNil(cfg.OdoSettings.NamePrefix))
 	fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(cfg.OdoSettings.Timeout))
+	fmt.Fprintln(w, "PushTimeout", "\t", showBlankIfNil(cfg.OdoSettings.PushTimeout))
 	w.Flush()
 	return
 }
