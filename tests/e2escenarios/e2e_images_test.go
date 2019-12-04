@@ -1,9 +1,9 @@
 package e2escenarios
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -15,6 +15,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 	//new clean project and context for each test
 	var project string
 	var context string
+	appName := "app"
 
 	var oc helper.OcRunner
 
@@ -32,11 +33,73 @@ var _ = Describe("odo supported images e2e tests", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
-	verifySupportedImage := func(image, srcType, cmpType, project string) {
+	// checkErr panic when error comes while creating the directories
+	checkErr := func(e error) {
+		if e != nil {
+			panic(e)
+		}
+	}
+
+	OdoWatch := func(srcType, routeURL, project, appName, context string) {
+
+		startSimulationCh := make(chan bool)
+		go func() {
+			startMsg := <-startSimulationCh
+			if startMsg {
+				err := os.MkdirAll(context+"/.abc", 0755)
+				err = os.MkdirAll(context+"/abcd", 0755)
+				_, err = os.Create(context + "/a.txt")
+
+				checkErr(err)
+
+				helper.DeleteDir(context + "/abcd")
+
+				if srcType == "openjdk" {
+					helper.ReplaceString(filepath.Join(context+"/src/main/java/MessageProducer.java"), "Hello", "Hello odo")
+				} else {
+					helper.ReplaceString(filepath.Join(context+"/server.js"), "Hello", "Hello odo")
+				}
+			}
+		}()
+
+		success, err := helper.WatchNonRetCmdStdOut(
+			("odo watch " + srcType + "-app" + " -v 4 " + "--context " + context),
+			time.Duration(5)*time.Minute,
+			func(output string) bool {
+				curlURL := helper.CmdShouldPass("curl", routeURL)
+				if strings.Contains(curlURL, "Hello odo") {
+					// Verify delete from component pod
+					podName := oc.GetRunningPodNameOfComp(srcType+"-app", project)
+					envs := oc.GetEnvs(srcType+"-app", appName, project)
+					dir := envs["ODO_S2I_SRC_BIN_PATH"]
+					stdOut := oc.ExecListDir(podName, project, dir+"/src")
+					Expect(stdOut).To(ContainSubstring(("a.txt")))
+					Expect(stdOut).To(Not(ContainSubstring("abcd")))
+				}
+				return strings.Contains(curlURL, "Hello odo")
+			},
+			startSimulationCh,
+			func(output string) bool {
+				return strings.Contains(output, "Waiting for something to change")
+			})
+
+		Expect(success).To(Equal(true))
+		Expect(err).To(BeNil())
+
+		// Verify memory limits to be same as configured
+		getMemoryLimit := oc.MaxMemory(srcType+"-app", appName, project)
+		Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
+		getMemoryRequest := oc.MinMemory(srcType+"-app", appName, project)
+		Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
+	}
+
+	// verifySupportedImage takes arguments supported images, source type, image type, namespace and application name.
+	// Also verify the flow of odo commands with respect to supported images only.
+	verifySupportedImage := func(image, srcType, cmpType, project, appName string) {
 
 		// create the component
 		helper.CopyExample(filepath.Join("source", srcType), context)
-		helper.CmdShouldPass("odo", "create", cmpType, srcType+"-app", "--project", project, "--context", context)
+		helper.CmdShouldPass("odo", "create", cmpType, srcType+"-app", "--project", project, "--context", context, "--app", appName, "--min-memory", "400Mi", "--max-memory", "700Mi")
 
 		// push component and validate
 		helper.CmdShouldPass("odo", "push", "--context", context)
@@ -62,7 +125,10 @@ var _ = Describe("odo supported images e2e tests", func() {
 			helper.HttpWaitFor(routeURL, "Hello nodejs UPDATED", 90, 1)
 		}
 
-		//delete the component and validate
+		// odo watch and validate
+		OdoWatch(srcType, routeURL, project, appName, context)
+
+		// delete the component and validate
 		helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")
 		cmpLst := helper.CmdShouldPass("odo", "list", "--context", context)
 		Expect(cmpLst).To(ContainSubstring("Not Pushed"))
@@ -71,52 +137,52 @@ var _ = Describe("odo supported images e2e tests", func() {
 	Context("odo supported images deployment", func() {
 		It("Should be able to verify the openjdk18-openshift image", func() {
 			oc.ImportSupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "java:8", project)
-			verifySupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "openjdk", "java:8", project)
+			verifySupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "openjdk", "java:8", project, appName)
 		})
 
-		It("Should be able to verify the openjdk-11-rhel8 image", func() {
-			value := os.Getenv("CI")
-			if len(value) > 0 {
-				oc.ImportSupportedImage("openjdk/openjdk-11-rhel8:latest", "java:8", project)
-				verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", project)
-			} else {
-				fmt.Printf("Authentication required skipping test")
-			}
-		})
+		// It("Should be able to verify the openjdk-11-rhel8 image", func() {
+		// 	value := os.Getenv("CI")
+		// 	if len(value) > 0 {
+		// 		oc.ImportSupportedImage("openjdk/openjdk-11-rhel8:latest", "java:8", project)
+		// 		verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", project, appName)
+		// 	} else {
+		// 		fmt.Printf("Authentication required skipping test")
+		// 	}
+		// })
 
 		It("Should be able to verify the openjdk-11-rhel7 image", func() {
 			oc.ImportSupportedImage("openjdk/openjdk-11-rhel7:latest", "java:8", project)
-			verifySupportedImage("openjdk/openjdk-11-rhel7:latest", "openjdk", "java:8", project)
+			verifySupportedImage("openjdk/openjdk-11-rhel7:latest", "openjdk", "java:8", project, appName)
 		})
 
 		It("Should be able to verify the nodejs-8-rhel7 image", func() {
 			oc.ImportSupportedImage("rhscl/nodejs-8-rhel7:latest", "nodejs:8", project)
-			verifySupportedImage("rhscl/nodejs-8-rhel7:latest", "nodejs", "nodejs:8", project)
+			verifySupportedImage("rhscl/nodejs-8-rhel7:latest", "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the nodejs-8 image", func() {
 			oc.ImportSupportedImage("rhoar-nodejs/nodejs-8:latest", "nodejs:8", project)
-			verifySupportedImage("rhoar-nodejs/nodejs-8:latest", "nodejs", "nodejs:8", project)
+			verifySupportedImage("rhoar-nodejs/nodejs-8:latest", "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the nodejs-10 image", func() {
 			oc.ImportSupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs:8", project)
-			verifySupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs", "nodejs:8", project)
+			verifySupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the centos7-s2i-nodejs image", func() {
 			oc.ImportDockerHubImage("bucharestgold/centos7-s2i-nodejs", "nodejs:8", project)
-			verifySupportedImage("bucharestgold/centos7-s2i-nodejs", "nodejs", "nodejs:8", project)
+			verifySupportedImage("bucharestgold/centos7-s2i-nodejs", "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the centos7-s2i-nodejs:10.x image", func() {
 			oc.ImportDockerHubImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs:8", project)
-			verifySupportedImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs", "nodejs:8", project)
+			verifySupportedImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the nodejs-8-centos7 image", func() {
 			oc.ImportDockerHubImage("centos/nodejs-8-centos7:latest", "nodejs:8", project)
-			verifySupportedImage("centos/nodejs-8-centos7:latest", "nodejs", "nodejs:8", project)
+			verifySupportedImage("centos/nodejs-8-centos7:latest", "nodejs", "nodejs:8", project, appName)
 		})
 	})
 })

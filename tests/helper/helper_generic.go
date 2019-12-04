@@ -1,9 +1,11 @@
 package helper
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -80,4 +82,53 @@ func Unindented(jsonStr string) (string, error) {
 		return "", err
 	}
 	return string(obj), err
+}
+
+// WatchNonRetCmdStdOut run odo watch and get the cmdSTDOUT output into buffer.
+func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(output string) bool, startSimulationCh chan bool, startIndicatorFunc func(output string) bool) (bool, error) {
+	var cmd *exec.Cmd
+	var buf bytes.Buffer
+
+	cmdStrParts := strings.Split(cmdStr, " ")
+	cmdName := cmdStrParts[0]
+	fmt.Println("Running command: ", cmdStrParts)
+	if len(cmdStrParts) > 1 {
+		cmdStrParts = cmdStrParts[1:]
+		cmd = exec.Command(cmdName, cmdStrParts...)
+	} else {
+		cmd = exec.Command(cmdName)
+	}
+	cmd.Stdout = &buf
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	timeoutCh := make(chan bool)
+	go func() {
+		time.Sleep(timeout)
+		timeoutCh <- true
+	}()
+
+	if err := cmd.Start(); err != nil {
+		return false, err
+	}
+
+	startedFileModification := false
+	for {
+		select {
+		case <-timeoutCh:
+			Fail("Timeout out after " + string(timeout) + " minutes")
+		case <-ticker.C:
+			if !startedFileModification && startIndicatorFunc(buf.String()) {
+				startedFileModification = true
+				startSimulationCh <- true
+			}
+			if check(buf.String()) {
+				if err := cmd.Process.Kill(); err != nil {
+					return true, err
+				}
+				return true, nil
+			}
+		}
+	}
 }
