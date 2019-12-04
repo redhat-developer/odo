@@ -17,7 +17,8 @@ const deleteRecommendedCommandName = "delete"
 var (
 	storageDeleteShortDesc = `Delete storage from component`
 	storageDeleteLongDesc  = ktemplates.LongDesc(`Delete storage from component`)
-	storageDeleteExample   = ktemplates.Examples(`  # Delete storage mystorage from the currently active component
+	storageDeleteExample   = ktemplates.Examples(`
+	# Delete storage mystorage from the currently active component
   %[1]s mystorage
 `)
 )
