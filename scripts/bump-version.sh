@@ -10,7 +10,7 @@ NEW_VERSION=$1
 if [[ -z "${NEW_VERSION}" ]]; then
     echo "Version number is missing."
     echo "One argument required."
-    echo "example: $0 v0.0.2"
+    echo "example: $0 0.0.2"
     exit 1
 fi
 
@@ -23,12 +23,20 @@ check_version(){
 
 
 echo "* Bumping version in pkg/odo/cli/version/version.go"
-sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSION}\"/g" pkg/version/version.go
+sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"v${NEW_VERSION}\"/g" pkg/version/version.go
 check_version pkg/version/version.go
 
+echo "* Bumping version in scripts/rpm-prepare.sh"
+sed -i "s/\(ODO_VERSION:=\)[0-9]*\.[0-9]*\.[0-9]*/\1${NEW_VERSION}/g" scripts/rpm-prepare.sh
+check_version scripts/rpm-prepare.sh
+
 echo "* Bumping version in scripts/installer.sh"
-sed -i "s/\(LATEST_VERSION=\)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"${NEW_VERSION}\"/g" scripts/installer.sh
+sed -i "s/\(LATEST_VERSION=\)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"v${NEW_VERSION}\"/g" scripts/installer.sh
 check_version scripts/installer.sh
+
+echo "* Bumping version in Dockerfile.rhel"
+sed -i "s/\(version=\)[0-9]*\.[0-9]*\.[0-9]*/\1${NEW_VERSION}/g" Dockerfile.rhel
+check_version Dockerfile.rhel
 
 echo "****************************************************************************************"
 echo "* Don't forget to update homebrew package at https://github.com/kadel/homebrew-odo ! *"
@@ -36,8 +44,4 @@ echo "**************************************************************************
 
 echo "****************************************************************************************"
 echo "* Don't forget to update build/VERSION once the binaries become available !            *"
-echo "****************************************************************************************"
-
-echo "****************************************************************************************"
-echo "* Don't forget to update Dockerfile.rhel version= label !            *"
 echo "****************************************************************************************"
