@@ -96,8 +96,7 @@ const (
 
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use getBoostrapperImage() function instead of this variable
-	// defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.0.0"
-	defaultBootstrapperImage = "yusufk53/odo-init-image:1066"
+	defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.0.1"
 
 	// ENV variable to overwrite image used to bootstrap SupervisorD in S2I builder Image
 	bootstrapperImageEnvName = "ODO_BOOTSTRAPPER_IMAGE"
