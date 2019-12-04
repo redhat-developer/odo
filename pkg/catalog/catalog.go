@@ -283,6 +283,7 @@ func isSupportedImage(imgName string) bool {
 		"openjdk/openjdk-11-rhel8:latest",
 		"openjdk/openjdk-11-rhel7:latest",
 		"rhscl/nodejs-8-rhel7:latest",
+		"rhscl/nodejs-10-rhel7:latest",
 		"rhoar-nodejs/nodejs-8:latest",
 		"rhoar-nodejs/nodejs-10:latest",
 		"bucharestgold/centos7-s2i-nodejs:8.x",
