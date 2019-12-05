@@ -27,7 +27,7 @@ type CommonPushOptions struct {
 	sourceType       config.SrcType
 	sourcePath       string
 	componentContext string
-	localConfigInfo  *config.LocalConfigInfo
+	LocalConfigInfo  *config.LocalConfigInfo
 
 	pushConfig         bool
 	pushSource         bool
@@ -60,7 +60,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 		return nil
 	}
 
-	cmpName := cpo.localConfigInfo.GetName()
+	cmpName := cpo.LocalConfigInfo.GetName()
 
 	// Output the "new" section (applying changes)
 	log.Info("\nConfiguration changes")
@@ -69,7 +69,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	if !cpo.doesComponentExist {
 
 		// Classic case of component creation
-		if err := component.CreateComponent(cpo.Context.Client, *cpo.localConfigInfo, cpo.componentContext, stdout); err != nil {
+		if err := component.CreateComponent(cpo.Context.Client, *cpo.LocalConfigInfo, cpo.componentContext, stdout); err != nil {
 			log.Errorf(
 				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %v",
 				cmpName,
@@ -80,7 +80,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	}
 
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, *cpo.localConfigInfo, stdout, cpo.doesComponentExist)
+	err := component.ApplyConfig(cpo.Context.Client, *cpo.LocalConfigInfo, stdout, cpo.doesComponentExist)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
@@ -112,12 +112,12 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 
 // SetSourceInfo sets up source information
 func (cpo *CommonPushOptions) SetSourceInfo() (err error) {
-	cpo.sourceType = cpo.localConfigInfo.GetSourceType()
+	cpo.sourceType = cpo.LocalConfigInfo.GetSourceType()
 
-	glog.V(4).Infof("SourceLocation: %s", cpo.localConfigInfo.GetSourceLocation())
+	glog.V(4).Infof("SourceLocation: %s", cpo.LocalConfigInfo.GetSourceLocation())
 
 	// Get SourceLocation here...
-	cpo.sourcePath, err = cpo.localConfigInfo.GetOSSourcePath()
+	cpo.sourcePath, err = cpo.LocalConfigInfo.GetOSSourcePath()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve absolute path to source location")
 	}
@@ -135,11 +135,11 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 	stdout := color.Output
 
-	cmpName := cpo.localConfigInfo.GetName()
-	appName := cpo.localConfigInfo.GetApplication()
+	cmpName := cpo.LocalConfigInfo.GetName()
+	appName := cpo.LocalConfigInfo.GetApplication()
 
 	if cpo.componentContext == "" {
-		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.localConfigInfo.Filename), ".odo")
+		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.LocalConfigInfo.Filename), ".odo")
 	}
 
 	err = cpo.createCmpIfNotExistsAndApplyCmpConfig(stdout)
@@ -202,7 +202,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	}
 
 	// Get SourceLocation here...
-	cpo.sourcePath, err = cpo.localConfigInfo.GetOSSourcePath()
+	cpo.sourcePath, err = cpo.LocalConfigInfo.GetOSSourcePath()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve OS source path to source location")
 	}

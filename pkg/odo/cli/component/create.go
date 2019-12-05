@@ -269,18 +269,18 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.interactive = true
 	}
 
-	co.localConfigInfo, err = config.NewLocalConfigInfo(co.componentContext)
+	co.LocalConfigInfo, err = config.NewLocalConfigInfo(co.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
 
 	// check to see if config file exists or not, if it does that
 	// means we shouldn't allow the user to override the current component
-	if co.localConfigInfo.ConfigFileExists() {
+	if co.LocalConfigInfo.ConfigFileExists() {
 		return errors.New("this directory already contains a component")
 	}
 
-	co.componentSettings = co.localConfigInfo.GetComponentSettings()
+	co.componentSettings = co.LocalConfigInfo.GetComponentSettings()
 
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
@@ -475,12 +475,12 @@ func (co *CreateOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
-	err = co.localConfigInfo.SetComponentSettings(co.componentSettings)
+	err = co.LocalConfigInfo.SetComponentSettings(co.componentSettings)
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
 	if co.now {
-		co.Context, co.localConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
+		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
 
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve updated local config")
