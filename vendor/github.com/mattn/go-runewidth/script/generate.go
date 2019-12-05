@@ -75,7 +75,7 @@ func eastasian(out io.Writer, in io.Reader) error {
 		}
 
 		switch ss {
-		case "W":
+		case "W","F":
 			dbl = append(dbl, rrange{
 				lo: r1,
 				hi: r2,
