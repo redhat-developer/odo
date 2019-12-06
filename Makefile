@@ -50,7 +50,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-vendor vet validate-vendor-licenses sec #lint
+validate: gofmt check-fit check-vendor vet validate-vendor-licenses sec #lint
 
 .PHONY: gofmt
 gofmt:
@@ -59,6 +59,10 @@ gofmt:
 .PHONY: check-vendor
 check-vendor:
 	./scripts/check-vendor.sh
+
+.PHONY: check-fit
+check-fit:
+	./scripts/check-fit.sh
 
 .PHONY: validate-vendor-licenses
 validate-vendor-licenses:
