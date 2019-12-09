@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -85,25 +86,20 @@ func resolveIndexFilePath(directory string) (string, error) {
 	return directory, nil
 }
 
-// gitignoreFilePath gives the filepath of the .gitignore file in the context
-func gitIgnoreFilePath(directory string) (string, error) {
-	_, err := os.Stat(directory)
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(directory, ".gitignore"), nil
+// AddOdoFileIndex adds odo-file-index.json to .gitignore
+func AddOdoFileIndex(gitIgnoreFile string) error {
+	return addOdoFileIndex(gitIgnoreFile, filesystem.DefaultFs{})
 }
 
-// addOdoFileIndex adds odo-file-index.json to .gitignore
-func addOdoFileIndex(gitIgnoreFile string) error {
+func addOdoFileIndex(gitIgnoreFile string, fs filesystem.Filesystem) error {
 	var data []byte
-	file, err := os.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, 0600)
+	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		return errors.Wrap(err, "failed to open .gitignore file")
 	}
 	defer file.Close()
 
-	if data, err = ioutil.ReadFile(gitIgnoreFile); err != nil {
+	if data, err = fs.ReadFile(gitIgnoreFile); err != nil {
 		return errors.Wrap(err, "failed reading data from .gitignore file")
 	}
 	// check whether .odo/odo-file-index.json is already in the .gitignore file
@@ -115,16 +111,23 @@ func addOdoFileIndex(gitIgnoreFile string) error {
 	return nil
 }
 
-// Check .gitignore file exists or not, if not then create it
-func checkGitIgnoreFile(directory string) (string, error) {
+// CheckGitIgnoreFile checks .gitignore file exists or not, if not then create it
+func CheckGitIgnoreFile(directory string) (string, error) {
+	return checkGitIgnoreFile(directory, filesystem.DefaultFs{})
+}
 
-	gitIgnoreFile, err := gitIgnoreFilePath(directory)
+func checkGitIgnoreFile(directory string, fs filesystem.Filesystem) (string, error) {
+
+	_, err := fs.Stat(directory)
 	if err != nil {
 		return "", err
 	}
+
+	gitIgnoreFile := filepath.Join(directory, ".gitignore")
+
 	// err checks the existence of .gitignore and then creates if does not exists
-	if _, err := os.Stat(gitIgnoreFile); os.IsNotExist(err) {
-		file, err := os.OpenFile(gitIgnoreFile, os.O_WRONLY|os.O_CREATE, 0600)
+	if _, err := fs.Stat(gitIgnoreFile); os.IsNotExist(err) {
+		file, err := fs.OpenFile(gitIgnoreFile, os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			return gitIgnoreFile, errors.Wrap(err, "failed to create .gitignore file")
 		}
@@ -159,13 +162,13 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	}
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore
-	gitIgnoreFile, err := checkGitIgnoreFile(directory)
+	gitIgnoreFile, err := CheckGitIgnoreFile(directory)
 	if err != nil {
 		return filesChanged, filesDeleted, err
 	}
 
 	// add odo-file-index.json path to .gitignore
-	err = addOdoFileIndex(gitIgnoreFile)
+	err = AddOdoFileIndex(gitIgnoreFile)
 	if err != nil {
 		return filesChanged, filesDeleted, err
 	}

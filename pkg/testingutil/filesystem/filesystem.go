@@ -33,6 +33,7 @@ type Filesystem interface {
 	Stat(name string) (os.FileInfo, error)
 	Create(name string) (File, error)
 	Open(name string) (File, error)
+	OpenFile(name string, flag int, perm os.FileMode) (File, error)
 	Rename(oldpath, newpath string) error
 	MkdirAll(path string, perm os.FileMode) error
 	Chtimes(name string, atime time.Time, mtime time.Time) error
@@ -53,6 +54,7 @@ type File interface {
 	// for now, the only os.File methods used are those below, add more as necessary
 	Name() string
 	Write(b []byte) (n int, err error)
+	WriteString(s string) (n int, err error)
 	Sync() error
 	Close() error
 	Readdir(n int) ([]os.FileInfo, error)
