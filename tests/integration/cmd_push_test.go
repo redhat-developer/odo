@@ -16,6 +16,7 @@ import (
 var _ = Describe("odo push command tests", func() {
 	var project string
 	var context string
+	var currentWorkingDirectory string
 
 	appName := "app"
 	cmpName := "nodejs"
@@ -27,6 +28,7 @@ var _ = Describe("odo push command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
+		currentWorkingDirectory = helper.Getwd()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
@@ -35,6 +37,7 @@ var _ = Describe("odo push command tests", func() {
 	var _ = AfterEach(func() {
 		helper.DeleteProject(project)
 		helper.DeleteDir(context)
+		helper.Chdir(currentWorkingDirectory)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
@@ -53,9 +56,9 @@ var _ = Describe("odo push command tests", func() {
 	Context("Check for label propagation after pushing", func() {
 
 		It("Check for labels", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// Check for all the labels
 			oc.VerifyLabelExistsOfComponent(cmpName, project, "app:"+appName)
@@ -67,6 +70,41 @@ var _ = Describe("odo push command tests", func() {
 			re := regexp.MustCompile(`v[0-9]\S*`)
 			odoVersionString := re.FindStringSubmatch(versionInfo)
 			oc.VerifyLabelExistsOfComponent(cmpName, project, "app.kubernetes.io/managed-by-version:"+odoVersionString[0])
+		})
+	})
+
+	Context("Test push outside of the current working direcory", func() {
+
+		// Change to "outside" the directory before running the below tests
+		var _ = BeforeEach(func() {
+			currentWorkingDirectory = helper.Getwd()
+			helper.Chdir(context)
+		})
+
+		// Change back to the currentWorkingDirectory
+		var _ = AfterEach(func() {
+			helper.Chdir(currentWorkingDirectory)
+		})
+
+		It("Push, modify a file and then push outside of the working directory", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			// Create a new file to test propagating changes
+			newFilePath := filepath.Join(context, "nodejs-ex", "foobar.txt")
+			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
+				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+			}
+
+			// Test propagating changes
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			// Delete the file and check that the file is deleted
+			helper.DeleteDir(newFilePath)
+
+			// Test propagating deletions
+			helper.CmdShouldPass("odo", "push", "--context", context)
 		})
 
 	})

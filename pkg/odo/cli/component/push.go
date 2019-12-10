@@ -81,7 +81,7 @@ func (po *PushOptions) Validate() (err error) {
 	s := log.Spinner("Checking component")
 	defer s.End(false)
 
-	po.isCmpExists, err = component.Exists(po.Context.Client, po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
+	po.doesComponentExist, err = component.Exists(po.Context.Client, po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", po.localConfigInfo.GetName(), po.localConfigInfo.GetApplication())
 	}
@@ -92,7 +92,7 @@ func (po *PushOptions) Validate() (err error) {
 		return fmt.Errorf("Invalid component type %s, %v", *po.localConfigInfo.GetComponentSettings().Type, errors.Cause(err))
 	}
 
-	if !po.isCmpExists && po.pushSource && !po.pushConfig {
+	if !po.doesComponentExist && po.pushSource && !po.pushConfig {
 		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.localConfigInfo.GetName())
 	}
 

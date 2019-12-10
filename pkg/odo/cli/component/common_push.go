@@ -29,10 +29,10 @@ type CommonPushOptions struct {
 	componentContext string
 	localConfigInfo  *config.LocalConfigInfo
 
-	pushConfig  bool
-	pushSource  bool
-	forceBuild  bool
-	isCmpExists bool
+	pushConfig         bool
+	pushSource         bool
+	forceBuild         bool
+	doesComponentExist bool
 
 	*genericclioptions.Context
 }
@@ -66,7 +66,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	log.Info("\nConfiguration changes")
 
 	// If the component does not exist, we will create it for the first time.
-	if !cpo.isCmpExists {
+	if !cpo.doesComponentExist {
 
 		// Classic case of component creation
 		if err := component.CreateComponent(cpo.Context.Client, *cpo.localConfigInfo, cpo.componentContext, stdout); err != nil {
@@ -80,7 +80,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	}
 
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, *cpo.localConfigInfo, stdout, cpo.isCmpExists)
+	err := component.ApplyConfig(cpo.Context.Client, *cpo.localConfigInfo, stdout, cpo.doesComponentExist)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	}
@@ -159,7 +159,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 		spinner := log.NewStatus(log.GetStdout())
 		defer spinner.End(true)
-		if cpo.isCmpExists {
+		if cpo.doesComponentExist {
 			spinner.Start("Checking file changes for pushing", false)
 		} else {
 			// if the component doesn't exist, we don't check for changes in the files
@@ -172,10 +172,10 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		spinner.End(true)
 
 		if err != nil {
-			return err
+			return errors.Wrap(err, "unable to run indexer")
 		}
 
-		if cpo.isCmpExists {
+		if cpo.doesComponentExist {
 			// apply the glob rules from the .gitignore/.odo file
 			// and ignore the files on which the rules apply and filter them out
 			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
@@ -184,7 +184,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			// in order to make the changes correctly within the OpenShift pod
 			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, cpo.sourcePath)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 			}
 			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
 			changedFiles = filesChangedFiltered
@@ -197,7 +197,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		}
 	}
 
-	if cpo.forceBuild || !cpo.isCmpExists {
+	if cpo.forceBuild || !cpo.doesComponentExist {
 		isForcePush = true
 	}
 
