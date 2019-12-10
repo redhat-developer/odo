@@ -63,9 +63,7 @@ func (do *DeleteOptions) Validate() (err error) {
 	if err != nil {
 		return err
 	}
-	if do.isCmpExists {
-		do.isCmpExists = true
-	} else {
+	if !do.isCmpExists {
 		log.Errorf("Component %s does not exist on the cluster", do.ComponentOptions.componentName)
 	}
 	return
