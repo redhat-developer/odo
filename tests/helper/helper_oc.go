@@ -276,7 +276,7 @@ func (oc *OcRunner) checkForImageStream(name string, tag string) bool {
 
 // ImportSupportedImage import all the supported images
 func (oc *OcRunner) ImportSupportedImage(image, cmpType, project string) {
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from=registry.access.redhat.com/"+image, "--confirm")
+	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from=registry.redhat.io/"+image, "--confirm")
 	CmdShouldPass(oc.path, "annotate", "istag/"+cmpType, "--namespace="+project, "tags=builder", "--overwrite")
 
 }
