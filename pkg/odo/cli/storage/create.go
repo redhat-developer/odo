@@ -17,9 +17,10 @@ import (
 const createRecommendedCommandName = "create"
 
 var (
-	urlCreateShortDesc = `Create storage and mount to a component`
-	urlCreateLongDesc  = ktemplates.LongDesc(`Create storage and mount to a component`)
-	urlCreateExample   = ktemplates.Examples(`  # Create storage of size 1Gb to a component
+	storageCreateShortDesc = `Create storage and mount to a component`
+	storageCreateLongDesc  = ktemplates.LongDesc(`Create storage and mount to a component`)
+	storageCreateExample   = ktemplates.Examples(`
+	# Create storage of size 1Gb to a component
   %[1]s mystorage --path=/opt/app-root/src/storage/ --size=1Gi
 	`)
 )
@@ -83,9 +84,9 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	o := NewStorageCreateOptions()
 	storageCreateCmd := &cobra.Command{
 		Use:         name,
-		Short:       urlCreateShortDesc,
-		Long:        urlCreateLongDesc,
-		Example:     fmt.Sprintf(urlCreateExample, fullName),
+		Short:       storageCreateShortDesc,
+		Long:        storageCreateLongDesc,
+		Example:     fmt.Sprintf(storageCreateExample, fullName),
 		Args:        cobra.MaximumNArgs(1),
 		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {

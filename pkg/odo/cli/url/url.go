@@ -28,7 +28,7 @@ func NewCmdURL(name, fullName string) *cobra.Command {
 		Use:   name,
 		Short: urlShortDesc,
 		Long:  urlLongDesc,
-		Example: fmt.Sprintf("%s\n%s\n%s",
+		Example: fmt.Sprintf("%s\n\n%s\n\n%s",
 			urlCreateCmd.Example,
 			urlDeleteCmd.Example,
 			urlListCmd.Example),

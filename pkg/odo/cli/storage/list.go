@@ -23,7 +23,8 @@ const listRecommendedCommandName = "list"
 var (
 	storageListShortDesc = `List storage attached to a component`
 	storageListLongDesc  = ktemplates.LongDesc(`List storage attached to a component`)
-	storageListExample   = ktemplates.Examples(`  # List all storage attached or mounted to the current component and 
+	storageListExample   = ktemplates.Examples(`
+	# List all storage attached or mounted to the current component and 
   # all unattached or unmounted storage in the current application
   %[1]s
 	`)
