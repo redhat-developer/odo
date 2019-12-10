@@ -135,25 +135,27 @@ var _ = Describe("odo supported images e2e tests", func() {
 	}
 
 	Context("odo supported images deployment", func() {
-		It("Should be able to verify the openjdk18-openshift image", func() {
-			oc.ImportSupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "java:8", project)
-			verifySupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "openjdk", "java:8", project, appName)
+		// It("Should be able to verify the openjdk18-openshift image", func() {
+		// 	oc.ImportSupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "java:8", project)
+		// 	verifySupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "openjdk", "java:8", project, appName)
+		// })
+
+		It("Should be able to verify the openjdk-11-rhel8 image", func() {
+			//value := os.Getenv("CI")
+			//if len(value) > 0 {
+			//	oc.ImportSupportedImage("openjdk/openjdk-11-rhel8:latest", "java:8", project)
+			//	verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", project, appName)
+			//} else {
+			//	fmt.Printf("Authentication required skipping test")
+			//}
+			oc.ImportSupportedImage("openjdk/openjdk-11-rhel8:latest", "java:8", project)
+			verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", project, appName)
 		})
 
-		// It("Should be able to verify the openjdk-11-rhel8 image", func() {
-		// 	value := os.Getenv("CI")
-		// 	if len(value) > 0 {
-		// 		oc.ImportSupportedImage("openjdk/openjdk-11-rhel8:latest", "java:8", project)
-		// 		verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", project, appName)
-		// 	} else {
-		// 		fmt.Printf("Authentication required skipping test")
-		// 	}
-		// })
-
-		// It("Should be able to verify the openjdk-11-rhel7 image", func() {
-		// 	oc.ImportSupportedImage("openjdk/openjdk-11-rhel7:latest", "java:8", project)
-		// 	verifySupportedImage("openjdk/openjdk-11-rhel7:latest", "openjdk", "java:8", project, appName)
-		// })
+		//It("Should be able to verify the openjdk-11-rhel7 image", func() {
+		//	oc.ImportSupportedImage("openjdk/openjdk-11-rhel7:latest", "java:8", project)
+		//	verifySupportedImage("openjdk/openjdk-11-rhel7:latest", "openjdk", "java:8", project, appName)
+		//})
 
 		// It("Should be able to verify the nodejs-8-rhel7 image", func() {
 		// 	oc.ImportSupportedImage("rhscl/nodejs-8-rhel7:latest", "nodejs:8", project)
