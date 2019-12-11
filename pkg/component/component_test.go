@@ -960,7 +960,6 @@ func TestUnlinkComponents(t *testing.T) {
 		parentComponent Component
 		childComponents []Component
 		ports           []string
-		wantErr         bool
 	}{
 		{
 			name:            "Case 1: Single child component linked to only one port of parent component",
@@ -975,7 +974,7 @@ func TestUnlinkComponents(t *testing.T) {
 			ports:           []string{"8080", "8443"},
 		},
 		{
-			name:            "Case 3: Multiple child components linke to multiple ports of parent component",
+			name:            "Case 3: Multiple child components linked to multiple ports of parent component",
 			parentComponent: fakeComponent("java"),
 			childComponents: []Component{fakeComponent("nodejs"), fakeComponent("python")},
 			ports:           []string{"8080", "8443"},
@@ -1017,6 +1016,7 @@ func TestUnlinkComponents(t *testing.T) {
 
 }
 
+// fakeComponent returns a Component of name & type specified by cmpType
 func fakeComponent(cmpType string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{

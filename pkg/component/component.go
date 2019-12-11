@@ -1513,7 +1513,7 @@ func addDebugPortToEnv(envVarList *config.EnvVarList, componentConfig config.Loc
 // It returns a map with keys indicating the components that are linked to the parent component
 // and values indicating the corresponding secret names
 func UnlinkComponents(parentComponent Component, compoList ComponentList) map[string][]string {
-	components := make(map[string][]string)
+	componentSecrets := make(map[string][]string)
 	for _, comp := range compoList.Items {
 		// .Items contains the list of components in the cluster
 		for component, ports := range comp.Status.LinkedComponents {
@@ -1523,12 +1523,12 @@ func UnlinkComponents(parentComponent Component, compoList ComponentList) map[st
 				// Component is linked with our parent component
 				// We need to create secret name for this and unlink the secret from component before deleting parent component
 				for _, port := range ports {
-					components[comp.Name] = append(components[comp.Name], generateSecretName(parentComponent.Name, comp.Spec.App, port))
+					componentSecrets[comp.Name] = append(componentSecrets[comp.Name], generateSecretName(parentComponent.Name, comp.Spec.App, port))
 				}
 			}
 		}
 	}
-	return components
+	return componentSecrets
 }
 
 func generateSecretName(compName, app, port string) string {
