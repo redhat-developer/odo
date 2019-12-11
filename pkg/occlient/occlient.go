@@ -89,6 +89,7 @@ type CreateArgs struct {
 
 const (
 	OcUpdateTimeout    = 5 * time.Minute
+	OcBuildTimeout     = 5 * time.Minute
 	OpenShiftNameSpace = "openshift"
 
 	// The length of the string to be generated for names of resources
@@ -1673,6 +1674,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 
 // WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
 func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error {
+	// following indicates if we have already setup the following logic
 	following := false
 	glog.V(4).Infof("Waiting for %s  build to finish", buildName)
 
@@ -1683,7 +1685,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 		return errors.Wrapf(err, "unable to watch build")
 	}
 	defer w.Stop()
-	timeout := time.After(5 * time.Minute)
+	timeout := time.After(OcBuildTimeout)
 	for {
 		select {
 		case val, ok := <-w.ResultChan():
@@ -1701,6 +1703,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 				case buildv1.BuildPhaseRunning:
 					// since the pod is ready and the build is now running, start following the logs
 					if !following {
+						// setting following to true as we need to set it up only once
 						following = true
 						err := c.FollowBuildLog(buildName, stdout)
 						if err != nil {
@@ -1859,7 +1862,7 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 	}
 
 	rd, err := c.buildClient.RESTClient().Get().
-		Timeout(5*time.Minute).
+		Timeout(OcBuildTimeout).
 		Namespace(c.Namespace).
 		Resource("builds").
 		Name(buildName).
