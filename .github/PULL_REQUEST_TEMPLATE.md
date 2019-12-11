@@ -1,21 +1,16 @@
-**What kind of PR is this?**
-<!--
-DELETE the kind(s) which are not applicable before opening the PR.
--->
+**What type of PR is this?**
+> Uncomment only one ` /kind <>` line, hit enter to put that in a new line, and remove leading whitespace from that line:
 
-/kind epic
-/kind docs
-/kind discussion
-/kind flake
-/kind api-change
-/kind cleanup
-/kind design
-/kind feature
-/kind bug
-/kind code-refactoring
-/kind use-case
-/kind enhancement
-/kind test
+> /kind api-change
+> /kind bug
+> /kind cleanup
+> /kind deprecation
+> /kind design
+> /kind documentation
+> /kind failing-test
+> /kind feature
+> /kind flake
+> /kind code-refactoring
 
 **What does does this PR do / why we need it**:
 
