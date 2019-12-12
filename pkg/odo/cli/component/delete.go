@@ -99,12 +99,19 @@ func (do *DeleteOptions) Run() (err error) {
 			componentSecrets := component.UnlinkComponents(parentComponent, compoList)
 
 			for component, secret := range componentSecrets {
+				spinner := log.Spinner("Unlinking components")
 				for _, secretName := range secret {
+
+					defer spinner.End(false)
+
 					err = do.Client.UnlinkSecret(secretName, component, do.Context.Application)
 					if err != nil {
+						log.Errorf("Unlinking failed")
 						return err
 					}
-					log.Successf("Unlinked component %q from component %q for secret %q", parentComponent.Name, component, secretName)
+
+					spinner.End(true)
+					log.Successf(fmt.Sprintf("Unlinked component %q from component %q for secret %q", parentComponent.Name, component, secretName))
 				}
 			}
 			err = component.Delete(do.Client, do.componentName, do.Application)
