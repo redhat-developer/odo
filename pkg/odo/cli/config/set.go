@@ -101,9 +101,16 @@ func (o *SetOptions) Run() (err error) {
 
 	if !o.configForceFlag {
 		if isSet := o.lci.IsSet(o.paramName); isSet {
-			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
-				fmt.Println("Aborted by the user.")
-				return nil
+			if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "project" || strings.ToLower(o.paramName) == "application" {
+				if !ui.Proceed(fmt.Sprintf("Are you sure you want to change the component's %s?\nThis action might result in the creation of a duplicate component.\nIf your component is already pushed, please delete the component %q after you apply the changes (odo component delete %s --app %s --project %s)", o.paramName, o.lci.GetName(), o.lci.GetName(), o.lci.GetApplication(), o.lci.GetProject())) {
+					fmt.Println("Aborted by the user.")
+					return nil
+				}
+			} else {
+				if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
+					fmt.Println("Aborted by the user.")
+					return nil
+				}
 			}
 		}
 	}
