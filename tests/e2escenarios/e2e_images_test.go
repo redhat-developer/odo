@@ -135,56 +135,49 @@ var _ = Describe("odo supported images e2e tests", func() {
 	}
 
 	Context("odo supported images deployment", func() {
-		// It("Should be able to verify the openjdk18-openshift image", func() {
-		// 	oc.ImportSupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "java:8", project)
-		// 	verifySupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "openjdk", "java:8", project, appName)
-		// })
+		It("Should be able to verify the openjdk18-openshift image", func() {
+			oc.ImportSupportedImage("registry.access.redhat.com", "redhat-openjdk-18/openjdk18-openshift:latest", "java:8", project)
+			verifySupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "openjdk", "java:8", project, appName)
+		})
 
 		It("Should be able to verify the openjdk-11-rhel8 image", func() {
-			//value := os.Getenv("CI")
-			//if len(value) > 0 {
-			//	oc.ImportSupportedImage("openjdk/openjdk-11-rhel8:latest", "java:8", project)
-			//	verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", project, appName)
-			//} else {
-			//	fmt.Printf("Authentication required skipping test")
-			//}
-			oc.ImportSupportedImage("openjdk/openjdk-11-rhel8:latest", "java:8", project)
+			oc.ImportSupportedImage("registry.redhat.io", "openjdk/openjdk-11-rhel8:latest", "java:8", project)
 			verifySupportedImage("openjdk/openjdk-11-rhel8:latest", "openjdk", "java:8", project, appName)
 		})
 
-		//It("Should be able to verify the openjdk-11-rhel7 image", func() {
-		//	oc.ImportSupportedImage("openjdk/openjdk-11-rhel7:latest", "java:8", project)
-		//	verifySupportedImage("openjdk/openjdk-11-rhel7:latest", "openjdk", "java:8", project, appName)
-		//})
+		It("Should be able to verify the openjdk-11-rhel7 image", func() {
+			oc.ImportSupportedImage("registry.access.redhat.com", "openjdk/openjdk-11-rhel7:latest", "java:8", project)
+			verifySupportedImage("openjdk/openjdk-11-rhel7:latest", "openjdk", "java:8", project, appName)
+		})
 
-		// It("Should be able to verify the nodejs-8-rhel7 image", func() {
-		// 	oc.ImportSupportedImage("rhscl/nodejs-8-rhel7:latest", "nodejs:8", project)
-		// 	verifySupportedImage("rhscl/nodejs-8-rhel7:latest", "nodejs", "nodejs:8", project, appName)
-		// })
+		It("Should be able to verify the nodejs-8-rhel7 image", func() {
+			oc.ImportSupportedImage("registry.access.redhat.com", "rhscl/nodejs-8-rhel7:latest", "nodejs:8", project)
+			verifySupportedImage("rhscl/nodejs-8-rhel7:latest", "nodejs", "nodejs:8", project, appName)
+		})
 
-		// It("Should be able to verify the nodejs-8 image", func() {
-		// 	oc.ImportSupportedImage("rhoar-nodejs/nodejs-8:latest", "nodejs:8", project)
-		// 	verifySupportedImage("rhoar-nodejs/nodejs-8:latest", "nodejs", "nodejs:8", project, appName)
-		// })
+		It("Should be able to verify the nodejs-8 image", func() {
+			oc.ImportSupportedImage("registry.access.redhat.com", "rhoar-nodejs/nodejs-8:latest", "nodejs:8", project)
+			verifySupportedImage("rhoar-nodejs/nodejs-8:latest", "nodejs", "nodejs:8", project, appName)
+		})
 
-		// It("Should be able to verify the nodejs-10 image", func() {
-		// 	oc.ImportSupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs:8", project)
-		// 	verifySupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs", "nodejs:8", project, appName)
-		// })
+		It("Should be able to verify the nodejs-10 image", func() {
+			oc.ImportSupportedImage("registry.access.redhat.com", "rhoar-nodejs/nodejs-10:latest", "nodejs:8", project)
+			verifySupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs", "nodejs:8", project, appName)
+		})
 
-		// It("Should be able to verify the centos7-s2i-nodejs image", func() {
-		// 	oc.ImportDockerHubImage("bucharestgold/centos7-s2i-nodejs", "nodejs:8", project)
-		// 	verifySupportedImage("bucharestgold/centos7-s2i-nodejs", "nodejs", "nodejs:8", project, appName)
-		// })
+		It("Should be able to verify the centos7-s2i-nodejs image", func() {
+			oc.ImportSupportedImage("docker.io", "bucharestgold/centos7-s2i-nodejs", "nodejs:8", project)
+			verifySupportedImage("bucharestgold/centos7-s2i-nodejs", "nodejs", "nodejs:8", project, appName)
+		})
 
-		// It("Should be able to verify the centos7-s2i-nodejs:10.x image", func() {
-		// 	oc.ImportDockerHubImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs:8", project)
-		// 	verifySupportedImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs", "nodejs:8", project, appName)
-		// })
+		It("Should be able to verify the centos7-s2i-nodejs:10.x image", func() {
+			oc.ImportSupportedImage("docker.io", "bucharestgold/centos7-s2i-nodejs:10.x", "nodejs:8", project)
+			verifySupportedImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs", "nodejs:8", project, appName)
+		})
 
-		// It("Should be able to verify the nodejs-8-centos7 image", func() {
-		// 	oc.ImportDockerHubImage("centos/nodejs-8-centos7:latest", "nodejs:8", project)
-		// 	verifySupportedImage("centos/nodejs-8-centos7:latest", "nodejs", "nodejs:8", project, appName)
-		// })
+		It("Should be able to verify the nodejs-8-centos7 image", func() {
+			oc.ImportSupportedImage("docker.io", "centos/nodejs-8-centos7:latest", "nodejs:8", project)
+			verifySupportedImage("centos/nodejs-8-centos7:latest", "nodejs", "nodejs:8", project, appName)
+		})
 	})
 })

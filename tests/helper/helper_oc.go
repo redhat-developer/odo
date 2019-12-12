@@ -3,6 +3,7 @@ package helper
 import (
 	"bufio"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -275,15 +276,8 @@ func (oc *OcRunner) checkForImageStream(name string, tag string) bool {
 }
 
 // ImportSupportedImage import all the supported images
-func (oc *OcRunner) ImportSupportedImage(image, cmpType, project string) {
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from=registry.redhat.io/"+image, "--confirm")
-	CmdShouldPass(oc.path, "annotate", "istag/"+cmpType, "--namespace="+project, "tags=builder", "--overwrite")
-
-}
-
-// ImportDockerHubImage import all the supported images
-func (oc *OcRunner) ImportDockerHubImage(image, cmpType, project string) {
-	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from=docker.io/"+image, "--confirm")
+func (oc *OcRunner) ImportSupportedImage(registry, image, cmpType, project string) {
+	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from="+filepath.Join(registry, image), "--confirm")
 	CmdShouldPass(oc.path, "annotate", "istag/"+cmpType, "--namespace="+project, "tags=builder", "--overwrite")
 
 }
