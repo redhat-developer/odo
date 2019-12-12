@@ -78,23 +78,6 @@ func (ww *StatusFriendlyWriter) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
-// WrapWriter returns a StatusFriendlyWriter for w
-func (s *Status) WrapWriter(w io.Writer) io.Writer {
-	return &StatusFriendlyWriter{
-		status: s,
-		inner:  w,
-	}
-}
-
-// MaybeWrapWriter returns a StatusFriendlyWriter for w IFF w and spinner's
-// output are a terminal, otherwise it returns w
-func (s *Status) MaybeWrapWriter(w io.Writer) io.Writer {
-	if IsTerminal(s.writer) && IsTerminal(w) {
-		return s.WrapWriter(w)
-	}
-	return w
-}
-
 // IsTerminal returns true if the writer w is a terminal
 // This function is modified if we are running within Windows..
 // as Golang's built-in "IsTerminal" command only works on UNIX-based systems:

@@ -1708,6 +1708,7 @@ func (c *Client) WaitForBuildToFinish(buildName string) error {
 //	waitCond: Function indicating when to consider dc rolled out
 // Returns:
 //	Updated DC and errors if any
+// TODO: Move this function into a separate file! (wait.go?), also, why isn't there a go routine here?
 func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.Duration, waitCond func(*appsv1.DeploymentConfig, int64) bool) (*appsv1.DeploymentConfig, error) {
 
 	w, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{
@@ -1775,12 +1776,11 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	watchErrorChannel := make(chan error)
 
 	go func() {
-	loop:
 		for {
 			val, ok := <-w.ResultChan()
 			if !ok {
 				watchErrorChannel <- errors.New("watch channel was closed")
-				break loop
+				break
 			}
 			if e, ok := val.Object.(*corev1.Pod); ok {
 				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
@@ -1789,14 +1789,14 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 					s.End(true)
 					glog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
-					break loop
+					break
 				case corev1.PodFailed, corev1.PodUnknown:
 					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
-					break loop
+					break
 				}
 			} else {
 				watchErrorChannel <- errors.New("unable to convert event object to Pod")
-				break loop
+				break
 			}
 		}
 		close(podChannel)
@@ -1814,6 +1814,7 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 }
 
 // WaitAndGetSecret blocks and waits until the secret is available
+// TODO: Why isn't there a goroutine here??
 func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret, error) {
 	glog.V(4).Infof("Waiting for secret %s to become available", name)
 

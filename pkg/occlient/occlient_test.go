@@ -35,7 +35,7 @@ import (
 
 // fakeDeploymentConfig creates a fake DC.
 // we "dog food" our own functions by using our templates / functions to generate this fake deployment config
-func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, envfrom []corev1.EnvFromSource, t *testing.T) *appsv1.DeploymentConfig {
+func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, envfrom []corev1.EnvFromSource) *appsv1.DeploymentConfig {
 
 	// save component type as label
 	labels := componentlabels.GetLabels(name, name, true)
@@ -546,7 +546,7 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/name":     "python",
 			},
 			wantErr:    false,
-			existingDC: *fakeDeploymentConfig("mailserver", "", nil, nil, t),
+			existingDC: *fakeDeploymentConfig("mailserver", "", nil, nil),
 		},
 
 		{
@@ -560,7 +560,7 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/name":     "golang",
 			},
 			wantErr:    false,
-			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
+			existingDC: *fakeDeploymentConfig("blog", "", nil, nil),
 		},
 	}
 	for _, tt := range tests {
@@ -1510,7 +1510,7 @@ func TestLinkSecret(t *testing.T) {
 			secretName:      "foo",
 			componentName:   "",
 			applicationName: "foo",
-			existingDC:      *fakeDeploymentConfig("foo", "", nil, nil, t),
+			existingDC:      *fakeDeploymentConfig("foo", "", nil, nil),
 			wantErr:         true,
 		},
 		{
@@ -1518,7 +1518,7 @@ func TestLinkSecret(t *testing.T) {
 			secretName:      "secret",
 			componentName:   "component",
 			applicationName: "app",
-			existingDC:      *fakeDeploymentConfig("component-app", "", nil, nil, nil),
+			existingDC:      *fakeDeploymentConfig("component-app", "", nil, nil),
 			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
@@ -1527,7 +1527,6 @@ func TestLinkSecret(t *testing.T) {
 						},
 					},
 				},
-				t,
 			),
 			wantErr: false,
 		},
@@ -1543,8 +1542,7 @@ func TestLinkSecret(t *testing.T) {
 							LocalObjectReference: corev1.LocalObjectReference{Name: "other"},
 						},
 					},
-				},
-				t),
+				}),
 			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
@@ -1557,8 +1555,7 @@ func TestLinkSecret(t *testing.T) {
 							LocalObjectReference: corev1.LocalObjectReference{Name: "secret"},
 						},
 					},
-				},
-				t),
+				}),
 			wantErr: false,
 		},
 	}
@@ -1617,7 +1614,7 @@ func TestUnlinkSecret(t *testing.T) {
 			secretName:      "secret",
 			componentName:   "component",
 			applicationName: "app",
-			existingDC:      *fakeDeploymentConfig("foo", "", nil, nil, t),
+			existingDC:      *fakeDeploymentConfig("foo", "", nil, nil),
 			wantErr:         true,
 		},
 		{
@@ -1632,8 +1629,7 @@ func TestUnlinkSecret(t *testing.T) {
 							LocalObjectReference: corev1.LocalObjectReference{Name: "other"},
 						},
 					},
-				},
-				t),
+				}),
 			wantErr: true,
 		},
 		{
@@ -1648,9 +1644,8 @@ func TestUnlinkSecret(t *testing.T) {
 							LocalObjectReference: corev1.LocalObjectReference{Name: "secret"},
 						},
 					},
-				},
-				t),
-			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil, []corev1.EnvFromSource{}, t),
+				}),
+			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil, []corev1.EnvFromSource{}),
 			wantErr:           false,
 		},
 		{
@@ -1675,8 +1670,7 @@ func TestUnlinkSecret(t *testing.T) {
 							LocalObjectReference: corev1.LocalObjectReference{Name: "other2"},
 						},
 					},
-				},
-				t),
+				}),
 			expectedUpdatedDC: *fakeDeploymentConfig("component-app", "", nil,
 				[]corev1.EnvFromSource{
 					{
@@ -1689,8 +1683,7 @@ func TestUnlinkSecret(t *testing.T) {
 							LocalObjectReference: corev1.LocalObjectReference{Name: "other2"},
 						},
 					},
-				},
-				t),
+				}),
 			wantErr: false,
 		},
 	}
@@ -2348,7 +2341,7 @@ func TestCreateService(t *testing.T) {
 	}{
 		{
 			name:       "Test case: with valid commonObjectName and containerPorts",
-			existingDC: *fakeDeploymentConfig("foo", "", nil, nil, t),
+			existingDC: *fakeDeploymentConfig("foo", "", nil, nil),
 			commonObjectMeta: metav1.ObjectMeta{
 				Name: "nodejs",
 				Labels: map[string]string{
@@ -3372,7 +3365,7 @@ func TestPatchCurrentDC(t *testing.T) {
 						Name: "foo",
 					},
 					ExistingDC: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
-						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, t),
+						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}),
 					DcRollOutWaitCond: dcRollOutWait,
 				},
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
@@ -3392,7 +3385,7 @@ func TestPatchCurrentDC(t *testing.T) {
 						Name: "foo",
 					},
 					ExistingDC: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
-						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, t),
+						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}),
 					DcRollOutWaitCond: dcRollOutWait,
 				},
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
@@ -3413,10 +3406,10 @@ func TestPatchCurrentDC(t *testing.T) {
 						Name: "foo",
 					},
 					ExistingDC: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
-						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, t),
+						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}),
 					DcRollOutWaitCond: dcRollOutWait,
 				},
-				dcPatch:           *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}}, []corev1.EnvFromSource{}, t),
+				dcPatch:           *fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"}}, []corev1.EnvFromSource{}),
 				prePatchDCHandler: removeTracesOfSupervisordFromDC,
 				isGit:             false,
 			},
@@ -3432,7 +3425,7 @@ func TestPatchCurrentDC(t *testing.T) {
 					},
 					ExistingDC: fakeDeploymentConfig("foo", "foo",
 						[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-						[]corev1.EnvFromSource{}, t),
+						[]corev1.EnvFromSource{}),
 					DcRollOutWaitCond: dcRollOutWait,
 				},
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo2"}, "bar",
@@ -3454,13 +3447,13 @@ func TestPatchCurrentDC(t *testing.T) {
 					},
 					ExistingDC: fakeDeploymentConfig("foo", "foo",
 						[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-						[]corev1.EnvFromSource{}, t,
+						[]corev1.EnvFromSource{},
 					),
 					DcRollOutWaitCond: dcRollOutWait,
 				},
 				dcPatch: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-					[]corev1.EnvFromSource{}, t,
+					[]corev1.EnvFromSource{},
 				),
 				isGit: false,
 			},
@@ -3498,7 +3491,7 @@ func TestPatchCurrentDC(t *testing.T) {
 						Name: "foo",
 					},
 					ExistingDC: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
-						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, t),
+						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}),
 					DcRollOutWaitCond: dcRollOutWait,
 				},
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
@@ -3601,7 +3594,7 @@ func TestUpdateDCToGit(t *testing.T) {
 
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-					[]corev1.EnvFromSource{}, t),
+					[]corev1.EnvFromSource{}),
 				ports:                      []corev1.ContainerPort{},
 				componentSettings:          fakeComponentSettings("foo", "foo", "foo", config.GIT, "nodejs", t),
 				resourceLimits:             corev1.ResourceRequirements{},
@@ -3621,7 +3614,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				newImage: "",
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-					[]corev1.EnvFromSource{}, t),
+					[]corev1.EnvFromSource{}),
 				ports:                      []corev1.ContainerPort{},
 				componentSettings:          fakeComponentSettings("foo", "foo", "foo", config.GIT, "foo", t),
 				resourceLimits:             corev1.ResourceRequirements{},
@@ -3641,7 +3634,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				newImage: "",
 				dc: *fakeDeploymentConfig("foo2", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-					[]corev1.EnvFromSource{}, t),
+					[]corev1.EnvFromSource{}),
 				ports:                      []corev1.ContainerPort{},
 				componentSettings:          fakeComponentSettings("foo2", "foo", "foo", config.GIT, "foo2", t),
 				resourceLimits:             corev1.ResourceRequirements{},
@@ -3661,7 +3654,7 @@ func TestUpdateDCToGit(t *testing.T) {
 				newImage: "bar:latest",
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-					[]corev1.EnvFromSource{}, t),
+					[]corev1.EnvFromSource{}),
 				ports:                      []corev1.ContainerPort{},
 				componentSettings:          fakeComponentSettings("foo", "foo", "foo", config.GIT, "foo", t),
 				resourceLimits:             corev1.ResourceRequirements{},
@@ -4125,7 +4118,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				isToLocal:      true,
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-					[]corev1.EnvFromSource{}, t),
+					[]corev1.EnvFromSource{}),
 			},
 			wantErr: false,
 			actions: 2,
@@ -4142,7 +4135,7 @@ func TestUpdateDCToSupervisor(t *testing.T) {
 				envVars:        []corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
 				dc: *fakeDeploymentConfig("foo", "foo",
 					[]corev1.EnvVar{{Name: "key1", Value: "value1"}, {Name: "key2", Value: "value2"}},
-					[]corev1.EnvFromSource{}, t),
+					[]corev1.EnvFromSource{}),
 			},
 			wantErr: true,
 			actions: 3,
@@ -4253,7 +4246,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 1 - Check that it is an emptyDir",
 			args: args{
 				VolumeName: supervisordVolumeName,
-				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil, t),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil),
 			},
 			wantEmptyDir: true,
 		},
@@ -4261,7 +4254,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 2 - Check a non-existent volume",
 			args: args{
 				VolumeName: "foobar",
-				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil, t),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil),
 			},
 			wantEmptyDir: false,
 		},
@@ -4269,7 +4262,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 			name: "Case 3 - Check a volume that exists but is not emptyDir",
 			args: args{
 				VolumeName: "foo-s2idata",
-				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil, t),
+				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil),
 			},
 			wantEmptyDir: false,
 		},
@@ -4539,7 +4532,7 @@ func Test_updateEnvVar(t *testing.T) {
 		{
 			name: "test case 1: tests with single container in dc and no existing env vars",
 			args: args{
-				dc: fakeDeploymentConfig("foo", "foo", nil, nil, t),
+				dc: fakeDeploymentConfig("foo", "foo", nil, nil),
 				inputEnvVars: []corev1.EnvVar{
 					{
 						Name:  "key",
@@ -4557,7 +4550,7 @@ func Test_updateEnvVar(t *testing.T) {
 			name: "test case 2: tests with single container in dc and existing env vars",
 			args: args{
 				dc: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key-1", Value: "key-1"}},
-					[]corev1.EnvFromSource{}, t),
+					[]corev1.EnvFromSource{}),
 				inputEnvVars: []corev1.EnvVar{
 					{
 						Name:  "key-2",
@@ -4764,7 +4757,7 @@ func TestWaitAndGetDC(t *testing.T) {
 				annotation: "app.kubernetes.io/component-source-type",
 				value:      "git",
 				dc: *fakeDeploymentConfig("foo", "bar",
-					[]corev1.EnvVar{}, []corev1.EnvFromSource{}, t),
+					[]corev1.EnvVar{}, []corev1.EnvFromSource{}),
 				timeout: 3 * time.Second,
 			},
 			wantErr: false,
@@ -4777,7 +4770,7 @@ func TestWaitAndGetDC(t *testing.T) {
 				annotation: "app.kubernetes.io/component-source-type",
 				value:      "foobar",
 				dc: *fakeDeploymentConfig("foo", "bar",
-					[]corev1.EnvVar{}, []corev1.EnvFromSource{}, t),
+					[]corev1.EnvVar{}, []corev1.EnvFromSource{}),
 				timeout: 3 * time.Second,
 			},
 			wantErr: true,

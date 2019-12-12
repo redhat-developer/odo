@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -652,10 +653,25 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	// Find Pod for component
 	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
 
+	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
+	pushTimeout := preference.DefaultPushTimeout * time.Second
+	cfg, configReadErr := preference.New()
+	if configReadErr != nil {
+		glog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
+	} else {
+		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
+	}
+
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+	err = client.WaitForEverything(podSelector, dc.Name, pushTimeout)
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
+	}
+
+	// Get the pod that was deployed
+	pod, err := client.GetOnePodFromSelector(podSelector)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving pod  %s", podSelector)
 	}
 
 	// Get S2I Source/Binary Path from Pod Env variables created at the time of component create

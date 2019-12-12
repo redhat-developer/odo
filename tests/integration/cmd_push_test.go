@@ -45,7 +45,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context+"/nodejs-ex", "--app", appName)
 			helper.CmdShouldPass("odo", "preference", "set", "PushTimeout", "1")
 			output := helper.CmdShouldFail("odo", "push", "--context", context+"/nodejs-ex")
-			Expect(output).To(ContainSubstring("waited 1s but couldn't find running pod matching selector"))
+			Expect(output).To(ContainSubstring("timed out, waited 1s"))
 		})
 
 	})
