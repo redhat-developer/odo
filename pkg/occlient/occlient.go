@@ -1678,6 +1678,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 	following := false
 	glog.V(4).Infof("Waiting for %s  build to finish", buildName)
 
+	// start a watch on the build resources and look for the given build name
 	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fields.Set{"metadata.name": buildName}.AsSelector().String(),
 	})
@@ -1688,17 +1689,21 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 	timeout := time.After(OcBuildTimeout)
 	for {
 		select {
+		// when a event is received regarding the given buildName
 		case val, ok := <-w.ResultChan():
 			if !ok {
 				break
 			}
+			// cast the object returned to a build object and check the phase of the build
 			if e, ok := val.Object.(*buildv1.Build); ok {
 				glog.V(4).Infof("Status of %s build is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case buildv1.BuildPhaseComplete:
+					// the build is completed thus return
 					glog.V(4).Infof("Build %s completed.", e.Name)
 					return nil
 				case buildv1.BuildPhaseFailed, buildv1.BuildPhaseCancelled, buildv1.BuildPhaseError:
+					// the build failed/got cancelled/error occurred thus return with error
 					return errors.Errorf("build %s status %s", e.Name, e.Status.Phase)
 				case buildv1.BuildPhaseRunning:
 					// since the pod is ready and the build is now running, start following the logs
@@ -1713,6 +1718,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 				}
 			}
 		case <-timeout:
+			// timeout has occurred while waiting for the build to start/complete, so error out
 			return errors.Errorf("timeout waiting for build %s to start", buildName)
 		}
 	}
