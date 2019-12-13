@@ -62,11 +62,10 @@ func fakeDeploymentConfigWithReplicas(name string, image string, requestedReplic
 func TestWaitForEverything(t *testing.T) {
 	mu := sync.Mutex{}
 	type args struct {
-		requestedReplicas      int
-		availableReplicas      int
-		podStatus              corev1.PodPhase
-		deploymentConfigStatus appsv1.DeploymentConfig
-		timeout                time.Duration
+		requestedReplicas int
+		availableReplicas int
+		podStatus         corev1.PodPhase
+		timeout           time.Duration
 	}
 	tests := []struct {
 		name    string

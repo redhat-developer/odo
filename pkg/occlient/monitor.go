@@ -103,13 +103,11 @@ func (c *Client) waitForPod(podSelector string, podSpinner *fidget.Spinny) {
 			case corev1.PodRunning:
 				podSpinner.Success()
 				wg.Done()
-				break
 
 			// If we have failed, we've got to output some more verbose output..
 			case corev1.PodFailed, corev1.PodUnknown:
 				podSpinner.Fail()
 				podErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
-				break
 			}
 
 		} else {

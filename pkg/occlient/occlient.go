@@ -1789,10 +1789,8 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 					s.End(true)
 					glog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
-					break
 				case corev1.PodFailed, corev1.PodUnknown:
 					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
-					break
 				}
 			} else {
 				watchErrorChannel <- errors.New("unable to convert event object to Pod")
