@@ -62,6 +62,11 @@ func componentTests(args ...string) {
 
 		It("should create component even in new project", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", project, "--context", context, "--app", "testing")...)
+			cmpSetting := helper.VerifyLocalConfig(context + "/.odo/config.yaml")
+			Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring("nodejs"))
+			Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring("cmp-git"))
+			Expect(cmpSetting.ComponentSettings.Application).To(ContainSubstring("testing"))
+			Expect(cmpSetting.ComponentSettings.SourceType).To(ContainSubstring("git"))
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v4")...)
 			oc.SwitchProject(project)
 			projectList := helper.CmdShouldPass("odo", "project", "list")

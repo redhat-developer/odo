@@ -3,6 +3,8 @@ package helper
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"math/rand"
 	"strings"
 	"time"
@@ -80,4 +82,37 @@ func Unindented(jsonStr string) (string, error) {
 		return "", err
 	}
 	return string(obj), err
+}
+
+type Config struct {
+	Kind	string	`yaml:"Kind"`
+	apiversion	string	`yaml:"apiversion"`
+	ComponentSettings struct {
+		Type	string	`yaml:"Type,omitempty"`
+		SourceLocation	string `yaml:"SourceLocation"`
+		SourceType	string `yaml:"SourceType"`
+		Ports	*[]string `yaml:"Ports"`
+		Application	string `yaml:"Application"`
+		Project	string `yaml:"Project"`
+		Name	string `yaml:"Name"`
+		URL	struct {
+			// Name of the URL
+			Name string `yaml:"Name"`
+			// Port number for the url of the component, required in case of components which expose more than one service port
+			Port int `yaml:"Port"`
+		} `yaml:"Url"`
+	} `yaml:"ComponentSettings"`
+}
+
+// VerifyLocalConfig verifies the content of the config.yaml file
+func VerifyLocalConfig(context string) Config {
+
+	var conf Config
+
+	yamlFile, err := ioutil.ReadFile(context)
+	err = yaml.Unmarshal(yamlFile, &conf)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return conf
 }
