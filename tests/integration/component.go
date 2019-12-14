@@ -73,9 +73,12 @@ func componentTests(args ...string) {
 			Expect(projectList).To(ContainSubstring(project))
 		})
 
-		It("Without an application should create one", func() {
+		FIt("Without an application should create one", func() {
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex")...)
+			cmpSetting := helper.VerifyLocalConfig("./.odo/config.yaml")
+			Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring("nodejs"))
+			Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring(componentName))
 			helper.CmdShouldPass("odo", append(args, "push")...)
 			appName := helper.CmdShouldPass("odo", "app", "list")
 			Expect(appName).ToNot(BeEmpty())
@@ -95,6 +98,9 @@ func componentTests(args ...string) {
 			dir := filepath.Base(context)
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, "--context", ".", "--app", "testing")...)
+			cmpSetting := helper.VerifyLocalConfig(context + "/.odo/config.yaml")
+			Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring("nodejs"))
+			Expect(cmpSetting.ComponentSettings.Application).To(ContainSubstring("testing"))
 			componentName := helper.GetConfigValueWithContext("Name", context)
 			Expect(componentName).To(ContainSubstring("nodejs-" + dir))
 			helper.DeleteDir(filepath.Join(context, ".odo"))
@@ -178,6 +184,10 @@ func componentTests(args ...string) {
 
 		It("should list the component", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
+			cmpSetting := helper.VerifyLocalConfig(context + "/.odo/config.yaml")
+			Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring("nodejs"))
+			Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring("cmp-git"))
+			Expect(cmpSetting.ComponentSettings.MaxMemory).To(ContainSubstring("300Mi"))
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--project", project)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
@@ -191,6 +201,10 @@ func componentTests(args ...string) {
 
 		It("should list the component when it is not pushed", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
+			cmpSetting := helper.VerifyLocalConfig(context + "/.odo/config.yaml")
+			Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring("nodejs"))
+			Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring("cmp-git"))
+			Expect(cmpSetting.ComponentSettings.MinCPU).To(ContainSubstring("0.1"))
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			Expect(cmpList).To(ContainSubstring("Not Pushed"))
@@ -199,6 +213,9 @@ func componentTests(args ...string) {
 
 		It("should describe the component when it is not pushed", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
+			cmpSetting := helper.VerifyLocalConfig(context + "/.odo/config.yaml")
+			Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring("nodejs"))
+			Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring("cmp-git"))
 			helper.CmdShouldPass("odo", "url", "create", "url-1", "--context", context)
 			cmpDescribe := helper.CmdShouldPass("odo", append(args, "describe", "--context", context)...)
 
