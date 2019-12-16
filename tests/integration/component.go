@@ -73,7 +73,7 @@ func componentTests(args ...string) {
 			Expect(projectList).To(ContainSubstring(project))
 		})
 
-		FIt("Without an application should create one", func() {
+		It("Without an application should create one", func() {
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex")...)
 			cmpSetting := helper.VerifyLocalConfig("./.odo/config.yaml")
@@ -204,7 +204,7 @@ func componentTests(args ...string) {
 			cmpSetting := helper.VerifyLocalConfig(context + "/.odo/config.yaml")
 			Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring("nodejs"))
 			Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring("cmp-git"))
-			Expect(cmpSetting.ComponentSettings.MinCPU).To(ContainSubstring("0.1"))
+			Expect(cmpSetting.ComponentSettings.MinCPU).To(ContainSubstring("100m"))
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context)...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			Expect(cmpList).To(ContainSubstring("Not Pushed"))
@@ -533,85 +533,86 @@ func componentTests(args ...string) {
 	})
 
 	/*
-			Enable once #1782 and #1778 are fixed
+				Enable once #1782 and #1778 are fixed
 
-				Context("odo component updating", func() {
-					JustBeforeEach(func() {
-						project = helper.CreateRandProject()
+					Context("odo component updating", func() {
+						JustBeforeEach(func() {
+							project = helper.CreateRandProject()
+						})
+
+						JustAfterEach(func() {
+							helper.DeleteProject(project)
+						})
+
+						It("should be able to create a git component and update it from local to git", func() {
+							helper.CopyExample(filepath.Join("source", "nodejs"), context)
+							helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
+							helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v", "4")...)
+							getCPULimit := oc.MaxCPU("cmp-git", "testing", project)
+							Expect(getCPULimit).To(ContainSubstring("2"))
+							getCPURequest := oc.MinCPU("cmp-git", "testing", project)
+							Expect(getCPURequest).To(ContainSubstring("100m"))
+
+							// update the component config according to the git component
+							helper.CmdShouldPass("odo", "config", "set", "sourcelocation", "https://github.com/openshift/nodejs-ex", "--context", context, "-f")
+							helper.CmdShouldPass("odo", "config", "set", "sourcetype", "git", "--context", context, "-f")
+
+							// check if the earlier resource requests are still valid
+							helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v", "4")...)
+							getCPULimit = oc.MaxCPU("cmp-git", "testing", project)
+							Expect(getCPULimit).To(ContainSubstring("2"))
+							getCPURequest = oc.MinCPU("cmp-git", "testing", project)
+							Expect(getCPURequest).To(ContainSubstring("100m"))
+
+							// check the source location and type in the deployment config
+							getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
+							Expect(getSourceLocation).To(ContainSubstring("https://github.com/openshift/nodejs-ex"))
+							getSourceType := oc.SourceTypeDC("cmp-git", "testing", project)
+							Expect(getSourceType).To(ContainSubstring("git"))
+
+							// since the current component type is git
+							// check the source location and type in the build config
+							getSourceLocation = oc.SourceLocationBC("cmp-git", "testing", project)
+							Expect(getSourceLocation).To(ContainSubstring("https://github.com/openshift/nodejs-ex"))
+							getSourceType = oc.SourceTypeBC("cmp-git", "testing", project)
+							Expect(getSourceType).To(ContainSubstring("Git"))
+						})
+
+						It("should be able to update a component from git to local", func() {
+							helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--context", context, "--app", "testing")...)
+							helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v", "4")...)
+							getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
+							Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
+							getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
+							Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
+
+							// update the component config according to the git component
+							helper.CopyExample(filepath.Join("source", "nodejs"), context)
+							helper.CmdShouldPass("odo", "config", "set", "sourcelocation", "./", "--context", context, "-f")
+							helper.CmdShouldPass("odo", "config", "set", "sourcetype", "local", "--context", context, "-f")
+
+							// check if the earlier resource requests are still valid
+							helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v", "4")...)
+							getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
+							Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
+							getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)
+							Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
+
+							// check the source location and type in the deployment config
+							getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
+							var sourcePath string
+							if runtime.GOOS == "
+		ws" {
+								sourcePath = "file:///./"
+							} else {
+								sourcePath = "file://./"
+							}
+							Expect(getSourceLocation).To(ContainSubstring(sourcePath))
+							getSourceType := oc.SourceTypeDC("cmp-git", "testing", project)
+							Expect(getSourceType).To(ContainSubstring("local"))
+						})
 					})
-
-					JustAfterEach(func() {
-						helper.DeleteProject(project)
-					})
-
-					It("should be able to create a git component and update it from local to git", func() {
-						helper.CopyExample(filepath.Join("source", "nodejs"), context)
-						helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
-						helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v", "4")...)
-						getCPULimit := oc.MaxCPU("cmp-git", "testing", project)
-						Expect(getCPULimit).To(ContainSubstring("2"))
-						getCPURequest := oc.MinCPU("cmp-git", "testing", project)
-						Expect(getCPURequest).To(ContainSubstring("100m"))
-
-						// update the component config according to the git component
-						helper.CmdShouldPass("odo", "config", "set", "sourcelocation", "https://github.com/openshift/nodejs-ex", "--context", context, "-f")
-						helper.CmdShouldPass("odo", "config", "set", "sourcetype", "git", "--context", context, "-f")
-
-						// check if the earlier resource requests are still valid
-						helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v", "4")...)
-						getCPULimit = oc.MaxCPU("cmp-git", "testing", project)
-						Expect(getCPULimit).To(ContainSubstring("2"))
-						getCPURequest = oc.MinCPU("cmp-git", "testing", project)
-						Expect(getCPURequest).To(ContainSubstring("100m"))
-
-						// check the source location and type in the deployment config
-						getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
-						Expect(getSourceLocation).To(ContainSubstring("https://github.com/openshift/nodejs-ex"))
-						getSourceType := oc.SourceTypeDC("cmp-git", "testing", project)
-						Expect(getSourceType).To(ContainSubstring("git"))
-
-						// since the current component type is git
-						// check the source location and type in the build config
-						getSourceLocation = oc.SourceLocationBC("cmp-git", "testing", project)
-						Expect(getSourceLocation).To(ContainSubstring("https://github.com/openshift/nodejs-ex"))
-						getSourceType = oc.SourceTypeBC("cmp-git", "testing", project)
-						Expect(getSourceType).To(ContainSubstring("Git"))
-					})
-
-					It("should be able to update a component from git to local", func() {
-						helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--context", context, "--app", "testing")...)
-						helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v", "4")...)
-						getMemoryLimit := oc.MaxMemory("cmp-git", "testing", project)
-						Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-						getMemoryRequest := oc.MinMemory("cmp-git", "testing", project)
-						Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
-
-						// update the component config according to the git component
-						helper.CopyExample(filepath.Join("source", "nodejs"), context)
-						helper.CmdShouldPass("odo", "config", "set", "sourcelocation", "./", "--context", context, "-f")
-						helper.CmdShouldPass("odo", "config", "set", "sourcetype", "local", "--context", context, "-f")
-
-						// check if the earlier resource requests are still valid
-						helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v", "4")...)
-						getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
-						Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
-						getMemoryRequest = oc.MinMemory("cmp-git", "testing", project)
-						Expect(getMemoryRequest).To(ContainSubstring("100Mi"))
-
-						// check the source location and type in the deployment config
-						getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
-						var sourcePath string
-						if runtime.GOOS == "windows" {
-							sourcePath = "file:///./"
-						} else {
-							sourcePath = "file://./"
-						}
-						Expect(getSourceLocation).To(ContainSubstring(sourcePath))
-						getSourceType := oc.SourceTypeDC("cmp-git", "testing", project)
-						Expect(getSourceType).To(ContainSubstring("local"))
-					})
-				})
-		})
+			})
 	*/
 
 	Context("odo component delete, list and describe", func() {
