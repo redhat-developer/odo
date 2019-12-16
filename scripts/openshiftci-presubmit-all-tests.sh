@@ -6,7 +6,6 @@ set -e
 set -x
 
 export CI="openshift"
-export GINKGO_VERBOSE_MODE="-v"
 make configure-installer-tests-cluster
 make bin
 mkdir -p $GOPATH/bin
