@@ -133,5 +133,23 @@ var _ = Describe("odo link and unlink command tests", func() {
 
 			helper.CmdShouldPass("odo", "unlink", "backend", "--app", appName, "--port", "8080", "--context", frontendContext)
 		})
+
+		It("should successfully delete component after linked component is deleted", func() {
+			// first create the two components
+			helper.CopyExample(filepath.Join("source", "nodejs"), frontendContext)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", frontendContext)
+			helper.CopyExample(filepath.Join("source", "nodejs"), backendContext)
+			helper.CmdShouldPass("odo", "create", "nodejs", "backend", "--context", backendContext, "--project", project)
+			helper.CmdShouldPass("odo", "push", "--context", backendContext)
+
+			// now link frontend to the backend component
+			helper.CmdShouldPass("odo", "link", "backend", "--port", "8080", "--context", frontendContext)
+
+			// now delete the backend component and then the frontend component
+			// this didn't work earlier: https://github.com/openshift/odo/issues/2355
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", backendContext)
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", frontendContext)
+		})
 	})
 })
