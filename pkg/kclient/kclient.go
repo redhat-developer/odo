@@ -1,7 +1,7 @@
 package kclient
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -23,31 +23,29 @@ type Client struct {
 }
 
 // New creates a new client
-func New(skipConnectionCheck bool) (*Client, error) {
+func New() (*Client, error) {
 	var client Client
+	var err error
 
 	// initialize client-go clients
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	config, err := client.KubeConfig.ClientConfig()
+	client.KubeClientConfig, err = client.KubeConfig.ClientConfig()
 	if err != nil {
-		return nil, errors.New(err.Error() + errorMsg)
+		return nil, errors.Wrapf(err, errorMsg)
 	}
-	client.KubeClientConfig = config
 
-	kubeClient, err := kubernetes.NewForConfig(config)
+	client.KubeClient, err = kubernetes.NewForConfig(client.KubeClientConfig)
 	if err != nil {
 		return nil, err
 	}
-	client.KubeClient = kubeClient
 
-	namespace, _, err := client.KubeConfig.Namespace()
+	client.Namespace, _, err = client.KubeConfig.Namespace()
 	if err != nil {
 		return nil, err
 	}
-	client.Namespace = namespace
 
 	return &client, nil
 }

@@ -66,8 +66,7 @@ func TestWaitAndGetPod(t *testing.T) {
 			pod, err := fkclient.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start")
 
 			if !tt.wantErr == (err != nil) {
-				t.Errorf(" client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf(" client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if len(fkclientset.Kubernetes.Actions()) != 1 {

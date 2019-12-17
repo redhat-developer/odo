@@ -20,7 +20,7 @@ const (
 	waitForPodTimeOut = 240 * time.Second
 )
 
-// WaitAndGetPod block and waits until pod matching selector is in in Running state
+// WaitAndGetPod block and waits until pod matching selector is in the desired phase
 // desiredPhase cannot be PodFailed or PodUnknown
 func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
 	glog.V(4).Infof("Waiting for %s pod", watchOptions.LabelSelector)
@@ -37,12 +37,14 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 	watchErrorChannel := make(chan error)
 
 	go func() {
-	loop:
+		defer close(podChannel)
+		defer close(watchErrorChannel)
+
 		for {
 			val, ok := <-w.ResultChan()
 			if !ok {
 				watchErrorChannel <- errors.New("watch channel was closed")
-				break loop
+				return
 			}
 			if e, ok := val.Object.(*corev1.Pod); ok {
 				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
@@ -51,18 +53,16 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 					s.End(true)
 					glog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
-					break loop
+					return
 				case corev1.PodFailed, corev1.PodUnknown:
 					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
-					break loop
+					return
 				}
 			} else {
 				watchErrorChannel <- errors.New("unable to convert event object to Pod")
-				break loop
+				return
 			}
 		}
-		close(podChannel)
-		close(watchErrorChannel)
 	}()
 
 	select {
