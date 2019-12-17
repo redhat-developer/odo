@@ -2094,10 +2094,9 @@ func (c *Client) GetServiceInstanceLabelValues(label string, selector string) ([
 	// Grab all the matched strings
 	var values []string
 	for _, elem := range svcList.Items {
-		for key, val := range elem.Labels {
-			if key == label {
-				values = append(values, val)
-			}
+		val, ok := elem.Labels[label]
+		if ok {
+			values = append(values, val)
 		}
 	}
 
