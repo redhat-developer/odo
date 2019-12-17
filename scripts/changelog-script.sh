@@ -38,8 +38,8 @@ github_changelog_generator \
 --header-label "# Release of $2" \
 --summary-label "**Epics & Discussions:**" \
 --summary-labels "kind/epic,kind/discussion,kind/design,kind/use-case" \
---enhancement-label "**Enhancements & Code Refactoring:**" \
---enhancement-labels "kind/enhancement,kind/cleanup,kind/api-change,kind/code-refactoring" \
+--enhancement-label "**Code Refactoring:**" \
+--enhancement-labels "kind/cleanup,kind/api-change,kind/code-refactoring" \
 --breaking-label "**New features:**" \
 --breaking-labels "kind/feature" \
 --bugs-label "**Bugs:**" \
