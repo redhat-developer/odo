@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 // CommonPushOptions has data needed for all pushes
@@ -44,6 +45,19 @@ func NewCommonPushOptions() *CommonPushOptions {
 	}
 }
 
+func (cpo *CommonPushOptions) InitConfigFromContext() error {
+	var err error
+	cpo.LocalConfigInfo, err = config.NewLocalConfigInfo(cpo.componentContext)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cpo *CommonPushOptions) AddContextFlag(cmd *cobra.Command) {
+	genericclioptions.AddContextFlag(cmd, &cpo.componentContext)
+}
+
 // ResolveSrcAndConfigFlags sets all pushes if none is asked
 func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 	// If neither config nor source flag is passed, update both config and source to the component
@@ -51,6 +65,25 @@ func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 		cpo.pushConfig = true
 		cpo.pushSource = true
 	}
+}
+
+func (cpo *CommonPushOptions) ValidateComponentCreate() error {
+	var err error
+	s := log.Spinner("Checking component")
+	defer s.End(false)
+
+	cpo.doesComponentExist, err = component.Exists(cpo.Context.Client, cpo.LocalConfigInfo.GetName(), cpo.LocalConfigInfo.GetApplication())
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", cpo.LocalConfigInfo.GetName(), cpo.LocalConfigInfo.GetApplication())
+	}
+
+	if err = component.ValidateComponentCreateRequest(cpo.Context.Client, cpo.LocalConfigInfo.GetComponentSettings(), cpo.componentContext); err != nil {
+		s.End(false)
+		log.Italic("\nRun 'odo catalog list components' for a list of supported component types")
+		return fmt.Errorf("Invalid component type %s, %v", *cpo.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))
+	}
+	s.End(true)
+	return nil
 }
 
 func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) error {

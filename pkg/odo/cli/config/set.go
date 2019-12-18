@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/pkg/errors"
-
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -41,17 +41,17 @@ var (
 
 // SetOptions encapsulates the options for the command
 type SetOptions struct {
+	*clicomponent.CommonPushOptions
 	paramName       string
 	paramValue      string
 	configForceFlag bool
-	contextDir      string
 	envArray        []string
-	lci             *config.LocalConfigInfo
+	now             bool
 }
 
 // NewSetOptions creates a new SetOptions instance
 func NewSetOptions() *SetOptions {
-	return &SetOptions{}
+	return &SetOptions{CommonPushOptions: clicomponent.NewCommonPushOptions()}
 }
 
 // Complete completes SetOptions after they've been created
@@ -61,19 +61,32 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
-
-	cfg, err := config.NewLocalConfigInfo(o.contextDir)
+	err = o.InitConfigFromContext()
 	if err != nil {
 		return err
 	}
-	o.lci = cfg
+	if o.now {
+		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		prjName := o.LocalConfigInfo.GetProject()
+		o.ResolveSrcAndConfigFlags()
+		err = o.ResolveProject(prjName)
+		if err != nil {
+			return err
+		}
+	}
 	return
 }
 
 // Validate validates the SetOptions based on completed values
 func (o *SetOptions) Validate() (err error) {
-	if !o.lci.ConfigFileExists() {
+	if !o.LocalConfigInfo.ConfigFileExists() {
 		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	}
+	if o.now {
+		err = o.ValidateComponentCreate()
+		if err != nil {
+			return err
+		}
 	}
 	return
 }
@@ -88,21 +101,28 @@ func (o *SetOptions) Run() (err error) {
 			return err
 		}
 		// keeping the old env vars as well
-		presentEnvVarList := o.lci.GetEnvVars()
+		presentEnvVarList := o.LocalConfigInfo.GetEnvVars()
 		newEnvVarList = presentEnvVarList.Merge(newEnvVarList)
-		if err := o.lci.SetEnvVars(newEnvVarList); err != nil {
+		if err := o.LocalConfigInfo.SetEnvVars(newEnvVarList); err != nil {
 			return err
 		}
 		log.Success("Environment variables were successfully updated")
-		log.Italic("\nRun `odo push --config` command to apply changes to the cluster.")
+		if o.now {
+			err = o.Push()
+			if err != nil {
+				return errors.Wrap(err, "failed to push changes")
+			}
+		} else {
+			log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
+		}
 
 		return nil
 	}
 
 	if !o.configForceFlag {
-		if isSet := o.lci.IsSet(o.paramName); isSet {
+		if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
 			if strings.ToLower(o.paramName) == "name" || strings.ToLower(o.paramName) == "project" || strings.ToLower(o.paramName) == "application" {
-				if !ui.Proceed(fmt.Sprintf("Are you sure you want to change the component's %s?\nThis action might result in the creation of a duplicate component.\nIf your component is already pushed, please delete the component %q after you apply the changes (odo component delete %s --app %s --project %s)", o.paramName, o.lci.GetName(), o.lci.GetName(), o.lci.GetApplication(), o.lci.GetProject())) {
+				if !ui.Proceed(fmt.Sprintf("Are you sure you want to change the component's %s?\nThis action might result in the creation of a duplicate component.\nIf your component is already pushed, please delete the component %q after you apply the changes (odo component delete %s --app %s --project %s)", o.paramName, o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetApplication(), o.LocalConfigInfo.GetProject())) {
 					fmt.Println("Aborted by the user.")
 					return nil
 				}
@@ -115,14 +135,20 @@ func (o *SetOptions) Run() (err error) {
 		}
 	}
 
-	err = o.lci.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	err = o.LocalConfigInfo.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
 	if err != nil {
 		return err
 	}
 
 	log.Success("Local config successfully updated")
-	log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
-
+	if o.now {
+		err = o.Push()
+		if err != nil {
+			return errors.Wrap(err, "failed to push changes")
+		}
+	} else {
+		log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
+	}
 	return nil
 }
 
@@ -158,7 +184,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	}
 	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
 	configurationSetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Set the environment variables in config")
-	genericclioptions.AddContextFlag(configurationSetCmd, &o.contextDir)
-
+	o.AddContextFlag(configurationSetCmd)
+	genericclioptions.AddNowFlag(configurationSetCmd, &o.now)
 	return configurationSetCmd
 }

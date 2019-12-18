@@ -3,11 +3,12 @@ package url
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 )
@@ -24,23 +25,34 @@ var (
 
 // URLDeleteOptions encapsulates the options for the odo url delete command
 type URLDeleteOptions struct {
-	localConfigInfo    *config.LocalConfigInfo
-	componentContext   string
+	*clicomponent.CommonPushOptions
 	urlName            string
 	urlForceDeleteFlag bool
-	*genericclioptions.Context
+	now                bool
 }
 
 // NewURLDeleteOptions creates a new URLDeleteOptions instance
 func NewURLDeleteOptions() *URLDeleteOptions {
-	return &URLDeleteOptions{}
+	return &URLDeleteOptions{CommonPushOptions: clicomponent.NewCommonPushOptions()}
 }
 
 // Complete completes URLDeleteOptions after they've been Deleted
 func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	if o.now {
+		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	} else {
+		o.Context = genericclioptions.NewContext(cmd)
+	}
 	o.urlName = args[0]
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+	err = o.InitConfigFromContext()
+	if o.now {
+		prjName := o.LocalConfigInfo.GetProject()
+		o.ResolveSrcAndConfigFlags()
+		err = o.ResolveProject(prjName)
+		if err != nil {
+			return err
+		}
+	}
 	return
 
 }
@@ -52,7 +64,7 @@ func (o *URLDeleteOptions) Validate() (err error) {
 	//	return err
 	//}
 	var exists bool
-	urls := o.localConfigInfo.GetURL()
+	urls := o.LocalConfigInfo.GetURL()
 
 	for _, url := range urls {
 		if url.Name == o.urlName {
@@ -62,6 +74,12 @@ func (o *URLDeleteOptions) Validate() (err error) {
 	if !exists {
 		return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.Component())
 	}
+	if o.now {
+		err = o.ValidateComponentCreate()
+		if err != nil {
+			return err
+		}
+	}
 	return
 }
 
@@ -69,12 +87,19 @@ func (o *URLDeleteOptions) Validate() (err error) {
 func (o *URLDeleteOptions) Run() (err error) {
 
 	if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
-		err = o.localConfigInfo.DeleteURL(o.urlName)
+		err = o.LocalConfigInfo.DeleteURL(o.urlName)
 		if err != nil {
 			return err
 		}
 		log.Successf("URL %s removed from the config file", o.urlName)
-		log.Italic("\nTo delete URL on the OpenShift Cluster, please use `odo push`")
+		if o.now {
+			err = o.Push()
+			if err != nil {
+				return errors.Wrap(err, "failed to push changes")
+			}
+		} else {
+			log.Italic("\nTo delete URL on the OpenShift Cluster, please use `odo push`")
+		}
 	} else {
 		return fmt.Errorf("aborting deletion of URL: %v", o.urlName)
 	}
@@ -95,7 +120,8 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(urlDeleteExample, fullName),
 	}
 	urlDeleteCmd.Flags().BoolVarP(&o.urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
-	genericclioptions.AddContextFlag(urlDeleteCmd, &o.componentContext)
+	o.AddContextFlag(urlDeleteCmd)
+	genericclioptions.AddNowFlag(urlDeleteCmd, &o.now)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)
 	return urlDeleteCmd

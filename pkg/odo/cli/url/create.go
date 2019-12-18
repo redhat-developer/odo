@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/url"
@@ -37,27 +38,31 @@ var (
 
 // URLCreateOptions encapsulates the options for the odo url create command
 type URLCreateOptions struct {
-	localConfigInfo  *config.LocalConfigInfo
-	componentContext string
-	urlName          string
-	urlPort          int
-	componentPort    int
-	*genericclioptions.Context
+	*clicomponent.CommonPushOptions
+	urlName       string
+	urlPort       int
+	componentPort int
+	now           bool
 }
 
 // NewURLCreateOptions creates a new URLCreateOptions instance
 func NewURLCreateOptions() *URLCreateOptions {
-	return &URLCreateOptions{}
+	return &URLCreateOptions{CommonPushOptions: clicomponent.NewCommonPushOptions()}
 }
 
 // Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+	if o.now {
+		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	} else {
+		o.Context = genericclioptions.NewContext(cmd)
+	}
+
+	err = o.InitConfigFromContext()
 	if err != nil {
 		return err
 	}
-	o.componentPort, err = url.GetValidPortNumber(o.Component(), o.urlPort, o.localConfigInfo.GetPorts())
+	o.componentPort, err = url.GetValidPortNumber(o.Component(), o.urlPort, o.LocalConfigInfo.GetPorts())
 	if err != nil {
 		return err
 	}
@@ -65,6 +70,14 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		o.urlName = url.GetURLName(o.Component(), o.componentPort)
 	} else {
 		o.urlName = args[0]
+	}
+	if o.now {
+		prjName := o.LocalConfigInfo.GetProject()
+		o.ResolveSrcAndConfigFlags()
+		err = o.ResolveProject(prjName)
+		if err != nil {
+			return err
+		}
 	}
 
 	return
@@ -74,7 +87,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 func (o *URLCreateOptions) Validate() (err error) {
 
 	// Check if exist
-	for _, localURL := range o.localConfigInfo.GetURL() {
+	for _, localURL := range o.LocalConfigInfo.GetURL() {
 		if o.urlName == localURL.Name {
 			return fmt.Errorf("the url %s already exists in the application: %s", o.urlName, o.Application)
 		}
@@ -89,17 +102,31 @@ func (o *URLCreateOptions) Validate() (err error) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
 
+	if o.now {
+		err = o.ValidateComponentCreate()
+		if err != nil {
+			return err
+		}
+	}
 	return
 }
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
-	err = o.localConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort})
+	err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort})
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
 	log.Successf("URL %s created for component: %v", o.urlName, o.Component())
-	log.Italic("\nTo create URL on the OpenShift Cluster, please use `odo push`")
+	if o.now {
+		err = o.Push()
+		if err != nil {
+			return errors.Wrap(err, "failed to push changes")
+		}
+	} else {
+		log.Italic("\nTo create URL on the OpenShift Cluster, please use `odo push`")
+	}
+
 	return
 }
 
@@ -117,7 +144,8 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		},
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
-	genericclioptions.AddContextFlag(urlCreateCmd, &o.componentContext)
+	o.AddContextFlag(urlCreateCmd)
+	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 	return urlCreateCmd
 }
