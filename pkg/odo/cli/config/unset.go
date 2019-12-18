@@ -6,10 +6,10 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/log"
+	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
@@ -43,16 +43,17 @@ var (
 
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
-	paramName       string
-	configForceFlag bool
-	contextDir      string
-	envArray        []string
-	lci             *config.LocalConfigInfo
+	*clicomponent.CommonPushOptions
+	paramName        string
+	configForceFlag  bool
+	componentContext string
+	envArray         []string
+	now              bool
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
 func NewUnsetOptions() *UnsetOptions {
-	return &UnsetOptions{}
+	return &UnsetOptions{CommonPushOptions: clicomponent.NewCommonPushOptions()}
 }
 
 // Complete completes UnsetOptions after they've been created
@@ -60,19 +61,37 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if o.envArray == nil {
 		o.paramName = args[0]
 	}
-
-	cfg, err := config.NewLocalConfigInfo(o.contextDir)
+	err = o.InitConfigFromContext()
 	if err != nil {
 		return err
 	}
-	o.lci = cfg
+	// cfg, err := config.NewLocalConfigInfo(o.componentContext)
+	// if err != nil {
+	// 	return err
+	// }
+	// o.LocalConfigInfo = cfg
+	if o.now {
+		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		prjName := o.LocalConfigInfo.GetProject()
+		o.ResolveSrcAndConfigFlags()
+		err = o.ResolveProject(prjName)
+		if err != nil {
+			return err
+		}
+	}
 	return
 }
 
 // Validate validates the UnsetOptions based on completed values
 func (o *UnsetOptions) Validate() (err error) {
-	if !o.lci.ConfigFileExists() {
+	if !o.LocalConfigInfo.ConfigFileExists() {
 		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	}
+	if o.now {
+		err = o.ValidateComponentCreate()
+		if err != nil {
+			return err
+		}
 	}
 	return
 }
@@ -83,33 +102,47 @@ func (o *UnsetOptions) Run() (err error) {
 	// env variables have been provided
 	if o.envArray != nil {
 
-		envList := o.lci.GetEnvVars()
+		envList := o.LocalConfigInfo.GetEnvVars()
 		newEnvList, err := config.RemoveEnvVarsFromList(envList, o.envArray)
 		if err != nil {
 			return err
 		}
 
-		if err = o.lci.SetEnvVars(newEnvList); err != nil {
+		if err = o.LocalConfigInfo.SetEnvVars(newEnvList); err != nil {
 			return err
 		}
 
 		log.Success("Environment variables were successfully updated")
-		log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
+		if o.now {
+			err = o.Push()
+			if err != nil {
+				return errors.Wrap(err, "failed to push changes")
+			}
+		} else {
+			log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
+		}
 		return nil
 	}
 
-	if isSet := o.lci.IsSet(o.paramName); isSet {
+	if isSet := o.LocalConfigInfo.IsSet(o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the config", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
 		}
-		err = o.lci.DeleteConfiguration(strings.ToLower(o.paramName))
+		err = o.LocalConfigInfo.DeleteConfiguration(strings.ToLower(o.paramName))
 		if err != nil {
 			return err
 		}
 
 		fmt.Println("Local config was successfully updated.")
-
+		if o.now {
+			err = o.Push()
+			if err != nil {
+				return errors.Wrap(err, "failed to push changes")
+			}
+		} else {
+			log.Italic("\nRun `odo push --config` command to apply changes to the cluster")
+		}
 		return nil
 	}
 	return errors.New("config already unset, cannot unset a configuration which is not set")
@@ -148,7 +181,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	}
 	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
 	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Unset the environment variables in config")
-	genericclioptions.AddContextFlag(configurationUnsetCmd, &o.contextDir)
-
+	o.AddContextFlag(configurationUnsetCmd)
+	genericclioptions.AddNowFlag(configurationUnsetCmd, &o.now)
 	return configurationUnsetCmd
 }
