@@ -63,7 +63,7 @@ https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn[image:https://asciinema.org/a/
 
 *Chat:* Join us on link:https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I[Slack].
 
-*Discussions:* For any developmental discussions with `odo`, use our link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group], for general help and inquiries, join our link:https://groups.google.com/forum/#!forum/odo-users[odo-users Google group].
+*Discussions:* For any developmental discussions with `odo`, use our link:https://groups.google.com/forum/\#!forum/odo-dev[odo-dev Google group], for general help and inquiries, join our link:https://groups.google.com/forum/\#!forum/odo-users[odo-users Google group].
 
 *Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
 
