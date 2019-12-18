@@ -89,6 +89,7 @@ type Config struct {
 	ComponentSettings struct {
 		Type           string   `yaml:"Type,omitempty"`
 		SourceLocation string   `yaml:"SourceLocation,omitempty"`
+		Ref            string   `yaml:"Ref,omitempty"`
 		SourceType     string   `yaml:"SourceType,omitempty"`
 		Ports          []string `yaml:"Ports,omitempty"`
 		Application    string   `yaml:"Application,omitempty"`
@@ -109,7 +110,7 @@ type Config struct {
 			// Name of the URL
 			Name string `yaml:"Name,omitempty"`
 			// Port number for the url of the component, required in case of components which expose more than one service port
-			Port []int `yaml:"Port,omitempty"`
+			Port int `yaml:"Port,omitempty"`
 		} `yaml:"Url,omitempty"`
 	} `yaml:"ComponentSettings,omitempty"`
 }
@@ -127,4 +128,12 @@ func VerifyLocalConfig(context string) Config {
 		fmt.Println(err)
 	}
 	return conf
+}
+
+// ValidateLocalCmpExist verifies the local config parameter
+func ValidateLocalCmpExist(context, cmpType, cmpName, appName string) {
+	cmpSetting := VerifyLocalConfig(context + "/.odo/config.yaml")
+	Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring(cmpType))
+	Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring(cmpName))
+	Expect(cmpSetting.ComponentSettings.Application).To(ContainSubstring(appName))
 }
