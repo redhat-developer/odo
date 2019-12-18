@@ -1,7 +1,7 @@
 package component
 
 import (
-	"github.com/openshift/odo/pkg/util"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"sort"
 	"testing"
+
+	"github.com/openshift/odo/pkg/util"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -950,4 +952,96 @@ func TestGetComponentFromConfig(t *testing.T) {
 		})
 	}
 
+}
+
+func TestUnlinkComponents(t *testing.T) {
+	tests := []struct {
+		name            string
+		parentComponent Component
+		childComponents []Component
+		ports           []string
+	}{
+		{
+			name:            "Case 1: Single child component linked to only one port of parent component",
+			parentComponent: fakeComponent("java"),
+			childComponents: []Component{fakeComponent("nodejs")},
+			ports:           []string{"8080"},
+		},
+		{
+			name:            "Case 2: Single child component linked to multiple ports of parent component",
+			parentComponent: fakeComponent("java"),
+			childComponents: []Component{fakeComponent("nodejs")},
+			ports:           []string{"8080", "8443"},
+		},
+		{
+			name:            "Case 3: Multiple child components linked to multiple ports of parent component",
+			parentComponent: fakeComponent("java"),
+			childComponents: []Component{fakeComponent("nodejs"), fakeComponent("python")},
+			ports:           []string{"8080", "8443"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			want := make(map[string][]string)
+
+			componentList := ComponentList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.openshift.io/v1alpha1",
+				},
+				ListMeta: metav1.ListMeta{},
+				Items:    tt.childComponents,
+			}
+
+			// link the components and create map of what we want (to avoid running the two loops second time)
+			for _, childComponent := range tt.childComponents {
+				for _, port := range tt.ports {
+					linkFakeComponents(&tt.parentComponent, &childComponent, port)
+					want[childComponent.Name] = append(
+						want[childComponent.Name],
+						fmt.Sprintf("%s-%s-%s", tt.parentComponent.Name, tt.parentComponent.Spec.App, port),
+					)
+				}
+			}
+
+			// run the tests
+			got := UnlinkComponents(tt.parentComponent, componentList)
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %q, wanted %q", got, want)
+			}
+		})
+	}
+
+}
+
+// fakeComponent returns a Component of name & type specified by cmpType
+func fakeComponent(cmpType string) Component {
+	return Component{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Component",
+			APIVersion: "odo.openshift.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cmpType,
+			Namespace: "test",
+		},
+		Spec: ComponentSpec{
+			Type: cmpType,
+			App:  "app",
+		},
+		Status: ComponentStatus{
+			State:            "Pushed",
+			LinkedServices:   []string{},
+			LinkedComponents: map[string][]string{},
+		},
+	}
+}
+
+// linkFakeComponents adds link to "port" of "componentA" in "componentB". It
+// is equivalent to doing `odo link componentA --port <port>` from component
+// directory of componentB
+func linkFakeComponents(componentA, componentB *Component, port string) {
+	componentB.Status.LinkedComponents[componentA.Name] = append(componentB.Status.LinkedComponents[componentA.Name], port)
 }
