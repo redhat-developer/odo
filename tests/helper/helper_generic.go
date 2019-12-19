@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -132,7 +133,7 @@ func VerifyLocalConfig(context string) Config {
 
 // ValidateLocalCmpExist verifies the local config parameter
 func ValidateLocalCmpExist(context, cmpType, cmpName, appName string) {
-	cmpSetting := VerifyLocalConfig(context + "/.odo/config.yaml")
+	cmpSetting := VerifyLocalConfig(filepath.Join(context, ".odo", "config.yaml"))
 	Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring(cmpType))
 	Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring(cmpName))
 	Expect(cmpSetting.ComponentSettings.Application).To(ContainSubstring(appName))
