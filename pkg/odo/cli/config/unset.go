@@ -44,11 +44,10 @@ var (
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
 	*clicomponent.CommonPushOptions
-	paramName        string
-	configForceFlag  bool
-	componentContext string
-	envArray         []string
-	now              bool
+	paramName       string
+	configForceFlag bool
+	envArray        []string
+	now             bool
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
