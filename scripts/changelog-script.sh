@@ -36,8 +36,8 @@ github_changelog_generator \
 --base /tmp/base \
 --output /tmp/changelog \
 --header-label "# Release of $2" \
---summary-label "**Epics & Discussions:**" \
---summary-labels "kind/epic,kind/discussion,kind/design,kind/use-case" \
+#--summary-label "**Epics & Discussions:**" \
+#--summary-labels "kind/epic,kind/discussion,kind/design,kind/use-case" \
 --enhancement-label "**Code Refactoring:**" \
 --enhancement-labels "kind/cleanup,kind/api-change,kind/code-refactoring" \
 --breaking-label "**New features:**" \
