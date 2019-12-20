@@ -306,4 +306,26 @@ var _ = Describe("odo preference and config command tests", func() {
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 	})
+
+	Context("when using --now with config command", func() {
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
+		})
+		JustAfterEach(func() {
+			helper.DeleteDir(context)
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
+
+		It("should successfully set and unset variables", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "--now", "--env", "hello=world", "--context", context)
+			configValue1 := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			helper.MatchAllInOutput(configValue1, []string{"hello", "world"})
+			// unset a valid env var
+			helper.CmdShouldPass("odo", "config", "unset", "--now", "--env", "hello", "--context", context)
+			configValue2 := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			helper.DontMatchAllInOutput(configValue2, []string{"hello", "world"})
+		})
+	})
 })
