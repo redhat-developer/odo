@@ -57,6 +57,16 @@ func (DefaultFs) Open(name string) (File, error) {
 	return &defaultFile{file}, nil
 }
 
+// OpenFile via os.OpenFile
+func (DefaultFs) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
+	file, err := os.OpenFile(name, flag, perm)
+	if err != nil {
+		return nil, err
+	}
+
+	return &defaultFile{file}, nil
+}
+
 // Rename via os.Rename
 func (DefaultFs) Rename(oldpath, newpath string) error {
 	return os.Rename(oldpath, newpath)
@@ -124,6 +134,11 @@ func (file *defaultFile) Name() string {
 // Write via os.File.Write
 func (file *defaultFile) Write(b []byte) (n int, err error) {
 	return file.file.Write(b)
+}
+
+// WriteString via File.WriteString
+func (file *defaultFile) WriteString(s string) (int, error) {
+	return file.file.WriteString(s)
 }
 
 // Sync via os.File.Sync

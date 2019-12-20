@@ -62,6 +62,15 @@ func (fs *fakeFs) Open(name string) (File, error) {
 	return &fakeFile{file}, nil
 }
 
+// OpenFile via afero.Fs.OpenFile
+func (fs *fakeFs) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
+	file, err := fs.a.Fs.OpenFile(name, flag, perm)
+	if err != nil {
+		return nil, err
+	}
+	return &fakeFile{file}, nil
+}
+
 // Rename via afero.Fs.Rename
 func (fs *fakeFs) Rename(oldpath, newpath string) error {
 	return fs.a.Fs.Rename(oldpath, newpath)
@@ -129,6 +138,11 @@ func (file *fakeFile) Name() string {
 // Write via afero.File.Write
 func (file *fakeFile) Write(b []byte) (n int, err error) {
 	return file.file.Write(b)
+}
+
+// WriteString via afero.File.WriteString
+func (file *fakeFile) WriteString(s string) (n int, err error) {
+	return file.file.WriteString(s)
 }
 
 // Sync via afero.File.Sync
