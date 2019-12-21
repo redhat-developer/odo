@@ -97,6 +97,11 @@ func (DefaultFs) ReadFile(filename string) ([]byte, error) {
 	return ioutil.ReadFile(filename)
 }
 
+// WriteFile via ioutil.WriteFile
+func (DefaultFs) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(filename, data, perm)
+}
+
 // TempDir via ioutil.TempDir
 func (DefaultFs) TempDir(dir, prefix string) (string, error) {
 	return ioutil.TempDir(dir, prefix)
