@@ -92,19 +92,19 @@ func printDeleteAppInfo(client *occlient.Client, appName string, projectName str
 				}
 			}
 		}
-		// List services that will be removed
-		serviceList, err := service.List(client, appName)
-		if err != nil {
-			log.Info("No services / could not get services")
-			glog.V(4).Info(err.Error())
-		}
-		if len(serviceList.Items) != 0 {
-			log.Info("This application has following service that will be deleted")
-			for _, ser := range serviceList.Items {
-				log.Info("service named", ser.ObjectMeta.Name, "of type", ser.Spec.Type)
-			}
-		}
-
 	}
+	// List services that will be removed
+	serviceList, err := service.List(client, appName)
+	if err != nil {
+		log.Info("No services / could not get services")
+		glog.V(4).Info(err.Error())
+	}
+	if len(serviceList.Items) != 0 {
+		log.Info("This application has following service(s) that will be deleted")
+		for _, ser := range serviceList.Items {
+			log.Info("service named", ser.ObjectMeta.Name, "of type", ser.Spec.Type)
+		}
+	}
+
 	return nil
 }
