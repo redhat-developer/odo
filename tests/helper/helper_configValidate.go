@@ -4,13 +4,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-
-	"gopkg.in/yaml.v2"
+	"reflect"
+	"strconv"
+	"strings"
 
 	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v2"
 )
 
-type Config struct {
+const configFileDirectory = ".odo"
+const configFileName = "config.yaml"
+
+type config struct {
 	ComponentSettings struct {
 		Type           string   `yaml:"Type,omitempty"`
 		SourceLocation string   `yaml:"SourceLocation,omitempty"`
@@ -31,7 +36,11 @@ type Config struct {
 		Ignore bool   `yaml:"Ignore,omitempty"`
 		MinCPU string `yaml:"MinCPU,omitempty"`
 		MaxCPU string `yaml:"MaxCPU,omitempty"`
-		URL    []struct {
+		Envs   []struct {
+			Name  string `yaml:"Name,omitempty"`
+			Value string `yaml:"Value,omitempty"`
+		} `yaml:"Envs,omitempty"`
+		URL []struct {
 			// Name of the URL
 			Name string `yaml:"Name,omitempty"`
 			// Port number for the url of the component, required in case of components which expose more than one service port
@@ -41,8 +50,8 @@ type Config struct {
 }
 
 // VerifyLocalConfig verifies the content of the config.yaml file
-func VerifyLocalConfig(context string) Config {
-	var conf Config
+func verifyLocalConfig(context string) config {
+	var conf config
 
 	yamlFile, err := ioutil.ReadFile(context)
 	if err != nil {
@@ -55,10 +64,75 @@ func VerifyLocalConfig(context string) Config {
 	return conf
 }
 
+// Search for the item in cmpfield string array
+func Search(cmpfield []string, val string) bool {
+	for _, item := range cmpfield {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
+
+// newInterfaceValue takes interface and keyValue of args
+// It returns new initilized value
+func newInterfaceValue(cmpSetting *config, keyValue ...string) reflect.Value {
+	indexNum, _ := strconv.Atoi(keyValue[1])
+	if keyValue[0] == "URL" {
+		return reflect.ValueOf(cmpSetting.ComponentSettings.URL[indexNum])
+	}
+	if keyValue[0] == "Storage" {
+		return reflect.ValueOf(cmpSetting.ComponentSettings.Storage[indexNum])
+	}
+	return reflect.ValueOf(cmpSetting.ComponentSettings.Envs[indexNum])
+}
+
 // ValidateLocalCmpExist verifies the local config parameter
-func ValidateLocalCmpExist(context, cmpType, cmpName, appName string) {
-	cmpSetting := VerifyLocalConfig(filepath.Join(context, ".odo", "config.yaml"))
-	Expect(cmpSetting.ComponentSettings.Type).To(ContainSubstring(cmpType))
-	Expect(cmpSetting.ComponentSettings.Name).To(ContainSubstring(cmpName))
-	Expect(cmpSetting.ComponentSettings.Application).To(ContainSubstring(appName))
+// It takes context and fieldType,value string as args
+// URL and Storage parameter takes key,indexnumber,fieldType,value as args
+func ValidateLocalCmpExist(context string, args ...string) {
+	var interfaceVal reflect.Value
+	cmpField := []string{"URL", "Storage", "Envs"}
+	cmpSetting := verifyLocalConfig(filepath.Join(context, configFileDirectory, configFileName))
+	for i := 0; i < len(args); i++ {
+		keyValue := strings.Split(args[i], ",")
+
+		if Search(cmpField, keyValue[0]) {
+			interfaceVal = newInterfaceValue(&cmpSetting, keyValue[0], keyValue[1])
+			keyValue[0] = keyValue[2]
+			keyValue[1] = keyValue[3]
+		} else {
+			interfaceVal = reflect.ValueOf(cmpSetting.ComponentSettings)
+		}
+
+		for i := 0; i < interfaceVal.NumField(); i++ {
+
+			// Get the field, returns https://golang.org/pkg/reflect/#StructField
+			field := interfaceVal.Field(i)
+			typeField := interfaceVal.Type().Field(i)
+
+			f := field.Interface()
+			// Get the value of the field
+			fieldVal := reflect.ValueOf(f)
+			if typeField.Name == keyValue[0] {
+
+				// validate the corresponding parameters
+				switch fieldVal.Kind() {
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					Expect(strconv.FormatInt(fieldVal.Int(), 10)).To(Equal(keyValue[1]))
+				case reflect.String:
+					Expect(fieldVal.String()).To(Equal(keyValue[1]))
+				case reflect.Slice:
+					sliceVal := fmt.Sprint(fieldVal)
+					Expect(sliceVal).To(Equal(keyValue[1]))
+				default:
+					fmt.Println("Invalid Kind of the field value")
+
+				}
+			}
+
+		}
+
+	}
+
 }
