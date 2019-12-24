@@ -235,6 +235,7 @@ func componentTests(args ...string) {
 			// Since components catalog is constantly changing, we simply check to see if this command passes.. rather than checking the JSON each time.
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
 			Expect(output).To(ContainSubstring("List"))
+			Expect(output).To(ContainSubstring("supportedTags"))
 		})
 
 		It("binary component should not fail when --context is not set", func() {

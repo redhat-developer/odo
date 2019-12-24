@@ -225,7 +225,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]ComponentType, error) {
 // SliceSupportedTags splits the tags in to fully supported and unsupported tags
 func SliceSupportedTags(component ComponentType) ([]string, []string) {
 
-	var supTag, unSupTag []string
+	supTag, unSupTag := []string{}, []string{}
 	tagMap := createImageTagMap(component.Spec.ImageStreamRef.Spec.Tags)
 	for _, tag := range component.Spec.NonHiddenTags {
 		imageName := tagMap[tag]
