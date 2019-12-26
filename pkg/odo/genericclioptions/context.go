@@ -255,13 +255,6 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	client := client(command)
 
-	// Get details from config file
-	configFileName := FlagValueIfSet(command, ContextFlagName)
-	if configFileName != "" {
-		_, err := pkgUtil.GetAbsPath(configFileName)
-		util.LogErrorAndExit(err, "")
-	}
-
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
 	if err != nil {
