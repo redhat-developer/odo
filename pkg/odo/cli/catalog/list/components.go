@@ -58,6 +58,11 @@ func (o *ListComponentsOptions) Validate() (err error) {
 // Run contains the logic for the command associated with ListComponentsOptions
 func (o *ListComponentsOptions) Run() (err error) {
 	if log.IsJSON() {
+		for i, image := range o.catalogList.Items {
+			// here we don't care about the unsupported tags (second return value)
+			supported, _ := catalog.SliceSupportedTags(image)
+			o.catalogList.Items[i].Spec.SupportedTags = supported
+		}
 		machineoutput.OutputSuccess(o.catalogList)
 	} else {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
