@@ -50,18 +50,18 @@ type config struct {
 }
 
 // VerifyLocalConfig verifies the content of the config.yaml file
-func verifyLocalConfig(context string) config {
+func verifyLocalConfig(context string) (config, error) {
 	var conf config
 
 	yamlFile, err := ioutil.ReadFile(context)
 	if err != nil {
-		fmt.Println(err)
+		return conf, err
 	}
 	err = yaml.Unmarshal(yamlFile, &conf)
 	if err != nil {
-		fmt.Println(err)
+		return conf, err
 	}
-	return conf
+	return conf, nil
 }
 
 // Search for the item in cmpfield string array
@@ -93,7 +93,11 @@ func newInterfaceValue(cmpSetting *config, keyValue ...string) reflect.Value {
 func ValidateLocalCmpExist(context string, args ...string) {
 	var interfaceVal reflect.Value
 	cmpField := []string{"URL", "Storage", "Envs"}
-	cmpSetting := verifyLocalConfig(filepath.Join(context, configFileDirectory, configFileName))
+	cmpSetting, err := verifyLocalConfig(filepath.Join(context, configFileDirectory, configFileName))
+	if err != nil {
+		Expect(err).To(Equal(nil))
+	}
+
 	for i := 0; i < len(args); i++ {
 		keyValue := strings.Split(args[i], ",")
 
