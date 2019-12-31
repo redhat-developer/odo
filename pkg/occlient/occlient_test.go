@@ -1487,12 +1487,14 @@ func TestCreateServiceBinding(t *testing.T) {
 		name        string
 		bindingNS   string
 		bindingName string
+		labels      map[string]string
 		wantErr     bool
 	}{
 		{
 			name:        "Case: Valid request for creating a secret",
 			bindingNS:   "",
 			bindingName: "foo",
+			labels:      map[string]string{"app": "app"},
 			wantErr:     false,
 		},
 	}
@@ -1500,7 +1502,7 @@ func TestCreateServiceBinding(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
-			err := fakeClient.CreateServiceBinding(tt.bindingName, tt.bindingNS)
+			err := fakeClient.CreateServiceBinding(tt.bindingName, tt.bindingNS, tt.labels)
 
 			if err == nil && !tt.wantErr {
 				if len(fakeClientSet.ServiceCatalogClientSet.Actions()) != 1 {
