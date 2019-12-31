@@ -7,6 +7,7 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,8 +72,22 @@ func Delete(client *occlient.Client, name string) error {
 
 	labels := applabels.GetLabels(name, false)
 
+	// first delete the services (ServiceInstance in OpenShift terminology)
+	// belonging to the app
+	svcList, err := service.List(client, name)
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete the application %s due to failure in listing service(s) in the application", name)
+	}
+
+	for _, svc := range svcList.Items {
+		err = service.DeleteServiceAndUnlinkComponents(client, svc.Name, name)
+		if err != nil {
+			return errors.Wrapf(err, "unable to delete the application %s due to failure in deleting service(s) in the application", name)
+		}
+	}
+
 	// delete application from cluster
-	err := client.Delete(labels)
+	err = client.Delete(labels)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}
