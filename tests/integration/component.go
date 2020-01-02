@@ -547,7 +547,7 @@ func componentTests(args ...string) {
 			// update the component config according to the git component
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
-			helper.CmdShouldPass("odo", "update", "--local", ".", "--context", context)
+			helper.CmdShouldPass("odo", "update", "--local", "./", "--context", context)
 
 			getMemoryLimit = oc.MaxMemory("cmp-git", "testing", project)
 			Expect(getMemoryLimit).To(ContainSubstring("300Mi"))
