@@ -39,16 +39,17 @@ var updateCmdExample = ktemplates.Examples(`  # Change the source code path of c
 	  %[1]s --git https://github.com/openshift/nodejs-ex.git
 		
 	  # Change the source code path of of currently active component to a binary named sample.war in ./downloads directory
-	  %[1]s wildfly --binary ./downloads/sample.war
+	  %[1]s --binary ./downloads/sample.war
 		`)
 
 // NewUpdateOptions returns new instance of UpdateOptions
 func NewUpdateOptions() *UpdateOptions {
 	return &UpdateOptions{
 		CommonPushOptions: &CommonPushOptions{
-			pushConfig: true, // we assume if someone updates then the config is only pushed
+			pushConfig: true, // we push everything
+			forceBuild: true,
+			pushSource: true,
 			show:       false,
-			forceBuild: false,
 		}}
 }
 
