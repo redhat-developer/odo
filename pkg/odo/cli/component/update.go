@@ -71,7 +71,7 @@ func (uo *UpdateOptions) Validate() (err error) {
 	// First off, we check to see if the component exists. This is ran each time we do `odo push`
 	s := log.Spinner("Checking component")
 
-	uo.isCmpExists, err = component.Exists(uo.Context.Client, uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
+	uo.doesComponentExist, err = component.Exists(uo.Context.Client, uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
 	}
