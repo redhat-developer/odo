@@ -76,16 +76,16 @@ func Delete(client *occlient.Client, name string) error {
 	// belonging to the app
 	svcList, err := service.List(client, name)
 	if err != nil {
-		return errors.Wrapf(err, "unable to delete the application %s due to failure in listing service(s) in the application", name)
-	}
-
-	for _, svc := range svcList.Items {
-		err = service.DeleteServiceAndUnlinkComponents(client, svc.Name, name)
-		if err != nil {
-			return errors.Wrapf(err, "unable to delete the application %s due to failure in deleting service(s) in the application", name)
+		// error is returned when there's no Service Catalog enabled in the service
+		glog.V(4).Infof("Service catalog is not enabled in the cluster, skipping service deletion")
+	} else {
+		for _, svc := range svcList.Items {
+			err = service.DeleteServiceAndUnlinkComponents(client, svc.Name, name)
+			if err != nil {
+				return errors.Wrapf(err, "unable to delete the application %s due to failure in deleting service(s) in the application", name)
+			}
 		}
 	}
-
 	// delete application from cluster
 	err = client.Delete(labels)
 	if err != nil {
