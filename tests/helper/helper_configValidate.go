@@ -65,8 +65,8 @@ func verifyLocalConfig(context string) (config, error) {
 }
 
 // Search for the item in cmpfield string array
-func Search(cmpfield []string, val string) bool {
-	for _, item := range cmpfield {
+func Search(cmpField []string, val string) bool {
+	for _, item := range cmpField {
 		if item == val {
 			return true
 		}
@@ -101,6 +101,9 @@ func ValidateLocalCmpExist(context string, args ...string) {
 	for i := 0; i < len(args); i++ {
 		keyValue := strings.Split(args[i], ",")
 
+		// if any of the cmp type like 'URL' is interface and matches cmpField
+		// New value is initialised for that particular interface in newInterfaceValue
+		// else New value is initialised for ComponentSettings interface
 		if Search(cmpField, keyValue[0]) {
 			interfaceVal = newInterfaceValue(&cmpSetting, keyValue[0], keyValue[1])
 			keyValue[0] = keyValue[2]
@@ -120,7 +123,8 @@ func ValidateLocalCmpExist(context string, args ...string) {
 			fieldVal := reflect.ValueOf(f)
 			if typeField.Name == keyValue[0] {
 
-				// validate the corresponding parameters
+				// validate the corresponding parameters of the type field
+				// convert the field value into the string
 				switch fieldVal.Kind() {
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 					Expect(strconv.FormatInt(fieldVal.Int(), 10)).To(Equal(keyValue[1]))
