@@ -2398,8 +2398,6 @@ func (c *Client) CreateServiceBinding(bindingName string, namespace string, labe
 				Labels:    labels,
 			},
 			Spec: scv1beta1.ServiceBindingSpec{
-				//ExternalID: UUID,
-
 				InstanceRef: scv1beta1.LocalObjectReference{
 					Name: bindingName,
 				},
