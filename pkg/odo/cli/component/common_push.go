@@ -71,7 +71,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 		// Classic case of component creation
 		if err := component.CreateComponent(cpo.Context.Client, *cpo.localConfigInfo, cpo.componentContext, stdout); err != nil {
 			log.Errorf(
-				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %+v",
+				"Failed to create component with name %s. Please use `odo config view` to view settings used to create component. Error: %v",
 				cmpName,
 				err,
 			)

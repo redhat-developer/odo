@@ -1547,7 +1547,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		)
 		addInitVolumesToDC(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
 
-		ownerReference := generateOwnerReference(&dc)
+		ownerReference := generateOwnerReference(ucp.ExistingDC)
 
 		// Setup PVC
 		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels, ownerReference)
@@ -2463,7 +2463,7 @@ func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 
 	// Convert labels to selector
 	selector := util.ConvertLabelsToSelector(commonObjectMeta.Labels)
-	glog.V(4).Infof("DeleteBuldConfig selectors used for deletion: %s", selector)
+	glog.V(4).Infof("DeleteBuildConfig selectors used for deletion: %s", selector)
 
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs with DeleteBuildConfig")
