@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -78,6 +80,10 @@ func (uo *UpdateOptions) Validate() (err error) {
 		checkFlag++
 		uo.sourceType = config.BINARY
 		uo.sourcePath = uo.binary
+
+		if strings.HasPrefix(uo.sourcePath, fmt.Sprintf("..%c", filepath.Separator)) {
+			return fmt.Errorf("%s binary needs to be inside of the context directory", uo.sourcePath)
+		}
 	}
 	if len(uo.git) != 0 {
 		checkFlag++
@@ -88,6 +94,13 @@ func (uo *UpdateOptions) Validate() (err error) {
 		checkFlag++
 		uo.sourceType = config.LOCAL
 		uo.sourcePath = uo.local
+		srcLocInfo, err := os.Stat(uo.sourcePath)
+		if err != nil {
+			return fmt.Errorf("error while validating source path: %v", err.Error())
+		}
+		if !srcLocInfo.IsDir() {
+			return fmt.Errorf("source path for component created for local source needs to be a directory")
+		}
 	}
 
 	if len(uo.componentContext) == 0 {
