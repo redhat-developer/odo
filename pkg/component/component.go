@@ -410,7 +410,7 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	case config.LOCAL:
 		fileInfo, err := os.Stat(createArgs.SourcePath)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get info of path %+v of component %+v", createArgs.SourcePath, createArgs)
+			return errors.Wrapf(err, "failed to get info of path %+v of component %+v", createArgs.SourcePath, createArgs.Name)
 		}
 		if !fileInfo.IsDir() {
 			return fmt.Errorf("component creation with args %+v as path needs to be a directory", createArgs)
