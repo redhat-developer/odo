@@ -98,7 +98,6 @@ var _ = Describe("odo url command tests", func() {
 	Context("when using --now flag with url create / delete", func() {
 		It("should create and delete url on cluster successfully with now flag", func() {
 			url1 := helper.RandString(5)
-			//url2 := helper.RandString(5)
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
 			helper.CmdShouldPass("odo", "url", "create", url1, "--context", context, "--port", "8080", "--now")

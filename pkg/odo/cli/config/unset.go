@@ -64,11 +64,6 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if err != nil {
 		return err
 	}
-	// cfg, err := config.NewLocalConfigInfo(o.componentContext)
-	// if err != nil {
-	// 	return err
-	// }
-	// o.LocalConfigInfo = cfg
 	if o.now {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 		prjName := o.LocalConfigInfo.GetProject()
