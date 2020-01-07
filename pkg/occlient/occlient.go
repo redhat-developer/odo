@@ -1145,28 +1145,18 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 		[]corev1.EnvFromSource{},
 		params.Resources,
 	)
-
-	// Add the appropriate bootstrap volumes for SupervisorD
-	addBootstrapVolumeCopyInitContainer(&dc, commonObjectMeta.Name)
-	addBootstrapSupervisordInitContainer(&dc, commonObjectMeta.Name)
-	addBootstrapVolume(&dc, commonObjectMeta.Name)
-	addBootstrapVolumeMount(&dc, commonObjectMeta.Name)
-	// only use the deployment Directory volume mount if its being used and
-	// its not a sub directory of src_or_bin_path
-	if s2iPaths.DeploymentDir != "" && !isSubDir(DefaultAppRootDir, s2iPaths.DeploymentDir) {
-		addDeploymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
-	}
-
-	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
-	}
-
 	if len(inputEnvs) != 0 {
 		err = updateEnvVar(&dc, inputEnvs)
 		if err != nil {
 			return errors.Wrapf(err, "unable to add env vars to the container")
 		}
+	}
+
+	addInitVolumesToDC(&dc, commonObjectMeta.Name, s2iPaths.DeploymentDir)
+
+	err = addOrRemoveVolumeAndVolumeMount(c, &dc, params.StorageToBeMounted, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to mount and unmount pvc to dc")
 	}
 
 	createdDC, err := c.appsClient.DeploymentConfigs(c.Namespace).Create(&dc)
@@ -1364,14 +1354,14 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 		// inspired from https://github.com/openshift/origin/blob/bb1b9b5223dd37e63790d99095eec04bfd52b848/pkg/apps/controller/deploymentconfig/deploymentconfig_controller.go#L609
 		if reflect.DeepEqual(updatedDc.Spec.Template, currentDC.Spec.Template) {
 			return nil
-		} else {
-			currentDCBytes, errCurrent := json.Marshal(currentDC.Spec.Template)
-			updatedDCBytes, errUpdated := json.Marshal(updatedDc.Spec.Template)
-			if errCurrent != nil || errUpdated != nil {
-				return errors.Wrapf(err, "unable to unmarshal dc")
-			}
-			glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
 		}
+		currentDCBytes, errCurrent := json.Marshal(currentDC.Spec.Template)
+		updatedDCBytes, errUpdated := json.Marshal(updatedDc.Spec.Template)
+		if errCurrent != nil || errUpdated != nil {
+			return errors.Wrapf(err, "unable to unmarshal dc")
+		}
+		glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
+
 	}
 
 	// We use the currentDC + 1 for the next revision.. We do NOT use the updated DC (see above code)
@@ -1555,19 +1545,9 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 			cmpContainer.EnvFrom,
 			&ucp.ResourceLimits,
 		)
+		addInitVolumesToDC(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
 
-		// Add the appropriate bootstrap volumes for SupervisorD
-		addBootstrapVolumeCopyInitContainer(&dc, ucp.CommonObjectMeta.Name)
-		addBootstrapSupervisordInitContainer(&dc, ucp.CommonObjectMeta.Name)
-		addBootstrapVolume(&dc, ucp.CommonObjectMeta.Name)
-		addBootstrapVolumeMount(&dc, ucp.CommonObjectMeta.Name)
-		// only use the deployment Directory volume mount if its being used and
-		// its not a sub directory of src_or_bin_path
-		if s2iPaths.DeploymentDir != "" && !isSubDir(DefaultAppRootDir, s2iPaths.DeploymentDir) {
-			addDeploymentDirVolumeMount(&dc, s2iPaths.DeploymentDir)
-		}
-
-		ownerReference := generateOwnerReference(&dc)
+		ownerReference := generateOwnerReference(ucp.ExistingDC)
 
 		// Setup PVC
 		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels, ownerReference)
@@ -1599,6 +1579,20 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 	}
 
 	return nil
+}
+
+func addInitVolumesToDC(dc *appsv1.DeploymentConfig, dcName string, deploymentDir string) {
+
+	// Add the appropriate bootstrap volumes for SupervisorD
+	addBootstrapVolumeCopyInitContainer(dc, dcName)
+	addBootstrapSupervisordInitContainer(dc, dcName)
+	addBootstrapVolume(dc, dcName)
+	addBootstrapVolumeMount(dc, dcName)
+	// only use the deployment Directory volume mount if its being used and
+	// its not a sub directory of src_or_bin_path
+	if deploymentDir != "" && !isSubDir(DefaultAppRootDir, deploymentDir) {
+		addDeploymentDirVolumeMount(dc, deploymentDir)
+	}
 }
 
 // UpdateDCAnnotations updates the DeploymentConfig file
@@ -2469,7 +2463,7 @@ func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 
 	// Convert labels to selector
 	selector := util.ConvertLabelsToSelector(commonObjectMeta.Labels)
-	glog.V(4).Infof("DeleteBuldConfig selectors used for deletion: %s", selector)
+	glog.V(4).Infof("DeleteBuildConfig selectors used for deletion: %s", selector)
 
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs with DeleteBuildConfig")
