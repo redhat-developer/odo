@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -433,6 +434,29 @@ var _ = Describe("odo service command tests", func() {
 
 			helper.CmdShouldPass("odo", "catalog", "describe", "service", "dh-es-apb")
 			helper.CmdShouldPass("odo", "catalog", "describe", "service", "dh-import-vm-apb")
+		})
+	})
+
+	Context("When the application is deleted", func() {
+		JustBeforeEach(func() {
+			preSetup()
+			app = helper.RandString(6)
+		})
+		It("should delete the service(s) in the application as well", func() {
+			helper.CmdShouldPass("odo", "service", "create", "--app", app, "-w", "dh-postgresql-apb", "--project", project, "--plan", "dev",
+				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
+			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "dh-postgresql-apb")
+			})
+
+			helper.CmdShouldPass("odo", "app", "delete", app, "-f")
+			odoArgs := []string{"service", "list", "--app", app}
+			helper.WaitForCmdOut("odo", odoArgs, 1, false, func(output string) bool {
+				fmt.Println(output)
+				return strings.Contains(output, "There are no services deployed for this application")
+			})
 		})
 	})
 })
