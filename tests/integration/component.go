@@ -676,7 +676,7 @@ func componentTests(args ...string) {
 			helper.Chdir(originalDir)
 		})
 
-		FIt("should should retain the same environment variable on multiple push", func() {
+		It("should should retain the same environment variable on multiple push", func() {
 			componentName := helper.RandString(6)
 			appName := helper.RandString(6)
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)

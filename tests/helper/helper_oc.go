@@ -209,7 +209,7 @@ func (oc *OcRunner) MaxCPU(componentName string, appName string, project string)
 	return maxMemory
 }
 
-// MinCPU reuturns maximum cpu
+// MinCPU reuturns minimum cpu
 func (oc *OcRunner) MinCPU(componentName string, appName string, project string) string {
 	minMemory := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'")
