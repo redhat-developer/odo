@@ -34,7 +34,11 @@ there. Hence, we will focus only on OperatorHub (kind of obvious 😉).
 
 There are three main categories of Operators as described in the OpenShift
 docs. We could focus on one of those categories or select specific Operators
-from each of the categories.
+from each of the categories. OpenShift comes pre-installed with [Operator
+Lifecycle
+Manager](https://github.com/operator-framework/operator-lifecycle-manager/)
+which helps in creating Operator backed services. We will levarage this to spin
+up services using odo.
 
 From a development perspective, we might just take a CRD definition and throw
 it to the Kubernetes API. The controller running in background would take care
@@ -58,9 +62,12 @@ As for using Service Binding Operator, we also should explore the possibility
 of linking services to components without using the Operator.
 
 ## List the services/operators
-Taking this from Tomas’s comment on the issue. Added column for available
-plans. But do Operators have “PLANS”? We should prune the PLANS column and let
-that piece be handled by `odo catalog describe service <service-name>`.
+Taking this from [Tomas’s
+comment](https://github.com/openshift/odo/issues/2461#issuecomment-566577064)
+on the issue. Added column for available plans. But do Operators have “PLANS”?
+We should prune the PLANS column and let that piece be handled by `odo catalog
+describe service <service-name>`.
+
 ### Both Service Catalog and Operator Hub are enabled
 ```
 $ odo catalog list services
@@ -101,6 +108,15 @@ One needs to manually install OLM from its
 [repo](https://github.com/operator-framework/operator-lifecycle-manager/tree/00eab85df0fd570891754cc743bc3d5831e9dd62/deploy/upstream/quickstart)
 to make ClusterServiceVersion objects available in Kubernetes.
 
+## Create a service
+At the moment, we don't have a lot of clarity around how the exact `odo service
+create` command will look for Operator Hub backed stuff. But it could be
+something like:
+
+```sh
+$ odo service create <operator-name> <service-name> --crd <crd-name> -p parameter1=value1 -p parameter2=value2
+```
+
 ## Link components with operands
 [GitHub issue](https://github.com/openshift/odo/issues/2463)
 
@@ -127,10 +143,13 @@ listing available/installed operators via `odo catalog list services`.
 
 ```sh
 $ odo services list
-NAME                          PLANS                    PROVISIONER
-mongodb-enterprise.v1.2.4     prod                     OperatorHub
-mariadb-operator-0.1.3-6      ephemeral,persistent     ServiceCatalog
+NAME                          TYPE                  PLANS                    PROVISIONER
+mongodb-enterprise.v1.2.4     dh-postgresql-apb     prod                     OperatorHub
+mariadb-operator-0.1.3-6      mariadb               persistent               ServiceCatalog
 ```
+
+For Operator Hub instances, `TYPE` column could indicate the CRD used to spin
+up the CR/service.
 
 ## Describe deployed services
 [GitHub issue](https://github.com/openshift/odo/issues/2480)
@@ -153,16 +172,6 @@ something that would help them.
 At the moment, we use `odo service delete <service-name>` to delete the service
 deployed in OpenShift cluster. We should be able to delete the service
 deployed using Operator Hub with the same command.
-Testing on Kubernetes
-As far as OpenShift is concerned, we have tests that test odo against different
-OCP versions. How do we make sure that our code/tooling is working on
-Kubernetes as well? How do we add this to our existing CI?
-Questions
-How do the CustomResourceDefinitions oc get crds get populated in the cluster?
-It looks like this is because Operator Hub is installed by default on OCP.
-Kubernetes doesn’t have Operator Hub installed by default like OCP has. How do
-we list Operators on it? It doesn’t have ClusterServiceVersions (CSVs) either.
-And there are other Operator Registries for it like KUDO operators.
 
 ## Testing on Kubernetes
 Our current CI tests odo against different OCP versions. How do we make sure
@@ -179,6 +188,9 @@ our existing CI?
 3. In future, we might want to add support for services to DevFile so as to
    spin up components linked with services
 
+## TODO
+1. Need more clarity around how to create the service/operand using the CRDs in
+   interactive and non-interactive mode.
 
 ## GitHub issues related to this task
 
