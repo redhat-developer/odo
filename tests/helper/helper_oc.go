@@ -204,16 +204,16 @@ func (oc *OcRunner) MinMemory(componentName string, appName string, project stri
 
 // MaxCPU reuturns maximum cpu
 func (oc *OcRunner) MaxCPU(componentName string, appName string, project string) string {
-	maxMemory := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+	maxCPU := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.limits.cpu}}{{end}}'")
-	return maxMemory
+	return maxCPU
 }
 
 // MinCPU reuturns minimum cpu
 func (oc *OcRunner) MinCPU(componentName string, appName string, project string) string {
-	minMemory := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+	minCPU := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'")
-	return minMemory
+	return minCPU
 }
 
 // SourceTypeDC returns the source type from the deployment config
