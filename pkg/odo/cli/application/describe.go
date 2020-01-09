@@ -19,7 +19,7 @@ import (
 const describeRecommendedCommandName = "describe"
 
 var (
-	describeExample = ktemplates.Examples(`  # Describe 'webapp' application,
+	describeExample = ktemplates.Examples(`  # Describe 'webapp' application
   %[1]s webapp`)
 )
 
