@@ -82,7 +82,7 @@ func TestCreate(t *testing.T) {
 				})
 			}()
 
-			fakeClientSet.KubernetesCoreV1ClientSet.PrependWatchReactor("serviceaccounts", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+			fakeClientSet.Kubernetes.PrependWatchReactor("serviceaccounts", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch2, nil
 			})
 

@@ -8,21 +8,18 @@ import (
 	fakeProjClientset "github.com/openshift/client-go/project/clientset/versioned/fake"
 	fakeRouteClientset "github.com/openshift/client-go/route/clientset/versioned/fake"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
-	clienttesting "k8s.io/client-go/testing"
-	fakeKubeCoreV1set "k8s.io/kubernetes/staging/src/k8s.io/client-go/kubernetes/typed/core/v1/fake"
 )
 
 // FakeClientset holds fake ClientSets
 // this is returned by FakeNew to access methods of fake client sets
 type FakeClientset struct {
-	Kubernetes                *fakeKubeClientset.Clientset
-	AppsClientset             *fakeAppsClientset.Clientset
-	BuildClientset            *fakeBuildClientset.Clientset
-	ImageClientset            *fakeImageClientset.Clientset
-	RouteClientset            *fakeRouteClientset.Clientset
-	ProjClientset             *fakeProjClientset.Clientset
-	ServiceCatalogClientSet   *fakeServiceCatalogClientSet.Clientset
-	KubernetesCoreV1ClientSet *fakeKubeCoreV1set.FakeCoreV1
+	Kubernetes              *fakeKubeClientset.Clientset
+	AppsClientset           *fakeAppsClientset.Clientset
+	BuildClientset          *fakeBuildClientset.Clientset
+	ImageClientset          *fakeImageClientset.Clientset
+	RouteClientset          *fakeRouteClientset.Clientset
+	ProjClientset           *fakeProjClientset.Clientset
+	ServiceCatalogClientSet *fakeServiceCatalogClientSet.Clientset
 }
 
 // FakeNew creates new fake client for testing
@@ -55,9 +52,6 @@ func FakeNew() (*Client, *FakeClientset) {
 
 	fkclientset.ServiceCatalogClientSet = fakeServiceCatalogClientSet.NewSimpleClientset()
 	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.Servicecatalog()
-
-	fkclientset.KubernetesCoreV1ClientSet = &fakeKubeCoreV1set.FakeCoreV1{Fake: &clienttesting.Fake{}}
-	client.kubernetesCoreV1 = fkclientset.KubernetesCoreV1ClientSet
 
 	return &client, &fkclientset
 }
