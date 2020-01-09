@@ -61,7 +61,11 @@ type ServicePlan struct {
 	Parameters  servicePlanParameters
 }
 
+// UnmarshalJSON unmarshals the JSON for ServicePlanParameter instead of using
+// the built in json.Unmarshal
 func (sp *ServicePlanParameter) UnmarshalJSON(data []byte) error {
+	// create a temporary struct similar to ServicePlanParameter but with
+	// Default's type set to interface{} so that we can store any value in it
 	tempServicePlanParameter := struct {
 		Name                   string      `json:"name"`
 		Title                  string      `json:"title,omitempty"`
@@ -70,10 +74,13 @@ func (sp *ServicePlanParameter) UnmarshalJSON(data []byte) error {
 		validation.Validatable `json:",inline,omitempty"`
 	}{}
 
+	// unmarshal the json obtained from server into the temporary struct
 	err := json.Unmarshal(data, &tempServicePlanParameter)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	// convert the value into a string so that it can be stored in ServicePlanParameter
 	sp.Default = fmt.Sprint(tempServicePlanParameter.Default)
 
 	sp.Name = tempServicePlanParameter.Name
