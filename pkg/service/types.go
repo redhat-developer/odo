@@ -1,6 +1,9 @@
 package service
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -56,4 +59,27 @@ type ServicePlan struct {
 	DisplayName string
 	Description string
 	Parameters  servicePlanParameters
+}
+
+func (sp *ServicePlanParameter) UnmarshalJSON(data []byte) error {
+	tempServicePlanParameter := struct {
+		Name                   string      `json:"name"`
+		Title                  string      `json:"title,omitempty"`
+		Description            string      `json:"description,omitempty"`
+		Default                interface{} `json:"default,omitempty"`
+		validation.Validatable `json:",inline,omitempty"`
+	}{}
+
+	err := json.Unmarshal(data, &tempServicePlanParameter)
+	if err != nil {
+		panic(err)
+	}
+	sp.Default = fmt.Sprint(tempServicePlanParameter.Default)
+
+	sp.Name = tempServicePlanParameter.Name
+	sp.Title = tempServicePlanParameter.Title
+	sp.Description = tempServicePlanParameter.Description
+	sp.Validatable = tempServicePlanParameter.Validatable
+
+	return nil
 }
