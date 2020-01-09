@@ -183,9 +183,9 @@ func (oc *OcRunner) DescribeDc(dcName string, namespace string) string {
 
 // GetDcPorts returns the ports of the component
 func (oc *OcRunner) GetDcPorts(componentName string, appName string, project string) string {
-	session := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
+	ports := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{range.spec.template.spec.containers}}{{.ports}}{{end}}'")
-	return session
+	return ports
 }
 
 // MaxMemory reuturns maximum memory
