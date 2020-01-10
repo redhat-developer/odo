@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -452,10 +451,10 @@ var _ = Describe("odo service command tests", func() {
 			})
 
 			helper.CmdShouldPass("odo", "app", "delete", app, "-f")
-			odoArgs := []string{"service", "list", "--app", app}
-			helper.WaitForCmdOut("odo", odoArgs, 1, false, func(output string) bool {
-				fmt.Println(output)
-				return strings.Contains(output, "There are no services deployed for this application")
+
+			ocArgs = []string{"get", "serviceinstances"}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Deprovisioning")
 			})
 		})
 	})
