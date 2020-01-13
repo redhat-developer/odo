@@ -489,11 +489,17 @@ func TestGetPVCFromName(t *testing.T) {
 	tests := []struct {
 		name    string
 		pvcName string
+		wantPVC *corev1.PersistentVolumeClaim
 		wantErr bool
 	}{
 		{
 			name:    "storage 10Gi",
 			pvcName: "postgresql",
+			wantPVC: &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "postgresql",
+				},
+			},
 			wantErr: false,
 		},
 	}
@@ -502,10 +508,10 @@ func TestGetPVCFromName(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
 			fakeClientSet.Kubernetes.PrependReactor("get", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, nil, nil
+				return true, tt.wantPVC, nil
 			})
 
-			_, err := fakeClient.GetPVCFromName(tt.pvcName)
+			returnPVC, err := fakeClient.GetPVCFromName(tt.pvcName)
 
 			//Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
@@ -520,6 +526,10 @@ func TestGetPVCFromName(t *testing.T) {
 			if PVCname != tt.pvcName {
 				t.Errorf("Get action is performed with wrong pvcName, expected: %s, got %s", tt.pvcName, PVCname)
 
+			}
+			// Check for returnPVC and tt.wantPVC is same
+			if returnPVC != tt.wantPVC {
+				t.Errorf("Get action has returned pvc with wrong name, expected: %s, got %s", tt.wantPVC, returnPVC)
 			}
 		})
 	}
