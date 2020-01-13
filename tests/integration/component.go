@@ -687,7 +687,8 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "config", "set", "--env", "FOO=BAR")
 			helper.CmdShouldPass("odo", append(args, "push")...)
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+componentName, "Application,"+appName, "Ports,[8080/TCP]", "Envs,0,Name,FOO")
-
+			ports := oc.GetDcPorts(componentName, appName, project)
+			Expect(ports).To(ContainSubstring("8080"))
 			dcName := oc.GetDcName(componentName, project)
 			stdOut := helper.CmdShouldPass("oc", "get", "dc/"+dcName, "-n", project, "-o", "go-template={{ .spec.template.spec }}{{.env}}")
 			Expect(stdOut).To(ContainSubstring("FOO"))
