@@ -81,7 +81,9 @@ func (sp *ServicePlanParameter) UnmarshalJSON(data []byte) error {
 	}
 
 	// convert the value into a string so that it can be stored in ServicePlanParameter
-	sp.Default = fmt.Sprint(tempServicePlanParameter.Default)
+	if tempServicePlanParameter.Default != nil {
+		sp.Default = fmt.Sprint(tempServicePlanParameter.Default)
+	}
 
 	sp.Name = tempServicePlanParameter.Name
 	sp.Title = tempServicePlanParameter.Title
