@@ -7,14 +7,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// constants for deployments
+const (
+	DeploymentKind       = "Deployment"
+	DeploymentAPIVersion = "apps/v1"
+)
+
 // CreateDeployment creates a deployment based on the given pod
 func (c *Client) CreateDeployment(pod *corev1.Pod) (*appsv1.Deployment, error) {
 
 	replicas := int32(1)
 	deployment := appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
+			Kind:       DeploymentKind,
+			APIVersion: DeploymentAPIVersion,
 		},
 		ObjectMeta: pod.ObjectMeta,
 		Spec: appsv1.DeploymentSpec{
