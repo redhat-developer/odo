@@ -188,28 +188,28 @@ func (oc *OcRunner) GetDcPorts(componentName string, appName string, project str
 	return ports
 }
 
-// MaxMemory reuturns maximum memory
+// MaxMemory returns maximum memory
 func (oc *OcRunner) MaxMemory(componentName string, appName string, project string) string {
 	maxMemory := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.limits.memory}}{{end}}'")
 	return maxMemory
 }
 
-// MinMemory reuturns minimum memory
+// MinMemory returns minimum memory
 func (oc *OcRunner) MinMemory(componentName string, appName string, project string) string {
 	minMemory := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.memory}}{{end}}'")
 	return minMemory
 }
 
-// MaxCPU reuturns maximum cpu
+// MaxCPU returns maximum cpu
 func (oc *OcRunner) MaxCPU(componentName string, appName string, project string) string {
 	maxCPU := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.limits.cpu}}{{end}}'")
 	return maxCPU
 }
 
-// MinCPU reuturns minimum cpu
+// MinCPU returns minimum cpu
 func (oc *OcRunner) MinCPU(componentName string, appName string, project string) string {
 	minCPU := CmdShouldPass(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", project,
 		"-o", "go-template='{{range.spec.template.spec.containers}}{{.resources.requests.cpu}}{{end}}'")
