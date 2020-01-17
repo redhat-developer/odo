@@ -68,7 +68,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), backendContext)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", backendContext, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", backendContext)
-			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--context", backendContext, "--port", "1234")
+			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--context", frontendContext, "--port", "1234")
 			Expect(stdErr).To(ContainSubstring("Unable to properly link to component backend using port 1234"))
 		})
 	})
