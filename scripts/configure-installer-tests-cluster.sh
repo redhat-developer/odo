@@ -14,6 +14,15 @@ OC_STABLE_LOGIN="false"
 # Exported to current env
 export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
+# Registry.redhat.io username and password for local testing
+REGISTRY_UN=""
+REGISTRY_PASS=""
+
+# Environment variable path for registry.redhat.io
+ENV_VAR_UN_FILE=""
+ENV_VAR_PASS_FILE=""
+SECRET_REGISTRY_NAME="openshift-private-registry"
+
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
 
@@ -54,6 +63,46 @@ done
 # Workarounds - Note we should find better soulutions asap
 ## Missing wildfly in OpenShift Adding it manually to cluster Please remove once wildfly is again visible
 oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/arch/x86_64/community/wildfly/imagestreams/wildfly-centos7.json
+
+# create_secret creates secrete in cluster to pull image from private registry registry.redhat.io
+create_secret () {
+    ENV_VAR_UN=$1
+    ENV_VAR_PASS=$2
+    oc create secret docker-registry --docker-server=registry.redhat.io --docker-username=$ENV_VAR_UN --docker-password=$ENV_VAR_PASS --docker-email=unused $SECRET_REGISTRY_NAME
+    oc secrets link default $SECRET_REGISTRY_NAME --for=pull
+    oc secrets link builder $SECRET_REGISTRY_NAME
+}
+
+# Set environment Variables for creating secret in cluster to pull image from private registry registry.redhat.io
+if [ $CI == "openshift" ]; then
+
+    # Check if environment variable files exist
+    if [ ! -f $ENV_VAR_UN_FILE ]; then
+        echo "Could not find environment variable username file for regidtry.redhat.io"
+        exit 1
+    fi
+
+    if [ ! -f $ENV_VAR_PASS_FILE ]; then
+        echo "Could not find environment variable password file for regidtry.redhat.io"
+        exit 1
+    fi
+
+    # Get environment variable username from file
+    ENV_VAR_UN=`cat $ENV_VAR_UN_FILE`
+
+    # Get environment variable password from file
+    ENV_VAR_PASS=`cat $ENV_VAR_PASS_FILE`
+    create_secret $ENV_VAR_UN $ENV_VAR_PASS
+
+else
+    if [ -z $REGISTRY_UN ]; then
+        echo "Please set environment variable REGISTRY_UN and REGISTRY_PASS for registry.redhat.io otherwise e2e supported image test won't work"
+        exit 0
+    fi
+    ENV_VAR_UN=$REGISTRY_UN
+    ENV_VAR_PASS=$REGISTRY_PASS
+    create_secret $ENV_VAR_UN $ENV_VAR_PASS
+fi
 
 # Create secret in cluster, removing if it already exists
 oc get secret $HTPASSWD_SECRET -n openshift-config &> /dev/null
