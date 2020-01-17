@@ -2,6 +2,7 @@ package genericclioptions
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/openshift/odo/pkg/log"
@@ -22,10 +23,40 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// fixes / checks all related machine readable output functions
 	CheckMachineReadableOutputCommand(cmd)
 
+	// LogErrorAndExit is used so that we get -o (jsonoutput) for cmds which have json output implemented
+	util.LogErrorAndExit(checkConflictingFlags(cmd), "")
 	// Run completion, validation and run.
 	util.LogErrorAndExit(o.Complete(cmd.Name(), cmd, args), "")
 	util.LogErrorAndExit(o.Validate(), "")
 	util.LogErrorAndExit(o.Run(), "")
+}
+
+func checkConflictingFlags(cmd *cobra.Command) error {
+
+	// we allow providing --context with --app and --project in case of `odo create` or `odo component create`
+	if cmd.Name() == "create" {
+		if cmd.HasParent() {
+			if cmd.Parent().Name() == "odo" || cmd.Parent().Name() == "component" {
+				return nil
+			}
+		}
+	}
+	app := stringFlagLookup(cmd, "app")
+	project := stringFlagLookup(cmd, "project")
+	context := stringFlagLookup(cmd, "context")
+	component := stringFlagLookup(cmd, "component")
+	if (context != "") && (app != "" || project != "" || component != "") {
+		return fmt.Errorf("cannot provide --app, --project or --component flag when --context is provided")
+	}
+	return nil
+}
+func stringFlagLookup(cmd *cobra.Command, flagName string) string {
+	flag := cmd.Flags().Lookup(flagName)
+	// a check to make sure if the flag is not defined we return blank
+	if flag == nil {
+		return ""
+	}
+	return flag.Value.String()
 }
 
 // CheckMachineReadableOutputCommand performs machine-readable output functions required to

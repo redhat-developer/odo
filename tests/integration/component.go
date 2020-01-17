@@ -69,6 +69,19 @@ func componentTests(args ...string) {
 			Expect(projectList).To(ContainSubstring(project))
 		})
 
+		It("shouldn't error when creating a component with --project and --context at the same time", func() {
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", project, "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v4")...)
+			oc.SwitchProject(project)
+			projectList := helper.CmdShouldPass("odo", "project", "list")
+			Expect(projectList).To(ContainSubstring(project))
+		})
+
+		It("should error when listing components (basically anything other then creating) with --project and --context ", func() {
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", project, "--context", context, "--app", "testing")...)
+			helper.CmdShouldFail("odo", "list", "--project", project, "--context", context)
+		})
+
 		It("Without an application should create one", func() {
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex")...)
