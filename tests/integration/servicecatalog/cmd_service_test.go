@@ -416,4 +416,23 @@ var _ = Describe("odo service command tests", func() {
 			Expect(stdOut).To(ContainSubstring("DB_HOST"))
 		})
 	})
+
+	Context("When describing services", func() {
+		JustBeforeEach(func() {
+			preSetup()
+		})
+		JustAfterEach(func() {
+			cleanPreSetup()
+		})
+
+		It("should succeed when we're describing service that could have integer value for default field", func() {
+			// https://github.com/openshift/odo/issues/2488
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			helper.CmdShouldPass("odo", "create", "python", "component1", "--context", context, "--project", project)
+			helper.Chdir(context)
+
+			helper.CmdShouldPass("odo", "catalog", "describe", "service", "dh-es-apb")
+			helper.CmdShouldPass("odo", "catalog", "describe", "service", "dh-import-vm-apb")
+		})
+	})
 })
