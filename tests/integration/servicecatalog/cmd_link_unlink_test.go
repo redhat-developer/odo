@@ -69,7 +69,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--context", context2, "--port", "1234")
+			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--context", context1, "--port", "1234")
 			Expect(stdErr).To(ContainSubstring("Unable to properly link to component backend using port 1234"))
 		})
 	})
@@ -129,7 +129,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--context", context1) // context1 is the frontend
 			// Switching to context2 dir because --context flag is not supported with service command
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
@@ -165,7 +165,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 

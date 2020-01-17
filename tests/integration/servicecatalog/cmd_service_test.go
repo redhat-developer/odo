@@ -312,7 +312,7 @@ var _ = Describe("odo service command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
 			// Switching to context2 dir because --context flag is not supported with service command
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
@@ -344,7 +344,7 @@ var _ = Describe("odo service command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
