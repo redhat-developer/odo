@@ -31,6 +31,9 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	util.LogErrorAndExit(o.Run(), "")
 }
 
+// checkConflictingFlags checks for conflicting flags. Currently --context cannot be provided
+// with either --app, --project and --component as that information can be fetched from the local
+// config.
 func checkConflictingFlags(cmd *cobra.Command) error {
 
 	// we allow providing --context with --app and --project in case of `odo create` or `odo component create`
