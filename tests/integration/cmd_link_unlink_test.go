@@ -68,7 +68,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), backendContext)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", backendContext, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", backendContext)
-			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", backendContext, "--port", "1234")
+			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--context", backendContext, "--port", "1234")
 			Expect(stdErr).To(ContainSubstring("Unable to properly link to component backend using port 1234"))
 		})
 	})
@@ -94,7 +94,8 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", backendContext)
 			helper.CmdShouldPass("odo", "push", "--context", backendContext)
 
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", backendContext)
+			// we link
+			helper.CmdShouldPass("odo", "link", "backend", "--context", frontendContext, "--port", "8778")
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
@@ -104,9 +105,9 @@ var _ = Describe("odo link and unlink command tests", func() {
 			oc.WaitForDCRollout(dcName, project, 20*time.Second)
 			helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 
-			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", backendContext)
+			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--port", "8778", "--context", frontendContext)
 			Expect(outputErr).To(ContainSubstring("been linked"))
-			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project, "--port", "8778", "--context", backendContext)
+			helper.CmdShouldPass("odo", "unlink", "backend", "--port", "8778", "--context", frontendContext)
 		})
 
 		It("Wait till frontend dc rollout properly after linking the frontend application to the backend", func() {
@@ -131,7 +132,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			envFromOutput := oc.GetEnvFromEntry("frontend", appName, project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
 
-			helper.CmdShouldPass("odo", "unlink", "backend", "--app", appName, "--port", "8080", "--context", frontendContext)
+			helper.CmdShouldPass("odo", "unlink", "backend", "--port", "8080", "--context", frontendContext)
 		})
 
 		It("should successfully delete component after linked component is deleted", func() {

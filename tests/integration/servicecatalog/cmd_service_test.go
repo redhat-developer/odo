@@ -312,7 +312,7 @@ var _ = Describe("odo service command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--context", context2)
 			// Switching to context2 dir because --context flag is not supported with service command
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
@@ -325,7 +325,7 @@ var _ = Describe("odo service command tests", func() {
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("backend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
-			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--component", "backend", "--project", project, "--context", context2)
+			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--context", context2)
 			Expect(outputErr).To(ContainSubstring("been linked"))
 		})
 	})
@@ -344,7 +344,7 @@ var _ = Describe("odo service command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--component", "--context", context2)
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 
