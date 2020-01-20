@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -39,6 +40,36 @@ func CmdShouldRunWithTimeout(timeout time.Duration, program string, args ...stri
 	session := CmdRunner(program, args...)
 	time.Sleep(timeout)
 	session.Terminate()
+	return string(session.Out.Contents())
+}
+
+// CmdShouldRunAndTerminate waits and returns stdout after a closed signal is passed on the closed channel
+func CmdShouldRunAndTerminate(timeoutAfter time.Duration, stopChan chan int, program string, args ...string) string {
+	session := CmdRunner(program, args...)
+	timeout := time.After(timeoutAfter)
+	select {
+	case <-stopChan:
+		if session != nil {
+			if runtime.GOOS == "windows" {
+				session.Kill()
+			} else {
+				session.Terminate()
+			}
+		}
+	case <-timeout:
+		if session != nil {
+			if runtime.GOOS == "windows" {
+				session.Kill()
+			} else {
+				session.Terminate()
+			}
+		}
+	}
+
+	if session == nil {
+		return ""
+	}
+
 	return string(session.Out.Contents())
 }
 

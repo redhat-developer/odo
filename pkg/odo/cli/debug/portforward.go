@@ -2,12 +2,12 @@ package debug
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -89,8 +89,13 @@ func (o PortForwardOptions) Validate() error {
 func (o PortForwardOptions) Run() error {
 
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt)
+	signal.Notify(signals, os.Interrupt,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
 	defer signal.Stop(signals)
+	defer os.RemoveAll(debug.GetDebugInfoFilePath(o.Client, o.localConfigInfo.GetName(), o.localConfigInfo.GetApplication()))
 
 	go func() {
 		<-signals
@@ -98,6 +103,11 @@ func (o PortForwardOptions) Run() error {
 			close(o.StopChannel)
 		}
 	}()
+
+	err := debug.CreateDebugInfoFile(o.PortForwarder, o.PortPair)
+	if err != nil {
+		return err
+	}
 
 	return o.PortForwarder.ForwardPorts(o.PortPair, o.StopChannel, o.ReadyChannel)
 }
