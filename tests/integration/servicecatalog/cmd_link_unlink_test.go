@@ -69,7 +69,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2, "--port", "1234")
+			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--context", context1, "--port", "1234")
 			Expect(stdErr).To(ContainSubstring("Unable to properly link to component backend using port 1234"))
 		})
 	})
@@ -94,7 +94,8 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--context", context2)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
 
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
+
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
@@ -104,9 +105,9 @@ var _ = Describe("odo link and unlink command tests", func() {
 			oc.WaitForDCRollout(dcName, project, 20*time.Second)
 			helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 
-			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--context", context1)
 			Expect(outputErr).To(ContainSubstring("been linked"))
-			helper.CmdShouldPass("odo", "unlink", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "unlink", "backend", "--context", context1)
 		})
 	})
 
@@ -128,7 +129,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--context", context1) // context1 is the frontend
 			// Switching to context2 dir because --context flag is not supported with service command
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
@@ -141,7 +142,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			// ensure that the proper envFrom entry was created
 			envFromOutput := oc.GetEnvFromEntry("backend", "app", project)
 			Expect(envFromOutput).To(ContainSubstring("mysql-persistent"))
-			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--component", "backend", "--project", project, "--context", context2)
+			outputErr := helper.CmdShouldFail("odo", "link", "mysql-persistent", "--context", context2)
 			Expect(outputErr).To(ContainSubstring("been linked"))
 		})
 	})
@@ -164,7 +165,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context2)
 			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", context2, "--project", project)
 			helper.CmdShouldPass("odo", "push", "--context", context2)
-			helper.CmdShouldPass("odo", "link", "backend", "--component", "frontend", "--project", project, "--context", context2)
+			helper.CmdShouldPass("odo", "link", "backend", "--context", context1)
 			helper.Chdir(context2)
 			helper.CmdShouldPass("odo", "service", "create", "mysql-persistent")
 

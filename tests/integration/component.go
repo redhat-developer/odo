@@ -69,6 +69,19 @@ func componentTests(args ...string) {
 			Expect(projectList).To(ContainSubstring(project))
 		})
 
+		It("shouldn't error when creating a component with --project and --context at the same time", func() {
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", project, "--context", context, "--app", "testing")...)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context, "-v4")...)
+			oc.SwitchProject(project)
+			projectList := helper.CmdShouldPass("odo", "project", "list")
+			Expect(projectList).To(ContainSubstring(project))
+		})
+
+		It("should error when listing components (basically anything other then creating) with --project and --context ", func() {
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--git", "https://github.com/openshift/nodejs-ex", "--project", project, "--context", context, "--app", "testing")...)
+			helper.CmdShouldFail("odo", "list", "--project", project, "--context", context)
+		})
+
 		It("Without an application should create one", func() {
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex")...)
@@ -485,8 +498,8 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", componentName, "--app", appName, "--project", project, "--env", "key=value,key1=value1")...)
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+componentName, "Application,"+appName)
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
-			helper.CmdShouldPass("odo", append(args, "delete", "--context", context, "-f", "--all", "--app", appName)...)
-			componentList := helper.CmdShouldPass("odo", append(args, "list", "--context", context, "--app", appName, "--project", project)...)
+			helper.CmdShouldPass("odo", append(args, "delete", "--context", context, "-f", "--all")...)
+			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", project)...)
 			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(context)
 			Expect(files).NotTo(ContainElement(".odo"))
@@ -499,7 +512,7 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 			helper.CmdShouldPass("odo", append(args, "delete", "--context", context, "-f")...)
 			helper.CmdShouldPass("odo", append(args, "delete", "--all", "-f", "--context", context)...)
-			componentList := helper.CmdShouldPass("odo", append(args, "list", "--context", context, "--app", appName, "--project", project)...)
+			componentList := helper.CmdShouldPass("odo", append(args, "list", "--app", appName, "--project", project)...)
 			Expect(componentList).NotTo(ContainSubstring(componentName))
 			files := helper.ListFilesInDir(context)
 			Expect(files).NotTo(ContainElement(".odo"))
