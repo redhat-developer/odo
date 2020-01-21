@@ -335,6 +335,44 @@ var _ = Describe("odo push command tests", func() {
 			Expect(modifiedCatViewFile).NotTo(Equal(earlierCatViewFile))
 			Expect(modifiedCatServerFile).To(Equal(earlierCatServerFile))
 		})
+
+		It("should delete the files from the container if its removed locally", func() {
+			oc.ImportJavaIS(project)
+			helper.CopyExample(filepath.Join("source", "openjdk"), context)
+			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", project, "--context", context, "--app", appName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			var statErr error
+			oc.CheckCmdOpInRemoteCmpPod(
+				"backend",
+				appName,
+				project,
+				[]string{"stat", "/tmp/src/src/main/java/AnotherMessageProducer.java"},
+				func(cmdOp string, err error) bool {
+					statErr = err
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
+			Expect(os.Remove(filepath.Join(context, "src", "main", "java", "AnotherMessageProducer.java"))).NotTo(HaveOccurred())
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			oc.CheckCmdOpInRemoteCmpPod(
+				"backend",
+				appName,
+				project,
+				[]string{"stat", "/tmp/src/src/main/java/AnotherMessageProducer.java"},
+				func(cmdOp string, err error) bool {
+					statErr = err
+					return true
+				},
+			)
+
+			Expect(statErr).To(HaveOccurred())
+			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/tmp/src/src/main/java/AnotherMessageProducer.java': No such file or directory"))
+		})
+
 	})
 
 	Context("when .odoignore file exists", func() {
