@@ -120,7 +120,7 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			url := oc.GetFirstURL(cmpName, appName, project)
-			helper.ReplaceString(filepath.Join(context+"/nodejs-ex"+"/views/index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
+			helper.ReplaceString(filepath.Join(context, "nodejs-ex", "views", "index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
 
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
@@ -207,7 +207,7 @@ var _ = Describe("odo push command tests", func() {
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			// rename a file and push
-			helper.RenameFile(filepath.Join(context, "/nodejs-ex", "README.md"), filepath.Join(context, "/nodejs-ex", "NEW-FILE.md"))
+			helper.RenameFile(filepath.Join(context, "nodejs-ex", "README.md"), filepath.Join(context, "nodejs-ex", "NEW-FILE.md"))
 			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
@@ -225,7 +225,7 @@ var _ = Describe("odo push command tests", func() {
 			Expect(stdOut).To(ContainSubstring("NEW-FILE.md"))
 
 			// rename a folder and push
-			helper.RenameFile(filepath.Join(context, "/nodejs-ex", "/tests"), filepath.Join(context, "/nodejs-ex", "/testing"))
+			helper.RenameFile(filepath.Join(context, "nodejs-ex", "tests"), filepath.Join(context, "nodejs-ex", "testing"))
 			output = helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 
@@ -249,7 +249,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 
 			// modify a ignored file and push
-			helper.ReplaceString(filepath.Join(context+"/nodejs-ex"+"/README.md"), "This example will serve a welcome page", "This is a example welcome page!")
+			helper.ReplaceString(filepath.Join(context, "nodejs-ex", "README.md"), "This example will serve a welcome page", "This is a example welcome page!")
 			output := helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
@@ -304,7 +304,7 @@ var _ = Describe("odo push command tests", func() {
 				},
 			)
 
-			helper.ReplaceString(filepath.Join(context+"/nodejs-ex"+"/views/index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
+			helper.ReplaceString(filepath.Join(context, "nodejs-ex", "views", "index.html"), "Welcome to your Node.js application on OpenShift", "UPDATED!")
 			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
 			helper.HttpWaitFor("http://"+url, "UPDATED!", 30, 1)
 
@@ -387,7 +387,7 @@ var _ = Describe("odo push command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
 
 			// push and include the odo-file-index.json path to .gitignore file
-			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(context))
+			helper.CmdShouldPass("odo", "push", "--context", context)
 			ignoreFilePath := filepath.Join(context, ".gitignore")
 			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "odo-file-index.json"))
 		})
