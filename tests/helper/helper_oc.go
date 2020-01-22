@@ -126,7 +126,6 @@ func (oc *OcRunner) CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prj
 	podName := strings.Replace(outPodName, "'", "", -1)
 	session := CmdRunner(oc.path, append([]string{"exec", podName, "--namespace", prjName,
 		"-c", cmpDCName, "--"}, cmd...)...)
-	Eventually(session).Should(gexec.Exit(0))
 	stdOut := string(session.Wait().Out.Contents())
 	stdErr := string(session.Wait().Err.Contents())
 	if stdErr != "" {
