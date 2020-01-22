@@ -11,7 +11,7 @@ import (
 	"unicode/utf8"
 )
 
-var _ sort.Interface = (*table)(nil)
+var _ sort.Interface = (*table)(nil) // ensure that type "table" does implement sort.Interface
 
 func init() {
 	os.Setenv("RUNEWIDTH_EASTASIAN", "")
@@ -30,51 +30,57 @@ func (t *table) Swap(i, j int) {
 	(*t)[i], (*t)[j] = (*t)[j], (*t)[i]
 }
 
-var tables = []table{
-	private,
-	nonprint,
-	combining,
-	doublewidth,
-	ambiguous,
-	emoji,
-	notassigned,
-	neutral,
+type tableInfo struct {
+	tbl     table
+	name    string
+	wantN   int
+	wantSHA string
+}
+
+var tables = []tableInfo{
+	{private, "private", 137468, "a4a641206dc8c5de80bd9f03515a54a706a5a4904c7684dc6a33d65c967a51b2"},
+	{nonprint, "nonprint", 2143, "288904683eb225e7c4c0bd3ee481b53e8dace404ec31d443afdbc4d13729fe95"},
+	{combining, "combining", 461, "ef1839ee99b2707da7d5592949bd9b40d434fa6462c6da61477bae923389e263"},
+	{doublewidth, "doublewidth", 181887, "de2d7a29c94fb2fe471b5fd0c003043845ce59d1823170606b95f9fc8988067a"},
+	{ambiguous, "ambiguous", 138739, "d05e339a10f296de6547ff3d6c5aee32f627f6555477afebd4a3b7e3cf74c9e3"},
+	{emoji, "emoji", 3791, "bf02b49f5cbee8df150053574d20125164e7f16b5f62aa5971abca3b2f39a8e6"},
+	{notassigned, "notassigned", 10, "68441e98eca1450efbe857ac051fcc872eed347054dfd0bc662d1c4ee021d69f"},
+	{neutral, "neutral", 26925, "d79d8558f3cc35c633e5025c9b29c005b853589c8f71b4a72507b5c31d8a6829"},
 }
 
 func TestTableChecksums(t *testing.T) {
-	check := func(name string, tbl table, wantN int, wantSHA string) {
+	for _, ti := range tables {
 		gotN := 0
 		buf := make([]byte, utf8.MaxRune+1)
 		for r := rune(0); r <= utf8.MaxRune; r++ {
-			if inTable(r, tbl) {
+			if inTable(r, ti.tbl) {
 				gotN++
 				buf[r] = 1
 			}
 		}
 		gotSHA := fmt.Sprintf("%x", sha256.Sum256(buf))
-		if gotN != wantN || gotSHA != wantSHA {
-			t.Errorf("table = %s,\n\tn = %d want %d,\n\tsha256 = %s want %s", name, gotN, wantN, gotSHA, wantSHA)
+		if gotN != ti.wantN || gotSHA != ti.wantSHA {
+			t.Errorf("table = %s,\n\tn = %d want %d,\n\tsha256 = %s want %s", ti.name, gotN, ti.wantN, gotSHA, ti.wantSHA)
 		}
 	}
-
-	check("private", private, 137468, "a4a641206dc8c5de80bd9f03515a54a706a5a4904c7684dc6a33d65c967a51b2")
-	check("notprint", nonprint, 2143, "288904683eb225e7c4c0bd3ee481b53e8dace404ec31d443afdbc4d13729fe95")
-	check("combining", combining, 461, "ef1839ee99b2707da7d5592949bd9b40d434fa6462c6da61477bae923389e263")
-	check("doublewidth", doublewidth, 181783, "3237ce320ce2b16f26e43c1b0e93f242566ffee50a7f360b51f3b41d5ecb0e7e")
-	check("ambiguous", ambiguous, 138739, "d05e339a10f296de6547ff3d6c5aee32f627f6555477afebd4a3b7e3cf74c9e3")
-	check("emoji", emoji, 3791, "bf02b49f5cbee8df150053574d20125164e7f16b5f62aa5971abca3b2f39a8e6")
-	check("notassigned", notassigned, 10, "68441e98eca1450efbe857ac051fcc872eed347054dfd0bc662d1c4ee021d69f")
-	check("neutral", neutral, 26925, "d79d8558f3cc35c633e5025c9b29c005b853589c8f71b4a72507b5c31d8a6829")
 }
 
-func isCompact(t *testing.T, tbl table) bool {
+func checkInterval(first, last rune) bool {
+	return first >= 0 && first <= utf8.MaxRune &&
+		last >= 0 && last <= utf8.MaxRune &&
+		first <= last
+}
+
+func isCompact(t *testing.T, ti *tableInfo) bool {
+	tbl := ti.tbl
 	for i := range tbl {
-		if tbl[i].last < tbl[i].first { // sanity check
-			t.Errorf("table invalid: %v", tbl[i])
+		e := tbl[i]
+		if !checkInterval(e.first, e.last) { // sanity check
+			t.Errorf("table invalid: table = %s index = %d %v", ti.name, i, e)
 			return false
 		}
-		if i+1 < len(tbl) && tbl[i].last+1 >= tbl[i+1].first { // can be combined into one entry
-			t.Errorf("table not compact: %v %v", tbl[i-1], tbl[i])
+		if i+1 < len(tbl) && e.last+1 >= tbl[i+1].first { // can be combined into one entry
+			t.Errorf("table not compact: table = %s index = %d %v %v", ti.name, i, e, tbl[i+1])
 			return false
 		}
 	}
@@ -100,26 +106,30 @@ func printCompactTable(tbl table) {
 	sort.Sort(&tbl) // just in case
 	first := rune(-1)
 	for i := range tbl {
-		if first < 0 {
-			first = tbl[i].first
+		e := tbl[i]
+		if !checkInterval(e.first, e.last) { // sanity check
+			panic("invalid table")
 		}
-		if i+1 < len(tbl) && tbl[i].last+1 >= tbl[i+1].first { // can be combined into one entry
+		if first < 0 {
+			first = e.first
+		}
+		if i+1 < len(tbl) && e.last+1 >= tbl[i+1].first { // can be combined into one entry
 			continue
 		}
-		printEntry(first, tbl[i].last)
+		printEntry(first, e.last)
 		first = -1
 	}
 	fmt.Printf("\n\n")
 }
 
 func TestSorted(t *testing.T) {
-	for _, tbl := range tables {
-		if !sort.IsSorted(&tbl) {
-			t.Errorf("table not sorted")
+	for _, ti := range tables {
+		if !sort.IsSorted(&ti.tbl) {
+			t.Errorf("table not sorted: %s", ti.name)
 		}
-		if !isCompact(t, tbl) {
-			t.Errorf("table not compact")
-			// printCompactTable(tbl)
+		if !isCompact(t, &ti) {
+			t.Errorf("table not compact: %s", ti.name)
+			//printCompactTable(ti.tbl)
 		}
 	}
 }
@@ -135,6 +145,20 @@ var runewidthtests = []struct {
 	{'ｶ', 1, 1},
 	{'ｲ', 1, 1},
 	{'☆', 1, 2}, // double width in ambiguous
+	{'☺', 1, 1},
+	{'☻', 1, 1},
+	{'♥', 1, 2},
+	{'♦', 1, 1},
+	{'♣', 1, 2},
+	{'♠', 1, 2},
+	{'♂', 1, 2},
+	{'♀', 1, 2},
+	{'♪', 1, 2},
+	{'♫', 1, 1},
+	{'☼', 1, 1},
+	{'↕', 1, 2},
+	{'‼', 1, 1},
+	{'↔', 1, 2},
 	{'\x00', 0, 0},
 	{'\x01', 0, 0},
 	{'\u0300', 0, 0},

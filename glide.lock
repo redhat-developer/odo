@@ -1,5 +1,5 @@
-hash: 659433dc0ee1e4220509fa3496d3d4f84cc6ec7c2b8b62792aa5bdcf22d7fd01
-updated: 2019-10-31T11:21:22.247018012+05:30
+hash: 41bb834dc435518710752ddf57141d40d504ce4bd8aca9e8456533b363ba0b57
+updated: 2020-01-22T14:16:11.737892193+05:30
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -23,7 +23,7 @@ imports:
 - name: github.com/certifi/gocertifi
   version: deb3ae2ef2610fde3330947281941c562861188b
 - name: github.com/creack/pty
-  version: 3a6a957789163cacdfe0e291617a1c8e80612c11
+  version: 8ab47f72e8547a066b4ea926f4523775bc1a0ec2
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -129,7 +129,7 @@ imports:
 - name: github.com/hashicorp/errwrap
   version: 8a6fb523712970c966eefc6b39ed2c5e74880354
 - name: github.com/hashicorp/go-multierror
-  version: bdca7bb83f603b80ef756bb953fe1dafa9cd00a2
+  version: 72917a1559e17f38638ade54020ab372ba848d67
 - name: github.com/hashicorp/golang-lru
   version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
   subpackages:
@@ -184,9 +184,9 @@ imports:
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: 0e9ddb7c0c0aef74fa25eaba4141e6b5ab7aca2a
+  version: 28b35a325e89623a31764c9bcfb74f4e6c9f105c
 - name: github.com/mattn/go-runewidth
-  version: 9d4e0701ab53d89eeb2f46b282d1cd71f458f0bf
+  version: a4df4ddbff020e131056d91f580a1cdcd806e3ae
 - name: github.com/matttproud/golang_protobuf_extensions
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
@@ -367,6 +367,15 @@ imports:
   - pkg/user/generated/internalclientset
   - pkg/user/generated/internalclientset/scheme
   - pkg/user/generated/internalclientset/typed/user/internalversion
+- name: github.com/operator-framework/operator-lifecycle-manager
+  version: 16619cd27fa56af837c26a49ba9badc7b6566fd8
+  subpackages:
+  - pkg/api/apis/operators
+  - pkg/api/apis/operators/v1
+  - pkg/api/apis/operators/v1alpha1
+  - pkg/api/client/clientset/versioned/scheme
+  - pkg/api/client/clientset/versioned/typed/operators/v1alpha1
+  - pkg/lib/version
 - name: github.com/pborman/uuid
   version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
 - name: github.com/peterbourgon/diskv
@@ -601,7 +610,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: c6aca565d348e53b6bd4cceb0c9fb3a67ccf6b2e
+  version: f82dd9e18de043955b5032249835cff86c5bdf13
   repo: https://github.com/openshift/kubernetes-apiserver.git
   subpackages:
   - pkg/apis/audit
@@ -614,7 +623,7 @@ imports:
   - pkg/features
   - pkg/util/feature
 - name: k8s.io/client-go
-  version: b1dc64b0ec03df0ed50b7400fd3f4017d4b083f4
+  version: 7a88268e115d643c24d43ee0eca15bb00c1f6386
   repo: https://github.com/openshift/kubernetes-client-go.git
   subpackages:
   - discovery
@@ -731,7 +740,7 @@ imports:
   - pkg/util/proto
   - pkg/util/proto/validation
 - name: k8s.io/kubernetes
-  version: 37c7789154ed2a309a1ac0c1675757600f245e7d
+  version: 7c3ad172ec69b794d803574c7aeb81070125d6f2
   repo: https://github.com/openshift/kubernetes.git
   subpackages:
   - pkg/api/events

@@ -1,0 +1,31 @@
+installType: upstream
+rbacApiVersion: rbac.authorization.k8s.io
+namespace: olm
+catalog_namespace: olm
+operator_namespace: operators
+imagestream: false
+writeStatusName: '""'
+writePackageServerStatusName: ""
+olm:
+  replicaCount: 1
+  image:
+    ref: quay.io/operator-framework/olm@sha256:91ac5bf350192e063a3c1be994827f67e254997939eda3d471253777cc840c45
+    pullPolicy: IfNotPresent
+  service:
+    internalPort: 8080
+catalog:
+  replicaCount: 1
+  image:
+    ref: quay.io/operator-framework/olm@sha256:91ac5bf350192e063a3c1be994827f67e254997939eda3d471253777cc840c45
+    pullPolicy: IfNotPresent
+  service:
+    internalPort: 8080
+package:
+  replicaCount: 2
+  image:
+    ref: quay.io/operator-framework/olm@sha256:91ac5bf350192e063a3c1be994827f67e254997939eda3d471253777cc840c45
+    pullPolicy: Always
+  service:
+    internalPort: 5443
+catalog_sources:
+- rh-operators
