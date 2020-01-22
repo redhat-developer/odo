@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -122,6 +123,17 @@ func getClusterCatalogServices(client *occlient.Client) ([]ServiceType, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get cluster service classes")
 	}
+
+	kclient, err := kclient.New()
+	if err != nil {
+		return nil, err
+	}
+
+	csvs, err := kclient.GetClusterServiceVersions()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(csvs)
 
 	planListItems, err := client.GetAllClusterServicePlans()
 	if err != nil {

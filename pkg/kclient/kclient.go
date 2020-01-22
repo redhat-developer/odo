@@ -3,9 +3,16 @@ package kclient
 import (
 	"github.com/pkg/errors"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	// api clientsets
+	operatorsclientset "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
+
+	// api resourcetypes
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 )
 
 // errorMsg is the message for user when invalid configuration error occurs
@@ -20,6 +27,7 @@ type Client struct {
 	KubeConfig       clientcmd.ClientConfig
 	KubeClientConfig *rest.Config
 	Namespace        string
+	OperatorClient   *operatorsclientset.OperatorsV1alpha1Client
 }
 
 // New creates a new client
@@ -47,5 +55,18 @@ func New() (*Client, error) {
 		return nil, err
 	}
 
+	client.OperatorClient, err = operatorsclientset.NewForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	return &client, nil
+}
+
+func (c *Client) GetClusterServiceVersions() (olmv1alpha1.ClusterVersionList, error) {
+	csvs, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).List(v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return csvs, nil
 }
