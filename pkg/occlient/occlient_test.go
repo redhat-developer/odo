@@ -5158,6 +5158,20 @@ func TestGetPortsFromBuilderImage(t *testing.T) {
 			want:           []string{"8080/TCP", "8443/TCP"},
 			wantErr:        false,
 		},
+		{
+			name:           "component type: is empty",
+			imageNamespace: "openshift",
+			args:           args{componentType: ""},
+			want:           []string{},
+			wantErr:        true,
+		},
+		{
+			name:           "component type: is invalid",
+			imageNamespace: "openshift",
+			args:           args{componentType: "abc"},
+			want:           []string{},
+			wantErr:        true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
