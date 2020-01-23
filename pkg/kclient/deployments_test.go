@@ -14,34 +14,14 @@ import (
 
 func TestCreateDeployment(t *testing.T) {
 
-	container := &corev1.Container{
-		Name:            "container1",
-		Image:           "image1",
-		ImagePullPolicy: corev1.PullAlways,
+	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{})
 
-		Command: []string{"tail"},
-		Args:    []string{"-f", "/dev/null"},
-		Env:     []corev1.EnvVar{},
+	labels := map[string]string{
+		"app":       "app",
+		"component": "frontend",
 	}
 
-	pod := &corev1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "",
-			Namespace: "default",
-			Labels: map[string]string{
-				"app":       "app",
-				"component": "frontend",
-			},
-		},
-		Spec: corev1.PodSpec{
-			ServiceAccountName: "default",
-			Containers:         []corev1.Container{*container},
-		},
-	}
+	podSpec := GeneratePodTemplateSpec("", "defualt", "default", labels, []corev1.Container{*container})
 
 	tests := []struct {
 		name           string
@@ -81,8 +61,8 @@ func TestCreateDeployment(t *testing.T) {
 				return true, &deployment, nil
 			})
 
-			pod.ObjectMeta.Name = tt.deploymentName
-			createdDeployment, err := fkclient.CreateDeployment(pod)
+			deploymentSpec := GenerateDeploymentSpec(*podSpec)
+			createdDeployment, err := fkclient.CreateDeployment(tt.deploymentName, *deploymentSpec)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

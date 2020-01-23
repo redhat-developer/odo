@@ -3,12 +3,13 @@ package kclient
 import (
 
 	// api resource types
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GenerateContainerSpec creates a container spec that can be used when creating a pod
-func GenerateContainerSpec(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar) corev1.Container {
+// GenerateContainer creates a container spec that can be used when creating a pod
+func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar) *corev1.Container {
 	container := &corev1.Container{
 		Name:            name,
 		Image:           image,
@@ -25,16 +26,12 @@ func GenerateContainerSpec(name, image string, isPrivileged bool, command, args 
 		}
 	}
 
-	return *container
+	return container
 }
 
-// GeneratePodSpec creates a pod spec
-func GeneratePodSpec(podName, namespace, serviceAccountName string, labels map[string]string, containers []corev1.Container) *corev1.Pod {
-	pod := &corev1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
+// GeneratePodTemplateSpec creates a pod template spec that can be used to create a deployment spec
+func GeneratePodTemplateSpec(podName, namespace, serviceAccountName string, labels map[string]string, containers []corev1.Container) *corev1.PodTemplateSpec {
+	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
 			Namespace: namespace,
@@ -46,5 +43,20 @@ func GeneratePodSpec(podName, namespace, serviceAccountName string, labels map[s
 		},
 	}
 
-	return pod
+	return podTemplateSpec
+}
+
+// GenerateDeploymentSpec creates a deployment spec
+func GenerateDeploymentSpec(podTemplateSpec corev1.PodTemplateSpec) *appsv1.DeploymentSpec {
+	replicas := int32(1)
+	labels := podTemplateSpec.ObjectMeta.Labels
+	deploymentSpec := &appsv1.DeploymentSpec{
+		Replicas: &replicas,
+		Selector: &metav1.LabelSelector{
+			MatchLabels: labels,
+		},
+		Template: podTemplateSpec,
+	}
+
+	return deploymentSpec
 }
