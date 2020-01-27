@@ -48,10 +48,8 @@ func GeneratePodTemplateSpec(podName, namespace, serviceAccountName string, labe
 
 // GenerateDeploymentSpec creates a deployment spec
 func GenerateDeploymentSpec(podTemplateSpec corev1.PodTemplateSpec) *appsv1.DeploymentSpec {
-	replicas := int32(1)
 	labels := podTemplateSpec.ObjectMeta.Labels
 	deploymentSpec := &appsv1.DeploymentSpec{
-		Replicas: &replicas,
 		Selector: &metav1.LabelSelector{
 			MatchLabels: labels,
 		},
