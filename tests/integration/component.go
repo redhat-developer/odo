@@ -812,4 +812,43 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "delete", "javaee-war-test", "-f", "--context", context)...)
 		})
 	})
+
+	Context("odo component delete should clean owned resources", func() {
+		appName := "app"
+		cmpName := "nodejs"
+		var oc helper.OcRunner
+
+		JustBeforeEach(func() {
+			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
+			oc = helper.NewOcRunner("oc")
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
+		})
+
+		It("should delete the component and the owned resources", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)...)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--context", context)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-name", "--size", "1Gi", "--path", "/data", "--context", context)
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+cmpName, "Application,"+appName, "URL,0,Name,example")
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", context)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-name-1", "--size", "1Gi", "--path", "/data-1", "--context", context)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--context", context)...)
+
+			oc.CheckForExistence("routes", project)
+			oc.CheckForExistence("dc", project)
+			oc.CheckForExistence("pvc", project)
+			oc.CheckForExistence("bc", project)
+			oc.CheckForExistence("is", project)
+			oc.CheckForExistence("service", project)
+		})
+	})
 }
