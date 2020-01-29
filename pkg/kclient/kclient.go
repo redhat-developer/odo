@@ -76,30 +76,3 @@ func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolume
 
 	return pvcList.Items, nil
 }
-
-// AddPVCAndVolumeMountToPod adds PVC and volume mount to the pod spec
-// volumePVCMap is a map of volume name to the PVC created
-// containerVolumesMap is a map of the Devfile container alias to the Devfile Volumes
-// func AddPVCAndVolumeMountToPod(pod *corev1.Pod, volumePVCMap map[string]*corev1.PersistentVolumeClaim, containerVolumesMap map[string][]devfile.DockerimageVolume) error {
-// 	for vol, pvc := range volumePVCMap {
-// 		pvcName := pvc.Name
-// 		generatedVolumeName := generateVolumeNameFromPVC(pvcName)
-// 		AddPVCToPodSpec(pod, pvcName, generatedVolumeName)
-
-// 		// containerMountPathsMap is a map of the Devfile container alias to their Devfile Volume Mount Paths for a given Volume Name
-// 		containerMountPathsMap := make(map[string][]string)
-// 		for containerName, volumes := range containerVolumesMap {
-// 			for _, volume := range volumes {
-// 				if vol == *volume.Name {
-// 					containerMountPathsMap[containerName] = append(containerMountPathsMap[containerName], *volume.ContainerPath)
-// 				}
-// 			}
-// 		}
-
-// 		err := AddVolumeMountToPodContainerSpec(pod, generatedVolumeName, pvcName, containerMountPathsMap)
-// 		if err != nil {
-// 			return errors.New("Unable to add volumes mounts to the pod: " + err.Error())
-// 		}
-// 	}
-// 	return nil
-// }

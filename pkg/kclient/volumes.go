@@ -10,7 +10,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// constants for volumes
 const (
+	PersistentVolumeClaimKind       = "PersistentVolumeClaim"
+	PersistentVolumeClaimAPIVersion = "v1"
+
 	// The length of the string to be generated for names of resources
 	nameLength = 5
 )
@@ -31,10 +35,10 @@ func (c *Client) CreatePVC(objectMeta metav1.ObjectMeta, pvcSpec corev1.Persiste
 	return createdPvc, nil
 }
 
-// AddPVCToPodSpec adds the given PVC to the given pod
-func AddPVCToPodSpec(pod *corev1.Pod, pvc, volumeName string) {
+// AddPVCToPodTemplateSpec adds the given PVC to the podTemplateSpec
+func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, pvc, volumeName string) {
 
-	pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, corev1.Volume{
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
@@ -44,16 +48,16 @@ func AddPVCToPodSpec(pod *corev1.Pod, pvc, volumeName string) {
 	})
 }
 
-// AddVolumeMountToPodContainerSpec adds the Volume Mounts for the containers for a given PVC
-func AddVolumeMountToPodContainerSpec(pod *corev1.Pod, volumeName, pvc string, containerMountPathsMap map[string][]string) error {
+// AddVolumeMountToPodTemplateSpec adds the Volume Mounts to the podTemplateSpec containers for a given PVC
+func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName, pvc string, containerMountPathsMap map[string][]string) error {
 
-	// Validating pod.Spec.Containers[] is present before dereferencing
-	if len(pod.Spec.Containers) == 0 {
-		return fmt.Errorf("Pod %s doesn't have any Containers defined", pod.Name)
+	// Validating podTemplateSpec.Spec.Containers[] is present before dereferencing
+	if len(podTemplateSpec.Spec.Containers) == 0 {
+		return fmt.Errorf("podTemplateSpec %s doesn't have any Containers defined", podTemplateSpec.ObjectMeta.Name)
 	}
 
 	for containerName, mountPaths := range containerMountPathsMap {
-		for i, container := range pod.Spec.Containers {
+		for i, container := range podTemplateSpec.Spec.Containers {
 			if container.Name == containerName {
 				for _, mountPath := range mountPaths {
 					container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
@@ -63,7 +67,7 @@ func AddVolumeMountToPodContainerSpec(pod *corev1.Pod, volumeName, pvc string, c
 					},
 					)
 				}
-				pod.Spec.Containers[i] = container
+				podTemplateSpec.Spec.Containers[i] = container
 			}
 		}
 	}

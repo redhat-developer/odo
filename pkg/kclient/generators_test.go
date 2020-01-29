@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestGenerateContainer(t *testing.T) {
@@ -149,6 +151,47 @@ func TestGeneratePodSpec(t *testing.T) {
 				}
 			}
 
+		})
+	}
+}
+
+func TestGeneratePVCSpec(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		size    string
+		wantErr bool
+	}{
+		{
+			name:    "1",
+			size:    "1Gi",
+			wantErr: false,
+		},
+		{
+			name:    "2",
+			size:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			quantity, err := resource.ParseQuantity(tt.size)
+			// Checks for unexpected error cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("resource.ParseQuantity unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			pvcSpec := GeneratePVCSpec(quantity)
+			if pvcSpec.AccessModes[0] != corev1.ReadWriteMany {
+				t.Errorf("AccessMode Error: expected %s, actual %s", corev1.ReadWriteMany, pvcSpec.AccessModes[0])
+			}
+
+			pvcSpecQuantity := pvcSpec.Resources.Requests["storage"]
+			if pvcSpecQuantity.String() != quantity.String() {
+				t.Errorf("pvcSpec.Resources.Requests Error: expected %v, actual %v", pvcSpecQuantity.String(), quantity.String())
+			}
 		})
 	}
 }
