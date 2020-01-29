@@ -56,12 +56,8 @@ func TestCreatePVC(t *testing.T) {
 				t.Errorf("resource.ParseQuantity unexpected error %v", err)
 			}
 			pvcSpec := GeneratePVCSpec(quantity)
-			objectMeta := metav1.ObjectMeta{
-				Name:        tt.pvcName,
-				Namespace:   tt.namespace,
-				Labels:      tt.labels,
-				Annotations: nil,
-			}
+
+			objectMeta := CreateObjectMeta(tt.pvcName, tt.namespace, tt.labels, nil)
 
 			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.pvcName == "" {
@@ -135,7 +131,9 @@ func TestAddPVCToPodTemplateSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.podName, func(t *testing.T) {
 
-			podTemplateSpec := GeneratePodTemplateSpec(tt.podName, tt.namespace, tt.serviceAccount, tt.labels, []corev1.Container{*container})
+			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
+
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{*container})
 
 			AddPVCToPodTemplateSpec(podTemplateSpec, tt.pvc, tt.volumeName)
 
@@ -194,7 +192,9 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.podName, func(t *testing.T) {
 
-			podTemplateSpec := GeneratePodTemplateSpec(tt.podName, tt.namespace, tt.serviceAccount, tt.labels, []corev1.Container{*container})
+			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
+
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{*container})
 
 			AddVolumeMountToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc, tt.containerMountPathsMap)
 			t.Logf("podTemplateSpec is %v", podTemplateSpec)

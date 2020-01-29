@@ -32,13 +32,9 @@ func GenerateContainer(name, image string, isPrivileged bool, command, args []st
 }
 
 // GeneratePodTemplateSpec creates a pod template spec that can be used to create a deployment spec
-func GeneratePodTemplateSpec(podName, namespace, serviceAccountName string, labels map[string]string, containers []corev1.Container) *corev1.PodTemplateSpec {
+func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, serviceAccountName string, containers []corev1.Container) *corev1.PodTemplateSpec {
 	podTemplateSpec := &corev1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName,
-			Namespace: namespace,
-			Labels:    labels,
-		},
+		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
 			ServiceAccountName: serviceAccountName,
 			Containers:         containers,

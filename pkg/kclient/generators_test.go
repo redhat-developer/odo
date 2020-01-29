@@ -99,7 +99,7 @@ func TestGenerateContainer(t *testing.T) {
 	}
 }
 
-func TestGeneratePodSpec(t *testing.T) {
+func TestGeneratePodTemplateSpec(t *testing.T) {
 
 	container := &corev1.Container{
 		Name:            "container1",
@@ -131,22 +131,24 @@ func TestGeneratePodSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.podName, func(t *testing.T) {
 
-			podSpec := GeneratePodTemplateSpec(tt.podName, tt.namespace, tt.serviceAccount, tt.labels, []corev1.Container{*container})
+			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			if podSpec.Name != tt.podName {
-				t.Errorf("expected %s, actual %s", tt.podName, podSpec.Name)
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{*container})
+
+			if podTemplateSpec.Name != tt.podName {
+				t.Errorf("expected %s, actual %s", tt.podName, podTemplateSpec.Name)
 			}
 
-			if podSpec.Namespace != tt.namespace {
-				t.Errorf("expected %s, actual %s", tt.namespace, podSpec.Namespace)
+			if podTemplateSpec.Namespace != tt.namespace {
+				t.Errorf("expected %s, actual %s", tt.namespace, podTemplateSpec.Namespace)
 			}
 
-			if len(podSpec.Labels) != len(tt.labels) {
-				t.Errorf("expected %d, actual %d", len(tt.labels), len(podSpec.Labels))
+			if len(podTemplateSpec.Labels) != len(tt.labels) {
+				t.Errorf("expected %d, actual %d", len(tt.labels), len(podTemplateSpec.Labels))
 			} else {
-				for i := range podSpec.Labels {
-					if podSpec.Labels[i] != tt.labels[i] {
-						t.Errorf("expected %s, actual %s", tt.labels[i], podSpec.Labels[i])
+				for i := range podTemplateSpec.Labels {
+					if podTemplateSpec.Labels[i] != tt.labels[i] {
+						t.Errorf("expected %s, actual %s", tt.labels[i], podTemplateSpec.Labels[i])
 					}
 				}
 			}

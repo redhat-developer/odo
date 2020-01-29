@@ -19,8 +19,7 @@ const (
 	nameLength = 5
 )
 
-// CreatePVC creates a PVC resource in the cluster with the given name, size and
-// labels
+// CreatePVC creates a PVC resource in the cluster with the given name, size and labels
 func (c *Client) CreatePVC(objectMeta metav1.ObjectMeta, pvcSpec corev1.PersistentVolumeClaimSpec) (*corev1.PersistentVolumeClaim, error) {
 
 	pvc := &corev1.PersistentVolumeClaim{
@@ -48,7 +47,8 @@ func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, pvc, volum
 	})
 }
 
-// AddVolumeMountToPodTemplateSpec adds the Volume Mounts to the podTemplateSpec containers for a given PVC
+// AddVolumeMountToPodTemplateSpec adds the Volume Mounts in containerMountPathsMap to the podTemplateSpec containers for a given PVC pvc and volume volumeName
+// containerMountPathsMap is a map of a container name/alias to an array of Mount Paths
 func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName, pvc string, containerMountPathsMap map[string][]string) error {
 
 	// Validating podTemplateSpec.Spec.Containers[] is present before dereferencing
@@ -75,8 +75,7 @@ func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, vo
 	return nil
 }
 
-// generateVolumeNameFromPVC generates a random volume name based on the name
-// of the given PVC
+// generateVolumeNameFromPVC generates a random volume name based on the name of the given PVC
 func generateVolumeNameFromPVC(pvc string) string {
 	return fmt.Sprintf("%v-%v-volume", pvc, util.GenerateRandomString(nameLength))
 }
