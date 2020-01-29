@@ -271,7 +271,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		},
 	}
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
-	serviceCreateCmd.Flags().StringSliceVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
+	serviceCreateCmd.Flags().StringArrayVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 	serviceCreateCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the service is ready")
 	genericclioptions.AddContextFlag(serviceCreateCmd, &o.componentContext)
 	completion.RegisterCommandHandler(serviceCreateCmd, completion.ServiceClassCompletionHandler)
