@@ -106,9 +106,8 @@ jobs:
     #     ./scripts/test-install.sh
 
     # Running Unit test on macOS
-    - stage: test
-      go_import_path: github.com/openshift/odo
-      go: "1.11.2"
+    - <<: *base-test
+      stage: test
       name: "Unit test on OSX"
       os: osx
       script:
