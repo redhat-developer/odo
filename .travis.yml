@@ -104,10 +104,12 @@ jobs:
     #     - true
     #   script:
     #     ./scripts/test-install.sh
-    # test installation script on macOS
-    # - state: test
-    #   os: osx
-    #   install:
-    #     - true
-    #   script:
-    #     ./scripts/installer.sh
+
+    # Running Unit test on macOS
+    - stage: test
+      go_import_path: github.com/openshift/odo
+      go: "1.11.2"
+      name: "Unit test on OSX"
+      os: osx
+      script:
+        - make test
