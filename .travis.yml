@@ -13,7 +13,7 @@ jobs:
     - &base-test
       stage: test
       go_import_path: github.com/openshift/odo
-      go: "1.11.2"
+      go: "1.13.1"
       install:
         - make goget-tools
         # binary will be $(go env GOPATH)/bin/golangci-lint
