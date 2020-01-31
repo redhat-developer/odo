@@ -1,11 +1,18 @@
-## Description
+---
+name: User Story
+about: New User Story
+---
+
+
+## User Story
+As a ... I want to ... So that ...
 
 ## Acceptance Criteria 
-- 
--
-
+- [ ] It should ....
+- [ ] It should ....
 
 ## Links 
-- Feature Request: #??
+- Feature Request: 
+- Related issue: 
 
 /kind user-story
