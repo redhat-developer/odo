@@ -27,10 +27,6 @@ jobs:
       after_success:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
-<<<<<<< HEAD
-      
-=======
->>>>>>> parent of 5308619c... fixing duplicate coverage.txt to codecov.io
 
     - <<: *base-test
       stage: test
