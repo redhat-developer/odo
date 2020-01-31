@@ -2101,7 +2101,7 @@ func TestWaitForBuildToFinish(t *testing.T) {
 				return true, fkWatch, nil
 			})
 
-			err := fkclient.WaitForBuildToFinish(tt.buildName)
+			err := fkclient.WaitForBuildToFinish(tt.buildName, os.Stdout)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf(" client.WaitForBuildToFinish(string) unexpected error %v, wantErr %v", err, tt.wantErr)
 				return
