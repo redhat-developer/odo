@@ -45,6 +45,7 @@ func NewCommonPushOptions() *CommonPushOptions {
 	}
 }
 
+//InitConfigFromContext initializes localconfiginfo from the context
 func (cpo *CommonPushOptions) InitConfigFromContext() error {
 	var err error
 	cpo.LocalConfigInfo, err = config.NewLocalConfigInfo(cpo.componentContext)
@@ -54,6 +55,7 @@ func (cpo *CommonPushOptions) InitConfigFromContext() error {
 	return nil
 }
 
+//AddContextFlag adds the context flag to specified command storing value of flag in options.componentContext
 func (cpo *CommonPushOptions) AddContextFlag(cmd *cobra.Command) {
 	genericclioptions.AddContextFlag(cmd, &cpo.componentContext)
 }
@@ -67,6 +69,7 @@ func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 	}
 }
 
+//ValidateComponentCreate validates if the request to create component is valid
 func (cpo *CommonPushOptions) ValidateComponentCreate() error {
 	var err error
 	s := log.Spinner("Checking component")
