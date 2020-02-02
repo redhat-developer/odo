@@ -7,10 +7,10 @@ import (
 	"unicode"
 
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/storage"
 	urlPkg "github.com/openshift/odo/pkg/url"
 
 	"github.com/golang/glog"
@@ -72,10 +72,6 @@ func CheckOutputFlag(outputFlag string) error {
 
 // PrintComponentInfo prints Component Information like path, URL & storage
 func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string, project string) {
-	localConfig, err := config.New()
-	if err != nil {
-		LogErrorAndExit(err, "")
-	}
 
 	log.Describef("Component Name: ", currentComponentName)
 	log.Describef("Type: ", componentDesc.Spec.Type)
@@ -95,26 +91,32 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		}
 
 		// Cut off the last newline and output
-		output = output[:len(output)-1]
-		log.Describef("Environment Variables:\n", output)
+		if len(output) > 0 {
+			output = output[:len(output)-1]
+			log.Describef("Environment Variables:\n", output)
+		}
+
 	}
 
 	// Storage
 	if len(componentDesc.Spec.Storage) > 0 {
 
 		// Retrieve the storage list
-		storages, err := localConfig.StorageList()
+		storages, err := storage.List(client, currentComponentName, applicationName)
 		LogErrorAndExit(err, "")
 
 		// Gather the output
 		var output string
-		for _, store := range storages {
-			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Size, store.Path)
+		for _, store := range storages.Items {
+			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Status)
 		}
 
 		// Cut off the last newline and output
-		output = output[:len(output)-1]
-		log.Describef("Storage:\n", output)
+		if len(output) > 0 {
+			output = output[:len(output)-1]
+			log.Describef("Storage:\n", output)
+		}
+
 	}
 
 	// URL
@@ -138,8 +140,11 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 			}
 		}
 		// Cut off the last newline and output
-		output = output[:len(output)-1]
-		log.Describef("URLs:\n", output)
+		if len(output) > 0 {
+			output = output[:len(output)-1]
+			log.Describef("URLs:\n", output)
+		}
+
 	}
 
 	// Linked components
@@ -156,8 +161,10 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		}
 
 		// Cut off the last newline and output
-		output = output[:len(output)-1]
-		log.Describef("Linked Components:\n", output)
+		if len(output) > 0 {
+			output = output[:len(output)-1]
+			log.Describef("Linked Components:\n", output)
+		}
 
 	}
 
@@ -178,18 +185,25 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 				for i := range secrets.Data {
 					secretOutput += fmt.Sprintf("    · %v\n", i)
 				}
-				// Cut off the last newline
-				secretOutput = secretOutput[:len(secretOutput)-1]
-				output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService, secretOutput)
+
+				if len(secretOutput) > 0 {
+					// Cut off the last newline
+					secretOutput = secretOutput[:len(secretOutput)-1]
+					output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService, secretOutput)
+				}
+
 			} else {
 				output += fmt.Sprintf(" · %s\n", linkedService)
 			}
 
 		}
 
-		// Cut off the last newline and output
-		output = output[:len(output)-1]
-		log.Describef("Linked Services:\n", output)
+		if len(output) > 0 {
+			// Cut off the last newline and output
+			output = output[:len(output)-1]
+			log.Describef("Linked Services:\n", output)
+
+		}
 
 	}
 
