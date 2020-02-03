@@ -34,7 +34,6 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 [id="odo-supported-languages-and-images"]
 === Officially supported languages and corresponding container images
 
-This conversation was marked as resolved by pmacko1
 .Supported container images
 [options="header"]
 |====
@@ -49,7 +48,6 @@ This conversation was marked as resolved by pmacko1
 
 [id="odo-listing-available-images"]
 ==== Listing available container images
-This conversation was marked as resolved by pmacko1
 
 [NOTE]
 ====
