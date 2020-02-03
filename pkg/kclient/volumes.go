@@ -79,3 +79,15 @@ func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, vo
 func generateVolumeNameFromPVC(pvc string) string {
 	return fmt.Sprintf("%v-%v-volume", pvc, util.GenerateRandomString(nameLength))
 }
+
+// GetPVCsFromSelector returns the PVCs based on the given selector
+func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolumeClaim, error) {
+	pvcList, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get PVCs for selector: %v", selector)
+	}
+
+	return pvcList.Items, nil
+}

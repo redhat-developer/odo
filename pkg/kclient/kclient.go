@@ -3,7 +3,6 @@ package kclient
 import (
 	"github.com/pkg/errors"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -63,16 +62,4 @@ func CreateObjectMeta(name, namespace string, labels, annotations map[string]str
 	}
 
 	return objectMeta
-}
-
-// GetPVCsFromSelector returns the PVCs based on the given selector
-func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolumeClaim, error) {
-	pvcList, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get PVCs for selector: %v", selector)
-	}
-
-	return pvcList.Items, nil
 }

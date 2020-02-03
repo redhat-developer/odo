@@ -186,7 +186,7 @@ func TestGeneratePVCSpec(t *testing.T) {
 			}
 
 			pvcSpec := GeneratePVCSpec(quantity)
-			if pvcSpec.AccessModes[0] != corev1.ReadWriteMany {
+			if pvcSpec.AccessModes[0] != corev1.ReadWriteOnce {
 				t.Errorf("AccessMode Error: expected %s, actual %s", corev1.ReadWriteMany, pvcSpec.AccessModes[0])
 			}
 

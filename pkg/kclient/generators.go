@@ -67,7 +67,7 @@ func GeneratePVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSp
 			},
 		},
 		AccessModes: []corev1.PersistentVolumeAccessMode{
-			corev1.ReadWriteMany,
+			corev1.ReadWriteOnce,
 		},
 	}
 
