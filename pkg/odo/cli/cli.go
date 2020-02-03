@@ -3,8 +3,10 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/application"
 	"github.com/openshift/odo/pkg/odo/cli/catalog"
 	"github.com/openshift/odo/pkg/odo/cli/component"
@@ -16,12 +18,15 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/cli/service"
 	"github.com/openshift/odo/pkg/odo/cli/storage"
-
 	"github.com/openshift/odo/pkg/odo/cli/url"
 	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
+
+	odoConfig "github.com/openshift/odo/pkg/config"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	odoPreference "github.com/openshift/odo/pkg/preference"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
@@ -146,6 +151,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", odoutil.CapitalizeFlagDescriptions)
 	cobra.AddTemplateFunc("ModifyAdditionalFlags", odoutil.ModifyAdditionalFlags)
 
+	// Add all subcommands to base commands
 	rootCmd.AddCommand(
 		application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),
 		catalog.NewCmdCatalog(catalog.RecommendedCommandName, util.GetFullName(fullName, catalog.RecommendedCommandName)),
@@ -174,8 +180,48 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		component.NewCmdPushDevfile(component.PushDevfileRecommendedCommandName, util.GetFullName(fullName, component.PushDevfileRecommendedCommandName)),
 	)
 
+	// Expose commands in experimental mode, if experimental mode is enabled.
+	rootCmd = addExperimentalCommands(rootCmd, fullName)
+
 	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
+	return rootCmd
+}
+
+// addExperimentalCommands exposes experimental commands which are in developement or experimental mode,
+// if experimental mode has been set via odo preferences or env variable
+// by default experimental mode is disabled
+func addExperimentalCommands(rootCmd *cobra.Command, fullName string) *cobra.Command {
+
+	// Experimental mode can be set by:
+	//		- setting an env variable "ODO_EXPERIMENTAL=true" or
+	//		- setting odo preference using "odo preference set experimental true"
+
+	var (
+		experimentalPreference bool = false
+		experimentalEnv        bool = false
+	)
+
+	// Fetch odo preferences and check if experimental mode is set
+	cfg, err := odoPreference.New()
+	if err != nil {
+		log.Errorf("failed to read odo preferences config. err: '%v'\n", err)
+	} else {
+		experimentalPreference = cfg.GetExperimental()
+	}
+
+	// Check "ODO_EXPERIMENTAL" env variable
+	experimentalEnvStr, _ := os.LookupEnv(odoConfig.OdoExperimentalEnv)
+	if experimentalEnvStr == "true" {
+		experimentalEnv = true
+	}
+
+	// If experimental mode set in preference or in env then enable experimental commands
+	if experimentalPreference || experimentalEnv {
+		// Add experimental commands
+	}
+
+	// Successful
 	return rootCmd
 }
 

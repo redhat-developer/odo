@@ -20,12 +20,21 @@ import (
 )
 
 const (
-	localConfigEnvName    = "LOCALODOCONFIG"
 	configFileName        = "config.yaml"
 	localConfigKind       = "LocalConfig"
 	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
+
 	// DefaultDebugPort is the default port used for debugging on remote pod
 	DefaultDebugPort = 5858
+)
+
+// Env variables
+const (
+	// Local config
+	localConfigEnvName = "LOCALODOCONFIG"
+
+	// Setting this env to true will expose experimental features to the user
+	OdoExperimentalEnv = "ODO_EXPERIMENTAL"
 )
 
 type ComponentStorageSettings struct {

@@ -89,7 +89,9 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Short: "Set a value in odo config file",
 		Long:  fmt.Sprintf(setLongDesc, preference.FormatSupportedParameters()),
 		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName,
-			preference.UpdateNotificationSetting, preference.NamePrefixSetting, preference.TimeoutSetting, preference.PushTimeoutSetting),
+			preference.UpdateNotificationSetting, preference.NamePrefixSetting,
+			preference.TimeoutSetting, preference.PushTimeoutSetting,
+			preference.ExperimentalSetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return fmt.Errorf("please provide a parameter name and value")

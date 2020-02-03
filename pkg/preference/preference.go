@@ -44,6 +44,12 @@ const (
 
 	// PushTimeoutSetting is the name of the setting controlling PushTimeout
 	PushTimeoutSetting = "PushTimeout"
+
+	// ExperimentalSetting is the name of the setting confrolling exposure of features in development/experimental mode
+	ExperimentalSetting = "Experimental"
+
+	// ExperimentalDescription is human-readable description for the experimental setting
+	ExperimentalDescription = "Set this value to true to expose features in development/experimental mode"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -63,6 +69,7 @@ var (
 		NamePrefixSetting:         NamePrefixSettingDescription,
 		TimeoutSetting:            TimeoutSettingDescription,
 		PushTimeoutSetting:        PushTimeoutSettingDescription,
+		ExperimentalSetting:       ExperimentalDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported
@@ -89,6 +96,9 @@ type OdoSettings struct {
 
 	// PushTimeout for OpenShift pod timeout check
 	PushTimeout *int `yaml:"PushTimeout,omitempty"`
+
+	// Experimental for exposing features in development/experimental mode
+	Experimental *bool `yaml:Experimental,omitempty`
 }
 
 // Preference stores all the preferences related to odo
@@ -192,6 +202,14 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 
 		case "nameprefix":
 			c.OdoSettings.NamePrefix = &value
+
+		case "experimental":
+			val, err := strconv.ParseBool(strings.ToLower(value))
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			c.OdoSettings.Experimental = &val
+
 		}
 	} else {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo preference", parameter)
@@ -264,6 +282,16 @@ func (c *PreferenceInfo) GetNamePrefix() string {
 		return ""
 	}
 	return *c.OdoSettings.NamePrefix
+}
+
+// GetExperimental returns the value of Experimental from config
+// and if absent then returns default
+// default value: false, experimental mode is disabled by default
+func (c *PreferenceInfo) GetExperimental() bool {
+	if c.OdoSettings.Experimental == nil {
+		return false
+	}
+	return *c.OdoSettings.Experimental
 }
 
 // FormatSupportedParameters outputs supported parameters and their description
