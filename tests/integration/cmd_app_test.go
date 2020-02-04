@@ -19,6 +19,8 @@ var _ = Describe("odo app command tests", func() {
 
 	appName := "app"
 	cmpName := "nodejs"
+	mountPath := "/data"
+	size := "1Gi"
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -128,5 +130,18 @@ var _ = Describe("odo app command tests", func() {
 
 			helper.CmdShouldPass("odo", "app", "delete", appName, "--project", project, "-f")
 		})
+
+	})
+
+	Context("When running app describe with storage added in component in directory that doesn't contain .odo config directory", func() {
+		It("should successfully execute describe", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-one", "--context", context, "--path", mountPath, "--size", size)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "app", "describe", appName, "--project", project)
+
+		})
+
 	})
 })
