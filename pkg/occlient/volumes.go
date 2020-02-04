@@ -2,7 +2,6 @@ package occlient
 
 import (
 	"fmt"
-
 	"github.com/golang/glog"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/util"
@@ -180,6 +179,26 @@ func addOrRemoveVolumeAndVolumeMount(client *Client, dc *appsv1.DeploymentConfig
 		if err != nil {
 			return errors.Wrap(err, "unable to add pvc to deployment config")
 		}
+	}
+	return nil
+}
+
+// updateStorageOwnerReference updates the given storage with the given owner references
+func updateStorageOwnerReference(client *Client, pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error {
+	if len(ownerReference) <= 0 {
+		return errors.New("owner references are empty")
+	}
+	// get the latest version of the PVC to avoid conflict errors
+	latestPVC, err := client.kubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Get(pvc.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	for _, owRf := range ownerReference {
+		pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
+	}
+	_, err = client.kubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Update(latestPVC)
+	if err != nil {
+		return err
 	}
 	return nil
 }

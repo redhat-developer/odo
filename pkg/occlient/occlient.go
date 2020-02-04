@@ -875,6 +875,14 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 
 	ownerReference := generateOwnerReference(createdDC)
 
+	// update the owner references for the new storage
+	for _, storage := range params.StorageToBeMounted {
+		err := updateStorageOwnerReference(c, storage, ownerReference)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update owner reference of storage")
+		}
+	}
+
 	// Create a service
 	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
 	if err != nil {
@@ -1171,6 +1179,14 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 
 	ownerReference := generateOwnerReference(createdDC)
 
+	// update the owner references for the new storage
+	for _, storage := range params.StorageToBeMounted {
+		err := updateStorageOwnerReference(c, storage, ownerReference)
+		if err != nil {
+			return errors.Wrapf(err, "unable to update owner reference of storage")
+		}
+	}
+
 	svc, err := c.CreateService(commonObjectMeta, dc.Spec.Template.Spec.Containers[0].Ports, ownerReference)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create Service for %s", commonObjectMeta.Name)
@@ -1375,6 +1391,14 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 	_, err = c.WaitAndGetDC(name, desiredRevision, OcUpdateTimeout, waitCond)
 	if err != nil {
 		return errors.Wrapf(err, "unable to wait for DeploymentConfig %s to update", name)
+	}
+
+	// update the owner references for the new storage
+	for _, storage := range ucp.StorageToBeMounted {
+		err := updateStorageOwnerReference(c, storage, generateOwnerReference(updatedDc))
+		if err != nil {
+			return errors.Wrapf(err, "unable to update owner reference of storage")
+		}
 	}
 
 	return nil

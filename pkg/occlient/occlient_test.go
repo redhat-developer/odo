@@ -1002,12 +1002,13 @@ func TestUpdateBuildConfig(t *testing.T) {
 
 func TestNewAppS2I(t *testing.T) {
 	type args struct {
-		commonObjectMeta metav1.ObjectMeta
-		namespace        string
-		builderImage     string
-		gitURL           string
-		inputPorts       []string
-		envVars          []string
+		commonObjectMeta   metav1.ObjectMeta
+		namespace          string
+		builderImage       string
+		gitURL             string
+		inputPorts         []string
+		envVars            []string
+		storageToBeMounted map[string]*corev1.PersistentVolumeClaim
 	}
 
 	tests := []struct {
@@ -1017,7 +1018,7 @@ func TestNewAppS2I(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name: "case 1: with valid gitURL and two env vars",
+			name: "case 1: with valid gitURL and two env vars and two storage to be mounted",
 			args: args{
 				builderImage: "ruby:latest",
 				namespace:    "testing",
@@ -1036,6 +1037,10 @@ func TestNewAppS2I(t *testing.T) {
 					},
 				},
 				envVars: []string{"key=value", "key1=value1"},
+				storageToBeMounted: map[string]*corev1.PersistentVolumeClaim{
+					"pvc-1": testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
+					"pvc-2": testingutil.FakePVC("pvc-2", "1Gi", map[string]string{}),
+				},
 			},
 			wantedService: map[int32]corev1.Protocol{
 				8080: corev1.ProtocolTCP,
@@ -1162,15 +1167,34 @@ func TestNewAppS2I(t *testing.T) {
 				return true, fakeImageStreamImages(tt.args.commonObjectMeta.Name), nil
 			})
 
+			fkclientset.Kubernetes.PrependReactor("get", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				pvcName := action.(ktesting.GetAction).GetName()
+				for _, pvc := range tt.args.storageToBeMounted {
+					if pvc.Name == pvcName {
+						return true, pvc, nil
+					}
+				}
+				return true, nil, nil
+			})
+
+			fkclientset.Kubernetes.PrependReactor("update", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				pvc := action.(ktesting.UpdateAction).GetObject().(*corev1.PersistentVolumeClaim)
+				if pvc.OwnerReferences[0].Name != tt.args.commonObjectMeta.Name {
+					t.Errorf("owner reference not set for dc %s", tt.args.commonObjectMeta.Name)
+				}
+				return true, pvc, nil
+			})
+
 			err := fkclient.NewAppS2I(
 				CreateArgs{
-					Name:       tt.args.commonObjectMeta.Name,
-					SourcePath: tt.args.gitURL,
-					SourceType: config.GIT,
-					ImageName:  tt.args.builderImage,
-					EnvVars:    tt.args.envVars,
-					Ports:      tt.args.inputPorts,
-					Resources:  fakeResourceRequirements(),
+					Name:               tt.args.commonObjectMeta.Name,
+					SourcePath:         tt.args.gitURL,
+					SourceType:         config.GIT,
+					ImageName:          tt.args.builderImage,
+					EnvVars:            tt.args.envVars,
+					Ports:              tt.args.inputPorts,
+					Resources:          fakeResourceRequirements(),
+					StorageToBeMounted: tt.args.storageToBeMounted,
 				},
 				tt.args.commonObjectMeta,
 			)
@@ -1189,8 +1213,14 @@ func TestNewAppS2I(t *testing.T) {
 					t.Errorf("expected 1 AppsClientset.Actions() in NewAppS2I, got: %v", fkclientset.AppsClientset.Actions())
 				}
 
-				if len(fkclientset.Kubernetes.Actions()) != 2 {
-					t.Errorf("expected 2 Kubernetes.Actions() in NewAppS2I, got: %v", fkclientset.Kubernetes.Actions())
+				if len(tt.args.storageToBeMounted) > 0 {
+					if len(fkclientset.Kubernetes.Actions()) != len(tt.args.storageToBeMounted)*2+2 {
+						t.Errorf("expected %v storage action(s) in PatchCurrentDC got : %v", len(tt.args.storageToBeMounted)*2, len(fkclientset.Kubernetes.Actions()))
+					}
+				} else {
+					if len(fkclientset.Kubernetes.Actions()) != 2 {
+						t.Errorf("expected 2 Kubernetes.Actions() in NewAppS2I, got: %v", fkclientset.Kubernetes.Actions())
+					}
 				}
 
 				var createdIS *imagev1.ImageStream
@@ -1247,7 +1277,15 @@ func TestNewAppS2I(t *testing.T) {
 					t.Errorf("deploymentconfig name is not matching with expected value, expected: %s, got %s", tt.args.commonObjectMeta.Name, createdDC.Spec.Selector["deploymentconfig"])
 				}
 
-				createdSvc := fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
+				var createdSvc *corev1.Service
+				if len(tt.args.storageToBeMounted) > 0 {
+					// if storage are needed to be mounted, service creation depends on the storage actions in the kubernetes client
+					// since each storage needs 2 actions thus we multiply 2 to the number of storage to be mounted
+					createdSvc = fkclientset.Kubernetes.Actions()[len(tt.args.storageToBeMounted)*2].(ktesting.CreateAction).GetObject().(*corev1.Service)
+				} else {
+					// no storage action needed thus service creation is the first action in the kubernetes client
+					createdSvc = fkclientset.Kubernetes.Actions()[0].(ktesting.CreateAction).GetObject().(*corev1.Service)
+				}
 
 				for port, protocol := range tt.wantedService {
 					found := false
@@ -3478,7 +3516,7 @@ func TestPatchCurrentDC(t *testing.T) {
 			actions: 1,
 		},
 		{
-			name: "Case 6: Test patching (git to git)",
+			name: "Case 6: Test patching (git to git) with two storage to mount",
 			args: args{
 				ucp: UpdateComponentParams{
 					CommonObjectMeta: metav1.ObjectMeta{
@@ -3489,6 +3527,10 @@ func TestPatchCurrentDC(t *testing.T) {
 						[]corev1.ContainerPort{{Name: "port-1", ContainerPort: 8080}},
 					),
 					DcRollOutWaitCond: dcRollOutWait,
+					StorageToBeMounted: map[string]*corev1.PersistentVolumeClaim{
+						"pvc-1": testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
+						"pvc-2": testingutil.FakePVC("pvc-2", "1Gi", map[string]string{}),
+					},
 				},
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
@@ -3501,7 +3543,7 @@ func TestPatchCurrentDC(t *testing.T) {
 			actions: 3,
 		},
 		{
-			name: "Case 7: Test patching (git to local/binary)",
+			name: "Case 7: Test patching (git to local/binary) with two storage to mount",
 			args: args{
 				ucp: UpdateComponentParams{
 					CommonObjectMeta: metav1.ObjectMeta{
@@ -3510,6 +3552,10 @@ func TestPatchCurrentDC(t *testing.T) {
 					ExistingDC: fakeDeploymentConfig("foo", "foo", []corev1.EnvVar{{Name: "key1", Value: "value1"},
 						{Name: "key2", Value: "value2"}}, []corev1.EnvFromSource{}, t),
 					DcRollOutWaitCond: dcRollOutWait,
+					StorageToBeMounted: map[string]*corev1.PersistentVolumeClaim{
+						"pvc-1": testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
+						"pvc-2": testingutil.FakePVC("pvc-2", "1Gi", map[string]string{}),
+					},
 				},
 				dcPatch: generateGitDeploymentConfig(metav1.ObjectMeta{Name: "foo", Annotations: map[string]string{"app.kubernetes.io/component-source-type": "git"}}, "bar",
 					[]corev1.ContainerPort{{Name: "foo", HostPort: 80, ContainerPort: 80}},
@@ -3540,6 +3586,24 @@ func TestPatchCurrentDC(t *testing.T) {
 				return true, tt.args.ucp.ExistingDC, nil
 			})
 
+			fakeClientSet.Kubernetes.PrependReactor("get", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				pvcName := action.(ktesting.GetAction).GetName()
+				for _, pvc := range tt.args.ucp.StorageToBeMounted {
+					if pvc.Name == pvcName {
+						return true, pvc, nil
+					}
+				}
+				return true, nil, nil
+			})
+
+			fakeClientSet.Kubernetes.PrependReactor("update", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				pvc := action.(ktesting.UpdateAction).GetObject().(*corev1.PersistentVolumeClaim)
+				if pvc.OwnerReferences[0].Name != tt.args.ucp.ExistingDC.Name {
+					t.Errorf("owner reference not set for dc %s", tt.args.ucp.ExistingDC.Name)
+				}
+				return true, pvc, nil
+			})
+
 			// Fake the "update"
 			fakeClientSet.AppsClientset.PrependReactor("update", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
 				dc := action.(ktesting.UpdateAction).GetObject().(*appsv1.DeploymentConfig)
@@ -3568,6 +3632,12 @@ func TestPatchCurrentDC(t *testing.T) {
 			// Error checking PatchCurrentDC
 			if !tt.wantErr == (err != nil) {
 				t.Errorf(" client.PatchCurrentDC() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if len(tt.args.ucp.StorageToBeMounted) > 0 {
+				if len(fakeClientSet.Kubernetes.Actions()) != len(tt.args.ucp.StorageToBeMounted)*2 {
+					t.Errorf("expected %v storage action(s) in PatchCurrentDC got : %v", len(tt.args.ucp.StorageToBeMounted)*2, len(fakeClientSet.Kubernetes.Actions()))
+				}
 			}
 
 			if err == nil && !tt.wantErr {

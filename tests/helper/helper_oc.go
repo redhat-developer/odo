@@ -420,3 +420,11 @@ func (oc *OcRunner) WaitForDCRollout(dcName string, project string, timeout time
 	Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
 	session.Wait(timeout)
 }
+
+// CheckForExistence checks if the given resource exists on the cluster
+func (oc *OcRunner) CheckForExistence(resourceName, namespace string) {
+	session := CmdRunner(oc.path, "get", "routes", "--namespace", namespace)
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	Expect(output).To(ContainSubstring(""))
+}
