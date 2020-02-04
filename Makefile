@@ -228,7 +228,7 @@ test-e2e-java:
 test-e2e-source:
 	ginkgo $(GINKGO_FLAGS) -focus="odo source e2e tests" tests/e2escenarios/
 
-# Run image e2e tests
+# Run supported images e2e tests
 .PHONY: test-e2e-images
 test-e2e-images:
 	ginkgo $(GINKGO_FLAGS) -focus="odo supported images e2e tests" tests/e2escenarios/

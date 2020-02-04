@@ -39,25 +39,25 @@ var _ = Describe("odo supported images e2e tests", func() {
 		go func() {
 			startMsg := <-startSimulationCh
 			if startMsg {
-				err := os.MkdirAll(context+"/.abc", 0755)
+				err := os.MkdirAll(filepath.Join(context, ".abc"), 0755)
 				if err != nil {
 					panic(err)
 				}
-				err = os.MkdirAll(context+"/abcd", 0755)
+				err = os.MkdirAll(filepath.Join(context, "abcd"), 0755)
 				if err != nil {
 					panic(err)
 				}
-				_, err = os.Create(context + "/a.txt")
+				_, err = os.Create(filepath.Join(context, "a.txt"))
 				if err != nil {
 					panic(err)
 				}
 
-				helper.DeleteDir(context + "/abcd")
+				helper.DeleteDir(filepath.Join(context, "abcd"))
 
 				if srcType == "openjdk" {
-					helper.ReplaceString(filepath.Join(context+"/src/main/java/MessageProducer.java"), "Hello", "Hello odo")
+					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
 				} else {
-					helper.ReplaceString(filepath.Join(context+"/server.js"), "Hello", "Hello odo")
+					helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
 				}
 			}
 		}()
@@ -72,7 +72,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 					podName := oc.GetRunningPodNameOfComp(srcType+"-app", project)
 					envs := oc.GetEnvs(srcType+"-app", appName, project)
 					dir := envs["ODO_S2I_SRC_BIN_PATH"]
-					stdOut := oc.ExecListDir(podName, project, dir+"/src")
+					stdOut := oc.ExecListDir(podName, project, filepath.Join(dir, "src"))
 					Expect(stdOut).To(ContainSubstring(("a.txt")))
 					Expect(stdOut).To(Not(ContainSubstring("abcd")))
 				}
@@ -116,11 +116,11 @@ var _ = Describe("odo supported images e2e tests", func() {
 
 		// edit source and validate
 		if srcType == "openjdk" {
-			helper.ReplaceString(filepath.Join(context+"/src/main/java/MessageProducer.java"), "Hello", "Hello Java UPDATED")
+			helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello Java UPDATED")
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			helper.HttpWaitFor(routeURL, "Hello Java UPDATED", 90, 1)
 		} else {
-			helper.ReplaceString(filepath.Join(context+"/server.js"), "Hello", "Hello nodejs UPDATED")
+			helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello nodejs UPDATED")
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			helper.HttpWaitFor(routeURL, "Hello nodejs UPDATED", 90, 1)
 		}
@@ -136,43 +136,43 @@ var _ = Describe("odo supported images e2e tests", func() {
 
 	Context("odo supported images deployment", func() {
 		It("Should be able to verify the openjdk18-openshift image", func() {
-			oc.ImportSupportedImage("registry.access.redhat.com", "redhat-openjdk-18/openjdk18-openshift:latest", "java:8", project)
-			verifySupportedImage("redhat-openjdk-18/openjdk18-openshift:latest", "openjdk", "java:8", project, appName)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "java:8", project)
+			verifySupportedImage(filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "openjdk", "java:8", project, appName)
 		})
 
 		It("Should be able to verify the openjdk-11-rhel7 image", func() {
-			oc.ImportSupportedImage("registry.access.redhat.com", "openjdk/openjdk-11-rhel7:latest", "java:8", project)
-			verifySupportedImage("openjdk/openjdk-11-rhel7:latest", "openjdk", "java:8", project, appName)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "java:8", project)
+			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "openjdk", "java:8", project, appName)
 		})
 
 		It("Should be able to verify the nodejs-8-rhel7 image", func() {
-			oc.ImportSupportedImage("registry.access.redhat.com", "rhscl/nodejs-8-rhel7:latest", "nodejs:8", project)
-			verifySupportedImage("rhscl/nodejs-8-rhel7:latest", "nodejs", "nodejs:8", project, appName)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("rhscl", "nodejs-8-rhel7:latest"), "nodejs:8", project)
+			verifySupportedImage(filepath.Join("rhscl", "nodejs-8-rhel7:latest"), "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the nodejs-8 image", func() {
-			oc.ImportSupportedImage("registry.access.redhat.com", "rhoar-nodejs/nodejs-8:latest", "nodejs:8", project)
-			verifySupportedImage("rhoar-nodejs/nodejs-8:latest", "nodejs", "nodejs:8", project, appName)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("rhoar-nodejs", "nodejs-8:latest"), "nodejs:8", project)
+			verifySupportedImage(filepath.Join("rhoar-nodejs", "nodejs-8:latest"), "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the nodejs-10 image", func() {
-			oc.ImportSupportedImage("registry.access.redhat.com", "rhoar-nodejs/nodejs-10:latest", "nodejs:8", project)
-			verifySupportedImage("rhoar-nodejs/nodejs-10:latest", "nodejs", "nodejs:8", project, appName)
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("rhoar-nodejs", "nodejs-10:latest"), "nodejs:8", project)
+			verifySupportedImage(filepath.Join("rhoar-nodejs", "nodejs-10:latest"), "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the centos7-s2i-nodejs image", func() {
-			oc.ImportSupportedImage("docker.io", "bucharestgold/centos7-s2i-nodejs", "nodejs:8", project)
-			verifySupportedImage("bucharestgold/centos7-s2i-nodejs", "nodejs", "nodejs:8", project, appName)
+			oc.ImportImageFromRegistry("docker.io", filepath.Join("bucharestgold", "centos7-s2i-nodejs"), "nodejs:8", project)
+			verifySupportedImage(filepath.Join("bucharestgold", "centos7-s2i-nodejs"), "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the centos7-s2i-nodejs:10.x image", func() {
-			oc.ImportSupportedImage("docker.io", "bucharestgold/centos7-s2i-nodejs:10.x", "nodejs:8", project)
-			verifySupportedImage("bucharestgold/centos7-s2i-nodejs:10.x", "nodejs", "nodejs:8", project, appName)
+			oc.ImportImageFromRegistry("docker.io", filepath.Join("bucharestgold", "centos7-s2i-nodejs:10.x"), "nodejs:8", project)
+			verifySupportedImage(filepath.Join("bucharestgold", "centos7-s2i-nodejs:10.x"), "nodejs", "nodejs:8", project, appName)
 		})
 
 		It("Should be able to verify the nodejs-8-centos7 image", func() {
-			oc.ImportSupportedImage("docker.io", "centos/nodejs-8-centos7:latest", "nodejs:8", project)
-			verifySupportedImage("centos/nodejs-8-centos7:latest", "nodejs", "nodejs:8", project, appName)
+			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-8-centos7:latest"), "nodejs:8", project)
+			verifySupportedImage(filepath.Join("centos", "nodejs-8-centos7:latest"), "nodejs", "nodejs:8", project, appName)
 		})
 	})
 })

@@ -85,6 +85,8 @@ func Unindented(jsonStr string) (string, error) {
 }
 
 // WatchNonRetCmdStdOut run odo watch and get the cmdSTDOUT output into buffer.
+// startIndicatorFunc sets true and startSimulationCh starts, when buffer contain "Waiting for something to change"
+// check function checks for the changes into the buffer
 func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(output string) bool, startSimulationCh chan bool, startIndicatorFunc func(output string) bool) (bool, error) {
 	var cmd *exec.Cmd
 	var buf bytes.Buffer
