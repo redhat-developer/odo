@@ -28,6 +28,7 @@ jobs:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
 
+    # YAML alias, for settings shared across the tests on macOS
     - &osx-test
       stage: Test
       name: "Unit test on OSX"
@@ -42,33 +43,7 @@ jobs:
         - make bin
         - make validate
         - make test
-
-    - &windows-test
-      stage: Test
-      name: "Unit test on windows"
-      os: 
-        - windows
-      init:
-      - git config --system core.longpaths true
-      go_import_path: github.com/openshift/odo
-      go: "1.13.1"
-      install:
-        # - appveyor DownloadFile https://storage.googleapis.com/golang/go%GOVERSION%.windows-amd64.msi
-        # - msiexec /i go%GOVERSION%.windows-amd64.msi /q
-        # - go version
-        # - go env
-        - systeminfo.exe | grep '^OS'
-        # - echo `cmd /c ver`
-        # - copy C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin\mingw32-make.exe C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin\make.exe
-        # - set PATH=%PATH%;C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin;%GOPATH%\bin
-        - make goget-tools
-      script:
-        - export PATH="$PATH:$GOPATH/bin"
-        - make bin
-        - make validate
-        - make test
-      # after_test:
-      #     - ps : echo $PATH
+      after_success: skip
 
     - <<: *base-test
       stage: test
@@ -137,12 +112,3 @@ jobs:
         - travis_wait make test-e2e-java
         - travis_wait make test-e2e-source
         - odo logout
-
-    # test installation script on linux
-    # - stage: test
-    #   services:
-    #     - docker
-    #   install:
-    #     - true
-    #   script:
-    #     ./scripts/test-install.sh
