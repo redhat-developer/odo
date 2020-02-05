@@ -177,7 +177,6 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		config.NewCmdConfiguration(config.RecommendedCommandName, util.GetFullName(fullName, config.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
-		component.NewCmdPushDevfile(component.PushDevfileRecommendedCommandName, util.GetFullName(fullName, component.PushDevfileRecommendedCommandName)),
 	)
 
 	// Expose commands in experimental mode, if experimental mode is enabled.
@@ -219,6 +218,9 @@ func addExperimentalCommands(rootCmd *cobra.Command, fullName string) *cobra.Com
 	// If experimental mode set in preference or in env then enable experimental commands
 	if experimentalPreference || experimentalEnv {
 		// Add experimental commands
+		rootCmd.AddCommand(
+			component.NewCmdPushDevfile(component.PushDevfileRecommendedCommandName, util.GetFullName(fullName, component.PushDevfileRecommendedCommandName)),
+		)
 	}
 
 	// Successful

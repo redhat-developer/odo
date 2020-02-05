@@ -98,7 +98,7 @@ type OdoSettings struct {
 	PushTimeout *int `yaml:"PushTimeout,omitempty"`
 
 	// Experimental for exposing features in development/experimental mode
-	Experimental *bool `yaml:Experimental,omitempty`
+	Experimental *bool `yaml:"Experimental,omitempty"`
 }
 
 // Preference stores all the preferences related to odo
