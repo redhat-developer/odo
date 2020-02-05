@@ -84,6 +84,7 @@ var _ = Describe("odo url command tests", func() {
 		It("should be able to list url in machine readable json format", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
 			helper.CmdShouldPass("odo", "url", "create", "myurl")
+
 			helper.CmdShouldPass("odo", "push")
 
 			// odo url list -o json
