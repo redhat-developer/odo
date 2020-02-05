@@ -111,4 +111,6 @@ jobs:
         - travis_wait make test-e2e-beta
         - travis_wait make test-e2e-java
         - travis_wait make test-e2e-source
+        - travis_wait make test-e2e-images
         - odo logout
+
