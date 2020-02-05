@@ -198,7 +198,7 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 
 			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{*container})
 
-			AddVolumeMountToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc, tt.containerMountPathsMap)
+			_ = AddVolumeMountToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc, tt.containerMountPathsMap)
 			t.Logf("podTemplateSpec is %v", podTemplateSpec)
 			mountPathCount := 0
 			for _, podTempSpecContainer := range podTemplateSpec.Spec.Containers {

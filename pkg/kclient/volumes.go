@@ -3,7 +3,6 @@ package kclient
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
@@ -14,9 +13,6 @@ import (
 const (
 	PersistentVolumeClaimKind       = "PersistentVolumeClaim"
 	PersistentVolumeClaimAPIVersion = "v1"
-
-	// The length of the string to be generated for names of resources
-	nameLength = 5
 )
 
 // CreatePVC creates a PVC resource in the cluster with the given name, size and labels
@@ -73,11 +69,6 @@ func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, vo
 	}
 
 	return nil
-}
-
-// generateVolumeNameFromPVC generates a random volume name based on the name of the given PVC
-func generateVolumeNameFromPVC(pvc string) string {
-	return fmt.Sprintf("%v-%v-volume", pvc, util.GenerateRandomString(nameLength))
 }
 
 // GetPVCsFromSelector returns the PVCs based on the given selector
