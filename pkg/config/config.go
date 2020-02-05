@@ -86,6 +86,8 @@ type ConfigURL struct {
 	Name string `yaml:"Name,omitempty"`
 	// Port number for the url of the component, required in case of components which expose more than one service port
 	Port int `yaml:"Port,omitempty"`
+	// Indicates if the URL should be a secure https one
+	Secure bool `yaml:"Secure,omitempty"`
 }
 
 // LocalConfig holds all the config relavent to a specific Component.

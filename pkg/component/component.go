@@ -605,7 +605,7 @@ func ApplyConfigCreateURL(client *occlient.Client, componentConfig config.LocalC
 		if exist {
 			log.Successf("URL %s already exists", urlo.Name)
 		} else {
-			host, err := urlpkg.Create(client, urlo.Name, urlo.Port, componentConfig.GetName(), componentConfig.GetApplication())
+			host, err := urlpkg.Create(client, urlo.Name, urlo.Port, urlo.Secure, componentConfig.GetName(), componentConfig.GetApplication())
 			if err != nil {
 				return errors.Wrapf(err, "unable to create url")
 			}

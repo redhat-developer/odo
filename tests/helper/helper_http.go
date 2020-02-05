@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -21,8 +22,12 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 		fmt.Fprintf(GinkgoWriter, "try %d of %d\n", i, maxRetry)
 
 		// #nosec
-		// gosec:G107 -> This is safe since it's just used for testing.
-		resp, err := http.Get(url)
+		// gosec:G107, G402 -> This is safe since it's just used for testing.
+		transporter := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: transporter}
+		resp, err := client.Get(url)
 		if err != nil {
 			// we log the error and sleep again because this could mean the component is not up yet
 			fmt.Fprintln(GinkgoWriter, "error while requesting:", err.Error())

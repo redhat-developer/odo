@@ -2416,7 +2416,8 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 // CreateRoute creates a route object for the given service and with the given labels
 // serviceName is the name of the service for the target reference
 // portNumber is the target port of the route
-func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string) (*routev1.Route, error) {
+// secureURL indicates if the route is a secure one or not
+func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool) (*routev1.Route, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
@@ -2431,6 +2432,13 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 				TargetPort: portNumber,
 			},
 		},
+	}
+
+	if secureURL {
+		route.Spec.TLS = &routev1.TLSConfig{
+			Termination:                   routev1.TLSTerminationEdge,
+			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+		}
 	}
 
 	// since the serviceName is same as the DC name, we use that to get the DC

@@ -26,6 +26,7 @@ func TestCreate(t *testing.T) {
 		applicationName string
 		urlName         string
 		portNumber      int
+		secure          bool
 	}
 	tests := []struct {
 		name          string
@@ -100,6 +101,44 @@ func TestCreate(t *testing.T) {
 			want:    "http://host",
 			wantErr: false,
 		},
+		{
+			name: "Case 3: a secure URL",
+			args: args{
+				componentName:   "nodejs",
+				applicationName: "app",
+				urlName:         "example-url",
+				portNumber:      9100,
+				secure:          true,
+			},
+			returnedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "example-url-app",
+					Labels: map[string]string{
+						"app.kubernetes.io/part-of":  "app",
+						"app.kubernetes.io/instance": "nodejs",
+						applabels.App:                "app",
+						applabels.OdoManagedBy:       "odo",
+						applabels.OdoVersion:         version.VERSION,
+						"odo.openshift.io/url-name":  "example-url",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:                   routev1.TLSTerminationEdge,
+						InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+					},
+					To: routev1.RouteTargetReference{
+						Kind: "Service",
+						Name: "nodejs-app",
+					},
+					Port: &routev1.RoutePort{
+						TargetPort: intstr.FromInt(9100),
+					},
+				},
+			},
+			want:    "https://host",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -122,7 +161,7 @@ func TestCreate(t *testing.T) {
 				return true, dc, nil
 			})
 
-			got, err := Create(client, tt.args.urlName, tt.args.portNumber, tt.args.componentName, tt.args.applicationName)
+			got, err := Create(client, tt.args.urlName, tt.args.portNumber, tt.args.secure, tt.args.componentName, tt.args.applicationName)
 
 			if err == nil && !tt.wantErr {
 				if len(fakeClientSet.RouteClientset.Actions()) != 1 {
