@@ -401,8 +401,10 @@ Available Parameters:
 %s - %s
 %s - %s
 %s - %s
+%s - %s
 `
 	expected = fmt.Sprintf(expected,
+		ExperimentalSetting, ExperimentalDescription,
 		NamePrefixSetting, NamePrefixSettingDescription,
 		PushTimeoutSetting, PushTimeoutSettingDescription,
 		TimeoutSetting, TimeoutSettingDescription,
@@ -414,7 +416,7 @@ Available Parameters:
 }
 
 func TestLowerCaseParameters(t *testing.T) {
-	expected := map[string]bool{"nameprefix": true, "pushtimeout": true, "timeout": true, "updatenotification": true}
+	expected := map[string]bool{"nameprefix": true, "pushtimeout": true, "timeout": true, "updatenotification": true, "experimental": true}
 	actual := util.GetLowerCaseParameters(GetSupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
