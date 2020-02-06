@@ -45,6 +45,9 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 	}
 	o.urlName = args[0]
 	err = o.InitConfigFromContext()
+	if err != nil {
+		return err
+	}
 	if o.now {
 		prjName := o.LocalConfigInfo.GetProject()
 		o.ResolveSrcAndConfigFlags()
