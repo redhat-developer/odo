@@ -236,7 +236,7 @@ func (s *simpleProvider) ValidatePodSecurityContext(pod *api.Pod, fldPath *field
 	allErrs = append(allErrs, s.sysctlsStrategy.Validate(pod)...)
 
 	if len(pod.Spec.Volumes) > 0 && !sccutil.SCCAllowsAllVolumes(s.scc) {
-		allowedVolumes := sccutil.FSTypeToStringSet(s.scc.Volumes)
+		allowedVolumes := sccutil.FSTypeToStringSetInternal(s.scc.Volumes)
 		for i, v := range pod.Spec.Volumes {
 			fsType, err := sccutil.GetVolumeFSType(v)
 			if err != nil {
@@ -252,7 +252,7 @@ func (s *simpleProvider) ValidatePodSecurityContext(pod *api.Pod, fldPath *field
 		}
 	}
 
-	if len(pod.Spec.Volumes) > 0 && len(s.scc.AllowedFlexVolumes) > 0 && sccutil.SCCAllowsFSType(s.scc, securityapi.FSTypeFlexVolume) {
+	if len(pod.Spec.Volumes) > 0 && len(s.scc.AllowedFlexVolumes) > 0 && sccutil.SCCAllowsFSTypeInternal(s.scc, securityapi.FSTypeFlexVolume) {
 		for i, v := range pod.Spec.Volumes {
 			if v.FlexVolume == nil {
 				continue
@@ -358,6 +358,14 @@ func (s *simpleProvider) hasHostPort(container *api.Container, fldPath *field.Pa
 // Get the name of the SCC that this provider was initialized with.
 func (s *simpleProvider) GetSCCName() string {
 	return s.scc.Name
+}
+
+func (s *simpleProvider) GetSCCUsers() []string {
+	return s.scc.Users
+}
+
+func (s *simpleProvider) GetSCCGroups() []string {
+	return s.scc.Groups
 }
 
 // createUserStrategy creates a new user strategy.

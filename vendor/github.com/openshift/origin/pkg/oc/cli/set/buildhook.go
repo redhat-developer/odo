@@ -3,18 +3,19 @@ package set
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	buildv1 "github.com/openshift/api/build/v1"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
@@ -45,10 +46,7 @@ var (
 	  %[1]s build-hook bc/mybuild --post-commit --command -- /bin/bash -c /var/lib/test-image.sh
 
 	  # Set the post-commit hook to execute a shell script
-	  %[1]s build-hook bc/mybuild --post-commit --script="/var/lib/test-image.sh param1 param2 && /var/lib/done.sh"
-
-	  # Set the post-commit hook as a set of arguments to the default image entrypoint
-	  %[1]s build-hook bc/mybuild --post-commit  -- arg1 arg2`)
+	  %[1]s build-hook bc/mybuild --post-commit --script="/var/lib/test-image.sh param1 param2 && /var/lib/done.sh"`)
 )
 
 type BuildHookOptions struct {
@@ -119,7 +117,7 @@ func (o *BuildHookOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args
 		o.Resources = args[:i]
 		o.Command = args[i:]
 	}
-	if len(o.Filenames) == 0 && len(args) < 1 {
+	if len(o.Filenames) == 0 && len(o.Resources) == 0 && !o.All {
 		return kcmdutil.UsageErrorf(cmd, "one or more build configs must be specified as <name> or <resource>/<name>")
 	}
 
@@ -162,7 +160,7 @@ func (o *BuildHookOptions) Validate() error {
 	}
 
 	if o.Remove {
-		if len(o.Command) > 0 {
+		if len(o.Script) > 0 || o.Entrypoint {
 			return fmt.Errorf("--remove may not be used with any other option")
 		}
 		return nil
@@ -172,11 +170,7 @@ func (o *BuildHookOptions) Validate() error {
 		return fmt.Errorf("--script and --command cannot be specified together")
 	}
 
-	if len(o.Script) > 0 && len(o.Command) > 0 {
-		return fmt.Errorf("a command cannot be specified when using the --script argument")
-	}
-
-	if len(o.Command) == 0 && len(o.Script) == 0 {
+	if !o.Entrypoint && len(o.Script) == 0 {
 		return fmt.Errorf("you must specify either a script or command for the build hook")
 	}
 	return nil
@@ -234,7 +228,7 @@ func (o *BuildHookOptions) Run() error {
 		}
 
 		if string(patch.Patch) == "{}" || len(patch.Patch) == 0 {
-			glog.V(1).Infof("info: %s was not changed\n", name)
+			klog.V(1).Infof("info: %s was not changed\n", name)
 			continue
 		}
 
@@ -245,7 +239,7 @@ func (o *BuildHookOptions) Run() error {
 			continue
 		}
 
-		actual, err := o.Client.Resource(info.Mapping.Resource).Namespace(info.Namespace).Patch(info.Name, types.StrategicMergePatchType, patch.Patch)
+		actual, err := o.Client.Resource(info.Mapping.Resource).Namespace(info.Namespace).Patch(info.Name, types.StrategicMergePatchType, patch.Patch, metav1.UpdateOptions{})
 		if err != nil {
 			allErrs = append(allErrs, fmt.Errorf("failed to patch build hook: %v\n", err))
 			continue
@@ -268,7 +262,7 @@ func (o *BuildHookOptions) updateBuildConfig(bc *buildv1.BuildConfig) {
 
 	switch {
 	case len(o.Script) > 0:
-		bc.Spec.PostCommit.Args = nil
+		bc.Spec.PostCommit.Args = o.Command[0:]
 		bc.Spec.PostCommit.Command = nil
 		bc.Spec.PostCommit.Script = o.Script
 	case o.Entrypoint:

@@ -20,33 +20,44 @@ import (
 	"fmt"
 
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/command"
+	servicecatalog "github.com/kubernetes-incubator/service-catalog/pkg/svcat/service-catalog"
 	"github.com/spf13/cobra"
 )
 
 // DeregisterCmd contains the info needed to delete a broker
 type DeregisterCmd struct {
+	*command.Namespaced
+	*command.Scoped
+	*command.Waitable
+
 	BrokerName string
-	Context    *command.Context
 }
 
 // NewDeregisterCmd builds a "svcat deregister" command
 func NewDeregisterCmd(cxt *command.Context) *cobra.Command {
 	deregisterCmd := &DeregisterCmd{
-		Context: cxt,
+		Namespaced: command.NewNamespaced(cxt),
+		Scoped:     command.NewScoped(),
+		Waitable:   command.NewWaitable(),
 	}
 	cmd := &cobra.Command{
 		Use:   "deregister NAME",
 		Short: "Deregisters an existing broker with service catalog",
 		Example: command.NormalizeExamples(`
 		svcat deregister mysqlbroker
+		svcat deregister mysqlbroker --namespace=mysqlnamespace
+		svcat deregister mysqlclusterbroker --cluster
 		`),
 		PreRunE: command.PreRunE(deregisterCmd),
 		RunE:    command.RunE(deregisterCmd),
 	}
+	deregisterCmd.AddNamespaceFlags(cmd.Flags(), false)
+	deregisterCmd.AddScopedFlags(cmd.Flags(), false)
+	deregisterCmd.AddWaitFlags(cmd)
 	return cmd
 }
 
-// Validate checks that the required arguements have been provided
+// Validate checks that the required arguments have been provided
 func (c *DeregisterCmd) Validate(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("a broker name is required")
@@ -63,7 +74,11 @@ func (c *DeregisterCmd) Run() error {
 
 // Deregister calls out to the pkg lib to delete the broker and display the output
 func (c *DeregisterCmd) Deregister() error {
-	err := c.Context.App.Deregister(c.BrokerName)
+	scopeOptions := &servicecatalog.ScopeOptions{
+		Namespace: c.Namespace,
+		Scope:     c.Scope,
+	}
+	err := c.Context.App.Deregister(c.BrokerName, scopeOptions)
 	if err != nil {
 		return err
 	}

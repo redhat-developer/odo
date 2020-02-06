@@ -3,24 +3,25 @@ package admission
 import (
 	"k8s.io/apiserver/pkg/admission"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/kubernetes/pkg/quota"
+	quota "k8s.io/kubernetes/pkg/quota/v1"
 
+	quotainformer "github.com/openshift/client-go/quota/informers/externalversions/quota/v1"
+	securityv1informer "github.com/openshift/client-go/security/informers/externalversions/security/v1"
 	userinformer "github.com/openshift/client-go/user/informers/externalversions"
 	"github.com/openshift/origin/pkg/image/apiserver/registryhostname"
 	"github.com/openshift/origin/pkg/project/cache"
 	"github.com/openshift/origin/pkg/quota/controller/clusterquotamapping"
-	quotainformer "github.com/openshift/origin/pkg/quota/generated/informers/internalversion/quota/internalversion"
-	securityinformer "github.com/openshift/origin/pkg/security/generated/informers/internalversion"
 )
 
 type PluginInitializer struct {
 	ProjectCache                 *cache.ProjectCache
+	DefaultNodeSelector          string
 	OriginQuotaRegistry          quota.Registry
 	RESTClientConfig             restclient.Config
 	ClusterResourceQuotaInformer quotainformer.ClusterResourceQuotaInformer
 	ClusterQuotaMapper           clusterquotamapping.ClusterQuotaMapper
 	RegistryHostnameRetriever    registryhostname.RegistryHostnameRetriever
-	SecurityInformers            securityinformer.SharedInformerFactory
+	SecurityInformers            securityv1informer.SecurityContextConstraintsInformer
 	UserInformers                userinformer.SharedInformerFactory
 }
 
@@ -29,6 +30,9 @@ type PluginInitializer struct {
 func (i *PluginInitializer) Initialize(plugin admission.Interface) {
 	if wantsProjectCache, ok := plugin.(WantsProjectCache); ok {
 		wantsProjectCache.SetProjectCache(i.ProjectCache)
+	}
+	if castObj, ok := plugin.(WantsDefaultNodeSelector); ok {
+		castObj.SetDefaultNodeSelector(i.DefaultNodeSelector)
 	}
 	if wantsOriginQuotaRegistry, ok := plugin.(WantsOriginQuotaRegistry); ok {
 		wantsOriginQuotaRegistry.SetOriginQuotaRegistry(i.OriginQuotaRegistry)

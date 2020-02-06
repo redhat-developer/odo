@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/library-go/pkg/crypto"
 )
@@ -117,7 +117,7 @@ func (o CreateServerCertOptions) Validate(args []string) error {
 }
 
 func (o CreateServerCertOptions) CreateServerCert() (*crypto.TLSCertificateConfig, error) {
-	glog.V(4).Infof("Creating a server cert with: %#v", o)
+	klog.V(4).Infof("Creating a server cert with: %#v", o)
 
 	signerCert, err := o.SignerCertOptions.CA()
 	if err != nil {
@@ -132,9 +132,9 @@ func (o CreateServerCertOptions) CreateServerCert() (*crypto.TLSCertificateConfi
 		ca, written, err = signerCert.EnsureServerCert(o.CertFile, o.KeyFile, sets.NewString([]string(o.Hostnames)...), o.ExpireDays)
 	}
 	if written {
-		glog.V(3).Infof("Generated new server certificate as %s, key as %s\n", o.CertFile, o.KeyFile)
+		klog.V(3).Infof("Generated new server certificate as %s, key as %s\n", o.CertFile, o.KeyFile)
 	} else {
-		glog.V(3).Infof("Keeping existing server certificate at %s, key at %s\n", o.CertFile, o.KeyFile)
+		klog.V(3).Infof("Keeping existing server certificate at %s, key at %s\n", o.CertFile, o.KeyFile)
 	}
 	return ca, err
 }

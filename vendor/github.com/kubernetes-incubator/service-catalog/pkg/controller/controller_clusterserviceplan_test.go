@@ -24,10 +24,11 @@ import (
 	"github.com/kubernetes-incubator/service-catalog/test/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"reflect"
+
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	clientgotesting "k8s.io/client-go/testing"
-	"reflect"
 )
 
 func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
@@ -44,7 +45,7 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 		catalogClientPrepFunc   func(*fake.Clientset)
 		shouldError             bool
 		errText                 *string
-		catalogActionsCheckFunc func(t *testing.T, name string, actions []clientgotesting.Action)
+		catalogActionsCheckFunc func(t *testing.T, actions []clientgotesting.Action)
 	}{
 		{
 			name:        "not removed from catalog",
@@ -56,13 +57,13 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 			plan:        getRemovedPlan(),
 			instances:   []v1beta1.ServiceInstance{*getTestServiceInstance()},
 			shouldError: false,
-			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
+			catalogActionsCheckFunc: func(t *testing.T, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "CSPGUID"),
+					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "cspguid"),
 				}
 
-				expectNumberOfActions(t, name, actions, 1)
+				assertNumberOfActions(t, actions, 1)
 				assertList(t, actions[0], &v1beta1.ServiceInstance{}, listRestrictions)
 			},
 		},
@@ -71,13 +72,13 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 			plan:        getRemovedPlan(),
 			instances:   nil,
 			shouldError: false,
-			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
+			catalogActionsCheckFunc: func(t *testing.T, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "CSPGUID"),
+					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "cspguid"),
 				}
 
-				expectNumberOfActions(t, name, actions, 2)
+				assertNumberOfActions(t, actions, 2)
 				assertList(t, actions[0], &v1beta1.ServiceInstance{}, listRestrictions)
 				assertDelete(t, actions[1], getRemovedPlan())
 			},
@@ -93,13 +94,13 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 				})
 			},
 			errText: strPtr("oops"),
-			catalogActionsCheckFunc: func(t *testing.T, name string, actions []clientgotesting.Action) {
+			catalogActionsCheckFunc: func(t *testing.T, actions []clientgotesting.Action) {
 				listRestrictions := clientgotesting.ListRestrictions{
 					Labels: labels.Everything(),
-					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "CSPGUID"),
+					Fields: fields.OneTermEqualSelector("spec.clusterServicePlanRef.name", "cspguid"),
 				}
 
-				expectNumberOfActions(t, name, actions, 2)
+				assertNumberOfActions(t, actions, 2)
 				assertList(t, actions[0], &v1beta1.ServiceInstance{}, listRestrictions)
 				assertDelete(t, actions[1], getRemovedPlan())
 			},
@@ -107,34 +108,35 @@ func TestReconcileClusterServicePlanRemovedFromCatalog(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, fakeCatalogClient, _, testController, _ := newTestController(t, noFakeActions())
+		t.Run(tc.name, func(t *testing.T) {
 
-		fakeCatalogClient.AddReactor("list", "serviceinstances", func(action clientgotesting.Action) (bool, runtime.Object, error) {
-			return true, &v1beta1.ServiceInstanceList{Items: tc.instances}, nil
-		})
+			_, fakeCatalogClient, _, testController, _ := newTestController(t, noFakeActions())
 
-		if tc.catalogClientPrepFunc != nil {
-			tc.catalogClientPrepFunc(fakeCatalogClient)
-		}
+			fakeCatalogClient.AddReactor("list", "serviceinstances", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+				return true, &v1beta1.ServiceInstanceList{Items: tc.instances}, nil
+			})
 
-		err := reconcileClusterServicePlan(t, testController, tc.plan)
-		if err != nil {
-			if !tc.shouldError {
-				t.Errorf("%v: unexpected error from method under test: %v", tc.name, err)
-				continue
-			} else if tc.errText != nil && *tc.errText != err.Error() {
-				t.Errorf("%v: unexpected error text from method under test; expected %v, got %v", tc.name, tc.errText, err.Error())
-				continue
+			if tc.catalogClientPrepFunc != nil {
+				tc.catalogClientPrepFunc(fakeCatalogClient)
 			}
-		}
 
-		actions := fakeCatalogClient.Actions()
+			err := reconcileClusterServicePlan(t, testController, tc.plan)
+			if err != nil {
+				if !tc.shouldError {
+					t.Fatalf("unexpected error from method under test: %v", err)
+				} else if tc.errText != nil && *tc.errText != err.Error() {
+					t.Fatalf("unexpected error text from method under test; expected %v, got %v", tc.errText, err.Error())
+				}
+			}
 
-		if tc.catalogActionsCheckFunc != nil {
-			tc.catalogActionsCheckFunc(t, tc.name, actions)
-		} else {
-			expectNumberOfActions(t, tc.name, actions, 0)
-		}
+			actions := fakeCatalogClient.Actions()
+
+			if tc.catalogActionsCheckFunc != nil {
+				tc.catalogActionsCheckFunc(t, actions)
+			} else {
+				assertNumberOfActions(t, actions, 0)
+			}
+		})
 	}
 }
 

@@ -10,8 +10,8 @@ import (
 	"github.com/openshift/origin/pkg/quota/image"
 	"k8s.io/kubernetes/pkg/controller"
 	kresourcequota "k8s.io/kubernetes/pkg/controller/resourcequota"
-	"k8s.io/kubernetes/pkg/quota/generic"
-	quotainstall "k8s.io/kubernetes/pkg/quota/install"
+	"k8s.io/kubernetes/pkg/quota/v1/generic"
+	quotainstall "k8s.io/kubernetes/pkg/quota/v1/install"
 )
 
 func RunResourceQuotaManager(ctx *ControllerContext) (bool, error) {
@@ -25,11 +25,11 @@ func RunResourceQuotaManager(ctx *ControllerContext) (bool, error) {
 	imageEvaluators := image.NewReplenishmentEvaluators(
 		listerFuncForResource,
 		ctx.ImageInformers.Image().V1().ImageStreams(),
-		ctx.ClientBuilder.OpenshiftImageClientOrDie(saName).Image())
+		ctx.ClientBuilder.OpenshiftImageClientOrDie(saName).ImageV1())
 	resourceQuotaRegistry := generic.NewRegistry(imageEvaluators)
 
 	resourceQuotaControllerOptions := &kresourcequota.ResourceQuotaControllerOptions{
-		QuotaClient:               ctx.ClientBuilder.ClientOrDie(saName).Core(),
+		QuotaClient:               ctx.ClientBuilder.ClientOrDie(saName).CoreV1(),
 		ResourceQuotaInformer:     ctx.KubernetesInformers.Core().V1().ResourceQuotas(),
 		ResyncPeriod:              controller.StaticResyncPeriodFunc(resourceQuotaSyncPeriod),
 		Registry:                  resourceQuotaRegistry,
@@ -55,7 +55,7 @@ func RunClusterQuotaReconciliationController(ctx *ControllerContext) (bool, erro
 
 	clusterQuotaMappingController := clusterquotamapping.NewClusterQuotaMappingController(
 		ctx.KubernetesInformers.Core().V1().Namespaces(),
-		ctx.InternalQuotaInformers.Quota().InternalVersion().ClusterResourceQuotas())
+		ctx.QuotaInformers.Quota().V1().ClusterResourceQuotas())
 	resourceQuotaControllerClient := ctx.ClientBuilder.ClientOrDie("resourcequota-controller")
 	discoveryFunc := resourceQuotaControllerClient.Discovery().ServerPreferredNamespacedResources
 	listerFuncForResource := generic.ListerFuncForResourceFunc(ctx.GenericResourceInformer.ForResource)
@@ -66,15 +66,15 @@ func RunClusterQuotaReconciliationController(ctx *ControllerContext) (bool, erro
 	imageEvaluators := image.NewReplenishmentEvaluators(
 		listerFuncForResource,
 		ctx.ImageInformers.Image().V1().ImageStreams(),
-		ctx.ClientBuilder.OpenshiftImageClientOrDie(saName).Image())
+		ctx.ClientBuilder.OpenshiftImageClientOrDie(saName).ImageV1())
 	for i := range imageEvaluators {
 		resourceQuotaRegistry.Add(imageEvaluators[i])
 	}
 
 	options := clusterquotareconciliation.ClusterQuotaReconcilationControllerOptions{
-		ClusterQuotaInformer: ctx.InternalQuotaInformers.Quota().InternalVersion().ClusterResourceQuotas(),
+		ClusterQuotaInformer: ctx.QuotaInformers.Quota().V1().ClusterResourceQuotas(),
 		ClusterQuotaMapper:   clusterQuotaMappingController.GetClusterQuotaMapper(),
-		ClusterQuotaClient:   ctx.ClientBuilder.OpenshiftInternalQuotaClientOrDie(saName).Quota().ClusterResourceQuotas(),
+		ClusterQuotaClient:   ctx.ClientBuilder.OpenshiftQuotaClientOrDie(saName).QuotaV1().ClusterResourceQuotas(),
 
 		Registry:                  resourceQuotaRegistry,
 		ResyncPeriod:              defaultResyncPeriod,

@@ -4,9 +4,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
+
+	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,16 +19,15 @@ import (
 	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
-	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	"k8s.io/client-go/kubernetes"
+	authorizationv1client "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
-	coreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 
 	imageapiv1 "github.com/openshift/api/image/v1"
+	openshiftcontrolplanev1 "github.com/openshift/api/openshiftcontrolplane/v1"
 	imageclientv1 "github.com/openshift/client-go/image/clientset/versioned"
-	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
 	"github.com/openshift/origin/pkg/image/apis/image/validation/whitelist"
-	imageadmission "github.com/openshift/origin/pkg/image/apiserver/admission/limitrange"
 	"github.com/openshift/origin/pkg/image/apiserver/registry/image"
 	imageetcd "github.com/openshift/origin/pkg/image/apiserver/registry/image/etcd"
 	"github.com/openshift/origin/pkg/image/apiserver/registry/imagesecret"
@@ -43,9 +47,8 @@ import (
 
 type ExtraConfig struct {
 	KubeAPIServerClientConfig          *restclient.Config
-	LimitVerifier                      imageadmission.LimitVerifier
 	RegistryHostnameRetriever          registryhostname.RegistryHostnameRetriever
-	AllowedRegistriesForImport         *configapi.AllowedRegistries
+	AllowedRegistriesForImport         openshiftcontrolplanev1.AllowedRegistries
 	MaxImagesBulkImportedPerRepository int
 	AdditionalTrustedCA                []byte
 
@@ -144,10 +147,29 @@ func (c *completedConfig) newV1RESTStorage() (map[string]rest.Storage, error) {
 		tlsConfig.RootCAs = x509.NewCertPool()
 	}
 
-	if len(c.ExtraConfig.AdditionalTrustedCA) != 0 {
-		if ok := tlsConfig.RootCAs.AppendCertsFromPEM(c.ExtraConfig.AdditionalTrustedCA); !ok {
-			return nil, fmt.Errorf("No valid certificates read from %v", c.ExtraConfig.AdditionalTrustedCA)
+	err = filepath.Walk("/var/run/configmaps/image-import-ca", func(path string, info os.FileInfo, err error) error {
+		klog.V(2).Infof("reading image import ca path: %s, incoming err: %v", path, err)
+		if err != nil {
+			return err
 		}
+		if !info.Mode().IsRegular() {
+			klog.V(2).Infof("skipping dir or symlink: %s", path)
+			return nil
+		}
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			klog.Errorf("error reading file: %s, err: %v", path, err)
+			// we don't want to abandon trying to read additional files
+			return nil
+		}
+		pemOk := tlsConfig.RootCAs.AppendCertsFromPEM(data)
+		if !pemOk {
+			klog.Errorf("unable to read certificate data from %s", path)
+		}
+		return nil
+	})
+	if err != nil {
+		klog.Errorf("unable to process additional image import certificates: %v", err)
 	}
 
 	transport := knet.SetTransportDefaults(&http.Transport{
@@ -168,11 +190,11 @@ func (c *completedConfig) newV1RESTStorage() (map[string]rest.Storage, error) {
 		return nil, fmt.Errorf("unable to configure a default transport for importing: %v", err)
 	}
 
-	coreClient, err := coreclient.NewForConfig(c.ExtraConfig.KubeAPIServerClientConfig)
+	kubeClient, err := kubernetes.NewForConfig(c.ExtraConfig.KubeAPIServerClientConfig)
 	if err != nil {
 		return nil, err
 	}
-	authorizationClient, err := authorizationclient.NewForConfig(c.ExtraConfig.KubeAPIServerClientConfig)
+	authorizationClient, err := authorizationv1client.NewForConfig(c.ExtraConfig.KubeAPIServerClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -192,9 +214,9 @@ func (c *completedConfig) newV1RESTStorage() (map[string]rest.Storage, error) {
 	}
 
 	var whitelister whitelist.RegistryWhitelister
-	if c.ExtraConfig.AllowedRegistriesForImport != nil {
+	if len(c.ExtraConfig.AllowedRegistriesForImport) > 0 {
 		whitelister, err = whitelist.NewRegistryWhitelister(
-			*c.ExtraConfig.AllowedRegistriesForImport,
+			c.ExtraConfig.AllowedRegistriesForImport,
 			c.ExtraConfig.RegistryHostnameRetriever)
 		if err != nil {
 			return nil, fmt.Errorf("error building registry whitelister: %v", err)
@@ -203,13 +225,20 @@ func (c *completedConfig) newV1RESTStorage() (map[string]rest.Storage, error) {
 		whitelister = whitelist.WhitelistAllRegistries()
 	}
 
-	imageLayerIndex := imagestreametcd.NewImageLayerIndex(imageV1Client.Image().Images())
+	imageLayerIndex := imagestreametcd.NewImageLayerIndex(imageV1Client.ImageV1().Images())
 	c.ExtraConfig.startFns = append(c.ExtraConfig.startFns, imageLayerIndex.Run)
 
 	imageRegistry := image.NewRegistry(imageStorage)
 	imageSignatureStorage := imagesignature.NewREST(imageClient.Image())
-	imageStreamSecretsStorage := imagesecret.NewREST(coreClient)
-	imageStreamStorage, imageStreamLayersStorage, imageStreamStatusStorage, internalImageStreamStorage, err := imagestreametcd.NewREST(c.GenericConfig.RESTOptionsGetter, c.ExtraConfig.RegistryHostnameRetriever, authorizationClient.SubjectAccessReviews(), c.ExtraConfig.LimitVerifier, whitelister, imageLayerIndex)
+	imageStreamSecretsStorage := imagesecret.NewREST(kubeClient.CoreV1())
+	imageStreamStorage, imageStreamLayersStorage, imageStreamStatusStorage, internalImageStreamStorage, err := imagestreametcd.NewREST(
+		c.GenericConfig.RESTOptionsGetter,
+		c.ExtraConfig.RegistryHostnameRetriever,
+		authorizationClient.SubjectAccessReviews(),
+		c.GenericConfig.SharedInformerFactory.Core().V1().LimitRanges(),
+		whitelister,
+		imageLayerIndex,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error building REST storage: %v", err)
 	}

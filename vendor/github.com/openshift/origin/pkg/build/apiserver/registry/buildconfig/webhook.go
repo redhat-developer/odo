@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +22,6 @@ import (
 	"github.com/openshift/api/build"
 	buildv1 "github.com/openshift/api/build/v1"
 	buildclienttyped "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
-	"github.com/openshift/origin/pkg/api/legacy"
 	buildapi "github.com/openshift/origin/pkg/build/apis/build"
 	buildv1helpers "github.com/openshift/origin/pkg/build/apis/build/v1"
 	"github.com/openshift/origin/pkg/build/client"
@@ -35,8 +34,6 @@ var (
 )
 
 func init() {
-	// webhooks need to return legacy build serialization when hit via oapi
-	legacy.InstallInternalLegacyBuild(webhookEncodingScheme)
 	// TODO eventually we shouldn't deal in internal versions, but for now decode into one.
 	utilruntime.Must(buildv1helpers.Install(webhookEncodingScheme))
 	webhookEncodingCodecFactory = serializer.NewCodecFactory(webhookEncodingScheme)
@@ -143,7 +140,7 @@ func (w *WebHookHandler) ProcessWebHook(writer http.ResponseWriter, req *http.Re
 		return errors.NewUnauthorized(fmt.Sprintf("the webhook %q for %q did not accept your secret", hookType, name))
 	}
 
-	glog.V(4).Infof("checking secret for %q webhook trigger of buildconfig %s/%s", hookType, config.Namespace, config.Name)
+	klog.V(4).Infof("checking secret for %q webhook trigger of buildconfig %s/%s", hookType, config.Namespace, config.Name)
 	trigger, err := webhook.CheckSecret(config.Namespace, secret, triggers, w.secretsClient)
 	if err != nil {
 		return errors.NewUnauthorized(fmt.Sprintf("the webhook %q for %q did not accept your secret", hookType, name))
@@ -167,10 +164,10 @@ func (w *WebHookHandler) ProcessWebHook(writer http.ResponseWriter, req *http.Re
 	buildTriggerCauses := webhook.GenerateBuildTriggerInfo(revision, hookType)
 
 	request := &buildv1.BuildRequest{
-		TriggeredBy: buildTriggerCauses,
-		ObjectMeta:  metav1.ObjectMeta{Name: name},
-		Revision:    revision,
-		Env:         envvars,
+		TriggeredBy:           buildTriggerCauses,
+		ObjectMeta:            metav1.ObjectMeta{Name: name},
+		Revision:              revision,
+		Env:                   envvars,
 		DockerStrategyOptions: dockerStrategyOptions,
 	}
 

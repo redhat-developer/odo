@@ -10,9 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta/testrestmapper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 
 	buildv1 "github.com/openshift/api/build/v1"
 	buildfake "github.com/openshift/client-go/build/clientset/versioned/fake"
@@ -175,7 +175,7 @@ func TestCancelBuildRun(t *testing.T) {
 
 		test.opts.timeout = 1 * time.Second
 		test.opts.Client = client.BuildV1()
-		test.opts.BuildClient = client.Build().Builds(test.opts.Namespace)
+		test.opts.BuildClient = client.BuildV1().Builds(test.opts.Namespace)
 		test.opts.ReportError = func(err error) {
 			test.opts.HasError = true
 			t.Logf("got error: %v", err)

@@ -6,28 +6,29 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/admission/initializer"
+	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
+	"k8s.io/client-go/kubernetes"
+	coreapi "k8s.io/kubernetes/pkg/apis/core"
 	kapihelper "k8s.io/kubernetes/pkg/apis/core/helper"
 	rbacregistry "k8s.io/kubernetes/pkg/registry/rbac"
+	"k8s.io/kubernetes/pkg/serviceaccount"
 
+	securityv1informer "github.com/openshift/client-go/security/informers/externalversions/security/v1"
+	securityv1listers "github.com/openshift/client-go/security/listers/security/v1"
 	oadmission "github.com/openshift/origin/pkg/cmd/server/admission"
 	allocator "github.com/openshift/origin/pkg/security"
 	scc "github.com/openshift/origin/pkg/security/apiserver/securitycontextconstraints"
-	securityinformer "github.com/openshift/origin/pkg/security/generated/informers/internalversion"
-	securitylisters "github.com/openshift/origin/pkg/security/generated/listers/security/internalversion"
-	admission "k8s.io/apiserver/pkg/admission"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	kadmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
-	"k8s.io/kubernetes/pkg/serviceaccount"
 )
 
-const PluginName = "SecurityContextConstraint"
+const PluginName = "security.openshift.io/SecurityContextConstraint"
 
 func Register(plugins *admission.Plugins) {
 	plugins.Register(PluginName,
@@ -38,16 +39,17 @@ func Register(plugins *admission.Plugins) {
 
 type constraint struct {
 	*admission.Handler
-	client     kclientset.Interface
-	sccLister  securitylisters.SecurityContextConstraintsLister
+	client     kubernetes.Interface
+	sccLister  securityv1listers.SecurityContextConstraintsLister
 	authorizer authorizer.Authorizer
 }
 
 var (
-	_ = admission.Interface(&constraint{})
 	_ = initializer.WantsAuthorizer(&constraint{})
+	_ = initializer.WantsExternalKubeClientSet(&constraint{})
 	_ = oadmission.WantsSecurityInformer(&constraint{})
-	_ = kadmission.WantsInternalKubeClientSet(&constraint{})
+	_ = admission.ValidationInterface(&constraint{})
+	_ = admission.MutationInterface(&constraint{})
 )
 
 // NewConstraint creates a new SCC constraint admission plugin.
@@ -76,7 +78,7 @@ func (c *constraint) Admit(a admission.Attributes) error {
 	} else if ignore {
 		return nil
 	}
-	pod := a.GetObject().(*kapi.Pod)
+	pod := a.GetObject().(*coreapi.Pod)
 
 	// TODO(liggitt): allow spec mutation during initializing updates?
 	specMutationAllowed := a.GetOperation() == admission.Create
@@ -89,7 +91,7 @@ func (c *constraint) Admit(a admission.Attributes) error {
 	if allowedPod != nil {
 		*pod = *allowedPod
 		// annotate and accept the pod
-		glog.V(4).Infof("pod %s (generate: %s) validated against provider %s", pod.Name, pod.GenerateName, sccName)
+		klog.V(4).Infof("pod %s (generate: %s) validated against provider %s", pod.Name, pod.GenerateName, sccName)
 		if pod.ObjectMeta.Annotations == nil {
 			pod.ObjectMeta.Annotations = map[string]string{}
 		}
@@ -98,7 +100,7 @@ func (c *constraint) Admit(a admission.Attributes) error {
 	}
 
 	// we didn't validate against any security context constraint provider, reject the pod and give the errors for each attempt
-	glog.V(4).Infof("unable to validate pod %s (generate: %s) against any security context constraint: %v", pod.Name, pod.GenerateName, validationErrs)
+	klog.V(4).Infof("unable to validate pod %s (generate: %s) against any security context constraint: %v", pod.Name, pod.GenerateName, validationErrs)
 	return admission.NewForbidden(a, fmt.Errorf("unable to validate against any security context constraint: %v", validationErrs))
 }
 
@@ -108,7 +110,7 @@ func (c *constraint) Validate(a admission.Attributes) error {
 	} else if ignore {
 		return nil
 	}
-	pod := a.GetObject().(*kapi.Pod)
+	pod := a.GetObject().(*coreapi.Pod)
 
 	// compute the context. Mutation is not allowed. ValidatedSCCAnnotation is used as a hint to gain same speed-up.
 	allowedPod, _, validationErrs, err := c.computeSecurityContext(a, pod, false, pod.ObjectMeta.Annotations[allocator.ValidatedSCCAnnotation])
@@ -120,67 +122,78 @@ func (c *constraint) Validate(a admission.Attributes) error {
 	}
 
 	// we didn't validate against any provider, reject the pod and give the errors for each attempt
-	glog.V(4).Infof("unable to validate pod %s (generate: %s) in namespace %s against any pod security policy: %v", pod.Name, pod.GenerateName, a.GetNamespace(), validationErrs)
-	return admission.NewForbidden(a, fmt.Errorf("unable to validate against any pod security policy: %v", validationErrs))
+	klog.V(4).Infof("unable to validate pod %s (generate: %s) in namespace %s against any security context constraint: %v", pod.Name, pod.GenerateName, a.GetNamespace(), validationErrs)
+	return admission.NewForbidden(a, fmt.Errorf("unable to validate against any security context constraint: %v", validationErrs))
 }
 
-func (c *constraint) computeSecurityContext(a admission.Attributes, pod *kapi.Pod, specMutationAllowed bool, validatedSCCHint string) (*kapi.Pod, string, field.ErrorList, error) {
+func (c *constraint) computeSecurityContext(a admission.Attributes, pod *coreapi.Pod, specMutationAllowed bool, validatedSCCHint string) (*coreapi.Pod, string, field.ErrorList, error) {
 	// get all constraints that are usable by the user
-	glog.V(4).Infof("getting security context constraints for pod %s (generate: %s) in namespace %s with user info %v", pod.Name, pod.GenerateName, a.GetNamespace(), a.GetUserInfo())
+	klog.V(4).Infof("getting security context constraints for pod %s (generate: %s) in namespace %s with user info %v", pod.Name, pod.GenerateName, a.GetNamespace(), a.GetUserInfo())
 
-	sccMatcher := scc.NewDefaultSCCMatcher(c.sccLister, c.authorizer)
-	matchedConstraints, err := sccMatcher.FindApplicableSCCs(a.GetUserInfo(), a.GetNamespace())
+	constraints, err := scc.NewDefaultSCCMatcher(c.sccLister, nil).FindApplicableSCCs(a.GetNamespace())
 	if err != nil {
 		return nil, "", nil, admission.NewForbidden(a, err)
 	}
-
-	// get all constraints that are usable by the SA
-	if len(pod.Spec.ServiceAccountName) > 0 {
-		userInfo := serviceaccount.UserInfo(a.GetNamespace(), pod.Spec.ServiceAccountName, "")
-		glog.V(4).Infof("getting security context constraints for pod %s (generate: %s) with service account info %v", pod.Name, pod.GenerateName, userInfo)
-		saConstraints, err := sccMatcher.FindApplicableSCCs(userInfo, a.GetNamespace())
+	if len(constraints) == 0 {
+		sccs, err := c.sccLister.List(labels.Everything())
 		if err != nil {
 			return nil, "", nil, admission.NewForbidden(a, err)
 		}
-		matchedConstraints = append(matchedConstraints, saConstraints...)
+		if len(sccs) == 0 {
+			return nil, "", nil, admission.NewForbidden(a, fmt.Errorf("no SecurityContextConstraints found in cluster"))
+		}
+		return nil, "", nil, admission.NewForbidden(a, fmt.Errorf("no SecurityContextConstraints found in namespace %s", a.GetNamespace()))
 	}
 
-	// remove duplicate constraints and sort
-	matchedConstraints = scc.DeduplicateSecurityContextConstraints(matchedConstraints)
-	sort.Sort(scc.ByPriority(matchedConstraints))
 	// If mutation is not allowed and validatedSCCHint is provided, check the validated policy first.
 	// Keep the other the same for everything else
-	sort.SliceStable(matchedConstraints, func(i, j int) bool {
+	sort.SliceStable(constraints, func(i, j int) bool {
 		if !specMutationAllowed {
-			if matchedConstraints[i].Name == validatedSCCHint {
+			if constraints[i].Name == validatedSCCHint {
 				return true
 			}
-			if matchedConstraints[j].Name == validatedSCCHint {
+			if constraints[j].Name == validatedSCCHint {
 				return false
 			}
 		}
 		return i < j
 	})
 
-	providers, errs := scc.CreateProvidersFromConstraints(a.GetNamespace(), matchedConstraints, c.client)
+	providers, errs := scc.CreateProvidersFromConstraints(a.GetNamespace(), constraints, c.client)
 	logProviders(pod, providers, errs)
 
 	if len(providers) == 0 {
-		return nil, "", nil, admission.NewForbidden(a, fmt.Errorf("no providers available to validate pod request"))
+		return nil, "", nil, admission.NewForbidden(a, fmt.Errorf("no SecurityContextConstraintsProvider available to validate pod request"))
 	}
 
 	// all containers in a single pod must validate under a single provider or we will reject the request
-	validationErrs := field.ErrorList{}
 	var (
-		allowedPod       *kapi.Pod
+		allowedPod       *coreapi.Pod
 		allowingProvider scc.SecurityContextConstraintsProvider
+		validationErrs   field.ErrorList
+		saUserInfo       user.Info
 	)
+
+	userInfo := a.GetUserInfo()
+	if len(pod.Spec.ServiceAccountName) > 0 {
+		saUserInfo = serviceaccount.UserInfo(a.GetNamespace(), pod.Spec.ServiceAccountName, "")
+	}
 
 loop:
 	for _, provider := range providers {
-		podCopy := pod.DeepCopy()
+		// Get the SCC attributes required to decide whether the SCC applies for current user/SA
+		sccName := provider.GetSCCName()
+		sccUsers := provider.GetSCCUsers()
+		sccGroups := provider.GetSCCGroups()
 
-		if errs := scc.AssignSecurityContext(provider, podCopy, field.NewPath(fmt.Sprintf("provider %s: ", provider.GetSCCName()))); len(errs) > 0 {
+		// continue to the next provider if the current SCC one does not apply to either the user or the serviceaccount
+		if !scc.ConstraintAppliesTo(sccName, sccUsers, sccGroups, userInfo, a.GetNamespace(), c.authorizer) &&
+			!(saUserInfo != nil && scc.ConstraintAppliesTo(sccName, sccUsers, sccGroups, saUserInfo, a.GetNamespace(), c.authorizer)) {
+			continue
+		}
+
+		podCopy := pod.DeepCopy()
+		if errs := scc.AssignSecurityContext(provider, podCopy, field.NewPath(fmt.Sprintf("provider %s: ", sccName))); len(errs) > 0 {
 			validationErrs = append(validationErrs, errs...)
 			continue
 		}
@@ -193,16 +206,16 @@ loop:
 			// even on creating. We prefer most restrictive SCC in this case even if it mutates a pod.
 			allowedPod = podCopy
 			allowingProvider = provider
-			glog.V(5).Infof("pod %s (generate: %s) validated against provider %s with mutation", pod.Name, pod.GenerateName, provider.GetSCCName())
+			klog.V(5).Infof("pod %s (generate: %s) validated against provider %s with mutation", pod.Name, pod.GenerateName, sccName)
 			break loop
 		case apiequality.Semantic.DeepEqual(pod, podCopy):
 			// if we don't allow mutation, only use the validated pod if it didn't require any spec changes
 			allowedPod = podCopy
 			allowingProvider = provider
-			glog.V(5).Infof("pod %s (generate: %s) validated against provider %s without mutation", pod.Name, pod.GenerateName, provider.GetSCCName())
+			klog.V(5).Infof("pod %s (generate: %s) validated against provider %s without mutation", pod.Name, pod.GenerateName, sccName)
 			break loop
 		default:
-			glog.V(5).Infof("pod %s (generate: %s) validated against provider %s, but required mutation, skipping", pod.Name, pod.GenerateName, provider.GetSCCName())
+			klog.V(5).Infof("pod %s (generate: %s) validated against provider %s, but required mutation, skipping", pod.Name, pod.GenerateName, sccName)
 		}
 	}
 
@@ -213,14 +226,14 @@ loop:
 }
 
 func shouldIgnore(a admission.Attributes) (bool, error) {
-	if a.GetResource().GroupResource() != kapi.Resource("pods") {
+	if a.GetResource().GroupResource() != coreapi.Resource("pods") {
 		return true, nil
 	}
 	if len(a.GetSubresource()) != 0 {
 		return true, nil
 	}
 
-	_, ok := a.GetObject().(*kapi.Pod)
+	_, ok := a.GetObject().(*coreapi.Pod)
 	// if we can't convert then fail closed since we've already checked that this is supposed to be a pod object.
 	// this shouldn't normally happen during admission but could happen if an integrator passes a versioned
 	// pod object rather than an internal object.
@@ -239,11 +252,11 @@ func shouldIgnore(a admission.Attributes) (bool, error) {
 }
 
 // SetSecurityInformers implements WantsSecurityInformer interface for constraint.
-func (c *constraint) SetSecurityInformers(informers securityinformer.SharedInformerFactory) {
-	c.sccLister = informers.Security().InternalVersion().SecurityContextConstraints().Lister()
+func (c *constraint) SetSecurityInformers(informers securityv1informer.SecurityContextConstraintsInformer) {
+	c.sccLister = informers.Lister()
 }
 
-func (c *constraint) SetInternalKubeClientSet(client kclientset.Interface) {
+func (c *constraint) SetExternalKubeClientSet(client kubernetes.Interface) {
 	c.client = client
 }
 
@@ -267,14 +280,14 @@ func (c *constraint) ValidateInitialization() error {
 
 // logProviders logs what providers were found for the pod as well as any errors that were encountered
 // while creating providers.
-func logProviders(pod *kapi.Pod, providers []scc.SecurityContextConstraintsProvider, providerCreationErrs []error) {
+func logProviders(pod *coreapi.Pod, providers []scc.SecurityContextConstraintsProvider, providerCreationErrs []error) {
 	names := make([]string, len(providers))
 	for i, p := range providers {
 		names[i] = p.GetSCCName()
 	}
-	glog.V(4).Infof("validating pod %s (generate: %s) against providers %s", pod.Name, pod.GenerateName, strings.Join(names, ","))
+	klog.V(4).Infof("validating pod %s (generate: %s) against providers %s", pod.Name, pod.GenerateName, strings.Join(names, ","))
 
 	for _, err := range providerCreationErrs {
-		glog.V(4).Infof("provider creation error: %v", err)
+		klog.V(4).Infof("provider creation error: %v", err)
 	}
 }

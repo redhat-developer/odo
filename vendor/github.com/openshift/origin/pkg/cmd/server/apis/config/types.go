@@ -55,6 +55,7 @@ var (
 	APIGroupAutoscaling           = "autoscaling"
 	APIGroupBatch                 = "batch"
 	APIGroupCertificates          = "certificates.k8s.io"
+	APIGroupCoordination          = "coordination.k8s.io"
 	APIGroupNetworking            = "networking.k8s.io"
 	APIGroupPolicy                = "policy"
 	APIGroupStorage               = "storage.k8s.io"
@@ -91,9 +92,10 @@ var (
 		APIGroupAuthentication:        {"v1", "v1beta1"},
 		APIGroupAuthorization:         {"v1", "v1beta1"},
 		APIGroupAuthorizationRbac:     {"v1", "v1beta1"},
-		APIGroupAutoscaling:           {"v1", "v2beta1"},
+		APIGroupAutoscaling:           {"v1", "v2beta1", "v2beta2"},
 		APIGroupBatch:                 {"v1", "v1beta1"},
 		APIGroupCertificates:          {"v1beta1"},
+		APIGroupCoordination:          {"v1beta1"},
 		APIGroupImagePolicy:           {},
 		APIGroupNetworking:            {"v1"},
 		APIGroupPolicy:                {"v1beta1"},
@@ -527,7 +529,7 @@ type ImagePolicyConfig struct {
 	// registry. The external hostname should be set only when the image registry
 	// is exposed externally. The value is used in 'publicDockerImageRepository'
 	// field in ImageStreams. The value must be in "hostname[:port]" format.
-	ExternalRegistryHostname string
+	ExternalRegistryHostnames []string
 
 	// AdditionalTrustedCA is a path to a pem bundle file containing additional CAs that
 	// should be trusted during imagestream import.
@@ -923,6 +925,7 @@ type IdentityProvider struct {
 	// MappingMethod determines how identities from this provider are mapped to users
 	MappingMethod string
 	// Provider contains the information about how to set up a specific identity provider
+	// +k8s:conversion-gen=false
 	Provider runtime.Object
 }
 
@@ -1433,6 +1436,7 @@ type AdmissionPluginConfig struct {
 
 	// Configuration is an embedded configuration object to be used as the plugin's
 	// configuration. If present, it will be used instead of the path to the configuration file.
+	// +k8s:conversion-gen=false
 	Configuration runtime.Object
 }
 

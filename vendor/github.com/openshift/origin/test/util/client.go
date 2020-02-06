@@ -11,17 +11,20 @@ import (
 
 	"github.com/pborman/uuid"
 
+	corev1 "k8s.io/api/core/v1"
 	kerrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	kcoreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
-	"k8s.io/kubernetes/pkg/quota"
+	coreapi "k8s.io/kubernetes/pkg/apis/core"
+	quota "k8s.io/kubernetes/pkg/quota/v1"
 	sautil "k8s.io/kubernetes/pkg/serviceaccount"
 
 	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
@@ -39,15 +42,6 @@ func GetBaseDir() string {
 
 func KubeConfigPath() string {
 	return filepath.Join(GetBaseDir(), "openshift.local.config", "master", "admin.kubeconfig")
-}
-
-func GetClusterAdminKubeInternalClient(adminKubeConfigFile string) (kclientset.Interface, error) {
-	clientConfig, err := GetClusterAdminClientConfig(adminKubeConfigFile)
-	if err != nil {
-		return nil, err
-	}
-
-	return kclientset.NewForConfig(clientConfig)
 }
 
 func GetClusterAdminKubeClient(adminKubeConfigFile string) (kubernetes.Interface, error) {
@@ -77,7 +71,7 @@ func GetClusterAdminClientConfigOrDie(adminKubeConfigFile string) *restclient.Co
 	return conf
 }
 
-func GetClientForUser(clusterAdminConfig *restclient.Config, username string) (kclientset.Interface, *restclient.Config, error) {
+func GetClientForUser(clusterAdminConfig *restclient.Config, username string) (kubernetes.Interface, *restclient.Config, error) {
 	userClient, err := userclient.NewForConfig(clusterAdminConfig)
 	if err != nil {
 		return nil, nil, err
@@ -103,7 +97,8 @@ func GetClientForUser(clusterAdminConfig *restclient.Config, username string) (k
 	}
 
 	oauthClientObj := &oauthapi.OAuthClient{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-integration-client"},
+		ObjectMeta:  metav1.ObjectMeta{Name: "test-integration-client"},
+		GrantMethod: oauthapi.GrantHandlerAuto,
 	}
 	if _, err := oauthClient.Oauth().OAuthClients().Create(oauthClientObj); err != nil && !kerrs.IsAlreadyExists(err) {
 		return nil, nil, err
@@ -116,10 +111,12 @@ func GetClientForUser(clusterAdminConfig *restclient.Config, username string) (k
 		accesstoken += "A"
 	}
 	token := &oauthapi.OAuthAccessToken{
-		ObjectMeta: metav1.ObjectMeta{Name: accesstoken},
-		ClientName: oauthClientObj.Name,
-		UserName:   username,
-		UserUID:    string(user.UID),
+		ObjectMeta:  metav1.ObjectMeta{Name: accesstoken},
+		ClientName:  oauthClientObj.Name,
+		UserName:    username,
+		UserUID:     string(user.UID),
+		Scopes:      []string{"user:full"},
+		RedirectURI: "https://localhost:8443/oauth/token/implicit",
 	}
 	if _, err := oauthClient.Oauth().OAuthAccessTokens().Create(token); err != nil {
 		return nil, nil, err
@@ -128,7 +125,7 @@ func GetClientForUser(clusterAdminConfig *restclient.Config, username string) (k
 	userClientConfig := restclient.AnonymousClientConfig(turnOffRateLimiting(clusterAdminConfig))
 	userClientConfig.BearerToken = token.Name
 
-	kubeClientset, err := kclientset.NewForConfig(userClientConfig)
+	kubeClientset, err := kubernetes.NewForConfig(userClientConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -136,7 +133,7 @@ func GetClientForUser(clusterAdminConfig *restclient.Config, username string) (k
 	return kubeClientset, userClientConfig, nil
 }
 
-func GetScopedClientForUser(clusterAdminClientConfig *restclient.Config, username string, scopes []string) (kclientset.Interface, *restclient.Config, error) {
+func GetScopedClientForUser(clusterAdminClientConfig *restclient.Config, username string, scopes []string) (kubernetes.Interface, *restclient.Config, error) {
 	// make sure the user exists
 	if _, _, err := GetClientForUser(clusterAdminClientConfig, username); err != nil {
 		return nil, nil, err
@@ -161,22 +158,22 @@ func GetScopedClientForUser(clusterAdminClientConfig *restclient.Config, usernam
 
 	scopedConfig := restclient.AnonymousClientConfig(turnOffRateLimiting(clusterAdminClientConfig))
 	scopedConfig.BearerToken = token.Name
-	kubeClient, err := kclientset.NewForConfig(scopedConfig)
+	kubeClient, err := kubernetes.NewForConfig(scopedConfig)
 	if err != nil {
 		return nil, nil, err
 	}
 	return kubeClient, scopedConfig, nil
 }
 
-func GetClientForServiceAccount(adminClient kclientset.Interface, clientConfig restclient.Config, namespace, name string) (*kclientset.Clientset, *restclient.Config, error) {
-	_, err := adminClient.Core().Namespaces().Create(&kapi.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+func GetClientForServiceAccount(adminClient kubernetes.Interface, clientConfig restclient.Config, namespace, name string) (*kubernetes.Clientset, *restclient.Config, error) {
+	_, err := adminClient.CoreV1().Namespaces().Create(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
 	if err != nil && !kerrs.IsAlreadyExists(err) {
 		return nil, nil, err
 	}
 
-	sa, err := adminClient.Core().ServiceAccounts(namespace).Create(&kapi.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}})
+	sa, err := adminClient.CoreV1().ServiceAccounts(namespace).Create(&corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}})
 	if kerrs.IsAlreadyExists(err) {
-		sa, err = adminClient.Core().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
+		sa, err = adminClient.CoreV1().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
 	}
 	if err != nil {
 		return nil, nil, err
@@ -184,14 +181,14 @@ func GetClientForServiceAccount(adminClient kclientset.Interface, clientConfig r
 
 	token := ""
 	err = wait.Poll(time.Second, 30*time.Second, func() (bool, error) {
-		selector := fields.OneTermEqualSelector(kapi.SecretTypeField, string(kapi.SecretTypeServiceAccountToken))
-		secrets, err := adminClient.Core().Secrets(namespace).List(metav1.ListOptions{FieldSelector: selector.String()})
+		selector := fields.OneTermEqualSelector(coreapi.SecretTypeField, string(corev1.SecretTypeServiceAccountToken))
+		secrets, err := adminClient.CoreV1().Secrets(namespace).List(metav1.ListOptions{FieldSelector: selector.String()})
 		if err != nil {
 			return false, err
 		}
 		for _, secret := range secrets.Items {
-			if sautil.InternalIsServiceAccountToken(&secret, sa) {
-				token = string(secret.Data[kapi.ServiceAccountTokenKey])
+			if sautil.IsServiceAccountToken(&secret, sa) {
+				token = string(secret.Data[corev1.ServiceAccountTokenKey])
 				return true, nil
 			}
 		}
@@ -204,7 +201,7 @@ func GetClientForServiceAccount(adminClient kclientset.Interface, clientConfig r
 	saClientConfig := restclient.AnonymousClientConfig(turnOffRateLimiting(&clientConfig))
 	saClientConfig.BearerToken = token
 
-	kubeClientset, err := kclientset.NewForConfig(saClientConfig)
+	kubeClientset, err := kubernetes.NewForConfig(saClientConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -212,12 +209,50 @@ func GetClientForServiceAccount(adminClient kclientset.Interface, clientConfig r
 	return kubeClientset, saClientConfig, nil
 }
 
+func WaitForClusterResourceQuotaCRDAvailable(clusterAdminClientConfig *rest.Config) error {
+	return WaitForCRDAvailable(clusterAdminClientConfig, schema.GroupVersionResource{
+		Version:  "v1",
+		Group:    "quota.openshift.io",
+		Resource: "clusterresourcequotas",
+	})
+}
+
+func WaitForSecurityContextConstraintsCRDAvailable(clusterAdminClientConfig *rest.Config) error {
+	return WaitForCRDAvailable(clusterAdminClientConfig, schema.GroupVersionResource{
+		Version:  "v1",
+		Group:    "security.openshift.io",
+		Resource: "securitycontextconstraints",
+	})
+}
+
+func WaitForRoleBindingRestrictionCRDAvailable(clusterAdminClientConfig *rest.Config) error {
+	return WaitForCRDAvailable(clusterAdminClientConfig, schema.GroupVersionResource{
+		Version:  "v1",
+		Group:    "authorization.openshift.io",
+		Resource: "rolebindingrestrictions",
+	})
+}
+
+func WaitForCRDAvailable(clusterAdminClientConfig *rest.Config, gvr schema.GroupVersionResource) error {
+	dynamicClient := dynamic.NewForConfigOrDie(clusterAdminClientConfig)
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	err := wait.PollImmediateUntil(1*time.Minute, func() (done bool, err error) {
+		_, listErr := dynamicClient.Resource(gvr).List(metav1.ListOptions{})
+		return listErr == nil, nil
+	}, stopCh)
+	if err != nil {
+		return fmt.Errorf("failed to wait for cluster resource quota CRD: %v", err)
+	}
+	return nil
+}
+
 // WaitForResourceQuotaLimitSync watches given resource quota until its hard limit is updated to match the desired
 // spec or timeout occurs.
 func WaitForResourceQuotaLimitSync(
-	client kcoreclient.ResourceQuotaInterface,
+	client corev1client.ResourceQuotaInterface,
 	name string,
-	hardLimit kapi.ResourceList,
+	hardLimit corev1.ResourceList,
 	timeout time.Duration,
 ) error {
 	startTime := time.Now()
@@ -251,7 +286,7 @@ func WaitForResourceQuotaLimitSync(
 				// reget and re-watch
 				continue
 			}
-			if rq, ok := val.Object.(*kapi.ResourceQuota); ok {
+			if rq, ok := val.Object.(*corev1.ResourceQuota); ok {
 				used := quota.Mask(rq.Status.Hard, expectedResourceNames)
 				if isLimitSynced(used, hardLimit) {
 					return nil
@@ -264,7 +299,7 @@ func WaitForResourceQuotaLimitSync(
 	return wait.ErrWaitTimeout
 }
 
-func isLimitSynced(received, expected kapi.ResourceList) bool {
+func isLimitSynced(received, expected corev1.ResourceList) bool {
 	resourceNames := quota.ResourceNames(expected)
 	masked := quota.Mask(received, resourceNames)
 	if len(masked) != len(expected) {
@@ -277,6 +312,13 @@ func isLimitSynced(received, expected kapi.ResourceList) bool {
 		return false
 	}
 	return true
+}
+
+func NonProtobufConfig(inConfig *rest.Config) *rest.Config {
+	npConfig := rest.CopyConfig(inConfig)
+	npConfig.ContentConfig.AcceptContentTypes = "application/json"
+	npConfig.ContentConfig.ContentType = "application/json"
+	return npConfig
 }
 
 // turnOffRateLimiting reduces the chance that a flaky test can be written while using this package

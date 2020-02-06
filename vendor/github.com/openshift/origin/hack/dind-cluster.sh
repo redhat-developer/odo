@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # WARNING: The script modifies the host that docker is running on.  It
 # attempts to load the overlay and openvswitch modules. If this modification
@@ -712,9 +712,11 @@ function copy-runtime() {
   local origin_root=$1
   local target=$2
 
+  cp "$(os::util::find::built_binary openshift-sdn)" "${target}/openshift-sdn-node"
   cp "$(os::util::find::built_binary hyperkube)" "${target}"
   cp "$(os::util::find::built_binary openshift-node-config)" "${target}"
   cp "$(os::util::find::built_binary openshift)" "${target}"
+  cp "$(os::util::find::built_binary hypershift)" "${target}"
   cp "$(os::util::find::built_binary oc)" "${target}"
   cp "$(os::util::find::built_binary host-local)" "${target}"
   cp "$(os::util::find::built_binary loopback)" "${target}"

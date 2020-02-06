@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/api/core/v1"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -85,7 +85,7 @@ type DeploymentConfigController struct {
 // Handle implements the loop that processes deployment configs. Since this controller started
 // using caches, the provided config MUST be deep-copied beforehand (see work() in factory.go).
 func (c *DeploymentConfigController) Handle(config *appsv1.DeploymentConfig) error {
-	glog.V(5).Infof("Reconciling %s/%s", config.Namespace, config.Name)
+	klog.V(5).Infof("Reconciling %s/%s", config.Namespace, config.Name)
 	// There's nothing to reconcile until the version is nonzero.
 	if appsutil.IsInitialDeployment(config) && !appsutil.HasTrigger(config) {
 		return c.updateStatus(config, []*v1.ReplicationController{}, true)
@@ -133,7 +133,16 @@ func (c *DeploymentConfigController) Handle(config *appsv1.DeploymentConfig) err
 		return c.updateStatus(config, existingDeployments, true)
 	}
 
+	configCopy := config.DeepCopy()
+
 	latestExists, latestDeployment := appsutil.LatestDeploymentInfo(config, existingDeployments)
+	candidateVersion := appsutil.DeploymentVersionFor(latestDeployment)
+	if candidateVersion > config.Status.LatestVersion {
+		// FIXME: update LatestVersion to candidateVersion directly when validation allows it in all supported skews
+		configCopy.Status.LatestVersion++
+		_, err := c.appsClient.DeploymentConfigs(configCopy.Namespace).UpdateStatus(configCopy)
+		return err
+	}
 
 	if !latestExists {
 		if err := c.cancelRunningRollouts(config, existingDeployments, cm); err != nil {
@@ -144,12 +153,11 @@ func (c *DeploymentConfigController) Handle(config *appsv1.DeploymentConfig) err
 	// Never deploy with invalid or unresolved images
 	for i, container := range config.Spec.Template.Spec.Containers {
 		if len(strings.TrimSpace(container.Image)) == 0 {
-			glog.V(4).Infof("Postponing rollout #%d for DeploymentConfig %s/%s because of invalid or unresolved image for container #%d (name=%s)", config.Status.LatestVersion, config.Namespace, config.Name, i, container.Name)
+			klog.V(4).Infof("Postponing rollout #%d for DeploymentConfig %s/%s because of invalid or unresolved image for container #%d (name=%s)", config.Status.LatestVersion, config.Namespace, config.Name, i, container.Name)
 			return c.updateStatus(config, existingDeployments, true)
 		}
 	}
 
-	configCopy := config.DeepCopy()
 	// Process triggers and start an initial rollouts
 	shouldTrigger, shouldSkip, err := triggerActivated(configCopy, latestExists, latestDeployment)
 	if err != nil {
@@ -186,30 +194,29 @@ func (c *DeploymentConfigController) Handle(config *appsv1.DeploymentConfig) err
 	}
 	created, err := c.kubeClient.ReplicationControllers(config.Namespace).Create(deployment)
 	if err != nil {
-		// We need to find out if our controller owns that deployment and report error if not
 		if kapierrors.IsAlreadyExists(err) {
-			rc, err := c.rcLister.ReplicationControllers(deployment.Namespace).Get(deployment.Name)
+			rc, err := c.kubeClient.ReplicationControllers(deployment.Namespace).Get(deployment.Name, metav1.GetOptions{})
 			if err != nil {
-				return fmt.Errorf("error while deploymentConfigController getting the replication controller %s/%s: %v", deployment.Namespace, deployment.Name, err)
+				return fmt.Errorf("error while getting replication controller %s/%s: %v", deployment.Namespace, deployment.Name, err)
 			}
-			// We need to make sure we own that RC or adopt it if possible
 			isOurs, err := cm.ClaimReplicationController(rc)
-			if err != nil {
-				return fmt.Errorf("error while deploymentConfigController claiming the replication controller: %v", err)
-			}
-			if isOurs {
-				// If the deployment was already created, just move on. The cache could be
-				// stale, or another process could have already handled this update.
-				return c.updateStatus(config, existingDeployments, true)
+			if err == nil {
+				if isOurs {
+					// Caches are stalled, wait for them to sync (errors cause requeue)
+					return fmt.Errorf("caches for RC %s/%s are stale, waiting to catch up", deployment.Namespace, deployment.Name)
+				} else {
+					err = fmt.Errorf("deployment %s/%s already exists and it couldn't be adopted",
+						deployment.Namespace, deployment.Name)
+				}
 			} else {
-				err = fmt.Errorf("replication controller %s already exists and deployment config is not allowed to claim it", deployment.Name)
-				c.recorder.Eventf(config, v1.EventTypeWarning, "DeploymentCreationFailed", "Couldn't deploy version %d: %v", config.Status.LatestVersion, err)
-				return c.updateStatus(config, existingDeployments, true)
+				err = fmt.Errorf("deployment %s/%s already exists and it couldn't be adopted: %v",
+					deployment.Namespace, deployment.Name, err)
 			}
 		}
+
 		c.recorder.Eventf(config, v1.EventTypeWarning, "DeploymentCreationFailed", "Couldn't deploy version %d: %s", config.Status.LatestVersion, err)
-		// We don't care about this error since we need to report the create failure.
 		cond := appsutil.NewDeploymentCondition(appsv1.DeploymentProgressing, v1.ConditionFalse, appsutil.FailedRcCreateReason, err.Error())
+		// We don't care about this error since we need to report the create failure.
 		_ = c.updateStatus(config, existingDeployments, true, *cond)
 		return fmt.Errorf("couldn't create deployment for deployment config %s: %v", appsutil.LabelForDeploymentConfig(config), err)
 	}
@@ -255,7 +262,7 @@ func (c *DeploymentConfigController) reconcileDeployments(existingDeployments []
 			newReplicaCount = config.Spec.Replicas
 		}
 		if config.Spec.Test {
-			glog.V(4).Infof("Deployment config %q is test and deployment %q will be scaled down", appsutil.LabelForDeploymentConfig(config), appsutil.LabelForDeployment(deployment))
+			klog.V(4).Infof("Deployment config %q is test and deployment %q will be scaled down", appsutil.LabelForDeploymentConfig(config), appsutil.LabelForDeployment(deployment))
 			newReplicaCount = 0
 		}
 
@@ -323,7 +330,7 @@ func (c *DeploymentConfigController) updateStatus(config *appsv1.DeploymentConfi
 	if _, err := c.appsClient.DeploymentConfigs(copied.Namespace).UpdateStatus(copied); err != nil {
 		return err
 	}
-	glog.V(4).Infof(fmt.Sprintf("Updated status for DeploymentConfig: %s, ", appsutil.LabelForDeploymentConfig(config)) +
+	klog.V(4).Infof(fmt.Sprintf("Updated status for DeploymentConfig: %s, ", appsutil.LabelForDeploymentConfig(config)) +
 		fmt.Sprintf("replicas %d->%d (need %d), ", config.Status.Replicas, newStatus.Replicas, config.Spec.Replicas) +
 		fmt.Sprintf("readyReplicas %d->%d, ", config.Status.ReadyReplicas, newStatus.ReadyReplicas) +
 		fmt.Sprintf("availableReplicas %d->%d, ", config.Status.AvailableReplicas, newStatus.AvailableReplicas) +
@@ -496,14 +503,18 @@ func (c *DeploymentConfigController) handleErr(err error, key interface{}) {
 		return
 	}
 
+	verbosity := klog.Level(2)
 	if c.queue.NumRequeues(key) < maxRetryCount {
-		glog.V(2).Infof("Error syncing deployment config %v: %v", key, err)
+		if kapierrors.IsConflict(err) {
+			verbosity = klog.Level(4)
+		}
+		klog.V(verbosity).Infof("Error syncing deployment config %v: %v", key, err)
 		c.queue.AddRateLimited(key)
 		return
 	}
 
 	utilruntime.HandleError(err)
-	glog.V(2).Infof("Dropping deployment config %q out of the queue: %v", key, err)
+	klog.V(2).Infof("Dropping deployment config %q out of the queue: %v", key, err)
 	c.queue.Forget(key)
 }
 
@@ -564,18 +575,18 @@ func triggerActivated(config *appsv1.DeploymentConfig, latestExists bool, latest
 		// When config has an image trigger, wait until its images are available to trigger.
 		if imageTrigger {
 			if hasAvailableImages {
-				glog.V(4).Infof("Rolling out initial deployment for %s/%s as it now have images available", config.Namespace, config.Name)
+				klog.V(4).Infof("Rolling out initial deployment for %s/%s as it now have images available", config.Namespace, config.Name)
 				// TODO: Technically this is not a config change cause, but we will have to report the image that caused the trigger.
 				//       In some cases it might be difficult because config can have multiple ICT.
 				appsutil.RecordConfigChangeCause(config)
 				return true, false, nil
 			}
-			glog.V(4).Infof("Rolling out initial deployment for %s/%s deferred until its images are ready", config.Namespace, config.Name)
+			klog.V(4).Infof("Rolling out initial deployment for %s/%s deferred until its images are ready", config.Namespace, config.Name)
 			return false, true, nil
 		}
 		// Rollout if we only have config change trigger.
 		if configTrigger {
-			glog.V(4).Infof("Rolling out initial deployment for %s/%s", config.Namespace, config.Name)
+			klog.V(4).Infof("Rolling out initial deployment for %s/%s", config.Namespace, config.Name)
 			appsutil.RecordConfigChangeCause(config)
 			return true, false, nil
 		}
@@ -595,7 +606,7 @@ func triggerActivated(config *appsv1.DeploymentConfig, latestExists bool, latest
 
 	if imageTrigger {
 		if ok, imageNames := appsutil.HasUpdatedImages(config, latestDeployment); ok {
-			glog.V(4).Infof("Rolling out #%d deployment for %s/%s caused by image changes (%s)", config.Status.LatestVersion+1, config.Namespace, config.Name, strings.Join(imageNames, ","))
+			klog.V(4).Infof("Rolling out #%d deployment for %s/%s caused by image changes (%s)", config.Status.LatestVersion+1, config.Namespace, config.Name, strings.Join(imageNames, ","))
 			appsutil.RecordImageChangeCauses(config, imageNames)
 			return true, false, nil
 		}
@@ -607,7 +618,7 @@ func triggerActivated(config *appsv1.DeploymentConfig, latestExists bool, latest
 			return false, false, fmt.Errorf("error while checking for latest pod template in replication controller: %v", err)
 		}
 		if !isLatest {
-			glog.V(4).Infof("Rolling out #%d deployment for %s/%s caused by config change, diff: %s", config.Status.LatestVersion+1, config.Namespace, config.Name, changes)
+			klog.V(4).Infof("Rolling out #%d deployment for %s/%s caused by config change, diff: %s", config.Status.LatestVersion+1, config.Namespace, config.Name, changes)
 			appsutil.RecordConfigChangeCause(config)
 			return true, false, nil
 		}

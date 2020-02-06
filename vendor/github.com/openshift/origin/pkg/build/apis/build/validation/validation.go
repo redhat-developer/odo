@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	kpath "k8s.io/apimachinery/pkg/api/validation/path"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -32,7 +33,7 @@ import (
 // ValidateBuild tests required fields for a Build.
 func ValidateBuild(build *buildapi.Build) field.ErrorList {
 	allErrs := field.ErrorList{}
-	allErrs = append(allErrs, validation.ValidateObjectMeta(&build.ObjectMeta, true, validation.NameIsDNSSubdomain, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, validation.ValidateObjectMeta(&build.ObjectMeta, true, apimachineryvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))...)
 	allErrs = append(allErrs, validateCommonSpec(&build.Spec.CommonSpec, field.NewPath("spec"))...)
 	return allErrs
 }
@@ -40,7 +41,7 @@ func ValidateBuild(build *buildapi.Build) field.ErrorList {
 func ValidateBuildUpdate(build *buildapi.Build, older *buildapi.Build) field.ErrorList {
 	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, validation.ValidateObjectMetaUpdate(&build.ObjectMeta, &older.ObjectMeta, field.NewPath("metadata"))...)
-	allErrs = append(allErrs, validation.ValidateObjectMeta(&build.ObjectMeta, true, validation.NameIsDNSSubdomain, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, validation.ValidateObjectMeta(&build.ObjectMeta, true, apimachineryvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))...)
 
 	if buildinternalhelpers.IsBuildComplete(older) && older.Status.Phase != build.Status.Phase {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("status", "phase"), build.Status.Phase, "phase cannot be updated from a terminal state"))
@@ -53,7 +54,7 @@ func ValidateBuildUpdate(build *buildapi.Build, older *buildapi.Build) field.Err
 	if !kapihelper.Semantic.DeepEqual(build.Spec, olderCopy.Spec) {
 		diff, err := diffBuildSpec(build.Spec, olderCopy.Spec)
 		if err != nil {
-			glog.V(2).Infof("Error calculating build spec patch: %v", err)
+			klog.V(2).Infof("Error calculating build spec patch: %v", err)
 			diff = "[unknown]"
 		}
 		detail := fmt.Sprintf("spec is immutable, diff: %s", diff)
@@ -79,7 +80,7 @@ func refKey(namespace string, ref *kapi.ObjectReference) string {
 // ValidateBuildConfig tests required fields for a Build.
 func ValidateBuildConfig(config *buildapi.BuildConfig) field.ErrorList {
 	allErrs := field.ErrorList{}
-	allErrs = append(allErrs, validation.ValidateObjectMeta(&config.ObjectMeta, true, validation.NameIsDNSSubdomain, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, validation.ValidateObjectMeta(&config.ObjectMeta, true, apimachineryvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))...)
 
 	// image change triggers that refer
 	fromRefs := map[string]struct{}{}
@@ -510,7 +511,7 @@ func validateDockerStrategy(strategy *buildapi.DockerBuildStrategy, fldPath *fie
 	case *t == buildapi.ImageOptimizationSkipLayers, *t == buildapi.ImageOptimizationSkipLayersAndWarn,
 		*t == buildapi.ImageOptimizationNone:
 	default:
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("imageOptimizationPolicy"), *t, "must be unset, 'None', 'SkipLayers', or 'SkipLayersAndWarn"))
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("imageOptimizationPolicy"), *t, "must be unset, 'None', 'SkipLayers', or 'SkipLayersAndWarn'"))
 	}
 
 	if len(strategy.DockerfilePath) != 0 {
@@ -698,7 +699,7 @@ func ValidateStrategyEnv(vars []kapi.EnvVar, fldPath *field.Path) field.ErrorLis
 
 func validatePostCommit(spec buildapi.BuildPostCommitSpec, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
-	if spec.Script != "" && len(spec.Command) > 0 {
+	if len(spec.Script) != 0 && len(spec.Command) > 0 {
 		allErrs = append(allErrs, field.Invalid(fldPath, spec, "cannot use command and script together"))
 	}
 	return allErrs

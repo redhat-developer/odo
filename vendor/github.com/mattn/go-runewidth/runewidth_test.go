@@ -1,11 +1,22 @@
+// +build !js,!appengine
+
 package runewidth
 
 import (
+	"crypto/sha256"
+	"fmt"
+	"os"
 	"sort"
 	"testing"
+	"unicode/utf8"
 )
 
-var _ sort.Interface = (*table)(nil)
+var _ sort.Interface = (*table)(nil) // ensure that type "table" does implement sort.Interface
+
+func init() {
+	os.Setenv("RUNEWIDTH_EASTASIAN", "")
+	handleEnv()
+}
 
 func (t table) Len() int {
 	return len(t)
@@ -19,21 +30,106 @@ func (t *table) Swap(i, j int) {
 	(*t)[i], (*t)[j] = (*t)[j], (*t)[i]
 }
 
-var tables = []table{
-	private,
-	nonprint,
-	combining,
-	doublewidth,
-	ambiguous,
-	emoji,
-	notassigned,
-	neutral,
+type tableInfo struct {
+	tbl     table
+	name    string
+	wantN   int
+	wantSHA string
+}
+
+var tables = []tableInfo{
+	{private, "private", 137468, "a4a641206dc8c5de80bd9f03515a54a706a5a4904c7684dc6a33d65c967a51b2"},
+	{nonprint, "nonprint", 2143, "288904683eb225e7c4c0bd3ee481b53e8dace404ec31d443afdbc4d13729fe95"},
+	{combining, "combining", 461, "ef1839ee99b2707da7d5592949bd9b40d434fa6462c6da61477bae923389e263"},
+	{doublewidth, "doublewidth", 181887, "de2d7a29c94fb2fe471b5fd0c003043845ce59d1823170606b95f9fc8988067a"},
+	{ambiguous, "ambiguous", 138739, "d05e339a10f296de6547ff3d6c5aee32f627f6555477afebd4a3b7e3cf74c9e3"},
+	{emoji, "emoji", 3791, "bf02b49f5cbee8df150053574d20125164e7f16b5f62aa5971abca3b2f39a8e6"},
+	{notassigned, "notassigned", 10, "68441e98eca1450efbe857ac051fcc872eed347054dfd0bc662d1c4ee021d69f"},
+	{neutral, "neutral", 26925, "d79d8558f3cc35c633e5025c9b29c005b853589c8f71b4a72507b5c31d8a6829"},
+}
+
+func TestTableChecksums(t *testing.T) {
+	for _, ti := range tables {
+		gotN := 0
+		buf := make([]byte, utf8.MaxRune+1)
+		for r := rune(0); r <= utf8.MaxRune; r++ {
+			if inTable(r, ti.tbl) {
+				gotN++
+				buf[r] = 1
+			}
+		}
+		gotSHA := fmt.Sprintf("%x", sha256.Sum256(buf))
+		if gotN != ti.wantN || gotSHA != ti.wantSHA {
+			t.Errorf("table = %s,\n\tn = %d want %d,\n\tsha256 = %s want %s", ti.name, gotN, ti.wantN, gotSHA, ti.wantSHA)
+		}
+	}
+}
+
+func checkInterval(first, last rune) bool {
+	return first >= 0 && first <= utf8.MaxRune &&
+		last >= 0 && last <= utf8.MaxRune &&
+		first <= last
+}
+
+func isCompact(t *testing.T, ti *tableInfo) bool {
+	tbl := ti.tbl
+	for i := range tbl {
+		e := tbl[i]
+		if !checkInterval(e.first, e.last) { // sanity check
+			t.Errorf("table invalid: table = %s index = %d %v", ti.name, i, e)
+			return false
+		}
+		if i+1 < len(tbl) && e.last+1 >= tbl[i+1].first { // can be combined into one entry
+			t.Errorf("table not compact: table = %s index = %d %v %v", ti.name, i, e, tbl[i+1])
+			return false
+		}
+	}
+	return true
+}
+
+// This is a utility function in case that a table has changed.
+func printCompactTable(tbl table) {
+	counter := 0
+	printEntry := func(first, last rune) {
+		if counter%3 == 0 {
+			fmt.Printf("\t")
+		}
+		fmt.Printf("{0x%04X, 0x%04X},", first, last)
+		if (counter+1)%3 == 0 {
+			fmt.Printf("\n")
+		} else {
+			fmt.Printf(" ")
+		}
+		counter++
+	}
+
+	sort.Sort(&tbl) // just in case
+	first := rune(-1)
+	for i := range tbl {
+		e := tbl[i]
+		if !checkInterval(e.first, e.last) { // sanity check
+			panic("invalid table")
+		}
+		if first < 0 {
+			first = e.first
+		}
+		if i+1 < len(tbl) && e.last+1 >= tbl[i+1].first { // can be combined into one entry
+			continue
+		}
+		printEntry(first, e.last)
+		first = -1
+	}
+	fmt.Printf("\n\n")
 }
 
 func TestSorted(t *testing.T) {
-	for _, tbl := range tables {
-		if !sort.IsSorted(&tbl) {
-			t.Errorf("not sorted")
+	for _, ti := range tables {
+		if !sort.IsSorted(&ti.tbl) {
+			t.Errorf("table not sorted: %s", ti.name)
+		}
+		if !isCompact(t, &ti) {
+			t.Errorf("table not compact: %s", ti.name)
+			//printCompactTable(ti.tbl)
 		}
 	}
 }
@@ -49,13 +145,30 @@ var runewidthtests = []struct {
 	{'ｶ', 1, 1},
 	{'ｲ', 1, 1},
 	{'☆', 1, 2}, // double width in ambiguous
+	{'☺', 1, 1},
+	{'☻', 1, 1},
+	{'♥', 1, 2},
+	{'♦', 1, 1},
+	{'♣', 1, 2},
+	{'♠', 1, 2},
+	{'♂', 1, 2},
+	{'♀', 1, 2},
+	{'♪', 1, 2},
+	{'♫', 1, 1},
+	{'☼', 1, 1},
+	{'↕', 1, 2},
+	{'‼', 1, 1},
+	{'↔', 1, 2},
 	{'\x00', 0, 0},
 	{'\x01', 0, 0},
 	{'\u0300', 0, 0},
+	{'\u2028', 0, 0},
+	{'\u2029', 0, 0},
 }
 
 func TestRuneWidth(t *testing.T) {
 	c := NewCondition()
+	c.EastAsianWidth = false
 	for _, tt := range runewidthtests {
 		if out := c.RuneWidth(tt.in); out != tt.out {
 			t.Errorf("RuneWidth(%q) = %d, want %d", tt.in, out, tt.out)
@@ -121,15 +234,16 @@ var stringwidthtests = []struct {
 
 func TestStringWidth(t *testing.T) {
 	c := NewCondition()
+	c.EastAsianWidth = false
 	for _, tt := range stringwidthtests {
 		if out := c.StringWidth(tt.in); out != tt.out {
-			t.Errorf("StringWidth(%q) = %q, want %q", tt.in, out, tt.out)
+			t.Errorf("StringWidth(%q) = %d, want %d", tt.in, out, tt.out)
 		}
 	}
 	c.EastAsianWidth = true
 	for _, tt := range stringwidthtests {
 		if out := c.StringWidth(tt.in); out != tt.eaout {
-			t.Errorf("StringWidth(%q) = %q, want %q", tt.in, out, tt.eaout)
+			t.Errorf("StringWidth(%q) = %d, want %d", tt.in, out, tt.eaout)
 		}
 	}
 }
@@ -137,7 +251,7 @@ func TestStringWidth(t *testing.T) {
 func TestStringWidthInvalid(t *testing.T) {
 	s := "こんにちわ\x00世界"
 	if out := StringWidth(s); out != 14 {
-		t.Errorf("StringWidth(%q) = %q, want %q", s, out, 14)
+		t.Errorf("StringWidth(%q) = %d, want %d", s, out, 14)
 	}
 }
 
@@ -271,5 +385,44 @@ func TestFillRightFit(t *testing.T) {
 
 	if out := FillRight(s, 10); out != expected {
 		t.Errorf("FillRight(%q) = %q, want %q", s, out, expected)
+	}
+}
+
+func TestEnv(t *testing.T) {
+	old := os.Getenv("RUNEWIDTH_EASTASIAN")
+	defer os.Setenv("RUNEWIDTH_EASTASIAN", old)
+
+	os.Setenv("RUNEWIDTH_EASTASIAN", "0")
+	handleEnv()
+
+	if w := RuneWidth('│'); w != 1 {
+		t.Errorf("RuneWidth('│') = %d, want %d", w, 1)
+	}
+}
+
+func TestZeroWidthJointer(t *testing.T) {
+	c := NewCondition()
+	c.ZeroWidthJoiner = true
+
+	var tests = []struct {
+		in   string
+		want int
+	}{
+		{"👩", 2},
+		{"👩‍", 2},
+		{"👩‍🍳", 2},
+		{"‍🍳", 2},
+		{"👨‍👨", 2},
+		{"👨‍👨‍👧", 2},
+		{"🏳️‍🌈", 2},
+		{"あ👩‍🍳い", 6},
+		{"あ‍🍳い", 6},
+		{"あ‍い", 4},
+	}
+
+	for _, tt := range tests {
+		if got := c.StringWidth(tt.in); got != tt.want {
+			t.Errorf("StringWidth(%q) = %d, want %d", tt.in, got, tt.want)
+		}
 	}
 }

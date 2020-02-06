@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/klog"
 )
 
 const (
@@ -78,7 +78,7 @@ func CreateKubeNamespace(c kubernetes.Interface) (*corev1.Namespace, error) {
 		var err error
 		got, err = c.CoreV1().Namespaces().Create(ns)
 		if err != nil {
-			glog.Errorf("Unexpected error while creating namespace: %v", err)
+			klog.Errorf("Unexpected error while creating namespace: %v", err)
 			return false, err
 		}
 		return true, nil
@@ -94,7 +94,7 @@ func DeleteKubeNamespace(c kubernetes.Interface, namespace string) error {
 	return c.CoreV1().Namespaces().Delete(namespace, nil)
 }
 
-// WaitForEndpoint waits for 'defaultTimeout' interval for an enpoint to be available
+// WaitForEndpoint waits for 'defaultTimeout' interval for an endpoint to be available
 func WaitForEndpoint(c kubernetes.Interface, namespace, name string) error {
 	return wait.PollImmediate(poll, defaultTimeout, endpointAvailable(c, namespace, name))
 }

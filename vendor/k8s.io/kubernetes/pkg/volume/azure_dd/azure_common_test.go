@@ -24,7 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 	"github.com/stretchr/testify/assert"
+
 	"k8s.io/kubernetes/pkg/util/mount"
 )
 
@@ -133,6 +135,51 @@ func TestIoHandler(t *testing.T) {
 		if disk != "/dev/"+devName || err != nil {
 			t.Errorf("no data disk found: disk %v err %v", disk, err)
 		}
+	}
+}
+
+func TestNormalizeStorageAccountType(t *testing.T) {
+	tests := []struct {
+		storageAccountType  string
+		expectedAccountType compute.DiskStorageAccountTypes
+		expectError         bool
+	}{
+		{
+			storageAccountType:  "",
+			expectedAccountType: compute.StandardLRS,
+			expectError:         false,
+		},
+		{
+			storageAccountType:  "NOT_EXISTING",
+			expectedAccountType: "",
+			expectError:         true,
+		},
+		{
+			storageAccountType:  "Standard_LRS",
+			expectedAccountType: compute.StandardLRS,
+			expectError:         false,
+		},
+		{
+			storageAccountType:  "Premium_LRS",
+			expectedAccountType: compute.PremiumLRS,
+			expectError:         false,
+		},
+		{
+			storageAccountType:  "StandardSSD_LRS",
+			expectedAccountType: compute.StandardSSDLRS,
+			expectError:         false,
+		},
+		{
+			storageAccountType:  "UltraSSD_LRS",
+			expectedAccountType: compute.UltraSSDLRS,
+			expectError:         false,
+		},
+	}
+
+	for _, test := range tests {
+		result, err := normalizeStorageAccountType(test.storageAccountType)
+		assert.Equal(t, result, test.expectedAccountType)
+		assert.Equal(t, err != nil, test.expectError, fmt.Sprintf("error msg: %v", err))
 	}
 }
 

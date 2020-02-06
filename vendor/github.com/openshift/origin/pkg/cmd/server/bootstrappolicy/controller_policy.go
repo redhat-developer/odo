@@ -3,7 +3,7 @@ package bootstrappolicy
 import (
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,19 +67,19 @@ func bindControllerRole(saName string, roleName string) {
 
 func addControllerRole(role rbacv1.ClusterRole) {
 	if !strings.HasPrefix(role.Name, saRolePrefix) {
-		glog.Fatalf(`role %q must start with %q`, role.Name, saRolePrefix)
+		klog.Fatalf(`role %q must start with %q`, role.Name, saRolePrefix)
 	}
 	addControllerRoleToSA(DefaultOpenShiftInfraNamespace, role.Name[len(saRolePrefix):], role)
 }
 
 func addControllerRoleToSA(saNamespace, saName string, role rbacv1.ClusterRole) {
 	if !strings.HasPrefix(role.Name, saRolePrefix) {
-		glog.Fatalf(`role %q must start with %q`, role.Name, saRolePrefix)
+		klog.Fatalf(`role %q must start with %q`, role.Name, saRolePrefix)
 	}
 
 	for _, existingRole := range controllerRoles {
 		if role.Name == existingRole.Name {
-			glog.Fatalf("role %q was already registered", role.Name)
+			klog.Fatalf("role %q was already registered", role.Name)
 		}
 	}
 
@@ -106,11 +106,12 @@ func init() {
 			rbacv1helpers.NewRule("create").Groups(buildGroup, legacyBuildGroup).Resources("builds/optimizeddocker", "builds/docker", "builds/source", "builds/custom", "builds/jenkinspipeline").RuleOrDie(),
 			rbacv1helpers.NewRule("get", "list").Groups(imageGroup, legacyImageGroup).Resources("imagestreams").RuleOrDie(),
 			rbacv1helpers.NewRule("get", "list").Groups(kapiGroup).Resources("secrets").RuleOrDie(),
-			rbacv1helpers.NewRule("get", "list").Groups(kapiGroup).Resources("configmaps").RuleOrDie(),
+			rbacv1helpers.NewRule("get", "list", "create").Groups(kapiGroup).Resources("configmaps").RuleOrDie(),
 			rbacv1helpers.NewRule("get", "list", "create", "delete").Groups(kapiGroup).Resources("pods").RuleOrDie(),
 			rbacv1helpers.NewRule("get").Groups(kapiGroup).Resources("namespaces").RuleOrDie(),
 			rbacv1helpers.NewRule("get", "list").Groups(kapiGroup).Resources("serviceaccounts").RuleOrDie(),
 			rbacv1helpers.NewRule("create").Groups(securityGroup, legacySecurityGroup).Resources("podsecuritypolicysubjectreviews").RuleOrDie(),
+			rbacv1helpers.NewRule("get", "list").Groups(configGroup).Resources("builds").RuleOrDie(),
 			eventsRule(),
 		},
 	})

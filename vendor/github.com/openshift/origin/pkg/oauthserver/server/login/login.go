@@ -2,13 +2,13 @@ package login
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
-	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/origin/pkg/oauthserver/prometheus"
 	"github.com/openshift/origin/pkg/oauthserver/server/csrf"
 	"github.com/openshift/origin/pkg/oauthserver/server/errorpage"
-	"github.com/openshift/origin/pkg/oauthserver/server/headers"
 	"github.com/openshift/origin/pkg/oauthserver/server/redirect"
 )
 
@@ -89,21 +88,15 @@ func NewLogin(provider string, csrf csrf.CSRF, auth PasswordAuthenticator, rende
 	}
 }
 
-// Install registers the login handler into a mux. It is expected that the
-// provided prefix will serve all operations. Path MUST NOT end in a slash.
-func (l *Login) Install(mux oauthserver.Mux, paths ...string) {
-	for _, path := range paths {
-		path = strings.TrimRight(path, "/")
-		mux.HandleFunc(path, l.ServeHTTP)
-	}
+func (l *Login) Install(mux oauthserver.Mux, prefix string) {
+	mux.Handle(prefix, l)
 }
 
 func (l *Login) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	headers.SetStandardHeaders(w)
 	switch req.Method {
-	case "GET":
+	case http.MethodGet:
 		l.handleLoginForm(w, req)
-	case "POST":
+	case http.MethodPost:
 		l.handleLogin(w, req)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -151,7 +144,7 @@ func (l *Login) handleLoginForm(w http.ResponseWriter, req *http.Request) {
 
 func (l *Login) handleLogin(w http.ResponseWriter, req *http.Request) {
 	if ok := l.csrf.Check(req, req.FormValue(csrfParam)); !ok {
-		glog.V(4).Infof("Invalid CSRF token: %s", req.FormValue(csrfParam))
+		klog.V(4).Infof("Invalid CSRF token: %s", req.FormValue(csrfParam))
 		failed(errorCodeTokenExpired, w, req)
 		return
 	}
@@ -165,11 +158,15 @@ func (l *Login) handleLogin(w http.ResponseWriter, req *http.Request) {
 		failed(errorCodeUserRequired, w, req)
 		return
 	}
+	if len(password) == 0 {
+		failed(errorCodeAccessDenied, w, req)
+		return
+	}
 	result := metrics.SuccessResult
 	defer func() {
 		metrics.RecordFormPasswordAuth(result)
 	}()
-	user, ok, err := l.auth.AuthenticatePassword(username, password)
+	authResponse, ok, err := l.auth.AuthenticatePassword(context.TODO(), username, password)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf(`Error authenticating %q with provider %q: %v`, username, l.provider, err))
 		failed(errorpage.AuthenticationErrorCode(err), w, req)
@@ -177,13 +174,13 @@ func (l *Login) handleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if !ok {
-		glog.V(4).Infof(`Login with provider %q failed for %q`, l.provider, username)
+		klog.V(4).Infof(`Login with provider %q failed for %q`, l.provider, username)
 		failed(errorCodeAccessDenied, w, req)
 		result = metrics.FailResult
 		return
 	}
-	glog.V(4).Infof(`Login with provider %q succeeded for %q: %#v`, l.provider, username, user)
-	l.auth.AuthenticationSucceeded(user, then, w, req)
+	klog.V(4).Infof(`Login with provider %q succeeded for %q: %#v`, l.provider, username, authResponse.User)
+	l.auth.AuthenticationSucceeded(authResponse.User, then, w, req)
 }
 
 // NewLoginFormRenderer creates a login form renderer that takes in an optional custom template to

@@ -21,16 +21,15 @@ import (
 
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/command"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/output"
-	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	servicecatalog "github.com/kubernetes-incubator/service-catalog/pkg/svcat/service-catalog"
 	"github.com/spf13/cobra"
 )
 
 type describeCmd struct {
 	*command.Context
-	lookupByUUID bool
-	uuid         string
-	name         string
+	lookupByKubeName bool
+	kubeName         string
+	name             string
 }
 
 // NewDescribeCmd builds a "svcat describe class" command
@@ -42,28 +41,28 @@ func NewDescribeCmd(cxt *command.Context) *cobra.Command {
 		Short:   "Show details of a specific class",
 		Example: command.NormalizeExamples(`
   svcat describe class mysqldb
-  svcat describe class -uuid 997b8372-8dac-40ac-ae65-758b4a5075a5
+  svcat describe class --kube-name 997b8372-8dac-40ac-ae65-758b4a5075a5
 `),
 		PreRunE: command.PreRunE(describeCmd),
 		RunE:    command.RunE(describeCmd),
 	}
 	cmd.Flags().BoolVarP(
-		&describeCmd.lookupByUUID,
-		"uuid",
-		"u",
+		&describeCmd.lookupByKubeName,
+		"kube-name",
+		"k",
 		false,
-		"Whether or not to get the class by UUID (the default is by name)",
+		"Whether or not to get the class by its Kubernetes Name (the default is by external name)",
 	)
 	return cmd
 }
 
 func (c *describeCmd) Validate(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("a class name or uuid is required")
+		return fmt.Errorf("a class name or Kubernetes name is required")
 	}
 
-	if c.lookupByUUID {
-		c.uuid = args[0]
+	if c.lookupByKubeName {
+		c.kubeName = args[0]
 	} else {
 		c.name = args[0]
 	}
@@ -76,12 +75,14 @@ func (c *describeCmd) Run() error {
 }
 
 func (c *describeCmd) describe() error {
-	var class *v1beta1.ClusterServiceClass
+	var class servicecatalog.Class
 	var err error
-	if c.lookupByUUID {
-		class, err = c.App.RetrieveClassByID(c.uuid)
+	if c.lookupByKubeName {
+		class, err = c.App.RetrieveClassByID(c.kubeName)
 	} else {
-		class, err = c.App.RetrieveClassByName(c.name)
+		class, err = c.App.RetrieveClassByName(c.name, servicecatalog.ScopeOptions{
+			Scope: servicecatalog.ClusterScope,
+		})
 	}
 	if err != nil {
 		return err
@@ -89,7 +90,8 @@ func (c *describeCmd) describe() error {
 
 	output.WriteClassDetails(c.Output, class)
 
-	plans, err := c.App.RetrievePlans(servicecatalog.RetrievePlanOptions{Scope: servicecatalog.AllScope, ClassID: class.Name})
+	opts := servicecatalog.ScopeOptions{Scope: servicecatalog.AllScope}
+	plans, err := c.App.RetrievePlans(class.GetName(), opts)
 	if err != nil {
 		return err
 	}

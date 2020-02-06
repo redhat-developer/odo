@@ -3,15 +3,13 @@ package util
 import (
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	ktypedclient "k8s.io/client-go/kubernetes/typed/core/v1"
+	v1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	credentialprovidersecrets "k8s.io/kubernetes/pkg/credentialprovider/secrets"
 
@@ -25,7 +23,7 @@ const (
 	// NoBuildLogsMessage reports that no build logs are available
 	NoBuildLogsMessage = "No logs are available."
 
-	// WorkDir is the working directory within the build pod, mounted as a volume.
+	// BuildWorkDirMount is the working directory within the build pod, mounted as a volume.
 	BuildWorkDirMount = "/tmp/build"
 
 	// BuilderServiceAccountName is the name of the account used to run build pods by default.
@@ -33,12 +31,14 @@ const (
 
 	// buildPodSuffix is the suffix used to append to a build pod name given a build name
 	buildPodSuffix = "build"
-)
 
-var (
-	// InputContentPath is the path at which the build inputs will be available
-	// to all the build containers.
-	InputContentPath = filepath.Join(BuildWorkDirMount, "inputs")
+	// BuildBlobsMetaCache is the directory used to store a cache for the blobs metadata to be
+	// reused across builds.
+	BuildBlobsMetaCache = "/var/lib/containers/cache"
+
+	// BuildBlobsContentCache is the directory used to store a cache for the blobs content to be
+	// reused within a build pod.
+	BuildBlobsContentCache = "/var/cache/blobs"
 )
 
 // GeneratorFatalError represents a fatal error while generating a build.
@@ -253,7 +253,7 @@ func FindDockerSecretAsReference(secrets []corev1.Secret, image string) *corev1.
 		secretList := []corev1.Secret{secret}
 		keyring, err := credentialprovidersecrets.MakeDockerKeyring(secretList, &emptyKeyring)
 		if err != nil {
-			glog.V(2).Infof("Unable to make the Docker keyring for %s/%s secret: %v", secret.Name, secret.Namespace, err)
+			klog.V(2).Infof("Unable to make the Docker keyring for %s/%s secret: %v", secret.Name, secret.Namespace, err)
 			continue
 		}
 		if _, found := keyring.Lookup(image); found {
@@ -265,14 +265,14 @@ func FindDockerSecretAsReference(secrets []corev1.Secret, image string) *corev1.
 
 // FetchServiceAccountSecrets retrieves the Secrets used for pushing and pulling
 // images from private Docker registries.
-func FetchServiceAccountSecrets(client ktypedclient.CoreV1Interface, namespace, serviceAccount string) ([]corev1.Secret, error) {
+func FetchServiceAccountSecrets(secretStore v1lister.SecretLister, serviceAccountStore v1lister.ServiceAccountLister, namespace, serviceAccount string) ([]corev1.Secret, error) {
 	var result []corev1.Secret
-	sa, err := client.ServiceAccounts(namespace).Get(serviceAccount, metav1.GetOptions{})
+	sa, err := serviceAccountStore.ServiceAccounts(namespace).Get(serviceAccount)
 	if err != nil {
 		return result, fmt.Errorf("Error getting push/pull secrets for service account %s/%s: %v", namespace, serviceAccount, err)
 	}
 	for _, ref := range sa.Secrets {
-		secret, err := client.Secrets(namespace).Get(ref.Name, metav1.GetOptions{})
+		secret, err := secretStore.Secrets(namespace).Get(ref.Name)
 		if err != nil {
 			continue
 		}
@@ -290,11 +290,11 @@ func UpdateCustomImageEnv(strategy *buildv1.CustomBuildStrategy, newImage string
 	} else {
 		found := false
 		for i := range strategy.Env {
-			glog.V(4).Infof("Checking env variable %s %s", strategy.Env[i].Name, strategy.Env[i].Value)
+			klog.V(4).Infof("Checking env variable %s %s", strategy.Env[i].Name, strategy.Env[i].Value)
 			if strategy.Env[i].Name == CustomBuildStrategyBaseImageKey {
 				found = true
 				strategy.Env[i].Value = newImage
-				glog.V(4).Infof("Updated env variable %s to %s", strategy.Env[i].Name, strategy.Env[i].Value)
+				klog.V(4).Infof("Updated env variable %s to %s", strategy.Env[i].Name, strategy.Env[i].Value)
 				break
 			}
 		}

@@ -11,13 +11,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-	kcmd "k8s.io/kubernetes/pkg/kubectl/cmd"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/completion"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/origin/pkg/cmd/flagtypes"
-	"github.com/openshift/origin/pkg/cmd/server/start"
 	"github.com/openshift/origin/pkg/cmd/templates"
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	cmdversion "github.com/openshift/origin/pkg/cmd/version"
@@ -57,16 +55,12 @@ func CommandFor(basename string) *cobra.Command {
 
 // NewCommandOpenShift creates the standard OpenShift command
 func NewCommandOpenShift(name string) *cobra.Command {
-	out, errout := os.Stdout, os.Stderr
-
 	root := &cobra.Command{
 		Use:   name,
 		Short: "Build, deploy, and manage your cloud applications",
 		Long:  fmt.Sprintf(openshiftLong, name, cmdutil.GetPlatformName(name), cmdutil.GetDistributionName(name)),
-		Run:   kcmdutil.DefaultSubCommandRun(out),
+		Run:   kcmdutil.DefaultSubCommandRun(os.Stderr),
 	}
-
-	root.AddCommand(start.NewCommandStart(name, out, errout, wait.NeverStop))
 
 	root.AddCommand(newCompletionCommand("completion", name+" completion"))
 	root.AddCommand(cmdversion.NewCmdVersion(name, osversion.Get(), os.Stdout))
@@ -131,7 +125,7 @@ func NewCmdCompletion(fullName string, out io.Writer) *cobra.Command {
 		cmdHelpName = "openshift"
 	}
 
-	cmd := kcmd.NewCmdCompletion(out, "\n")
+	cmd := completion.NewCmdCompletion(out, "\n")
 	cmd.Long = fmt.Sprintf(completionLong, cmdHelpName)
 	cmd.Example = fmt.Sprintf(completionExample, cmdHelpName, cmdHelpName, cmdHelpName, cmdHelpName)
 	// mark all statically included flags as hidden to prevent them appearing in completions

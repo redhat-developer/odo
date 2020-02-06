@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	knet "k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
 	clienttesting "k8s.io/client-go/testing"
 
@@ -28,8 +29,8 @@ type testAuth struct {
 	Err     error
 }
 
-func (t *testAuth) AuthenticateRequest(req *http.Request) (user.Info, bool, error) {
-	return t.User, t.Success, t.Err
+func (t *testAuth) AuthenticateRequest(req *http.Request) (*authenticator.Response, bool, error) {
+	return &authenticator.Response{User: t.User}, t.Success, t.Err
 }
 
 func goodAuth(username string) *testAuth {
@@ -40,7 +41,7 @@ func badAuth(err error) *testAuth {
 }
 
 func emptyClientRegistry() api.OAuthClientGetter {
-	return oauthfake.NewSimpleClientset().Oauth().OAuthClients()
+	return oauthfake.NewSimpleClientset().OauthV1().OAuthClients()
 }
 
 func goodClientRegistry(clientID string, redirectURIs []string, literalScopes []string) api.OAuthClientGetter {
@@ -51,14 +52,14 @@ func goodClientRegistry(clientID string, redirectURIs []string, literalScopes []
 	}
 	fakeOAuthClient := oauthfake.NewSimpleClientset(client)
 
-	return fakeOAuthClient.Oauth().OAuthClients()
+	return fakeOAuthClient.OauthV1().OAuthClients()
 }
 func badClientRegistry(err error) api.OAuthClientGetter {
 	fakeOAuthClient := oauthfake.NewSimpleClientset()
 	fakeOAuthClient.PrependReactor("get", "oauthclients", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, err
 	})
-	return fakeOAuthClient.Oauth().OAuthClients()
+	return fakeOAuthClient.OauthV1().OAuthClients()
 }
 
 func emptyAuthRegistry() *oauthfake.Clientset {
@@ -394,7 +395,7 @@ func TestGrant(t *testing.T) {
 	}
 
 	for k, testCase := range testCases {
-		server := httptest.NewServer(NewGrant(testCase.CSRF, testCase.Auth, DefaultFormRenderer, testCase.ClientRegistry, testCase.AuthRegistry.Oauth().OAuthClientAuthorizations()))
+		server := httptest.NewServer(NewGrant(testCase.CSRF, testCase.Auth, DefaultFormRenderer, testCase.ClientRegistry, testCase.AuthRegistry.OauthV1().OAuthClientAuthorizations()))
 
 		var resp *http.Response
 		if testCase.PostValues != nil {

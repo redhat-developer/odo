@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ghodss/yaml"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	fakeosb "github.com/pmorie/go-open-service-broker-client/v2/fake"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	servicecataloginformers "github.com/kubernetes-incubator/service-catalog/pkg/client/informers_generated/externalversions"
@@ -61,15 +61,15 @@ import (
 // loops for the different catalog API resources.
 
 const (
-	testClusterServiceClassGUID            = "CSCGUID"
-	testClusterServicePlanGUID             = "CSPGUID"
-	testNonbindableClusterServiceClassGUID = "UNBINDABLE-CLUSTERSERVICECLASS"
-	testNonbindableClusterServicePlanGUID  = "UNBINDABLE-CLUSTERSERVICEPLAN"
-	testServiceInstanceGUID                = "IGUID"
-	testServiceBindingGUID                 = "BGUID"
+	testClusterServiceClassGUID            = "cscguid"
+	testClusterServicePlanGUID             = "cspguid"
+	testNonbindableClusterServiceClassGUID = "unbindable-clusterserviceclass"
+	testNonbindableClusterServicePlanGUID  = "unbindable-clusterserviceplan"
+	testServiceInstanceGUID                = "iguid"
+	testServiceBindingGUID                 = "bguid"
 	testNamespaceGUID                      = "test-ns-uid"
-	testRemovedClusterServiceClassGUID     = "REMOVED-CLUSTERSERVICECLASS"
-	testRemovedClusterServicePlanGUID      = "REMOVED-CLUSTERSERVICEPLAN"
+	testRemovedClusterServiceClassGUID     = "removed-clusterserviceclass"
+	testRemovedClusterServicePlanGUID      = "removed-clusterserviceplan"
 
 	testClusterServiceBrokerName            = "test-clusterservicebroker"
 	testClusterServiceClassName             = "test-clusterserviceclass"
@@ -91,8 +91,10 @@ const (
 )
 
 var (
-	testDashboardURL = "http://dashboard"
-	testContext      = map[string]interface{}{
+	emptyServiceClasses = make(map[string]*v1beta1.ClusterServiceClass)
+	emptyServicePlans   = make(map[string]*v1beta1.ClusterServicePlan)
+	testDashboardURL    = "http://dashboard"
+	testContext         = map[string]interface{}{
 		"platform":           ContextProfilePlatformKubernetes,
 		"namespace":          testNamespace,
 		clusterIdentifierKey: testClusterID,
@@ -102,7 +104,7 @@ var (
 const testCatalog = `{
   "services": [{
     "name": "fake-service",
-    "id": "acb56d7c-XXXX-XXXX-XXXX-feb140a59a66",
+    "id": "acb56d7c-xxxx-xxxx-xxxx-feb140a59a66",
     "description": "fake service",
     "tags": ["no-sql", "relational"],
     "requires": ["route_forwarding"],
@@ -120,14 +122,14 @@ const testCatalog = `{
       "displayName": "The Fake ClusterServiceBroker"
     },
     "dashboard_client": {
-      "id": "398e2f8e-XXXX-XXXX-XXXX-19a71ecbcf64",
-      "secret": "277cabb0-XXXX-XXXX-XXXX-7822c0a90e5d",
+      "id": "398e2f8e-xxxx-xxxx-xxxx-19a71ecbcf64",
+      "secret": "277cabb0-xxxx-xxxx-xxxx-7822c0a90e5d",
       "redirect_uri": "http://localhost:1234"
     },
     "plan_updateable": true,
     "plans": [{
       "name": "fake-plan-1",
-      "id": "d3031751-XXXX-XXXX-XXXX-a42377d3320e",
+      "id": "d3031751-xxxx-xxxx-xxxx-a42377d3320e",
       "description": "Shared fake Server, 5tb persistent disk, 40 max concurrent connections",
       "max_storage_tb": 5,
       "metadata": {
@@ -153,7 +155,7 @@ const testCatalog = `{
       }
     }, {
       "name": "fake-plan-2",
-      "id": "0f4008b5-XXXX-XXXX-XXXX-dace631cd648",
+      "id": "0f4008b5-xxxx-xxxx-xxxx-dace631cd648",
       "description": "Shared fake Server, 5tb persistent disk, 40 max concurrent connections. 100 async",
       "max_storage_tb": 5,
       "metadata": {
@@ -182,7 +184,7 @@ const testCatalog = `{
 const alphaParameterSchemaCatalogBytes = `{
   "services": [{
     "name": "fake-service",
-    "id": "acb56d7c-XXXX-XXXX-XXXX-feb140a59a66",
+    "id": "acb56d7c-xxxx-xxxx-xxxx-feb140a59a66",
     "description": "fake service",
     "tags": ["tag1", "tag2"],
     "requires": ["route_forwarding"],
@@ -192,14 +194,14 @@ const alphaParameterSchemaCatalogBytes = `{
     	"c": "d"
     },
     "dashboard_client": {
-      "id": "398e2f8e-XXXX-XXXX-XXXX-19a71ecbcf64",
-      "secret": "277cabb0-XXXX-XXXX-XXXX-7822c0a90e5d",
+      "id": "398e2f8e-xxxx-xxxx-xxxx-19a71ecbcf64",
+      "secret": "277cabb0-xxxx-xxxx-xxxx-7822c0a90e5d",
       "redirect_uri": "http://localhost:1234"
     },
     "plan_updateable": true,
     "plans": [{
       "name": "fake-plan-1",
-      "id": "d3031751-XXXX-XXXX-XXXX-a42377d3320e",
+      "id": "d3031751-xxxx-xxxx-xxxx-a42377d3320e",
       "description": "description1",
       "metadata": {
       	"b": "c",
@@ -513,6 +515,39 @@ func getTestClusterServiceBrokerWithAuth(authInfo *v1beta1.ClusterServiceBrokerA
 	broker := getTestClusterServiceBroker()
 	broker.Spec.AuthInfo = authInfo
 	return broker
+}
+
+func getTestClusterBrokerBasicAuthInfo() *v1beta1.ClusterServiceBrokerAuthInfo {
+	return &v1beta1.ClusterServiceBrokerAuthInfo{
+		Basic: &v1beta1.ClusterBasicAuthConfig{
+			SecretRef: &v1beta1.ObjectReference{Namespace: "test-ns", Name: "auth-secret"},
+		},
+	}
+}
+
+func getTestClusterBrokerBearerAuthInfo() *v1beta1.ClusterServiceBrokerAuthInfo {
+	return &v1beta1.ClusterServiceBrokerAuthInfo{
+		Bearer: &v1beta1.ClusterBearerTokenAuthConfig{
+			SecretRef: &v1beta1.ObjectReference{Namespace: "test-ns", Name: "auth-secret"},
+		},
+	}
+}
+
+func getTestBasicAuthSecret() *corev1.Secret {
+	return &corev1.Secret{
+		Data: map[string][]byte{
+			v1beta1.BasicAuthUsernameKey: []byte("foo"),
+			v1beta1.BasicAuthPasswordKey: []byte("bar"),
+		},
+	}
+}
+
+func getTestBearerAuthSecret() *corev1.Secret {
+	return &corev1.Secret{
+		Data: map[string][]byte{
+			v1beta1.BearerTokenKey: []byte("token"),
+		},
+	}
 }
 
 // a bindable service class wired to the result of getTestClusterServiceBroker()
@@ -1058,8 +1093,8 @@ func getTestServiceBinding() *v1beta1.ServiceBinding {
 			Generation: 1,
 		},
 		Spec: v1beta1.ServiceBindingSpec{
-			ServiceInstanceRef: v1beta1.LocalObjectReference{Name: testServiceInstanceName},
-			ExternalID:         testServiceBindingGUID,
+			InstanceRef: v1beta1.LocalObjectReference{Name: testServiceInstanceName},
+			ExternalID:  testServiceBindingGUID,
 		},
 		Status: v1beta1.ServiceBindingStatus{
 			UnbindStatus: v1beta1.ServiceBindingUnbindStatusRequired,
@@ -1077,8 +1112,8 @@ func getTestServiceInactiveBinding() *v1beta1.ServiceBinding {
 			Generation: 1,
 		},
 		Spec: v1beta1.ServiceBindingSpec{
-			ServiceInstanceRef: v1beta1.LocalObjectReference{Name: testServiceInstanceName},
-			ExternalID:         testServiceBindingGUID,
+			InstanceRef: v1beta1.LocalObjectReference{Name: testServiceInstanceName},
+			ExternalID:  testServiceBindingGUID,
 		},
 		Status: v1beta1.ServiceBindingStatus{
 			Conditions:   []v1beta1.ServiceBindingCondition{},
@@ -1097,9 +1132,9 @@ func getTestServiceBindingUnbinding() *v1beta1.ServiceBinding {
 			Generation:        2,
 		},
 		Spec: v1beta1.ServiceBindingSpec{
-			ServiceInstanceRef: v1beta1.LocalObjectReference{Name: testServiceInstanceName},
-			ExternalID:         testServiceBindingGUID,
-			SecretName:         testServiceBindingSecretName,
+			InstanceRef: v1beta1.LocalObjectReference{Name: testServiceInstanceName},
+			ExternalID:  testServiceBindingGUID,
+			SecretName:  testServiceBindingSecretName,
 		},
 		Status: v1beta1.ServiceBindingStatus{
 			ReconciledGeneration: 1,
@@ -1250,7 +1285,7 @@ type bindingParameters struct {
 }
 
 func TestEmptyCatalogConversion(t *testing.T) {
-	serviceClasses, servicePlans, err := convertAndFilterCatalog(&osb.CatalogResponse{}, nil)
+	serviceClasses, servicePlans, err := convertAndFilterCatalog(&osb.CatalogResponse{}, nil, emptyServiceClasses, emptyServicePlans)
 	if err != nil {
 		t.Fatalf("Failed to convertAndFilterCatalog: %v", err)
 	}
@@ -1268,7 +1303,7 @@ func TestCatalogConversion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to unmarshal test catalog: %v", err)
 	}
-	serviceClasses, servicePlans, err := convertAndFilterCatalog(catalog, nil)
+	serviceClasses, servicePlans, err := convertAndFilterCatalog(catalog, nil, emptyServiceClasses, emptyServicePlans)
 	if err != nil {
 		t.Fatalf("Failed to convertAndFilterCatalog: %v", err)
 	}
@@ -1279,8 +1314,46 @@ func TestCatalogConversion(t *testing.T) {
 		t.Fatalf("Expected 2 plans for testCatalog, but got: %d", len(servicePlans))
 	}
 
-	checkPlan(servicePlans[0], "d3031751-XXXX-XXXX-XXXX-a42377d3320e", "fake-plan-1", "Shared fake Server, 5tb persistent disk, 40 max concurrent connections", t)
-	checkPlan(servicePlans[1], "0f4008b5-XXXX-XXXX-XXXX-dace631cd648", "fake-plan-2", "Shared fake Server, 5tb persistent disk, 40 max concurrent connections. 100 async", t)
+	checkPlan(servicePlans[0], "d3031751-xxxx-xxxx-xxxx-a42377d3320e", "d3031751-xxxx-xxxx-xxxx-a42377d3320e", "fake-plan-1", "Shared fake Server, 5tb persistent disk, 40 max concurrent connections", t)
+	checkPlan(servicePlans[1], "0f4008b5-xxxx-xxxx-xxxx-dace631cd648", "0f4008b5-xxxx-xxxx-xxxx-dace631cd648", "fake-plan-2", "Shared fake Server, 5tb persistent disk, 40 max concurrent connections. 100 async", t)
+}
+
+func TestCatalogConversionWithPreexistingClassesAndPlans(t *testing.T) {
+	catalog := &osb.CatalogResponse{}
+	err := json.Unmarshal([]byte(testCatalog), &catalog)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal test catalog: %v", err)
+	}
+	testClassExternalID := "foo-bar"
+	testPlanExternalID := "foo-bar-plan"
+	catalog.Services[0].ID = testClassExternalID
+	catalog.Services[0].Plans[0].ID = testPlanExternalID
+
+	oldServiceClasses := make(map[string]*v1beta1.ClusterServiceClass)
+	oldServiceClass := getTestClusterServiceClass()
+	oldServiceClass.Name = testClassExternalID
+	oldServiceClass.Spec.ExternalID = testClassExternalID
+	oldServiceClasses[catalog.Services[0].ID] = oldServiceClass
+
+	oldServicePlans := make(map[string]*v1beta1.ClusterServicePlan)
+	oldServicePlan := getTestClusterServicePlan()
+	oldServiceClass.Spec.ExternalID = testPlanExternalID
+	oldServicePlans[catalog.Services[0].Plans[0].ID] = oldServicePlan
+
+	serviceClasses, servicePlans, err := convertAndFilterCatalog(catalog, nil, oldServiceClasses, oldServicePlans)
+	if err != nil {
+		t.Fatalf("Failed to convertAndFilterCatalog: %v", err)
+	}
+	if len(serviceClasses) != 1 {
+		t.Fatalf("Expected 1 serviceclasses for testCatalog, but got: %d", len(serviceClasses))
+	}
+	checkClass(serviceClasses[0], testClassExternalID, testClassExternalID, "fake-service", "fake service", t)
+
+	if len(servicePlans) != 2 {
+		t.Fatalf("Expected 2 plans for testCatalog, but got: %d", len(servicePlans))
+	}
+	checkPlan(servicePlans[0], oldServicePlan.Spec.ExternalID, testPlanExternalID, "fake-plan-1", "Shared fake Server, 5tb persistent disk, 40 max concurrent connections", t)
+	checkPlan(servicePlans[1], "0f4008b5-xxxx-xxxx-xxxx-dace631cd648", "0f4008b5-xxxx-xxxx-xxxx-dace631cd648", "fake-plan-2", "Shared fake Server, 5tb persistent disk, 40 max concurrent connections. 100 async", t)
 }
 
 func TestCatalogConversionWithParameterSchemas(t *testing.T) {
@@ -1292,7 +1365,7 @@ func TestCatalogConversionWithParameterSchemas(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to unmarshal test catalog: %v", err)
 	}
-	serviceClasses, servicePlans, err := convertAndFilterCatalog(catalog, nil)
+	serviceClasses, servicePlans, err := convertAndFilterCatalog(catalog, nil, emptyServiceClasses, emptyServicePlans)
 	if err != nil {
 		t.Fatalf("Failed to convertAndFilterCatalog: %v", err)
 	}
@@ -1304,12 +1377,12 @@ func TestCatalogConversionWithParameterSchemas(t *testing.T) {
 	}
 
 	plan := servicePlans[0]
-	if plan.Spec.ServiceInstanceCreateParameterSchema == nil {
-		t.Fatalf("Expected plan.ServiceInstanceCreateParameterSchema to be set, but was nil")
+	if plan.Spec.InstanceCreateParameterSchema == nil {
+		t.Fatalf("Expected plan.InstanceCreateParameterSchema to be set, but was nil")
 	}
 
 	cSchema := make(map[string]interface{})
-	if err := json.Unmarshal(plan.Spec.ServiceInstanceCreateParameterSchema.Raw, &cSchema); err == nil {
+	if err := json.Unmarshal(plan.Spec.InstanceCreateParameterSchema.Raw, &cSchema); err == nil {
 		schema := make(map[string]interface{})
 		if err := json.Unmarshal([]byte(instanceParameterSchemaBytes), &schema); err != nil {
 			t.Fatalf("Error unmarshalling schema bytes: %v", err)
@@ -1320,11 +1393,11 @@ func TestCatalogConversionWithParameterSchemas(t *testing.T) {
 		}
 	}
 
-	if plan.Spec.ServiceInstanceUpdateParameterSchema == nil {
-		t.Fatalf("Expected plan.ServiceInstanceUpdateParameterSchema to be set, but was nil")
+	if plan.Spec.InstanceUpdateParameterSchema == nil {
+		t.Fatalf("Expected plan.InstanceUpdateParameterSchema to be set, but was nil")
 	}
 	m := make(map[string]string)
-	if err := json.Unmarshal(plan.Spec.ServiceInstanceUpdateParameterSchema.Raw, &m); err == nil {
+	if err := json.Unmarshal(plan.Spec.InstanceUpdateParameterSchema.Raw, &m); err == nil {
 		if e, a := "zap", m["baz"]; e != a {
 			t.Fatalf("Unexpected value of alphaInstanceUpdateParameterSchema; expected %v, got %v", e, a)
 		}
@@ -1351,9 +1424,24 @@ func TestCatalogConversionWithParameterSchemas(t *testing.T) {
 	}
 }
 
-func checkPlan(plan *v1beta1.ClusterServicePlan, planID, planName, planDescription string, t *testing.T) {
-	if plan.Name != planID {
-		t.Errorf("Expected plan name to be %q, but was: %q", planID, plan.Name)
+func checkClass(class *v1beta1.ClusterServiceClass, classK8sName, classID, className, classDescription string, t *testing.T) {
+	if class.Name != classK8sName {
+		t.Errorf("Expected class name to be %q, but was: %q", classK8sName, class.Name)
+	}
+	if class.Spec.ExternalID != classID {
+		t.Errorf("Expected class ExternalID to be %q, but was: %q", classID, class.Spec.ExternalID)
+	}
+	if class.Spec.ExternalName != className {
+		t.Errorf("Expected plan ExternalName to be %q, but was: %q", className, class.Spec.ExternalName)
+	}
+	if class.Spec.Description != classDescription {
+		t.Errorf("Expected class description to be %q, but was: %q", classDescription, class.Spec.Description)
+	}
+}
+
+func checkPlan(plan *v1beta1.ClusterServicePlan, planK8sName, planID, planName, planDescription string, t *testing.T) {
+	if plan.Name != planK8sName {
+		t.Errorf("Expected plan name to be %q, but was: %q", planK8sName, plan.Name)
 	}
 	if plan.Spec.ExternalID != planID {
 		t.Errorf("Expected plan ExternalID to be %q, but was: %q", planID, plan.Spec.ExternalID)
@@ -1594,7 +1682,7 @@ func TestConvertAndFilterCatalog(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to unmarshal test catalog: %v", err)
 			}
-			classes, plans, err := convertAndFilterCatalog(catalog, tc.restrictions)
+			classes, plans, err := convertAndFilterCatalog(catalog, tc.restrictions, emptyServiceClasses, emptyServicePlans)
 			if err != nil {
 				if tc.error {
 					return
@@ -1670,7 +1758,7 @@ func TestFilterServicePlans(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to unmarshal test catalog: %v", err)
 			}
-			_, servicePlans, err := convertAndFilterCatalog(catalog, nil)
+			_, servicePlans, err := convertAndFilterCatalog(catalog, nil, emptyServiceClasses, emptyServicePlans)
 			if err != nil {
 				t.Fatalf("Failed to convertAndFilterCatalog: %v", err)
 			}
@@ -1703,11 +1791,11 @@ const testCatalogForClusterServicePlanBindableOverride = `{
       "bindable": true,
       "plans": [{
         "name": "bindable-bindable",
-        "id": "s1_plan1_id"
+        "id": "s1-plan1-id"
       },
       {
         "name": "bindable-unbindable",
-        "id": "s1_plan2_id",
+        "id": "s1-plan2-id",
         "bindable": false
       }]
     },
@@ -1717,11 +1805,11 @@ const testCatalogForClusterServicePlanBindableOverride = `{
       "bindable": false,
       "plans": [{
         "name": "unbindable-unbindable",
-        "id": "s2_plan1_id"
+        "id": "s2-plan1-id"
       },
       {
         "name": "unbindable-bindable",
-        "id": "s2_plan2_id",
+        "id": "s2-plan2-id",
         "bindable": true
       }]
     }
@@ -1748,7 +1836,7 @@ func TestCatalogConversionClusterServicePlanBindable(t *testing.T) {
 		t.Fatalf("Failed to unmarshal test catalog: %v", err)
 	}
 
-	aclasses, aplans, err := convertAndFilterCatalog(catalog, nil)
+	aclasses, aplans, err := convertAndFilterCatalog(catalog, nil, emptyServiceClasses, emptyServicePlans)
 	if err != nil {
 		t.Fatalf("Failed to convertAndFilterCatalog: %v", err)
 	}
@@ -1783,11 +1871,11 @@ func TestCatalogConversionClusterServicePlanBindable(t *testing.T) {
 	eplans := []*v1beta1.ClusterServicePlan{
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "s1_plan1_id",
+				Name: "s1-plan1-id",
 			},
 			Spec: v1beta1.ClusterServicePlanSpec{
 				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
-					ExternalID:   "s1_plan1_id",
+					ExternalID:   "s1-plan1-id",
 					ExternalName: "bindable-bindable",
 					Bindable:     nil,
 				},
@@ -1798,12 +1886,12 @@ func TestCatalogConversionClusterServicePlanBindable(t *testing.T) {
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "s1_plan2_id",
+				Name: "s1-plan2-id",
 			},
 			Spec: v1beta1.ClusterServicePlanSpec{
 				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
 					ExternalName: "bindable-unbindable",
-					ExternalID:   "s1_plan2_id",
+					ExternalID:   "s1-plan2-id",
 					Bindable:     falsePtr(),
 				},
 				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
@@ -1813,12 +1901,12 @@ func TestCatalogConversionClusterServicePlanBindable(t *testing.T) {
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "s2_plan1_id",
+				Name: "s2-plan1-id",
 			},
 			Spec: v1beta1.ClusterServicePlanSpec{
 				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
 					ExternalName: "unbindable-unbindable",
-					ExternalID:   "s2_plan1_id",
+					ExternalID:   "s2-plan1-id",
 					Bindable:     nil,
 				},
 				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
@@ -1828,12 +1916,12 @@ func TestCatalogConversionClusterServicePlanBindable(t *testing.T) {
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "s2_plan2_id",
+				Name: "s2-plan2-id",
 			},
 			Spec: v1beta1.ClusterServicePlanSpec{
 				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
 					ExternalName: "unbindable-bindable",
-					ExternalID:   "s2_plan2_id",
+					ExternalID:   "s2-plan2-id",
 					Bindable:     truePtr(),
 				},
 				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
@@ -1850,6 +1938,265 @@ func TestCatalogConversionClusterServicePlanBindable(t *testing.T) {
 		t.Errorf("Unexpected diff between expected and actual serviceplans: %v", diff.ObjectReflectDiff(eplans, aplans))
 	}
 
+}
+
+const testCatalogForClusterServiceClassAndPlanWithInvalidExternalIDCharacters = `{
+  "services": [
+    {
+      "name": "mysql",
+      "id": "mysqlclass-1234-A",
+      "plans": [{
+        "name": "normal-characters",
+        "id": "mysql-100mb"
+      },
+      {
+        "name": "contains-escape-chars",
+        "id": "abz-class"
+      },
+      {
+        "name": "invalid-internal-characters",
+        "id": "invalid/characters"
+      },
+			{
+				"name": "invalid-starting-ending-characters",
+				"id": "InvalidstarT"
+      },
+			{
+				"name": "starting-ending-periods",
+				"id": ".start."
+      },
+			{
+				"name": "period-next-to-invalid-character",
+				"id": "foo.Bar"
+      },
+			{
+				"name": "internal-period",
+				"id": "foo.bar"
+      },
+			{
+				"name": "too-long",
+				"id": "thisnameisreallyreallywaytoolonghowcouldanyonepossiblyreadthisplansname"
+      },
+			{
+				"name": "too-long-with-problem-chars",
+				"id": "thisnameisreallyreallywaytool-onghowcouldanyonepossiblyreadthisplansname"
+      },
+			{
+				"name": "too-long-with-problem-period",
+				"id": "thisnameisreallyreallywaytool.onghowcouldanyonepossiblyreadthisplansname"
+			}]
+    }
+]}`
+
+func TestCatalogConversionInvalidCharactersInExternalID(t *testing.T) {
+	catalog := &osb.CatalogResponse{}
+	err := json.Unmarshal([]byte(testCatalogForClusterServiceClassAndPlanWithInvalidExternalIDCharacters), &catalog)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal test catalog: %v", err)
+	}
+
+	aclasses, aplans, err := convertAndFilterCatalog(catalog, nil, emptyServiceClasses, emptyServicePlans)
+	if err != nil {
+		t.Fatalf("Failed to convertAndFilterCatalog: %v", err)
+	}
+
+	eclasses := []*v1beta1.ClusterServiceClass{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "mysqlclass-1234-z41z",
+			},
+			Spec: v1beta1.ClusterServiceClassSpec{
+				CommonServiceClassSpec: v1beta1.CommonServiceClassSpec{
+					ExternalName: "mysql",
+					ExternalID:   "mysqlclass-1234-A",
+				},
+			},
+		},
+	}
+
+	eplans := []*v1beta1.ClusterServicePlan{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "mysql-100mb",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "normal-characters",
+					ExternalID:   "mysql-100mb",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "abz7az-class",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "contains-escape-chars",
+					ExternalID:   "abz-class",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "invalidz2fzcharacters",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "invalid-internal-characters",
+					ExternalID:   "invalid/characters",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "z49znvalidstarz54z",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "invalid-starting-ending-characters",
+					ExternalID:   "InvalidstarT",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "z2ezstartz2ez",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "starting-ending-periods",
+					ExternalID:   ".start.",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "foo.z42zar",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "period-next-to-invalid-character",
+					ExternalID:   "foo.Bar",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "foo.bar",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "internal-period",
+					ExternalID:   "foo.bar",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "thisnameisreallyreallywaytoolo-3f54131bf8c96c7d946ee1d7a32136dd",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "too-long",
+					ExternalID:   "thisnameisreallyreallywaytoolonghowcouldanyonepossiblyreadthisplansname",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "thisnameisreallyreallywaytool--ca868df5f4322294bd65bd7e81866660",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "too-long-with-problem-chars",
+					ExternalID:   "thisnameisreallyreallywaytool-onghowcouldanyonepossiblyreadthisplansname",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "thisnameisreallyreallywaytool-fa00db817d4c467b3bf3893240ed04a1",
+			},
+			Spec: v1beta1.ClusterServicePlanSpec{
+				CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
+					ExternalName: "too-long-with-problem-period",
+					ExternalID:   "thisnameisreallyreallywaytool.onghowcouldanyonepossiblyreadthisplansname",
+				},
+				ClusterServiceClassRef: v1beta1.ClusterObjectReference{
+					Name: "mysqlclass-1234-z41z",
+				},
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(eclasses, aclasses) {
+		t.Errorf("Unexpected diff between expected and actual serviceclasses: %v", diff.ObjectReflectDiff(eclasses, aclasses))
+	}
+	if !reflect.DeepEqual(eplans, aplans) {
+		t.Errorf("Unexpected diff between expected and actual serviceplans: %v", diff.ObjectReflectDiff(eplans, aplans))
+	}
+
+}
+
+func TestGenerateEscapedName(t *testing.T) {
+	externalIDs := []string{
+		"simple",
+		"contains-escape-char-z",
+		"ContainsCaps",
+		".starts-and-ends-with-periods.",
+		"-starts-and-ends-with-hyphens-",
+		"adjacent.-specialchars",
+		"otherorderadjacent-.specialchars",
+		"waytoomany-.-.-.-.-adjacentspecialchars",
+		"thisnameisreallyreallywaytoolonghowcouldanyonepossiblyreadthisplansname",
+		"thisnameisreallyreallywaytool.onghowcouldanyonepossiblyreadthisplansnamewithproblemperiod",
+	}
+	eEscapedNames := []string{
+		"simple",
+		"contains-escape-char-z7az",
+		"z43zontainsz43zaps",
+		"z2ezstarts-and-ends-with-periodsz2ez",
+		"z2dzstarts-and-ends-with-hyphensz2dz",
+		"adjacent.z2dzspecialchars",
+		"otherorderadjacent-z2ezspecialchars",
+		"waytoomany-z2ez-z2ez-z2ez-z2ez-adjacentspecialchars",
+		"thisnameisreallyreallywaytoolo-3f54131bf8c96c7d946ee1d7a32136dd",
+		"thisnameisreallyreallywaytool-84b392d072a2cbe3a18f87e7f7776d94",
+	}
+	for i, v := range externalIDs {
+		aEscapedName := GenerateEscapedName(v)
+		if eEscapedNames[i] != aEscapedName {
+			t.Errorf("Unexpected diff between expected and actual escaped name: %v", diff.ObjectReflectDiff(eEscapedNames[i], aEscapedName))
+		}
+	}
 }
 
 func TestIsClusterServiceBrokerReady(t *testing.T) {
@@ -2004,12 +2351,18 @@ func newTestController(t *testing.T, config fakeosb.FakeClientConfiguration) (
 		DefaultClusterIDConfigMapNamespace,
 	)
 
-	if c, ok := testController.(*controller); ok {
-		c.setClusterID(testClusterID)
-	}
-
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if c, ok := testController.(*controller); ok {
+		c.setClusterID(testClusterID)
+		c.brokerClientManager.clients[NewClusterServiceBrokerKey(getTestClusterServiceBroker().Name)] = clientWithConfig{
+			OSBClient: fakeOSBClient,
+		}
+		c.brokerClientManager.clients[NewServiceBrokerKey(getTestServiceBroker().Namespace, getTestServiceBroker().Name)] = clientWithConfig{
+			OSBClient: fakeOSBClient,
+		}
 	}
 
 	fakeKubeClient.AddReactor("get", "namespaces", func(action clientgotesting.Action) (bool, runtime.Object, error) {
@@ -2045,47 +2398,16 @@ func assertNumEvents(t *testing.T, strings []string, number int) {
 	}
 }
 
-// failfFunc is a type that defines the common signatures of T.Fatalf and
-// T.Errorf.
-type failfFunc func(t *testing.T, msg string, args ...interface{})
-
 func fatalf(t *testing.T, msg string, args ...interface{}) {
 	t.Log(string(debug.Stack()))
 	t.Fatalf(msg, args...)
 }
 
-func errorf(t *testing.T, msg string, args ...interface{}) {
-	t.Log(string(debug.Stack()))
-	t.Errorf(msg, args...)
-}
-
-// assertion and expectation methods:
-//
-// - assertX will call t.Fatalf
-// - expectX will call t.Errorf and return a boolean, allowing you to drive a 'continue'
-//   in a table-type test
-
 func assertNumberOfActions(t *testing.T, actions []clientgotesting.Action, number int) {
-	testNumberOfActions(t, "" /* name */, fatalf, actions, number)
-}
-
-func expectNumberOfActions(t *testing.T, name string, actions []clientgotesting.Action, number int) bool {
-	return testNumberOfActions(t, name, errorf, actions, number)
-}
-
-func testNumberOfActions(t *testing.T, name string, f failfFunc, actions []clientgotesting.Action, number int) bool {
-	logContext := ""
-	if len(name) > 0 {
-		logContext = name + ": "
-	}
-
 	if e, a := number, len(actions); e != a {
 		t.Logf("%+v\n", actions)
-		f(t, "%vUnexpected number of actions: expected %v, got %v;\nactions: %+v", logContext, e, a, actions)
-		return false
+		fatalf(t, "Unexpected number of actions: expected %v, got %v;\nactions: %+v", e, a, actions)
 	}
-
-	return true
 }
 
 func assertGet(t *testing.T, action clientgotesting.Action, obj interface{}) {
@@ -2114,36 +2436,14 @@ func assertUpdateReference(t *testing.T, action clientgotesting.Action, obj inte
 	return assertActionFor(t, action, "update", "reference", obj)
 }
 
-func expectCreate(t *testing.T, name string, action clientgotesting.Action, obj interface{}) (runtime.Object, bool) {
-	return testActionFor(t, name, errorf, action, "create", "" /* subresource */, obj)
-}
-
-func expectUpdate(t *testing.T, name string, action clientgotesting.Action, obj interface{}) (runtime.Object, bool) {
-	return testActionFor(t, name, errorf, action, "update", "" /* subresource */, obj)
-}
-
-func expectUpdateStatus(t *testing.T, name string, action clientgotesting.Action, obj interface{}) (runtime.Object, bool) {
-	return testActionFor(t, name, errorf, action, "update", "status", obj)
-}
-
 func assertDelete(t *testing.T, action clientgotesting.Action, obj interface{}) {
 	assertActionFor(t, action, "delete", "" /* subresource */, obj)
 }
 
 func assertActionFor(t *testing.T, action clientgotesting.Action, verb, subresource string, obj interface{}) runtime.Object {
-	r, _ := testActionFor(t, "" /* name */, fatalf, action, verb, subresource, obj)
-	return r
-}
-
-func testActionFor(t *testing.T, name string, f failfFunc, action clientgotesting.Action, verb, subresource string, obj interface{}) (runtime.Object, bool) {
-	logContext := ""
-	if len(name) > 0 {
-		logContext = name + ": "
-	}
-
 	if e, a := verb, action.GetVerb(); e != a {
-		f(t, "%vUnexpected verb: expected %v, got %v\n\tactual action %q", logContext, e, a, action)
-		return nil, false
+		fatalf(t, "Unexpected verb: expected %v, got %v\n\tactual action %q", e, a, action)
+		return nil
 	}
 
 	var resource string
@@ -2168,25 +2468,25 @@ func testActionFor(t *testing.T, name string, f failfFunc, action clientgotestin
 	}
 
 	if e, a := resource, action.GetResource().Resource; e != a {
-		f(t, "%vUnexpected resource; expected %v, got %v", logContext, e, a)
-		return nil, false
+		fatalf(t, "Unexpected resource; expected %v, got %v", e, a)
+		return nil
 	}
 
 	if e, a := subresource, action.GetSubresource(); e != a {
-		f(t, "%vUnexpected subresource; expected %v, got %v", logContext, e, a)
-		return nil, false
+		fatalf(t, "Unexpected subresource; expected %v, got %v", e, a)
+		return nil
 	}
 
 	rtObject, ok := obj.(runtime.Object)
 	if !ok {
-		f(t, "%vObject %+v was not a runtime.Object", logContext, obj)
-		return nil, false
+		fatalf(t, "Object %+v was not a runtime.Object", obj)
+		return nil
 	}
 
 	paramAccessor, err := meta.Accessor(rtObject)
 	if err != nil {
-		f(t, "%vError creating ObjectMetaAccessor for param object %+v: %v", logContext, rtObject, err)
-		return nil, false
+		fatalf(t, "Error creating ObjectMetaAccessor for param object %+v: %v", rtObject, err)
+		return nil
 	}
 
 	var (
@@ -2198,78 +2498,78 @@ func testActionFor(t *testing.T, name string, f failfFunc, action clientgotestin
 	case "get":
 		getAction, ok := action.(clientgotesting.GetAction)
 		if !ok {
-			f(t, "%vUnexpected type; failed to convert action %+v to DeleteAction", logContext, action)
-			return nil, false
+			fatalf(t, "Unexpected type; failed to convert action %+v to GetAction", action)
+			return nil
 		}
 
 		if e, a := paramAccessor.GetName(), getAction.GetName(); e != a {
-			f(t, "%vUnexpected name: expected %v, got %v", logContext, e, a)
-			return nil, false
+			fatalf(t, "Unexpected name: expected %v, got %v", e, a)
+			return nil
 		}
 
-		return nil, true
+		return nil
 	case "list":
 		_, ok := action.(clientgotesting.ListAction)
 		if !ok {
-			f(t, "%vUnexpected type; failed to convert action %+v to ListAction", logContext, action)
-			return nil, false
+			fatalf(t, "Unexpected type; failed to convert action %+v to ListAction", action)
+			return nil
 		}
-		return nil, true
+		return nil
 	case "delete":
 		deleteAction, ok := action.(clientgotesting.DeleteAction)
 		if !ok {
-			f(t, "%vUnexpected type; failed to convert action %+v to DeleteAction", logContext, action)
-			return nil, false
+			fatalf(t, "Unexpected type; failed to convert action %+v to DeleteAction", action)
+			return nil
 		}
 
 		if e, a := paramAccessor.GetName(), deleteAction.GetName(); e != a {
-			f(t, "%vUnexpected name: expected %v, got %v", logContext, e, a)
-			return nil, false
+			fatalf(t, "Unexpected name: expected %v, got %v", e, a)
+			return nil
 		}
 
-		return nil, true
+		return nil
 	case "create":
 		createAction, ok := action.(clientgotesting.CreateAction)
 		if !ok {
-			f(t, "%vUnexpected type; failed to convert action %+v to CreateAction", logContext, action)
-			return nil, false
+			fatalf(t, "Unexpected type; failed to convert action %+v to CreateAction", action)
+			return nil
 		}
 
 		fakeRtObject = createAction.GetObject()
 		objectMeta, err = meta.Accessor(fakeRtObject)
 		if err != nil {
-			f(t, "%vError creating ObjectMetaAccessor for %+v", logContext, fakeRtObject)
-			return nil, false
+			fatalf(t, "Error creating ObjectMetaAccessor for %+v", fakeRtObject)
+			return nil
 		}
 	case "update":
 		updateAction, ok := action.(clientgotesting.UpdateAction)
 		if !ok {
-			f(t, "%vUnexpected type; failed to convert action %+v to UpdateAction", logContext, action)
-			return nil, false
+			fatalf(t, "Unexpected type; failed to convert action %+v to UpdateAction", action)
+			return nil
 		}
 
 		fakeRtObject = updateAction.GetObject()
 		objectMeta, err = meta.Accessor(fakeRtObject)
 		if err != nil {
-			f(t, "%vError creating ObjectMetaAccessor for %+v", logContext, fakeRtObject)
-			return nil, false
+			fatalf(t, "Error creating ObjectMetaAccessor for %+v", fakeRtObject)
+			return nil
 		}
 	}
 
 	if e, a := paramAccessor.GetName(), objectMeta.GetName(); e != a {
-		f(t, "%vUnexpected name: expected %q, got %q", logContext, e, a)
-		return nil, false
+		fatalf(t, "Unexpected name: expected %q, got %q", e, a)
+		return nil
 	}
 
 	fakeValue := reflect.ValueOf(fakeRtObject)
 	paramValue := reflect.ValueOf(obj)
 
 	if e, a := paramValue.Type(), fakeValue.Type(); e != a {
-		f(t, "%vUnexpected type of object passed to fake client; expected %v, got %v", logContext, e, a)
-		return nil, false
+		fatalf(t, "Unexpected type of object passed to fake client; expected %v, got %v", e, a)
+		return nil
 	}
 
-	return fakeRtObject, true
+	return fakeRtObject
 }
 
 func assertClassRemovedFromBrokerCatalogFalse(t *testing.T, obj runtime.Object) {
@@ -2398,7 +2698,7 @@ func assertServiceInstanceConditionMissing(t *testing.T, obj runtime.Object, con
 
 	for _, condition := range instance.Status.Conditions {
 		if condition.Type == conditionType {
-			fatalf(t, "%v condition expected to be missing", conditionType)
+			fatalf(t, "%v condition expected to be missing, but was present with the reason %q and message %q", conditionType, condition.Reason, condition.Message)
 			return
 		}
 	}
@@ -2499,39 +2799,23 @@ func assertAsyncOpInProgressFalse(t *testing.T, obj runtime.Object) {
 }
 
 func assertServiceInstanceOrphanMitigationInProgressTrue(t *testing.T, obj runtime.Object) {
-	testServiceInstanceOrphanMitigationInProgress(t, "" /* name */, fatalf, obj, true)
+	assertServiceInstanceOrphanMitigationInProgress(t, obj, true)
 }
 
 func assertServiceInstanceOrphanMitigationInProgressFalse(t *testing.T, obj runtime.Object) {
-	testServiceInstanceOrphanMitigationInProgress(t, "" /* name */, fatalf, obj, false)
+	assertServiceInstanceOrphanMitigationInProgress(t, obj, false)
 }
 
-func expectServiceInstanceOrphanMitigationInProgressTrue(t *testing.T, name string, obj runtime.Object) bool {
-	return testServiceInstanceOrphanMitigationInProgress(t, name, fatalf, obj, true)
-}
-
-func expectServiceInstanceOrphanMitigationInProgressFalse(t *testing.T, name string, obj runtime.Object) bool {
-	return testServiceInstanceOrphanMitigationInProgress(t, name, fatalf, obj, false)
-}
-
-func testServiceInstanceOrphanMitigationInProgress(t *testing.T, name string, f failfFunc, obj runtime.Object, expected bool) bool {
-	logContext := ""
-	if len(name) > 0 {
-		logContext = name + ": "
-	}
-
+func assertServiceInstanceOrphanMitigationInProgress(t *testing.T, obj runtime.Object, expected bool) {
 	instance, ok := obj.(*v1beta1.ServiceInstance)
 	if !ok {
-		f(t, "%vCouldn't convert object %+v into a *v1beta1.ServiceInstance", obj)
+		fatalf(t, "Couldn't convert object %+v into a *v1beta1.ServiceInstance", obj)
 	}
 
 	actual := isServiceInstanceOrphanMitigation(instance)
 	if actual != expected {
-		f(t, "%vexpected OrphanMitigationInProgress to be %v but was %v", logContext, expected, actual)
-		return false
+		fatalf(t, "Expected OrphanMitigationInProgress to be %v but was %v", expected, actual)
 	}
-
-	return true
 }
 
 func assertServiceInstanceLastOperation(t *testing.T, obj runtime.Object, operation string) {
@@ -2982,7 +3266,7 @@ func assertServiceInstancePropertiesStateParameters(t *testing.T, propsLabel str
 		fatalf(t, "expected %v properties to not be nil", propsLabel)
 	}
 	assertPropertiesStateParameters(t, propsLabel, actualProps.Parameters, expectedParams)
-	if e, a := expectedChecksum, actualProps.ParametersChecksum; e != a {
+	if e, a := expectedChecksum, actualProps.ParameterChecksum; e != a {
 		fatalf(t, "unexpected %v properties parameters checksum: expected %v, actual %v", propsLabel, e, a)
 	}
 }
@@ -3472,7 +3756,7 @@ func assertServiceBindingPropertiesStateParameters(t *testing.T, propsLabel stri
 		fatalf(t, "expected %v properties to not be nil", propsLabel)
 	}
 	assertPropertiesStateParameters(t, propsLabel, actualProps.Parameters, expectedParams)
-	if e, a := expectedChecksum, actualProps.ParametersChecksum; e != a {
+	if e, a := expectedChecksum, actualProps.ParameterChecksum; e != a {
 		fatalf(t, "unexpected %v properties parameters checksum: expected %v, actual %v", propsLabel, e, a)
 	}
 }
@@ -3520,36 +3804,15 @@ func assertEmptyFinalizers(t *testing.T, obj runtime.Object) {
 }
 
 func assertCatalogFinalizerExists(t *testing.T, obj runtime.Object) {
-	testCatalogFinalizerExists(t, "" /* name */, fatalf, obj)
-}
-
-func expectCatalogFinalizerExists(t *testing.T, name string, obj runtime.Object) bool {
-	return testCatalogFinalizerExists(t, name, errorf, obj)
-}
-
-func testCatalogFinalizerExists(t *testing.T, name string, f failfFunc, obj runtime.Object) bool {
-	logContext := ""
-	if len(name) > 0 {
-		logContext = name + ": "
-	}
-
 	accessor, err := meta.Accessor(obj)
 	if err != nil {
-		f(t, "%vError creating ObjectMetaAccessor for param object %+v: %v", logContext, obj, err)
-		return false
+		fatalf(t, "Error creating ObjectMetaAccessor for param object %+v: %v", obj, err)
 	}
 
 	finalizers := sets.NewString(accessor.GetFinalizers()...)
 	if !finalizers.Has(v1beta1.FinalizerServiceCatalog) {
-		f(t, "%vExpected Service Catalog finalizer but was not there", logContext)
-		return false
+		fatalf(t, "Expected Service Catalog finalizer but was not there")
 	}
-
-	return true
-}
-
-func assertNumberOfBrokerActions(t *testing.T, actions []fakeosb.Action, number int) {
-	testNumberOfBrokerActions(t, "" /* name */, fatalf, actions, number)
 }
 
 // assertListRestrictions compares expected Fields / Labels on a list options.
@@ -3562,23 +3825,11 @@ func assertListRestrictions(t *testing.T, e, a clientgotesting.ListRestrictions)
 	}
 }
 
-func expectNumberOfClusterServiceBrokerActions(t *testing.T, name string, actions []fakeosb.Action, number int) bool {
-	return testNumberOfBrokerActions(t, name, errorf, actions, number)
-}
-
-func testNumberOfBrokerActions(t *testing.T, name string, f failfFunc, actions []fakeosb.Action, number int) bool {
-	logContext := ""
-	if len(name) > 0 {
-		logContext = name + ": "
-	}
-
+func assertNumberOfBrokerActions(t *testing.T, actions []fakeosb.Action, number int) {
 	if e, a := number, len(actions); e != a {
 		t.Logf("%+v\n", actions)
-		f(t, "%vUnexpected number of actions: expected %v, got %v\nactions: %+v", logContext, e, a, actions)
-		return false
+		fatalf(t, "Unexpected number of actions: expected %v, got %v\nactions: %+v", e, a, actions)
 	}
-
-	return true
 }
 
 func noFakeActions() fakeosb.FakeClientConfiguration {

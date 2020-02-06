@@ -3,7 +3,9 @@ package mirror
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
+	"path"
 	"strings"
 	"sync"
 
@@ -20,6 +22,8 @@ type Mapping struct {
 	Source      reference.DockerImageReference
 	Destination reference.DockerImageReference
 	Type        DestinationType
+	// Name is an optional field for identifying uniqueness within the mappings
+	Name string
 }
 
 func parseSource(ref string) (reference.DockerImageReference, error) {
@@ -31,6 +35,65 @@ func parseSource(ref string) (reference.DockerImageReference, error) {
 		return src, fmt.Errorf("you must specify a tag or digest for SRC")
 	}
 	return src, nil
+}
+
+type AWSReference struct {
+	Bucket string
+	Region string
+}
+
+type MirrorReference struct {
+	reference.DockerImageReference
+	AWS *AWSReference
+}
+
+func (r MirrorReference) Type() DestinationType {
+	if r.AWS != nil {
+		return DestinationS3
+	}
+	return DestinationRegistry
+}
+
+func (r MirrorReference) Combined() reference.DockerImageReference {
+	if r.AWS == nil {
+		return r.DockerImageReference
+	}
+	copied := r.DockerImageReference
+	copied.Registry = "s3.amazonaws.com"
+	copied.Namespace = path.Join(r.AWS.Region, r.AWS.Bucket, r.Namespace)
+	return copied
+}
+
+func ParseMirrorReference(ref string) (MirrorReference, error) {
+	var dst MirrorReference
+	switch {
+	case strings.HasPrefix(ref, "s3://"):
+		ref = strings.TrimPrefix(ref, "s3://")
+		dst.AWS = &AWSReference{}
+	}
+	image, err := reference.Parse(ref)
+	if err != nil {
+		return dst, fmt.Errorf("%q is not a valid image reference: %v", ref, err)
+	}
+	if len(dst.ID) != 0 {
+		return dst, fmt.Errorf("you must specify a tag for DST or leave it blank to only push by digest")
+	}
+	dst.DockerImageReference = image
+	if dst.AWS != nil {
+		parts := strings.SplitN(image.RepositoryName(), "/", 3)
+		if len(parts) < 3 {
+			return dst, fmt.Errorf("s3 target URLs must have at least 3 path segments: REGION/BUCKET/REPO[/...]")
+		}
+		dst.AWS.Region = parts[0]
+		dst.AWS.Bucket = parts[1]
+		dst.Registry = fmt.Sprintf("%s.s3.amazonaws.com", parts[0])
+		dst.Name = path.Base(parts[2])
+		dst.Namespace = path.Dir(parts[2])
+		if dst.Namespace == "." {
+			dst.Namespace = ""
+		}
+	}
+	return dst, nil
 }
 
 func parseDestination(ref string) (reference.DockerImageReference, DestinationType, error) {
@@ -104,14 +167,17 @@ func parseArgs(args []string, overlap map[string]string) ([]Mapping, error) {
 	return mappings, nil
 }
 
-func parseFile(filename string, overlap map[string]string) ([]Mapping, error) {
+func parseFile(filename string, overlap map[string]string, in io.Reader) ([]Mapping, error) {
 	var fileMappings []Mapping
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+	if filename != "-" {
+		f, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		in = f
 	}
-	defer f.Close()
-	s := bufio.NewScanner(f)
+	s := bufio.NewScanner(in)
 	lineNumber := 0
 	for s.Scan() {
 		line := s.Text()

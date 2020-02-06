@@ -5,16 +5,19 @@ import (
 	"reflect"
 	"testing"
 
-	userv1 "github.com/openshift/api/user/v1"
-	fakeuserclient "github.com/openshift/client-go/user/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	diffutil "k8s.io/apimachinery/pkg/util/diff"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
 	fakeclient "k8s.io/client-go/kubernetes/fake"
 	rbacv1client "k8s.io/client-go/kubernetes/typed/rbac/v1"
+
+	userv1 "github.com/openshift/api/user/v1"
+	fakeuserclient "github.com/openshift/client-go/user/clientset/versioned/fake"
 )
 
 func TestModifyNamedClusterRoleBinding(t *testing.T) {
@@ -317,7 +320,9 @@ func TestModifyNamedClusterRoleBinding(t *testing.T) {
 			RoleKind:        "ClusterRole",
 			RoleBindingName: tc.inputRoleBindingName,
 			Users:           tc.inputSubjects,
-			RbacClient:      fakeclient.NewSimpleClientset(tc.existingClusterRoleBindings).Rbac(),
+			RbacClient:      fakeclient.NewSimpleClientset(tc.existingClusterRoleBindings).RbacV1(),
+			PrintFlags:      genericclioptions.NewPrintFlags(""),
+			ToPrinter:       func(string) (printers.ResourcePrinter, error) { return printers.NewDiscardingPrinter(), nil },
 		}
 
 		modifyRoleAndCheck(t, o, tcName, tc.action, tc.expectedRoleBindingName, tc.expectedSubjects, tc.expectedRoleBindingList)
@@ -574,8 +579,10 @@ func TestModifyNamedLocalRoleBinding(t *testing.T) {
 			RoleBindingName:      tc.inputRoleBindingName,
 			RoleKind:             "Role",
 			RoleName:             tc.inputRole,
-			RbacClient:           fakeclient.NewSimpleClientset(tc.existingRoleBindings).Rbac(),
+			RbacClient:           fakeclient.NewSimpleClientset(tc.existingRoleBindings).RbacV1(),
 			Users:                tc.inputSubjects,
+			PrintFlags:           genericclioptions.NewPrintFlags(""),
+			ToPrinter:            func(string) (printers.ResourcePrinter, error) { return printers.NewDiscardingPrinter(), nil },
 		}
 
 		modifyRoleAndCheck(t, o, tcName, tc.action, tc.expectedRoleBindingName, tc.expectedSubjects, tc.expectedRoleBindingList)
@@ -1203,12 +1210,14 @@ func TestModifyRoleBindingWarnings(t *testing.T) {
 				RoleBindingName:      tt.inputs.roleBindingName,
 				RoleKind:             tt.inputs.roleKind,
 				RoleName:             tt.inputs.roleName,
-				RbacClient:           fakeclient.NewSimpleClientset(tt.initialState.roles, tt.initialState.clusterRoles, tt.initialState.roleBindings, tt.initialState.clusterRoleBindings).Rbac(),
+				RbacClient:           fakeclient.NewSimpleClientset(tt.initialState.roles, tt.initialState.clusterRoles, tt.initialState.roleBindings, tt.initialState.clusterRoleBindings).RbacV1(),
 				Users:                tt.inputs.userNames,
 				Groups:               tt.inputs.groupNames,
 				Subjects:             tt.inputs.serviceAccounts,
-				UserClient:           fakeuserclient.NewSimpleClientset(tt.initialState.users, tt.initialState.groups).User(),
-				ServiceAccountClient: fakeclient.NewSimpleClientset(tt.initialState.serviceAccounts).Core(),
+				UserClient:           fakeuserclient.NewSimpleClientset(tt.initialState.users, tt.initialState.groups).UserV1(),
+				ServiceAccountClient: fakeclient.NewSimpleClientset(tt.initialState.serviceAccounts).CoreV1(),
+				PrintFlags:           genericclioptions.NewPrintFlags(""),
+				ToPrinter:            func(string) (printers.ResourcePrinter, error) { return printers.NewDiscardingPrinter(), nil },
 				PrintErrf: func(format string, args ...interface{}) {
 					actualWarning := fmt.Sprintf(format, args...)
 					if _, ok := expectedWarnings[actualWarning]; !ok {

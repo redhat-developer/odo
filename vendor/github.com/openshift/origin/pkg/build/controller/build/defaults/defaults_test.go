@@ -6,27 +6,24 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	internalcore "k8s.io/kubernetes/pkg/apis/core"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
 	kapihelper "k8s.io/kubernetes/pkg/apis/core/helper"
 
 	buildv1 "github.com/openshift/api/build/v1"
-	buildapi "github.com/openshift/origin/pkg/build/apis/build"
+	configv1 "github.com/openshift/api/config/v1"
+	openshiftcontrolplanev1 "github.com/openshift/api/openshiftcontrolplane/v1"
 	"github.com/openshift/origin/pkg/build/controller/common"
 	testutil "github.com/openshift/origin/pkg/build/controller/common/testutil"
 	buildutil "github.com/openshift/origin/pkg/build/util"
-	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
 )
 
-func TestProxyDefaults(t *testing.T) {
-	defaultsConfig := &configapi.BuildDefaultsConfig{
+func TestGitProxyDefaults(t *testing.T) {
+	defaultsConfig := &openshiftcontrolplanev1.BuildDefaultsConfig{
 		GitHTTPProxy:  "http",
 		GitHTTPSProxy: "https",
 		GitNoProxy:    "no",
 	}
 
-	admitter := BuildDefaults{defaultsConfig}
+	admitter := BuildDefaults{defaultsConfig, nil}
 	pod := testutil.Pod().WithBuild(t, testutil.Build().WithDockerStrategy().AsBuild())
 	err := admitter.ApplyDefaults((*corev1.Pod)(pod))
 	if err != nil {
@@ -49,8 +46,8 @@ func TestProxyDefaults(t *testing.T) {
 }
 
 func TestEnvDefaults(t *testing.T) {
-	defaultsConfig := &configapi.BuildDefaultsConfig{
-		Env: []internalcore.EnvVar{
+	defaultsConfig := &openshiftcontrolplanev1.BuildDefaultsConfig{
+		Env: []corev1.EnvVar{
 			{
 				Name:  "VAR1",
 				Value: "VALUE1",
@@ -66,7 +63,7 @@ func TestEnvDefaults(t *testing.T) {
 		},
 	}
 
-	admitter := BuildDefaults{defaultsConfig}
+	admitter := BuildDefaults{defaultsConfig, nil}
 	pod := testutil.Pod().WithBuild(t, testutil.Build().WithSourceStrategy().AsBuild())
 	err := admitter.ApplyDefaults((*corev1.Pod)(pod))
 	if err != nil {
@@ -150,15 +147,196 @@ func TestEnvDefaults(t *testing.T) {
 	}
 }
 
+func TestGlobalProxyDefaults(t *testing.T) {
+	defaultsProxy := &configv1.ProxySpec{
+		HTTPProxy:  "http",
+		HTTPSProxy: "https",
+		NoProxy:    "no",
+	}
+
+	admitter := BuildDefaults{nil, defaultsProxy}
+
+	// source builds should have the defaulted env vars applied to the build pod
+	pod := testutil.Pod().WithBuild(t, testutil.Build().WithSourceStrategy().AsBuild())
+	err := admitter.ApplyDefaults((*corev1.Pod)(pod))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	httpProxyFound, httpsProxyFound, noProxyFound := false, false, false
+	for _, ev := range pod.Spec.Containers[0].Env {
+		if ev.Name == "HTTP_PROXY" {
+			if ev.Value != "http" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			httpProxyFound = true
+		}
+		if ev.Name == "HTTPS_PROXY" {
+			if ev.Value != "https" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			httpsProxyFound = true
+		}
+		if ev.Name == "NO_PROXY" {
+			if ev.Value != "no" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			noProxyFound = true
+		}
+	}
+	if !httpProxyFound {
+		t.Errorf("HTTP_PROXY not found")
+	}
+	if !httpsProxyFound {
+		t.Errorf("HTTPS_PROXY not found")
+	}
+	if !noProxyFound {
+		t.Errorf("NO_PROXY not found")
+	}
+
+	// source builds should not have the defaulted env vars applied to the build
+	build, err := common.GetBuildFromPod((*corev1.Pod)(pod))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	env := buildutil.GetBuildEnv(build)
+	for _, ev := range env {
+		if ev.Name == "HTTP_PROXY" {
+			t.Errorf("HTTP_PROXY was found, but should not have been")
+		}
+		if ev.Name == "HTTPS_PROXY" {
+			t.Errorf("HTTPS_PROXY was found, but should not have been")
+		}
+		if ev.Name == "NO_PROXY" {
+			t.Errorf("NO_PROXY was found, but should not have been")
+		}
+	}
+
+	// docker builds should have the defaulted env vars applied to the build pod
+	pod = testutil.Pod().WithBuild(t, testutil.Build().WithDockerStrategy().AsBuild())
+	err = admitter.ApplyDefaults((*corev1.Pod)(pod))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	httpProxyFound, httpsProxyFound, noProxyFound = false, false, false
+	for _, ev := range pod.Spec.Containers[0].Env {
+		if ev.Name == "HTTP_PROXY" {
+			if ev.Value != "http" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			httpProxyFound = true
+		}
+		if ev.Name == "HTTPS_PROXY" {
+			if ev.Value != "https" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			httpsProxyFound = true
+		}
+		if ev.Name == "NO_PROXY" {
+			if ev.Value != "no" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			noProxyFound = true
+		}
+	}
+	if !httpProxyFound {
+		t.Errorf("HTTP_PROXY not found")
+	}
+	if !httpsProxyFound {
+		t.Errorf("HTTPS_PROXY not found")
+	}
+	if !noProxyFound {
+		t.Errorf("NO_PROXY not found")
+	}
+
+	// docker builds should not have the defaulted env vars applied to the build
+	build, err = common.GetBuildFromPod((*corev1.Pod)(pod))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	env = buildutil.GetBuildEnv(build)
+	for _, ev := range env {
+		if ev.Name == "HTTP_PROXY" {
+			t.Errorf("HTTP_PROXY was found, but should not have been")
+		}
+		if ev.Name == "HTTPS_PROXY" {
+			t.Errorf("HTTPS_PROXY was found, but should not have been")
+		}
+		if ev.Name == "NO_PROXY" {
+			t.Errorf("NO_PROXY was found, but should not have been")
+		}
+	}
+
+	// custom builds should have the defaulted env vars applied to the build pod
+	pod = testutil.Pod().WithBuild(t, testutil.Build().WithCustomStrategy().AsBuild())
+	err = admitter.ApplyDefaults((*corev1.Pod)(pod))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	httpProxyFound, httpsProxyFound, noProxyFound = false, false, false
+	for _, ev := range pod.Spec.Containers[0].Env {
+		if ev.Name == "HTTP_PROXY" {
+			if ev.Value != "http" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			httpProxyFound = true
+		}
+		if ev.Name == "HTTPS_PROXY" {
+			if ev.Value != "https" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			httpsProxyFound = true
+		}
+		if ev.Name == "NO_PROXY" {
+			if ev.Value != "no" {
+				t.Errorf("unexpected value %s", ev.Value)
+			}
+			noProxyFound = true
+		}
+	}
+	if !httpProxyFound {
+		t.Errorf("HTTP_PROXY not found")
+	}
+	if !httpsProxyFound {
+		t.Errorf("HTTPS_PROXY not found")
+	}
+	if !noProxyFound {
+		t.Errorf("NO_PROXY not found")
+	}
+
+	// custom builds should not have the defaulted env vars applied to the build
+	build, err = common.GetBuildFromPod((*corev1.Pod)(pod))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	env = buildutil.GetBuildEnv(build)
+	for _, ev := range env {
+		if ev.Name == "HTTP_PROXY" {
+			t.Errorf("HTTP_PROXY was found, but should not have been")
+		}
+		if ev.Name == "HTTPS_PROXY" {
+			t.Errorf("HTTPS_PROXY was found, but should not have been")
+		}
+		if ev.Name == "NO_PROXY" {
+			t.Errorf("NO_PROXY was found, but should not have been")
+		}
+	}
+}
+
 func TestIncrementalDefaults(t *testing.T) {
 	bool_t := true
-	defaultsConfig := &configapi.BuildDefaultsConfig{
-		SourceStrategyDefaults: &configapi.SourceStrategyDefaultsConfig{
+	defaultsConfig := &openshiftcontrolplanev1.BuildDefaultsConfig{
+		SourceStrategyDefaults: &openshiftcontrolplanev1.SourceStrategyDefaultsConfig{
 			Incremental: &bool_t,
 		},
 	}
 
-	admitter := BuildDefaults{defaultsConfig}
+	admitter := BuildDefaults{defaultsConfig, nil}
 
 	pod := testutil.Pod().WithBuild(t, testutil.Build().WithSourceStrategy().AsBuild())
 	err := admitter.ApplyDefaults((*corev1.Pod)(pod))
@@ -303,19 +481,11 @@ func TestLabelDefaults(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		internalLabels := []buildapi.ImageLabel{}
-		for _, l := range test.defaultLabels {
-			internalLabel := buildapi.ImageLabel{}
-			if err := legacyscheme.Scheme.Convert(&l, &internalLabel, nil); err != nil {
-				panic(err)
-			}
-			internalLabels = append(internalLabels, internalLabel)
-		}
-		defaultsConfig := &configapi.BuildDefaultsConfig{
-			ImageLabels: internalLabels,
+		defaultsConfig := &openshiftcontrolplanev1.BuildDefaultsConfig{
+			ImageLabels: test.defaultLabels,
 		}
 
-		admitter := BuildDefaults{defaultsConfig}
+		admitter := BuildDefaults{defaultsConfig, nil}
 		pod := testutil.Pod().WithBuild(t, testutil.Build().WithImageLabels(test.buildLabels).AsBuild())
 		err := admitter.ApplyDefaults((*corev1.Pod)(pod))
 		if err != nil {
@@ -361,7 +531,7 @@ func TestBuildDefaultsNodeSelector(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		defaults := BuildDefaults{Config: &configapi.BuildDefaultsConfig{NodeSelector: test.defaults}}
+		defaults := BuildDefaults{Config: &openshiftcontrolplanev1.BuildDefaultsConfig{NodeSelector: test.defaults}}
 		pod := testutil.Pod().WithBuild(t, test.build)
 		// normally the pod will have the nodeselectors from the build, due to the pod creation logic
 		// in the build controller flow. fake it out here.
@@ -413,7 +583,7 @@ func TestBuildDefaultsAnnotations(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		defaults := BuildDefaults{Config: &configapi.BuildDefaultsConfig{Annotations: test.defaults}}
+		defaults := BuildDefaults{Config: &openshiftcontrolplanev1.BuildDefaultsConfig{Annotations: test.defaults}}
 		pod := testutil.Pod().WithBuild(t, test.build)
 		pod.Annotations = test.annotations
 		err := defaults.ApplyDefaults((*corev1.Pod)(pod))
@@ -432,19 +602,19 @@ func TestBuildDefaultsAnnotations(t *testing.T) {
 }
 func TestResourceDefaults(t *testing.T) {
 	tests := map[string]struct {
-		DefaultResource  kapi.ResourceRequirements
+		DefaultResource  corev1.ResourceRequirements
 		BuildResource    corev1.ResourceRequirements
 		ExpectedResource corev1.ResourceRequirements
 	}{
 		"BuildDefaults plugin and Build object both defined resource limits and requests": {
-			DefaultResource: kapi.ResourceRequirements{
-				Limits: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU):    resource.MustParse("10"),
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("1G"),
+			DefaultResource: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("10"),
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("1G"),
 				},
-				Requests: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU):    resource.MustParse("20"),
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("2G"),
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("20"),
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("2G"),
 				},
 			},
 			BuildResource: corev1.ResourceRequirements{
@@ -469,14 +639,14 @@ func TestResourceDefaults(t *testing.T) {
 			},
 		},
 		"BuildDefaults plugin defined limits and requests, Build object defined resource requests": {
-			DefaultResource: kapi.ResourceRequirements{
-				Limits: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU):    resource.MustParse("10"),
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("1G"),
+			DefaultResource: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("10"),
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("1G"),
 				},
-				Requests: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU):    resource.MustParse("20"),
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("2G"),
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("20"),
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("2G"),
 				},
 			},
 			BuildResource: corev1.ResourceRequirements{
@@ -497,14 +667,14 @@ func TestResourceDefaults(t *testing.T) {
 			},
 		},
 		"BuildDefaults plugin defined limits and requests, Build object defined resource limits": {
-			DefaultResource: kapi.ResourceRequirements{
-				Limits: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU):    resource.MustParse("10"),
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("1G"),
+			DefaultResource: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("10"),
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("1G"),
 				},
-				Requests: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU):    resource.MustParse("20"),
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("2G"),
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("20"),
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("2G"),
 				},
 			},
 			BuildResource: corev1.ResourceRequirements{
@@ -525,7 +695,7 @@ func TestResourceDefaults(t *testing.T) {
 			},
 		},
 		"BuildDefaults plugin defined nothing, Build object defined resource limits": {
-			DefaultResource: kapi.ResourceRequirements{},
+			DefaultResource: corev1.ResourceRequirements{},
 			BuildResource: corev1.ResourceRequirements{
 				Limits: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("10"),
@@ -548,19 +718,19 @@ func TestResourceDefaults(t *testing.T) {
 			},
 		},
 		"BuildDefaults plugin and Build object defined nothing": {
-			DefaultResource:  kapi.ResourceRequirements{},
+			DefaultResource:  corev1.ResourceRequirements{},
 			BuildResource:    corev1.ResourceRequirements{},
 			ExpectedResource: corev1.ResourceRequirements{},
 		},
 		"BuildDefaults plugin defined limits and requests, Build object defined nothing": {
-			DefaultResource: kapi.ResourceRequirements{
-				Limits: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU):    resource.MustParse("10"),
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("1G"),
+			DefaultResource: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("10"),
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("1G"),
 				},
-				Requests: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU):    resource.MustParse("20"),
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("2G"),
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU):    resource.MustParse("20"),
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("2G"),
 				},
 			},
 			BuildResource: corev1.ResourceRequirements{},
@@ -576,12 +746,12 @@ func TestResourceDefaults(t *testing.T) {
 			},
 		},
 		"BuildDefaults plugin defined part of limits and requests, Build object defined part of limits and  requests": {
-			DefaultResource: kapi.ResourceRequirements{
-				Limits: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceCPU): resource.MustParse("10"),
+			DefaultResource: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceCPU): resource.MustParse("10"),
 				},
-				Requests: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceMemory): resource.MustParse("2G"),
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceMemory): resource.MustParse("2G"),
 				},
 			},
 			BuildResource: corev1.ResourceRequirements{
@@ -606,7 +776,7 @@ func TestResourceDefaults(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		defaults := BuildDefaults{Config: &configapi.BuildDefaultsConfig{Resources: test.DefaultResource}}
+		defaults := BuildDefaults{Config: &openshiftcontrolplanev1.BuildDefaultsConfig{Resources: test.DefaultResource}}
 
 		build := testutil.Build().WithSourceStrategy().AsBuild()
 		build.Spec.Resources = test.BuildResource

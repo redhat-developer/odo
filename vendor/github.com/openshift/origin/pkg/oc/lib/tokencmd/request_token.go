@@ -1,13 +1,19 @@
 package tokencmd
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/RangelReale/osincli"
+	"k8s.io/klog"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,9 +22,6 @@ import (
 
 	"github.com/openshift/origin/pkg/oauth/urls"
 	"github.com/openshift/origin/pkg/oauth/util"
-
-	"github.com/RangelReale/osincli"
-	"github.com/golang/glog"
 )
 
 const (
@@ -65,6 +68,7 @@ type RequestTokenOptions struct {
 	ClientConfig *restclient.Config
 	Handler      ChallengeHandler
 	OsinConfig   *osincli.ClientConfig
+	Issuer       string
 	TokenFlow    bool
 }
 
@@ -75,16 +79,21 @@ func RequestToken(clientCfg *restclient.Config, reader io.Reader, defaultUsernam
 }
 
 func NewRequestTokenOptions(clientCfg *restclient.Config, reader io.Reader, defaultUsername string, defaultPassword string, tokenFlow bool) *RequestTokenOptions {
-	handlers := []ChallengeHandler{}
+	// priority ordered list of challenge handlers
+	// the SPNEGO ones must come before basic auth
+	var handlers []ChallengeHandler
+
 	if GSSAPIEnabled() {
+		klog.V(6).Info("GSSAPI Enabled")
 		handlers = append(handlers, NewNegotiateChallengeHandler(NewGSSAPINegotiator(defaultUsername)))
 	}
+
 	if SSPIEnabled() {
+		klog.V(6).Info("SSPI Enabled")
 		handlers = append(handlers, NewNegotiateChallengeHandler(NewSSPINegotiator(defaultUsername, defaultPassword, clientCfg.Host, reader)))
 	}
-	if BasicEnabled() {
-		handlers = append(handlers, &BasicChallengeHandler{Host: clientCfg.Host, Reader: reader, Username: defaultUsername, Password: defaultPassword})
-	}
+
+	handlers = append(handlers, &BasicChallengeHandler{Host: clientCfg.Host, Reader: reader, Username: defaultUsername, Password: defaultPassword})
 
 	var handler ChallengeHandler
 	if len(handlers) == 1 {
@@ -107,7 +116,8 @@ func (o *RequestTokenOptions) SetDefaultOsinConfig() error {
 		return fmt.Errorf("osin config is already set to: %#v", *o.OsinConfig)
 	}
 
-	// get the OAuth metadata from the server
+	// get the OAuth metadata directly from the api server
+	// we only want to use the ca data from our config
 	rt, err := restclient.TransportFor(o.ClientConfig)
 	if err != nil {
 		return err
@@ -143,6 +153,7 @@ func (o *RequestTokenOptions) SetDefaultOsinConfig() error {
 	}
 
 	o.OsinConfig = config
+	o.Issuer = metadata.Issuer
 	return nil
 }
 
@@ -157,19 +168,25 @@ func (o *RequestTokenOptions) RequestToken() (string, error) {
 		// Always release the handler
 		if err := o.Handler.Release(); err != nil {
 			// Release errors shouldn't fail the token request, just log
-			glog.V(4).Infof("error releasing handler: %v", err)
+			klog.V(4).Infof("error releasing handler: %v", err)
 		}
 	}()
-
-	rt, err := restclient.TransportFor(o.ClientConfig)
-	if err != nil {
-		return "", err
-	}
 
 	if o.OsinConfig == nil {
 		if err := o.SetDefaultOsinConfig(); err != nil {
 			return "", err
 		}
+	}
+
+	// we are going to use this transport to talk
+	// with a server that may not be the api server
+	// thus we need to include the system roots
+	// in our ca data otherwise an external
+	// oauth server with a valid cert will fail with
+	// error: x509: certificate signed by unknown authority
+	rt, err := transportWithSystemRoots(o.Issuer, o.ClientConfig)
+	if err != nil {
+		return "", err
 	}
 
 	client, err := osincli.NewClient(o.OsinConfig)
@@ -318,7 +335,7 @@ func oauthTokenFlow(location string) (string, error) {
 // of the challenge flow (an authenticating proxy for example) and not a redirect step in the OAuth flow.
 func oauthCodeFlow(client *osincli.Client, authorizeRequest *osincli.AuthorizeRequest, location string) (string, error) {
 	// Make a request out of the URL since that is what AuthorizeRequest.HandleRequest expects to extract data from
-	req, err := http.NewRequest("GET", location, nil)
+	req, err := http.NewRequest(http.MethodGet, location, nil)
 	if err != nil {
 		return "", err
 	}
@@ -368,7 +385,7 @@ func createOAuthError(errorCode, errorDescription string) error {
 
 func request(rt http.RoundTripper, requestURL string, requestHeaders http.Header) (*http.Response, error) {
 	// Build the request
-	req, err := http.NewRequest("GET", requestURL, nil)
+	req, err := http.NewRequest(http.MethodGet, requestURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -379,4 +396,57 @@ func request(rt http.RoundTripper, requestURL string, requestHeaders http.Header
 
 	// Make the request
 	return rt.RoundTrip(req)
+}
+
+func transportWithSystemRoots(issuer string, clientConfig *restclient.Config) (http.RoundTripper, error) {
+	// copy the config so we can freely mutate it
+	configWithSystemRoots := restclient.CopyConfig(clientConfig)
+
+	// explicitly unset CA cert information
+	// this will make the transport use the system roots or OS specific verification
+	// this is required to have reasonable behavior on windows (cannot get system roots)
+	// in general there is no good with to say "I want system roots plus this CA bundle"
+	// so we just try system roots first before using the kubeconfig CA bundle
+	configWithSystemRoots.CAFile = ""
+	configWithSystemRoots.CAData = nil
+
+	systemRootsRT, err := restclient.TransportFor(configWithSystemRoots)
+	if err != nil {
+		return nil, err
+	}
+
+	// build a request to probe the OAuth server CA
+	req, err := http.NewRequest(http.MethodHead, issuer, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// see if get a certificate error when using the system roots
+	// we perform the check using this transport (instead of the kubeconfig based one)
+	// because it is most likely to work with a route (which is what the OAuth server uses in 4.0+)
+	// note that both transports are "safe" to use (in the sense that they have valid TLS configurations)
+	// thus the fallback case is not an "unsafe" operation
+	_, err = systemRootsRT.RoundTrip(req)
+	switch err.(type) {
+	case nil:
+		// no error meaning the system roots work with the OAuth server
+		klog.V(4).Info("using system roots as no error was encountered")
+		return systemRootsRT, nil
+	case x509.UnknownAuthorityError, x509.HostnameError, x509.CertificateInvalidError, x509.SystemRootsError,
+		tls.RecordHeaderError, *net.OpError:
+		// fallback to the CA in the kubeconfig since the system roots did not work
+		// we are very broad on the errors here to avoid failing when we should fallback
+		klog.V(4).Infof("falling back to kubeconfig CA due to possible x509 error: %v", err)
+		return restclient.TransportFor(clientConfig)
+	default:
+		switch err {
+		case io.EOF, io.ErrUnexpectedEOF, io.ErrNoProgress:
+			// also fallback on various io errors
+			klog.V(4).Infof("falling back to kubeconfig CA due to possible IO error: %v", err)
+			return restclient.TransportFor(clientConfig)
+		}
+		// unknown error, fail (ideally should never occur)
+		klog.V(4).Infof("unexpected error during system roots probe: %v", err)
+		return nil, err
+	}
 }

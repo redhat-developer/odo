@@ -5,7 +5,7 @@ Hacking on OpenShift
 
 To build an OpenShift release you create the `make release` target on a
 system with Docker, which will create a build environment image and then
-execute a cross platform Go build within it. The build output will be copied
+execute a cross-platform Go build within it. The build output will be copied
 to `_output/releases` as a set of tars containing each version. It will also
 build the `openshift/origin-base` image which is the common parent image for all
 OpenShift Docker images.
@@ -65,7 +65,7 @@ action is taken, use `$OS_BUILD_ENV_PRESERVE`. By default, `_output/local/bin`,
 
 While `make release` and `make build` will both build all of the binaries required
 for a full release of OpenShift, it is also possible to build individual
-binaries. Binary entrypoints are kept under the `cmd/` directory and can be
+binaries. Binary entry points are kept under the `cmd/` directory and can be
 specified to build with the `WHAT` parameter, for instance, to build just `oc`:
 
     $ make build WHAT=cmd/oc
@@ -87,7 +87,7 @@ binaries or files with the `hack/build-local-images.py` script. For example:
     build-local-images.py f5-router
 
     # build with a different image prefix
-    OS_IMAGE_PREFIX=openshift3/ose build-local-images.sh
+    OS_IMAGE_PREFIX=openshift3/ose build-local-images.py
 
 
 ## Test Suites
@@ -202,12 +202,12 @@ We break integration tests into two categories, those that use Docker and those
 that do not.  In general, high-level components that depend on the behavior of code
 running inside a Docker container should have at least one or two integration tests
 that test all the way down to Docker, but those should be part of their own
-test suite.  Testing the API and high level API functions should generally
+test suite.  Testing the API and high-level API functions should generally
 not depend on calling into Docker. They are denoted by special test tags and
 should be in their own files so we can selectively build them.
 
 All integration tests are located under `test/integration/*`. For special function
-sets please create sub directories like `test/integration/deployimages`.
+sets please create subdirectories like `test/integration/deployimages`.
 
 Run all of the integration tests with:
 
@@ -257,7 +257,7 @@ the test suite, use:
 
 The final test category is end to end tests (e2e) which should verify a long
 set of flows in the product as a user would see them.  Two e2e tests should not
-overlap more than 10% of function, and are not intended to test error conditions
+overlap more than 10% of function and are not intended to test error conditions
 in detail. The project
 examples should be driven by e2e tests. e2e tests can also test external
 components working together.
@@ -280,7 +280,7 @@ and can be run individually by specifying `--ginkgo.focus` and a regex filter:
 
     $ test/extended/core.sh --ginkgo.focus=<regex>
 
-In addition, the extended tests can be ran against an existing OpenShift
+In addition, the extended tests can be run against an existing OpenShift
 cluster:
 
     $ KUBECONFIG=/path/to/admin.kubeconfig TEST_ONLY=true test/extended/core.sh --ginkgo.focus=<regex>
@@ -316,8 +316,8 @@ changes.  When you're done open a PR against the aforementioned repository and p
 [@openshift/sig-master](https://github.com/orgs/openshift/teams/sig-master) for a review.
 
 3. The final step happens in [openshift/origin](https://github.com/openshift/origin/) repository.
-As previously, run `make update-deps` to pick up the changes from previous two steps.  Afterwards
-run `make update` to generated the remaining bits in origin repository. When you're done open
+As previously, run `make update-deps` to pick up the changes from previous two steps.  Afterwards,
+run `make update` to generate the remaining bits in origin repository. When you're done open
 a PR against the aforementioned repository and ping [@openshift/sig-master](https://github.com/orgs/openshift/teams/sig-master)
 for a review.
 
@@ -371,7 +371,7 @@ If this fails, then it's possible you may need to pick multiple commits.
 Assuming you read the bullets above... If your patch is really far behind, for
 example, if there have been 5 commits modifying the directory you care about,
 cherry picking will be increasingly difficult and you should consider waiting
-for the next rebase, which will likely include the commit you care about, or at
+for the next rebase, which will likely include the commit you care about or at
 least decrease the amount of cherry picks you need to do to merge.
 
 To really know the answer, you need to know *how many commits behind you are in
@@ -434,7 +434,7 @@ To pull an upstream commit, run:
 
 This will attempt to create a patch from the current Kube rebase version in
 Origin that contains the commits added in the PR. If the PR has already been
-merged to the Kube version, you'll get an error. If there are conflicts, you'll
+merged into the Kube version, you'll get an error. If there are conflicts, you'll
 have to resolve them in the upstream repo, then hit ENTER to continue. The end
 result will be a single commit in your Origin repo that contains the changes.
 
@@ -445,21 +445,15 @@ command is run. You can also specify a commit range directly with:
 
 All upstream commits should have a commit message where the first line is:
 
-    UPSTREAM: <PR number|drop|carry>: <short description>
+    UPSTREAM: <PR number|drop|carry|00000>: <short description>
 
 `drop` indicates the commit should be removed during the next
 rebase. `carry` means that the change cannot go into upstream, and we
 should continue to use it during the next rebase. `PR number` means
 that the commit will be dropped during a rebase, as long as that
-rebase includes the given PR number.
-
-You can also target repositories other than Kube by setting `UPSTREAM_REPO` and
-`UPSTREAM_PACKAGE` env vars.  `UPSTREAM_REPO` should be the full name of the Git
-repo as Go sees it, i.e. `github.com/coreos/etcd`, and `UPSTREAM_PACKAGE` must be
-a package inside that repo that is currently part of the Godeps.json file.  Example:
-
-    $ UPSTREAM_REPO=github.com/coreos/etcd UPSTREAM_PACKAGE=store
-hack/cherry-pick.sh <pr_number>
+rebase includes the given PR number. `00000` means that the master team
+has opted into carrying the debt until the next rebase when we will attempt
+to gather them and create upstream patches.
 
 By default `hack/cherry-pick.sh` uses git remote named `origin` to fetch
 kubernetes repository, if your git configuration is different, you can pass the git
@@ -606,7 +600,7 @@ by the `hack/rebase-kube.sh` script, make sure you update it accordingly to help
 
 ### 3. cherry-pick upstream changes pushed to the Origin repo
 
-Eventually during the development cycle we introduce changes to dependencies
+Eventually, during the development cycle, we introduce changes to dependencies
 right in the Origin
 repository. This is not a largely recommended practice, but it's useful if we
 need something that,
@@ -624,7 +618,7 @@ looking for a message like
 `bump(k8s.io/kubernetes):...`).
 2. For every commit tagged UPSTREAM, do `git cherry-pick <commit SHA>`.
 3. Notice that eventually the cherry-pick will be empty. This probably means
-the given change were
+the given change was
 already merged in Kubernetes and we don't need to specifically add it to our
 Godeps. Nice!
 4. Read over the commit history and make sure you have every UPSTREAM commit
@@ -745,18 +739,15 @@ framework](http://swagger.io) which aims to make it easier to document and
 write clients for RESTful APIs.  When you start OpenShift, the Swagger API
 endpoint is exposed at `https://localhost:8443/swaggerapi`. The Swagger UI
 makes it easy to view your documentation - to view the docs for your local
-version of OpenShift start the server with CORS enabled:
-
-    $ openshift start --cors-allowed-origins=.*
-
-and then browse to http://openshift3swagger-claytondev.rhcloud.com (which runs
-a copy of the Swagger UI that points to localhost:8080 by default).  Expand the
-operations available on v1 to see the schemas (and to try the API directly).
+version of OpenShift start the server with CORS enabled and then browse to
+http://openshift3swagger-claytondev.rhcloud.com (which runs a copy of the
+Swagger UI that points to localhost:8080 by default).  Expand the operations
+available on v1 to see the schemas (and to try the API directly).
 Additionally, you can download swagger-ui from http://swagger.io/swagger-ui/
 and use it to point to your local swagger API endpoint.
 
 Note: Hosted API documentation can be found
-[here](http://docs.openshift.org/latest/rest_api/openshift_v1.html).
+[here](http://docs.okd.io/latest/rest_api/openshift_v1.html).
 
 
 ## Performance debugging
@@ -770,7 +761,7 @@ on the secured HTTPS port for the `openshift` binary:
 To view profiles, you use
 [pprof](http://goog-perftools.sourceforge.net/doc/cpu_profiler.html) which is
 part of `go tool`.  You must pass the captured pprof file (for source lines
-you will need to build the binary locally).  For instance, to view a `cpu` profile 
+you will need to build the binary locally).  For instance, to view a `cpu` profile
 from above, you would run OpenShift to completion, and then run:
 
     $ go tool pprof cpu.pprof
@@ -805,7 +796,7 @@ but you can also see the allocated object counts:
     $ go tool pprof --alloc_objects mem.pprof
 
 Finally, when using the `web` profile mode, you can have the go tool directly
-fetch your profiles via HTTP for services that only expose their profiling 
+fetch your profiles via HTTP for services that only expose their profiling
 contents over an unsecured HTTP endpoint:
 
     # for a 30s CPU trace

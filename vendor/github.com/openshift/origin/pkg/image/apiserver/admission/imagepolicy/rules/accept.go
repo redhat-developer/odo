@@ -1,22 +1,23 @@
 package rules
 
 import (
-	"github.com/golang/glog"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog"
 
-	"github.com/openshift/origin/pkg/image/apiserver/admission/apis/imagepolicy"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	imagepolicy "github.com/openshift/origin/pkg/image/apiserver/admission/apis/imagepolicy/v1"
 )
 
 type Accepter interface {
-	Covers(schema.GroupResource) bool
+	Covers(metav1.GroupResource) bool
 
 	Accepts(*ImagePolicyAttributes) bool
 }
 
 // mappedAccepter implements the Accepter interface for a map of group resources and accepters
-type mappedAccepter map[schema.GroupResource]Accepter
+type mappedAccepter map[metav1.GroupResource]Accepter
 
-func (a mappedAccepter) Covers(gr schema.GroupResource) bool {
+func (a mappedAccepter) Covers(gr metav1.GroupResource) bool {
 	_, ok := a[gr]
 	return ok
 }
@@ -33,7 +34,7 @@ func (a mappedAccepter) Accepts(attr *ImagePolicyAttributes) bool {
 
 type executionAccepter struct {
 	rules         []imagepolicy.ImageExecutionPolicyRule
-	covers        schema.GroupResource
+	covers        metav1.GroupResource
 	defaultReject bool
 
 	integratedRegistryMatcher RegistryMatcher
@@ -53,7 +54,7 @@ func NewExecutionRulesAccepter(rules []imagepolicy.ImageExecutionPolicyRule, int
 			a, ok := mapped[gr]
 			if !ok {
 				a = &executionAccepter{
-					covers: gr,
+					covers:                    gr,
 					integratedRegistryMatcher: integratedRegistryMatcher,
 				}
 				mapped[gr] = a
@@ -81,7 +82,7 @@ func NewExecutionRulesAccepter(rules []imagepolicy.ImageExecutionPolicyRule, int
 	return mapped, nil
 }
 
-func (r *executionAccepter) Covers(gr schema.GroupResource) bool {
+func (r *executionAccepter) Covers(gr metav1.GroupResource) bool {
 	return r.covers == gr
 }
 
@@ -92,21 +93,21 @@ func (r *executionAccepter) Accepts(attrs *ImagePolicyAttributes) bool {
 
 	anyMatched := false
 	for _, rule := range r.rules {
-		glog.V(5).Infof("image policy checking rule %q", rule.Name)
+		klog.V(5).Infof("image policy checking rule %q", rule.Name)
 		if attrs.ExcludedRules.Has(rule.Name) && !rule.IgnoreNamespaceOverride {
-			glog.V(5).Infof("skipping because rule is excluded by namespace annotations\n")
+			klog.V(5).Infof("skipping because rule is excluded by namespace annotations\n")
 			continue
 		}
 
 		// if we don't have a resolved image and we're supposed to skip the rule if that happens,
 		// continue here.  Otherwise, the reject option is impossible to reason about.
 		if attrs.Image == nil && rule.SkipOnResolutionFailure {
-			glog.V(5).Infof("skipping because image is not resolved and skip on failure is true\n")
+			klog.V(5).Infof("skipping because image is not resolved and skip on failure is true\n")
 			continue
 		}
 
 		matches := matchImageCondition(&rule.ImageCondition, r.integratedRegistryMatcher, attrs)
-		glog.V(5).Infof("Rule %q(reject=%t) applies to image %v: %t", rule.Name, rule.Reject, attrs.Name, matches)
+		klog.V(5).Infof("Rule %q(reject=%t) applies to image %v: %t", rule.Name, rule.Reject, attrs.Name, matches)
 		if matches {
 			if rule.Reject {
 				return false

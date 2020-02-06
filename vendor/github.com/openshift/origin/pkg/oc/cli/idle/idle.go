@@ -11,31 +11,30 @@ import (
 	"github.com/spf13/cobra"
 
 	utilerrors "github.com/openshift/origin/pkg/util/errors"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	clientset "k8s.io/client-go/kubernetes"
-	kextensionsclient "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/scale"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
 	appsclient "github.com/openshift/client-go/apps/clientset/versioned"
-	appsv1client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	appsmanualclient "github.com/openshift/origin/pkg/apps/client/v1"
-	"github.com/openshift/origin/pkg/oc/util/ocscheme"
+	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
 	unidlingapi "github.com/openshift/origin/pkg/unidling/api"
 	utilunidling "github.com/openshift/origin/pkg/unidling/util"
-	kinternalclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
 
 var (
@@ -67,11 +66,11 @@ type IdleOptions struct {
 
 	ClientForMappingFn func(*meta.RESTMapping) (resource.RESTClient, error)
 	ClientConfig       *rest.Config
-	ClientSet          clientset.Interface
+	ClientSet          kubernetes.Interface
+	AppClient          appsclient.Interface
+	OperatorClient     operatorclient.Interface
+	ScaleClient        scale.ScalesGetter
 	Mapper             meta.RESTMapper
-
-	// TODO(juanvallejo): remove this once we switch unidling helpers to use external versions
-	InternalClientset kinternalclientset.Interface
 
 	Builder   func() *resource.Builder
 	Namespace string
@@ -106,7 +105,7 @@ func NewCmdIdle(fullName string, f kcmdutil.Factory, streams genericclioptions.I
 	cmd.Flags().StringVar(&o.filename, "resource-names-file", o.filename, "file containing list of services whose scalable resources to idle")
 	cmd.Flags().StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to use to select services")
 	cmd.Flags().BoolVar(&o.all, "all", o.all, "if true, select all services in the namespace")
-	cmd.Flags().BoolVar(&o.allNamespaces, "all-namespaces", o.allNamespaces, "if true, select services across all namespaces")
+	cmd.Flags().BoolVarP(&o.allNamespaces, "all-namespaces", "A", o.allNamespaces, "if true, select services across all namespaces")
 	cmd.MarkFlagFilename("resource-names-file")
 
 	// TODO: take the `-o name` argument, and only print out names instead of the summary
@@ -133,7 +132,12 @@ func (o *IdleOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []st
 		return err
 	}
 
-	o.ClientSet, err = clientset.NewForConfig(o.ClientConfig)
+	o.ClientSet, err = kubernetes.NewForConfig(o.ClientConfig)
+	if err != nil {
+		return err
+	}
+
+	o.ScaleClient, err = scaleClient(f)
 	if err != nil {
 		return err
 	}
@@ -143,7 +147,12 @@ func (o *IdleOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []st
 		return err
 	}
 
-	o.InternalClientset, err = f.ClientSet()
+	o.AppClient, err = appsclient.NewForConfig(o.ClientConfig)
+	if err != nil {
+		return err
+	}
+
+	o.OperatorClient, err = operatorclient.NewForConfig(o.ClientConfig)
 	if err != nil {
 		return err
 	}
@@ -154,6 +163,31 @@ func (o *IdleOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []st
 	o.resources = args
 
 	return nil
+}
+
+// scaleClient gives you back scale getter
+func scaleClient(restClientGetter genericclioptions.RESTClientGetter) (scale.ScalesGetter, error) {
+	discoveryClient, err := restClientGetter.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+
+	clientConfig, err := restClientGetter.ToRESTConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	restClient, err := rest.RESTClientFor(clientConfig)
+	if err != nil {
+		return nil, err
+	}
+	resolver := scale.NewDiscoveryScaleKindResolver(discoveryClient)
+	mapper, err := restClientGetter.ToRESTMapper()
+	if err != nil {
+		return nil, err
+	}
+
+	return scale.New(restClient, mapper, dynamic.LegacyAPIPathResolverFunc, resolver), nil
 }
 
 // scanLinesFromFile loads lines from either standard in or a file
@@ -198,16 +232,6 @@ type idleUpdateInfo struct {
 	scaleRefs map[unidlingapi.CrossGroupObjectReference]struct{}
 }
 
-// controllerRef contains the small subset of info
-// that we need to compare controllers (like ObjectReference,
-// or OwnerReference, but with comparable and with just what we need).
-type controllerRef struct {
-	Name      string
-	Namespace string
-	Kind      string
-	Group     string
-}
-
 // calculateIdlableAnnotationsByService calculates the list of objects involved in the idling process from a list of services in a file.
 // Using the list of services, it figures out the associated scalable objects, and returns a map from the endpoints object for the services to
 // the list of scalable resources associated with that endpoints object, as well as a map from CrossGroupObjectReferences to scale to 0 to the
@@ -218,7 +242,7 @@ func (o *IdleOptions) calculateIdlableAnnotationsByService(infoVisitor func(reso
 		if pod, ok := podsLoaded[ref]; ok {
 			return pod, nil
 		}
-		pod, err := o.ClientSet.Core().Pods(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+		pod, err := o.ClientSet.CoreV1().Pods(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -491,7 +515,7 @@ func pairScalesWithScaleRefs(serviceName types.NamespacedName, annotations map[s
 }
 
 // setIdleAnnotations sets the given annotation on the given object to the marshaled list of CrossGroupObjectReferences
-func setIdleAnnotations(serviceName types.NamespacedName, annotations map[string]string, scaleRefs []unidlingapi.RecordedScaleReference, nowTime time.Time) error {
+func setIdleAnnotations(annotations map[string]string, scaleRefs []unidlingapi.RecordedScaleReference, nowTime time.Time) error {
 	var scaleRefsBytes []byte
 	var err error
 	if scaleRefsBytes, err = json.Marshal(scaleRefs); err != nil {
@@ -522,12 +546,12 @@ func patchObj(obj runtime.Object, metadata metav1.Object, oldData []byte, mappin
 
 	helper := resource.NewHelper(clientForMapping, mapping)
 
-	return helper.Patch(metadata.GetNamespace(), metadata.GetName(), types.StrategicMergePatchType, patchBytes)
+	return helper.Patch(metadata.GetNamespace(), metadata.GetName(), types.StrategicMergePatchType, patchBytes, &metav1.UpdateOptions{})
 }
 
 type scaleInfo struct {
 	namespace string
-	scale     *extensions.Scale
+	scale     *autoscalingv1.Scale
 	obj       runtime.Object
 }
 
@@ -535,6 +559,15 @@ type scaleInfo struct {
 // scalable resources to zero, and annotating the associated endpoints objects with the scalable resources to unidle
 // when they receive traffic.
 func (o *IdleOptions) RunIdle() error {
+	clusterNetwork, err := o.OperatorClient.OperatorV1().Networks().Get("cluster", metav1.GetOptions{})
+	if err == nil {
+		sdnType := clusterNetwork.Spec.DefaultNetwork.Type
+
+		if sdnType == operatorv1.NetworkTypeOpenShiftSDN {
+			fmt.Fprintln(o.ErrOut, "WARNING: idling when network policies are in place may cause connections to bypass network policy entirely")
+		}
+	}
+
 	b := o.Builder().
 		WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).
 		ContinueOnError().
@@ -579,18 +612,7 @@ func (o *IdleOptions) RunIdle() error {
 		fmt.Fprintf(o.ErrOut, "warning: continuing on for valid scalable resources, but an error occurred while finding scalable resources to idle: %v", err)
 	}
 
-	appClient, err := appsclient.NewForConfig(o.ClientConfig)
-	if err != nil {
-		return err
-	}
-	appsV1Client, err := appsv1client.NewForConfig(o.ClientConfig)
-	if err != nil {
-		return err
-	}
-
-	externalKubeExtensionClient := kextensionsclient.New(o.ClientSet.Extensions().RESTClient())
-	delegScaleGetter := appsmanualclient.NewDelegatingScaleNamespacer(appsV1Client, externalKubeExtensionClient)
-	scaleAnnotater := utilunidling.NewScaleAnnotater(delegScaleGetter, appClient.Apps(), o.InternalClientset.Core(), func(currentReplicas int32, annotations map[string]string) {
+	scaleAnnotater := utilunidling.NewScaleAnnotater(o.ScaleClient, o.Mapper, o.AppClient.AppsV1(), o.ClientSet.CoreV1(), func(currentReplicas int32, annotations map[string]string) {
 		annotations[unidlingapi.IdledAtAnnotation] = nowTime.UTC().Format(time.RFC3339)
 		annotations[unidlingapi.PreviousScaleAnnotation] = fmt.Sprintf("%v", currentReplicas)
 	})
@@ -639,7 +661,7 @@ func (o *IdleOptions) RunIdle() error {
 				continue
 			}
 
-			gvks, _, err := ocscheme.ReadingInternalScheme.ObjectKinds(info.obj)
+			gvks, _, err := scheme.Scheme.ObjectKinds(info.obj)
 			if err != nil {
 				fmt.Fprintf(o.ErrOut, "error: unable to mark service %q as idled: %v", serviceName.String(), err)
 				hadError = true
@@ -653,14 +675,7 @@ func (o *IdleOptions) RunIdle() error {
 				continue
 			}
 
-			versionedObj, err := legacyscheme.Scheme.ConvertToVersion(info.obj, schema.GroupVersions{gvks[0].GroupVersion()})
-			if err != nil {
-				fmt.Fprintf(o.ErrOut, "error: unable to mark service %q as idled: %v", serviceName.String(), err)
-				hadError = true
-				continue
-			}
-
-			oldData, err := json.Marshal(versionedObj)
+			oldData, err := json.Marshal(info.obj)
 			if err != nil {
 				fmt.Fprintf(o.ErrOut, "error: unable to mark service %q as idled: %v", serviceName.String(), err)
 				hadError = true
@@ -669,7 +684,7 @@ func (o *IdleOptions) RunIdle() error {
 
 			clientForMapping, err := o.ClientForMappingFn(mapping)
 
-			if err = setIdleAnnotations(serviceName, info.obj.Annotations, refsWithScale, nowTime); err != nil {
+			if err = setIdleAnnotations(info.obj.Annotations, refsWithScale, nowTime); err != nil {
 				fmt.Fprintf(o.ErrOut, "error: unable to mark service %q as idled: %v", serviceName.String(), err)
 				hadError = true
 				continue
@@ -693,7 +708,7 @@ func (o *IdleOptions) RunIdle() error {
 	for scaleRef, info := range toScale {
 		if !o.dryRun {
 			info.scale.Spec.Replicas = 0
-			scaleUpdater := utilunidling.NewScaleUpdater(kcmdutil.InternalVersionJSONEncoder(), info.namespace, appClient.Apps(), o.InternalClientset.Core())
+			scaleUpdater := utilunidling.NewScaleUpdater(scheme.DefaultJSONEncoder(), info.namespace, o.AppClient.AppsV1(), o.ClientSet.CoreV1())
 			if err := scaleAnnotater.UpdateObjectScale(scaleUpdater, info.namespace, scaleRef.CrossGroupObjectReference, info.obj, info.scale); err != nil {
 				fmt.Fprintf(o.ErrOut, "error: unable to scale %s %s/%s to 0, but still listed as target for unidling: %v\n", scaleRef.Kind, info.namespace, scaleRef.Name, err)
 				hadError = true

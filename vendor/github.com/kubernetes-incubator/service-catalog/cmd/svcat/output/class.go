@@ -20,15 +20,14 @@ import (
 	"io"
 	"strings"
 
-	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/kubernetes-incubator/service-catalog/pkg/svcat/service-catalog"
 )
 
-func getClassStatusText(status v1beta1.ClusterServiceClassStatus) string {
-	if status.RemovedFromBrokerCatalog {
-		return statusDeprecated
+func getScope(class servicecatalog.Class) string {
+	if class.GetNamespace() != "" {
+		return servicecatalog.NamespaceScope
 	}
-	return statusActive
+	return servicecatalog.ClusterScope
 }
 
 func writeClassListTable(w io.Writer, classes []servicecatalog.Class) {
@@ -65,27 +64,63 @@ func WriteClassList(w io.Writer, outputFormat string, classes ...servicecatalog.
 }
 
 // WriteClass prints a single class in the specified output format.
-func WriteClass(w io.Writer, outputFormat string, class v1beta1.ClusterServiceClass) {
+func WriteClass(w io.Writer, outputFormat string, class servicecatalog.Class) {
 	switch outputFormat {
 	case FormatJSON:
 		writeJSON(w, class)
 	case FormatYAML:
 		writeYAML(w, class, 0)
 	case FormatTable:
-		writeClassListTable(w, []servicecatalog.Class{&class})
+		writeClassListTable(w, []servicecatalog.Class{class})
 	}
 }
 
 // WriteClassDetails prints details for a single class.
-func WriteClassDetails(w io.Writer, class *v1beta1.ClusterServiceClass) {
+func WriteClassDetails(w io.Writer, class servicecatalog.Class) {
+	scope := getScope(class)
+	spec := class.GetSpec()
 	t := NewDetailsTable(w)
+	t.Append([]string{"Name:", spec.ExternalName})
+	if class.GetNamespace() != "" {
+		t.Append([]string{"Namespace:", class.GetNamespace()})
+	}
 	t.AppendBulk([][]string{
-		{"Name:", class.Spec.ExternalName},
-		{"Description:", class.Spec.Description},
-		{"UUID:", string(class.Name)},
-		{"Status:", getClassStatusText(class.Status)},
-		{"Tags:", strings.Join(class.Spec.Tags, ", ")},
-		{"Broker:", class.Spec.ClusterServiceBrokerName},
+		{"Scope:", scope},
+		{"Description:", spec.Description},
+		{"Kubernetes Name:", class.GetName()},
+		{"Status:", class.GetStatusText()},
+		{"Tags:", strings.Join(spec.Tags, ", ")},
+		{"Broker:", class.GetServiceBrokerName()},
 	})
+	t.Render()
+}
+
+// WriteClassAndPlanDetails prints details for multiple classes and plans
+func WriteClassAndPlanDetails(w io.Writer, classes []servicecatalog.Class, plans [][]servicecatalog.Plan) {
+	t := NewListTable(w)
+	t.SetHeader([]string{
+		"Class",
+		"Plans",
+		"Description",
+	})
+	for i, class := range classes {
+		for i, plan := range plans[i] {
+			if i == 0 {
+				t.Append([]string{
+					class.GetExternalName(),
+					plan.GetExternalName(),
+					class.GetSpec().Description,
+				})
+			} else {
+				t.Append([]string{
+					"",
+					plan.GetExternalName(),
+					"",
+				})
+			}
+		}
+	}
+	t.table.SetAutoWrapText(true)
+	t.SetVariableColumn(3)
 	t.Render()
 }

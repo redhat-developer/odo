@@ -4,18 +4,17 @@ import (
 	"io"
 	"net/http"
 
+	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 )
 
 // portForwarder starts port forwarding to a given pod
 type portForwarder struct {
 	Namespace string
 	PodName   string
-	Client    kclientset.Interface
+	Client    kubernetes.Interface
 	Config    *restclient.Config
 	Out       io.Writer
 	ErrOut    io.Writer
@@ -27,7 +26,7 @@ var _ forwarder = &portForwarder{}
 // ForwardPorts will forward a set of ports from a pod, the stopChan will stop the forwarding
 // when it's closed or receives a struct{}
 func (f *portForwarder) ForwardPorts(ports []string, stopChan <-chan struct{}) error {
-	req := f.Client.Core().RESTClient().Post().
+	req := f.Client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Namespace(f.Namespace).
 		Name(f.PodName).
@@ -53,21 +52,13 @@ func (f *portForwarder) ForwardPorts(ports []string, stopChan <-chan struct{}) e
 }
 
 // newPortForwarder creates a new forwarder for use with rsync
-func newPortForwarder(f kcmdutil.Factory, o *RsyncOptions) (forwarder, error) {
-	config, err := f.ToRESTConfig()
-	if err != nil {
-		return nil, err
-	}
-	client, err := kclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
+func newPortForwarder(o *RsyncOptions) forwarder {
 	return &portForwarder{
 		Namespace: o.Namespace,
 		PodName:   o.PodName(),
-		Client:    client,
-		Config:    config,
+		Client:    o.Client,
+		Config:    o.Config,
 		Out:       o.Out,
 		ErrOut:    o.ErrOut,
-	}, nil
+	}
 }

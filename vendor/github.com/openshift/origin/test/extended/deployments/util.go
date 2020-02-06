@@ -3,7 +3,6 @@ package deployments
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"reflect"
 	"sort"
 	"strings"
@@ -18,14 +17,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
-	kyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	watchtools "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/retry"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 
@@ -205,6 +203,9 @@ func GetDeploymentCondition(status appsv1.DeploymentConfigStatus, condType appsv
 }
 
 func deploymentReachedCompletion(dc *appsv1.DeploymentConfig, rcs []*corev1.ReplicationController, pods []corev1.Pod) (bool, error) {
+	if dc.Status.ObservedGeneration != dc.Generation {
+		return false, nil
+	}
 	if len(rcs) == 0 {
 		return false, nil
 	}
@@ -404,7 +405,9 @@ func waitForDeployerToComplete(oc *exutil.CLI, name string, timeout time.Duratio
 	}
 	defer watcher.Stop()
 	var rc *corev1.ReplicationController
-	if _, err := watch.Until(timeout, watcher, func(e watch.Event) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if _, err := watchtools.UntilWithoutRetry(ctx, watcher, func(e watch.Event) (bool, error) {
 		if e.Type == watch.Error {
 			return false, fmt.Errorf("error while waiting for replication controller: %v", e.Object)
 		}
@@ -454,7 +457,9 @@ func waitForPodModification(oc *exutil.CLI, namespace string, name string, timeo
 		return nil, err
 	}
 
-	event, err := watch.Until(timeout, watcher, func(event watch.Event) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	event, err := watchtools.UntilWithoutRetry(ctx, watcher, func(event watch.Event) (bool, error) {
 		if event.Type != watch.Modified && (resourceVersion == "" && event.Type != watch.Added) {
 			return true, fmt.Errorf("different kind of event appeared while waiting for Pod modification: event: %#v", event)
 		}
@@ -472,7 +477,9 @@ func waitForRCModification(oc *exutil.CLI, namespace string, name string, timeou
 		return nil, err
 	}
 
-	event, err := watch.Until(timeout, watcher, func(event watch.Event) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	event, err := watchtools.UntilWithoutRetry(ctx, watcher, func(event watch.Event) (bool, error) {
 		if event.Type != watch.Modified && (resourceVersion == "" && event.Type != watch.Added) {
 			return true, fmt.Errorf("different kind of event appeared while waiting for RC modification: event: %#v", event)
 		}
@@ -493,7 +500,9 @@ func waitForDCModification(oc *exutil.CLI, namespace string, name string, timeou
 		return nil, err
 	}
 
-	event, err := watch.Until(timeout, watcher, func(event watch.Event) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	event, err := watchtools.UntilWithoutRetry(ctx, watcher, func(event watch.Event) (bool, error) {
 		if event.Type != watch.Modified && (resourceVersion == "" && event.Type != watch.Added) {
 			return true, fmt.Errorf("different kind of event appeared while waiting for DC modification: event: %#v", event)
 		}
@@ -506,11 +515,12 @@ func waitForDCModification(oc *exutil.CLI, namespace string, name string, timeou
 }
 
 func createDeploymentConfig(oc *exutil.CLI, fixture string) (*appsv1.DeploymentConfig, error) {
-	dcFixture, err := readDCFixture(fixture)
+	obj, err := exutil.ReadFixture(fixture)
 	if err != nil {
 		return nil, err
 	}
-	dc, err := oc.AppsClient().AppsV1().DeploymentConfigs(oc.Namespace()).Create(dcFixture)
+	dc := obj.(*appsv1.DeploymentConfig)
+	dc, err = oc.AppsClient().AppsV1().DeploymentConfigs(oc.Namespace()).Create(dc)
 	if err != nil {
 		return nil, err
 	}
@@ -631,25 +641,6 @@ func HasValidDCControllerRef(dc metav1.Object, controllee metav1.Object) bool {
 		ref.Name == dc.GetName()
 }
 
-func readDCFixture(path string) (*appsv1.DeploymentConfig, error) {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	content, err := kyaml.ToJSON(data)
-	if err != nil {
-		return nil, err
-	}
-	appsScheme := runtime.NewScheme()
-	appsCodecs := serializer.NewCodecFactory(appsScheme)
-	appsv1.AddToScheme(appsScheme)
-	obj, err := runtime.Decode(appsCodecs.UniversalDecoder(appsv1.GroupVersion), content)
-	if err != nil {
-		return nil, err
-	}
-	return obj.(*appsv1.DeploymentConfig), err
-}
-
 type deployerPodInvariantChecker struct {
 	ctx       context.Context
 	wg        sync.WaitGroup
@@ -726,10 +717,14 @@ func (d *deployerPodInvariantChecker) UpdatePod(pod *corev1.Pod) {
 	// Check for sanity.
 	// This is not paranoid; kubelet has already been broken this way:
 	// https://github.com/openshift/origin/issues/17011
-	oldPhase := d.cache[key][index].Status.Phase
+	oldPod := d.cache[key][index]
+	oldPhase := oldPod.Status.Phase
 	oldPhaseIsTerminated := oldPhase == corev1.PodSucceeded || oldPhase == corev1.PodFailed
 	o.Expect(oldPhaseIsTerminated && pod.Status.Phase != oldPhase).To(o.BeFalse(),
-		fmt.Sprintf("%v: detected deployer pod transition from terminated phase: %q -> %q", time.Now(), oldPhase, pod.Status.Phase))
+		spew.Sprintf("%v: detected deployer pod '%s/%s' transition from terminated phase: %q -> %q;\n"+
+			"old: %#+v\nnew: %#+v\ndiff: %s",
+			time.Now(), pod.Namespace, pod.Name, oldPhase, pod.Status.Phase,
+			oldPod, pod, diff.ObjectReflectDiff(oldPod, pod)))
 
 	d.cache[key][index] = pod
 
@@ -748,7 +743,9 @@ func (d *deployerPodInvariantChecker) doChecking() {
 		select {
 		case <-d.ctx.Done():
 			return
-		case event := <-watcher.ResultChan():
+		case event, ok := <-watcher.ResultChan():
+			o.Expect(ok).To(o.BeEquivalentTo(true), "watch closed unexpectedly")
+
 			t := event.Type
 			if t != watch.Added && t != watch.Modified && t != watch.Deleted {
 				o.Expect(fmt.Errorf("unexpected event: %#v", event)).NotTo(o.HaveOccurred())

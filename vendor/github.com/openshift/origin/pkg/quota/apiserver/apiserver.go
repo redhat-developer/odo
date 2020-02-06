@@ -9,19 +9,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
-	kinternalinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion"
 
 	quotaapiv1 "github.com/openshift/api/quota/v1"
+	quotainformer "github.com/openshift/client-go/quota/informers/externalversions"
 	appliedclusterresourcequotaregistry "github.com/openshift/origin/pkg/quota/apiserver/registry/appliedclusterresourcequota"
 	clusterresourcequotaetcd "github.com/openshift/origin/pkg/quota/apiserver/registry/clusterresourcequota/etcd"
 	"github.com/openshift/origin/pkg/quota/controller/clusterquotamapping"
-	quotainformer "github.com/openshift/origin/pkg/quota/generated/informers/internalversion"
 )
 
 type ExtraConfig struct {
 	ClusterQuotaMappingController *clusterquotamapping.ClusterQuotaMappingController
 	QuotaInformers                quotainformer.SharedInformerFactory
-	KubeInternalInformers         kinternalinformers.SharedInformerFactory
 
 	// TODO these should all become local eventually
 	Scheme *runtime.Scheme
@@ -95,7 +93,7 @@ func (c *completedConfig) V1RESTStorage() (map[string]rest.Storage, error) {
 }
 
 func (c *completedConfig) newV1RESTStorage() (map[string]rest.Storage, error) {
-	clusterResourceQuotaStorage, clusterResourceQuotaStatusStorage, err := clusterresourcequotaetcd.NewREST(c.GenericConfig.RESTOptionsGetter)
+	clusterResourceQuotaStorage, clusterResourceQuotaStatusStorage, err := clusterresourcequotaetcd.NewREST()
 	if err != nil {
 		return nil, fmt.Errorf("error building REST storage: %v", err)
 	}
@@ -105,8 +103,7 @@ func (c *completedConfig) newV1RESTStorage() (map[string]rest.Storage, error) {
 	v1Storage["clusterResourceQuotas/status"] = clusterResourceQuotaStatusStorage
 	v1Storage["appliedClusterResourceQuotas"] = appliedclusterresourcequotaregistry.NewREST(
 		c.ExtraConfig.ClusterQuotaMappingController.GetClusterQuotaMapper(),
-		c.ExtraConfig.QuotaInformers.Quota().InternalVersion().ClusterResourceQuotas().Lister(),
-		c.ExtraConfig.KubeInternalInformers.Core().InternalVersion().Namespaces().Lister(),
+		c.ExtraConfig.QuotaInformers.Quota().V1().ClusterResourceQuotas().Lister(),
 	)
 	return v1Storage, nil
 }

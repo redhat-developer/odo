@@ -3,7 +3,7 @@ package util
 // TODO: This list needs triage and move to openshift/api and library-go:
 
 var (
-	WhitelistEnvVarNames = []string{"BUILD_LOGLEVEL", "GIT_SSL_NO_VERIFY"}
+	WhitelistEnvVarNames = []string{"BUILD_LOGLEVEL", "GIT_SSL_NO_VERIFY", "HTTP_PROXY", "HTTPS_PROXY", "LANG", "NO_PROXY"}
 
 	// DefaultSuccessfulBuildsHistoryLimit is the default number of successful builds to retain
 	DefaultSuccessfulBuildsHistoryLimit = int32(5)
@@ -88,6 +88,8 @@ const (
 const (
 	StatusMessageCannotCreateBuildPodSpec        = "Failed to create pod spec."
 	StatusMessageCannotCreateBuildPod            = "Failed creating build pod."
+	StatusMessageCannotCreateCAConfigMap         = "Failed creating build certificate authority configMap."
+	StatusMessageCannotCreateBuildSysConfigMap   = "Failed creating build system config configMap."
 	StatusMessageInvalidOutputRef                = "Output image could not be resolved."
 	StatusMessageInvalidImageRef                 = "Referenced image could not be resolved."
 	StatusMessageBuildPodDeleted                 = "The pod for this build was deleted before the build completed."
@@ -111,4 +113,13 @@ const (
 	// CustomBuildStrategyBaseImageKey is the environment variable that indicates the base image to be used when
 	// performing a custom build, if needed.
 	CustomBuildStrategyBaseImageKey = "OPENSHIFT_CUSTOM_BUILD_BASE_IMAGE"
+
+	// RegistryConfKey is the ConfigMap key for the build pod's registry configuration file.
+	RegistryConfKey = "registries.conf"
+
+	// SignaturePolicyKey is the ConfigMap key for the build pod's image signature policy file.
+	SignaturePolicyKey = "policy.json"
+
+	// ServiceCAKey is the ConfigMap key for the service signing certificate authority mounted into build pods.
+	ServiceCAKey = "service-ca.crt"
 )

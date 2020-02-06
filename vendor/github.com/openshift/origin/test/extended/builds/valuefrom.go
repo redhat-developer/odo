@@ -25,26 +25,20 @@ var _ = g.Describe("[Feature:Builds][Conformance][valueFrom] process valueFrom i
 
 	g.Context("", func() {
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
+			exutil.PreTestDump()
 		})
 
 		g.AfterEach(func() {
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 		})
 
 		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
-
 			g.By("waiting for openshift namespace imagestreams")
-			err = exutil.WaitForOpenShiftNamespaceImageStreams(oc)
+			err := exutil.WaitForOpenShiftNamespaceImageStreams(oc)
 			o.Expect(err).NotTo(o.HaveOccurred())
 
 			g.By("creating test image stream")
@@ -95,13 +89,13 @@ var _ = g.Describe("[Feature:Builds][Conformance][valueFrom] process valueFrom i
 			br.AssertSuccess()
 
 			logs, _ := br.Logs()
-			o.Expect(logs).To(o.ContainSubstring("\"FIELDREF_ENV\" \"mydockertest-1\""))
-			o.Expect(logs).To(o.ContainSubstring("\"CONFIGMAPKEYREF_ENV\" \"myvalue\""))
-			o.Expect(logs).To(o.ContainSubstring("\"SECRETKEYREF_ENV\" \"developer\""))
-			o.Expect(logs).To(o.ContainSubstring("\"FIELDREF_CLONE_ENV\" \"mydockertest-1\""))
-			o.Expect(logs).To(o.ContainSubstring("\"FIELDREF_CLONE_CLONE_ENV\" \"mydockertest-1\""))
-			o.Expect(logs).To(o.ContainSubstring("\"UNAVAILABLE_ENV\" \"$(SOME_OTHER_ENV)\""))
-			o.Expect(logs).To(o.ContainSubstring("\"ESCAPED_ENV\" \"$(MY_ESCAPED_VALUE)\""))
+			o.Expect(logs).To(o.ContainSubstring("\"FIELDREF_ENV\"=\"mydockertest-1\""))
+			o.Expect(logs).To(o.ContainSubstring("\"CONFIGMAPKEYREF_ENV\"=\"myvalue\""))
+			o.Expect(logs).To(o.ContainSubstring("\"SECRETKEYREF_ENV\"=\"developer\""))
+			o.Expect(logs).To(o.ContainSubstring("\"FIELDREF_CLONE_ENV\"=\"mydockertest-1\""))
+			o.Expect(logs).To(o.ContainSubstring("\"FIELDREF_CLONE_CLONE_ENV\"=\"mydockertest-1\""))
+			o.Expect(logs).To(o.ContainSubstring("\"UNAVAILABLE_ENV\"=\"$(SOME_OTHER_ENV)\""))
+			o.Expect(logs).To(o.ContainSubstring("\"ESCAPED_ENV\"=\"$(MY_ESCAPED_VALUE)\""))
 
 		})
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
 	authorizationapi "k8s.io/api/authorization/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,6 +15,7 @@ import (
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/storage/names"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	kapi "k8s.io/kubernetes/pkg/apis/core"
 	kapihelper "k8s.io/kubernetes/pkg/apis/core/helper"
@@ -82,7 +82,7 @@ func (s Strategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
 	stream := obj.(*imageapi.ImageStream)
 	stream.Status = imageapi.ImageStreamStatus{
 		DockerImageRepository: s.dockerImageRepository(stream, false),
-		Tags: make(map[string]imageapi.TagEventList),
+		Tags:                  make(map[string]imageapi.TagEventList),
 	}
 	stream.Generation = 1
 	for tag, ref := range stream.Spec.Tags {
@@ -219,7 +219,7 @@ func (s Strategy) tagsChanged(old, stream *imageapi.ImageStream) field.ErrorList
 			continue
 		}
 
-		glog.V(5).Infof("Detected changed tag %s in %s/%s", tag, stream.Namespace, stream.Name)
+		klog.V(5).Infof("Detected changed tag %s in %s/%s", tag, stream.Namespace, stream.Name)
 
 		generation := stream.Generation
 		tagRef.Generation = &generation
@@ -463,6 +463,8 @@ func (v *TagVerifier) Verify(old, stream *imageapi.ImageStream, user user.Info) 
 	if old != nil && old.Spec.Tags != nil {
 		oldTags = old.Spec.Tags
 	}
+	// Store tags by the ImageStreamTags they reference on creation to minimize the number of SAR checks to make
+	tagsByNamespacedStream := make(map[string]map[string][]string)
 	for tag, tagRef := range stream.Spec.Tags {
 		if tagRef.From == nil {
 			continue
@@ -484,31 +486,44 @@ func (v *TagVerifier) Verify(old, stream *imageapi.ImageStream, user user.Info) 
 			continue
 		}
 
-		// Make sure this user can pull the specified image before allowing them to tag it into another imagestream
-		subjectAccessReview := authorizationutil.AddUserToSAR(user, &authorizationapi.SubjectAccessReview{
-			Spec: authorizationapi.SubjectAccessReviewSpec{
-				ResourceAttributes: &authorizationapi.ResourceAttributes{
-					Namespace:   tagRef.From.Namespace,
-					Verb:        "get",
-					Group:       imageapi.GroupName,
-					Resource:    "imagestreams",
-					Subresource: "layers",
-					Name:        streamName,
+		mapping, ok := tagsByNamespacedStream[tagRef.From.Namespace]
+		if !ok {
+			mapping = make(map[string][]string)
+		}
+		mapping[streamName] = append(mapping[streamName], tag)
+		tagsByNamespacedStream[tagRef.From.Namespace] = mapping
+	}
+	for namespace, mapping := range tagsByNamespacedStream {
+		for streamName, tags := range mapping {
+			// Make sure this user can pull the specified image before allowing them to tag it into another imagestream
+			subjectAccessReview := authorizationutil.AddUserToSAR(user, &authorizationapi.SubjectAccessReview{
+				Spec: authorizationapi.SubjectAccessReviewSpec{
+					ResourceAttributes: &authorizationapi.ResourceAttributes{
+						Namespace:   namespace,
+						Verb:        "get",
+						Group:       imageapi.GroupName,
+						Resource:    "imagestreams",
+						Subresource: "layers",
+						Name:        streamName,
+					},
 				},
-			},
-		})
-		glog.V(4).Infof("Performing SubjectAccessReview for user=%s, groups=%v to %s/%s", user.GetName(), user.GetGroups(), tagRef.From.Namespace, streamName)
-		resp, err := v.subjectAccessReviewClient.Create(subjectAccessReview)
-		if err != nil || resp == nil || (resp != nil && !resp.Status.Allowed) {
-			message := fmt.Sprintf("%s/%s", tagRef.From.Namespace, streamName)
-			if resp != nil {
-				message = message + fmt.Sprintf(": %q %q", resp.Status.Reason, resp.Status.EvaluationError)
+			})
+			klog.V(4).Infof("Performing SubjectAccessReview for user=%s, groups=%v to %s/%s", user.GetName(), user.GetGroups(), namespace, streamName)
+			resp, err := v.subjectAccessReviewClient.Create(subjectAccessReview)
+			if err != nil || resp == nil || (resp != nil && !resp.Status.Allowed) {
+				message := fmt.Sprintf("%s/%s", namespace, streamName)
+				if resp != nil {
+					message = message + fmt.Sprintf(": %q %q", resp.Status.Reason, resp.Status.EvaluationError)
+				}
+				if err != nil {
+					message = message + fmt.Sprintf("- %v", err)
+				}
+				for _, tag := range tags {
+					fromPath := field.NewPath("spec", "tags").Key(tag).Child("from")
+					errors = append(errors, field.Forbidden(fromPath, message))
+				}
+				continue
 			}
-			if err != nil {
-				message = message + fmt.Sprintf("- %v", err)
-			}
-			errors = append(errors, field.Forbidden(fromPath, message))
-			continue
 		}
 	}
 	return errors

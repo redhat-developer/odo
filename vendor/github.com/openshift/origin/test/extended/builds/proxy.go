@@ -11,7 +11,7 @@ import (
 	exutil "github.com/openshift/origin/test/extended/util"
 )
 
-var _ = g.Describe("[Feature:Builds][Slow] the s2i build should support proxies", func() {
+var _ = g.Describe("[Feature:Builds][Slow] builds should support proxies", func() {
 	defer g.GinkgoRecover()
 	var (
 		buildFixture = exutil.FixturePath("testdata", "builds", "test-build-proxy.yaml")
@@ -21,23 +21,17 @@ var _ = g.Describe("[Feature:Builds][Slow] the s2i build should support proxies"
 	g.Context("", func() {
 
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
+			exutil.PreTestDump()
 		})
 
 		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
-
 			oc.Run("create").Args("-f", buildFixture).Execute()
 		})
 
 		g.AfterEach(func() {
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 		})
@@ -72,8 +66,9 @@ var _ = g.Describe("[Feature:Builds][Slow] the s2i build should support proxies"
 				br.AssertSuccess()
 				buildLog, err := br.Logs()
 				o.Expect(err).NotTo(o.HaveOccurred())
+				// envuser:password will appear in the log because the full/unstripped env HTTP_PROXY variable is injected
+				// into the dockerfile and displayed by docker build.
 				o.Expect(buildLog).NotTo(o.ContainSubstring("gituser:password"), "build log should not include proxy credentials")
-				o.Expect(buildLog).NotTo(o.ContainSubstring("envuser:password"), "build log should not include proxy credentials")
 				o.Expect(buildLog).To(o.ContainSubstring("proxy1"), "build log should include proxy host")
 				o.Expect(buildLog).To(o.ContainSubstring("proxy2"), "build log should include proxy host")
 				o.Expect(buildLog).To(o.ContainSubstring("proxy3"), "build log should include proxy host")

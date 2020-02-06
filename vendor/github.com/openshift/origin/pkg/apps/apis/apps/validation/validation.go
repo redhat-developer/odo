@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	unversionedvalidation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kvalidation "k8s.io/apimachinery/pkg/util/validation"
@@ -21,7 +22,7 @@ import (
 )
 
 func ValidateDeploymentConfig(config *appsapi.DeploymentConfig) field.ErrorList {
-	allErrs := validation.ValidateObjectMeta(&config.ObjectMeta, true, validation.NameIsDNSSubdomain, field.NewPath("metadata"))
+	allErrs := validation.ValidateObjectMeta(&config.ObjectMeta, true, apimachineryvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))
 	allErrs = append(allErrs, ValidateDeploymentConfigSpec(config.Spec)...)
 	allErrs = append(allErrs, ValidateDeploymentConfigStatus(config.Status)...)
 	return allErrs
@@ -160,8 +161,6 @@ func ValidateDeploymentConfigStatusUpdate(newConfig *appsapi.DeploymentConfig, o
 	statusPath := field.NewPath("status")
 	if newConfig.Status.LatestVersion < oldConfig.Status.LatestVersion {
 		allErrs = append(allErrs, field.Invalid(statusPath.Child("latestVersion"), newConfig.Status.LatestVersion, "latestVersion cannot be decremented"))
-	} else if newConfig.Status.LatestVersion > (oldConfig.Status.LatestVersion + 1) {
-		allErrs = append(allErrs, field.Invalid(statusPath.Child("latestVersion"), newConfig.Status.LatestVersion, "latestVersion can only be incremented by 1"))
 	}
 	if newConfig.Status.ObservedGeneration < oldConfig.Status.ObservedGeneration {
 		allErrs = append(allErrs, field.Invalid(statusPath.Child("observedGeneration"), newConfig.Status.ObservedGeneration, "observedGeneration cannot be decremented"))

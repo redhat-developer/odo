@@ -32,7 +32,7 @@ var DefaultDropCaps = []string{
 
 // CreateBuildPod creates a pod that will execute the STI build
 // TODO: Make the Pod definition configurable
-func (bs *SourceBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod, error) {
+func (bs *SourceBuildStrategy) CreateBuildPod(build *buildv1.Build, additionalCAs map[string]string, internalRegistryHost string) (*corev1.Pod, error) {
 	data, err := runtime.Encode(buildJSONCodec, build)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode the Build %s/%s: %v", build.Namespace, build.Name, err)
@@ -40,6 +40,7 @@ func (bs *SourceBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 
 	containerEnv := []corev1.EnvVar{
 		{Name: "BUILD", Value: string(data)},
+		{Name: "LANG", Value: "en_US.utf8"},
 	}
 
 	addSourceEnvVars(build.Spec.Source, &containerEnv)
@@ -89,12 +90,22 @@ func (bs *SourceBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 							Name:      "buildworkdir",
 							MountPath: buildutil.BuildWorkDirMount,
 						},
+						{
+							Name:      "buildcachedir",
+							MountPath: buildutil.BuildBlobsMetaCache,
+						},
 					},
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Resources:       build.Spec.Resources,
 				},
 			},
 			Volumes: []corev1.Volume{
+				{
+					Name: "buildcachedir",
+					VolumeSource: corev1.VolumeSource{
+						HostPath: &corev1.HostPathVolumeSource{Path: buildutil.BuildBlobsMetaCache},
+					},
+				},
 				{
 					Name: "buildworkdir",
 					VolumeSource: corev1.VolumeSource{
@@ -109,10 +120,10 @@ func (bs *SourceBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 
 	if build.Spec.Source.Git != nil || build.Spec.Source.Binary != nil {
 		gitCloneContainer := corev1.Container{
-			Name:    GitCloneContainer,
-			Image:   bs.Image,
-			Command: []string{"openshift-git-clone"},
-			Env:     copyEnvVarSlice(containerEnv),
+			Name:                     GitCloneContainer,
+			Image:                    bs.Image,
+			Command:                  []string{"openshift-git-clone"},
+			Env:                      copyEnvVarSlice(containerEnv),
 			TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 			VolumeMounts: []corev1.VolumeMount{
 				{
@@ -146,19 +157,24 @@ func (bs *SourceBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 					Name:      "buildworkdir",
 					MountPath: buildutil.BuildWorkDirMount,
 				},
+				{
+					Name:      "buildcachedir",
+					MountPath: buildutil.BuildBlobsMetaCache,
+				},
 			},
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Resources:       build.Spec.Resources,
 		}
 		setupDockerSecrets(pod, &extractImageContentContainer, build.Spec.Output.PushSecret, strategy.PullSecret, build.Spec.Source.Images)
+		setupContainersStorage(pod, &extractImageContentContainer)
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, extractImageContentContainer)
 	}
 	pod.Spec.InitContainers = append(pod.Spec.InitContainers,
 		corev1.Container{
-			Name:    "manage-dockerfile",
-			Image:   bs.Image,
-			Command: []string{"openshift-manage-dockerfile"},
-			Env:     copyEnvVarSlice(containerEnv),
+			Name:                     "manage-dockerfile",
+			Image:                    bs.Image,
+			Command:                  []string{"openshift-manage-dockerfile"},
+			Env:                      copyEnvVarSlice(containerEnv),
 			TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 			VolumeMounts: []corev1.VolumeMount{
 				{
@@ -176,8 +192,6 @@ func (bs *SourceBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 	}
 
 	setOwnerReference(pod, build)
-	setupDockerSocket(pod)
-	setupCrioSocket(pod)
 	setupDockerSecrets(pod, &pod.Spec.Containers[0], build.Spec.Output.PushSecret, strategy.PullSecret, build.Spec.Source.Images)
 	// For any secrets the user wants to reference from their Assemble script or Dockerfile, mount those
 	// secrets into the main container.  The main container includes logic to copy them from the mounted
@@ -185,6 +199,11 @@ func (bs *SourceBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 	// TODO: consider moving this into the git-clone container and doing the secret copying there instead.
 	setupInputSecrets(pod, &pod.Spec.Containers[0], build.Spec.Source.Secrets)
 	setupInputConfigMaps(pod, &pod.Spec.Containers[0], build.Spec.Source.ConfigMaps)
+	setupContainersConfigs(build, pod)
+	setupBuildCAs(build, pod, additionalCAs, internalRegistryHost)
+	setupContainersStorage(pod, &pod.Spec.Containers[0]) // for unprivileged builds
+	// setupContainersNodeStorage(pod, &pod.Spec.Containers[0]) // for privileged builds
+	setupBlobCache(pod)
 	return pod, nil
 }
 

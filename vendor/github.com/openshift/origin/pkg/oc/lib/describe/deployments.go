@@ -8,6 +8,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"k8s.io/kubernetes/pkg/kubectl/describe/versioned"
+
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,9 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/apis/autoscaling"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kprinters "k8s.io/kubernetes/pkg/printers"
-	kinternalprinters "k8s.io/kubernetes/pkg/printers/internalversion"
+	"k8s.io/kubernetes/pkg/kubectl/describe"
 
 	"github.com/openshift/api/apps"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -63,7 +63,7 @@ func NewDeploymentConfigDescriber(client appstypedclient.AppsV1Interface, kclien
 }
 
 // Describe returns the description of a DeploymentConfig
-func (d *DeploymentConfigDescriber) Describe(namespace, name string, settings kprinters.DescriberSettings) (string, error) {
+func (d *DeploymentConfigDescriber) Describe(namespace, name string, settings describe.DescriberSettings) (string, error) {
 	var deploymentConfig *appsv1.DeploymentConfig
 	if d.config != nil {
 		// If a deployment config is already provided use that.
@@ -85,7 +85,7 @@ func (d *DeploymentConfigDescriber) Describe(namespace, name string, settings kp
 		)
 
 		if d.config == nil {
-			if rcs, err := d.kubeClient.Core().ReplicationControllers(namespace).List(metav1.ListOptions{LabelSelector: appsutil.ConfigSelector(deploymentConfig.Name).String()}); err == nil {
+			if rcs, err := d.kubeClient.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{LabelSelector: appsutil.ConfigSelector(deploymentConfig.Name).String()}); err == nil {
 				deploymentsHistory = make([]*corev1.ReplicationController, 0, len(rcs.Items))
 				for i := range rcs.Items {
 					deploymentsHistory = append(deploymentsHistory, &rcs.Items[i])
@@ -150,19 +150,14 @@ func (d *DeploymentConfigDescriber) Describe(namespace, name string, settings kp
 
 		if settings.ShowEvents {
 			// Events
-			if events, err := d.kubeClient.Core().Events(deploymentConfig.Namespace).Search(legacyscheme.Scheme, deploymentConfig); err == nil && events != nil {
+			if events, err := d.kubeClient.CoreV1().Events(deploymentConfig.Namespace).Search(legacyscheme.Scheme, deploymentConfig); err == nil && events != nil {
 				latestDeploymentEvents := &corev1.EventList{Items: []corev1.Event{}}
 				for i := len(events.Items); i != 0 && i > len(events.Items)-maxDisplayDeploymentsEvents; i-- {
 					latestDeploymentEvents.Items = append(latestDeploymentEvents.Items, events.Items[i-1])
 				}
 				fmt.Fprintln(out)
-				pw := kinternalprinters.NewPrefixWriter(out)
-				// TODO: Remove conversion when DescribeEvents use external types
-				latestInternalEvents := &kapi.EventList{}
-				if err := legacyscheme.Scheme.Convert(latestDeploymentEvents, latestInternalEvents, nil); err != nil {
-					return fmt.Errorf("conversion error: %v", err)
-				}
-				kinternalprinters.DescribeEvents(latestInternalEvents, pw)
+				pw := versioned.NewPrefixWriter(out)
+				versioned.DescribeEvents(latestDeploymentEvents, pw)
 			}
 		}
 		return nil
@@ -323,18 +318,14 @@ func printDeploymentConfigSpec(kc kubernetes.Interface, dc appsv1.DeploymentConf
 
 	// Pod template
 	fmt.Fprintf(w, "Template:\n")
-	internalSpecTemplate := &kapi.PodTemplateSpec{}
-	if err := legacyscheme.Scheme.Convert(spec.Template, internalSpecTemplate, nil); err != nil {
-		return err
-	}
-	kinternalprinters.DescribePodTemplate(internalSpecTemplate, kinternalprinters.NewPrefixWriter(w))
+	versioned.DescribePodTemplate(spec.Template, versioned.NewPrefixWriter(w))
 
 	return nil
 }
 
 // TODO: Move this upstream
 func printAutoscalingInfo(res []schema.GroupResource, namespace, name string, kclient kubernetes.Interface, w *tabwriter.Writer) {
-	hpaList, err := kclient.Autoscaling().HorizontalPodAutoscalers(namespace).List(metav1.ListOptions{LabelSelector: labels.Everything().String()})
+	hpaList, err := kclient.AutoscalingV1().HorizontalPodAutoscalers(namespace).List(metav1.ListOptions{LabelSelector: labels.Everything().String()})
 	if err != nil {
 		return
 	}
@@ -380,18 +371,18 @@ func formatHPATargets(hpa *autoscaling.HorizontalPodAutoscaler) []string {
 	for i, metricSpec := range hpa.Spec.Metrics {
 		switch metricSpec.Type {
 		case autoscaling.PodsMetricSourceType:
-			descriptions[i] = fmt.Sprintf("%s %s average per pod", metricSpec.Pods.TargetAverageValue.String(), metricSpec.Pods.MetricName)
+			descriptions[i] = fmt.Sprintf("%s %s average per pod", metricSpec.Pods.Target.AverageValue.String(), metricSpec.Pods.Metric.Name)
 		case autoscaling.ObjectMetricSourceType:
 			// TODO: it'd probably be more accurate if we put the group in here too,
 			// but it might be a bit to verbose to read at a glance
 			// TODO: we might want to use the resource name here instead of the kind?
-			targetObjDesc := fmt.Sprintf("%s %s", metricSpec.Object.Target.Kind, metricSpec.Object.Target.Name)
-			descriptions[i] = fmt.Sprintf("%s %s on %s", metricSpec.Object.TargetValue.String(), metricSpec.Object.MetricName, targetObjDesc)
+			targetObjDesc := fmt.Sprintf("%s %s", metricSpec.Object.Target.Type, metricSpec.Object.Metric.Name)
+			descriptions[i] = fmt.Sprintf("%s %s on %s", metricSpec.Object.Target.Value.String(), metricSpec.Object.Metric.Name, targetObjDesc)
 		case autoscaling.ResourceMetricSourceType:
-			if metricSpec.Resource.TargetAverageValue != nil {
-				descriptions[i] = fmt.Sprintf("%s %s average per pod", metricSpec.Resource.TargetAverageValue.String(), metricSpec.Resource.Name)
-			} else if metricSpec.Resource.TargetAverageUtilization != nil {
-				descriptions[i] = fmt.Sprintf("%d%% %s average per pod", *metricSpec.Resource.TargetAverageUtilization, metricSpec.Resource.Name)
+			if metricSpec.Resource.Target.AverageValue != nil {
+				descriptions[i] = fmt.Sprintf("%s %s average per pod", metricSpec.Resource.Target.AverageValue.String(), metricSpec.Resource.Name)
+			} else if metricSpec.Resource.Target.AverageUtilization != nil {
+				descriptions[i] = fmt.Sprintf("%d%% %s average per pod", *metricSpec.Resource.Target.AverageUtilization, metricSpec.Resource.Name)
 			} else {
 				descriptions[i] = "<unset resource metric>"
 			}
@@ -433,7 +424,7 @@ func printDeploymentRc(deployment *corev1.ReplicationController, kubeClient kube
 
 func getPodStatusForDeployment(deployment *corev1.ReplicationController, kubeClient kubernetes.Interface) (running, waiting, succeeded, failed int,
 	err error) {
-	rcPods, err := kubeClient.Core().Pods(deployment.Namespace).List(metav1.ListOptions{LabelSelector: labels.Set(deployment.Spec.Selector).AsSelector().String()})
+	rcPods, err := kubeClient.CoreV1().Pods(deployment.Namespace).List(metav1.ListOptions{LabelSelector: labels.Set(deployment.Spec.Selector).AsSelector().String()})
 	if err != nil {
 		return
 	}
@@ -478,14 +469,14 @@ func (d *LatestDeploymentsDescriber) Describe(namespace, name string) (string, e
 
 	var deployments []corev1.ReplicationController
 	if d.count == -1 || d.count > 1 {
-		list, err := d.kubeClient.Core().ReplicationControllers(namespace).List(metav1.ListOptions{LabelSelector: appsutil.ConfigSelector(name).String()})
+		list, err := d.kubeClient.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{LabelSelector: appsutil.ConfigSelector(name).String()})
 		if err != nil && !kerrors.IsNotFound(err) {
 			return "", err
 		}
 		deployments = list.Items
 	} else {
 		deploymentName := appsutil.LatestDeploymentNameForConfig(config)
-		deployment, err := d.kubeClient.Core().ReplicationControllers(config.Namespace).Get(deploymentName, metav1.GetOptions{})
+		deployment, err := d.kubeClient.CoreV1().ReplicationControllers(config.Namespace).Get(deploymentName, metav1.GetOptions{})
 		if err != nil && !kerrors.IsNotFound(err) {
 			return "", err
 		}

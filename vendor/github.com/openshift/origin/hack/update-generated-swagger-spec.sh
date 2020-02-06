@@ -1,7 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Script to create latest swagger spec.
 source "$(dirname "${BASH_SOURCE}")/lib/init.sh"
+
+os::log::info "Generating & verifying swagger is disabled temporarily due to removal of openshift start"
+exit 0
 
 function cleanup() {
     return_code=$?
@@ -46,7 +49,7 @@ done
 
 # Swagger 2.0 / OpenAPI docs
 generated_file="${SWAGGER_SPEC_OUT_DIR}/openshift-openapi-spec.json"
-oc get --raw "/swagger.json" --config="${MASTER_CONFIG_DIR}/admin.kubeconfig" > "${generated_file}"
+oc get --raw "/swagger.json" --config="${MASTER_CONFIG_DIR}/admin.kubeconfig" | jq -S . > "${generated_file}"
 
 os::util::sed 's|https://127.0.0.1:38443|https://127.0.0.1:8443|g' "${generated_file}"
 os::util::sed -E '0,/"version":/ s|"version": "[^\"]+"|"version": "latest"|g' "${generated_file}"

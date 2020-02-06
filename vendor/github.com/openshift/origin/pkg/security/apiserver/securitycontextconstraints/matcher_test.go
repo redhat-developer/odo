@@ -3,6 +3,7 @@ package securitycontextconstraints
 import (
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kapi "k8s.io/kubernetes/pkg/apis/core"
 
@@ -10,41 +11,6 @@ import (
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	"github.com/openshift/origin/pkg/security/uid"
 )
-
-func TestDeduplicateSecurityContextConstraints(t *testing.T) {
-	duped := []*securityapi.SecurityContextConstraints{
-		{ObjectMeta: metav1.ObjectMeta{Name: "a"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "a"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "b"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "b"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "c"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "d"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "e"}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "e"}},
-	}
-
-	deduped := DeduplicateSecurityContextConstraints(duped)
-
-	if len(deduped) != 5 {
-		t.Fatalf("expected to have 5 remaining sccs but found %d: %v", len(deduped), deduped)
-	}
-
-	constraintCounts := map[string]int{}
-
-	for _, scc := range deduped {
-		if _, ok := constraintCounts[scc.Name]; !ok {
-			constraintCounts[scc.Name] = 0
-		}
-		constraintCounts[scc.Name] = constraintCounts[scc.Name] + 1
-	}
-
-	for k, v := range constraintCounts {
-		if v > 1 {
-			t.Errorf("%s was found %d times after de-duping", k, v)
-		}
-	}
-
-}
 
 func TestAssignSecurityContext(t *testing.T) {
 	// set up test data
@@ -386,8 +352,8 @@ func hasBlock(block uid.Block, blocks []uid.Block) bool {
 }
 
 func TestGetPreallocatedFSGroup(t *testing.T) {
-	ns := func() *kapi.Namespace {
-		return &kapi.Namespace{
+	ns := func() *corev1.Namespace {
+		return &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{},
 			},
@@ -407,7 +373,7 @@ func TestGetPreallocatedFSGroup(t *testing.T) {
 	goodNS.Annotations[allocator.SupplementalGroupsAnnotation] = "1/5"
 
 	tests := map[string]struct {
-		ns         *kapi.Namespace
+		ns         *corev1.Namespace
 		expected   []securityapi.IDRange
 		shouldFail bool
 	}{
@@ -462,8 +428,8 @@ func TestGetPreallocatedFSGroup(t *testing.T) {
 }
 
 func TestGetPreallocatedSupplementalGroups(t *testing.T) {
-	ns := func() *kapi.Namespace {
-		return &kapi.Namespace{
+	ns := func() *corev1.Namespace {
+		return &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{},
 			},
@@ -483,7 +449,7 @@ func TestGetPreallocatedSupplementalGroups(t *testing.T) {
 	goodNS.Annotations[allocator.SupplementalGroupsAnnotation] = "1/5"
 
 	tests := map[string]struct {
-		ns         *kapi.Namespace
+		ns         *corev1.Namespace
 		expected   []securityapi.IDRange
 		shouldFail bool
 	}{

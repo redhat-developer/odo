@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
-	"sync"
 	"syscall"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
@@ -20,7 +19,7 @@ import (
 )
 
 type egressIPWatcher struct {
-	sync.Mutex
+	// We don't need a mutex because tracker serializes all of its callbacks to us
 
 	tracker *common.EgressIPTracker
 
@@ -69,6 +68,45 @@ func (eip *egressIPWatcher) Start(networkInformers networkinformers.SharedInform
 
 	eip.tracker.Start(networkInformers.Network().V1().HostSubnets(), networkInformers.Network().V1().NetNamespaces())
 	return nil
+}
+
+func (eip *egressIPWatcher) Synced() {
+	link, _, err := GetLinkDetails(eip.localIP)
+	if err != nil {
+		// shouldn't happen, but obviously there's nothing to clean up...
+		return
+	}
+	label, err := egressIPLabel(link)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("Could not check for stale egress IPs: %v", err))
+		return
+	}
+	addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("Could not check for stale egress IPs: %v", err))
+		return
+	}
+
+	for _, addr := range addrs {
+		ip := addr.IP.String()
+		if addr.Label == label && eip.iptablesMark[ip] == "" {
+			klog.Infof("Cleaning up stale egress IP %s", addr.IP.String())
+			err = netlink.AddrDel(link, &addr)
+			if err != nil {
+				utilruntime.HandleError(fmt.Errorf("Could not clean up stale egress IP: %v", err))
+			}
+		}
+	}
+}
+
+func egressIPLabel(link netlink.Link) (string, error) {
+	// An address label must start with the link name plus ":", and must be at most 15
+	// characters long. If the link name is too long then we can't label egress IPs.
+	label := link.Attrs().Name + ":eip"
+	if len(label) > 15 {
+		return "", fmt.Errorf("link name %q is too long", link.Attrs().Name)
+	}
+	return label, nil
 }
 
 // Convert vnid to a hex value that is not 0, does not have masqueradeBit set, and isn't
@@ -148,10 +186,11 @@ func (eip *egressIPWatcher) assignEgressIP(egressIP, mark string) error {
 	if !eip.localEgressNet.Contains(addr.IP) {
 		return fmt.Errorf("egress IP %q is not in local network %s of interface %s", egressIP, eip.localEgressNet.String(), eip.localEgressLink.Attrs().Name)
 	}
+	addr.Label, _ = egressIPLabel(eip.localEgressLink)
 	err = netlink.AddrAdd(eip.localEgressLink, addr)
 	if err != nil {
 		if err == syscall.EEXIST {
-			glog.V(2).Infof("Egress IP %q already exists on %s", egressIPNet, eip.localEgressLink.Attrs().Name)
+			klog.V(2).Infof("Egress IP %q already exists on %s", egressIPNet, eip.localEgressLink.Attrs().Name)
 		} else {
 			return fmt.Errorf("could not add egress IP %q to %s: %v", egressIPNet, eip.localEgressLink.Attrs().Name, err)
 		}
@@ -161,7 +200,7 @@ func (eip *egressIPWatcher) assignEgressIP(egressIP, mark string) error {
 	go func() {
 		out, err := exec.Command("/sbin/arping", "-q", "-A", "-c", "1", "-I", eip.localEgressLink.Attrs().Name, egressIP).CombinedOutput()
 		if err != nil {
-			glog.Warningf("Failed to send ARP claim for egress IP %q: %v (%s)", egressIP, err, string(out))
+			klog.Warningf("Failed to send ARP claim for egress IP %q: %v (%s)", egressIP, err, string(out))
 			return
 		}
 		time.Sleep(2 * time.Second)
@@ -194,7 +233,7 @@ func (eip *egressIPWatcher) releaseEgressIP(egressIP, mark string) error {
 	err = netlink.AddrDel(eip.localEgressLink, addr)
 	if err != nil {
 		if err == syscall.EADDRNOTAVAIL {
-			glog.V(2).Infof("Could not delete egress IP %q from %s: no such address", egressIPNet, eip.localEgressLink.Attrs().Name)
+			klog.V(2).Infof("Could not delete egress IP %q from %s: no such address", egressIPNet, eip.localEgressLink.Attrs().Name)
 		} else {
 			return fmt.Errorf("could not delete egress IP %q from %s: %v", egressIPNet, eip.localEgressLink.Attrs().Name, err)
 		}

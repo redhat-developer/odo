@@ -30,7 +30,7 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 	// hook
 	g.AfterEach(func() {
 		if g.CurrentGinkgoTestDescription().Failed {
-			client := routeclientset.NewForConfigOrDie(oc.AdminConfig()).Route().Routes(ns)
+			client := routeclientset.NewForConfigOrDie(oc.AdminConfig()).RouteV1().Routes(ns)
 			if routes, _ := client.List(metav1.ListOptions{}); routes != nil {
 				outputIngress(routes.Items...)
 			}
@@ -43,7 +43,7 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 	g.BeforeEach(func() {
 		ns = oc.Namespace()
 
-		routerImage, _ := exutil.FindImageFormatString(oc)
+		routerImage, _ := exutil.FindRouterImage(oc)
 		routerImage = strings.Replace(routerImage, "${component}", "haproxy-router", -1)
 
 		err := oc.AsAdmin().Run("new-app").Args("-f", configPath, "-p", "IMAGE="+routerImage).Execute()

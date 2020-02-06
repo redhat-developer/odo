@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	restclient "k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -208,7 +208,7 @@ func ModifyConfig(configAccess ConfigAccess, newConfig clientcmdapi.Config, rela
 		}
 	}
 
-	// seenConfigs stores a map of config source filenames to computed config objects.
+	// seenConfigs stores a map of config source filenames to computed config objects
 	seenConfigs := map[string]*clientcmdapi.Config{}
 
 	for key, context := range newConfig.Contexts {
@@ -471,7 +471,7 @@ func getConfigFromFile(filename string) (*clientcmdapi.Config, error) {
 func GetConfigFromFileOrDie(filename string) *clientcmdapi.Config {
 	config, err := getConfigFromFile(filename)
 	if err != nil {
-		glog.FatalDepth(1, err)
+		klog.FatalDepth(1, err)
 	}
 
 	return config

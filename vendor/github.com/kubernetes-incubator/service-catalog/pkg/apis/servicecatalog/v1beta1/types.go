@@ -213,7 +213,7 @@ const (
 )
 
 // ClusterServiceBrokerAuthInfo is a union type that contains information on
-// one of the authentication methods the the service catalog and brokers may
+// one of the authentication methods the service catalog and brokers may
 // support, according to the OpenServiceBroker API specification
 // (https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md).
 type ClusterServiceBrokerAuthInfo struct {
@@ -249,7 +249,7 @@ type ClusterBearerTokenAuthConfig struct {
 }
 
 // ServiceBrokerAuthInfo is a union type that contains information on
-// one of the authentication methods the the service catalog and brokers may
+// one of the authentication methods the service catalog and brokers may
 // support, according to the OpenServiceBroker API specification
 // (https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md).
 type ServiceBrokerAuthInfo struct {
@@ -514,6 +514,13 @@ type CommonServiceClassSpec struct {
 	// ServiceInstance provisioned from this ServiceClass will not
 	// work correctly.
 	Requires []string `json:"requires,omitempty"`
+
+	// DefaultProvisionParameters are default parameters passed to the broker
+	// when an instance of this class is provisioned. Any parameters defined on
+	// the plan and instance are merged with these defaults, with
+	// plan and then instance-defined parameters taking precedence over the class
+	// defaults.
+	DefaultProvisionParameters *runtime.RawExtension `json:"defaultProvisionParameters,omitempty"`
 }
 
 // ClusterServiceClassSpec represents the details about a ClusterServiceClass
@@ -602,18 +609,18 @@ type CommonServicePlanSpec struct {
 	// Currently, this field is ALPHA: it may change or disappear at any time
 	// and its data will not be migrated.
 	//
-	// ServiceInstanceCreateParameterSchema is the schema for the parameters
+	// InstanceCreateParameterSchema is the schema for the parameters
 	// that may be supplied when provisioning a new ServiceInstance on this plan.
-	ServiceInstanceCreateParameterSchema *runtime.RawExtension `json:"instanceCreateParameterSchema,omitempty"`
+	InstanceCreateParameterSchema *runtime.RawExtension `json:"instanceCreateParameterSchema,omitempty"`
 
 	// Currently, this field is ALPHA: it may change or disappear at any time
 	// and its data will not be migrated.
 	//
-	// ServiceInstanceUpdateParameterSchema is the schema for the parameters
+	// InstanceUpdateParameterSchema is the schema for the parameters
 	// that may be updated once an ServiceInstance has been provisioned on
 	// this plan. This field only has meaning if the corresponding ServiceClassSpec is
 	// PlanUpdatable.
-	ServiceInstanceUpdateParameterSchema *runtime.RawExtension `json:"instanceUpdateParameterSchema,omitempty"`
+	InstanceUpdateParameterSchema *runtime.RawExtension `json:"instanceUpdateParameterSchema,omitempty"`
 
 	// Currently, this field is ALPHA: it may change or disappear at any time
 	// and its data will not be migrated.
@@ -634,6 +641,12 @@ type CommonServicePlanSpec struct {
 	// broker's response, which allows clients to see what the credentials
 	// will look like even before the binding operation is performed.
 	ServiceBindingCreateResponseSchema *runtime.RawExtension `json:"serviceBindingCreateResponseSchema,omitempty"`
+
+	// DefaultProvisionParameters are default parameters passed to the broker
+	// when an instance of this plan is provisioned. Any parameters defined on
+	// the instance are merged with these defaults, with instance-defined
+	// parameters taking precedence over defaults.
+	DefaultProvisionParameters *runtime.RawExtension `json:"defaultProvisionParameters,omitempty"`
 }
 
 // ClusterServicePlanSpec represents details about a ClusterServicePlan.
@@ -970,6 +983,10 @@ type ServiceInstanceStatus struct {
 	// DeprovisionStatus describes what has been done to deprovision the
 	// ServiceInstance.
 	DeprovisionStatus ServiceInstanceDeprovisionStatus `json:"deprovisionStatus"`
+
+	// DefaultProvisionParameters are the default parameters applied to this
+	// instance.
+	DefaultProvisionParameters *runtime.RawExtension `json:"defaultProvisionParameters,omitempty"`
 }
 
 // ServiceInstanceCondition contains condition information about an Instance.
@@ -1052,8 +1069,8 @@ type ServiceInstancePropertiesState struct {
 	// a secret, its value will be "<redacted>" in this blob.
 	Parameters *runtime.RawExtension `json:"parameters,omitempty"`
 
-	// ParametersChecksum is the checksum of the parameters that were sent.
-	ParametersChecksum string `json:"parameterChecksum,omitempty"`
+	// ParameterChecksum is the checksum of the parameters that were sent.
+	ParameterChecksum string `json:"parameterChecksum,omitempty"`
 
 	// UserInfo is information about the user that made the request.
 	UserInfo *UserInfo `json:"userInfo,omitempty"`
@@ -1134,10 +1151,10 @@ type ServiceBinding struct {
 // The spec field cannot be changed after a ServiceBinding is
 // created.  Changes submitted to the spec field will be ignored.
 type ServiceBindingSpec struct {
-	// ServiceInstanceRef is the reference to the Instance this ServiceBinding is to.
+	// InstanceRef is the reference to the Instance this ServiceBinding is to.
 	//
 	// Immutable.
-	ServiceInstanceRef LocalObjectReference `json:"instanceRef"`
+	InstanceRef LocalObjectReference `json:"instanceRef"`
 
 	// Parameters is a set of the parameters to be passed to the underlying
 	// broker. The inline YAML/JSON payload to be translated into equivalent
@@ -1313,8 +1330,8 @@ type ServiceBindingPropertiesState struct {
 	// sourced from a secret, its value will be "<redacted>" in this blob.
 	Parameters *runtime.RawExtension `json:"parameters,omitempty"`
 
-	// ParametersChecksum is the checksum of the parameters that were sent.
-	ParametersChecksum string `json:"parameterChecksum,omitempty"`
+	// ParameterChecksum is the checksum of the parameters that were sent.
+	ParameterChecksum string `json:"parameterChecksum,omitempty"`
 
 	// UserInfo is information about the user that made the request.
 	UserInfo *UserInfo `json:"userInfo,omitempty"`
@@ -1445,7 +1462,7 @@ type AddKeyTransform struct {
 }
 
 // AddKeysFromTransform specifies that Service Catalog should merge
-// an existing secret into the the Secret associated with the ServiceBinding.
+// an existing secret into the Secret associated with the ServiceBinding.
 // For example, given the following AddKeysFromTransform:
 //     {"secretRef": {"namespace": "foo", "name": "bar"}}
 // the entries of the Secret "bar" from Namespace "foo" will be merged into

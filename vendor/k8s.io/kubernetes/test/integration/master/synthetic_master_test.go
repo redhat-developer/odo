@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
@@ -103,8 +103,16 @@ func TestKubernetesService(t *testing.T) {
 	_, _, closeFn := framework.RunAMaster(config)
 	defer closeFn()
 	coreClient := clientset.NewForConfigOrDie(config.GenericConfig.LoopbackClientConfig)
-	if _, err := coreClient.Core().Services(metav1.NamespaceDefault).Get("kubernetes", metav1.GetOptions{}); err != nil {
-		t.Fatalf("Expected kubernetes service to exists, got: %v", err)
+	err := wait.PollImmediate(time.Millisecond*100, wait.ForeverTestTimeout, func() (bool, error) {
+		if _, err := coreClient.Core().Services(metav1.NamespaceDefault).Get("kubernetes", metav1.GetOptions{}); err != nil && errors.IsNotFound(err) {
+			return false, nil
+		} else if err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+	if err != nil {
+		t.Fatalf("Expected kubernetes service to exist, got: %v", err)
 	}
 }
 
@@ -305,7 +313,7 @@ func TestObjectSizeResponses(t *testing.T) {
 	const DeploymentThreeMegabyteSize = 250000
 
 	expectedMsgFor1MB := `etcdserver: request is too large`
-	expectedMsgFor2MB := `rpc error: code = ResourceExhausted desc = grpc: trying to send message larger than max`
+	expectedMsgFor2MB := `rpc error: code = ResourceExhausted desc = trying to send message larger than max`
 	expectedMsgFor3MB := `Request entity too large: limit is 3145728`
 	expectedMsgForLargeAnnotation := `metadata.annotations: Too long: must have at most 262144 characters`
 
@@ -868,7 +876,7 @@ func TestUpdateNodeObjects(t *testing.T) {
 							Reason: "bar",
 						},
 					}
-				case i%4 == 1:
+				case i%4 == 2:
 					lastCount = 0
 					n.Status.Conditions = nil
 				}

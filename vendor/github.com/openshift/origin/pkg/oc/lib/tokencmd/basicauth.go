@@ -9,14 +9,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/openshift/origin/pkg/cmd/util/term"
 )
-
-func BasicEnabled() bool {
-	return true
-}
 
 type BasicChallengeHandler struct {
 	// Host is the server being authenticated to. Used only for displaying messages when prompting for username/password
@@ -44,11 +40,11 @@ func (c *BasicChallengeHandler) CanHandle(headers http.Header) bool {
 }
 func (c *BasicChallengeHandler) HandleChallenge(requestURL string, headers http.Header) (http.Header, bool, error) {
 	if c.prompted {
-		glog.V(2).Info("already prompted for challenge, won't prompt again")
+		klog.V(2).Info("already prompted for challenge, won't prompt again")
 		return nil, false, nil
 	}
 	if c.handled {
-		glog.V(2).Info("already handled basic challenge")
+		klog.V(2).Info("already handled basic challenge")
 		return nil, false, nil
 	}
 
@@ -94,7 +90,7 @@ func (c *BasicChallengeHandler) HandleChallenge(requestURL string, headers http.
 		return responseHeaders, true, nil
 	}
 
-	glog.V(2).Info("no username or password available")
+	klog.V(2).Info("no username or password available")
 	return nil, false, nil
 }
 func (c *BasicChallengeHandler) CompleteChallenge(requestURL string, headers http.Header) error {

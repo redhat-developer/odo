@@ -1,6 +1,8 @@
 package images
 
 import (
+	"strings"
+
 	"github.com/MakeNowJust/heredoc"
 	g "github.com/onsi/ginkgo"
 	o "github.com/onsi/gomega"
@@ -28,11 +30,16 @@ var _ = g.Describe("[Feature:ImageExtract] Image extract", func() {
 	oc = exutil.NewCLI("image-extract", exutil.KubeConfigPath())
 
 	g.It("should extract content from an image", func() {
+		is, err := oc.ImageClient().Image().ImageStreams("openshift").Get("php", metav1.GetOptions{})
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(is.Status.DockerImageRepository).NotTo(o.BeEmpty(), "registry not yet configured?")
+		registry := strings.Split(is.Status.DockerImageRepository, "/")[0]
+
 		ns = oc.Namespace()
 		cli := oc.KubeFramework().PodClient()
-		client := imageclientset.NewForConfigOrDie(oc.UserConfig()).Image()
+		client := imageclientset.NewForConfigOrDie(oc.UserConfig()).ImageV1()
 
-		_, err := client.ImageStreamImports(ns).Create(&imageapi.ImageStreamImport{
+		_, err = client.ImageStreamImports(ns).Create(&imageapi.ImageStreamImport{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "1",
 			},
@@ -61,16 +68,27 @@ var _ = g.Describe("[Feature:ImageExtract] Image extract", func() {
 			set -x
 
 			# command exits if directory doesn't exist
-			! oc image extract --insecure docker-registry.default.svc:5000/%[1]s/1:busybox --path=/:/tmp/doesnotexist
+			! oc image extract --insecure %[2]s/%[1]s/1:busybox --path=/:/tmp/doesnotexist
+			# command exits if directory isn't empty
+			! oc image extract --insecure %[2]s/%[1]s/1:busybox --path=/:/
 
 			# extract busybox to a directory, verify the contents
 			mkdir -p /tmp/test
-			oc image extract --insecure docker-registry.default.svc:5000/%[1]s/1:busybox --path=/:/tmp/test
+			oc image extract --insecure %[2]s/%[1]s/1:busybox --path=/:/tmp/test
 			[ -d /tmp/test/etc ] && [ -d /tmp/test/bin ]
 			[ -f /tmp/test/bin/ls ] && /tmp/test/bin/ls /tmp/test
-			oc image extract --insecure docker-registry.default.svc:5000/%[1]s/1:busybox --path=/etc/shadow:/tmp --path=/etc/localtime:/tmp
-			[ -f /tmp/shadow ] && [ -f /tmp/localtime ]
-		`, ns)))
+
+			# extract multiple individual files
+			mkdir -p /tmp/test2
+			oc image extract --insecure %[2]s/%[1]s/1:busybox --path=/etc/shadow:/tmp/test2 --path=/etc/localtime:/tmp/test2
+			[ -f /tmp/test2/shadow ] && [ -f /tmp/test2/localtime ]
+
+			# extract a single file to the current directory
+			mkdir -p /tmp/test3
+			cd /tmp/test3
+			oc image extract --insecure %[2]s/%[1]s/1:busybox --file=/etc/shadow
+			[ -f /tmp/test3/shadow ]
+		`, ns, registry)))
 		cli.WaitForSuccess(pod.Name, podStartupTimeout)
 	})
 })

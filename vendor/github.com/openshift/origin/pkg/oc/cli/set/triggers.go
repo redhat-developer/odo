@@ -7,8 +7,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	kappsv1 "k8s.io/api/apps/v1"
 	kappsv1beta1 "k8s.io/api/apps/v1beta1"
@@ -18,22 +18,23 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
+	"github.com/openshift/library-go/pkg/image/reference"
 	ometa "github.com/openshift/origin/pkg/api/imagereferencemutators"
-	imageapi "github.com/openshift/origin/pkg/image/apis/image"
 	triggerapi "github.com/openshift/origin/pkg/image/apis/image/v1/trigger"
 	"github.com/openshift/origin/pkg/image/trigger/annotations"
 	"github.com/openshift/origin/pkg/oc/lib/newapp/app"
@@ -189,7 +190,7 @@ func (o *TriggersOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args 
 	}
 
 	if len(o.FromImage) > 0 {
-		ref, err := imageapi.ParseDockerImageReference(o.FromImage)
+		ref, err := reference.Parse(o.FromImage)
 		if err != nil {
 			return fmt.Errorf("the value of --from-image does not appear to be a valid reference to an image: %v", err)
 		}
@@ -328,7 +329,7 @@ func (o *TriggersOptions) Run() error {
 		}
 
 		if string(patch.Patch) == "{}" || len(patch.Patch) == 0 {
-			glog.V(1).Infof("info: %s was not changed\n", name)
+			klog.V(1).Infof("info: %s was not changed\n", name)
 			continue
 		}
 
@@ -339,7 +340,7 @@ func (o *TriggersOptions) Run() error {
 			continue
 		}
 
-		actual, err := o.Client.Resource(info.Mapping.Resource).Namespace(info.Namespace).Patch(info.Name, types.StrategicMergePatchType, patch.Patch)
+		actual, err := o.Client.Resource(info.Mapping.Resource).Namespace(info.Namespace).Patch(info.Name, types.StrategicMergePatchType, patch.Patch, metav1.UpdateOptions{})
 		if err != nil {
 			allErrs = append(allErrs, fmt.Errorf("failed to patch build hook: %v\n", err))
 			continue
@@ -396,7 +397,7 @@ func (o *TriggersOptions) printTriggers(infos []*resource.Info) error {
 			return nil
 		})
 		if err != nil {
-			glog.V(2).Infof("Unable to calculate trigger for %s: %v", info.Name, err)
+			klog.V(2).Infof("Unable to calculate trigger for %s: %v", info.Name, err)
 			fmt.Fprintf(w, "%s/%s\t%s\t%s\t%t\n", info.Mapping.Resource.Resource, info.Name, "<error>", "", false)
 		}
 	}
@@ -836,7 +837,7 @@ func (t *TriggerDefinition) Apply(obj runtime.Object) error {
 		}
 		alreadyTriggered := sets.NewString()
 		var triggers []triggerapi.ObjectFieldTrigger
-		glog.V(4).Infof("calculated triggers: %#v", t.ImageChange)
+		klog.V(4).Infof("calculated triggers: %#v", t.ImageChange)
 		for _, trigger := range t.ImageChange {
 			if len(trigger.Names) == 0 {
 				return fmt.Errorf("you must specify --containers when setting --from-image")
@@ -890,7 +891,7 @@ func (t *TriggerDefinition) Apply(obj runtime.Object) error {
 		case *kappsv1.Deployment:
 			typed.Spec.Paused = !t.ConfigChange
 		}
-		glog.V(4).Infof("Updated annotated object: %#v", obj)
+		klog.V(4).Infof("Updated annotated object: %#v", obj)
 		return nil
 
 	default:

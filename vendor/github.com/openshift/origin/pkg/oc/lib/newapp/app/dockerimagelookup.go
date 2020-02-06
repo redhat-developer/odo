@@ -8,14 +8,17 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 
-	"github.com/golang/glog"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
 
+	dockerv10 "github.com/openshift/api/image/docker10"
+	imagev1 "github.com/openshift/api/image/v1"
+	imagev1client "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
 	imageapi "github.com/openshift/origin/pkg/image/apis/image"
-	imageclient "github.com/openshift/origin/pkg/image/generated/internalclientset/typed/image/internalversion"
 	dockerregistry "github.com/openshift/origin/pkg/image/importer/dockerv1client"
+	imageutil "github.com/openshift/origin/pkg/image/util"
 )
 
 // DockerClient is the local interface for the docker client
@@ -81,13 +84,13 @@ func (r DockerClientSearcher) Search(precise bool, terms ...string) (ComponentMa
 
 		// first look for the image in the remote docker registry
 		if r.RegistrySearcher != nil {
-			glog.V(4).Infof("checking remote registry for %q", ref.String())
+			klog.V(4).Infof("checking remote registry for %q", ref.String())
 			matches, err := r.RegistrySearcher.Search(precise, term)
 			errs = append(errs, err...)
 
 			for i := range matches {
 				matches[i].LocalOnly = false
-				glog.V(5).Infof("Found remote match %v", matches[i].Value)
+				klog.V(5).Infof("Found remote match %v", matches[i].Value)
 			}
 			termMatches = append(termMatches, matches...)
 		}
@@ -100,7 +103,7 @@ func (r DockerClientSearcher) Search(precise bool, terms ...string) (ComponentMa
 		// if we didn't find it exactly in a remote registry,
 		// try to find it as a local-only image.
 		if len(termMatches.Exact()) == 0 {
-			glog.V(4).Infof("checking local Docker daemon for %q", ref.String())
+			klog.V(4).Infof("checking local Docker daemon for %q", ref.String())
 			images, err := r.Client.ListImages(docker.ListImagesOptions{})
 			if err != nil {
 				errs = append(errs, err)
@@ -115,7 +118,7 @@ func (r DockerClientSearcher) Search(precise bool, terms ...string) (ComponentMa
 				if tags := matchTag(image, term, ref.Registry, ref.Namespace, ref.Name, ref.Tag); len(tags) > 0 {
 					for i := range tags {
 						tags[i].LocalOnly = true
-						glog.V(5).Infof("Found local docker image match %q with score %f", tags[i].Value, tags[i].Score)
+						klog.V(5).Infof("Found local docker image match %q with score %f", tags[i].Value, tags[i].Score)
 					}
 					termMatches = append(termMatches, tags...)
 				}
@@ -124,7 +127,7 @@ func (r DockerClientSearcher) Search(precise bool, terms ...string) (ComponentMa
 		sort.Sort(termMatches)
 
 		for i, match := range termMatches {
-			if match.Image != nil {
+			if match.DockerImage != nil {
 				continue
 			}
 
@@ -146,7 +149,7 @@ func (r DockerClientSearcher) Search(precise bool, terms ...string) (ComponentMa
 				Name:        match.Value,
 				Description: descriptionFor(dockerImage, match.Value, ref.Registry, ""),
 				Score:       match.Score,
-				Image:       dockerImage,
+				DockerImage: dockerImage,
 				ImageTag:    ref.Tag,
 				Insecure:    r.Insecure,
 				Meta:        map[string]string{"registry": ref.Registry},
@@ -181,13 +184,13 @@ func (r MissingImageSearcher) Search(precise bool, terms ...string) (ComponentMa
 			Score:     0.0,
 			LocalOnly: true,
 		})
-		glog.V(4).Infof("Added missing image match for %v", term)
+		klog.V(4).Infof("Added missing image match for %v", term)
 	}
 	return componentMatches, nil
 }
 
 type ImageImportSearcher struct {
-	Client        imageclient.ImageStreamImportInterface
+	Client        imagev1client.ImageStreamImportInterface
 	AllowInsecure bool
 	Fallback      Searcher
 }
@@ -200,15 +203,15 @@ func (s ImageImportSearcher) Type() string {
 // using secrets stored on the server.
 func (s ImageImportSearcher) Search(precise bool, terms ...string) (ComponentMatches, []error) {
 	var errs []error
-	isi := &imageapi.ImageStreamImport{}
+	isi := &imagev1.ImageStreamImport{}
 	for _, term := range terms {
 		if term == "__imageimport_fail" {
 			errs = append(errs, fmt.Errorf("unable to find the specified docker import: %s", term))
 			continue
 		}
-		isi.Spec.Images = append(isi.Spec.Images, imageapi.ImageImportSpec{
-			From:         kapi.ObjectReference{Kind: "DockerImage", Name: term},
-			ImportPolicy: imageapi.TagImportPolicy{Insecure: s.AllowInsecure},
+		isi.Spec.Images = append(isi.Spec.Images, imagev1.ImageImportSpec{
+			From:         corev1.ObjectReference{Kind: "DockerImage", Name: term},
+			ImportPolicy: imagev1.TagImportPolicy{Insecure: s.AllowInsecure},
 		})
 	}
 	isi.Name = "newapp"
@@ -224,16 +227,16 @@ func (s ImageImportSearcher) Search(precise bool, terms ...string) (ComponentMat
 	for i, image := range result.Status.Images {
 		term := result.Spec.Images[i].From.Name
 		if image.Status.Status != metav1.StatusSuccess {
-			glog.V(4).Infof("image import failed: %#v", image)
+			klog.V(4).Infof("image import failed: %#v", image)
 			switch image.Status.Reason {
 			case metav1.StatusReasonInternalError:
 				// try to find the cause of the internal error
 				if image.Status.Details != nil && len(image.Status.Details.Causes) > 0 {
 					for _, c := range image.Status.Details.Causes {
-						glog.Warningf("Docker registry lookup failed: %s", c.Message)
+						klog.Warningf("Docker registry lookup failed: %s", c.Message)
 					}
 				} else {
-					glog.Warningf("Docker registry lookup failed: %s", image.Status.Message)
+					klog.Warningf("Docker registry lookup failed: %s", image.Status.Message)
 				}
 			case metav1.StatusReasonInvalid, metav1.StatusReasonUnauthorized, metav1.StatusReasonNotFound:
 			default:
@@ -243,7 +246,7 @@ func (s ImageImportSearcher) Search(precise bool, terms ...string) (ComponentMat
 		}
 		ref, err := imageapi.ParseDockerImageReference(term)
 		if err != nil {
-			glog.V(4).Infof("image import failed, can't parse ref %q: %v", term, err)
+			klog.V(4).Infof("image import failed, can't parse ref %q: %v", term, err)
 			continue
 		}
 		if len(ref.Tag) == 0 {
@@ -253,18 +256,28 @@ func (s ImageImportSearcher) Search(precise bool, terms ...string) (ComponentMat
 			ref.Registry = "Docker Hub"
 		}
 
+		if err := imageutil.ImageWithMetadata(image.Image); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		dockerImage, ok := image.Image.DockerImageMetadata.Object.(*dockerv10.DockerImage)
+		if !ok {
+			continue
+		}
+
 		match := &ComponentMatch{
 			Value:       term,
 			Argument:    fmt.Sprintf("--docker-image=%q", term),
 			Name:        term,
-			Description: descriptionFor(&image.Image.DockerImageMetadata, term, ref.Registry, ref.Tag),
+			Description: descriptionFor(dockerImage, term, ref.Registry, ref.Tag),
 			Score:       0,
-			Image:       &image.Image.DockerImageMetadata,
+			DockerImage: dockerImage,
 			ImageTag:    ref.Tag,
 			Insecure:    s.AllowInsecure,
 			Meta:        map[string]string{"registry": ref.Registry, "direct-tag": "1"},
 		}
-		glog.V(2).Infof("Adding %s as component match for %q with score %v", match.Description, term, match.Score)
+		klog.V(2).Infof("Adding %s as component match for %q with score %v", match.Description, term, match.Score)
 		componentMatches = append(componentMatches, match)
 	}
 	return componentMatches, errs
@@ -301,7 +314,7 @@ func (r DockerRegistrySearcher) Search(precise bool, terms ...string) (Component
 			ref = imageapi.DockerImageReference{Name: term}
 		}
 
-		glog.V(4).Infof("checking Docker registry for %q, allow-insecure=%v", ref.String(), r.AllowInsecure)
+		klog.V(4).Infof("checking Docker registry for %q, allow-insecure=%v", ref.String(), r.AllowInsecure)
 		connection, err := r.Client.Connect(ref.Registry, r.AllowInsecure)
 		if err != nil {
 			if dockerregistry.IsRegistryNotFound(err) {
@@ -316,7 +329,7 @@ func (r DockerRegistrySearcher) Search(precise bool, terms ...string) (Component
 		if err != nil {
 			if dockerregistry.IsNotFound(err) {
 				if dockerregistry.IsTagNotFound(err) {
-					glog.V(4).Infof("tag not found: %v", err)
+					klog.V(4).Infof("tag not found: %v", err)
 				}
 				continue
 			}
@@ -330,7 +343,7 @@ func (r DockerRegistrySearcher) Search(precise bool, terms ...string) (Component
 		if len(ref.Registry) == 0 {
 			ref.Registry = "Docker Hub"
 		}
-		glog.V(4).Infof("found image: %#v", image)
+		klog.V(4).Infof("found image: %#v", image)
 
 		dockerImage := &imageapi.DockerImage{}
 		if err = legacyscheme.Scheme.Convert(&image.Image, dockerImage, nil); err != nil {
@@ -344,19 +357,19 @@ func (r DockerRegistrySearcher) Search(precise bool, terms ...string) (Component
 			Name:        term,
 			Description: descriptionFor(dockerImage, term, ref.Registry, ref.Tag),
 			Score:       0,
-			Image:       dockerImage,
+			DockerImage: dockerImage,
 			ImageTag:    ref.Tag,
 			Insecure:    r.AllowInsecure,
 			Meta:        map[string]string{"registry": ref.Registry},
 		}
-		glog.V(2).Infof("Adding %s as component match for %q with score %v", match.Description, term, match.Score)
+		klog.V(2).Infof("Adding %s as component match for %q with score %v", match.Description, term, match.Score)
 		componentMatches = append(componentMatches, match)
 	}
 
 	return componentMatches, errs
 }
 
-func descriptionFor(image *imageapi.DockerImage, value, from string, tag string) string {
+func descriptionFor(image *dockerv10.DockerImage, value, from string, tag string) string {
 	if len(from) == 0 {
 		from = "local"
 	}
@@ -383,7 +396,7 @@ func matchTag(image docker.APIImages, value, registry, namespace, name, tag stri
 	matches := []*ComponentMatch{}
 	for _, s := range image.RepoTags {
 		if value == s {
-			glog.V(4).Infof("exact match on %q", s)
+			klog.V(4).Infof("exact match on %q", s)
 			matches = append(matches, &ComponentMatch{
 				Value: s,
 				Score: 0.0,
@@ -417,7 +430,7 @@ func matchTag(image docker.APIImages, value, registry, namespace, name, tag stri
 			continue
 		}
 		match.Score = match.Score / 4.0
-		glog.V(4).Infof("partial match on %q with %f", s, match.Score)
+		klog.V(4).Infof("partial match on %q with %f", s, match.Score)
 		match.Value = s
 		match.Meta = map[string]string{"registry": registry}
 		matches = append(matches, match)

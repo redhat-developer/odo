@@ -11,19 +11,22 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	genericapiserver "k8s.io/apiserver/pkg/server"
 	utilflag "k8s.io/apiserver/pkg/util/flag"
 	"k8s.io/apiserver/pkg/util/logs"
 
 	"github.com/openshift/library-go/pkg/serviceability"
 	"github.com/openshift/origin/pkg/cmd/openshift-apiserver"
 	"github.com/openshift/origin/pkg/cmd/openshift-controller-manager"
-	"github.com/openshift/origin/pkg/cmd/openshift-etcd"
-	"github.com/openshift/origin/pkg/cmd/openshift-experimental"
+	"github.com/openshift/origin/pkg/cmd/openshift-integrated-oauth-server"
 	"github.com/openshift/origin/pkg/cmd/openshift-kube-apiserver"
+	"github.com/openshift/origin/pkg/cmd/openshift-network-controller"
 	"github.com/openshift/origin/pkg/version"
 )
 
 func main() {
+	stopCh := genericapiserver.SetupSignalHandler()
+
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	pflag.CommandLine.SetNormalizeFunc(utilflag.WordSepNormalizeFunc)
@@ -38,14 +41,14 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	command := NewHyperShiftCommand()
+	command := NewHyperShiftCommand(stopCh)
 	if err := command.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }
 
-func NewHyperShiftCommand() *cobra.Command {
+func NewHyperShiftCommand(stopCh <-chan struct{}) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "hypershift",
 		Short: "Combined server command for OpenShift",
@@ -55,22 +58,23 @@ func NewHyperShiftCommand() *cobra.Command {
 		},
 	}
 
-	startEtcd, _ := openshift_etcd.NewCommandStartEtcdServer(openshift_etcd.RecommendedStartEtcdServerName, "hypershift", os.Stdout, os.Stderr)
-	startEtcd.Deprecated = "will be removed in 3.10"
-	startEtcd.Hidden = true
-	cmd.AddCommand(startEtcd)
-
-	startOpenShiftAPIServer := openshift_apiserver.NewOpenShiftAPIServerCommand(openshift_apiserver.RecommendedStartAPIServerName, "hypershift", os.Stdout, os.Stderr)
+	startOpenShiftAPIServer := openshift_apiserver.NewOpenShiftAPIServerCommand(openshift_apiserver.RecommendedStartAPIServerName, "hypershift", os.Stdout, os.Stderr, stopCh)
 	cmd.AddCommand(startOpenShiftAPIServer)
 
-	startOpenShiftKubeAPIServer := openshift_kube_apiserver.NewOpenShiftKubeAPIServerServerCommand(openshift_kube_apiserver.RecommendedStartAPIServerName, "hypershift", os.Stdout, os.Stderr)
+	startOpenShiftKubeAPIServer := openshift_kube_apiserver.NewOpenShiftKubeAPIServerServerCommand(openshift_kube_apiserver.RecommendedStartAPIServerName, "hypershift", os.Stdout, os.Stderr, stopCh)
 	cmd.AddCommand(startOpenShiftKubeAPIServer)
 
 	startOpenShiftControllerManager := openshift_controller_manager.NewOpenShiftControllerManagerCommand(openshift_controller_manager.RecommendedStartControllerManagerName, "hypershift", os.Stdout, os.Stderr)
 	cmd.AddCommand(startOpenShiftControllerManager)
 
-	experimental := openshift_experimental.NewExperimentalCommand(os.Stdout, os.Stderr)
-	cmd.AddCommand(experimental)
+	startOpenShiftNetworkController := openshift_network_controller.NewOpenShiftNetworkControllerCommand(openshift_network_controller.RecommendedStartNetworkControllerName, "hypershift", os.Stdout, os.Stderr)
+	cmd.AddCommand(startOpenShiftNetworkController)
+
+	startOsin := openshift_integrated_oauth_server.NewOsinServer(os.Stdout, os.Stderr, stopCh)
+	startOsin.Use = "openshift-osinserver"
+	startOsin.Deprecated = "will be removed in 4.0"
+	startOsin.Hidden = true
+	cmd.AddCommand(startOsin)
 
 	return cmd
 }

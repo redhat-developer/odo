@@ -24,14 +24,14 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 
+	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	authorizationapi "k8s.io/kubernetes/pkg/apis/authorization"
-	internalauthorizationclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authorization/internalversion"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	authorizationv1client "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 // CanIOptions is the start of the data required to perform the operation.  As new fields are added, add them here instead of
@@ -40,7 +40,7 @@ type CanIOptions struct {
 	AllNamespaces bool
 	Quiet         bool
 	Namespace     string
-	SelfSARClient internalauthorizationclient.SelfSubjectAccessReviewsGetter
+	SelfSARClient authorizationv1client.SelfSubjectAccessReviewsGetter
 
 	Verb           string
 	Resource       schema.GroupVersionResource
@@ -86,11 +86,11 @@ func NewCmdCanI(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.C
 	}
 
 	cmd := &cobra.Command{
-		Use: "can-i VERB [TYPE | TYPE/NAME | NONRESOURCEURL]",
+		Use:                   "can-i VERB [TYPE | TYPE/NAME | NONRESOURCEURL]",
 		DisableFlagsInUseLine: true,
-		Short:   "Check whether an action is allowed",
-		Long:    canILong,
-		Example: canIExample,
+		Short:                 "Check whether an action is allowed",
+		Long:                  canILong,
+		Example:               canIExample,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(f, args))
 			cmdutil.CheckErr(o.Validate())
@@ -106,7 +106,7 @@ func NewCmdCanI(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.C
 		},
 	}
 
-	cmd.Flags().BoolVar(&o.AllNamespaces, "all-namespaces", o.AllNamespaces, "If true, check the specified action in all namespaces.")
+	cmd.Flags().BoolVarP(&o.AllNamespaces, "all-namespaces", "A", o.AllNamespaces, "If true, check the specified action in all namespaces.")
 	cmd.Flags().BoolVarP(&o.Quiet, "quiet", "q", o.Quiet, "If true, suppress output and just return the exit code.")
 	cmd.Flags().StringVar(&o.Subresource, "subresource", o.Subresource, "SubResource such as pod/log or deployment/scale")
 	return cmd
@@ -138,11 +138,11 @@ func (o *CanIOptions) Complete(f cmdutil.Factory, args []string) error {
 	}
 
 	var err error
-	client, err := f.ClientSet()
+	client, err := f.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
-	o.SelfSARClient = client.Authorization()
+	o.SelfSARClient = client.AuthorizationV1()
 
 	o.Namespace = ""
 	if !o.AllNamespaces {
@@ -168,11 +168,11 @@ func (o *CanIOptions) Validate() error {
 }
 
 func (o *CanIOptions) RunAccessCheck() (bool, error) {
-	var sar *authorizationapi.SelfSubjectAccessReview
+	var sar *authorizationv1.SelfSubjectAccessReview
 	if o.NonResourceURL == "" {
-		sar = &authorizationapi.SelfSubjectAccessReview{
-			Spec: authorizationapi.SelfSubjectAccessReviewSpec{
-				ResourceAttributes: &authorizationapi.ResourceAttributes{
+		sar = &authorizationv1.SelfSubjectAccessReview{
+			Spec: authorizationv1.SelfSubjectAccessReviewSpec{
+				ResourceAttributes: &authorizationv1.ResourceAttributes{
 					Namespace:   o.Namespace,
 					Verb:        o.Verb,
 					Group:       o.Resource.Group,
@@ -183,9 +183,9 @@ func (o *CanIOptions) RunAccessCheck() (bool, error) {
 			},
 		}
 	} else {
-		sar = &authorizationapi.SelfSubjectAccessReview{
-			Spec: authorizationapi.SelfSubjectAccessReviewSpec{
-				NonResourceAttributes: &authorizationapi.NonResourceAttributes{
+		sar = &authorizationv1.SelfSubjectAccessReview{
+			Spec: authorizationv1.SelfSubjectAccessReviewSpec{
+				NonResourceAttributes: &authorizationv1.NonResourceAttributes{
 					Verb: o.Verb,
 					Path: o.NonResourceURL,
 				},

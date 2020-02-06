@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
@@ -86,7 +86,7 @@ func (evm *egressVXLANMonitor) AddNode(nodeIP string) {
 	if evm.monitorNodes[nodeIP] != nil {
 		return
 	}
-	glog.V(4).Infof("Monitoring node %s", nodeIP)
+	klog.V(4).Infof("Monitoring node %s", nodeIP)
 
 	evm.monitorNodes[nodeIP] = &egressVXLANNode{nodeIP: nodeIP}
 	if len(evm.monitorNodes) == 1 && evm.pollInterval != 0 {
@@ -102,7 +102,7 @@ func (evm *egressVXLANMonitor) RemoveNode(nodeIP string) {
 	if evm.monitorNodes[nodeIP] == nil {
 		return
 	}
-	glog.V(4).Infof("Unmonitoring node %s", nodeIP)
+	klog.V(4).Infof("Unmonitoring node %s", nodeIP)
 
 	delete(evm.monitorNodes, nodeIP)
 	if len(evm.monitorNodes) == 0 && evm.stop != nil {
@@ -210,7 +210,7 @@ func (evm *egressVXLANMonitor) check(retryOnly bool) bool {
 
 		if node.offline {
 			if in > node.in {
-				glog.Infof("Node %s is back online", node.nodeIP)
+				klog.Infof("Node %s is back online", node.nodeIP)
 				node.offline = false
 				evm.updates <- node
 			} else if evm.tracker != nil {
@@ -222,16 +222,30 @@ func (evm *egressVXLANMonitor) check(retryOnly bool) bool {
 		} else {
 			if out > node.out && in == node.in {
 				node.retries++
+				if evm.tracker != nil {
+					// Start a ping probe as early as we can
+					go evm.tracker.Ping(node.nodeIP, repollInterval)
+
+					// For the first occurrence skip logging if we can
+					// start pinging
+					if node.retries == 1 {
+						retry = true
+						continue
+					}
+				}
+
 				if node.retries > maxRetries {
-					glog.Warningf("Node %s is offline", node.nodeIP)
+					klog.Warningf("Node %s is offline", node.nodeIP)
 					node.retries = 0
 					node.offline = true
 					evm.updates <- node
 				} else {
-					glog.V(2).Infof("Node %s may be offline... retrying", node.nodeIP)
+					klog.V(2).Infof("Node %s may be offline... retrying", node.nodeIP)
 					retry = true
 					continue
 				}
+			} else {
+				node.retries = 0
 			}
 		}
 

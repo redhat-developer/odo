@@ -9,7 +9,7 @@ import (
 	"regexp"
 
 	"github.com/emicklei/go-restful"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,8 +21,8 @@ import (
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	coreapi "k8s.io/kubernetes/pkg/apis/core"
 
+	kubecontrolplanev1 "github.com/openshift/api/kubecontrolplane/v1"
 	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
-	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
 )
 
 type userAgentFilter struct {
@@ -31,7 +31,7 @@ type userAgentFilter struct {
 	verbs   sets.String
 }
 
-func newUserAgentFilter(config configapi.UserAgentMatchRule) (userAgentFilter, error) {
+func newUserAgentFilter(config kubecontrolplanev1.UserAgentMatchRule) (userAgentFilter, error) {
 	regex, err := regexp.Compile(config.Regex)
 	if err != nil {
 		return userAgentFilter{}, err
@@ -51,7 +51,7 @@ func (f *userAgentFilter) matches(verb, userAgent string) bool {
 
 // versionSkewFilter adds a filter that may deny requests from skewed
 // oc clients, since we know that those clients will strip unknown fields which can lead to unexpected outcomes
-func versionSkewFilter(handler http.Handler, userAgentMatchingConfig configapi.UserAgentMatchingConfig) http.Handler {
+func versionSkewFilter(handler http.Handler, userAgentMatchingConfig kubecontrolplanev1.UserAgentMatchingConfig) http.Handler {
 	filterConfig := userAgentMatchingConfig
 	if len(filterConfig.RequiredClients) == 0 && len(filterConfig.DeniedClients) == 0 {
 		return handler
@@ -69,7 +69,7 @@ func versionSkewFilter(handler http.Handler, userAgentMatchingConfig configapi.U
 	for _, config := range filterConfig.RequiredClients {
 		userAgentFilter, err := newUserAgentFilter(config)
 		if err != nil {
-			glog.Errorf("Failure to compile User-Agent regex %v: %v", config.Regex, err)
+			klog.Errorf("Failure to compile User-Agent regex %v: %v", config.Regex, err)
 			continue
 		}
 
@@ -78,7 +78,7 @@ func versionSkewFilter(handler http.Handler, userAgentMatchingConfig configapi.U
 	for _, config := range filterConfig.DeniedClients {
 		userAgentFilter, err := newUserAgentFilter(config.UserAgentMatchRule)
 		if err != nil {
-			glog.Errorf("Failure to compile User-Agent regex %v: %v", config.Regex, err)
+			klog.Errorf("Failure to compile User-Agent regex %v: %v", config.Regex, err)
 			continue
 		}
 		userAgentFilter.message = config.RejectionMessage

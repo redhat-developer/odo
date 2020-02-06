@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2017-09-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/stretchr/testify/assert"
@@ -31,9 +31,9 @@ const (
 	fakePublicIP  = "10.10.10.10"
 )
 
-func newTestScaleSet(scaleSetName string, vmList []string) (*scaleSet, error) {
+func newTestScaleSet(scaleSetName, zone string, faultDomain int32, vmList []string) (*scaleSet, error) {
 	cloud := getTestCloud()
-	setTestVirtualMachineCloud(cloud, scaleSetName, "", 0, vmList)
+	setTestVirtualMachineCloud(cloud, scaleSetName, zone, faultDomain, vmList)
 	ss, err := newScaleSet(cloud)
 	if err != nil {
 		return nil, err
@@ -80,21 +80,6 @@ func setTestVirtualMachineCloud(ss *Cloud, scaleSetName, zone string, faultDomai
 				ID: &interfaceID,
 			},
 		}
-		ipConfigurations := []compute.VirtualMachineScaleSetIPConfiguration{
-			{
-				Name: to.StringPtr("ipconfig1"),
-				VirtualMachineScaleSetIPConfigurationProperties: &compute.VirtualMachineScaleSetIPConfigurationProperties{},
-			},
-		}
-		networkConfigurations := []compute.VirtualMachineScaleSetNetworkConfiguration{
-			{
-				Name: to.StringPtr("ipconfig1"),
-				ID:   to.StringPtr("fakeNetworkConfiguration"),
-				VirtualMachineScaleSetNetworkConfigurationProperties: &compute.VirtualMachineScaleSetNetworkConfigurationProperties{
-					IPConfigurations: &ipConfigurations,
-				},
-			},
-		}
 		vmssVM := compute.VirtualMachineScaleSetVM{
 			VirtualMachineScaleSetVMProperties: &compute.VirtualMachineScaleSetVMProperties{
 				OsProfile: &compute.OSProfile{
@@ -102,9 +87,6 @@ func setTestVirtualMachineCloud(ss *Cloud, scaleSetName, zone string, faultDomai
 				},
 				NetworkProfile: &compute.NetworkProfile{
 					NetworkInterfaces: &networkInterfaces,
-				},
-				NetworkProfileConfiguration: &compute.VirtualMachineScaleSetVMNetworkProfileConfiguration{
-					NetworkInterfaceConfigurations: &networkConfigurations,
 				},
 				InstanceView: &compute.VirtualMachineScaleSetVMInstanceView{
 					PlatformFaultDomain: &faultDomain,
@@ -219,7 +201,7 @@ func TestGetInstanceIDByNodeName(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		ss, err := newTestScaleSet(test.scaleSet, test.vmList)
+		ss, err := newTestScaleSet(test.scaleSet, "", 0, test.vmList)
 		assert.NoError(t, err, test.description)
 
 		real, err := ss.GetInstanceIDByNodeName(test.nodeName)
@@ -230,6 +212,59 @@ func TestGetInstanceIDByNodeName(t *testing.T) {
 
 		assert.NoError(t, err, test.description)
 		assert.Equal(t, test.expected, real, test.description)
+	}
+}
+
+func TestGetZoneByNodeName(t *testing.T) {
+	testCases := []struct {
+		description string
+		scaleSet    string
+		vmList      []string
+		nodeName    string
+		zone        string
+		faultDomain int32
+		expected    string
+		expectError bool
+	}{
+		{
+			description: "scaleSet should get faultDomain for non-zoned nodes",
+			scaleSet:    "ss",
+			vmList:      []string{"vmssee6c2000000", "vmssee6c2000001"},
+			nodeName:    "vmssee6c2000000",
+			faultDomain: 3,
+			expected:    "3",
+		},
+		{
+			description: "scaleSet should get availability zone for zoned nodes",
+			scaleSet:    "ss",
+			vmList:      []string{"vmssee6c2000000", "vmssee6c2000001"},
+			nodeName:    "vmssee6c2000000",
+			zone:        "2",
+			faultDomain: 3,
+			expected:    "westus-2",
+		},
+		{
+			description: "scaleSet should return error for non-exist nodes",
+			scaleSet:    "ss",
+			faultDomain: 3,
+			vmList:      []string{"vmssee6c2000000", "vmssee6c2000001"},
+			nodeName:    "agente6c2000005",
+			expectError: true,
+		},
+	}
+
+	for _, test := range testCases {
+		ss, err := newTestScaleSet(test.scaleSet, test.zone, test.faultDomain, test.vmList)
+		assert.NoError(t, err, test.description)
+
+		real, err := ss.GetZoneByNodeName(test.nodeName)
+		if test.expectError {
+			assert.Error(t, err, test.description)
+			continue
+		}
+
+		assert.NoError(t, err, test.description)
+		assert.Equal(t, test.expected, real.FailureDomain, test.description)
 	}
 }
 
@@ -259,7 +294,7 @@ func TestGetIPByNodeName(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		ss, err := newTestScaleSet(test.scaleSet, test.vmList)
+		ss, err := newTestScaleSet(test.scaleSet, "", 0, test.vmList)
 		assert.NoError(t, err, test.description)
 
 		privateIP, publicIP, err := ss.GetIPByNodeName(test.nodeName)
@@ -270,54 +305,5 @@ func TestGetIPByNodeName(t *testing.T) {
 
 		assert.NoError(t, err, test.description)
 		assert.Equal(t, test.expected, []string{privateIP, publicIP}, test.description)
-	}
-}
-
-func TestGetNodeNameByIPConfigurationID(t *testing.T) {
-	ipConfigurationIDTemplate := "/subscriptions/script/resourceGroups/rg/providers/Microsoft.Compute/virtualMachineScaleSets/%s/virtualMachines/%s/networkInterfaces/%s/ipConfigurations/ipconfig1"
-
-	testCases := []struct {
-		description       string
-		scaleSet          string
-		vmList            []string
-		ipConfigurationID string
-		expected          string
-		expectError       bool
-	}{
-		{
-			description:       "getNodeNameByIPConfigurationID should get node's Name when the node is existing",
-			scaleSet:          "scaleset1",
-			ipConfigurationID: fmt.Sprintf(ipConfigurationIDTemplate, "scaleset1", "0", "scaleset1"),
-			vmList:            []string{"vmssee6c2000000", "vmssee6c2000001"},
-			expected:          "vmssee6c2000000",
-		},
-		{
-			description:       "getNodeNameByIPConfigurationID should return error for non-exist nodes",
-			scaleSet:          "scaleset2",
-			ipConfigurationID: fmt.Sprintf(ipConfigurationIDTemplate, "scaleset2", "3", "scaleset1"),
-			vmList:            []string{"vmssee6c2000002", "vmssee6c2000003"},
-			expectError:       true,
-		},
-		{
-			description:       "getNodeNameByIPConfigurationID should return error for wrong ipConfigurationID",
-			scaleSet:          "scaleset3",
-			ipConfigurationID: "invalid-configuration-id",
-			vmList:            []string{"vmssee6c2000004", "vmssee6c2000005"},
-			expectError:       true,
-		},
-	}
-
-	for _, test := range testCases {
-		ss, err := newTestScaleSet(test.scaleSet, test.vmList)
-		assert.NoError(t, err, test.description)
-
-		nodeName, err := ss.getNodeNameByIPConfigurationID(test.ipConfigurationID)
-		if test.expectError {
-			assert.Error(t, err, test.description)
-			continue
-		}
-
-		assert.NoError(t, err, test.description)
-		assert.Equal(t, test.expected, nodeName, test.description)
 	}
 }

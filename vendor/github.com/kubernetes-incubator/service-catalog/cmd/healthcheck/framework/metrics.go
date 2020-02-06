@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/klog"
 )
 
 var registerMetrics sync.Once
@@ -57,7 +57,7 @@ var (
 		[]string{"error"},
 	)
 
-	// eventHandlingTime is a histogram recording how long a operation took
+	// eventHandlingTime is a histogram recording how long an operation took
 	eventHandlingTimeSummary = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Namespace:  promNamespace,
@@ -86,5 +86,5 @@ func RegisterMetricsAndInstallHandler(m *http.ServeMux) {
 	registry := prometheus.NewRegistry()
 	register(registry)
 	m.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorHandling: promhttp.ContinueOnError}))
-	glog.V(3).Info("Registered /metrics with prometheus")
+	klog.V(3).Info("Registered /metrics with prometheus")
 }

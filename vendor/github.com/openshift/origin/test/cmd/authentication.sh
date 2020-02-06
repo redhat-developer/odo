@@ -41,27 +41,26 @@ useruid="$(oc get user/scoped-user -o jsonpath='{.metadata.uid}')"
 os::cmd::expect_success_and_text "oc policy can-i --list -n '${project}' --as=scoped-user" 'get.*pods'
 os::cmd::expect_success "oc policy can-i --list --output=yaml"
 os::cmd::expect_success "oc policy can-i --list --output=json"
-os::cmd::expect_success "oc policy can-i --list --output=wide"
 os::cmd::expect_success "oc policy can-i --list"
 
 whoamitoken="$(oc process -f "${OS_ROOT}/test/testdata/authentication/scoped-token-template.yaml" TOKEN_PREFIX=whoami SCOPE=user:info USER_NAME="${username}" USER_UID="${useruid}" | oc create -f - -o name | awk -F/ '{print $2}')"
 os::cmd::expect_success_and_text "oc get user/~ --token='${whoamitoken}'" "${username}"
 os::cmd::expect_success_and_text "oc whoami --token='${whoamitoken}'" "${username}"
-os::cmd::expect_failure_and_text "oc get pods --token='${whoamitoken}' -n '${project}'" "pods is forbidden: User \"scoped-user\" cannot list pods in the namespace \"${project}\""
+os::cmd::expect_failure_and_text "oc get pods --token='${whoamitoken}' -n '${project}'" "pods is forbidden: User \"scoped-user\" cannot list resource \"pods\" in API group \"\" in the namespace \"${project}\""
 
 listprojecttoken="$(oc process -f "${OS_ROOT}/test/testdata/authentication/scoped-token-template.yaml" TOKEN_PREFIX=listproject SCOPE=user:list-scoped-projects USER_NAME="${username}" USER_UID="${useruid}" | oc create -f - -o name | awk -F/ '{print $2}')"
 # this token doesn't have rights to see any projects even though it can hit the list endpoint, so an empty list is correct
 # we'll add another scope that allows listing all known projects even if this token has no other powers in them.
 os::cmd::expect_success_and_not_text "oc get projects --token='${listprojecttoken}'" "${project}"
-os::cmd::expect_failure_and_text "oc get user/~ --token='${listprojecttoken}'" 'User "scoped-user" cannot get users.user.openshift.io at the cluster scope'
-os::cmd::expect_failure_and_text "oc get pods --token='${listprojecttoken}' -n '${project}'" "User \"scoped-user\" cannot list pods in the namespace \"${project}\""
+os::cmd::expect_failure_and_text "oc get user/~ --token='${listprojecttoken}'" 'User "scoped-user" cannot get resource "users" in API group "user.openshift.io" at the cluster scope'
+os::cmd::expect_failure_and_text "oc get pods --token='${listprojecttoken}' -n '${project}'" "User \"scoped-user\" cannot list resource \"pods\" in API group \"\" in the namespace \"${project}\""
 
 listprojecttoken="$(oc process -f "${OS_ROOT}/test/testdata/authentication/scoped-token-template.yaml" TOKEN_PREFIX=listallprojects SCOPE=user:list-projects USER_NAME="${username}" USER_UID="${useruid}" | oc create -f - -o name | awk -F/ '{print $2}')"
 os::cmd::expect_success_and_text "oc get projects --token='${listprojecttoken}'" "${project}"
 
 adminnonescalatingpowerstoken="$(oc process -f "${OS_ROOT}/test/testdata/authentication/scoped-token-template.yaml" TOKEN_PREFIX=admin SCOPE=role:admin:* USER_NAME="${username}" USER_UID="${useruid}" | oc create -f - -o name | awk -F/ '{print $2}')"
-os::cmd::expect_failure_and_text "oc get user/~ --token='${adminnonescalatingpowerstoken}'" 'User "scoped-user" cannot get users.user.openshift.io at the cluster scope'
-os::cmd::expect_failure_and_text "oc get secrets --token='${adminnonescalatingpowerstoken}' -n '${project}'" "User \"scoped-user\" cannot list secrets in the namespace \"${project}\""
+os::cmd::expect_failure_and_text "oc get user/~ --token='${adminnonescalatingpowerstoken}'" 'User "scoped-user" cannot get resource "users" in API group "user.openshift.io" at the cluster scope'
+os::cmd::expect_failure_and_text "oc get secrets --token='${adminnonescalatingpowerstoken}' -n '${project}'" "User \"scoped-user\" cannot list resource \"secrets\" in API group \"\" in the namespace \"${project}\""
 os::cmd::expect_success_and_text "oc get 'projects/${project}' --token='${adminnonescalatingpowerstoken}' -n '${project}'" "${project}"
 
 allescalatingpowerstoken="$(oc process -f "${OS_ROOT}/test/testdata/authentication/scoped-token-template.yaml" TOKEN_PREFIX=clusteradmin SCOPE='role:cluster-admin:*:!' USER_NAME="${username}" USER_UID="${useruid}" | oc create -f - -o name | awk -F/ '{print $2}')"
@@ -69,15 +68,13 @@ os::cmd::expect_success_and_text "oc get user/~ --token='${allescalatingpowersto
 os::cmd::expect_success "oc get secrets --token='${allescalatingpowerstoken}' -n '${project}'"
 # scopes allow it, but authorization doesn't
 os::cmd::try_until_failure "oc get secrets --token='${allescalatingpowerstoken}' -n default"
-os::cmd::expect_failure_and_text "oc get secrets --token='${allescalatingpowerstoken}' -n default" 'cannot list secrets in the namespace'
+os::cmd::expect_failure_and_text "oc get secrets --token='${allescalatingpowerstoken}' -n default" 'cannot list resource "secrets" in API group "" in the namespace'
 os::cmd::expect_success_and_text "oc get projects --token='${allescalatingpowerstoken}'" "${project}"
 os::cmd::expect_success_and_text "oc policy can-i --list --token='${allescalatingpowerstoken}' -n '${project}'" 'get.*pods'
 
 accesstoken="$(oc process -f "${OS_ROOT}/test/testdata/authentication/scoped-token-template.yaml" TOKEN_PREFIX=access SCOPE=user:check-access USER_NAME="${username}" USER_UID="${useruid}" | oc create -f - -o name | awk -F/ '{print $2}')"
-os::cmd::expect_success_and_text "curl -k -XPOST -H 'Content-Type: application/json' -H 'Authorization: Bearer ${accesstoken}' '${API_SCHEME}://${API_HOST}:${API_PORT}/oapi/v1/namespaces/${project}/localsubjectaccessreviews' -d @${OS_ROOT}/test/testdata/authentication/localsubjectaccessreview.json" '"kind": "SubjectAccessReviewResponse"'
 os::cmd::expect_success_and_text "curl -k -XPOST -H 'Content-Type: application/json' -H 'Authorization: Bearer ${accesstoken}' '${API_SCHEME}://${API_HOST}:${API_PORT}/apis/authorization.openshift.io/v1/namespaces/${project}/localsubjectaccessreviews' -d '{\"kind\":\"LocalSubjectAccessReview\",\"apiVersion\":\"authorization.openshift.io/v1\",\"namespace\":\"${project}\",\"verb\":\"create\",\"resource\":\"pods\"}'" '"kind": "SubjectAccessReviewResponse"'
 # verify group and kind defaulting works correctly
-os::cmd::expect_success_and_text "curl -k -XPOST -H 'Content-Type: application/json' -H 'Authorization: Bearer ${accesstoken}' '${API_SCHEME}://${API_HOST}:${API_PORT}/oapi/v1/subjectaccessreviews' -d '{\"namespace\":\"${project}\",\"verb\":\"create\",\"resource\":\"pods\"}'" '"kind": "SubjectAccessReviewResponse"'
 os::cmd::expect_success_and_text "curl -k -XPOST -H 'Content-Type: application/json' -H 'Authorization: Bearer ${accesstoken}' '${API_SCHEME}://${API_HOST}:${API_PORT}/apis/authorization.openshift.io/v1/subjectaccessreviews' -d '{\"namespace\":\"${project}\",\"verb\":\"create\",\"resource\":\"pods\"}'" '"kind": "SubjectAccessReviewResponse"'
 os::cmd::expect_success_and_text "oc policy can-i create pods --token='${accesstoken}' -n '${project}' --ignore-scopes" 'yes'
 os::cmd::expect_success_and_text "oc policy can-i create pods --token='${accesstoken}' -n '${project}'" 'no'

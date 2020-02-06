@@ -28,12 +28,12 @@ func TestCustomCreateBuildPod(t *testing.T) {
 		Kind: "DockerImage",
 		Name: "",
 	}
-	if _, err := strategy.CreateBuildPod(expectedBad); err == nil {
+	if _, err := strategy.CreateBuildPod(expectedBad, nil, testInternalRegistryHost); err == nil {
 		t.Errorf("Expected error when Image is empty, got nothing")
 	}
 
 	build := mockCustomBuild(false, false)
-	actual, err := strategy.CreateBuildPod(build)
+	actual, err := strategy.CreateBuildPod(build, nil, testInternalRegistryHost)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -58,8 +58,30 @@ func TestCustomCreateBuildPod(t *testing.T) {
 	if actual.Spec.RestartPolicy != corev1.RestartPolicyNever {
 		t.Errorf("Expected never, got %#v", actual.Spec.RestartPolicy)
 	}
-	if len(container.VolumeMounts) != 4 {
-		t.Fatalf("Expected 4 volumes in container, got %d", len(container.VolumeMounts))
+
+	// expected volumes:
+	// docker socket
+	// push secret
+	// source secret
+	// additional secrets
+	// build-system-configmap
+	// certificate authorities
+	// container storage
+	if len(container.VolumeMounts) != 7 {
+		t.Fatalf("Expected 7 volumes in container, got %d", len(container.VolumeMounts))
+	}
+	expectedMounts := []string{"/var/run/docker.sock",
+		DockerPushSecretMountPath,
+		sourceSecretMountPath,
+		"secret",
+		ConfigMapBuildSystemConfigsMountPath,
+		ConfigMapCertsMountPath,
+		"/var/lib/containers/storage",
+	}
+	for i, expected := range expectedMounts {
+		if container.VolumeMounts[i].MountPath != expected {
+			t.Fatalf("Expected %s in VolumeMount[%d], got %s", expected, i, container.VolumeMounts[i].MountPath)
+		}
 	}
 	if *actual.Spec.ActiveDeadlineSeconds != 60 {
 		t.Errorf("Expected ActiveDeadlineSeconds 60, got %d", *actual.Spec.ActiveDeadlineSeconds)
@@ -72,12 +94,13 @@ func TestCustomCreateBuildPod(t *testing.T) {
 	if !kapihelper.Semantic.DeepEqual(container.Resources, build.Spec.Resources) {
 		t.Fatalf("Expected actual=expected, %v != %v", container.Resources, build.Spec.Resources)
 	}
-	if len(actual.Spec.Volumes) != 4 {
-		t.Fatalf("Expected 4 volumes in Build pod, got %d", len(actual.Spec.Volumes))
+	if len(actual.Spec.Volumes) != 7 {
+		t.Fatalf("Expected 7 volumes in Build pod, got %d", len(actual.Spec.Volumes))
 	}
 	buildJSON, _ := runtime.Encode(customBuildEncodingCodecFactory.LegacyCodec(buildv1.GroupVersion), build)
 	errorCases := map[int][]string{
 		0: {"BUILD", string(buildJSON)},
+		1: {"LANG", "en_US.utf8"},
 	}
 	standardEnv := []string{"SOURCE_REPOSITORY", "SOURCE_URI", "SOURCE_CONTEXT_DIR", "SOURCE_REF", "OUTPUT_IMAGE", "OUTPUT_REGISTRY"}
 	for index, exp := range errorCases {
@@ -104,7 +127,7 @@ func TestCustomCreateBuildPodExpectedForcePull(t *testing.T) {
 	strategy := CustomBuildStrategy{}
 
 	expected := mockCustomBuild(true, false)
-	actual, fperr := strategy.CreateBuildPod(expected)
+	actual, fperr := strategy.CreateBuildPod(expected, nil, testInternalRegistryHost)
 	if fperr != nil {
 		t.Fatalf("Unexpected error: %v", fperr)
 	}
@@ -118,7 +141,7 @@ func TestEmptySource(t *testing.T) {
 	strategy := CustomBuildStrategy{}
 
 	expected := mockCustomBuild(false, true)
-	_, fperr := strategy.CreateBuildPod(expected)
+	_, fperr := strategy.CreateBuildPod(expected, nil, testInternalRegistryHost)
 	if fperr != nil {
 		t.Fatalf("Unexpected error: %v", fperr)
 	}
@@ -132,7 +155,7 @@ func TestCustomCreateBuildPodWithCustomCodec(t *testing.T) {
 		build := mockCustomBuild(false, false)
 		build.Spec.Strategy.CustomStrategy.BuildAPIVersion = fmt.Sprintf("%s/%s", version.Group, version.Version)
 
-		pod, err := strategy.CreateBuildPod(build)
+		pod, err := strategy.CreateBuildPod(build, nil, testInternalRegistryHost)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -156,7 +179,7 @@ func TestCustomBuildLongName(t *testing.T) {
 	strategy := CustomBuildStrategy{}
 	build := mockCustomBuild(false, false)
 	build.Name = strings.Repeat("a", validation.DNS1123LabelMaxLength*2)
-	pod, err := strategy.CreateBuildPod(build)
+	pod, err := strategy.CreateBuildPod(build, nil, testInternalRegistryHost)
 	if err != nil {
 		t.Fatalf("unexpected: %v", err)
 	}

@@ -18,9 +18,7 @@ package server
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	goruntime "runtime"
@@ -30,7 +28,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/emicklei/go-restful-swagger12"
+	swagger "github.com/emicklei/go-restful-swagger12"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/go-openapi/spec"
 	"github.com/pborman/uuid"
@@ -56,18 +54,19 @@ import (
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/features"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic"
+	"k8s.io/apiserver/pkg/server/certs"
 	genericfilters "k8s.io/apiserver/pkg/server/filters"
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/apiserver/pkg/server/routes"
 	serverstore "k8s.io/apiserver/pkg/server/storage"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/apiserver/pkg/util/logs"
 	"k8s.io/client-go/informers"
 	restclient "k8s.io/client-go/rest"
-	certutil "k8s.io/client-go/util/cert"
+	"k8s.io/klog"
 	openapicommon "k8s.io/kube-openapi/pkg/common"
 
 	// install apis
-	"github.com/golang/glog"
 	_ "k8s.io/apiserver/pkg/apis/apiserver/install"
 )
 
@@ -115,8 +114,6 @@ type Config struct {
 
 	// Version will enable the /version endpoint if non-nil
 	Version *version.Info
-	// LegacyAuditWriter is the destination for audit logs. If nil, they will not be written.
-	LegacyAuditWriter io.Writer
 	// AuditBackend is where audit events are sent to.
 	AuditBackend audit.Backend
 	// AuditPolicyChecker makes the decision of whether and how to audit log a request.
@@ -168,6 +165,9 @@ type Config struct {
 	// The limit on the request size that would be accepted and decoded in a write request
 	// 0 means no limit.
 	MaxRequestBodyBytes int64
+	// MinimalShutdownDuration allows to block shutdown for some time, e.g. until endpoints pointing to this API server
+	// have converged on all node. During this time, the API server keeps serving.
+	MinimalShutdownDuration time.Duration
 	// MaxRequestsInFlight is the maximum number of parallel non-long-running requests. Every further
 	// request has to wait. Applies only to non-mutating requests.
 	MaxRequestsInFlight int
@@ -190,9 +190,6 @@ type Config struct {
 	// values below here are targets for removal
 	//===========================================================================
 
-	// The port on PublicAddress where a read-write server will be installed.
-	// Defaults to 6443 if not set.
-	ReadWritePort int
 	// PublicAddress is the IP address where members of the cluster (kubelet,
 	// kube-proxy, services, etc.) can reach the GenericAPIServer.
 	// If nil or 0.0.0.0, the host's default interface will be used.
@@ -217,15 +214,14 @@ type SecureServingInfo struct {
 	// Listener is the secure server network listener.
 	Listener net.Listener
 
-	// Cert is the main server cert which is used if SNI does not match. Cert must be non-nil and is
-	// allowed to be in SNICerts.
-	Cert *tls.Certificate
-
-	// SNICerts are the TLS certificates by name used for SNI.
-	SNICerts map[string]*tls.Certificate
-
 	// ClientCA is the certificate bundle for all the signers that you'll recognize for incoming client certificates
-	ClientCA *x509.CertPool
+	ClientCA certs.CABundleFileReferences
+
+	DefaultCertificate certs.CertKeyFileReference
+	NameToCertificate  map[string]*certs.CertKeyFileReference
+
+	// LoopbackCert holds the special certificate that we create for loopback connections
+	LoopbackCert *tls.Certificate
 
 	// MinTLSVersion optionally overrides the minimum TLS version supported.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
@@ -238,15 +234,25 @@ type SecureServingInfo struct {
 	// HTTP2MaxStreamsPerConnection is the limit that the api server imposes on each client.
 	// A value of zero means to use the default provided by golang's HTTP/2 support.
 	HTTP2MaxStreamsPerConnection int
+
+	// HTTP1Only indicates that http2 should not be enabled.
+	HTTP1Only bool
 }
 
 type AuthenticationInfo struct {
+	// APIAudiences is a list of identifier that the API identifies as. This is
+	// used by some authenticators to validate audience bound credentials.
+	APIAudiences authenticator.Audiences
 	// Authenticator determines which subject is making the request
 	Authenticator authenticator.Request
 	// SupportsBasicAuth indicates that's at least one Authenticator supports basic auth
 	// If this is true, a basic auth challenge is returned on authentication failure
 	// TODO(roberthbailey): Remove once the server no longer supports http basic auth.
 	SupportsBasicAuth bool
+
+	// DynamicReloadFns are post-start hooks used to dynamically refresh authentication information.
+	// Only the authencation builder knows how to wire them and only this level of code knows how apply them.
+	DynamicReloadFns map[string]PostStartHookFunc
 }
 
 type AuthorizationInfo struct {
@@ -259,7 +265,6 @@ type AuthorizationInfo struct {
 func NewConfig(codecs serializer.CodecFactory) *Config {
 	return &Config{
 		Serializer:                  codecs,
-		ReadWritePort:               443,
 		BuildHandlerChainFunc:       DefaultBuildHandlerChain,
 		HandlerChainWaitGroup:       new(utilwaitgroup.SafeWaitGroup),
 		LegacyAPIGroupPrefixes:      sets.NewString(DefaultLegacyAPIPrefix),
@@ -273,6 +278,7 @@ func NewConfig(codecs serializer.CodecFactory) *Config {
 		MaxMutatingRequestsInFlight: 200,
 		RequestTimeout:              time.Duration(60) * time.Second,
 		MinRequestTimeout:           1800,
+		MinimalShutdownDuration:     0,
 		// 1.5MB is the default client request size in bytes
 		// the etcd server should accept. See
 		// https://github.com/etcd-io/etcd/blob/release-3.4/embed/config.go#L56.
@@ -342,16 +348,7 @@ func DefaultSwaggerConfig() *swagger.Config {
 func (c *AuthenticationInfo) ApplyClientCert(clientCAFile string, servingInfo *SecureServingInfo) error {
 	if servingInfo != nil {
 		if len(clientCAFile) > 0 {
-			clientCAs, err := certutil.CertsFromFile(clientCAFile)
-			if err != nil {
-				return fmt.Errorf("unable to load client CA file: %v", err)
-			}
-			if servingInfo.ClientCA == nil {
-				servingInfo.ClientCA = x509.NewCertPool()
-			}
-			for _, cert := range clientCAs {
-				servingInfo.ClientCA.AddCert(cert)
-			}
+			servingInfo.ClientCA.CABundles = append(servingInfo.ClientCA.CABundles, clientCAFile)
 		}
 	}
 
@@ -377,39 +374,47 @@ type CompletedConfig struct {
 // Complete fills in any fields not set that are required to have valid data and can be derived
 // from other fields. If you're going to `ApplyOptions`, do that first. It's mutating the receiver.
 func (c *Config) Complete(informers informers.SharedInformerFactory) CompletedConfig {
-	host := c.ExternalAddress
-	if host == "" && c.PublicAddress != nil {
-		host = c.PublicAddress.String()
+	if len(c.ExternalAddress) == 0 && c.PublicAddress != nil {
+		c.ExternalAddress = c.PublicAddress.String()
 	}
 
-	// if there is no port, and we have a ReadWritePort, use that
-	if _, _, err := net.SplitHostPort(host); err != nil && c.ReadWritePort != 0 {
-		host = net.JoinHostPort(host, strconv.Itoa(c.ReadWritePort))
+	// if there is no port, and we listen on one securely, use that one
+	if _, _, err := net.SplitHostPort(c.ExternalAddress); err != nil {
+		if c.SecureServing == nil {
+			klog.Fatalf("cannot derive external address port without listening on a secure port.")
+		}
+		_, port, err := c.SecureServing.HostPort()
+		if err != nil {
+			klog.Fatalf("cannot derive external address from the secure port: %v", err)
+		}
+		c.ExternalAddress = net.JoinHostPort(c.ExternalAddress, strconv.Itoa(port))
 	}
-	c.ExternalAddress = host
 
-	if c.OpenAPIConfig != nil && c.OpenAPIConfig.SecurityDefinitions != nil {
-		// Setup OpenAPI security: all APIs will have the same authentication for now.
-		c.OpenAPIConfig.DefaultSecurity = []map[string][]string{}
-		keys := []string{}
-		for k := range *c.OpenAPIConfig.SecurityDefinitions {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			c.OpenAPIConfig.DefaultSecurity = append(c.OpenAPIConfig.DefaultSecurity, map[string][]string{k: {}})
-		}
-		if c.OpenAPIConfig.CommonResponses == nil {
-			c.OpenAPIConfig.CommonResponses = map[int]spec.Response{}
-		}
-		if _, exists := c.OpenAPIConfig.CommonResponses[http.StatusUnauthorized]; !exists {
-			c.OpenAPIConfig.CommonResponses[http.StatusUnauthorized] = spec.Response{
-				ResponseProps: spec.ResponseProps{
-					Description: "Unauthorized",
-				},
+	if c.OpenAPIConfig != nil {
+		if c.OpenAPIConfig.SecurityDefinitions != nil {
+			// Setup OpenAPI security: all APIs will have the same authentication for now.
+			c.OpenAPIConfig.DefaultSecurity = []map[string][]string{}
+			keys := []string{}
+			for k := range *c.OpenAPIConfig.SecurityDefinitions {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				c.OpenAPIConfig.DefaultSecurity = append(c.OpenAPIConfig.DefaultSecurity, map[string][]string{k: {}})
+			}
+			if c.OpenAPIConfig.CommonResponses == nil {
+				c.OpenAPIConfig.CommonResponses = map[int]spec.Response{}
+			}
+			if _, exists := c.OpenAPIConfig.CommonResponses[http.StatusUnauthorized]; !exists {
+				c.OpenAPIConfig.CommonResponses[http.StatusUnauthorized] = spec.Response{
+					ResponseProps: spec.ResponseProps{
+						Description: "Unauthorized",
+					},
+				}
 			}
 		}
 
+		// make sure we populate info, and info.version, if not manually set
 		if c.OpenAPIConfig.Info == nil {
 			c.OpenAPIConfig.Info = &spec.Info{}
 		}
@@ -432,24 +437,7 @@ func (c *Config) Complete(informers informers.SharedInformerFactory) CompletedCo
 		c.DiscoveryAddresses = discovery.DefaultAddresses{DefaultAddress: c.ExternalAddress}
 	}
 
-	// If the loopbackclientconfig is specified AND it has a token for use against the API server
-	// wrap the authenticator and authorizer in loopback authentication logic
-	if c.Authentication.Authenticator != nil && c.Authorization.Authorizer != nil && c.LoopbackClientConfig != nil && len(c.LoopbackClientConfig.BearerToken) > 0 {
-		privilegedLoopbackToken := c.LoopbackClientConfig.BearerToken
-		var uid = uuid.NewRandom().String()
-		tokens := make(map[string]*user.DefaultInfo)
-		tokens[privilegedLoopbackToken] = &user.DefaultInfo{
-			Name:   user.APIServerUser,
-			UID:    uid,
-			Groups: []string{user.SystemPrivilegedGroup},
-		}
-
-		tokenAuthenticator := authenticatorfactory.NewFromTokens(tokens)
-		c.Authentication.Authenticator = authenticatorunion.New(tokenAuthenticator, c.Authentication.Authenticator)
-
-		tokenAuthorizer := authorizerfactory.NewPrivilegedGroups(user.SystemPrivilegedGroup)
-		c.Authorization.Authorizer = authorizerunion.New(tokenAuthorizer, c.Authorization.Authorizer)
-	}
+	AuthorizeClientBearerToken(c.LoopbackClientConfig, &c.Authentication, &c.Authorization)
 
 	if c.RequestInfoResolver == nil {
 		c.RequestInfoResolver = NewRequestInfoResolver(c)
@@ -487,11 +475,13 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 		admissionControl:       c.AdmissionControl,
 		Serializer:             c.Serializer,
 		AuditBackend:           c.AuditBackend,
+		Authorizer:             c.Authorization.Authorizer,
 		delegationTarget:       delegationTarget,
 		HandlerChainWaitGroup:  c.HandlerChainWaitGroup,
 
-		minRequestTimeout: time.Duration(c.MinRequestTimeout) * time.Second,
-		ShutdownTimeout:   c.RequestTimeout,
+		minRequestTimeout:       time.Duration(c.MinRequestTimeout) * time.Second,
+		MinimalShutdownDuration: c.MinimalShutdownDuration,
+		ShutdownTimeout:         c.RequestTimeout,
 
 		SecureServingInfo: c.SecureServing,
 		ExternalAddress:   c.ExternalAddress,
@@ -500,9 +490,8 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 
 		listedPathProvider: apiServerHandler,
 
-		swaggerConfig:           c.SwaggerConfig,
-		openAPIConfig:           c.OpenAPIConfig,
-		openAPIDelegationTarget: delegationTarget,
+		swaggerConfig: c.SwaggerConfig,
+		openAPIConfig: c.OpenAPIConfig,
 
 		postStartHooks:         map[string]postStartHookEntry{},
 		preShutdownHooks:       map[string]preShutdownHookEntry{},
@@ -548,6 +537,16 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 		}
 	}
 
+	// often, authentication config is passed through multiple delegated apiservers.  If the authentication
+	// dynamic reloads themselves conflict, we only need to register the first one because there is only one authentication
+	// chain.  In any case where you may need more than one, you should always deconflict the names as we have
+	// in kube-apiserver's authentication chain versus the generic delegated one
+	for name, dynamicReloadFn := range c.Authentication.DynamicReloadFns {
+		if !s.isPostStartHookRegistered(name) {
+			s.AddPostStartHookOrDie(name, dynamicReloadFn)
+		}
+	}
+
 	for _, delegateCheck := range delegationTarget.HealthzChecks() {
 		skip := false
 		for _, existingCheck := range c.HealthzChecks {
@@ -583,16 +582,10 @@ func DefaultBuildHandlerChain(apiHandler http.Handler, c *Config) http.Handler {
 	handler := genericapifilters.WithAuthorization(apiHandler, c.Authorization.Authorizer, c.Serializer)
 	handler = genericfilters.WithMaxInFlightLimit(handler, c.MaxRequestsInFlight, c.MaxMutatingRequestsInFlight, c.LongRunningFunc)
 	handler = genericapifilters.WithImpersonation(handler, c.Authorization.Authorizer, c.Serializer)
-	if utilfeature.DefaultFeatureGate.Enabled(features.AdvancedAuditing) {
-		handler = genericapifilters.WithAudit(handler, c.AuditBackend, c.AuditPolicyChecker, c.LongRunningFunc)
-	} else {
-		handler = genericapifilters.WithLegacyAudit(handler, c.LegacyAuditWriter)
-	}
+	handler = genericapifilters.WithAudit(handler, c.AuditBackend, c.AuditPolicyChecker, c.LongRunningFunc)
 	failedHandler := genericapifilters.Unauthorized(c.Serializer, c.Authentication.SupportsBasicAuth)
-	if utilfeature.DefaultFeatureGate.Enabled(features.AdvancedAuditing) {
-		failedHandler = genericapifilters.WithFailedAuthenticationAudit(failedHandler, c.AuditBackend, c.AuditPolicyChecker)
-	}
-	handler = genericapifilters.WithAuthentication(handler, c.Authentication.Authenticator, failedHandler)
+	failedHandler = genericapifilters.WithFailedAuthenticationAudit(failedHandler, c.AuditBackend, c.AuditPolicyChecker)
+	handler = genericapifilters.WithAuthentication(handler, c.Authentication.Authenticator, failedHandler, c.Authentication.APIAudiences)
 	handler = genericfilters.WithCORS(handler, c.CorsAllowedOriginList, nil, nil, nil, "true")
 	handler = genericfilters.WithTimeoutForNonLongRunningRequests(handler, c.LongRunningFunc, c.RequestTimeout)
 	handler = genericfilters.WithWaitGroup(handler, c.LongRunningFunc, c.HandlerChainWaitGroup)
@@ -614,15 +607,7 @@ func installAPI(s *GenericAPIServer, c *Config) {
 			goruntime.SetBlockProfileRate(1)
 		}
 		// so far, only logging related endpoints are considered valid to add for these debug flags.
-		routes.DebugFlags{}.Install(s.Handler.NonGoRestfulMux, "v", routes.StringFlagPutHandler(
-			routes.StringFlagSetterFunc(func(val string) (string, error) {
-				var level glog.Level
-				if err := level.Set(val); err != nil {
-					return "", fmt.Errorf("failed set glog.logging.verbosity %s: %v", val, err)
-				}
-				return "successfully set glog.logging.verbosity to " + val, nil
-			}),
-		))
+		routes.DebugFlags{}.Install(s.Handler.NonGoRestfulMux, "v", routes.StringFlagPutHandler(logs.GlogSetter))
 	}
 	if c.EnableMetrics {
 		if c.EnableProfiling {
@@ -632,9 +617,8 @@ func installAPI(s *GenericAPIServer, c *Config) {
 		}
 	}
 
-	if c.Version != nil {
-		routes.Version{Version: c.Version}.Install(s.Handler.NonGoRestfulMux)
-	}
+	routes.Version{Version: c.Version}.Install(s.Handler.GoRestfulContainer)
+
 	if c.EnableDiscovery {
 		s.Handler.GoRestfulContainer.Add(s.DiscoveryGroupManager.WebService())
 	}
@@ -652,4 +636,43 @@ func NewRequestInfoResolver(c *Config) *apirequest.RequestInfoFactory {
 		APIPrefixes:          apiPrefixes,
 		GrouplessAPIPrefixes: legacyAPIPrefixes,
 	}
+}
+
+func (s *SecureServingInfo) HostPort() (string, int, error) {
+	if s == nil || s.Listener == nil {
+		return "", 0, fmt.Errorf("no listener found")
+	}
+	addr := s.Listener.Addr().String()
+	host, portStr, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get port from listener address %q: %v", addr, err)
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid non-numeric port %q", portStr)
+	}
+	return host, port, nil
+}
+
+// AuthorizeClientBearerToken wraps the authenticator and authorizer in loopback authentication logic
+// if the loopback client config is specified AND it has a bearer token.
+func AuthorizeClientBearerToken(loopback *restclient.Config, authn *AuthenticationInfo, authz *AuthorizationInfo) {
+	if loopback == nil || authn == nil || authz == nil || authn.Authenticator == nil && authz.Authorizer == nil || len(loopback.BearerToken) == 0 {
+		return
+	}
+
+	privilegedLoopbackToken := loopback.BearerToken
+	var uid = uuid.NewRandom().String()
+	tokens := make(map[string]*user.DefaultInfo)
+	tokens[privilegedLoopbackToken] = &user.DefaultInfo{
+		Name:   user.APIServerUser,
+		UID:    uid,
+		Groups: []string{user.SystemPrivilegedGroup},
+	}
+
+	tokenAuthenticator := authenticatorfactory.NewFromTokens(tokens)
+	authn.Authenticator = authenticatorunion.New(tokenAuthenticator, authn.Authenticator)
+
+	tokenAuthorizer := authorizerfactory.NewPrivilegedGroups(user.SystemPrivilegedGroup)
+	authz.Authorizer = authorizerunion.New(tokenAuthorizer, authz.Authorizer)
 }

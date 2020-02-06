@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/util/cert"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/library-go/pkg/crypto"
 )
@@ -122,7 +122,7 @@ func (o CreateClientOptions) Validate(args []string) error {
 }
 
 func (o CreateClientOptions) CreateClientFolder() error {
-	glog.V(4).Infof("creating a .kubeconfig with: %#v", o)
+	klog.V(4).Infof("creating a .kubeconfig with: %#v", o)
 
 	baseName := o.BaseName
 	if len(baseName) == 0 {
@@ -176,4 +176,21 @@ func (o CreateClientOptions) CreateClientFolder() error {
 	}
 
 	return nil
+}
+
+// readFiles returns a byte array containing the contents of all the given filenames,
+// optionally separated by a delimiter, or an error if any of the files cannot be read
+func readFiles(srcFiles []string, separator []byte) ([]byte, error) {
+	data := []byte{}
+	for _, srcFile := range srcFiles {
+		fileData, err := ioutil.ReadFile(srcFile)
+		if err != nil {
+			return nil, err
+		}
+		if len(data) > 0 && len(separator) > 0 {
+			data = append(data, separator...)
+		}
+		data = append(data, fileData...)
+	}
+	return data, nil
 }

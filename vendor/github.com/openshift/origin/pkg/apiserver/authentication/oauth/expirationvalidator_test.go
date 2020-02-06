@@ -1,6 +1,7 @@
 package oauth
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -29,10 +30,10 @@ func TestAuthenticateTokenExpired(t *testing.T) {
 	)
 	fakeUserClient := userfake.NewSimpleClientset(&userapi.User{ObjectMeta: metav1.ObjectMeta{Name: "foo", UID: "bar"}})
 
-	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.Oauth().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{}, NewExpirationValidator())
+	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{}, NewExpirationValidator())
 
 	for _, tokenName := range []string{"token1", "token2"} {
-		userInfo, found, err := tokenAuthenticator.AuthenticateToken(tokenName)
+		userInfo, found, err := tokenAuthenticator.AuthenticateToken(context.TODO(), tokenName)
 		if found {
 			t.Error("Found token, but it should be missing!")
 		}
@@ -56,9 +57,9 @@ func TestAuthenticateTokenValidated(t *testing.T) {
 	)
 	fakeUserClient := userfake.NewSimpleClientset(&userapi.User{ObjectMeta: metav1.ObjectMeta{Name: "foo", UID: "bar"}})
 
-	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.Oauth().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{}, NewExpirationValidator(), NewUIDValidator())
+	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{}, NewExpirationValidator(), NewUIDValidator())
 
-	userInfo, found, err := tokenAuthenticator.AuthenticateToken("token")
+	userInfo, found, err := tokenAuthenticator.AuthenticateToken(context.TODO(), "token")
 	if !found {
 		t.Error("Did not find a token!")
 	}

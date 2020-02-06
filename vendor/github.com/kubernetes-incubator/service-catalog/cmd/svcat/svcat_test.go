@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -31,11 +32,6 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/spf13/pflag"
-	clientgotesting "k8s.io/client-go/testing"
-
-	"encoding/json"
-
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/command"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/plugin"
 	"github.com/kubernetes-incubator/service-catalog/internal/test"
@@ -46,16 +42,25 @@ import (
 	"github.com/kubernetes-incubator/service-catalog/pkg/svcat/service-catalog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clientgotesting "k8s.io/client-go/testing"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/klog"
+	"sigs.k8s.io/yaml"
 )
 
 var catalogRequestRegex = regexp.MustCompile("/apis/servicecatalog.k8s.io/v1beta1/(.*)")
 var coreRequestRegex = regexp.MustCompile("/api/v1/(.*)")
+
+func TestMain(m *testing.M) {
+	// Init klog flags because tests rely on flags to be globally registered
+	klog.InitFlags(nil)
+	os.Exit(m.Run())
+}
 
 // Verify that svcat gracefully handles when the namespaced broker feature flag is disabled
 // TODO: Once we take Namespaced brokers out from behind the feature flag, this test won't be necessary
@@ -69,7 +74,7 @@ func TestGetSvcatWithNamespacedBrokerFeatureDisabled(t *testing.T) {
 		{"get classes", "my-cluster-class"},
 		{"get class my-cluster-class", "my-cluster-class"},
 		{"get plans", "my-cluster-plan"},
-		{"get plan my-cluster-plan", "my-cluster-plan"},
+		{"get plan --scope cluster my-cluster-plan", "my-cluster-plan"},
 	}
 
 	for _, tc := range testcases {
@@ -144,8 +149,8 @@ func TestCommandValidation(t *testing.T) {
 		{"viper bug workaround: provision", "provision name --class class --plan plan", ""},
 		{"viper bug workaround: bind", "bind name", ""},
 		{"describe broker requires name", "describe broker", "a broker name is required"},
-		{"describe class requires name", "describe class", "a class name or uuid is required"},
-		{"describe plan requires name", "describe plan", "a plan name or uuid is required"},
+		{"describe class requires name", "describe class", "a class name or Kubernetes name is required"},
+		{"describe plan requires name", "describe plan", "a plan name or Kubernetes name is required"},
 		{"describe instance requires name", "describe instance", "an instance name is required"},
 		{"describe binding requires name", "describe binding", "a binding name is required"},
 		{"bind requires arg", "bind", "an instance name is required"},
@@ -189,16 +194,24 @@ func TestCommandOutput(t *testing.T) {
 		{name: "register broker", cmd: "register ups-broker --url http://upsbroker.com", golden: "output/register-broker.txt"},
 		{name: "deregister broker", cmd: "deregister ups-broker", golden: "output/deregister-broker.txt"},
 
+		{name: "sync broker", cmd: "sync broker ups-broker", golden: "output/sync-broker.txt"},
+		{name: "sync broker in namespace", cmd: "sync broker ups-broker-ns -n test-ns", golden: "output/sync-broker-ns.txt"},
 		{name: "list all classes", cmd: "get classes", golden: "output/get-classes.txt"},
 		{name: "list all classes (json)", cmd: "get classes -o json", golden: "output/get-classes.json"},
 		{name: "list all classes (yaml)", cmd: "get classes -o yaml", golden: "output/get-classes.yaml"},
 		{name: "get class by name", cmd: "get class user-provided-service", golden: "output/get-class.txt"},
+		{name: "get class not found（cluster scope）", cmd: "get class foo --scope cluster", golden: "output/get-class-not-found-cluster.txt", continueOnError: true},
+		{name: "get class not found（default namespace）", cmd: "get class foo --scope namespace", golden: "output/get-class-not-found-default-namespace.txt", continueOnError: true},
+		{name: "get class not found（all namespaces）", cmd: "get class foo --scope namespace --all-namespaces", golden: "output/get-class-not-found-all-namespaces.txt", continueOnError: true},
 		{name: "get class by name (json)", cmd: "get class user-provided-service -o json", golden: "output/get-class.json"},
 		{name: "get class by name (yaml)", cmd: "get class user-provided-service -o yaml", golden: "output/get-class.yaml"},
-		{name: "get class by uuid", cmd: "get class --uuid 4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468", golden: "output/get-class.txt"},
+		{name: "get class by Kubernetes name", cmd: "get class --kube-name 4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468", golden: "output/get-class.txt"},
 		{name: "describe class by name", cmd: "describe class user-provided-service", golden: "output/describe-class.txt"},
-		{name: "describe class uuid", cmd: "describe class --uuid 4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468", golden: "output/describe-class.txt"},
-		{name: "create class", cmd: "create class new-class --from user-provided-service", golden: "output/create-class.txt"},
+		{name: "describe class by Kubernetes name", cmd: "describe class --kube-name 4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468", golden: "output/describe-class.txt"},
+		{name: "create cluster class", cmd: "create class new-class --from user-provided-service --scope cluster", golden: "output/create-cluster-class.txt"},
+		{name: "create cluster class not found", cmd: "create class new-class --from foo --scope cluster", golden: "output/create-cluster-class-not-found.txt", continueOnError: true},
+		{name: "create namespace class", cmd: "create class new-class --from user-provided-namespaced-service --scope namespace --namespace default", golden: "output/create-namespace-class.txt"},
+		{name: "create namespace class not found", cmd: "create class new-class --from foo --scope namespace --namespace default", golden: "output/create-namespace-class-not-found.txt", continueOnError: true},
 
 		{name: "list all plans", cmd: "get plans", golden: "output/get-plans.txt"},
 		{name: "list all plans (json)", cmd: "get plans -o json", golden: "output/get-plans.json"},
@@ -206,20 +219,23 @@ func TestCommandOutput(t *testing.T) {
 		{name: "list all namespaced plans", cmd: "get plans --scope namespace", golden: "output/get-namespaced-plans.txt"},
 		{name: "list all namespaced plans (json)", cmd: "get plans --scope namespace -o json", golden: "output/get-namespaced-plans.json"},
 		{name: "list all namespaced plans (yaml)", cmd: "get plans --scope namespace -o yaml", golden: "output/get-namespaced-plans.yaml"},
-		{name: "get plan by name", cmd: "get plan default", golden: "output/get-plan.txt"},
-		{name: "get plan by name (json)", cmd: "get plan default -o json", golden: "output/get-plan.json"},
-		{name: "get plan by name (yaml)", cmd: "get plan default -o yaml", golden: "output/get-plan.yaml"},
-		{name: "get plan by uuid", cmd: "get plan --uuid 86064792-7ea2-467b-af93-ac9694d96d52", golden: "output/get-plan.txt"},
-		{name: "get plan by class/plan name combo", cmd: "get plan user-provided-service/default", golden: "output/get-plan.txt"},
-		{name: "get plan by class name", cmd: "get plan --class user-provided-service", golden: "output/get-plans-by-class.txt"},
-		{name: "get plan by class/plan name combo", cmd: "get plan --class user-provided-service default", golden: "output/get-plan.txt"},
-		{name: "get plan by class/plan uuid combo", cmd: "get plan --uuid --class 4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468 86064792-7ea2-467b-af93-ac9694d96d52", golden: "output/get-plan.txt"},
-		{name: "get plan by class uuid", cmd: "get plan --uuid --class 4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468", golden: "output/get-plans-by-class.txt"},
-		{name: "describe plan by name", cmd: "describe plan default", golden: "output/describe-plan.txt"},
-		{name: "describe plan by uuid", cmd: "describe plan --uuid 86064792-7ea2-467b-af93-ac9694d96d52", golden: "output/describe-plan.txt"},
-		{name: "describe plan by class/plan name combo", cmd: "describe plan user-provided-service/default", golden: "output/describe-plan.txt"},
-		{name: "describe plan with schemas", cmd: "describe plan premium", golden: "output/describe-plan-with-schemas.txt"},
-		{name: "describe plan without schemas", cmd: "describe plan premium --show-schemas=false", golden: "output/describe-plan-without-schemas.txt"},
+		{name: "get plan by name", cmd: "get plan --scope cluster default", golden: "output/get-plan.txt"},
+		{name: "get plan by name (json)", cmd: "get plan --scope cluster default -o json", golden: "output/get-plan.json"},
+		{name: "get plan by name (yaml)", cmd: "get plan --scope cluster default -o yaml", golden: "output/get-plan.yaml"},
+		{name: "get plan by Kubernetes name", cmd: "get plan --scope cluster --kube-name 86064792-7ea2-467b-af93-ac9694d96d52", golden: "output/get-plan.txt"},
+		{name: "get plan by class/plan name combo", cmd: "get plan --scope cluster user-provided-service/default", golden: "output/get-plan.txt"},
+		{name: "get plan by class name", cmd: "get plan --scope cluster --class user-provided-service", golden: "output/get-plans-by-class.txt"},
+		{name: "get plan by class/plan name combo", cmd: "get plan --scope cluster --class user-provided-service default", golden: "output/get-plan.txt"},
+		{name: "get plan by class/plan Kubernetes name combo", cmd: "get plan --scope cluster --kube-name --class 4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468 86064792-7ea2-467b-af93-ac9694d96d52", golden: "output/get-plan.txt"},
+		{name: "get plan by class Kubernetes name", cmd: "get plan --scope cluster --kube-name --class 4f6e6cf6-ffdd-425f-a2c7-3c9258ad2468", golden: "output/get-plans-by-class.txt"},
+		{name: "describe plan by name", cmd: "describe plan --scope cluster default", golden: "output/describe-plan.txt"},
+		{name: "describe namespace plan by name", cmd: "describe plan namespacedplan", golden: "output/describe-namespace-plan.txt"},
+		{name: "describe plan by Kubernetes name", cmd: "describe plan --scope cluster --kube-name 86064792-7ea2-467b-af93-ac9694d96d52", golden: "output/describe-plan.txt"},
+		{name: "describe namespace plan by Kubernetes name", cmd: "describe plan --kube-name 86064792-7ea2-467b-af93-ac9694d96d52", golden: "output/describe-namespace-plan.txt"},
+		{name: "describe plan by class/plan name combo", cmd: "describe plan --scope cluster user-provided-service/default", golden: "output/describe-plan.txt"},
+		{name: "describe namespace plan by class/plan name combo", cmd: "describe plan user-provided-namespaced-service/namespacedplan", golden: "output/describe-namespace-plan.txt"},
+		{name: "describe plan with schemas", cmd: "describe plan --scope cluster premium", golden: "output/describe-plan-with-schemas.txt"},
+		{name: "describe plan without schemas", cmd: "describe plan --scope cluster premium --show-schemas=false", golden: "output/describe-plan-without-schemas.txt"},
 
 		{name: "list all instances in a namespace", cmd: "get instances -n test-ns", golden: "output/get-instances.txt"},
 		{name: "list all instances in a namespace (json)", cmd: "get instances -n test-ns -o json", golden: "output/get-instances.json"},

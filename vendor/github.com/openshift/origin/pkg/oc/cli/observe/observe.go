@@ -18,27 +18,28 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/server/healthz"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/jsonpath"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/origin/pkg/util/proc"
 )
@@ -158,7 +159,10 @@ var (
 	  %[1]s observe services
 
 	  # Observe changes to services, including the clusterIP and invoke a script for each
-	  %[1]s observe services -a '{ .spec.clusterIP }' -- register_dns.sh`)
+	  %[1]s observe services -a '{ .spec.clusterIP }' -- register_dns.sh
+
+	  # Observe changes to services filtered by a label selector
+	  %[1]s observe namespaces -l regist-dns=true -a '{ .spec.clusterIP }' -- register_dns.sh`)
 )
 
 type ObserveOptions struct {
@@ -172,6 +176,7 @@ type ObserveOptions struct {
 	// which resources to select
 	namespace     string
 	allNamespaces bool
+	selector      string
 
 	// additional debugging information
 	listenAddr string
@@ -246,7 +251,8 @@ func NewCmdObserve(fullName string, f kcmdutil.Factory, streams genericclioption
 	}
 
 	// flags controlling what to select
-	cmd.Flags().BoolVar(&o.allNamespaces, "all-namespaces", false, "If true, list the requested object(s) across all projects. Project in current context is ignored.")
+	cmd.Flags().BoolVarP(&o.allNamespaces, "all-namespaces", "A", o.allNamespaces, "If true, list the requested object(s) across all projects. Project in current context is ignored.")
+	cmd.Flags().StringVarP(&o.selector, "selector", "l", o.selector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 
 	// to perform deletion synchronization
 	cmd.Flags().VarP(&o.deleteCommand, "delete", "d", "A command to run when resources are deleted. Specify multiple times to add arguments.")
@@ -254,25 +260,25 @@ func NewCmdObserve(fullName string, f kcmdutil.Factory, streams genericclioption
 
 	// add additional arguments / info to the server
 	cmd.Flags().StringVar(&o.templateType, "output", o.templateType, "Controls the template type used for the --argument flags. Supported values are gotemplate and jsonpath.")
-	cmd.Flags().BoolVar(&o.strictTemplates, "strict-templates", false, "If true return an error on any field or map key that is not missing in a template.")
+	cmd.Flags().BoolVar(&o.strictTemplates, "strict-templates", o.strictTemplates, "If true return an error on any field or map key that is not missing in a template.")
 	cmd.Flags().VarP(&o.templates, "argument", "a", "Template for the arguments to be passed to each command in the format defined by --output.")
 	cmd.Flags().StringVar(&o.typeEnvVar, "type-env-var", "", "The name of an env var to set with the type of event received ('Sync', 'Updated', 'Deleted', 'Added') to the reaction command or --delete.")
 	cmd.Flags().StringVar(&o.objectEnvVar, "object-env-var", "", "The name of an env var to serialize the object to when calling the command, optional.")
 
 	// control retries of individual commands
 	cmd.Flags().IntVar(&o.maximumErrors, "maximum-errors", o.maximumErrors, "Exit after this many errors have been detected with. May be set to -1 for no maximum.")
-	cmd.Flags().IntVar(&o.retryExitStatus, "retry-on-exit-code", 0, "If any command returns this exit code, retry up to --retry-count times.")
+	cmd.Flags().IntVar(&o.retryExitStatus, "retry-on-exit-code", o.retryExitStatus, "If any command returns this exit code, retry up to --retry-count times.")
 	cmd.Flags().IntVar(&o.retryCount, "retry-count", o.retryCount, "The number of times to retry a failing command before continuing.")
 
 	// control observe program behavior
-	cmd.Flags().BoolVar(&o.once, "once", false, "If true, exit with a status code 0 after all current objects have been processed.")
-	cmd.Flags().DurationVar(&o.exitAfterPeriod, "exit-after", 0, "Exit with status code 0 after the provided duration, optional.")
-	cmd.Flags().DurationVar(&o.resyncPeriod, "resync-period", 0, "When non-zero, periodically reprocess every item from the server as a Sync event. Use to ensure external systems are kept up to date.")
-	cmd.Flags().BoolVar(&o.printMetricsOnExit, "print-metrics-on-exit", false, "If true, on exit write all metrics to stdout.")
+	cmd.Flags().BoolVar(&o.once, "once", o.once, "If true, exit with a status code 0 after all current objects have been processed.")
+	cmd.Flags().DurationVar(&o.exitAfterPeriod, "exit-after", o.exitAfterPeriod, "Exit with status code 0 after the provided duration, optional.")
+	cmd.Flags().DurationVar(&o.resyncPeriod, "resync-period", o.resyncPeriod, "When non-zero, periodically reprocess every item from the server as a Sync event. Use to ensure external systems are kept up to date.")
+	cmd.Flags().BoolVar(&o.printMetricsOnExit, "print-metrics-on-exit", o.printMetricsOnExit, "If true, on exit write all metrics to stdout.")
 	cmd.Flags().StringVar(&o.listenAddr, "listen-addr", o.listenAddr, "The name of an interface to listen on to expose metrics and health checking.")
 
 	// additional debug output
-	cmd.Flags().BoolVar(&o.noHeaders, "no-headers", false, "If true, skip printing information about each event prior to executing the command.")
+	cmd.Flags().BoolVar(&o.noHeaders, "no-headers", o.noHeaders, "If true, skip printing information about each event prior to executing the command.")
 
 	return cmd
 }
@@ -380,7 +386,7 @@ func (o *ObserveOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args [
 					break
 				}
 			}
-			glog.V(4).Infof("Found existing keys: %v", outputNames)
+			klog.V(4).Infof("Found existing keys: %v", outputNames)
 			return outputNames, nil
 		}
 		o.knownObjects = o.argumentStore
@@ -395,6 +401,11 @@ func (o *ObserveOptions) Validate(args []string) error {
 	if len(o.nameSyncCommand) > 0 && len(o.deleteCommand) == 0 {
 		return fmt.Errorf("--delete and --names must both be specified")
 	}
+
+	if _, err := labels.Parse(o.selector); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -405,7 +416,10 @@ func (o *ObserveOptions) Run() error {
 
 	// watch the given resource for changes
 	store := cache.NewDeltaFIFO(objectArgumentsKeyFunc, o.knownObjects)
-	lw := restListWatcher{Helper: resource.NewHelper(o.client, o.mapping)}
+	lw := restListWatcher{
+		Helper:   resource.NewHelper(o.client, o.mapping),
+		selector: o.selector,
+	}
 	if !o.allNamespaces {
 		lw.namespace = o.namespace
 	}
@@ -427,9 +441,9 @@ func (o *ObserveOptions) Run() error {
 		}))
 		http.Handle("/metrics", prometheus.Handler())
 		go func() {
-			glog.Fatalf("Unable to listen on %q: %v", o.listenAddr, http.ListenAndServe(o.listenAddr, nil))
+			klog.Fatalf("Unable to listen on %q: %v", o.listenAddr, http.ListenAndServe(o.listenAddr, nil))
 		}()
-		glog.V(2).Infof("Listening on %s at /metrics and /healthz", o.listenAddr)
+		klog.V(2).Infof("Listening on %s at /metrics and /healthz", o.listenAddr)
 	}
 
 	// exit cleanly after a certain period
@@ -459,7 +473,7 @@ func (o *ObserveOptions) Run() error {
 				utilruntime.HandleError(err)
 				observedListErrors++
 				if o.maximumErrors != -1 && observedListErrors > o.maximumErrors {
-					glog.Fatalf("Maximum list errors of %d reached, exiting", o.maximumErrors)
+					klog.Fatalf("Maximum list errors of %d reached, exiting", o.maximumErrors)
 				}
 			}
 		}, time.Second, stopCh)
@@ -639,7 +653,7 @@ func (o *ObserveOptions) finishSync() error {
 }
 
 func (o *ObserveOptions) next(deltaType cache.DeltaType, obj runtime.Object, output []byte, arguments []string) error {
-	glog.V(4).Infof("Processing %s %v: %#v", deltaType, arguments, obj)
+	klog.V(4).Infof("Processing %s %v: %#v", deltaType, arguments, obj)
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return fmt.Errorf("unable to handle %T: %v", obj, err)
@@ -772,7 +786,7 @@ func retryCommandError(onExitStatus, times int, fn func() error) error {
 	if err != nil && onExitStatus != 0 && times > 0 {
 		if status, ok := exitCodeForCommandError(err); ok {
 			if status == onExitStatus {
-				glog.V(4).Infof("retrying command: %v", err)
+				klog.V(4).Infof("retrying command: %v", err)
 				return retryCommandError(onExitStatus, times-1, fn)
 			}
 		}
@@ -807,13 +821,16 @@ func printCommandLine(cmd string, args ...string) string {
 type restListWatcher struct {
 	*resource.Helper
 	namespace string
+	selector  string
 }
 
 func (lw restListWatcher) List(opt metav1.ListOptions) (runtime.Object, error) {
+	opt.LabelSelector = lw.selector
 	return lw.Helper.List(lw.namespace, "", false, &opt)
 }
 
 func (lw restListWatcher) Watch(opt metav1.ListOptions) (watch.Interface, error) {
+	opt.LabelSelector = lw.selector
 	return lw.Helper.Watch(lw.namespace, opt.ResourceVersion, &opt)
 }
 

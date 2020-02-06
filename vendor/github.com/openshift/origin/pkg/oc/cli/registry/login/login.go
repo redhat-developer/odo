@@ -11,8 +11,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,13 +21,13 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/homedir"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	imageclient "github.com/openshift/client-go/image/clientset/versioned"
-	imageapi "github.com/openshift/origin/pkg/image/apis/image"
+	"github.com/openshift/library-go/pkg/image/reference"
 	"github.com/openshift/origin/pkg/image/registryclient"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 var (
@@ -115,6 +115,7 @@ func NewRegistryLoginCmd(name string, f kcmdutil.Factory, streams genericcliopti
 	}
 
 	flag := cmd.Flags()
+	flag.StringVarP(&o.ConfigFile, "registry-config", "a", o.ConfigFile, "The location of the Docker config.json your credentials will be stored in.")
 	flag.StringVar(&o.ConfigFile, "to", o.ConfigFile, "The location of the Docker config.json your credentials will be stored in.")
 	flag.StringVarP(&o.ServiceAccount, "service-account", "z", o.ServiceAccount, "Log in as the specified service account name in the specified namespace.")
 	flag.StringVar(&o.HostPort, "registry", o.HostPort, "An alternate domain name and port to use for the registry, defaults to the cluster's configured external hostname.")
@@ -140,7 +141,7 @@ func (o *LoginOptions) Complete(f kcmdutil.Factory, args []string) error {
 		if err != nil {
 			return err
 		}
-		sa, err := client.Core().ServiceAccounts(ns).Get(o.ServiceAccount, metav1.GetOptions{})
+		sa, err := client.CoreV1().ServiceAccounts(ns).Get(o.ServiceAccount, metav1.GetOptions{})
 		if err != nil {
 			if kerrors.IsNotFound(err) {
 				return fmt.Errorf("the service account %s does not exist in namespace %s", o.ServiceAccount, ns)
@@ -149,7 +150,7 @@ func (o *LoginOptions) Complete(f kcmdutil.Factory, args []string) error {
 		}
 		var lastErr error
 		for _, ref := range sa.Secrets {
-			secret, err := client.Core().Secrets(ns).Get(ref.Name, metav1.GetOptions{})
+			secret, err := client.CoreV1().Secrets(ns).Get(ref.Name, metav1.GetOptions{})
 			if err != nil {
 				lastErr = err
 				continue
@@ -191,7 +192,7 @@ func (o *LoginOptions) Complete(f kcmdutil.Factory, args []string) error {
 		}
 
 		if registry, internal := findPublicHostname(client, ns, "openshift"); len(registry) > 0 {
-			if ref, err := imageapi.ParseDockerImageReference(registry); err == nil {
+			if ref, err := reference.Parse(registry); err == nil {
 				o.HostPort = ref.Registry
 				if internal {
 					fmt.Fprintf(o.ErrOut, "info: Using internal registry hostname %s\n", o.HostPort)
@@ -213,7 +214,7 @@ func (o *LoginOptions) Complete(f kcmdutil.Factory, args []string) error {
 
 func findPublicHostname(client *imageclient.Clientset, namespaces ...string) (name string, internal bool) {
 	for _, ns := range namespaces {
-		imageStreams, err := client.Image().ImageStreams(ns).List(metav1.ListOptions{})
+		imageStreams, err := client.ImageV1().ImageStreams(ns).List(metav1.ListOptions{})
 		if err != nil || len(imageStreams.Items) == 0 {
 			continue
 		}
@@ -298,7 +299,7 @@ func (o *LoginOptions) Run() error {
 	if o.CreateDirectory {
 		dir := filepath.Dir(filename)
 		if err := os.MkdirAll(dir, 0700); err != nil {
-			glog.V(2).Infof("Unable to create nested directories: %v", err)
+			klog.V(2).Infof("Unable to create nested directories: %v", err)
 		}
 	}
 

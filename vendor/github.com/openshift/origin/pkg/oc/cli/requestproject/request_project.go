@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	projectv1 "github.com/openshift/api/project/v1"
 	projectv1client "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
@@ -57,9 +57,12 @@ const (
 	requestProjectNewAppOutput = `
 You can add applications to this project with the 'new-app' command. For example, try:
 
-    %[1]s new-app centos/ruby-25-centos7~https://github.com/sclorg/ruby-ex.git
+    %[1]s new-app django-psql-example
 
-to build a new example application in Ruby.
+to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
 `
 	requestProjectSwitchProjectOutput = `Project %[2]q created on server %[3]q.
 

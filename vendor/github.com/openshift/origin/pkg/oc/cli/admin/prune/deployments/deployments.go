@@ -11,10 +11,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsv1client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -168,7 +168,7 @@ func (o PruneDeploymentsOptions) Run() error {
 	deploymentDeleter := &describingDeploymentDeleter{w: w}
 
 	if o.Confirm {
-		deploymentDeleter.delegate = NewDeploymentDeleter(o.KubeClient, o.KubeClient)
+		deploymentDeleter.delegate = NewDeploymentDeleter(o.KubeClient)
 	} else {
 		fmt.Fprintln(os.Stderr, "Dry run enabled - no modifications will be made. Add --confirm to remove deployments")
 	}

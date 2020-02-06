@@ -47,7 +47,7 @@ import (
 )
 
 func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
+	rand.Seed(time.Now().UnixNano())
 
 	hyperkubeCommand, allCommandFns := NewHyperKubeCommand(server.SetupSignalHandler())
 
@@ -94,7 +94,7 @@ func NewHyperKubeCommand(stopCh <-chan struct{}) (*cobra.Command, []func() *cobr
 		return ret
 	}
 	controller := func() *cobra.Command {
-		ret := kubecontrollermanager.NewControllerManagerCommand()
+		ret := kubecontrollermanager.NewControllerManagerCommand(stopCh)
 		// add back some unfortunate aliases that should be removed
 		ret.Aliases = []string{"controller-manager"}
 		return ret
@@ -106,7 +106,7 @@ func NewHyperKubeCommand(stopCh <-chan struct{}) (*cobra.Command, []func() *cobr
 		return ret
 	}
 	scheduler := func() *cobra.Command {
-		ret := kubescheduler.NewSchedulerCommand()
+		ret := kubescheduler.NewSchedulerCommand(stopCh)
 		// add back some unfortunate aliases that should be removed
 		ret.Aliases = []string{"scheduler"}
 		return ret

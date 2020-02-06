@@ -24,6 +24,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestExtractNotFound(t *testing.T) {
@@ -53,77 +54,91 @@ func TestExtractNotFound(t *testing.T) {
 	}
 }
 
-func TestIsBackendPoolOnSameLB(t *testing.T) {
+func TestIsNodeUnmanaged(t *testing.T) {
 	tests := []struct {
-		backendPoolID        string
-		existingBackendPools []string
-		expected             bool
-		expectedLBName       string
-		expectError          bool
+		name           string
+		unmanagedNodes sets.String
+		node           string
+		expected       bool
+		expectErr      bool
 	}{
 		{
-			backendPoolID: "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1/backendAddressPools/pool1",
-			existingBackendPools: []string{
-				"/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1/backendAddressPools/pool2",
-			},
+			name:           "unmanaged node should return true",
+			unmanagedNodes: sets.NewString("node1", "node2"),
+			node:           "node1",
 			expected:       true,
-			expectedLBName: "",
 		},
 		{
-			backendPoolID: "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1-internal/backendAddressPools/pool1",
-			existingBackendPools: []string{
-				"/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1/backendAddressPools/pool2",
-			},
-			expected:       true,
-			expectedLBName: "",
-		},
-		{
-			backendPoolID: "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1/backendAddressPools/pool1",
-			existingBackendPools: []string{
-				"/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1-internal/backendAddressPools/pool2",
-			},
-			expected:       true,
-			expectedLBName: "",
-		},
-		{
-			backendPoolID: "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1/backendAddressPools/pool1",
-			existingBackendPools: []string{
-				"/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb2/backendAddressPools/pool2",
-			},
+			name:           "managed node should return false",
+			unmanagedNodes: sets.NewString("node1", "node2"),
+			node:           "node3",
 			expected:       false,
-			expectedLBName: "lb2",
 		},
 		{
-			backendPoolID: "wrong-backendpool-id",
-			existingBackendPools: []string{
-				"/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1/backendAddressPools/pool2",
-			},
-			expectError: true,
+			name:           "empty unmanagedNodes should return true",
+			unmanagedNodes: sets.NewString(),
+			node:           "node3",
+			expected:       false,
 		},
 		{
-			backendPoolID: "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb1/backendAddressPools/pool1",
-			existingBackendPools: []string{
-				"wrong-existing-backendpool-id",
-			},
-			expectError: true,
-		},
-		{
-			backendPoolID: "wrong-backendpool-id",
-			existingBackendPools: []string{
-				"wrong-existing-backendpool-id",
-			},
-			expectError: true,
+			name:           "no synced informer should report error",
+			unmanagedNodes: sets.NewString(),
+			node:           "node1",
+			expectErr:      true,
 		},
 	}
 
+	az := getTestCloud()
 	for _, test := range tests {
-		isSameLB, lbName, err := isBackendPoolOnSameLB(test.backendPoolID, test.existingBackendPools)
-		if test.expectError {
-			assert.Error(t, err)
+		az.unmanagedNodes = test.unmanagedNodes
+		if test.expectErr {
+			az.nodeInformerSynced = func() bool {
+				return false
+			}
+		}
+
+		real, err := az.IsNodeUnmanaged(test.node)
+		if test.expectErr {
+			assert.Error(t, err, test.name)
 			continue
 		}
 
-		assert.Equal(t, test.expected, isSameLB)
-		assert.Equal(t, test.expectedLBName, lbName)
+		assert.NoError(t, err, test.name)
+		assert.Equal(t, test.expected, real, test.name)
+	}
+}
+
+func TestIsNodeUnmanagedByProviderID(t *testing.T) {
+	tests := []struct {
+		providerID string
+		expected   bool
+		name       string
+	}{
+		{
+			providerID: CloudProviderName + ":///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachines/k8s-agent-AAAAAAAA-0",
+			expected:   false,
+		},
+		{
+			providerID: CloudProviderName + "://",
+			expected:   true,
+		},
+		{
+			providerID: ":///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachines/k8s-agent-AAAAAAAA-0",
+			expected:   true,
+		},
+		{
+			providerID: "aws:///subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroupName/providers/Microsoft.Compute/virtualMachines/k8s-agent-AAAAAAAA-0",
+			expected:   true,
+		},
+		{
+			providerID: "k8s-agent-AAAAAAAA-0",
+			expected:   true,
+		},
+	}
+
+	az := getTestCloud()
+	for _, test := range tests {
+		isUnmanagedNode := az.IsNodeUnmanagedByProviderID(test.providerID)
+		assert.Equal(t, test.expected, isUnmanagedNode, test.providerID)
 	}
 }

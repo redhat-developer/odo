@@ -72,10 +72,10 @@ func replicationTestFactory(oc *exutil.CLI, tc testCase, cleanup func()) func() 
 		// up prior to the AfterEach processing, to guaranteed deletion order
 		defer cleanup()
 
-		err := testutil.WaitForPolicyUpdate(oc.InternalKubeClient().Authorization(), oc.Namespace(), "create", template.Resource("templates"), true)
+		err := testutil.WaitForPolicyUpdate(oc.KubeClient().AuthorizationV1(), oc.Namespace(), "create", template.Resource("templates"), true)
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.CheckOpenShiftNamespaceImageStreams(oc)
+		exutil.WaitForOpenShiftNamespaceImageStreams(oc)
 		err = oc.Run("create").Args("-f", tc.TemplatePath).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
@@ -227,7 +227,7 @@ var _ = g.Describe("[image_ecosystem][mysql][Slow] openshift mysql replication",
 
 	g.Context("", func() {
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
+			exutil.PreTestDump()
 
 			g.By("waiting for default service account")
 			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")

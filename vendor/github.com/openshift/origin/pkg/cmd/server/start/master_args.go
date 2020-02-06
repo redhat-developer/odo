@@ -17,11 +17,12 @@ import (
 	"k8s.io/kubernetes/pkg/master/ports"
 	"k8s.io/kubernetes/pkg/registry/core/service/ipallocator"
 
+	legacyconfigv1 "github.com/openshift/api/legacyconfig/v1"
 	"github.com/openshift/origin/pkg/cmd/flagtypes"
 	"github.com/openshift/origin/pkg/cmd/server/admin"
 	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
-	configapiv1 "github.com/openshift/origin/pkg/cmd/server/apis/config/v1"
 	"github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
+	"github.com/openshift/origin/pkg/cmd/server/start/options"
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/spf13/cobra"
 )
@@ -65,13 +66,13 @@ type MasterArgs struct {
 
 	APIServerCAFiles []string
 
-	ListenArg          *ListenArg
-	ImageFormatArgs    *ImageFormatArgs
-	KubeConnectionArgs *KubeConnectionArgs
+	ListenArg          *options.ListenArg
+	ImageFormatArgs    *options.ImageFormatArgs
+	KubeConnectionArgs *options.KubeConnectionArgs
 
 	SchedulerConfigFile string
 
-	NetworkArgs *NetworkArgs
+	NetworkArgs *options.NetworkArgs
 
 	OverrideConfig func(config *configapi.MasterConfig) error
 }
@@ -104,10 +105,10 @@ func NewDefaultMasterArgs() *MasterArgs {
 
 		ConfigDir: &flag.StringFlag{},
 
-		ListenArg:          NewDefaultListenArg(),
-		ImageFormatArgs:    NewDefaultImageFormatArgs(),
-		KubeConnectionArgs: NewDefaultKubeConnectionArgs(),
-		NetworkArgs:        NewDefaultMasterNetworkArgs(),
+		ListenArg:          options.NewDefaultListenArg(),
+		ImageFormatArgs:    options.NewDefaultImageFormatArgs(),
+		KubeConnectionArgs: options.NewDefaultKubeConnectionArgs(),
+		NetworkArgs:        options.NewDefaultMasterNetworkArgs(),
 	}
 
 	return config
@@ -188,8 +189,6 @@ func (args MasterArgs) BuildSerializeableMasterConfig() (*configapi.MasterConfig
 
 	etcdClientInfo := admin.DefaultMasterEtcdClientCertInfo(args.ConfigDir.Value())
 
-	serviceServingCertSigner := admin.DefaultServiceSignerCAInfo(args.ConfigDir.Value())
-
 	dnsServingInfo := servingInfoForAddr(&dnsBindAddr)
 
 	config := &configapi.MasterConfig{
@@ -269,7 +268,7 @@ func (args MasterArgs) BuildSerializeableMasterConfig() (*configapi.MasterConfig
 
 		ControllerConfig: configapi.ControllerConfig{
 			ServiceServingCert: configapi.ServiceServingCert{
-				Signer: &serviceServingCertSigner,
+				Signer: &configapi.CertInfo{},
 			},
 		},
 	}
@@ -305,7 +304,7 @@ func (args MasterArgs) BuildSerializeableMasterConfig() (*configapi.MasterConfig
 		admin.DefaultServiceAccountPublicKeyFile(args.ConfigDir.Value()),
 	}
 
-	internal, err := applyDefaults(config, configapiv1.LegacySchemeGroupVersion)
+	internal, err := applyDefaults(config, legacyconfigv1.LegacySchemeGroupVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -484,6 +483,7 @@ func (args MasterArgs) GetServerCertHostnames() (sets.String, error) {
 		"kubernetes.default.svc",
 		"kubernetes.default",
 		"kubernetes",
+		"etcd.kube-system.svc",
 		masterAddr.Host, masterPublicAddr.Host, assetPublicAddr.Host)
 
 	if _, ipnet, err := net.ParseCIDR(args.NetworkArgs.ServiceNetworkCIDR); err == nil {

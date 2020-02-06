@@ -19,7 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	kapihelper "k8s.io/kubernetes/pkg/apis/core/helper"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -67,7 +66,7 @@ func TestHookExecutor_executeExecNewCreatePodFailure(t *testing.T) {
 		return true, nil, errors.New("could not create the pod")
 	})
 	executor := &hookExecutor{
-		pods: client.Core(),
+		pods: client.CoreV1(),
 	}
 
 	if err := executor.executeExecNewPod(hook, deployment, "hook", "test"); err == nil {
@@ -112,7 +111,7 @@ func TestHookExecutor_executeExecNewPodSucceeded(t *testing.T) {
 	}()
 
 	executor := &hookExecutor{
-		pods: client.Core(),
+		pods: client.CoreV1(),
 		out:  podLogs,
 		getPodLogs: func(*corev1.Pod) (io.ReadCloser, error) {
 			return ioutil.NopCloser(strings.NewReader("test")), nil
@@ -176,7 +175,7 @@ func TestHookExecutor_executeExecNewPodFailed(t *testing.T) {
 	}()
 
 	executor := &hookExecutor{
-		pods: client.Core(),
+		pods: client.CoreV1(),
 		out:  ioutil.Discard,
 		getPodLogs: func(*corev1.Pod) (io.ReadCloser, error) {
 			return ioutil.NopCloser(strings.NewReader("test")), nil
@@ -389,7 +388,7 @@ func TestHookExecutor_makeHookPod(t *testing.T) {
 					Labels: map[string]string{
 						"openshift.io/deployer-pod.type":     "hook",
 						appsv1.DeployerPodForDeploymentLabel: deploymentName,
-						"label1": "value1",
+						"label1":                             "value1",
 					},
 					Annotations: map[string]string{
 						appsv1.DeploymentAnnotation: deploymentName,
@@ -438,7 +437,7 @@ func TestHookExecutor_makeHookPod(t *testing.T) {
 			},
 			strategyLabels: map[string]string{
 				appsv1.DeployerPodForDeploymentLabel: "ignoredValue",
-				"label1": "value1",
+				"label1":                             "value1",
 			},
 			strategyAnnotations: map[string]string{"annotation2": "value2"},
 		},
@@ -498,10 +497,7 @@ func TestHookExecutor_makeHookPod(t *testing.T) {
 	for _, test := range tests {
 		t.Logf("evaluating test: %s", test.name)
 		config, deployment := deployment("deployment", "test", test.strategyLabels, test.strategyAnnotations)
-		newStrategy := appsv1.DeploymentStrategy{}
-		if err := legacyscheme.Scheme.Convert(&config.Spec.Strategy, &newStrategy, nil); err != nil {
-			t.Fatalf("conversion error: %v", err)
-		}
+		newStrategy := config.Spec.Strategy
 		pod, err := createHookPodManifest(test.hook, deployment, &newStrategy, "hook", nowFunc().Time)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
@@ -534,10 +530,7 @@ func TestHookExecutor_makeHookPodRestart(t *testing.T) {
 
 	config := appstest.OkDeploymentConfig(1)
 	deployment, _ := appsutil.MakeDeployment(config)
-	newStrategy := appsv1.DeploymentStrategy{}
-	if err := legacyscheme.Scheme.Convert(&config.Spec.Strategy, &newStrategy, nil); err != nil {
-		t.Fatalf("conversion error: %v", err)
-	}
+	newStrategy := config.Spec.Strategy
 	pod, err := createHookPodManifest(hook, deployment, &newStrategy, "hook", nowFunc().Time)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)

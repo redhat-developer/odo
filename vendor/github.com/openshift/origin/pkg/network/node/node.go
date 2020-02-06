@@ -4,35 +4,34 @@ package node
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/vishvananda/netlink"
+	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
-	"k8s.io/api/core/v1"
+	"github.com/vishvananda/netlink"
+	"k8s.io/klog"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	kubeutilnet "k8s.io/apimachinery/pkg/util/net"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kapihelper "k8s.io/kubernetes/pkg/apis/core/helper"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	kinternalinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion"
 	kubeletapi "k8s.io/kubernetes/pkg/kubelet/apis/cri"
 	kruntimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 	ktypes "k8s.io/kubernetes/pkg/kubelet/types"
-	"k8s.io/kubernetes/pkg/proxy/apis/kubeproxyconfig"
+	kubeproxyconfig "k8s.io/kubernetes/pkg/proxy/apis/config"
 	kexec "k8s.io/utils/exec"
 
 	networkapi "github.com/openshift/api/network/v1"
@@ -45,10 +44,7 @@ import (
 	"github.com/openshift/origin/pkg/util/ovs"
 )
 
-const (
-	openshiftCNIFile = "80-openshift-network.conf"
-	hostLocalDataDir = "/var/lib/cni/networks"
-)
+const hostLocalDataDir = "/var/lib/cni/networks"
 
 type osdnPolicy interface {
 	Name() string
@@ -71,18 +67,16 @@ type OsdnNodeConfig struct {
 	PluginName      string
 	Hostname        string
 	SelfIP          string
-	DNSIP           string
 	RuntimeEndpoint string
 	MTU             uint32
 	EnableHostports bool
 	CNIBinDir       string
-	CNIConfDir      string
 
 	NetworkClient networkclient.Interface
-	KClient       kclientset.Interface
+	KClient       kubernetes.Interface
 	Recorder      record.EventRecorder
 
-	KubeInformers    kinternalinformers.SharedInformerFactory
+	KubeInformers    informers.SharedInformerFactory
 	NetworkInformers networkinformers.SharedInformerFactory
 
 	IPTablesSyncPeriod time.Duration
@@ -92,7 +86,7 @@ type OsdnNodeConfig struct {
 
 type OsdnNode struct {
 	policy             osdnPolicy
-	kClient            kclientset.Interface
+	kClient            kubernetes.Interface
 	networkClient      networkclient.Interface
 	recorder           record.EventRecorder
 	oc                 *ovsController
@@ -104,14 +98,14 @@ type OsdnNode struct {
 	useConnTrack       bool
 	iptablesSyncPeriod time.Duration
 	mtu                uint32
-	cniDirPath         string
+	masqueradeBit      uint32
 
 	// Synchronizes operations on egressPolicies
 	egressPoliciesLock sync.Mutex
 	egressPolicies     map[uint32][]networkapi.EgressNetworkPolicy
 	egressDNS          *common.EgressDNS
 
-	kubeInformers    kinternalinformers.SharedInformerFactory
+	kubeInformers    informers.SharedInformerFactory
 	networkInformers networkinformers.SharedInformerFactory
 
 	// Holds runtime endpoint shim to make SDN <-> runtime communication
@@ -144,15 +138,11 @@ func New(c *OsdnNodeConfig) (*OsdnNode, error) {
 		// Not an OpenShift plugin
 		return nil, nil
 	}
-	glog.Infof("Initializing SDN node of type %q with configured hostname %q (IP %q), iptables sync period %q", c.PluginName, c.Hostname, c.SelfIP, c.IPTablesSyncPeriod.String())
+	klog.Infof("Initializing SDN node of type %q with configured hostname %q (IP %q), iptables sync period %q", c.PluginName, c.Hostname, c.SelfIP, c.IPTablesSyncPeriod.String())
 
 	if useConnTrack && c.ProxyMode != kubeproxyconfig.ProxyModeIPTables {
 		return nil, fmt.Errorf("%q plugin is not compatible with proxy-mode %q", c.PluginName, c.ProxyMode)
 	}
-
-	// If our CNI config file exists, remove it so that kubelet doesn't think
-	// we're ready yet
-	os.Remove(filepath.Join(c.CNIConfDir, openshiftCNIFile))
 
 	if err := c.setNodeIP(); err != nil {
 		return nil, err
@@ -164,24 +154,29 @@ func New(c *OsdnNodeConfig) (*OsdnNode, error) {
 	}
 	oc := NewOVSController(ovsif, pluginId, useConnTrack, c.SelfIP)
 
+	masqBit := uint32(0)
+	if c.MasqueradeBit != nil {
+		masqBit = uint32(*c.MasqueradeBit)
+	}
+
 	plugin := &OsdnNode{
 		policy:             policy,
 		kClient:            c.KClient,
 		networkClient:      c.NetworkClient,
 		recorder:           c.Recorder,
 		oc:                 oc,
-		podManager:         newPodManager(c.KClient, policy, c.MTU, c.CNIBinDir, oc, c.EnableHostports, c.DNSIP),
+		podManager:         newPodManager(c.KClient, policy, c.MTU, c.CNIBinDir, oc, c.EnableHostports),
 		localIP:            c.SelfIP,
 		hostName:           c.Hostname,
 		useConnTrack:       useConnTrack,
 		iptablesSyncPeriod: c.IPTablesSyncPeriod,
 		mtu:                c.MTU,
+		masqueradeBit:      masqBit,
 		egressPolicies:     make(map[uint32][]networkapi.EgressNetworkPolicy),
 		egressDNS:          common.NewEgressDNS(),
 		kubeInformers:      c.KubeInformers,
 		networkInformers:   c.NetworkInformers,
 		egressIP:           newEgressIPWatcher(oc, c.SelfIP, c.MasqueradeBit),
-		cniDirPath:         c.CNIConfDir,
 
 		runtimeEndpoint: c.RuntimeEndpoint,
 		// 2 minutes is the current default value used in kubelet
@@ -203,21 +198,21 @@ func (c *OsdnNodeConfig) setNodeIP() error {
 			return err
 		}
 		c.Hostname = strings.TrimSpace(string(output))
-		glog.Infof("Resolved hostname to %q", c.Hostname)
+		klog.Infof("Resolved hostname to %q", c.Hostname)
 	}
 
 	if len(c.SelfIP) == 0 {
 		var err error
 		c.SelfIP, err = netutils.GetNodeIP(c.Hostname)
 		if err != nil {
-			glog.V(5).Infof("Failed to determine node address from hostname %s; using default interface (%v)", c.Hostname, err)
+			klog.V(5).Infof("Failed to determine node address from hostname %s; using default interface (%v)", c.Hostname, err)
 			var defaultIP net.IP
 			defaultIP, err = kubeutilnet.ChooseHostInterface()
 			if err != nil {
 				return err
 			}
 			c.SelfIP = defaultIP.String()
-			glog.Infof("Resolved IP address to %q", c.SelfIP)
+			klog.Infof("Resolved IP address to %q", c.SelfIP)
 		}
 	}
 
@@ -244,7 +239,7 @@ func GetLinkDetails(ip string) (netlink.Link, *net.IPNet, error) {
 	for _, link := range links {
 		addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
 		if err != nil {
-			glog.Warningf("Could not get addresses of interface %q: %v", link.Attrs().Name, err)
+			klog.Warningf("Could not get addresses of interface %q: %v", link.Attrs().Name, err)
 			continue
 		}
 
@@ -262,31 +257,8 @@ func GetLinkDetails(ip string) (netlink.Link, *net.IPNet, error) {
 	return nil, nil, ErrorNetworkInterfaceNotFound
 }
 
-func (node *OsdnNode) killUpdateFailedPods(pods []kapi.Pod) error {
-	for _, pod := range pods {
-		// Get the sandbox ID for this pod from the runtime
-		filter := &kruntimeapi.PodSandboxFilter{
-			LabelSelector: map[string]string{ktypes.KubernetesPodUIDLabel: string(pod.UID)},
-		}
-		sandboxID, err := node.getPodSandboxID(filter)
-		if err != nil {
-			return err
-		}
-
-		// Make an event that the pod is going to be killed
-		podRef := &v1.ObjectReference{Kind: "Pod", Name: pod.Name, Namespace: pod.Namespace, UID: pod.UID}
-		node.recorder.Eventf(podRef, v1.EventTypeWarning, "NetworkFailed", "The pod's network interface has been lost and the pod will be stopped.")
-
-		glog.V(5).Infof("Killing pod '%s/%s' sandbox due to failed restart", pod.Namespace, pod.Name)
-		if err := node.runtimeService.StopPodSandbox(sandboxID); err != nil {
-			glog.Warningf("Failed to kill pod '%s/%s' sandbox: %v", pod.Namespace, pod.Name, err)
-		}
-	}
-	return nil
-}
-
 func (node *OsdnNode) Start() error {
-	glog.V(2).Infof("Starting openshift-sdn network plugin")
+	klog.V(2).Infof("Starting openshift-sdn network plugin")
 
 	if err := validateNetworkPluginName(node.networkClient, node.policy.Name()); err != nil {
 		return fmt.Errorf("failed to validate network configuration: %v", err)
@@ -316,13 +288,13 @@ func (node *OsdnNode) Start() error {
 	for _, cn := range node.networkInfo.ClusterNetworks {
 		cidrList = append(cidrList, cn.ClusterCIDR.String())
 	}
-	nodeIPTables := newNodeIPTables(cidrList, node.iptablesSyncPeriod, !node.useConnTrack, node.networkInfo.VXLANPort)
+	nodeIPTables := newNodeIPTables(cidrList, node.iptablesSyncPeriod, !node.useConnTrack, node.networkInfo.VXLANPort, node.masqueradeBit)
 
 	if err = nodeIPTables.Setup(); err != nil {
 		return fmt.Errorf("failed to set up iptables: %v", err)
 	}
 
-	networkChanged, err := node.SetupSDN()
+	networkChanged, existingOFPodNetworks, err := node.SetupSDN()
 	if err != nil {
 		return fmt.Errorf("node SDN setup failed: %v", err)
 	}
@@ -345,43 +317,32 @@ func (node *OsdnNode) Start() error {
 		node.watchServices()
 	}
 
-	glog.V(2).Infof("Starting openshift-sdn pod manager")
-	if err := node.podManager.Start(cniserver.CNIServerRunDir, node.localSubnetCIDR,
-		node.networkInfo.ClusterNetworks, node.networkInfo.ServiceNetwork.String()); err != nil {
+	existingSandboxPods, err := node.getPodSandboxes()
+	if err != nil {
 		return err
 	}
 
-	if networkChanged {
-		var pods, podsToKill []kapi.Pod
+	runningPods, err := node.GetRunningPods(metav1.NamespaceAll)
+	if err != nil {
+		return err
+	}
 
-		pods, err = node.GetLocalPods(metav1.NamespaceAll)
+	if err = node.podManager.InitRunningPods(existingSandboxPods, existingOFPodNetworks, runningPods); err != nil {
+		return err
+	}
+
+	klog.V(2).Infof("Starting openshift-sdn pod manager")
+	if err := node.podManager.Start(cniserver.CNIServerRunDir, node.localSubnetCIDR,
+		node.networkInfo.ClusterNetworks, node.networkInfo.ServiceNetwork.String(),
+		networkChanged); err != nil {
+		return err
+	}
+
+	if networkChanged && len(existingOFPodNetworks) > 0 {
+		err := node.reattachPods(existingSandboxPods, existingOFPodNetworks)
 		if err != nil {
 			return err
 		}
-		for _, p := range pods {
-			// Ignore HostNetwork pods since they don't go through OVS
-			if p.Spec.SecurityContext != nil && p.Spec.SecurityContext.HostNetwork {
-				continue
-			}
-			if err := node.UpdatePod(p); err != nil {
-				glog.Warningf("will restart pod '%s/%s' due to update failure on restart: %s", p.Namespace, p.Name, err)
-				podsToKill = append(podsToKill, p)
-			} else if vnid, err := node.policy.GetVNID(p.Namespace); err == nil {
-				node.policy.EnsureVNIDRules(vnid)
-			}
-		}
-
-		// Kill pods we couldn't recover; they will get restarted and then
-		// we'll be able to set them up correctly
-		if len(podsToKill) > 0 {
-			if err := node.killUpdateFailedPods(podsToKill); err != nil {
-				glog.Warningf("failed to restart pods that failed to update at startup: %v", err)
-			}
-		}
-	}
-
-	if err := os.MkdirAll(node.cniDirPath, 0755); err != nil {
-		return err
 	}
 
 	go kwait.Forever(node.policy.SyncVNIDRules, time.Hour)
@@ -389,25 +350,68 @@ func (node *OsdnNode) Start() error {
 		gatherPeriodicMetrics(node.oc.ovs)
 	}, time.Minute*2)
 
-	glog.V(2).Infof("openshift-sdn network plugin ready")
-
-	// Make an event that openshift-sdn started
-	node.recorder.Eventf(&v1.ObjectReference{Kind: "Node", Name: node.hostName}, v1.EventTypeNormal, "Starting", "Starting openshift-sdn.")
-
-	// Write our CNI config file out to disk to signal to kubelet that
-	// our network plugin is ready
-	return ioutil.WriteFile(filepath.Join(node.cniDirPath, openshiftCNIFile), []byte(`
-{
-  "cniVersion": "0.2.0",
-  "name": "openshift-sdn",
-  "type": "openshift-sdn"
+	return nil
 }
-`), 0644)
+
+// reattachPods takes an array containing the information about pods that had been
+// attached to the OVS bridge before restart, and either reattaches or kills each of the
+// corresponding pods.
+func (node *OsdnNode) reattachPods(existingPodSandboxes map[string]*kruntimeapi.PodSandbox, existingOFPodNetworks map[string]podNetworkInfo) error {
+
+	failed := []*kruntimeapi.PodSandbox{}
+	for sandboxID, podInfo := range existingOFPodNetworks {
+		sandbox, ok := existingPodSandboxes[sandboxID]
+		if !ok {
+			klog.V(5).Infof("Sandbox for pod with IP %s no longer exists", podInfo.ip)
+			continue
+		}
+		if _, err := netlink.LinkByName(podInfo.vethName); err != nil {
+			klog.Infof("Interface %s for pod '%s/%s' no longer exists", podInfo.vethName, sandbox.Metadata.Namespace, sandbox.Metadata.Name)
+			failed = append(failed, sandbox)
+			continue
+		}
+
+		req := &cniserver.PodRequest{
+			Command:      cniserver.CNI_ADD,
+			PodNamespace: sandbox.Metadata.Namespace,
+			PodName:      sandbox.Metadata.Name,
+			SandboxID:    sandboxID,
+			HostVeth:     podInfo.vethName,
+			AssignedIP:   podInfo.ip,
+			Result:       make(chan *cniserver.PodResult),
+		}
+		klog.Infof("Reattaching pod '%s/%s' to SDN", req.PodNamespace, req.PodName)
+		// NB: we don't need to worry about locking here because the cniserver
+		// isn't running for real yet.
+		if _, err := node.podManager.handleCNIRequest(req); err != nil {
+			klog.Warningf("Could not reattach pod '%s/%s' to SDN: %v", req.PodNamespace, req.PodName, err)
+			failed = append(failed, sandbox)
+		}
+	}
+
+	// Kill any remaining pods in another thread, after letting SDN startup proceed
+	go node.killFailedPods(failed)
+
+	return nil
+}
+
+func (node *OsdnNode) killFailedPods(failed []*kruntimeapi.PodSandbox) {
+	// Kill pods we couldn't recover; they will get restarted and then
+	// we'll be able to set them up correctly
+	for _, sandbox := range failed {
+		podRef := &corev1.ObjectReference{Kind: "Pod", Name: sandbox.Metadata.Name, Namespace: sandbox.Metadata.Namespace, UID: types.UID(sandbox.Metadata.Uid)}
+		node.recorder.Eventf(podRef, corev1.EventTypeWarning, "NetworkFailed", "The pod's network interface has been lost and the pod will be stopped.")
+
+		klog.V(5).Infof("Killing pod '%s/%s' sandbox", podRef.Namespace, podRef.Name)
+		if err := node.runtimeService.StopPodSandbox(sandbox.Id); err != nil {
+			klog.Warningf("Failed to kill pod '%s/%s' sandbox: %v", podRef.Namespace, podRef.Name, err)
+		}
+	}
 }
 
 // FIXME: this should eventually go into kubelet via a CNI UPDATE/CHANGE action
 // See https://github.com/containernetworking/cni/issues/89
-func (node *OsdnNode) UpdatePod(pod kapi.Pod) error {
+func (node *OsdnNode) UpdatePod(pod corev1.Pod) error {
 	filter := &kruntimeapi.PodSandboxFilter{
 		LabelSelector: map[string]string{ktypes.KubernetesPodUIDLabel: string(pod.UID)},
 	}
@@ -429,28 +433,28 @@ func (node *OsdnNode) UpdatePod(pod kapi.Pod) error {
 	return err
 }
 
-func (node *OsdnNode) GetLocalPods(namespace string) ([]kapi.Pod, error) {
+func (node *OsdnNode) GetRunningPods(namespace string) ([]corev1.Pod, error) {
 	fieldSelector := fields.Set{"spec.nodeName": node.hostName}.AsSelector()
 	opts := metav1.ListOptions{
 		LabelSelector: labels.Everything().String(),
 		FieldSelector: fieldSelector.String(),
 	}
-	podList, err := node.kClient.Core().Pods(namespace).List(opts)
+	podList, err := node.kClient.CoreV1().Pods(namespace).List(opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Filter running pods
-	pods := make([]kapi.Pod, 0, len(podList.Items))
+	pods := make([]corev1.Pod, 0, len(podList.Items))
 	for _, pod := range podList.Items {
-		if pod.Status.Phase == kapi.PodRunning {
+		if pod.Status.Phase == corev1.PodRunning {
 			pods = append(pods, pod)
 		}
 	}
 	return pods, nil
 }
 
-func isServiceChanged(oldsvc, newsvc *kapi.Service) bool {
+func isServiceChanged(oldsvc, newsvc *corev1.Service) bool {
 	if len(oldsvc.Spec.Ports) == len(newsvc.Spec.Ports) {
 		for i := range oldsvc.Spec.Ports {
 			if oldsvc.Spec.Ports[i].Protocol != newsvc.Spec.Ports[i].Protocol ||
@@ -465,18 +469,18 @@ func isServiceChanged(oldsvc, newsvc *kapi.Service) bool {
 
 func (node *OsdnNode) watchServices() {
 	funcs := common.InformerFuncs(&kapi.Service{}, node.handleAddOrUpdateService, node.handleDeleteService)
-	node.kubeInformers.Core().InternalVersion().Services().Informer().AddEventHandler(funcs)
+	node.kubeInformers.Core().V1().Services().Informer().AddEventHandler(funcs)
 }
 
 func (node *OsdnNode) handleAddOrUpdateService(obj, oldObj interface{}, eventType watch.EventType) {
-	serv := obj.(*kapi.Service)
+	serv := obj.(*corev1.Service)
 	// Ignore headless/external services
-	if !kapihelper.IsServiceIPSet(serv) {
+	if !helper.IsServiceIPSet(serv) {
 		return
 	}
 
-	glog.V(5).Infof("Watch %s event for Service %q", eventType, serv.Name)
-	oldServ, exists := oldObj.(*kapi.Service)
+	klog.V(5).Infof("Watch %s event for Service %q", eventType, serv.Name)
+	oldServ, exists := oldObj.(*corev1.Service)
 	if exists {
 		if !isServiceChanged(oldServ, serv) {
 			return
@@ -495,19 +499,19 @@ func (node *OsdnNode) handleAddOrUpdateService(obj, oldObj interface{}, eventTyp
 }
 
 func (node *OsdnNode) handleDeleteService(obj interface{}) {
-	serv := obj.(*kapi.Service)
+	serv := obj.(*corev1.Service)
 	// Ignore headless/external services
-	if !kapihelper.IsServiceIPSet(serv) {
+	if !helper.IsServiceIPSet(serv) {
 		return
 	}
 
-	glog.V(5).Infof("Watch %s event for Service %q", watch.Deleted, serv.Name)
+	klog.V(5).Infof("Watch %s event for Service %q", watch.Deleted, serv.Name)
 	node.DeleteServiceRules(serv)
 }
 
 func validateNetworkPluginName(networkClient networkclient.Interface, pluginName string) error {
 	// Detect any plugin mismatches between node and master
-	clusterNetwork, err := networkClient.Network().ClusterNetworks().Get(networkapi.ClusterNetworkDefault, metav1.GetOptions{})
+	clusterNetwork, err := networkClient.NetworkV1().ClusterNetworks().Get(networkapi.ClusterNetworkDefault, metav1.GetOptions{})
 	switch {
 	case errors.IsNotFound(err):
 		return fmt.Errorf("master has not created a default cluster network, network plugin %q can not start", pluginName)

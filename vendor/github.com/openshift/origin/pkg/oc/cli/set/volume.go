@@ -9,9 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	kresource "k8s.io/apimachinery/pkg/api/resource"
@@ -21,17 +22,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apiserver/pkg/storage/names"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kcoreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/client-go/kubernetes"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
 	"k8s.io/kubernetes/pkg/kubectl/polymorphichelpers"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
-
-	"github.com/openshift/origin/pkg/oc/util/clientcmd"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 const (
@@ -104,9 +102,8 @@ type VolumeOptions struct {
 	DefaultNamespace       string
 	ExplicitNamespace      bool
 	Mapper                 meta.RESTMapper
-	Client                 kcoreclient.CoreInterface
+	Client                 kubernetes.Interface
 	UpdatePodSpecForObject polymorphichelpers.UpdatePodSpecForObjectFunc
-	Encoder                runtime.Encoder
 	Builder                func() *resource.Builder
 
 	// Resource selection
@@ -152,7 +149,8 @@ type AddVolumeOptions struct {
 	ClaimMode   string
 	ClaimClass  string
 
-	TypeChanged bool
+	TypeChanged  bool
+	ClassChanged bool
 }
 
 func NewVolumeOptions(streams genericclioptions.IOStreams) *VolumeOptions {
@@ -300,7 +298,7 @@ func (a *AddVolumeOptions) Validate() error {
 			return errors.New("must provide only one volume for --source")
 		}
 
-		var vs kapi.VolumeSource
+		var vs corev1.VolumeSource
 		err = json.Unmarshal([]byte(a.Source), &vs)
 		if err != nil {
 			return err
@@ -319,11 +317,14 @@ func (a *AddVolumeOptions) Validate() error {
 }
 
 func (o *VolumeOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []string) error {
-	kc, err := f.ClientSet()
+	config, err := f.ToRESTConfig()
 	if err != nil {
 		return err
 	}
-	o.Client = kc.Core()
+	o.Client, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		return err
+	}
 
 	o.DefaultNamespace, o.ExplicitNamespace, err = f.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
@@ -354,10 +355,10 @@ func (o *VolumeOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []
 
 	o.Args = args
 	o.Builder = f.NewBuilder
-	o.Encoder = kcmdutil.InternalVersionJSONEncoder()
 	o.UpdatePodSpecForObject = polymorphichelpers.UpdatePodSpecForObjectFn
 
 	o.AddOpts.TypeChanged = cmd.Flag("type").Changed
+	o.AddOpts.ClassChanged = cmd.Flag("claim-class").Changed
 
 	o.DryRun = kcmdutil.GetDryRunFlag(cmd)
 	if o.DryRun {
@@ -422,12 +423,12 @@ func (a *AddVolumeOptions) Complete() error {
 		a.ClaimSize = q.String()
 	}
 	switch strings.ToLower(a.ClaimMode) {
-	case strings.ToLower(string(kapi.ReadOnlyMany)), "rom":
-		a.ClaimMode = string(kapi.ReadOnlyMany)
-	case strings.ToLower(string(kapi.ReadWriteOnce)), "rwo":
-		a.ClaimMode = string(kapi.ReadWriteOnce)
-	case strings.ToLower(string(kapi.ReadWriteMany)), "rwm":
-		a.ClaimMode = string(kapi.ReadWriteMany)
+	case strings.ToLower(string(corev1.ReadOnlyMany)), "rom":
+		a.ClaimMode = string(corev1.ReadOnlyMany)
+	case strings.ToLower(string(corev1.ReadWriteOnce)), "rwo":
+		a.ClaimMode = string(corev1.ReadWriteOnce)
+	case strings.ToLower(string(corev1.ReadWriteMany)), "rwm":
+		a.ClaimMode = string(corev1.ReadWriteMany)
 	case "":
 	default:
 		return errors.New("--claim-mode must be one of ReadWriteOnce (rwo), ReadWriteMany (rwm), or ReadOnlyMany (rom)")
@@ -468,13 +469,13 @@ func (o *VolumeOptions) RunVolume() error {
 	// if a claim should be created, generate the info we'll add to the flow
 	if o.Add && o.AddOpts.CreateClaim {
 		claim := o.AddOpts.createClaim()
-		m, err := o.Mapper.RESTMapping(kapi.Kind("PersistentVolumeClaim"))
+		m, err := o.Mapper.RESTMapping(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim").GroupKind())
 		if err != nil {
 			return err
 		}
 		info := &resource.Info{
 			Mapping:   m,
-			Client:    o.Client.RESTClient(),
+			Client:    o.Client.CoreV1().RESTClient(),
 			Namespace: o.DefaultNamespace,
 			Object:    claim,
 		}
@@ -499,7 +500,7 @@ func (o *VolumeOptions) RunVolume() error {
 	for _, info := range updateInfos {
 		var obj runtime.Object
 		if len(info.ResourceVersion) == 0 {
-			obj, err = resource.NewHelper(info.Client, info.Mapping).Create(info.Namespace, false, info.Object)
+			obj, err = resource.NewHelper(info.Client, info.Mapping).Create(info.Namespace, false, info.Object, &metav1.CreateOptions{})
 		} else {
 			obj, err = resource.NewHelper(info.Client, info.Mapping).Replace(info.Namespace, info.Name, true, info.Object)
 		}
@@ -518,7 +519,7 @@ func (o *VolumeOptions) RunVolume() error {
 		}
 
 		if string(patch.Patch) == "{}" || len(patch.Patch) == 0 {
-			glog.V(1).Infof("info: %s was not changed\n", name)
+			klog.V(1).Infof("info: %s was not changed\n", name)
 			continue
 		}
 
@@ -529,7 +530,7 @@ func (o *VolumeOptions) RunVolume() error {
 			continue
 		}
 
-		actual, err := resource.NewHelper(info.Client, info.Mapping).Patch(info.Namespace, info.Name, types.StrategicMergePatchType, patch.Patch)
+		actual, err := resource.NewHelper(info.Client, info.Mapping).Patch(info.Namespace, info.Name, types.StrategicMergePatchType, patch.Patch, &metav1.UpdateOptions{})
 		if err != nil {
 			allErrs = append(allErrs, fmt.Errorf("failed to patch volume update to pod template: %v\n", err))
 			continue
@@ -544,9 +545,9 @@ func (o *VolumeOptions) RunVolume() error {
 
 func (o *VolumeOptions) getVolumeUpdatePatches(infos []*resource.Info, singleItemImplied bool) ([]*Patch, error) {
 	skipped := 0
-	patches := CalculatePatches(infos, o.Encoder, func(info *resource.Info) (bool, error) {
+	patches := CalculatePatches(infos, scheme.DefaultJSONEncoder(), func(info *resource.Info) (bool, error) {
 		transformed := false
-		ok, err := o.UpdatePodSpecForObject(info.Object, clientcmd.ConvertInteralPodSpecToExternal(func(spec *kapi.PodSpec) error {
+		ok, err := o.UpdatePodSpecForObject(info.Object, func(spec *corev1.PodSpec) error {
 			var e error
 			switch {
 			case o.Add:
@@ -557,7 +558,7 @@ func (o *VolumeOptions) getVolumeUpdatePatches(infos []*resource.Info, singleIte
 				transformed = true
 			}
 			return e
-		}))
+		})
 		if !ok {
 			skipped++
 		}
@@ -570,12 +571,12 @@ func (o *VolumeOptions) getVolumeUpdatePatches(infos []*resource.Info, singleIte
 	return patches, nil
 }
 
-func setVolumeSourceByType(kv *kapi.Volume, opts *AddVolumeOptions) error {
+func setVolumeSourceByType(kv *corev1.Volume, opts *AddVolumeOptions) error {
 	switch strings.ToLower(opts.Type) {
 	case "emptydir":
-		kv.EmptyDir = &kapi.EmptyDirVolumeSource{}
+		kv.EmptyDir = &corev1.EmptyDirVolumeSource{}
 	case "hostpath":
-		kv.HostPath = &kapi.HostPathVolumeSource{
+		kv.HostPath = &corev1.HostPathVolumeSource{
 			Path: opts.Path,
 		}
 	case "secret":
@@ -584,7 +585,7 @@ func setVolumeSourceByType(kv *kapi.Volume, opts *AddVolumeOptions) error {
 			return err
 		}
 		defaultMode32 := int32(defaultMode)
-		kv.Secret = &kapi.SecretVolumeSource{
+		kv.Secret = &corev1.SecretVolumeSource{
 			SecretName:  opts.SecretName,
 			DefaultMode: &defaultMode32,
 		}
@@ -594,14 +595,14 @@ func setVolumeSourceByType(kv *kapi.Volume, opts *AddVolumeOptions) error {
 			return err
 		}
 		defaultMode32 := int32(defaultMode)
-		kv.ConfigMap = &kapi.ConfigMapVolumeSource{
-			LocalObjectReference: kapi.LocalObjectReference{
+		kv.ConfigMap = &corev1.ConfigMapVolumeSource{
+			LocalObjectReference: corev1.LocalObjectReference{
 				Name: opts.ConfigMapName,
 			},
 			DefaultMode: &defaultMode32,
 		}
 	case "persistentvolumeclaim", "pvc":
-		kv.PersistentVolumeClaim = &kapi.PersistentVolumeClaimVolumeSource{
+		kv.PersistentVolumeClaim = &corev1.PersistentVolumeClaimVolumeSource{
 			ClaimName: opts.ClaimName,
 		}
 	default:
@@ -613,9 +614,9 @@ func setVolumeSourceByType(kv *kapi.Volume, opts *AddVolumeOptions) error {
 func (o *VolumeOptions) printVolumes(infos []*resource.Info) []error {
 	listingErrors := []error{}
 	for _, info := range infos {
-		_, err := o.UpdatePodSpecForObject(info.Object, clientcmd.ConvertInteralPodSpecToExternal(func(spec *kapi.PodSpec) error {
+		_, err := o.UpdatePodSpecForObject(info.Object, func(spec *corev1.PodSpec) error {
 			return o.listVolumeForSpec(spec, info)
-		}))
+		})
 		if err != nil {
 			listingErrors = append(listingErrors, err)
 			fmt.Fprintf(o.ErrOut, "error: %s %v\n", getObjectName(info), err)
@@ -624,21 +625,21 @@ func (o *VolumeOptions) printVolumes(infos []*resource.Info) []error {
 	return listingErrors
 }
 
-func (a *AddVolumeOptions) createClaim() *kapi.PersistentVolumeClaim {
-	pvc := &kapi.PersistentVolumeClaim{
+func (a *AddVolumeOptions) createClaim() *corev1.PersistentVolumeClaim {
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: a.ClaimName,
 		},
-		Spec: kapi.PersistentVolumeClaimSpec{
-			AccessModes: []kapi.PersistentVolumeAccessMode{kapi.PersistentVolumeAccessMode(a.ClaimMode)},
-			Resources: kapi.ResourceRequirements{
-				Requests: kapi.ResourceList{
-					kapi.ResourceName(kapi.ResourceStorage): kresource.MustParse(a.ClaimSize),
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.PersistentVolumeAccessMode(a.ClaimMode)},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): kresource.MustParse(a.ClaimSize),
 				},
 			},
 		},
 	}
-	if len(a.ClaimClass) > 0 {
+	if a.ClassChanged {
 		pvc.Annotations = map[string]string{
 			storageAnnClass: a.ClaimClass,
 		}
@@ -646,7 +647,7 @@ func (a *AddVolumeOptions) createClaim() *kapi.PersistentVolumeClaim {
 	return pvc
 }
 
-func (o *VolumeOptions) setVolumeSource(kv *kapi.Volume) error {
+func (o *VolumeOptions) setVolumeSource(kv *corev1.Volume) error {
 	var err error
 	opts := o.AddOpts
 	if len(opts.Type) > 0 {
@@ -657,7 +658,7 @@ func (o *VolumeOptions) setVolumeSource(kv *kapi.Volume) error {
 	return err
 }
 
-func (o *VolumeOptions) setVolumeMount(spec *kapi.PodSpec, info *resource.Info) error {
+func (o *VolumeOptions) setVolumeMount(spec *corev1.PodSpec, info *resource.Info) error {
 	opts := o.AddOpts
 	containers, _ := selectContainers(spec.Containers, o.Containers)
 	if len(containers) == 0 && o.Containers != "*" {
@@ -677,7 +678,7 @@ func (o *VolumeOptions) setVolumeMount(spec *kapi.PodSpec, info *resource.Info) 
 				break
 			}
 		}
-		volumeMount := &kapi.VolumeMount{
+		volumeMount := &corev1.VolumeMount{
 			Name:      o.Name,
 			MountPath: path.Clean(opts.MountPath),
 			ReadOnly:  opts.ReadOnly,
@@ -690,7 +691,7 @@ func (o *VolumeOptions) setVolumeMount(spec *kapi.PodSpec, info *resource.Info) 
 	return nil
 }
 
-func (o *VolumeOptions) getVolumeName(spec *kapi.PodSpec, singleResource bool) (string, bool, error) {
+func (o *VolumeOptions) getVolumeName(spec *corev1.PodSpec, singleResource bool) (string, bool, error) {
 	opts := o.AddOpts
 	if opts.Overwrite {
 		// Multiple resources can have same mount-path for different volumes,
@@ -737,7 +738,7 @@ func (o *VolumeOptions) getVolumeName(spec *kapi.PodSpec, singleResource bool) (
 	return name, false, nil
 }
 
-func (o *VolumeOptions) checkForExistingClaim(spec *kapi.PodSpec) (string, bool) {
+func (o *VolumeOptions) checkForExistingClaim(spec *corev1.PodSpec) (string, bool) {
 	for _, vol := range spec.Volumes {
 		oldSource := vol.VolumeSource.PersistentVolumeClaim
 		if oldSource != nil && o.AddOpts.ClaimName == oldSource.ClaimName {
@@ -747,7 +748,7 @@ func (o *VolumeOptions) checkForExistingClaim(spec *kapi.PodSpec) (string, bool)
 	return "", false
 }
 
-func (o *VolumeOptions) addVolumeToSpec(spec *kapi.PodSpec, info *resource.Info, singleResource bool) error {
+func (o *VolumeOptions) addVolumeToSpec(spec *corev1.PodSpec, info *resource.Info, singleResource bool) error {
 	opts := o.AddOpts
 	claimFound := false
 	if len(o.Name) == 0 {
@@ -760,7 +761,7 @@ func (o *VolumeOptions) addVolumeToSpec(spec *kapi.PodSpec, info *resource.Info,
 		_, claimFound = o.checkForExistingClaim(spec)
 	}
 
-	newVolume := &kapi.Volume{
+	newVolume := &corev1.Volume{
 		Name: o.Name,
 	}
 	setSource := true
@@ -782,7 +783,7 @@ func (o *VolumeOptions) addVolumeToSpec(spec *kapi.PodSpec, info *resource.Info,
 	// if --overwrite was passed, but volume did not previously
 	// exist, log a warning that no volumes were overwritten
 	if !vNameFound && opts.Overwrite && (o.PrintFlags.OutputFormat == nil || len(*o.PrintFlags.OutputFormat) == 0) {
-		fmt.Fprintf(o.ErrOut, "warning: volume %q did not previously exist and was not overriden. A new volume with this name has been created instead.", o.Name)
+		fmt.Fprintf(o.ErrOut, "warning: volume %q did not previously exist and was not overwritten. A new volume with this name has been created instead.", o.Name)
 	}
 
 	if setSource {
@@ -802,7 +803,7 @@ func (o *VolumeOptions) addVolumeToSpec(spec *kapi.PodSpec, info *resource.Info,
 	return nil
 }
 
-func (o *VolumeOptions) removeSpecificVolume(spec *kapi.PodSpec, containers, skippedContainers []*kapi.Container) error {
+func (o *VolumeOptions) removeSpecificVolume(spec *corev1.PodSpec, containers, skippedContainers []*corev1.Container) error {
 	for _, c := range containers {
 		newMounts := c.VolumeMounts[:0]
 		for _, m := range c.VolumeMounts {
@@ -843,7 +844,7 @@ func (o *VolumeOptions) removeSpecificVolume(spec *kapi.PodSpec, containers, ski
 	return nil
 }
 
-func (o *VolumeOptions) removeVolumeFromSpec(spec *kapi.PodSpec, info *resource.Info) error {
+func (o *VolumeOptions) removeVolumeFromSpec(spec *corev1.PodSpec, info *resource.Info) error {
 	containers, skippedContainers := selectContainers(spec.Containers, o.Containers)
 	if len(containers) == 0 && o.Containers != "*" {
 		fmt.Fprintf(o.ErrOut, "warning: %s/%s does not have any containers matching %q\n", info.Mapping.Resource.Resource, info.Name, o.Containers)
@@ -852,9 +853,9 @@ func (o *VolumeOptions) removeVolumeFromSpec(spec *kapi.PodSpec, info *resource.
 
 	if len(o.Name) == 0 {
 		for _, c := range containers {
-			c.VolumeMounts = []kapi.VolumeMount{}
+			c.VolumeMounts = []corev1.VolumeMount{}
 		}
-		spec.Volumes = []kapi.Volume{}
+		spec.Volumes = []corev1.Volume{}
 	} else {
 		err := o.removeSpecificVolume(spec, containers, skippedContainers)
 		if err != nil {
@@ -871,22 +872,22 @@ func sourceAccessMode(readOnly bool) string {
 	return ""
 }
 
-func describePersistentVolumeClaim(claim *kapi.PersistentVolumeClaim) string {
+func describePersistentVolumeClaim(claim *corev1.PersistentVolumeClaim) string {
 	if len(claim.Spec.VolumeName) == 0 {
 		// TODO: check for other dimensions of request - IOPs, etc
-		if val, ok := claim.Spec.Resources.Requests[kapi.ResourceStorage]; ok {
+		if val, ok := claim.Spec.Resources.Requests[corev1.ResourceStorage]; ok {
 			return fmt.Sprintf("waiting for %sB allocation", val.String())
 		}
 		return "waiting to allocate"
 	}
 	// TODO: check for other dimensions of capacity?
-	if val, ok := claim.Status.Capacity[kapi.ResourceStorage]; ok {
+	if val, ok := claim.Status.Capacity[corev1.ResourceStorage]; ok {
 		return fmt.Sprintf("allocated %sB", val.String())
 	}
 	return "allocated unknown size"
 }
 
-func describeVolumeSource(source *kapi.VolumeSource) string {
+func describeVolumeSource(source *corev1.VolumeSource) string {
 	switch {
 	case source.AWSElasticBlockStore != nil:
 		return fmt.Sprintf("AWS EBS %s type=%s partition=%d%s", source.AWSElasticBlockStore.VolumeID, source.AWSElasticBlockStore.FSType, source.AWSElasticBlockStore.Partition, sourceAccessMode(source.AWSElasticBlockStore.ReadOnly))
@@ -920,7 +921,7 @@ func describeVolumeSource(source *kapi.VolumeSource) string {
 	}
 }
 
-func (o *VolumeOptions) listVolumeForSpec(spec *kapi.PodSpec, info *resource.Info) error {
+func (o *VolumeOptions) listVolumeForSpec(spec *corev1.PodSpec, info *resource.Info) error {
 	containers, _ := selectContainers(spec.Containers, o.Containers)
 	if len(containers) == 0 && o.Containers != "*" {
 		fmt.Fprintf(o.ErrOut, "warning: %s/%s does not have any containers matching %q\n", info.Mapping.Resource.Resource, info.Name, o.Containers)
@@ -939,7 +940,7 @@ func (o *VolumeOptions) listVolumeForSpec(spec *kapi.PodSpec, info *resource.Inf
 		refInfo := ""
 		if vol.VolumeSource.PersistentVolumeClaim != nil {
 			claimName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
-			claim, err := o.Client.PersistentVolumeClaims(info.Namespace).Get(claimName, metav1.GetOptions{})
+			claim, err := o.Client.CoreV1().PersistentVolumeClaims(info.Namespace).Get(claimName, metav1.GetOptions{})
 			switch {
 			case err == nil:
 				refInfo = fmt.Sprintf("(%s)", describePersistentVolumeClaim(claim))

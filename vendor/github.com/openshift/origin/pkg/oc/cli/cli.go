@@ -8,37 +8,34 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/MakeNowJust/heredoc"
+
+	"k8s.io/kubernetes/pkg/kubectl/cmd/diff"
+
 	"github.com/spf13/cobra"
 
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kubecmd "k8s.io/kubernetes/pkg/kubectl/cmd"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/plugin"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/origin/pkg/cmd/flagtypes"
-	"github.com/openshift/origin/pkg/cmd/infra/builder"
 	"github.com/openshift/origin/pkg/cmd/infra/deployer"
-	irouter "github.com/openshift/origin/pkg/cmd/infra/router"
 	"github.com/openshift/origin/pkg/cmd/recycle"
 	"github.com/openshift/origin/pkg/cmd/templates"
 	"github.com/openshift/origin/pkg/cmd/util/term"
 	"github.com/openshift/origin/pkg/oc/cli/admin"
 	"github.com/openshift/origin/pkg/oc/cli/admin/buildchain"
-	"github.com/openshift/origin/pkg/oc/cli/admin/diagnostics"
 	sync "github.com/openshift/origin/pkg/oc/cli/admin/groups/sync"
-	exipfailover "github.com/openshift/origin/pkg/oc/cli/admin/ipfailover"
 	"github.com/openshift/origin/pkg/oc/cli/buildlogs"
 	"github.com/openshift/origin/pkg/oc/cli/cancelbuild"
-	"github.com/openshift/origin/pkg/oc/cli/cluster"
 	"github.com/openshift/origin/pkg/oc/cli/debug"
-	configcmd "github.com/openshift/origin/pkg/oc/cli/experimental/config"
 	"github.com/openshift/origin/pkg/oc/cli/experimental/dockergc"
-	"github.com/openshift/origin/pkg/oc/cli/export"
 	"github.com/openshift/origin/pkg/oc/cli/expose"
 	"github.com/openshift/origin/pkg/oc/cli/extract"
 	"github.com/openshift/origin/pkg/oc/cli/idle"
 	"github.com/openshift/origin/pkg/oc/cli/image"
-	"github.com/openshift/origin/pkg/oc/cli/importer"
 	"github.com/openshift/origin/pkg/oc/cli/importimage"
 	"github.com/openshift/origin/pkg/oc/cli/kubectlwrappers"
 	"github.com/openshift/origin/pkg/oc/cli/login"
@@ -64,48 +61,71 @@ import (
 	"github.com/openshift/origin/pkg/oc/cli/startbuild"
 	"github.com/openshift/origin/pkg/oc/cli/status"
 	"github.com/openshift/origin/pkg/oc/cli/tag"
-	"github.com/openshift/origin/pkg/oc/cli/types"
-	"github.com/openshift/origin/pkg/oc/cli/version"
 	"github.com/openshift/origin/pkg/oc/cli/whoami"
-	"github.com/openshift/origin/pkg/oc/util/ocscheme"
 )
 
 const productName = `OpenShift`
 
 var (
-	cliLong = ktemplates.LongDesc(`
+	cliLong = heredoc.Doc(`
     ` + productName + ` Client
 
     This client helps you develop, build, deploy, and run your applications on any
-    OpenShift or Kubernetes compatible platform. It also includes the administrative
+    OpenShift or Kubernetes cluster. It also includes the administrative
     commands for managing a cluster under the 'adm' subcommand.`)
 
-	cliExplain = ktemplates.LongDesc(`
-    To create a new application, login to your server and then run new-app:
+	cliExplain = heredoc.Doc(`
+    To familiarize yourself with OpenShift, login to your cluster and try creating a sample application:
 
-        %[1]s login https://mycluster.mycompany.com
-        %[1]s new-app centos/ruby-25-centos7~https://github.com/sclorg/ruby-ex.git
-        %[1]s logs -f bc/ruby-ex
+        %[1]s login mycluster.mycompany.com
+        %[1]s new-project my-example
+        %[1]s new-app django-psql-example
+        %[1]s logs -f bc/django-psql-example
 
-    This will create an application based on the Docker image 'centos/ruby-25-centos7' that builds the source code from GitHub. A build will start automatically, push the resulting image to the registry, and a deployment will roll that change out in your project.
-
-    Once your application is deployed, use the status, describe, and get commands to see more about the created components:
+    To see what has been created, run:
 
         %[1]s status
-        %[1]s describe deploymentconfig ruby-ex
-        %[1]s get pods
 
-    To make this application visible outside of the cluster, use the expose command on the service we just created to create a 'route' (which will connect your application over the HTTP port to a public domain name).
+    and get a command shell inside one of the created containers with:
 
-        %[1]s expose svc/ruby-ex
-        %[1]s status
+        %[1]s rsh dc/postgresql
 
-    You should now see the URL the application can be reached at.
+    To see the list of available toolchains for building applications, run:
+
+        %[1]s new-app -L
+
+    Since OpenShift runs on top of Kubernetes, your favorite kubectl commands are also present in oc,
+    allowing you to quickly switch between development and debugging. You can also run kubectl directly
+    against any OpenShift cluster using the kubeconfig file created by 'oc login'.
+
+    For more on OpenShift, see the documentation at https://docs.openshift.com.
 
     To see the full list of commands supported, run '%[1]s --help'.`)
 )
 
-func NewCommandCLI(name, fullName string, in io.Reader, out, errout io.Writer) *cobra.Command {
+func NewDefaultOcCommand(name, fullName string, in io.Reader, out, errout io.Writer) *cobra.Command {
+	cmd := NewOcCommand(name, fullName, in, out, errout)
+
+	if len(os.Args) <= 1 {
+		return cmd
+	}
+
+	cmdPathPieces := os.Args[1:]
+	pluginHandler := kubecmd.NewDefaultPluginHandler(plugin.ValidPluginFilenamePrefixes)
+
+	// only look for suitable extension executables if
+	// the specified command does not already exist
+	if _, _, err := cmd.Find(cmdPathPieces); err != nil {
+		if err := kubecmd.HandlePluginCommand(pluginHandler, cmdPathPieces); err != nil {
+			fmt.Fprintf(errout, "%v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	return cmd
+}
+
+func NewOcCommand(name, fullName string, in io.Reader, out, errout io.Writer) *cobra.Command {
 	// Main command
 	cmds := &cobra.Command{
 		Use:   name,
@@ -136,7 +156,6 @@ func NewCommandCLI(name, fullName string, in io.Reader, out, errout io.Writer) *
 		{
 			Message: "Basic Commands:",
 			Commands: []*cobra.Command{
-				types.NewCmdTypes(fullName, f, ioStreams),
 				loginCmd,
 				requestproject.NewCmdRequestProject(fullName, f, ioStreams),
 				newapp.NewCmdNewApplication(newapp.NewAppRecommendedCommandName, fullName, f, ioStreams),
@@ -144,7 +163,6 @@ func NewCommandCLI(name, fullName string, in io.Reader, out, errout io.Writer) *
 				project.NewCmdProject(fullName, f, ioStreams),
 				projects.NewCmdProjects(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdExplain(fullName, f, ioStreams),
-				cluster.NewCmdCluster(cluster.ClusterRecommendedName, fullName+" "+cluster.ClusterRecommendedName, f, ioStreams),
 			},
 		},
 		{
@@ -162,6 +180,8 @@ func NewCommandCLI(name, fullName string, in io.Reader, out, errout io.Writer) *
 		{
 			Message: "Application Management Commands:",
 			Commands: []*cobra.Command{
+				kubectlwrappers.NewCmdCreate(fullName, f, ioStreams),
+				kubectlwrappers.NewCmdApply(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdGet(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdDescribe(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdEdit(fullName, f, ioStreams),
@@ -196,23 +216,21 @@ func NewCommandCLI(name, fullName string, in io.Reader, out, errout io.Writer) *
 			Message: "Advanced Commands:",
 			Commands: []*cobra.Command{
 				admin.NewCommandAdmin("adm", fullName+" "+"adm", f, ioStreams),
-				kubectlwrappers.NewCmdCreate(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdReplace(fullName, f, ioStreams),
-				kubectlwrappers.NewCmdApply(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdPatch(fullName, f, ioStreams),
 				process.NewCmdProcess(fullName, f, ioStreams),
-				export.NewCmdExport(fullName, f, ioStreams),
 				extract.NewCmdExtract(fullName, f, ioStreams),
-				idle.NewCmdIdle(fullName, f, ioStreams),
 				observe.NewCmdObserve(fullName, f, ioStreams),
 				policy.NewCmdPolicy(policy.PolicyRecommendedName, fullName+" "+policy.PolicyRecommendedName, f, ioStreams),
 				kubectlwrappers.NewCmdAuth(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdConvert(fullName, f, ioStreams),
-				importer.NewCmdImport(fullName, f, ioStreams),
 				image.NewCmdImage(fullName, f, ioStreams),
 				registry.NewCmd(fullName, f, ioStreams),
+				idle.NewCmdIdle(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdApiVersions(fullName, f, ioStreams),
 				kubectlwrappers.NewCmdApiResources(fullName, f, ioStreams),
+				kubectlwrappers.NewCmdClusterInfo(fullName, f, ioStreams),
+				diff.NewCmdDiff(f, ioStreams),
 			},
 		},
 		{
@@ -250,9 +268,7 @@ func NewCommandCLI(name, fullName string, in io.Reader, out, errout io.Writer) *
 	cmds.AddCommand(newExperimentalCommand("ex", name+" ex", f, ioStreams))
 
 	cmds.AddCommand(kubectlwrappers.NewCmdPlugin(fullName, f, ioStreams))
-	if name == fullName {
-		cmds.AddCommand(version.NewCmdVersion(fullName, f, version.NewVersionOptions(true, ioStreams)))
-	}
+	cmds.AddCommand(kubectlwrappers.NewCmdVersion(fullName, f, ioStreams))
 	cmds.AddCommand(options.NewCmdOptions(ioStreams))
 
 	if cmds.Flag("namespace") != nil {
@@ -314,13 +330,8 @@ func newExperimentalCommand(name, fullName string, f kcmdutil.Factory, ioStreams
 		BashCompletionFunction: admin.BashCompletionFunc,
 	}
 
-	experimental.AddCommand(exipfailover.NewCmdIPFailoverConfig(f, fullName, "ipfailover", ioStreams))
 	experimental.AddCommand(dockergc.NewCmdDockerGCConfig(f, fullName, "dockergc", ioStreams))
 	experimental.AddCommand(buildchain.NewCmdBuildChain(name, fullName+" "+buildchain.BuildChainRecommendedCommandName, f, ioStreams))
-	experimental.AddCommand(configcmd.NewCmdConfig(configcmd.ConfigRecommendedName, fullName+" "+configcmd.ConfigRecommendedName, f, ioStreams))
-	deprecatedDiag := diagnostics.NewCmdDiagnostics(diagnostics.DiagnosticsRecommendedName, fullName+" "+diagnostics.DiagnosticsRecommendedName, f, ioStreams)
-	deprecatedDiag.Deprecated = fmt.Sprintf(`use "oc adm %[1]s" to run diagnostics instead.`, diagnostics.DiagnosticsRecommendedName)
-	experimental.AddCommand(deprecatedDiag)
 	experimental.AddCommand(options.NewCmdOptions(ioStreams))
 
 	// these groups also live under `oc adm groups {sync,prune}` and are here only for backwards compatibility
@@ -344,36 +355,52 @@ func CommandFor(basename string) *cobra.Command {
 
 	switch basename {
 	case "kubectl":
-		kcmdutil.DefaultPrintingScheme = ocscheme.PrintingInternalScheme
-		cmd = kubecmd.NewKubectlCommand(in, out, errout)
+		cmd = kubecmd.NewDefaultKubectlCommand()
 	case "openshift-deploy":
 		cmd = deployer.NewCommandDeployer(basename)
-	case "openshift-sti-build":
-		cmd = builder.NewCommandS2IBuilder(basename)
-	case "openshift-docker-build":
-		cmd = builder.NewCommandDockerBuilder(basename)
-	case "openshift-git-clone":
-		cmd = builder.NewCommandGitClone(basename)
-	case "openshift-manage-dockerfile":
-		cmd = builder.NewCommandManageDockerfile(basename)
-	case "openshift-extract-image-content":
-		cmd = builder.NewCommandExtractImageContent(basename)
-	case "openshift-router":
-		cmd = irouter.NewCommandTemplateRouter(basename)
-	case "openshift-f5-router":
-		cmd = irouter.NewCommandF5Router(basename)
 	case "openshift-recycle":
 		cmd = recycle.NewCommandRecycle(basename, out)
 	default:
-		kcmdutil.DefaultPrintingScheme = ocscheme.PrintingInternalScheme
 		shimKubectlForOc()
-		cmd = NewCommandCLI("oc", "oc", in, out, errout)
+		cmd = NewDefaultOcCommand("oc", "oc", in, out, errout)
+
+		// treat oc as a kubectl plugin
+		if strings.HasPrefix(basename, "kubectl-") {
+			args := strings.Split(strings.TrimPrefix(basename, "kubectl-"), "-")
+
+			// the plugin mechanism interprets "_" as dashes. Convert any "_" our basename
+			// might have in order to find the appropriate command in the `oc` tree.
+			for i := range args {
+				args[i] = strings.Replace(args[i], "_", "-", -1)
+			}
+
+			if targetCmd, _, err := cmd.Find(args); targetCmd != nil && err == nil {
+				// since cobra refuses to execute a child command, executing its root
+				// any time Execute() is called, we must create a completely new command
+				// and "deep copy" the targetCmd information to it.
+				newParent := &cobra.Command{
+					Use:     targetCmd.Use,
+					Short:   targetCmd.Short,
+					Long:    targetCmd.Long,
+					Example: targetCmd.Example,
+					Run:     targetCmd.Run,
+				}
+
+				// copy flags
+				newParent.Flags().AddFlagSet(cmd.Flags())
+				newParent.Flags().AddFlagSet(targetCmd.Flags())
+				newParent.PersistentFlags().AddFlagSet(targetCmd.PersistentFlags())
+
+				// copy subcommands
+				newParent.AddCommand(targetCmd.Commands()...)
+				cmd = newParent
+			}
+		}
 	}
 
 	if cmd.UsageFunc() == nil {
 		templates.ActsAsRootCommand(cmd, []string{"options"})
 	}
 	flagtypes.GLog(cmd.PersistentFlags())
-
 	return cmd
 }

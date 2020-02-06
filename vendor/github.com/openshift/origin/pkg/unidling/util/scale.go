@@ -1,22 +1,25 @@
 package util
 
 import (
-	"github.com/golang/glog"
+	"fmt"
 
+	"k8s.io/klog"
+
+	"github.com/openshift/origin/pkg/api/legacy"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
-	kextapi "k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	kextensionsclient "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/scale"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsclient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	"github.com/openshift/origin/pkg/api/legacy"
 	unidlingapi "github.com/openshift/origin/pkg/unidling/api"
-	kcoreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 )
 
 // TODO: remove the below functions once we get a way to mark/unmark an object as idled
@@ -24,8 +27,9 @@ import (
 
 type AnnotationFunc func(currentReplicas int32, annotations map[string]string)
 
-func NewScaleAnnotater(scales kextensionsclient.ScalesGetter, dcs appsclient.DeploymentConfigsGetter, rcs kcoreclient.ReplicationControllersGetter, changeAnnots AnnotationFunc) *ScaleAnnotater {
+func NewScaleAnnotater(scales scale.ScalesGetter, mapper meta.RESTMapper, dcs appsclient.DeploymentConfigsGetter, rcs corev1client.ReplicationControllersGetter, changeAnnots AnnotationFunc) *ScaleAnnotater {
 	return &ScaleAnnotater{
+		mapper:            mapper,
 		scales:            scales,
 		dcs:               dcs,
 		rcs:               rcs,
@@ -34,15 +38,16 @@ func NewScaleAnnotater(scales kextensionsclient.ScalesGetter, dcs appsclient.Dep
 }
 
 type ScaleAnnotater struct {
-	scales            kextensionsclient.ScalesGetter
+	mapper            meta.RESTMapper
+	scales            scale.ScalesGetter
 	dcs               appsclient.DeploymentConfigsGetter
-	rcs               kcoreclient.ReplicationControllersGetter
+	rcs               corev1client.ReplicationControllersGetter
 	ChangeAnnotations AnnotationFunc
 }
 
 // ScaleUpdater implements a method "Update" that knows how to update a given object
 type ScaleUpdater interface {
-	Update(*ScaleAnnotater, runtime.Object, *kextapi.Scale) error
+	Update(*ScaleAnnotater, runtime.Object, *autoscalingv1.Scale) error
 }
 
 // ScaleUpdater implements unidlingutil.ScaleUpdater
@@ -50,10 +55,10 @@ type scaleUpdater struct {
 	encoder   runtime.Encoder
 	namespace string
 	dcGetter  appsclient.DeploymentConfigsGetter
-	rcGetter  kcoreclient.ReplicationControllersGetter
+	rcGetter  corev1client.ReplicationControllersGetter
 }
 
-func NewScaleUpdater(encoder runtime.Encoder, namespace string, dcGetter appsclient.DeploymentConfigsGetter, rcGetter kcoreclient.ReplicationControllersGetter) ScaleUpdater {
+func NewScaleUpdater(encoder runtime.Encoder, namespace string, dcGetter appsclient.DeploymentConfigsGetter, rcGetter corev1client.ReplicationControllersGetter) ScaleUpdater {
 	return scaleUpdater{
 		encoder:   encoder,
 		namespace: namespace,
@@ -62,7 +67,7 @@ func NewScaleUpdater(encoder runtime.Encoder, namespace string, dcGetter appscli
 	}
 }
 
-func (s scaleUpdater) Update(annotator *ScaleAnnotater, obj runtime.Object, scale *kextapi.Scale) error {
+func (s scaleUpdater) Update(annotator *ScaleAnnotater, obj runtime.Object, scale *autoscalingv1.Scale) error {
 	var (
 		err                             error
 		patchBytes, originalObj, newObj []byte
@@ -93,13 +98,13 @@ func (s scaleUpdater) Update(annotator *ScaleAnnotater, obj runtime.Object, scal
 		}
 
 		_, err = s.dcGetter.DeploymentConfigs(s.namespace).Patch(typedObj.Name, types.StrategicMergePatchType, patchBytes)
-	case *kapi.ReplicationController:
+	case *corev1.ReplicationController:
 		if typedObj.Annotations == nil {
 			typedObj.Annotations = make(map[string]string)
 		}
 
-		annotator.ChangeAnnotations(typedObj.Spec.Replicas, typedObj.Annotations)
-		typedObj.Spec.Replicas = scale.Spec.Replicas
+		annotator.ChangeAnnotations(*typedObj.Spec.Replicas, typedObj.Annotations)
+		typedObj.Spec.Replicas = &scale.Spec.Replicas
 
 		newObj, err = runtime.Encode(s.encoder, typedObj)
 		if err != nil {
@@ -118,34 +123,35 @@ func (s scaleUpdater) Update(annotator *ScaleAnnotater, obj runtime.Object, scal
 
 // getObjectWithScale either fetches a known type of object and constructs a Scale from that, or uses the scale
 // subresource to fetch a Scale by itself.
-func (c *ScaleAnnotater) GetObjectWithScale(namespace string, ref unidlingapi.CrossGroupObjectReference) (runtime.Object, *kextapi.Scale, error) {
+func (c *ScaleAnnotater) GetObjectWithScale(namespace string, ref unidlingapi.CrossGroupObjectReference) (runtime.Object, *autoscalingv1.Scale, error) {
 	var obj runtime.Object
 	var err error
-	var scale *kextapi.Scale
+	var scale *autoscalingv1.Scale
 
 	switch {
 	case ref.Kind == "DeploymentConfig" && (ref.Group == appsv1.GroupName || ref.Group == legacy.GroupName):
 		var dc *appsv1.DeploymentConfig
 		dc, err = c.dcs.DeploymentConfigs(namespace).Get(ref.Name, metav1.GetOptions{})
+
 		if err != nil {
 			return nil, nil, err
 		}
-		scale = &kextapi.Scale{
-			Spec: kextapi.ScaleSpec{Replicas: dc.Spec.Replicas},
-		}
 		obj = dc
-	case ref.Kind == "ReplicationController" && ref.Group == kapi.GroupName:
-		var rc *kapi.ReplicationController
+	case ref.Kind == "ReplicationController" && ref.Group == corev1.GroupName:
+		var rc *corev1.ReplicationController
 		rc, err = c.rcs.ReplicationControllers(namespace).Get(ref.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, nil, err
 		}
-		scale = &kextapi.Scale{
-			Spec: kextapi.ScaleSpec{Replicas: rc.Spec.Replicas},
-		}
 		obj = rc
-	default:
-		scale, err = c.scales.Scales(namespace).Get(ref.Kind, ref.Name)
+	}
+
+	mappings, err := c.mapper.RESTMappings(schema.GroupKind{Group: ref.Group, Kind: ref.Kind})
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, mapping := range mappings {
+		scale, err = c.scales.Scales(namespace).Get(mapping.Resource.GroupResource(), ref.Name)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -157,20 +163,30 @@ func (c *ScaleAnnotater) GetObjectWithScale(namespace string, ref unidlingapi.Cr
 // updateObjectScale updates the scale of an object and removes unidling annotations for objects of a know type.
 // For objects of an unknown type, it scales the object using the scale subresource
 // (and does not change annotations).
-func (c *ScaleAnnotater) UpdateObjectScale(updater ScaleUpdater, namespace string, ref unidlingapi.CrossGroupObjectReference, obj runtime.Object, scale *kextapi.Scale) error {
+func (c *ScaleAnnotater) UpdateObjectScale(updater ScaleUpdater, namespace string, ref unidlingapi.CrossGroupObjectReference, obj runtime.Object, scale *autoscalingv1.Scale) error {
 	var err error
 
-	if obj == nil {
-		_, err = c.scales.Scales(namespace).Update(ref.Kind, scale)
+	mappings, err := c.mapper.RESTMappings(schema.GroupKind{Group: ref.Group, Kind: ref.Kind})
+	if err != nil {
 		return err
 	}
+	if len(mappings) == 0 {
+		return fmt.Errorf("cannot locate resource for %s.%s/%s", ref.Kind, ref.Group, ref.Name)
+	}
 
-	switch obj.(type) {
-	case *appsv1.DeploymentConfig, *kapi.ReplicationController:
-		return updater.Update(c, obj, scale)
-	default:
-		glog.V(2).Infof("Unidling unknown type %t: using scale interface and not removing annotations", obj)
-		_, err = c.scales.Scales(namespace).Update(ref.Kind, scale)
+	for _, mapping := range mappings {
+		if obj == nil {
+			_, err = c.scales.Scales(namespace).Update(mapping.Resource.GroupResource(), scale)
+			return err
+		}
+
+		switch obj.(type) {
+		case *appsv1.DeploymentConfig, *corev1.ReplicationController:
+			return updater.Update(c, obj, scale)
+		default:
+			klog.V(2).Infof("Unidling unknown type %t: using scale interface and not removing annotations", obj)
+			_, err = c.scales.Scales(namespace).Update(mapping.Resource.GroupResource(), scale)
+		}
 	}
 
 	return err

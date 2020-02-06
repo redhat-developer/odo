@@ -274,7 +274,7 @@ func TestValidateDeploymentConfigMissingFields(t *testing.T) {
 					Triggers: manualTrigger(),
 					Selector: appstest.OkSelector(),
 					Strategy: appsapi.DeploymentStrategy{
-						Type: appsapi.DeploymentStrategyTypeCustom,
+						Type:                  appsapi.DeploymentStrategyTypeCustom,
 						ActiveDeadlineSeconds: mkint64p(3600),
 					},
 					Template: appstest.OkPodTemplate(),
@@ -713,7 +713,6 @@ func TestValidateDeploymentConfigUpdate(t *testing.T) {
 		newLatestVersion int64
 	}{
 		{5, 3},
-		{5, 7},
 		{0, -1},
 	}
 

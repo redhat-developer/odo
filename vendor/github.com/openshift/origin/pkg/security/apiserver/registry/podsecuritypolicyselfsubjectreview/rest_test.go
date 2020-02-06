@@ -9,25 +9,26 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	clientsetfake "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/fake"
+	coreapi "k8s.io/kubernetes/pkg/apis/core"
 
+	securityv1 "github.com/openshift/api/security/v1"
+	securityv1listers "github.com/openshift/client-go/security/listers/security/v1"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	admissionttesting "github.com/openshift/origin/pkg/security/apiserver/admission/testing"
 	oscc "github.com/openshift/origin/pkg/security/apiserver/securitycontextconstraints"
-	securitylisters "github.com/openshift/origin/pkg/security/generated/listers/security/internalversion"
 
 	_ "github.com/openshift/origin/pkg/api/install"
 )
 
 func TestPodSecurityPolicySelfSubjectReview(t *testing.T) {
 	testcases := map[string]struct {
-		sccs  []*securityapi.SecurityContextConstraints
+		sccs  []*securityv1.SecurityContextConstraints
 		check func(p *securityapi.PodSecurityPolicySelfSubjectReview) (bool, string)
 	}{
 		"user foo": {
-			sccs: []*securityapi.SecurityContextConstraints{
+			sccs: []*securityv1.SecurityContextConstraints{
 				admissionttesting.UserScc("bar"),
 				admissionttesting.UserScc("foo"),
 			},
@@ -37,7 +38,7 @@ func TestPodSecurityPolicySelfSubjectReview(t *testing.T) {
 			},
 		},
 		"user bar ": {
-			sccs: []*securityapi.SecurityContextConstraints{
+			sccs: []*securityv1.SecurityContextConstraints{
 				admissionttesting.UserScc("bar"),
 			},
 			check: func(p *securityapi.PodSecurityPolicySelfSubjectReview) (bool, string) {
@@ -50,28 +51,28 @@ func TestPodSecurityPolicySelfSubjectReview(t *testing.T) {
 		serviceAccount := admissionttesting.CreateSAForTest()
 		reviewRequest := &securityapi.PodSecurityPolicySelfSubjectReview{
 			Spec: securityapi.PodSecurityPolicySelfSubjectReviewSpec{
-				Template: kapi.PodTemplateSpec{
-					Spec: kapi.PodSpec{
-						Containers: []kapi.Container{
+				Template: coreapi.PodTemplateSpec{
+					Spec: coreapi.PodSpec{
+						Containers: []coreapi.Container{
 							{
 								Name:                     "ctr",
 								Image:                    "image",
 								ImagePullPolicy:          "IfNotPresent",
-								TerminationMessagePolicy: kapi.TerminationMessageReadFile,
+								TerminationMessagePolicy: coreapi.TerminationMessageReadFile,
 							},
 						},
-						RestartPolicy:      kapi.RestartPolicyAlways,
-						SecurityContext:    &kapi.PodSecurityContext{},
-						DNSPolicy:          kapi.DNSClusterFirst,
+						RestartPolicy:      coreapi.RestartPolicyAlways,
+						SecurityContext:    &coreapi.PodSecurityContext{},
+						DNSPolicy:          coreapi.DNSClusterFirst,
 						ServiceAccountName: "default",
-						SchedulerName:      kapi.DefaultSchedulerName,
+						SchedulerName:      coreapi.DefaultSchedulerName,
 					},
 				},
 			},
 		}
 
 		sccIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-		sccCache := securitylisters.NewSecurityContextConstraintsLister(sccIndexer)
+		sccCache := securityv1listers.NewSecurityContextConstraintsLister(sccIndexer)
 
 		for _, scc := range testcase.sccs {
 			if err := sccIndexer.Add(scc); err != nil {
@@ -79,10 +80,10 @@ func TestPodSecurityPolicySelfSubjectReview(t *testing.T) {
 			}
 		}
 
-		csf := clientsetfake.NewSimpleClientset(namespace, serviceAccount)
+		csf := fake.NewSimpleClientset(namespace, serviceAccount)
 		storage := REST{oscc.NewDefaultSCCMatcher(sccCache, &noopTestAuthorizer{}), csf}
 		ctx := apirequest.WithUser(apirequest.WithNamespace(apirequest.NewContext(), metav1.NamespaceAll), &user.DefaultInfo{Name: "foo", Groups: []string{"bar", "baz"}})
-		obj, err := storage.Create(ctx, reviewRequest, rest.ValidateAllObjectFunc, false)
+		obj, err := storage.Create(ctx, reviewRequest, rest.ValidateAllObjectFunc, &metav1.CreateOptions{})
 		if err != nil {
 			t.Errorf("%s - Unexpected error", testName)
 		}

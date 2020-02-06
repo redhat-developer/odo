@@ -1,5 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 source "$(dirname "${BASH_SOURCE}")/lib/init.sh"
+
+os::log::info "Generating & verifying swagger is disabled temporarily due to removal of openshift start"
+exit 0
 
 os::log::info "===== Verifying API Swagger Spec ====="
 

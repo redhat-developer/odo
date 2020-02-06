@@ -8,7 +8,10 @@ metadata:
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
 spec:
-  replicas: 1
+  replicas: {{ .Values.apiserver.replicas }}
+  strategy:
+    type: {{ .Values.apiserver.updateStrategy }}
+  minReadySeconds: {{ .Values.apiserver.minReadySeconds }}
   selector:
     matchLabels:
       app: {{ template "fullname" . }}-apiserver
@@ -42,12 +45,8 @@ spec:
         - "NamespaceLifecycle,DefaultServicePlan,ServiceBindingsLifecycle,ServicePlanChangeValidator,BrokerAuthSarCheck"
         - --secure-port
         - "8443"
-        - --storage-type
-        - {{ .Values.apiserver.storage.type }}
-        {{- if eq .Values.apiserver.storage.type "etcd" }}
         - --etcd-servers
         - {{ .Values.apiserver.storage.etcd.servers }}
-        {{- end }}
         - -v
         - "{{ .Values.apiserver.verbosity }}"
         {{- if .Values.apiserver.tls.requestHeaderCA }}
@@ -58,6 +57,8 @@ spec:
         {{- end }}
         - --feature-gates
         - OriginatingIdentity={{.Values.originatingIdentityEnabled}}
+        - --feature-gates
+        - ServicePlanDefaults={{.Values.servicePlanDefaultsEnabled}}
         {{- if .Values.namespacedServiceBrokerDisabled }}
         - --feature-gates
         - NamespacedServiceBroker=false
@@ -85,13 +86,13 @@ spec:
         readinessProbe:
           httpGet:
             port: 8443
-            path: /healthz
+            path: /healthz/ready
             scheme: HTTPS
           failureThreshold: 1
           initialDelaySeconds: 10
           periodSeconds: 10
           successThreshold: 1
-          timeoutSeconds: 2
+          timeoutSeconds: 5
         livenessProbe:
           httpGet:
             port: 8443
@@ -101,7 +102,7 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 10
           successThreshold: 1
-          timeoutSeconds: 2
+          timeoutSeconds: 5
         {{- end }}
       {{- if and (eq .Values.apiserver.storage.type "etcd") .Values.apiserver.storage.etcd.useEmbedded }}
       - name: etcd

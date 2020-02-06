@@ -7,6 +7,9 @@ import (
 	"runtime"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachineryruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/util/logs"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
@@ -17,11 +20,10 @@ import (
 	"github.com/openshift/api/image"
 	"github.com/openshift/api/network"
 	"github.com/openshift/api/oauth"
-	"github.com/openshift/api/operator"
 	"github.com/openshift/api/project"
 	"github.com/openshift/api/quota"
 	"github.com/openshift/api/route"
-	"github.com/openshift/api/security"
+	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/api/template"
 	"github.com/openshift/api/user"
 	"github.com/openshift/library-go/pkg/serviceability"
@@ -51,11 +53,10 @@ func main() {
 	utilruntime.Must(image.Install(scheme.Scheme))
 	utilruntime.Must(network.Install(scheme.Scheme))
 	utilruntime.Must(oauth.Install(scheme.Scheme))
-	utilruntime.Must(operator.Install(scheme.Scheme))
 	utilruntime.Must(project.Install(scheme.Scheme))
 	utilruntime.Must(quota.Install(scheme.Scheme))
 	utilruntime.Must(route.Install(scheme.Scheme))
-	utilruntime.Must(security.Install(scheme.Scheme))
+	utilruntime.Must(installNonCRDSecurity(scheme.Scheme))
 	utilruntime.Must(template.Install(scheme.Scheme))
 	utilruntime.Must(user.Install(scheme.Scheme))
 	legacy.InstallExternalLegacyAll(scheme.Scheme)
@@ -70,4 +71,19 @@ func main() {
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func installNonCRDSecurity(scheme *apimachineryruntime.Scheme) error {
+	scheme.AddKnownTypes(securityv1.GroupVersion,
+		&securityv1.PodSecurityPolicySubjectReview{},
+		&securityv1.PodSecurityPolicySelfSubjectReview{},
+		&securityv1.PodSecurityPolicyReview{},
+		&securityv1.RangeAllocation{},
+		&securityv1.RangeAllocationList{},
+	)
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return err
+	}
+	metav1.AddToGroupVersion(scheme, securityv1.GroupVersion)
+	return nil
 }

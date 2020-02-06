@@ -22,9 +22,6 @@ __oc_override_flags()
                     ;;
             esac
         done
-        if [ "${w}" == "--all-namespaces" ]; then
-            namespace="--all-namespaces"
-        fi
     done
     for of in "${__oc_override_flag_list[@]}"; do
         if eval "test -n \"\$${of}\""; then
@@ -55,9 +52,14 @@ __oc_get_namespaces()
 __oc_get_resource()
 {
     if [[ ${#nouns[@]} -eq 0 ]]; then
-        return 1
+      local oc_out
+      if oc_out=$(oc api-resources $(__oc_override_flags) -o name --cached --request-timeout=5s --verbs=get 2>/dev/null); then
+          COMPREPLY=( $( compgen -W "${oc_out[*]}" -- "$cur" ) )
+          return 0
+      fi
+      return 1
     fi
-    __oc_parse_get ${nouns[${#nouns[@]} -1]}
+    __oc_parse_get "${nouns[${#nouns[@]} -1]}"
 }
 
 # $1 is the name of the pod we want to get the list of containers inside
@@ -65,7 +67,7 @@ __oc_get_containers()
 {
     local template
     template="{{ range .spec.containers  }}{{ .name }} {{ end }}"
-    __debug ${FUNCNAME} "nouns are ${nouns[@]}"
+    __oc_debug "${FUNCNAME} nouns are ${nouns[@]}"
 
     local len="${#nouns[@]}"
     if [[ ${len} -ne 1 ]]; then
@@ -93,13 +95,13 @@ __custom_func() {
     case ${last_command} in
  
         # first arg is the kind according to ValidArgs, second is resource name
-        oc_get | oc_describe | oc_delete | oc_label | oc_stop | oc_expose | oc_export | oc_patch | oc_annotate | oc_env | oc_edit | oc_volume | oc_scale )
+        oc_get | oc_describe | oc_delete | oc_label | oc_expose | oc_export | oc_patch | oc_annotate | oc_edit | oc_scale | oc_autoscale | oc_observe )
             __oc_get_resource
             return
             ;;
 
         # first arg is a pod name
-        oc_rsh | oc_exec)
+        oc_rsh | oc_exec | oc_port-forward | oc_attach)
             if [[ ${#nouns[@]} -eq 0 ]]; then
                 __oc_parse_get pods
             fi;
@@ -107,17 +109,8 @@ __custom_func() {
             ;;
  
         # first arg is a pod name, second is a container name
-        oc_logs | oc_attach)
+        oc_logs)
             __oc_require_pod_and_container
-            return
-            ;;
- 
-        # args other than the first are filenames
-        oc_secrets_new)
-            # Complete args other than the first as filenames
-            if [[ ${#nouns[@]} -gt 0 ]]; then
-                _filedir
-            fi;
             return
             ;;
  
@@ -125,14 +118,6 @@ __custom_func() {
         oc_start-build | oc_cancel-build)
             if [[ ${#nouns[@]} -eq 0 ]]; then
                 __oc_parse_get buildconfigs
-            fi;
-            return
-            ;;
- 
-        # first arg is a deployment config
-        oc_deploy)
-            if [[ ${#nouns[@]} -eq 0 ]]; then
-                __oc_parse_get deploymentconfigs
             fi;
             return
             ;;

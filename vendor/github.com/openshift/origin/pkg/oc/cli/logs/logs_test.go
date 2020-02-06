@@ -9,8 +9,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	kcmd "k8s.io/kubernetes/pkg/kubectl/cmd"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/logs"
 
 	buildv1 "github.com/openshift/api/build/v1"
 	buildfake "github.com/openshift/client-go/build/clientset/versioned/fake"
@@ -21,7 +21,7 @@ import (
 // TestLogsFlagParity makes sure that our copied flags don't slip during rebases
 func TestLogsFlagParity(t *testing.T) {
 	streams := genericclioptions.NewTestIOStreamsDiscard()
-	kubeCmd := kcmd.NewCmdLogs(nil, streams)
+	kubeCmd := logs.NewCmdLogs(nil, streams)
 	originCmd := NewCmdLogs("oc", "logs", nil, streams)
 
 	kubeCmd.LocalFlags().VisitAll(func(kubeFlag *pflag.Flag) {
@@ -91,12 +91,12 @@ func TestRunLogForPipelineStrategy(t *testing.T) {
 	for _, tc := range testCases {
 		o := &LogsOptions{
 			IOStreams: streams,
-			KubeLogOptions: &kcmd.LogsOptions{
+			KubeLogOptions: &logs.LogsOptions{
 				IOStreams: streams,
 				Object:    tc.o,
 				Namespace: "foo",
 			},
-			Client: fakebc.Build(),
+			Client: fakebc.BuildV1(),
 		}
 		if err := o.runLogPipeline(); err != nil {
 			t.Errorf("%#v: RunLog error %v", tc.o, err)

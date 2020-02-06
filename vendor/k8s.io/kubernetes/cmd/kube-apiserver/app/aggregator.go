@@ -21,24 +21,25 @@ package app
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
+	"k8s.io/apiserver/pkg/features"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/apiserver/pkg/server/healthz"
+	genericoptions "k8s.io/apiserver/pkg/server/options"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	kubeexternalinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kube-aggregator/pkg/apis/apiregistration"
-	aggregatorinstall "k8s.io/kube-aggregator/pkg/apis/apiregistration/install"
 	"k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	aggregatorapiserver "k8s.io/kube-aggregator/pkg/apiserver"
@@ -47,7 +48,6 @@ import (
 	informers "k8s.io/kube-aggregator/pkg/client/informers/internalversion/apiregistration/internalversion"
 	"k8s.io/kube-aggregator/pkg/controllers/autoregister"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/master/controller/crdregistration"
 )
 
@@ -78,11 +78,9 @@ func createAggregatorConfig(
 
 	// copy the etcd options so we don't mutate originals.
 	etcdOptions := *commandOptions.Etcd
+	etcdOptions.StorageConfig.Paging = utilfeature.DefaultFeatureGate.Enabled(features.APIListChunking)
 	etcdOptions.StorageConfig.Codec = aggregatorscheme.Codecs.LegacyCodec(v1beta1.SchemeGroupVersion, v1.SchemeGroupVersion)
-	// openshift accidentally wired the wrong RESTOptionsGetter here and stored in apiservices instead under a group.
-	// this patch installs the types in the scheme and re-uses the restoptions from the kubeapiserver
-	aggregatorinstall.Install(legacyscheme.Scheme)
-	//genericConfig.RESTOptionsGetter = &genericoptions.SimpleRestOptionsFactory{Options: etcdOptions}
+	genericConfig.RESTOptionsGetter = &genericoptions.SimpleRestOptionsFactory{Options: etcdOptions}
 
 	// override MergedResourceConfig with aggregator defaults and registry
 	if err := commandOptions.APIEnablement.ApplyTo(
@@ -92,27 +90,14 @@ func createAggregatorConfig(
 		return nil, err
 	}
 
-	var err error
-	var certBytes, keyBytes []byte
-	if len(commandOptions.ProxyClientCertFile) > 0 && len(commandOptions.ProxyClientKeyFile) > 0 {
-		certBytes, err = ioutil.ReadFile(commandOptions.ProxyClientCertFile)
-		if err != nil {
-			return nil, err
-		}
-		keyBytes, err = ioutil.ReadFile(commandOptions.ProxyClientKeyFile)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	aggregatorConfig := &aggregatorapiserver.Config{
 		GenericConfig: &genericapiserver.RecommendedConfig{
 			Config:                genericConfig,
 			SharedInformerFactory: externalInformers,
 		},
 		ExtraConfig: aggregatorapiserver.ExtraConfig{
-			ProxyClientCert: certBytes,
-			ProxyClientKey:  keyBytes,
+			ProxyClientCert: commandOptions.ProxyClientCertFile,
+			ProxyClientKey:  commandOptions.ProxyClientKeyFile,
 			ServiceResolver: serviceResolver,
 			ProxyTransport:  proxyTransport,
 		},
@@ -168,7 +153,7 @@ func makeAPIService(gv schema.GroupVersion) *apiregistration.APIService {
 	if !ok {
 		// if we aren't found, then we shouldn't register ourselves because it could result in a CRD group version
 		// being permanently stuck in the APIServices list.
-		glog.Infof("Skipping APIService creation for %v", gv)
+		klog.Infof("Skipping APIService creation for %v", gv)
 		return nil
 	}
 	return &apiregistration.APIService{
@@ -236,7 +221,7 @@ type priority struct {
 // That ripples out every bit as far as you'd expect, so for 1.7 we'll include the list here instead of being built up during storage.
 var apiVersionPriorities = map[schema.GroupVersion]priority{
 	{Group: "", Version: "v1"}: {group: 18000, version: 1},
-	// extensions is above the rest for CLI compatibility, though the level of unqalified resource compatibility we
+	// extensions is above the rest for CLI compatibility, though the level of unqualified resource compatibility we
 	// can reasonably expect seems questionable.
 	{Group: "extensions", Version: "v1beta1"}: {group: 17900, version: 1},
 	// to my knowledge, nothing below here collides
@@ -250,6 +235,7 @@ var apiVersionPriorities = map[schema.GroupVersion]priority{
 	{Group: "authorization.k8s.io", Version: "v1beta1"}:          {group: 17600, version: 9},
 	{Group: "autoscaling", Version: "v1"}:                        {group: 17500, version: 15},
 	{Group: "autoscaling", Version: "v2beta1"}:                   {group: 17500, version: 9},
+	{Group: "autoscaling", Version: "v2beta2"}:                   {group: 17500, version: 1},
 	{Group: "batch", Version: "v1"}:                              {group: 17400, version: 15},
 	{Group: "batch", Version: "v1beta1"}:                         {group: 17400, version: 9},
 	{Group: "batch", Version: "v2alpha1"}:                        {group: 17400, version: 9},
@@ -269,6 +255,8 @@ var apiVersionPriorities = map[schema.GroupVersion]priority{
 	{Group: "admissionregistration.k8s.io", Version: "v1alpha1"}: {group: 16700, version: 9},
 	{Group: "scheduling.k8s.io", Version: "v1beta1"}:             {group: 16600, version: 12},
 	{Group: "scheduling.k8s.io", Version: "v1alpha1"}:            {group: 16600, version: 9},
+	{Group: "coordination.k8s.io", Version: "v1beta1"}:           {group: 16500, version: 9},
+	{Group: "auditregistration.k8s.io", Version: "v1alpha1"}:     {group: 16400, version: 1},
 	// Append a new group to the end of the list if unsure.
 	// You can use min(existing group)-100 as the initial value for a group.
 	// Version can be set to 9 (to have space around) for a new group.

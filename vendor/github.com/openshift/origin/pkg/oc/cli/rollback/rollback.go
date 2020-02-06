@@ -12,17 +12,17 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
+	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	appstypedclient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	appsutil "github.com/openshift/origin/pkg/apps/util"
-	"github.com/openshift/origin/pkg/oc/util/ocscheme"
 )
 
 var (
@@ -92,7 +92,7 @@ type RollbackOptions struct {
 
 func NewRollbackOptions(streams genericclioptions.IOStreams) *RollbackOptions {
 	return &RollbackOptions{
-		PrintFlags: genericclioptions.NewPrintFlags("rolled back").WithTypeSetter(ocscheme.PrintingInternalScheme),
+		PrintFlags: genericclioptions.NewPrintFlags("rolled back").WithTypeSetter(scheme.Scheme),
 		IOStreams:  streams,
 	}
 }
@@ -192,7 +192,7 @@ func (o *RollbackOptions) Validate() error {
 // Run performs a rollback.
 func (o *RollbackOptions) Run() error {
 	// Get the resource referenced in the command args.
-	obj, mapping, err := o.findResource(o.TargetName)
+	obj, _, err := o.findResource(o.TargetName)
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func (o *RollbackOptions) Run() error {
 		if err != nil {
 			return err
 		}
-		return printer.PrintObj(kcmdutil.AsDefaultVersionedOrOriginal(newConfig, mapping), o.Out)
+		return printer.PrintObj(newConfig, o.Out)
 	}
 
 	// Perform a real rollback.
@@ -285,7 +285,7 @@ func (o *RollbackOptions) Run() error {
 		return err
 	}
 
-	return printer.PrintObj(kcmdutil.AsDefaultVersionedOrOriginal(rolledback, mapping), o.Out)
+	return printer.PrintObj(rolledback, o.Out)
 }
 
 // findResource tries to find a deployment or deploymentconfig named
@@ -303,7 +303,7 @@ func (o *RollbackOptions) findResource(targetName string) (runtime.Object, *meta
 	var m *meta.RESTMapping
 	for _, name := range candidates {
 		r := o.builder().
-			WithScheme(ocscheme.ReadingInternalScheme, ocscheme.ReadingInternalScheme.PrioritizedVersionsAllGroups()...).
+			WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).
 			NamespaceParam(o.Namespace).
 			ResourceTypeOrNameArgs(false, name).
 			SingleResourceType().

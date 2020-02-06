@@ -15,13 +15,13 @@
 FROM golang:GO_VERSION
 
 # Install dep as root
-ENV DEP_VERSION=v0.4.1
+ENV DEP_VERSION=v0.5.0
 RUN curl -sSL -o /usr/local/bin/dep https://github.com/golang/dep/releases/download/$DEP_VERSION/dep-linux-amd64 && \
     chmod +x /usr/local/bin/dep
 
 # Install etcd
-RUN curl -sSL https://github.com/coreos/etcd/releases/download/v3.1.10/etcd-v3.1.10-linux-amd64.tar.gz \
-    | tar -vxz -C /usr/local/bin --strip=1 etcd-v3.1.10-linux-amd64/etcd
+RUN curl -sSL https://github.com/coreos/etcd/releases/download/v3.2.24/etcd-v3.2.24-linux-amd64.tar.gz \
+    | tar -vxz -C /usr/local/bin --strip=1 etcd-v3.2.24-linux-amd64/etcd
 
 # Install the golint, use this to check our source for niceness
 COPY vendor/golang.org /go/src/golang.org
@@ -32,7 +32,7 @@ RUN git clone https://github.com/duglin/vlinker.git /vlinker
 ENV PATH=$PATH:/vlinker/bin
 
 # Install the azure client, used to publish svcat binaries
-ENV AZCLI_VERSION=v0.1.2
+ENV AZCLI_VERSION=v0.3.1
 RUN curl -sLo /usr/local/bin/az https://github.com/carolynvs/az-cli/releases/download/$AZCLI_VERSION/az-linux-amd64 && \
     chmod +x /usr/local/bin/az
 

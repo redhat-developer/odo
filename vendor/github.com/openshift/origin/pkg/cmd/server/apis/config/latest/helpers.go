@@ -10,13 +10,13 @@ import (
 	"reflect"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	kyaml "k8s.io/apimachinery/pkg/util/yaml"
 
+	legacyconfigv1 "github.com/openshift/api/legacyconfig/v1"
 	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
-	configv1 "github.com/openshift/origin/pkg/cmd/server/apis/config/v1"
 )
 
 func ReadSessionSecrets(filename string) (*configapi.SessionSecrets, error) {
@@ -123,7 +123,7 @@ func ReadYAMLInto(data []byte, obj runtime.Object) error {
 func strictDecodeCheck(jsonData []byte, obj runtime.Object) error {
 	out, err := getExternalZeroValue(obj) // we need the external version of obj as that has the correct JSON struct tags
 	if err != nil {
-		glog.Errorf("Encountered config error %v in object %T, raw JSON:\n%s", err, obj, string(jsonData)) // TODO just return the error and die
+		klog.Errorf("Encountered config error %v in object %T, raw JSON:\n%s", err, obj, string(jsonData)) // TODO just return the error and die
 		// never error for now, we need to determine a safe way to make this check fatal
 		return nil
 	}
@@ -131,7 +131,7 @@ func strictDecodeCheck(jsonData []byte, obj runtime.Object) error {
 	d.DisallowUnknownFields()
 	// note that we only care about the error, out is discarded
 	if err := d.Decode(out); err != nil {
-		glog.Errorf("Encountered config error %v in object %T, raw JSON:\n%s", err, obj, string(jsonData)) // TODO just return the error and die
+		klog.Errorf("Encountered config error %v in object %T, raw JSON:\n%s", err, obj, string(jsonData)) // TODO just return the error and die
 	}
 	// never error for now, we need to determine a safe way to make this check fatal
 	return nil
@@ -146,7 +146,7 @@ func getExternalZeroValue(obj runtime.Object) (runtime.Object, error) {
 	if len(gvks) == 0 { // should never happen
 		return nil, fmt.Errorf("no gvks found for %#v", obj)
 	}
-	gvk := configv1.LegacySchemeGroupVersion.WithKind(gvks[0].Kind)
+	gvk := legacyconfigv1.LegacySchemeGroupVersion.WithKind(gvks[0].Kind)
 	return configapi.Scheme.New(gvk)
 }
 

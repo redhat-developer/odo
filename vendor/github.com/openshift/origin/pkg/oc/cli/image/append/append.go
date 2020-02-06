@@ -13,27 +13,24 @@ import (
 	"time"
 
 	units "github.com/docker/go-units"
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/docker/distribution"
-	distributioncontext "github.com/docker/distribution/context"
 	"github.com/docker/distribution/manifest/schema2"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client"
 	digest "github.com/opencontainers/go-digest"
 
-	"k8s.io/client-go/rest"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/origin/pkg/image/apis/image/docker10"
 	imagereference "github.com/openshift/origin/pkg/image/apis/image/reference"
 	"github.com/openshift/origin/pkg/image/dockerlayer"
 	"github.com/openshift/origin/pkg/image/dockerlayer/add"
 	"github.com/openshift/origin/pkg/image/registryclient"
-	"github.com/openshift/origin/pkg/image/registryclient/dockercredentials"
 	imagemanifest "github.com/openshift/origin/pkg/oc/cli/image/manifest"
 	"github.com/openshift/origin/pkg/oc/cli/image/workqueue"
 )
@@ -81,24 +78,27 @@ type AppendImageOptions struct {
 	ConfigPatch string
 	MetaPatch   string
 
+	ConfigurationCallback func(dgst, contentDigest digest.Digest, config *docker10.DockerImageConfig) error
+	// ToDigest is set after a new image is uploaded
+	ToDigest digest.Digest
+
 	DropHistory bool
 	CreatedAt   string
 
-	FilterOptions imagemanifest.FilterOptions
+	SecurityOptions imagemanifest.SecurityOptions
+	FilterOptions   imagemanifest.FilterOptions
+	ParallelOptions imagemanifest.ParallelOptions
 
-	MaxPerRegistry int
-
-	DryRun   bool
-	Insecure bool
-	Force    bool
+	DryRun bool
+	Force  bool
 
 	genericclioptions.IOStreams
 }
 
 func NewAppendImageOptions(streams genericclioptions.IOStreams) *AppendImageOptions {
 	return &AppendImageOptions{
-		IOStreams:      streams,
-		MaxPerRegistry: 3,
+		IOStreams:       streams,
+		ParallelOptions: imagemanifest.ParallelOptions{MaxPerRegistry: 4},
 	}
 }
 
@@ -110,18 +110,20 @@ func NewCmdAppendImage(name string, streams genericclioptions.IOStreams) *cobra.
 		Use:     "append",
 		Short:   "Add layers to images and push them to a registry",
 		Long:    desc,
-		Example: fmt.Sprintf(example, name),
+		Example: fmt.Sprintf(example, name+" append"),
 		Run: func(c *cobra.Command, args []string) {
 			kcmdutil.CheckErr(o.Complete(c, args))
+			kcmdutil.CheckErr(o.Validate())
 			kcmdutil.CheckErr(o.Run())
 		},
 	}
 
 	flag := cmd.Flags()
+	o.SecurityOptions.Bind(flag)
 	o.FilterOptions.Bind(flag)
+	o.ParallelOptions.Bind(flag)
 
 	flag.BoolVar(&o.DryRun, "dry-run", o.DryRun, "Print the actions that would be taken and exit without writing to the destination.")
-	flag.BoolVar(&o.Insecure, "insecure", o.Insecure, "Allow push and pull operations to registries to be made over HTTP")
 
 	flag.StringVar(&o.From, "from", o.From, "The image to use as a base. If empty, a new scratch image is created.")
 	flag.StringVar(&o.To, "to", o.To, "The Docker repository tag to upload the appended image to.")
@@ -132,7 +134,6 @@ func NewCmdAppendImage(name string, streams genericclioptions.IOStreams) *cobra.
 	flag.StringVar(&o.CreatedAt, "created-at", o.CreatedAt, "The creation date for this image, in RFC3339 format or milliseconds from the Unix epoch.")
 
 	flag.BoolVar(&o.Force, "force", o.Force, "If set, the command will attempt to upload all layers instead of skipping those that are already uploaded.")
-	flag.IntVar(&o.MaxPerRegistry, "max-per-registry", o.MaxPerRegistry, "Number of concurrent requests allowed per registry.")
 
 	return cmd
 }
@@ -161,6 +162,10 @@ func (o *AppendImageOptions) Complete(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func (o *AppendImageOptions) Validate() error {
+	return o.FilterOptions.Validate()
 }
 
 func (o *AppendImageOptions) Run() error {
@@ -197,20 +202,14 @@ func (o *AppendImageOptions) Run() error {
 		return fmt.Errorf("--to may not point to an image by ID")
 	}
 
-	rt, err := rest.TransportFor(&rest.Config{})
-	if err != nil {
-		return err
-	}
-	insecureRT, err := rest.TransportFor(&rest.Config{TLSClientConfig: rest.TLSClientConfig{Insecure: true}})
-	if err != nil {
-		return err
-	}
-	creds := dockercredentials.NewLocal()
 	ctx := context.Background()
-	fromContext := registryclient.NewContext(rt, insecureRT).WithCredentials(creds)
-	toContext := registryclient.NewContext(rt, insecureRT).WithActions("push").WithCredentials(creds)
+	fromContext, err := o.SecurityOptions.Context()
+	if err != nil {
+		return err
+	}
+	toContext := fromContext.Copy().WithActions("pull", "push")
 
-	toRepo, err := toContext.Repository(ctx, to.DockerClientDefaults().RegistryURL(), to.RepositoryName(), o.Insecure)
+	toRepo, err := toContext.Repository(ctx, to.DockerClientDefaults().RegistryURL(), to.RepositoryName(), o.SecurityOptions.Insecure)
 	if err != nil {
 		return err
 	}
@@ -220,25 +219,35 @@ func (o *AppendImageOptions) Run() error {
 	}
 
 	var (
-		base     *docker10.DockerImageConfig
-		layers   []distribution.Descriptor
-		fromRepo distribution.Repository
+		base              *docker10.DockerImageConfig
+		baseDigest        digest.Digest
+		baseContentDigest digest.Digest
+		layers            []distribution.Descriptor
+		fromRepo          distribution.Repository
 	)
 	if from != nil {
-		repo, err := fromContext.Repository(ctx, from.DockerClientDefaults().RegistryURL(), from.RepositoryName(), o.Insecure)
+		repo, err := fromContext.Repository(ctx, from.DockerClientDefaults().RegistryURL(), from.RepositoryName(), o.SecurityOptions.Insecure)
 		if err != nil {
 			return err
 		}
 		fromRepo = repo
 
-		srcManifest, _, location, err := imagemanifest.FirstManifest(ctx, *from, repo, o.FilterOptions.Include)
+		srcManifest, manifestLocation, err := imagemanifest.FirstManifest(ctx, *from, repo, o.FilterOptions.Include)
 		if err != nil {
 			return fmt.Errorf("unable to read image %s: %v", from, err)
 		}
-		base, layers, err = imagemanifest.ManifestToImageConfig(ctx, srcManifest, repo.Blobs(ctx), location)
+		base, layers, err = imagemanifest.ManifestToImageConfig(ctx, srcManifest, repo.Blobs(ctx), manifestLocation)
 		if err != nil {
 			return fmt.Errorf("unable to parse image %s: %v", from, err)
 		}
+
+		contentDigest, err := registryclient.ContentDigestForManifest(srcManifest, manifestLocation.Manifest.Algorithm())
+		if err != nil {
+			return err
+		}
+
+		baseDigest = manifestLocation.Manifest
+		baseContentDigest = contentDigest
 
 	} else {
 		base = add.NewEmptyConfig()
@@ -250,38 +259,46 @@ func (o *AppendImageOptions) Run() error {
 		base.Config = &docker10.DockerConfig{}
 	}
 
-	if glog.V(4) {
-		configJSON, _ := json.MarshalIndent(base, "", "  ")
-		glog.Infof("input config:\n%s\nlayers: %#v", configJSON, layers)
-	}
+	if o.ConfigurationCallback != nil {
+		if err := o.ConfigurationCallback(baseDigest, baseContentDigest, base); err != nil {
+			return err
+		}
+	} else {
+		if klog.V(4) {
+			configJSON, _ := json.MarshalIndent(base, "", "  ")
+			klog.Infof("input config:\n%s\nlayers: %#v", configJSON, layers)
+		}
 
-	if createdAt == nil {
-		t := time.Now()
-		createdAt = &t
-	}
-	base.Created = *createdAt
-	if o.DropHistory {
-		base.ContainerConfig = docker10.DockerConfig{}
-		base.History = nil
-		base.Container = ""
-		base.DockerVersion = ""
-		base.Config.Image = ""
-	}
+		base.Parent = ""
 
-	if len(o.ConfigPatch) > 0 {
-		if err := json.Unmarshal([]byte(o.ConfigPatch), base.Config); err != nil {
-			return fmt.Errorf("unable to patch image from --image: %v", err)
+		if createdAt == nil {
+			t := time.Now()
+			createdAt = &t
+		}
+		base.Created = *createdAt
+
+		if o.DropHistory {
+			base.ContainerConfig = docker10.DockerConfig{}
+			base.History = nil
+			base.Container = ""
+			base.DockerVersion = ""
+			base.Config.Image = ""
+		}
+		if len(o.ConfigPatch) > 0 {
+			if err := json.Unmarshal([]byte(o.ConfigPatch), base.Config); err != nil {
+				return fmt.Errorf("unable to patch image from --image: %v", err)
+			}
+		}
+		if len(o.MetaPatch) > 0 {
+			if err := json.Unmarshal([]byte(o.MetaPatch), base); err != nil {
+				return fmt.Errorf("unable to patch image from --meta: %v", err)
+			}
 		}
 	}
-	if len(o.MetaPatch) > 0 {
-		if err := json.Unmarshal([]byte(o.MetaPatch), base); err != nil {
-			return fmt.Errorf("unable to patch image from --meta: %v", err)
-		}
-	}
 
-	if glog.V(4) {
+	if klog.V(4) {
 		configJSON, _ := json.MarshalIndent(base, "", "  ")
-		glog.Infof("output config:\n%s", configJSON)
+		klog.Infof("output config:\n%s", configJSON)
 	}
 
 	numLayers := len(layers)
@@ -306,21 +323,28 @@ func (o *AppendImageOptions) Run() error {
 		}
 	}
 
+	// all v1 schema images must have a history that equals the number of non-zero blob
+	// layers, but v2 images do not require it
+	for i := len(base.History); i < len(layers); i++ {
+		base.History = append(base.History, docker10.DockerConfigHistory{
+			Created: base.Created,
+		})
+	}
+
 	if o.DryRun {
-		configJSON, _ := json.MarshalIndent(base, "", "  ")
-		fmt.Fprintf(o.Out, "%s", configJSON)
-		return nil
+		toManifests = &dryRunManifestService{}
+		toBlobs = &dryRunBlobStore{layers: layers}
 	}
 
 	// upload base layers in parallel
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	q := workqueue.New(o.MaxPerRegistry, stopCh)
+	q := workqueue.New(o.ParallelOptions.MaxPerRegistry, stopCh)
 	err = q.Try(func(w workqueue.Try) {
 		for i := range layers[:numLayers] {
 			layer := &layers[i]
 			index := i
-			missingDiffID := len(base.RootFS.DiffIDs[i]) == 0
+			needLayerDigest := len(base.RootFS.DiffIDs[i]) == 0
 			w.Try(func() error {
 				fromBlobs := fromRepo.Blobs(ctx)
 
@@ -328,13 +352,13 @@ func (o *AppendImageOptions) Run() error {
 				if !o.Force {
 					if desc, err := toBlobs.Stat(ctx, layer.Digest); err == nil {
 						// ensure the correct size makes it back to the manifest
-						glog.V(4).Infof("Layer %s already exists in destination (%s)", layer.Digest, units.HumanSizeWithPrecision(float64(layer.Size), 3))
+						klog.V(4).Infof("Layer %s already exists in destination (%s)", layer.Digest, units.HumanSizeWithPrecision(float64(layer.Size), 3))
 						if layer.Size == 0 {
 							layer.Size = desc.Size
 						}
 						// we need to calculate the tar sum from the image, requiring us to pull it
-						if missingDiffID {
-							glog.V(4).Infof("Need tar sum, streaming layer %s", layer.Digest)
+						if needLayerDigest {
+							klog.V(4).Infof("Need tar sum, streaming layer %s", layer.Digest)
 							r, err := fromBlobs.Open(ctx, layer.Digest)
 							if err != nil {
 								return fmt.Errorf("unable to access the layer %s in order to calculate its content ID: %v", layer.Digest, err)
@@ -344,7 +368,7 @@ func (o *AppendImageOptions) Run() error {
 							if err != nil {
 								return fmt.Errorf("unable to calculate contentID for layer %s: %v", layer.Digest, err)
 							}
-							glog.V(4).Infof("Layer %s has tar sum %s", layer.Digest, layerDigest)
+							klog.V(4).Infof("Layer %s has tar sum %s", layer.Digest, layerDigest)
 							base.RootFS.DiffIDs[index] = layerDigest.String()
 						}
 						// TODO: due to a bug in the registry, the empty layer is always returned as existing, but
@@ -355,50 +379,17 @@ func (o *AppendImageOptions) Run() error {
 					}
 				}
 
-				// source
-				r, err := fromBlobs.Open(ctx, layer.Digest)
-				if err != nil {
-					return fmt.Errorf("unable to access the source layer %s: %v", layer.Digest, err)
-				}
-				defer r.Close()
-
-				// destination
-				mountOptions := []distribution.BlobCreateOption{WithDescriptor(*layer)}
+				// copy the blob, calculating layer digest if needed
+				var mountFrom reference.Named
 				if from != nil && from.Registry == to.Registry {
-					source, err := reference.WithDigest(fromRepo.Named(), layer.Digest)
-					if err != nil {
-						return err
-					}
-					mountOptions = append(mountOptions, client.WithMountFrom(source))
+					mountFrom = fromRepo.Named()
 				}
-				bw, err := toBlobs.Create(ctx, mountOptions...)
-				if err != nil {
-					return fmt.Errorf("unable to upload layer %s to destination repository: %v", layer.Digest, err)
-				}
-				defer bw.Close()
-
-				// copy the blob, calculating the diffID if necessary
-				if layer.Size > 0 {
-					fmt.Fprintf(o.Out, "Uploading %s ...\n", units.HumanSize(float64(layer.Size)))
-				} else {
-					fmt.Fprintf(o.Out, "Uploading ...\n")
-				}
-				if missingDiffID {
-					glog.V(4).Infof("Need tar sum, calculating while streaming %s", layer.Digest)
-					layerDigest, _, _, _, err := add.DigestCopy(bw, r)
-					if err != nil {
-						return err
-					}
-					glog.V(4).Infof("Layer %s has tar sum %s", layer.Digest, layerDigest)
-					base.RootFS.DiffIDs[index] = layerDigest.String()
-				} else {
-					if _, err := bw.ReadFrom(r); err != nil {
-						return fmt.Errorf("unable to copy the source layer %s to the destination image: %v", layer.Digest, err)
-					}
-				}
-				desc, err := bw.Commit(ctx, *layer)
+				desc, layerDigest, err := copyBlob(ctx, fromBlobs, toBlobs, *layer, o.Out, needLayerDigest, mountFrom)
 				if err != nil {
 					return fmt.Errorf("uploading the source layer %s failed: %v", layer.Digest, err)
+				}
+				if needLayerDigest {
+					base.RootFS.DiffIDs[index] = layerDigest.String()
 				}
 
 				// check output
@@ -417,16 +408,88 @@ func (o *AppendImageOptions) Run() error {
 		return err
 	}
 
-	manifest, err := add.UploadSchema2Config(ctx, toBlobs, base, layers)
+	manifest, configJSON, err := add.UploadSchema2Config(ctx, toBlobs, base, layers)
 	if err != nil {
 		return fmt.Errorf("unable to upload the new image manifest: %v", err)
 	}
-	toDigest, err := imagemanifest.PutManifestInCompatibleSchema(ctx, manifest, to.Tag, toManifests, fromRepo.Blobs(ctx), toRepo.Named())
+	klog.V(4).Infof("Created config JSON:\n%s", configJSON)
+	toDigest, err := imagemanifest.PutManifestInCompatibleSchema(ctx, manifest, to.Tag, toManifests, toRepo.Named(), fromRepo.Blobs(ctx), configJSON)
 	if err != nil {
 		return fmt.Errorf("unable to convert the image to a compatible schema version: %v", err)
 	}
-	fmt.Fprintf(o.Out, "Pushed image %s to %s\n", toDigest, to)
+	o.ToDigest = toDigest
+	if !o.DryRun {
+		fmt.Fprintf(o.Out, "Pushed %s to %s\n", toDigest, to)
+	}
 	return nil
+}
+
+// copyBlob attempts to mirror a blob from one repo to another, mounting it if possible, and calculating the
+// layerDigest if needLayerDigest is true (mounting is not possible if we need to calculate a layerDigest).
+func copyBlob(ctx context.Context, fromBlobs, toBlobs distribution.BlobService, layer distribution.Descriptor, out io.Writer, needLayerDigest bool, mountFrom reference.Named) (distribution.Descriptor, digest.Digest, error) {
+	// source
+	r, err := fromBlobs.Open(ctx, layer.Digest)
+	if err != nil {
+		return distribution.Descriptor{}, "", fmt.Errorf("unable to access the source layer %s: %v", layer.Digest, err)
+	}
+	defer r.Close()
+
+	// destination
+	mountOptions := []distribution.BlobCreateOption{WithDescriptor(layer)}
+	if mountFrom != nil && !needLayerDigest {
+		source, err := reference.WithDigest(mountFrom, layer.Digest)
+		if err != nil {
+			return distribution.Descriptor{}, "", err
+		}
+		mountOptions = append(mountOptions, client.WithMountFrom(source))
+	}
+	bw, err := toBlobs.Create(ctx, mountOptions...)
+	if err != nil {
+		switch t := err.(type) {
+		case distribution.ErrBlobMounted:
+			// mount successful
+			klog.V(5).Infof("Blob mounted %#v", layer)
+			if t.From.Digest() != layer.Digest {
+				return distribution.Descriptor{}, "", fmt.Errorf("unable to upload layer %s to destination repository: tried to mount source and got back a different digest %s", layer.Digest, t.From.Digest())
+			}
+			if t.Descriptor.Size > 0 {
+				layer.Size = t.Descriptor.Size
+			}
+			return layer, "", nil
+		default:
+			return distribution.Descriptor{}, "", fmt.Errorf("unable to upload layer %s to destination repository: %v", layer.Digest, err)
+		}
+	}
+	defer bw.Close()
+
+	if layer.Size > 0 {
+		fmt.Fprintf(out, "Uploading %s ...\n", units.HumanSize(float64(layer.Size)))
+	} else {
+		fmt.Fprintf(out, "Uploading ...\n")
+	}
+
+	// copy the blob, calculating the diffID if necessary
+	var layerDigest digest.Digest
+	if needLayerDigest {
+		klog.V(4).Infof("Need tar sum, calculating while streaming %s", layer.Digest)
+		calculatedDigest, _, _, _, err := add.DigestCopy(bw, r)
+		if err != nil {
+			return distribution.Descriptor{}, "", err
+		}
+		layerDigest = calculatedDigest
+		klog.V(4).Infof("Layer %s has tar sum %s", layer.Digest, layerDigest)
+
+	} else {
+		if _, err := bw.ReadFrom(r); err != nil {
+			return distribution.Descriptor{}, "", err
+		}
+	}
+
+	desc, err := bw.Commit(ctx, layer)
+	if err != nil {
+		return distribution.Descriptor{}, "", err
+	}
+	return desc, layerDigest, nil
 }
 
 type optionFunc func(interface{}) error
@@ -512,16 +575,16 @@ type scratchRepo struct{}
 var _ distribution.Repository = scratchRepo{}
 
 func (_ scratchRepo) Named() reference.Named { panic("not implemented") }
-func (_ scratchRepo) Tags(ctx distributioncontext.Context) distribution.TagService {
+func (_ scratchRepo) Tags(ctx context.Context) distribution.TagService {
 	panic("not implemented")
 }
-func (_ scratchRepo) Manifests(ctx distributioncontext.Context, options ...distribution.ManifestServiceOption) (distribution.ManifestService, error) {
+func (_ scratchRepo) Manifests(ctx context.Context, options ...distribution.ManifestServiceOption) (distribution.ManifestService, error) {
 	panic("not implemented")
 }
 
-func (r scratchRepo) Blobs(ctx distributioncontext.Context) distribution.BlobStore { return r }
+func (r scratchRepo) Blobs(ctx context.Context) distribution.BlobStore { return r }
 
-func (_ scratchRepo) Stat(ctx distributioncontext.Context, dgst digest.Digest) (distribution.Descriptor, error) {
+func (_ scratchRepo) Stat(ctx context.Context, dgst digest.Digest) (distribution.Descriptor, error) {
 	if dgst != dockerlayer.GzippedEmptyLayerDigest {
 		return distribution.Descriptor{}, distribution.ErrBlobUnknown
 	}
@@ -532,7 +595,7 @@ func (_ scratchRepo) Stat(ctx distributioncontext.Context, dgst digest.Digest) (
 	}, nil
 }
 
-func (_ scratchRepo) Get(ctx distributioncontext.Context, dgst digest.Digest) ([]byte, error) {
+func (_ scratchRepo) Get(ctx context.Context, dgst digest.Digest) ([]byte, error) {
 	if dgst != dockerlayer.GzippedEmptyLayerDigest {
 		return nil, distribution.ErrBlobUnknown
 	}
@@ -551,29 +614,95 @@ func (_ nopCloseBuffer) Close() error {
 	return nil
 }
 
-func (_ scratchRepo) Open(ctx distributioncontext.Context, dgst digest.Digest) (distribution.ReadSeekCloser, error) {
+func (_ scratchRepo) Open(ctx context.Context, dgst digest.Digest) (distribution.ReadSeekCloser, error) {
 	if dgst != dockerlayer.GzippedEmptyLayerDigest {
 		return nil, distribution.ErrBlobUnknown
 	}
 	return nopCloseBuffer{bytes.NewBuffer(dockerlayer.GzippedEmptyLayer)}, nil
 }
 
-func (_ scratchRepo) Put(ctx distributioncontext.Context, mediaType string, p []byte) (distribution.Descriptor, error) {
+func (_ scratchRepo) Put(ctx context.Context, mediaType string, p []byte) (distribution.Descriptor, error) {
 	panic("not implemented")
 }
 
-func (_ scratchRepo) Create(ctx distributioncontext.Context, options ...distribution.BlobCreateOption) (distribution.BlobWriter, error) {
+func (_ scratchRepo) Create(ctx context.Context, options ...distribution.BlobCreateOption) (distribution.BlobWriter, error) {
 	panic("not implemented")
 }
 
-func (_ scratchRepo) Resume(ctx distributioncontext.Context, id string) (distribution.BlobWriter, error) {
+func (_ scratchRepo) Resume(ctx context.Context, id string) (distribution.BlobWriter, error) {
 	panic("not implemented")
 }
 
-func (_ scratchRepo) ServeBlob(ctx distributioncontext.Context, w http.ResponseWriter, r *http.Request, dgst digest.Digest) error {
+func (_ scratchRepo) ServeBlob(ctx context.Context, w http.ResponseWriter, r *http.Request, dgst digest.Digest) error {
 	panic("not implemented")
 }
 
-func (_ scratchRepo) Delete(ctx distributioncontext.Context, dgst digest.Digest) error {
+func (_ scratchRepo) Delete(ctx context.Context, dgst digest.Digest) error {
+	panic("not implemented")
+}
+
+// dryRunManifestService emulates a remote registry for dry run behavior
+type dryRunManifestService struct{}
+
+func (s *dryRunManifestService) Exists(ctx context.Context, dgst digest.Digest) (bool, error) {
+	panic("not implemented")
+}
+
+func (s *dryRunManifestService) Get(ctx context.Context, dgst digest.Digest, options ...distribution.ManifestServiceOption) (distribution.Manifest, error) {
+	panic("not implemented")
+}
+
+func (s *dryRunManifestService) Put(ctx context.Context, manifest distribution.Manifest, options ...distribution.ManifestServiceOption) (digest.Digest, error) {
+	klog.V(4).Infof("Manifest: %#v", manifest.References())
+	return registryclient.ContentDigestForManifest(manifest, digest.SHA256)
+}
+
+func (s *dryRunManifestService) Delete(ctx context.Context, dgst digest.Digest) error {
+	panic("not implemented")
+}
+
+// dryRunBlobStore emulates a remote registry for dry run behavior
+type dryRunBlobStore struct {
+	layers []distribution.Descriptor
+}
+
+func (s *dryRunBlobStore) Stat(ctx context.Context, dgst digest.Digest) (distribution.Descriptor, error) {
+	for _, layer := range s.layers {
+		if layer.Digest == dgst {
+			return layer, nil
+		}
+	}
+	return distribution.Descriptor{}, distribution.ErrBlobUnknown
+}
+
+func (s *dryRunBlobStore) Get(ctx context.Context, dgst digest.Digest) ([]byte, error) {
+	panic("not implemented")
+}
+
+func (s *dryRunBlobStore) Open(ctx context.Context, dgst digest.Digest) (distribution.ReadSeekCloser, error) {
+	panic("not implemented")
+}
+
+func (s *dryRunBlobStore) Put(ctx context.Context, mediaType string, p []byte) (distribution.Descriptor, error) {
+	return distribution.Descriptor{
+		MediaType: mediaType,
+		Size:      int64(len(p)),
+		Digest:    digest.SHA256.FromBytes(p),
+	}, nil
+}
+
+func (s *dryRunBlobStore) Create(ctx context.Context, options ...distribution.BlobCreateOption) (distribution.BlobWriter, error) {
+	panic("not implemented")
+}
+
+func (s *dryRunBlobStore) Resume(ctx context.Context, id string) (distribution.BlobWriter, error) {
+	panic("not implemented")
+}
+
+func (s *dryRunBlobStore) ServeBlob(ctx context.Context, w http.ResponseWriter, r *http.Request, dgst digest.Digest) error {
+	panic("not implemented")
+}
+
+func (s *dryRunBlobStore) Delete(ctx context.Context, dgst digest.Digest) error {
 	panic("not implemented")
 }

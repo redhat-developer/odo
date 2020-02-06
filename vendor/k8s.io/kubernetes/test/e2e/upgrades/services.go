@@ -17,7 +17,9 @@ limitations under the License.
 package upgrades
 
 import (
-	"k8s.io/api/core/v1"
+	"time"
+
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/test/e2e/framework"
 
@@ -36,7 +38,7 @@ type ServiceUpgradeTest struct {
 
 func (ServiceUpgradeTest) Name() string { return "service-upgrade" }
 
-func shouldTestPDBs() bool { return framework.ProviderIs("gce", "gke") }
+func shouldTestPDBs() bool { return true }
 
 // Setup creates a service with a load balancer and makes sure it's reachable.
 func (t *ServiceUpgradeTest) Setup(f *framework.Framework) {
@@ -66,7 +68,8 @@ func (t *ServiceUpgradeTest) Setup(f *framework.Framework) {
 
 	// Hit it once before considering ourselves ready
 	By("hitting the pod through the service's LoadBalancer")
-	jig.TestReachableHTTP(tcpIngressIP, svcPort, framework.LoadBalancerLagTimeoutDefault)
+	// Load balancers can take more than 2 minutes in heavily contended AWS accounts
+	jig.TestReachableHTTP(tcpIngressIP, svcPort, 3*time.Minute)
 
 	t.jig = jig
 	t.tcpService = tcpService
@@ -77,7 +80,7 @@ func (t *ServiceUpgradeTest) Setup(f *framework.Framework) {
 // Test runs a connectivity check to the service.
 func (t *ServiceUpgradeTest) Test(f *framework.Framework, done <-chan struct{}, upgrade UpgradeType) {
 	switch upgrade {
-	case MasterUpgrade:
+	case MasterUpgrade, ClusterUpgrade:
 		t.test(f, done, true)
 	case NodeUpgrade:
 		// Node upgrades should test during disruption only on GCE/GKE for now.

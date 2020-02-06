@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/gorilla/mux"
+	"k8s.io/klog"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
@@ -45,10 +45,10 @@ import (
 // started.
 
 // Default directory for CNIServer runtime files
-const CNIServerRunDir string = "/var/run/openshift-sdn"
+const CNIServerRunDir string = "/var/run/openshift-sdn/cniserver"
 
 // CNIServer socket name, and default full path
-const CNIServerSocketName string = "cni-server.sock"
+const CNIServerSocketName string = "socket"
 const CNIServerSocketPath string = CNIServerRunDir + "/" + CNIServerSocketName
 
 // Config file contains server to plugin config data
@@ -59,7 +59,6 @@ const CNIServerConfigFilePath string = CNIServerRunDir + "/" + CNIServerConfigFi
 type Config struct {
 	MTU                uint32 `json:"mtu"`
 	ServiceNetworkCIDR string `json:"serviceNetworkCIDR"`
-	DNSIP              string `json:"dnsIP"`
 }
 
 // Explicit type for CNI commands the server handles
@@ -94,6 +93,8 @@ type PodRequest struct {
 	Netns string
 	// for an ADD request, the host side of the created veth
 	HostVeth string
+	// for an ADD request, the (optional) already-assigned IP
+	AssignedIP string
 	// Channel for returning the operation result to the CNIServer
 	Result chan *PodResult
 }
@@ -143,15 +144,30 @@ func (s *CNIServer) Start(requestFunc cniRequestFunc) error {
 	}
 	s.requestFunc = requestFunc
 
-	// Remove and re-create the socket directory with root-only permissions
-	if err := os.RemoveAll(s.rundir); err != nil && !os.IsNotExist(err) {
-		utilruntime.HandleError(fmt.Errorf("failed to remove old pod info socket: %v", err))
+	configPath := filepath.Join(s.rundir, CNIServerConfigFileName)
+	socketPath := filepath.Join(s.rundir, CNIServerSocketName)
+
+	// If our socket directory exists, make sure it is private and empty
+	info, err := os.Stat(s.rundir)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("could not read CNIServer directory: %v", err)
+		}
+	} else if info.IsDir() && info.Mode().Perm() == 0700 {
+		if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove old CNIServer socket: %v", err)
+		}
+		if err := os.Remove(configPath); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove old CNIServer config: %v", err)
+		}
+	} else {
+		if err := os.RemoveAll(s.rundir); err != nil {
+			return fmt.Errorf("failed to remove old CNIServer directory: %v", err)
+		}
 	}
-	if err := os.RemoveAll(s.rundir); err != nil && !os.IsNotExist(err) {
-		utilruntime.HandleError(fmt.Errorf("failed to remove contents of socket directory: %v", err))
-	}
+
 	if err := os.MkdirAll(s.rundir, 0700); err != nil {
-		return fmt.Errorf("failed to create pod info socket directory: %v", err)
+		return fmt.Errorf("failed to create CNIServer directory: %v", err)
 	}
 
 	// Write config file
@@ -159,8 +175,7 @@ func (s *CNIServer) Start(requestFunc cniRequestFunc) error {
 	if err != nil {
 		return fmt.Errorf("could not marshal config data: %v", err)
 	}
-	configPath := filepath.Join(s.rundir, CNIServerConfigFileName)
-	err = ioutil.WriteFile(configPath, config, os.FileMode(0444))
+	err = ioutil.WriteFile(configPath, config, 0444)
 	if err != nil {
 		return fmt.Errorf("could not write config file %q: %v", configPath, err)
 	}
@@ -168,7 +183,6 @@ func (s *CNIServer) Start(requestFunc cniRequestFunc) error {
 	// On Linux the socket is created with the permissions of the directory
 	// it is in, so as long as the directory is root-only we can avoid
 	// racy umask manipulation.
-	socketPath := filepath.Join(s.rundir, CNIServerSocketName)
 	l, err := net.Listen("unix", socketPath)
 	if err != nil {
 		return fmt.Errorf("failed to listen on pod info socket: %v", err)
@@ -282,7 +296,7 @@ func (s *CNIServer) handleCNIRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	glog.V(5).Infof("Waiting for %s result for pod %s/%s", req.Command, req.PodNamespace, req.PodName)
+	klog.V(5).Infof("Waiting for %s result for pod %s/%s", req.Command, req.PodNamespace, req.PodName)
 	result, err := s.requestFunc(req)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
@@ -290,7 +304,7 @@ func (s *CNIServer) handleCNIRequest(w http.ResponseWriter, r *http.Request) {
 		// Empty response JSON means success with no body
 		w.Header().Set("Content-Type", "application/json")
 		if _, err := w.Write(result); err != nil {
-			glog.Warningf("Error writing %s HTTP response: %v", req.Command, err)
+			klog.Warningf("Error writing %s HTTP response: %v", req.Command, err)
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package oauth
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -30,9 +31,9 @@ func TestAuthenticateTokenInvalidUID(t *testing.T) {
 	)
 	fakeUserClient := userfake.NewSimpleClientset(&userapi.User{ObjectMeta: metav1.ObjectMeta{Name: "foo", UID: "bar2"}})
 
-	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.Oauth().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{}, NewUIDValidator())
+	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{}, NewUIDValidator())
 
-	userInfo, found, err := tokenAuthenticator.AuthenticateToken("token")
+	userInfo, found, err := tokenAuthenticator.AuthenticateToken(context.TODO(), "token")
 	if found {
 		t.Error("Found token, but it should be missing!")
 	}
@@ -47,9 +48,9 @@ func TestAuthenticateTokenInvalidUID(t *testing.T) {
 func TestAuthenticateTokenNotFoundSuppressed(t *testing.T) {
 	fakeOAuthClient := oauthfake.NewSimpleClientset()
 	fakeUserClient := userfake.NewSimpleClientset()
-	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.Oauth().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{})
+	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{})
 
-	userInfo, found, err := tokenAuthenticator.AuthenticateToken("token")
+	userInfo, found, err := tokenAuthenticator.AuthenticateToken(context.TODO(), "token")
 	if found {
 		t.Error("Found token, but it should be missing!")
 	}
@@ -67,9 +68,9 @@ func TestAuthenticateTokenOtherGetErrorSuppressed(t *testing.T) {
 		return true, nil, errors.New("get error")
 	})
 	fakeUserClient := userfake.NewSimpleClientset()
-	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.Oauth().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{})
+	tokenAuthenticator := NewTokenAuthenticator(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeUserClient.UserV1().Users(), NoopGroupMapper{})
 
-	userInfo, found, err := tokenAuthenticator.AuthenticateToken("token")
+	userInfo, found, err := tokenAuthenticator.AuthenticateToken(context.TODO(), "token")
 	if found {
 		t.Error("Found token, but it should be missing!")
 	}
@@ -136,8 +137,8 @@ func TestAuthenticateTokenTimeout(t *testing.T) {
 	}
 	fakeOAuthClient := oauthfake.NewSimpleClientset(&testToken, &quickToken, &slowToken, &emergToken, &testClient, &quickClient, &slowClient)
 	fakeUserClient := userfake.NewSimpleClientset(&userapi.User{ObjectMeta: metav1.ObjectMeta{Name: "foo", UID: "bar"}})
-	accessTokenGetter := fakeOAuthClient.Oauth().OAuthAccessTokens()
-	oauthClients := fakeOAuthClient.Oauth().OAuthClients()
+	accessTokenGetter := fakeOAuthClient.OauthV1().OAuthAccessTokens()
+	oauthClients := fakeOAuthClient.OauthV1().OAuthClients()
 	lister := &fakeOAuthClientLister{
 		clients: oauthClients,
 	}
@@ -314,7 +315,7 @@ func (f fakeOAuthClientLister) List(selector labels.Selector) ([]*oauthv1.OAuthC
 
 func checkToken(t *testing.T, name string, authf authenticator.Token, tokens oauthclient.OAuthAccessTokenInterface, current clock.Clock, present bool) {
 	t.Helper()
-	userInfo, found, err := authf.AuthenticateToken(name)
+	userInfo, found, err := authf.AuthenticateToken(context.TODO(), name)
 	if present {
 		if !found {
 			t.Errorf("Did not find token %s!", name)

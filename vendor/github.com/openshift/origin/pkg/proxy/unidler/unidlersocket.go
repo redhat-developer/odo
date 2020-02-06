@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
+
+	corev1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/proxy"
 	"k8s.io/kubernetes/pkg/proxy/userspace"
 )
@@ -115,7 +116,7 @@ var (
 	needPodsTickLen     = 5 * time.Second
 )
 
-func newUnidlerSocket(protocol api.Protocol, ip net.IP, port int, signaler NeedPodsSignaler) (userspace.ProxySocket, error) {
+func newUnidlerSocket(protocol corev1.Protocol, ip net.IP, port int, signaler NeedPodsSignaler) (userspace.ProxySocket, error) {
 	host := ""
 	if ip != nil {
 		host = ip.String()
@@ -217,7 +218,7 @@ func (tcp *tcpUnidlerSocket) awaitAwakening(service proxy.ServicePortName, loadB
 			}
 
 			if !sent_need_pods && !loadBalancer.ServiceHasEndpoints(service) {
-				glog.V(4).Infof("unidling TCP proxy sent unidle event to wake up service %s/%s:%s", service.Namespace, service.Name, service.Port)
+				klog.V(4).Infof("unidling TCP proxy sent unidle event to wake up service %s/%s:%s", service.Namespace, service.Name, service.Port)
 				tcp.signaler.NeedPods(service.NamespacedName, service.Port)
 
 				// only send NeedPods once
@@ -233,7 +234,7 @@ func (tcp *tcpUnidlerSocket) awaitAwakening(service proxy.ServicePortName, loadB
 			}
 
 			allConns.Add(inConn)
-			glog.V(4).Infof("unidling TCP proxy has accumulated %v connections while waiting for service %s/%s:%s to unidle", allConns.Len(), service.Namespace, service.Name, service.Port)
+			klog.V(4).Infof("unidling TCP proxy has accumulated %v connections while waiting for service %s/%s:%s to unidle", allConns.Len(), service.Namespace, service.Name, service.Port)
 		case <-ticker.C:
 			if !timeout_started {
 				continue
@@ -259,7 +260,7 @@ func (tcp *tcpUnidlerSocket) ProxyLoop(service proxy.ServicePortName, svcInfo *u
 	var allConns *connectionList
 
 	for {
-		glog.V(4).Infof("unidling TCP proxy start/reset for service %s/%s:%s", service.Namespace, service.Name, service.Port)
+		klog.V(4).Infof("unidling TCP proxy start/reset for service %s/%s:%s", service.Namespace, service.Name, service.Port)
 
 		var cont bool
 		if allConns, cont = tcp.awaitAwakening(service, loadBalancer, inConns, endpointsAvail); !cont {
@@ -267,7 +268,7 @@ func (tcp *tcpUnidlerSocket) ProxyLoop(service proxy.ServicePortName, svcInfo *u
 		}
 	}
 
-	glog.V(4).Infof("unidling TCP proxy waiting for endpoints for service %s/%s:%s to become available with %v accumulated connections", service.Namespace, service.Name, service.Port, allConns.Len())
+	klog.V(4).Infof("unidling TCP proxy waiting for endpoints for service %s/%s:%s to become available with %v accumulated connections", service.Namespace, service.Name, service.Port, allConns.Len())
 	// block until we have endpoints available
 	select {
 	case _, ok := <-endpointsAvail:
@@ -282,10 +283,10 @@ func (tcp *tcpUnidlerSocket) ProxyLoop(service proxy.ServicePortName, svcInfo *u
 		}
 		return
 	}
-	glog.V(4).Infof("unidling TCP proxy got endpoints for service %s/%s:%s, connecting %v accumulated connections", service.Namespace, service.Name, service.Port, allConns.Len())
+	klog.V(4).Infof("unidling TCP proxy got endpoints for service %s/%s:%s, connecting %v accumulated connections", service.Namespace, service.Name, service.Port, allConns.Len())
 
 	for _, inConn := range allConns.GetConns() {
-		glog.V(3).Infof("Accepted TCP connection from %v to %v", inConn.RemoteAddr(), inConn.LocalAddr())
+		klog.V(3).Infof("Accepted TCP connection from %v to %v", inConn.RemoteAddr(), inConn.LocalAddr())
 		outConn, err := userspace.TryConnectEndpoints(service, inConn.(*net.TCPConn).RemoteAddr(), "tcp", loadBalancer)
 		if err != nil {
 			utilruntime.HandleError(fmt.Errorf("Failed to connect to balancer: %v", err))
@@ -328,7 +329,7 @@ func (udp *udpUnidlerSocket) readFromSock(buffer []byte, svcInfo *userspace.Serv
 	if err != nil {
 		if e, ok := err.(net.Error); ok {
 			if e.Temporary() {
-				glog.V(1).Infof("ReadFrom had a temporary failure: %v", err)
+				klog.V(1).Infof("ReadFrom had a temporary failure: %v", err)
 				return true
 			}
 		}
@@ -341,7 +342,7 @@ func (udp *udpUnidlerSocket) readFromSock(buffer []byte, svcInfo *userspace.Serv
 
 func (udp *udpUnidlerSocket) sendWakeup(svcPortName proxy.ServicePortName, svcInfo *userspace.ServiceInfo) *time.Timer {
 	timeoutTimer := time.NewTimer(needPodsWaitTimeout)
-	glog.V(4).Infof("unidling proxy sent unidle event to wake up service %s/%s:%s", svcPortName.Namespace, svcPortName.Name, svcPortName.Port)
+	klog.V(4).Infof("unidling proxy sent unidle event to wake up service %s/%s:%s", svcPortName.Namespace, svcPortName.Name, svcPortName.Port)
 	udp.signaler.NeedPods(svcPortName.NamespacedName, svcPortName.Port)
 
 	return timeoutTimer
@@ -351,7 +352,7 @@ func (udp *udpUnidlerSocket) ProxyLoop(svcPortName proxy.ServicePortName, svcInf
 	// just drop the packets on the floor until we have endpoints
 	var buffer [UDPBufferSize]byte
 
-	glog.V(4).Infof("unidling proxy UDP proxy waiting for data for service %s/%s:%s", svcPortName.Namespace, svcPortName.Name, svcPortName.Port)
+	klog.V(4).Infof("unidling proxy UDP proxy waiting for data for service %s/%s:%s", svcPortName.Namespace, svcPortName.Name, svcPortName.Port)
 
 	if !udp.readFromSock(buffer[0:], svcInfo) {
 		return

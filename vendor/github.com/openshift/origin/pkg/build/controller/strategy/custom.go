@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +37,7 @@ type CustomBuildStrategy struct {
 }
 
 // CreateBuildPod creates the pod to be used for the Custom build
-func (bs *CustomBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod, error) {
+func (bs *CustomBuildStrategy) CreateBuildPod(build *buildv1.Build, additionalCAs map[string]string, internalRegistryHost string) (*corev1.Pod, error) {
 	strategy := build.Spec.Strategy.CustomStrategy
 	if strategy == nil {
 		return nil, errors.New("CustomBuildStrategy cannot be executed without CustomStrategy parameters")
@@ -57,7 +57,10 @@ func (bs *CustomBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 		return nil, fmt.Errorf("failed to encode the build: %v", err)
 	}
 
-	containerEnv := []corev1.EnvVar{{Name: "BUILD", Value: string(data)}}
+	containerEnv := []corev1.EnvVar{
+		{Name: "BUILD", Value: string(data)},
+		{Name: "LANG", Value: "en_US.utf8"},
+	}
 
 	if build.Spec.Source.Git != nil {
 		addSourceEnvVars(build.Spec.Source, &containerEnv)
@@ -79,7 +82,7 @@ func (bs *CustomBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 	}
 
 	if strategy.ExposeDockerSocket {
-		glog.V(2).Infof("ExposeDockerSocket is enabled for %s build", build.Name)
+		klog.V(2).Infof("ExposeDockerSocket is enabled for %s build", build.Name)
 		containerEnv = append(containerEnv, corev1.EnvVar{Name: "DOCKER_SOCKET", Value: dockerSocketPath})
 	}
 
@@ -120,7 +123,7 @@ func (bs *CustomBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 	if !strategy.ForcePull {
 		pod.Spec.Containers[0].ImagePullPolicy = corev1.PullIfNotPresent
 	} else {
-		glog.V(2).Infof("ForcePull is enabled for %s build", build.Name)
+		klog.V(2).Infof("ForcePull is enabled for %s build", build.Name)
 		pod.Spec.Containers[0].ImagePullPolicy = corev1.PullAlways
 	}
 	pod.Spec.Containers[0].Resources = build.Spec.Resources
@@ -131,11 +134,14 @@ func (bs *CustomBuildStrategy) CreateBuildPod(build *buildv1.Build) (*corev1.Pod
 
 	if strategy.ExposeDockerSocket {
 		setupDockerSocket(pod)
-		setupDockerSecrets(pod, &pod.Spec.Containers[0], build.Spec.Output.PushSecret, strategy.PullSecret, build.Spec.Source.Images)
 	}
+	setupDockerSecrets(pod, &pod.Spec.Containers[0], build.Spec.Output.PushSecret, strategy.PullSecret, build.Spec.Source.Images)
 	setOwnerReference(pod, build)
 	setupSourceSecrets(pod, &pod.Spec.Containers[0], build.Spec.Source.SourceSecret)
 	setupInputSecrets(pod, &pod.Spec.Containers[0], build.Spec.Source.Secrets)
 	setupAdditionalSecrets(pod, &pod.Spec.Containers[0], build.Spec.Strategy.CustomStrategy.Secrets)
+	setupContainersConfigs(build, pod)
+	setupBuildCAs(build, pod, additionalCAs, internalRegistryHost)
+	setupContainersStorage(pod, &pod.Spec.Containers[0]) // for unprivileged builds
 	return pod, nil
 }

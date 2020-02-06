@@ -15,26 +15,23 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
-	templatev1 "github.com/openshift/api/template/v1"
 	"github.com/openshift/origin/pkg/oc/lib/newapp/appjson"
 	appcmd "github.com/openshift/origin/pkg/oc/lib/newapp/cmd"
-	"github.com/openshift/origin/pkg/oc/util/ocscheme"
-	templateapi "github.com/openshift/origin/pkg/template/apis/template"
-	templateapiv1 "github.com/openshift/origin/pkg/template/apis/template/v1"
 	templatev1client "github.com/openshift/origin/pkg/template/client/v1"
 )
 
@@ -86,7 +83,7 @@ type AppJSONOptions struct {
 func NewAppJSONOptions(streams genericclioptions.IOStreams) *AppJSONOptions {
 	return &AppJSONOptions{
 		IOStreams:  streams,
-		PrintFlags: genericclioptions.NewPrintFlags("created").WithTypeSetter(ocscheme.PrintingInternalScheme),
+		PrintFlags: genericclioptions.NewPrintFlags("created").WithTypeSetter(scheme.Scheme),
 		Generator:  AppJSONV1GeneratorName,
 	}
 }
@@ -113,6 +110,7 @@ func NewCmdAppJSON(fullName string, f kcmdutil.Factory, streams genericclioption
 	cmd.Flags().StringVar(&o.Generator, "generator", o.Generator, "The name of the generator strategy to use - specify this value to for backwards compatibility.")
 	cmd.Flags().StringVar(&o.AsTemplate, "as-template", o.AsTemplate, "If set, generate a template with the provided name")
 	cmd.Flags().StringVar(&o.OutputVersionStr, "output-version", o.OutputVersionStr, "The preferred API versions of the output objects")
+	cmd.Flags().MarkDeprecated("output-version", "this flag is deprecated and will be removed in the future")
 
 	o.PrintFlags.AddFlags(cmd)
 	return cmd
@@ -137,7 +135,7 @@ func (o *AppJSONOptions) createResources(list *corev1.List) (*corev1.List, []err
 			continue
 		}
 
-		_, err = o.DynamicClient.Resource(mapping.Resource).Namespace(o.Namespace).Create(unstructuredObj)
+		_, err = o.DynamicClient.Resource(mapping.Resource).Namespace(o.Namespace).Create(unstructuredObj, metav1.CreateOptions{})
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -233,38 +231,27 @@ func (o *AppJSONOptions) Run() error {
 		return err
 	}
 
-	externalTemplate := &templatev1.Template{}
-	if err := templateapiv1.Convert_template_Template_To_v1_Template(template, externalTemplate, nil); err != nil {
-		return err
-	}
-
-	externalTemplate.ObjectLabels = map[string]string{"app.json": externalTemplate.Name}
+	template.ObjectLabels = map[string]string{"app.json": template.Name}
 
 	// TODO: stop implying --dry-run behavior when an --output value is provided
 	if o.PrintFlags.OutputFormat != nil && len(*o.PrintFlags.OutputFormat) > 0 || len(o.AsTemplate) > 0 {
 		var obj runtime.Object
 		if len(o.AsTemplate) > 0 {
-			externalTemplate.Name = o.AsTemplate
-			obj = externalTemplate
+			template.Name = o.AsTemplate
+			obj = template
 		} else {
-			obj = &corev1.List{Items: externalTemplate.Objects}
+			obj = &corev1.List{Items: template.Objects}
 		}
 		return o.Printer.PrintObj(obj, o.Out)
 	}
 
 	templateProcessor := templatev1client.NewTemplateProcessorClient(o.Client, o.Namespace)
-	result, err := appcmd.TransformTemplate(externalTemplate, templateProcessor, o.Namespace, nil, false)
+	result, err := appcmd.TransformTemplate(template, templateProcessor, o.Namespace, nil, false)
 	if err != nil {
 		return err
 	}
 
-	// TODO(juanvallejo): remove once we have external version describers
-	describableResult := &templateapi.Template{}
-	if err := templateapiv1.Convert_v1_Template_To_template_Template(result, describableResult, nil); err != nil {
-		return err
-	}
-
-	appcmd.DescribeGeneratedTemplate(o.Out, "", describableResult, o.Namespace)
+	appcmd.DescribeGeneratedTemplate(o.Out, "", result, o.Namespace)
 
 	objs := &corev1.List{Items: result.Objects}
 

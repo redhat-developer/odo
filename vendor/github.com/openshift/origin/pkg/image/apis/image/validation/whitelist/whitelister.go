@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	kerrutil "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	serverapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
+	openshiftcontrolplanev1 "github.com/openshift/api/openshiftcontrolplane/v1"
 	imageapi "github.com/openshift/origin/pkg/image/apis/image"
 	stringsutil "github.com/openshift/origin/pkg/util/strings"
 )
@@ -72,7 +72,7 @@ var _ RegistryWhitelister = &registryWhitelister{}
 // NewRegistryWhitelister creates a whitelister that admits registry domains and pull specs based on the given
 // list of allowed registries and the current domain name of the integrated Docker registry.
 func NewRegistryWhitelister(
-	whitelist serverapi.AllowedRegistries,
+	whitelist openshiftcontrolplanev1.AllowedRegistries,
 	registryHostRetriever RegistryHostnameRetriever,
 ) (RegistryWhitelister, error) {
 	errs := []error{}
@@ -202,11 +202,11 @@ func (rw *registryWhitelister) AdmitDockerImageReference(ref *imageapi.DockerIma
 	}
 
 	if len(rw.whitelist) == 0 {
-		glog.V(5).Infof("registry %q not allowed by empty whitelist", hostname)
+		klog.V(5).Infof("registry %q not allowed by empty whitelist", hostname)
 		return fmt.Errorf("registry %q not allowed by empty whitelist", hostname)
 	}
 
-	glog.V(5).Infof("registry %q not allowed by whitelist: %s", hostname, strings.Join(whitelist, ", "))
+	klog.V(5).Infof("registry %q not allowed by whitelist: %s", hostname, strings.Join(whitelist, ", "))
 	if len(rw.whitelist) <= showMax {
 		return fmt.Errorf("registry %q not allowed by whitelist: %s", hostname, strings.Join(whitelist, ", "))
 	}
@@ -259,9 +259,7 @@ func (rw *registryWhitelister) Copy() RegistryWhitelister {
 		pullSpecs:             sets.NewString(rw.pullSpecs.List()...),
 		registryHostRetriever: rw.registryHostRetriever,
 	}
+	copy(newRW.whitelist, rw.whitelist)
 
-	for i, item := range rw.whitelist {
-		newRW.whitelist[i] = item
-	}
 	return &newRW
 }

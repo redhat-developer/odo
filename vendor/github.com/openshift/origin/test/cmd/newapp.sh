@@ -5,9 +5,14 @@ trap os::test::junit::reconcile_output EXIT
 # Cleanup cluster resources created by this test
 (
   set +e
-#  oc delete all,templates --all
-  oc delete-project template-substitute
-  oc delete-project prefix-template-substitute
+  oc login -u system:admin
+  oc delete all,templates --all
+  oc delete all,templates --all -n openshift
+  oc delete project template-substitute
+  oc delete project prefix-template-substitute
+  oc delete project test-imagestreams
+  oc delete project new-app-syntax
+  rm -rf ./test/testdata/testapp
   exit 0
 ) &>/dev/null
 
@@ -15,9 +20,10 @@ os::util::environment::setup_time_vars
 
 os::test::junit::declare_suite_start "cmd/newapp"
 
-#
+default_project=$(oc project -q)
+os::cmd::expect_success 'git clone https://github.com/openshift/ruby-hello-world.git ./test/testdata/testapp'
+
 # imagestream/tag creation and reuse
-#
 os::cmd::expect_success 'oc create -f examples/image-streams/image-streams-centos7.json -n openshift'
 os::cmd::expect_success 'oc delete istag php:latest -n openshift'
 os::cmd::expect_success 'oc new-project test-imagestreams'
@@ -37,7 +43,7 @@ os::cmd::expect_success 'oc new-app --docker-image=library/perl https://github.c
 os::cmd::try_until_success 'oc get istag perl:latest -n test-imagestreams'
 
 # remove redundant imagestream tag before creating objects
-os::cmd::expect_success_and_text 'oc new-app  openshift/ruby-22-centos7 https://github.com/openshift/ruby-hello-world  --strategy=docker --loglevel=5' 'Removing duplicate tag from object list'
+os::cmd::expect_success_and_text 'oc new-app centos/ruby-25-centos7 https://github.com/openshift/ruby-hello-world  --strategy=docker --loglevel=5' 'Removing duplicate tag from object list'
 
 # create imagestream in the correct namespace
 os::cmd::expect_success 'oc new-app --name=mytest --image-stream=mysql --env=MYSQL_USER=test --env=MYSQL_PASSWORD=redhat --env=MYSQL_DATABASE=testdb -l app=mytest'
@@ -55,13 +61,10 @@ os::cmd::try_until_success 'oc get istag node:10'
 
 # cleanup and reset to default namespace
 os::cmd::expect_success 'oc delete is --all -n openshift'
-os::cmd::expect_success 'oc project cmd-newapp'
 os::cmd::expect_success 'oc delete project test-imagestreams'
 
-# end imagestream/tag creation and reuse
-
-
 # This test validates the new-app command
+os::cmd::expect_success 'oc project ${default_project}'
 os::cmd::expect_success_and_text 'oc new-app library/php mysql -o yaml' '3306'
 os::cmd::expect_success_and_text 'oc new-app library/php mysql --dry-run' "Image \"library/php\" runs as the 'root' user which may not be permitted by your cluster administrator"
 os::cmd::expect_failure 'oc new-app unknownhubimage -o yaml'
@@ -89,8 +92,7 @@ os::cmd::expect_success 'oc delete all -l app=expose-output'
 os::cmd::expect_success_and_text 'oc new-app mysql --as-test' 'Application is not exposed'
 os::cmd::expect_success 'oc delete all -l app=mysql'
 
-# ensure that oc new-app does not emit a BuildConfigInstantiateFailed event when creating
-# a new application
+# ensure that oc new-app does not emit a BuildConfigInstantiateFailed event when creating a new application
 os::cmd::expect_success 'oc new-app https://github.com/sclorg/ruby-ex'
 os::cmd::expect_success_and_not_text 'oc describe bc/ruby-ex' 'BuildConfigInstantiateFailed'
 os::cmd::expect_success 'oc delete all -l app=ruby-ex'
@@ -99,11 +101,14 @@ os::cmd::expect_success 'oc delete all -l app=ruby-ex'
 os::cmd::expect_success_and_not_text 'oc new-app --file test/testdata/invalid-build-strategy.yaml --dry-run' 'invalid memory address or nil pointer dereference'
 
 # test that imagestream references across imagestreams do not cause an error
-os::cmd::try_until_success 'oc get imagestreamtags ruby:2.3'
+os::cmd::try_until_success 'oc get imagestreamtags ruby:2.5'
 os::cmd::expect_success 'oc create -f test/testdata/newapp/imagestream-ref.yaml'
 os::cmd::try_until_success 'oc get imagestreamtags myruby:latest'
 os::cmd::expect_success 'oc new-app myruby~https://github.com/openshift/ruby-hello-world.git --dry-run'
 os::cmd::expect_success 'oc delete is myruby'
+
+# Ensure clear error message wrt templates container CRDs and new-app appears
+os::cmd::expect_failure_and_text 'oc new-app -f test/testdata/newapp/template-with-crd.yaml' 'error: The template contained an object type unknown to '
 
 # docker strategy with repo that has no dockerfile
 os::cmd::expect_failure_and_text 'oc new-app https://github.com/sclorg/nodejs-ex --strategy=docker' 'No Dockerfile was found'
@@ -165,10 +170,9 @@ os::cmd::expect_failure_and_text 'oc new-app -f test/testdata/template-with-name
 # ensure --build-env environment variables get added to the buildconfig
 os::cmd::expect_success_and_text 'oc new-app -f test/testdata/template-with-app-label.json --build-env FOO=bar -o yaml' 'FOO'
 # ensure the objects can actually get created with a namespace specified
-project=$(oc project -q)
 os::cmd::expect_success 'oc new-project template-substitute'
 os::cmd::expect_success 'oc new-project prefix-template-substitute'
-os::cmd::expect_success 'oc project ${project}'
+os::cmd::expect_success 'oc project ${default_project}'
 os::cmd::expect_success 'oc new-app -f test/testdata/template-with-namespaces.json -p SUBSTITUTED=template-substitute'
 os::cmd::expect_success 'oc delete all -l app=ruby-helloworld-sample'
 
@@ -316,8 +320,8 @@ os::cmd::expect_success_and_text 'oc new-app --search ruby-helloworld-sample' 'r
 os::cmd::expect_success_and_text 'oc new-app --search ruby-hellow' 'ruby-helloworld-sample'
 os::cmd::expect_success_and_text 'oc new-app --search --template=ruby-hel' 'ruby-helloworld-sample'
 os::cmd::expect_success_and_text 'oc new-app --search --template=ruby-helloworld-sam -o yaml' 'ruby-helloworld-sample'
-os::cmd::expect_success_and_text 'oc new-app --search rub' "Tags:\s+2.3, 2.4, 2.5, latest"
-os::cmd::expect_success_and_text 'oc new-app --search --image-stream=rub' "Tags:\s+2.3, 2.4, 2.5, latest"
+os::cmd::expect_success_and_text 'oc new-app --search rub' "Tags:\s+2.5, latest"
+os::cmd::expect_success_and_text 'oc new-app --search --image-stream=rub' "Tags:\s+2.5, latest"
 # check search - check correct usage of filters
 os::cmd::expect_failure_and_not_text 'oc new-app --search --image-stream=ruby-heloworld-sample' 'application-template-stibuild'
 os::cmd::expect_failure 'oc new-app --search --template=php'
@@ -367,10 +371,6 @@ os::cmd::try_until_success 'oc get imagestreamtags python:3.4'
 os::cmd::try_until_success 'oc get imagestreamtags python:3.5'
 os::cmd::try_until_success 'oc get imagestreamtags python:3.6'
 os::cmd::try_until_success 'oc get imagestreamtags ruby:latest'
-os::cmd::try_until_success 'oc get imagestreamtags ruby:2.0'
-os::cmd::try_until_success 'oc get imagestreamtags ruby:2.2'
-os::cmd::try_until_success 'oc get imagestreamtags ruby:2.3'
-os::cmd::try_until_success 'oc get imagestreamtags ruby:2.4'
 os::cmd::try_until_success 'oc get imagestreamtags ruby:2.5'
 os::cmd::try_until_success 'oc get imagestreamtags wildfly:latest'
 os::cmd::try_until_success 'oc get imagestreamtags wildfly:12.0'
@@ -384,13 +384,13 @@ os::cmd::expect_success_and_text 'oc new-app --search --image-stream=mariadb' "T
 os::cmd::expect_success_and_text 'oc new-app --search --image-stream=mongodb' "Tags:\s+3.2, 3.4, 3.6, latest"
 os::cmd::expect_success_and_text 'oc new-app --search --image-stream=mysql' "Tags:\s+5.7, latest"
 os::cmd::expect_success_and_text 'oc new-app --search --image-stream=nginx' "Tags:\s+1.10, 1.12, 1.8, latest"
-os::cmd::expect_success_and_text 'oc new-app --search --image-stream=nodejs' "Tags:\s+10, 6, 8, 8-RHOAR, latest"
+os::cmd::expect_success_and_text 'oc new-app --search --image-stream=nodejs' "Tags:\s+10, 11, 6, 8, 8-RHOAR, latest"
 os::cmd::expect_success_and_text 'oc new-app --search --image-stream=perl' "Tags:\s+5.24, 5.26, latest"
 os::cmd::expect_success_and_text 'oc new-app --search --image-stream=php' "Tags:\s+7.0, 7.1, latest"
 os::cmd::expect_success_and_text 'oc new-app --search --image-stream=postgresql' "Tags:\s+10, 9.5, 9.6, latest"
 os::cmd::expect_success_and_text 'oc new-app -S --image-stream=python' "Tags:\s+2.7, 3.5, 3.6, latest"
-os::cmd::expect_success_and_text 'oc new-app -S --image-stream=ruby' "Tags:\s+2.3, 2.4, 2.5, latest"
-os::cmd::expect_success_and_text 'oc new-app -S --image-stream=wildfly' "Tags:\s+10.0, 10.1, 11.0, 12.0, 13.0, 8.1, 9.0, latest"
+os::cmd::expect_success_and_text 'oc new-app -S --image-stream=ruby' "Tags:\s+2.5, latest"
+os::cmd::expect_success_and_text 'oc new-app -S --image-stream=wildfly' "Tags:\s+10.0, 10.1, 11.0, 12.0, 13.0, 14.0, 15.0, 8.1, 9.0, latest"
 os::cmd::expect_success_and_text 'oc new-app --search --template=ruby-helloworld-sample' 'ruby-helloworld-sample'
 # check search - no matches
 os::cmd::expect_failure_and_text 'oc new-app -S foo-the-bar' 'no matches found'
@@ -403,8 +403,8 @@ os::cmd::expect_failure_and_text 'oc new-app --search mysql --param=FOO=BAR' "ca
 os::cmd::expect_failure_and_not_text 'oc new-app --template foo' 'index out of range'
 
 # set context-dir
-os::cmd::expect_success_and_text 'oc new-app https://github.com/sclorg/s2i-ruby-container.git --context-dir="2.4/test/puma-test-app" -o yaml' 'contextDir: 2.4/test/puma-test-app'
-os::cmd::expect_success_and_text 'oc new-app ruby~https://github.com/sclorg/s2i-ruby-container.git --context-dir="2.4/test/puma-test-app" -o yaml' 'contextDir: 2.4/test/puma-test-app'
+os::cmd::expect_success_and_text 'oc new-app https://github.com/sclorg/s2i-ruby-container.git --context-dir="2.5/test/puma-test-app" -o yaml' 'contextDir: 2.5/test/puma-test-app'
+os::cmd::expect_success_and_text 'oc new-app ruby~https://github.com/sclorg/s2i-ruby-container.git --context-dir="2.5/test/puma-test-app" -o yaml' 'contextDir: 2.5/test/puma-test-app'
 
 # set strategy
 os::cmd::expect_success_and_text 'oc new-app ruby~https://github.com/openshift/ruby-hello-world.git --strategy=docker -o yaml' 'dockerStrategy'
@@ -456,11 +456,6 @@ os::cmd::expect_success_and_text 'oc new-build --binary --image=ruby --strategy=
 os::cmd::expect_success 'oc new-app --image-stream ruby https://github.com/sclorg/rails-ex --dry-run'
 # when latest does not exist, there are multiple partial matches (2.2, 2.3, 2.4, 2.5)
 os::cmd::expect_success 'oc delete imagestreamtag ruby:latest'
-os::cmd::expect_failure_and_text 'oc new-app --image-stream ruby https://github.com/sclorg/rails-ex --dry-run' 'error: multiple images or templates matched \"ruby\"'
-# when only 2.5 exists, there is a single partial match (2.5)
-os::cmd::expect_success 'oc delete imagestreamtag ruby:2.2'
-os::cmd::expect_success 'oc delete imagestreamtag ruby:2.3'
-os::cmd::expect_success 'oc delete imagestreamtag ruby:2.4'
 os::cmd::expect_failure_and_text 'oc new-app --image-stream ruby https://github.com/sclorg/rails-ex --dry-run' 'error: only a partial match was found for \"ruby\":'
 # when the tag is specified explicitly, the operation is successful
 os::cmd::expect_success 'oc new-app --image-stream ruby:2.5 https://github.com/sclorg/rails-ex --dry-run'
@@ -476,9 +471,10 @@ os::cmd::expect_success 'oc delete all -l app=testapp1'
 os::cmd::expect_success 'oc delete all -l app=ruby --ignore-not-found'
 os::cmd::expect_success 'oc delete imagestreams --all --ignore-not-found'
 # newapp does not attempt to create an imagestream that already exists for a Docker image
-os::cmd::expect_success 'oc new-app docker.io/ruby:2.2'
+os::cmd::expect_success 'oc new-app docker.io/ruby:2.5'
 # the next one technically fails cause the DC is already created, but we should still see the ist created
-os::cmd::expect_failure_and_text 'oc new-app docker.io/ruby:2.4' 'imagestreamtag.image.openshift.io "ruby:2.4" created'
+ os::cmd::expect_success 'oc delete imagestreamtag ruby:2.5' 
+os::cmd::expect_failure_and_text 'oc new-app docker.io/ruby:2.5' 'imagestreamtag.image.openshift.io "ruby:2.5" created'
 os::cmd::expect_success 'oc delete imagestreams --all --ignore-not-found'
 
 # check that we can create from the template without errors
@@ -504,7 +500,7 @@ os::cmd::expect_success_and_text 'oc new-build mysql https://github.com/openshif
 os::cmd::expect_failure_and_text 'oc new-build mysql https://github.com/openshift/ruby-hello-world --binary' 'specifying binary builds and source repositories at the same time is not allowed'
 # binary builds cannot be created unless a builder image is specified.
 os::cmd::expect_failure_and_text 'oc new-build --name mybuild --binary --strategy=source -o yaml' 'you must provide a builder image when using the source strategy with a binary build'
-os::cmd::expect_success_and_text 'oc new-build --name mybuild centos/ruby-22-centos7 --binary --strategy=source -o yaml' 'name: ruby-22-centos7:latest'
+os::cmd::expect_success_and_text 'oc new-build --name mybuild centos/ruby-25-centos7 --binary --strategy=source -o yaml' 'name: ruby-25-centos7:latest'
 # binary builds can be created with no builder image if no strategy or docker strategy is specified
 os::cmd::expect_success_and_text 'oc new-build --name mybuild --binary -o yaml' 'type: Binary'
 os::cmd::expect_success_and_text 'oc new-build --name mybuild --binary --strategy=docker -o yaml' 'type: Binary'
@@ -526,10 +522,9 @@ os::cmd::expect_success 'oc new-app openshift/bogusimage https://github.com/open
 
 os::cmd::expect_success 'oc create -f test/testdata/installable-stream.yaml'
 
-project=$(oc project -q)
 os::cmd::expect_success 'oc policy add-role-to-user edit test-user'
 os::cmd::expect_success 'oc login -u test-user -p anything'
-os::cmd::try_until_success 'oc project ${project}'
+os::cmd::try_until_success 'oc project ${default_project}'
 
 os::cmd::try_until_success 'oc get imagestreamtags installable:file'
 os::cmd::try_until_success 'oc get imagestreamtags installable:token'
@@ -573,44 +568,24 @@ os::cmd::expect_failure_and_text 'oc new-build --name sourcetest --source-image 
 os::cmd::expect_success 'oc delete imagestreams --all --ignore-not-found'
 
 # new-app different syntax for new-app functionality
-os::cmd::expect_success 'oc new-project new-app-syntax'
-os::cmd::expect_success 'oc import-image openshift/ruby-20-centos7:latest --confirm'
-os::cmd::expect_success 'oc import-image openshift/php-55-centos7:latest --confirm'
-rm -rf ./test/testdata/testapp
-git clone https://github.com/openshift/ruby-hello-world.git ./test/testdata/testapp
-os::cmd::expect_success 'oc new-app ruby-20-centos7:latest~https://github.com/openshift/ruby-hello-world.git --dry-run'
-os::cmd::expect_success 'oc new-app ruby-20-centos7:latest~./test/testdata/testapp --dry-run'
-os::cmd::expect_success 'oc new-app -i ruby-20-centos7:latest https://github.com/openshift/ruby-hello-world.git --dry-run'
-os::cmd::expect_success 'oc new-app -i ruby-20-centos7:latest ./test/testdata/testapp --dry-run'
-os::cmd::expect_success 'oc new-app ruby-20-centos7:latest --code https://github.com/openshift/ruby-hello-world.git --dry-run'
-os::cmd::expect_success 'oc new-app ruby-20-centos7:latest --code ./test/testdata/testapp --dry-run'
-os::cmd::expect_success 'oc new-app -i ruby-20-centos7:latest --code https://github.com/openshift/ruby-hello-world.git --dry-run'
-os::cmd::expect_success 'oc new-app -i ruby-20-centos7:latest --code ./test/testdata/testapp --dry-run'
 
-os::cmd::expect_success 'oc new-app --code ./test/testdata/testapp --name test'
-os::cmd::expect_success_and_text 'oc get bc test --template={{.spec.strategy.dockerStrategy.from.name}}' 'ruby-22-centos7:latest'
+# new-app docker build strategy with binary input
+os::cmd::expect_success 'oc project ${default_project}'
+os::cmd::expect_success 'oc delete all,templates --all'
+os::cmd::expect_success 'oc create -f examples/image-streams/image-streams-centos7.json'
+os::cmd::try_until_success 'oc get imagestreamtags ruby:latest' # need to wait until tags are available!?
+os::cmd::expect_failure_and_text 'oc new-app --strategy=docker --name my-docker-app' 'none of the arguments provided could be classified as a source code location'
+os::cmd::expect_success_and_text 'oc new-app --strategy=docker --binary --name my-docker-app' 'A binary build was created'
+os::cmd::expect_success_and_text 'oc get bc my-docker-app -o yaml' 'type: Binary'
+os::cmd::expect_success 'oc delete all -l app=my-docker-app'
 
-os::cmd::expect_success 'oc new-app -i php-55-centos7:latest --code ./test/testdata/testapp --name test2'
-os::cmd::expect_success_and_text 'oc get bc test2 --template={{.spec.strategy.sourceStrategy.from.name}}' 'php-55-centos7:latest'
+# new-app source build strategy with binary input
+os::cmd::expect_success_and_text 'oc new-app  ruby --binary --name my-imagestream-app' 'A binary build was created'
+os::cmd::expect_success_and_text 'oc get bc my-imagestream-app -o yaml' 'type: Binary'
+os::cmd::expect_success 'oc delete all -l app=my-imagestream-app'
 
-os::cmd::expect_success 'oc new-app -i php-55-centos7:latest~https://github.com/openshift/ruby-hello-world.git --name test3'
-os::cmd::expect_success_and_text 'oc get bc test3 --template={{.spec.strategy.sourceStrategy.from.name}}' 'php-55-centos7:latest'
-
-os::cmd::expect_success 'oc new-app php-55-centos7:latest~https://github.com/openshift/ruby-hello-world.git --name test4'
-os::cmd::expect_success_and_text 'oc get bc test4 --template={{.spec.strategy.sourceStrategy.from.name}}' 'php-55-centos7:latest'
-
-os::cmd::expect_success 'oc new-app -i php-55-centos7:latest https://github.com/openshift/ruby-hello-world.git --name test5'
-os::cmd::expect_success_and_text 'oc get bc test5 --template={{.spec.strategy.sourceStrategy.from.name}}' 'php-55-centos7:latest'
-
-os::cmd::expect_success 'oc new-app php-55-centos7:latest --code https://github.com/openshift/ruby-hello-world.git --name test6'
-os::cmd::expect_success_and_text 'oc get bc test6 --template={{.spec.strategy.sourceStrategy.from.name}}' 'php-55-centos7:latest'
-
-os::cmd::expect_success 'oc new-app https://github.com/openshift/ruby-hello-world.git --name test7'
-os::cmd::expect_success_and_text 'oc get bc test7 --template={{.spec.strategy.dockerStrategy.from.name}}' 'ruby-22-centos7:latest'
-
-os::cmd::expect_success 'oc new-app php-55-centos7:latest https://github.com/openshift/ruby-hello-world.git --name test8'
-os::cmd::expect_success_and_text 'oc get bc test8 --template={{.spec.strategy.sourceStrategy.from.name}}' 'php-55-centos7:latest'
-os::cmd::expect_success 'oc delete project new-app-syntax'
+# new-app with source repository and binary input
+os::cmd::expect_failure_and_text 'oc new-app ./test/testdata/testapp --binary' 'error: specifying binary builds and source repositories at the same time is not allowed'
 
 echo "new-app: ok"
 os::test::junit::declare_suite_end

@@ -6,13 +6,16 @@ import (
 	"regexp"
 	"strings"
 
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/api/validation/path"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/authentication/serviceaccount"
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 
+	routev1 "github.com/openshift/api/route/v1"
 	authorizerscopes "github.com/openshift/origin/pkg/authorization/authorizer/scope"
 	oauthapi "github.com/openshift/origin/pkg/oauth/apis/oauth"
+	"github.com/openshift/origin/pkg/oauthserver/authenticator/password/bootstrap"
 	uservalidation "github.com/openshift/origin/pkg/user/apis/user/validation"
 )
 
@@ -47,7 +50,7 @@ func ValidateTokenName(name string, prefix bool) []string {
 
 func ValidateRedirectURI(redirect string) (bool, string) {
 	if len(redirect) == 0 {
-		return true, ""
+		return false, "may not be empty"
 	}
 
 	u, err := url.Parse(redirect)
@@ -79,11 +82,14 @@ func ValidateAccessToken(accessToken *oauthapi.OAuthAccessToken) field.ErrorList
 	}
 	// negative values are not allowed
 	if accessToken.InactivityTimeoutSeconds < 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("inactivityTimeoutSeconds"),
-			accessToken.InactivityTimeoutSeconds, "cannot be a negative value"))
+		allErrs = append(allErrs, field.Invalid(field.NewPath("inactivityTimeoutSeconds"), accessToken.InactivityTimeoutSeconds, "cannot be a negative value"))
 	}
 	if ok, msg := ValidateRedirectURI(accessToken.RedirectURI); !ok {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("redirectURI"), accessToken.RedirectURI, msg))
+	}
+
+	if accessToken.ExpiresIn < 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("expiresIn"), accessToken.ExpiresIn, "cannot be a negative value"))
 	}
 
 	return allErrs
@@ -150,6 +156,10 @@ func ValidateAuthorizeToken(authorizeToken *oauthapi.OAuthAuthorizeToken) field.
 		}
 	}
 
+	if authorizeToken.ExpiresIn <= 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("expiresIn"), authorizeToken.ExpiresIn, "must be greater than zero"))
+	}
+
 	return allErrs
 }
 
@@ -161,10 +171,16 @@ func ValidateAuthorizeTokenUpdate(newToken, oldToken *oauthapi.OAuthAuthorizeTok
 }
 
 func ValidateClient(client *oauthapi.OAuthClient) field.ErrorList {
-	allErrs := validation.ValidateObjectMeta(&client.ObjectMeta, false, validation.NameIsDNSSubdomain, field.NewPath("metadata"))
+	allErrs := validation.ValidateObjectMeta(&client.ObjectMeta, false, apimachineryvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))
 	for i, redirect := range client.RedirectURIs {
 		if ok, msg := ValidateRedirectURI(redirect); !ok {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("redirectURIs").Index(i), redirect, msg))
+		}
+	}
+
+	for i, secret := range client.AdditionalSecrets {
+		if len(secret) == 0 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("additionalSecrets").Index(i), "", "may not be empty"))
 		}
 	}
 
@@ -172,18 +188,34 @@ func ValidateClient(client *oauthapi.OAuthClient) field.ErrorList {
 		allErrs = append(allErrs, ValidateScopeRestriction(restriction, field.NewPath("scopeRestrictions").Index(i))...)
 	}
 
+	if accessTokenMaxAgeSeconds := client.AccessTokenMaxAgeSeconds; accessTokenMaxAgeSeconds != nil {
+		if *accessTokenMaxAgeSeconds < 0 {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("accessTokenMaxAgeSeconds"), *accessTokenMaxAgeSeconds, "value cannot be negative"))
+		}
+	}
+
 	if client.AccessTokenInactivityTimeoutSeconds != nil {
 		timeout := *client.AccessTokenInactivityTimeoutSeconds
 		if timeout > 0 && timeout < MinimumInactivityTimeoutSeconds {
-			allErrs = append(allErrs, field.Invalid(
-				field.NewPath("accessTokenInactivityTimeoutSeconds"),
-				client.AccessTokenInactivityTimeoutSeconds,
-				fmt.Sprintf("The minimum valid timeout value is %d seconds", MinimumInactivityTimeoutSeconds)))
+			msg := fmt.Sprintf("The minimum valid timeout value is %d seconds", MinimumInactivityTimeoutSeconds)
+			allErrs = append(allErrs, field.Invalid(field.NewPath("accessTokenInactivityTimeoutSeconds"), timeout, msg))
 		}
 		if timeout < 0 {
-			allErrs = append(allErrs, field.Invalid(
-				field.NewPath("accessTokenInactivityTimeoutSeconds"),
-				client.AccessTokenInactivityTimeoutSeconds, "value cannot be negative"))
+			allErrs = append(allErrs, field.Invalid(field.NewPath("accessTokenInactivityTimeoutSeconds"), timeout, "value cannot be negative"))
+		}
+	}
+
+	if len(client.GrantMethod) == 0 {
+		allErrs = append(allErrs, field.Required(field.NewPath("grantMethod"),
+			fmt.Sprintf("must be %s or %s", oauthapi.GrantHandlerAuto, oauthapi.GrantHandlerPrompt)))
+	} else {
+		switch client.GrantMethod {
+		case oauthapi.GrantHandlerAuto, oauthapi.GrantHandlerPrompt:
+			// valid grant methods
+		default:
+			allErrs = append(allErrs, field.NotSupported(field.NewPath("grantMethod"), string(client.GrantMethod),
+				[]string{string(oauthapi.GrantHandlerAuto), string(oauthapi.GrantHandlerPrompt)},
+			))
 		}
 	}
 
@@ -295,7 +327,7 @@ func ValidateClientNameField(value string, fldPath *field.Path) field.ErrorList 
 		if reasons := validation.ValidateServiceAccountName(saName, false); len(reasons) != 0 {
 			return field.ErrorList{field.Invalid(fldPath, value, strings.Join(reasons, ", "))}
 		}
-	} else if reasons := validation.NameIsDNSSubdomain(value, false); len(reasons) != 0 {
+	} else if reasons := apimachineryvalidation.NameIsDNSSubdomain(value, false); len(reasons) != 0 {
 		return field.ErrorList{field.Invalid(fldPath, value, strings.Join(reasons, ", "))}
 	}
 	return field.ErrorList{}
@@ -304,7 +336,13 @@ func ValidateClientNameField(value string, fldPath *field.Path) field.ErrorList 
 func ValidateUserNameField(value string, fldPath *field.Path) field.ErrorList {
 	if len(value) == 0 {
 		return field.ErrorList{field.Required(fldPath, "")}
-	} else if reasons := uservalidation.ValidateUserName(value, false); len(reasons) != 0 {
+	}
+	// we explicitly allow the bootstrap user in the username field
+	// note that we still do not allow the user API objects to have such a name
+	if value == bootstrap.BootstrapUser {
+		return field.ErrorList{}
+	}
+	if reasons := uservalidation.ValidateUserName(value, false); len(reasons) != 0 {
 		return field.ErrorList{field.Invalid(fldPath, value, strings.Join(reasons, ", "))}
 	}
 	return field.ErrorList{}
@@ -312,6 +350,10 @@ func ValidateUserNameField(value string, fldPath *field.Path) field.ErrorList {
 
 func ValidateScopes(scopes []string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
+
+	if len(scopes) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath, "may not be empty"))
+	}
 
 	for i, scope := range scopes {
 		illegalCharacter := false
@@ -354,26 +396,31 @@ func ValidateScopes(scopes []string, fldPath *field.Path) field.ErrorList {
 
 func ValidateOAuthRedirectReference(sref *oauthapi.OAuthRedirectReference) field.ErrorList {
 	allErrs := validation.ValidateObjectMeta(&sref.ObjectMeta, true, path.ValidatePathSegmentName, field.NewPath("metadata"))
-	return append(allErrs, validateRedirectReference(&sref.Reference)...)
+	return append(allErrs, validateRedirectReference(&sref.Reference, field.NewPath("reference"))...)
 }
 
-func validateRedirectReference(ref *oauthapi.RedirectReference) field.ErrorList {
+func validateRedirectReference(ref *oauthapi.RedirectReference, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	if len(ref.Name) == 0 {
-		allErrs = append(allErrs, field.Required(field.NewPath("name"), "may not be empty"))
+		allErrs = append(allErrs, field.Required(fldPath.Child("name"), "may not be empty"))
 	} else {
 		for _, msg := range path.ValidatePathSegmentName(ref.Name, false) {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("name"), ref.Name, msg))
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), ref.Name, msg))
 		}
 	}
 	switch ref.Kind {
 	case "":
-		allErrs = append(allErrs, field.Required(field.NewPath("kind"), "may not be empty"))
+		allErrs = append(allErrs, field.Required(fldPath.Child("kind"), "may not be empty"))
 	case "Route":
 		// Valid, TODO add ingress once we support it and update error message
 	default:
-		allErrs = append(allErrs, field.Invalid(field.NewPath("kind"), ref.Kind, "must be Route"))
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("kind"), ref.Kind, "must be Route"))
 	}
-	// TODO validate group once we start using it
+	switch ref.Group {
+	case "", routev1.GroupName:
+	// valid group names
+	default:
+		allErrs = append(allErrs, field.NotSupported(fldPath.Child("group"), ref.Group, []string{"", routev1.GroupName}))
+	}
 	return allErrs
 }

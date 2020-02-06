@@ -8,13 +8,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/openshift/origin/pkg/util/netutils"
 
+	corev1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/util/sysctl"
 
 	"github.com/vishvananda/netlink"
@@ -100,15 +100,15 @@ func deleteLocalSubnetRoute(device, localSubnetCIDR string) {
 	}
 }
 
-func (plugin *OsdnNode) SetupSDN() (bool, error) {
+func (plugin *OsdnNode) SetupSDN() (bool, map[string]podNetworkInfo, error) {
 	// Make sure IPv4 forwarding state is 1
 	sysctl := sysctl.New()
 	val, err := sysctl.GetSysctl("net/ipv4/ip_forward")
 	if err != nil {
-		return false, fmt.Errorf("could not get IPv4 forwarding state: %s", err)
+		return false, nil, fmt.Errorf("could not get IPv4 forwarding state: %s", err)
 	}
 	if val != 1 {
-		return false, fmt.Errorf("net/ipv4/ip_forward=0, it must be set to 1")
+		return false, nil, fmt.Errorf("net/ipv4/ip_forward=0, it must be set to 1")
 	}
 
 	var clusterNetworkCIDRs []string
@@ -119,26 +119,31 @@ func (plugin *OsdnNode) SetupSDN() (bool, error) {
 	localSubnetCIDR := plugin.localSubnetCIDR
 	_, ipnet, err := net.ParseCIDR(localSubnetCIDR)
 	if err != nil {
-		return false, fmt.Errorf("invalid local subnet CIDR: %v", err)
+		return false, nil, fmt.Errorf("invalid local subnet CIDR: %v", err)
 	}
 	localSubnetMaskLength, _ := ipnet.Mask.Size()
 	localSubnetGateway := netutils.GenerateDefaultGateway(ipnet).String()
 
-	glog.V(5).Infof("[SDN setup] node pod subnet %s gateway %s", ipnet.String(), localSubnetGateway)
+	klog.V(5).Infof("[SDN setup] node pod subnet %s gateway %s", ipnet.String(), localSubnetGateway)
 
 	gwCIDR := fmt.Sprintf("%s/%d", localSubnetGateway, localSubnetMaskLength)
 
 	if err := waitForOVS(ovsDialDefaultNetwork, ovsDialDefaultAddress); err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	var changed bool
+	existingPods, err := plugin.oc.GetPodNetworkInfo()
+	if err != nil {
+		klog.Warningf("[SDN setup] Could not get details of existing pods: %v", err)
+	}
+
 	if err := plugin.alreadySetUp(gwCIDR, clusterNetworkCIDRs); err == nil {
-		glog.V(5).Infof("[SDN setup] no SDN setup required")
+		klog.V(5).Infof("[SDN setup] no SDN setup required")
 	} else {
-		glog.Infof("[SDN setup] full SDN setup required (%v)", err)
+		klog.Infof("[SDN setup] full SDN setup required (%v)", err)
 		if err := plugin.setup(clusterNetworkCIDRs, localSubnetCIDR, localSubnetGateway, gwCIDR); err != nil {
-			return false, err
+			return false, nil, err
 		}
 		changed = true
 	}
@@ -148,7 +153,7 @@ func (plugin *OsdnNode) SetupSDN() (bool, error) {
 	healthFn := func() error { return plugin.alreadySetUp(gwCIDR, clusterNetworkCIDRs) }
 	runOVSHealthCheck(ovsDialDefaultNetwork, ovsDialDefaultAddress, healthFn)
 
-	return changed, nil
+	return changed, existingPods, nil
 }
 
 func (plugin *OsdnNode) setup(clusterNetworkCIDRs []string, localSubnetCIDR, localSubnetGateway, gwCIDR string) error {
@@ -203,15 +208,15 @@ func (plugin *OsdnNode) updateEgressNetworkPolicyRules(vnid uint32) {
 	}
 }
 
-func (plugin *OsdnNode) AddServiceRules(service *kapi.Service, netID uint32) {
-	glog.V(5).Infof("AddServiceRules for %v", service)
+func (plugin *OsdnNode) AddServiceRules(service *corev1.Service, netID uint32) {
+	klog.V(5).Infof("AddServiceRules for %v", service)
 	if err := plugin.oc.AddServiceRules(service, netID); err != nil {
 		utilruntime.HandleError(fmt.Errorf("Error adding OVS flows for service %v, netid %d: %v", service, netID, err))
 	}
 }
 
-func (plugin *OsdnNode) DeleteServiceRules(service *kapi.Service) {
-	glog.V(5).Infof("DeleteServiceRules for %v", service)
+func (plugin *OsdnNode) DeleteServiceRules(service *corev1.Service) {
+	klog.V(5).Infof("DeleteServiceRules for %v", service)
 	if err := plugin.oc.DeleteServiceRules(service); err != nil {
 		utilruntime.HandleError(fmt.Errorf("Error deleting OVS flows for service %v: %v", service, err))
 	}

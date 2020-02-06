@@ -7,6 +7,7 @@ import (
 	g "github.com/onsi/ginkgo"
 	o "github.com/onsi/gomega"
 
+	corev1 "k8s.io/api/core/v1"
 	kapierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -30,12 +31,19 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 	// hook
 	g.AfterEach(func() {
 		if g.CurrentGinkgoTestDescription().Failed {
-			exutil.DumpPodLogsStartingWithInNamespace("router", "default", oc.AsAdmin())
-			selector, err := labels.Parse("router=router")
-			if err != nil {
-				panic(err)
+			currlabel := "router=router"
+			for _, ns := range []string{"default", "openshift-ingress", "tectonic-ingress"} {
+				//Search the router by label
+				if ns == "openshift-ingress" {
+					currlabel = "router=router-default"
+				}
+				exutil.DumpPodLogsStartingWithInNamespace("router", ns, oc.AsAdmin())
+				selector, err := labels.Parse(currlabel)
+				if err != nil {
+					panic(err)
+				}
+				exutil.DumpPodsCommand(oc.AdminKubeClient(), ns, selector, "cat /var/lib/haproxy/router/routes.json /var/lib/haproxy/conf/haproxy.config")
 			}
-			exutil.DumpPodsCommand(oc.AdminKubeClient(), "default", selector, "cat /var/lib/haproxy/router/routes.json /var/lib//var/lib/haproxy/conf/haproxy.config")
 		}
 	})
 
@@ -43,11 +51,7 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 
 	g.BeforeEach(func() {
 		var err error
-		host, err = waitForFirstRouterEndpointIP(oc)
-		if kapierrs.IsNotFound(err) {
-			g.Skip("no router installed on the cluster")
-			return
-		}
+		host, err = waitForRouterServiceIP(oc)
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		ns = oc.KubeFramework().Namespace.Name
@@ -72,7 +76,7 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 			g.By("waiting for the ingress rule to be converted to routes")
 			client := routeclientset.NewForConfigOrDie(oc.AdminConfig())
 			err = wait.Poll(time.Second, time.Minute, func() (bool, error) {
-				routes, err := client.Route().Routes(ns).List(metav1.ListOptions{})
+				routes, err := client.RouteV1().Routes(ns).List(metav1.ListOptions{})
 				if err != nil {
 					return false, err
 				}
@@ -96,21 +100,67 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 	})
 })
 
-func waitForFirstRouterEndpointIP(oc *exutil.CLI) (string, error) {
+func waitForRouterInternalIP(oc *exutil.CLI) (string, error) {
+	return waitForNamedRouterServiceIP(oc, "router-internal-default")
+}
+
+func waitForRouterExternalIP(oc *exutil.CLI) (string, error) {
+	return waitForNamedRouterServiceIP(oc, "router-default")
+}
+
+func routerShouldHaveExternalService(oc *exutil.CLI) (bool, error) {
+	foundLoadBalancerServiceStrategyType := false
+	err := wait.PollImmediate(2*time.Second, 30*time.Second, func() (bool, error) {
+		ic, err := oc.AdminOperatorClient().OperatorV1().IngressControllers("openshift-ingress-operator").Get("default", metav1.GetOptions{})
+		if kapierrs.IsNotFound(err) {
+			return false, nil
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+		if ic.Status.EndpointPublishingStrategy == nil {
+			return false, nil
+		}
+		if ic.Status.EndpointPublishingStrategy.Type == "LoadBalancerService" {
+			foundLoadBalancerServiceStrategyType = true
+		}
+		return true, nil
+	})
+	return foundLoadBalancerServiceStrategyType, err
+}
+
+func waitForRouterServiceIP(oc *exutil.CLI) (string, error) {
+	if useExternal, err := routerShouldHaveExternalService(oc); err != nil {
+		return "", err
+	} else if useExternal {
+		return waitForRouterExternalIP(oc)
+	}
+	return waitForRouterInternalIP(oc)
+}
+
+func waitForNamedRouterServiceIP(oc *exutil.CLI, name string) (string, error) {
 	_, ns, err := exutil.GetRouterPodTemplate(oc)
 	if err != nil {
 		return "", err
 	}
 
-	// wait for at least one router endpoint to be up router endpoints to show up
+	// wait for the service to show up
 	var host string
-	err = wait.PollImmediate(2*time.Second, 120*time.Second, func() (bool, error) {
-		epts, err := oc.AdminKubeClient().CoreV1().Endpoints(ns).Get("router", metav1.GetOptions{})
-		o.Expect(err).NotTo(o.HaveOccurred())
-		if len(epts.Subsets) == 0 || len(epts.Subsets[0].Addresses) == 0 {
-			return false, nil
+	err = wait.PollImmediate(2*time.Second, 60*time.Second, func() (bool, error) {
+		svc, err := oc.AdminKubeClient().CoreV1().Services(ns).Get(name, metav1.GetOptions{})
+		if kapierrs.IsNotFound(err) {
+			// see if an older service named 'router' exists.
+			svc, err = oc.AdminKubeClient().CoreV1().Services(ns).Get("router", metav1.GetOptions{})
+			if kapierrs.IsNotFound(err) {
+				return false, nil
+			}
 		}
-		host = epts.Subsets[0].Addresses[0].IP
+		o.Expect(err).NotTo(o.HaveOccurred())
+		host = svc.Spec.ClusterIP
+		if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+			if len(svc.Status.LoadBalancer.Ingress) == 0 || len(svc.Status.LoadBalancer.Ingress[0].Hostname) == 0 {
+				return false, nil
+			}
+			host = svc.Status.LoadBalancer.Ingress[0].Hostname
+		}
 		return true, nil
 	})
 	return host, err

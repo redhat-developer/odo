@@ -24,25 +24,19 @@ var _ = g.Describe("[Feature:Builds][Conformance] oc new-app", func() {
 	g.Context("", func() {
 
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
+			exutil.PreTestDump()
 		})
 
 		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
-
 			g.By("waiting for openshift namespace imagestreams")
-			err = exutil.WaitForOpenShiftNamespaceImageStreams(oc)
+			err := exutil.WaitForOpenShiftNamespaceImageStreams(oc)
 			o.Expect(err).NotTo(o.HaveOccurred())
 		})
 
 		g.AfterEach(func() {
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 			deployutil.DeploymentConfigFailureTrap(oc, a58, g.CurrentGinkgoTestDescription().Failed)
@@ -55,7 +49,7 @@ var _ = g.Describe("[Feature:Builds][Conformance] oc new-app", func() {
 			o.Expect(err).NotTo(o.HaveOccurred())
 
 			g.By("waiting for the build to complete")
-			err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), a58+"-1", nil, nil, nil)
+			err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), a58+"-1", nil, nil, nil)
 			if err != nil {
 				exutil.DumpBuildLogs(a58, oc)
 			}

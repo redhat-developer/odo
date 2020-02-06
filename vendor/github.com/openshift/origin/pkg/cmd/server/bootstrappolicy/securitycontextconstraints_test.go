@@ -7,9 +7,9 @@ import (
 
 	"k8s.io/apiserver/pkg/authentication/serviceaccount"
 
-	securityapi "github.com/openshift/origin/pkg/security/apis/security"
-	scc "github.com/openshift/origin/pkg/security/apiserver/securitycontextconstraints"
+	securityv1 "github.com/openshift/api/security/v1"
 	sccutil "github.com/openshift/origin/pkg/security/securitycontextconstraints/util"
+	sccsort "github.com/openshift/origin/pkg/security/securitycontextconstraints/util/sort"
 )
 
 func TestBootstrappedConstraints(t *testing.T) {
@@ -24,7 +24,7 @@ func TestBootstrappedConstraints(t *testing.T) {
 		SecurityContextConstraintPrivileged,
 	}
 	expectedGroups, expectedUsers := getExpectedAccess()
-	expectedVolumes := []securityapi.FSType{securityapi.FSTypeEmptyDir, securityapi.FSTypeSecret, securityapi.FSTypeDownwardAPI, securityapi.FSTypeConfigMap, securityapi.FSTypePersistentVolumeClaim}
+	expectedVolumes := []securityv1.FSType{securityv1.FSTypeEmptyDir, securityv1.FSTypeSecret, securityv1.FSTypeDownwardAPI, securityv1.FSTypeConfigMap, securityv1.FSTypePersistentVolumeClaim}
 
 	groups, users := GetBoostrapSCCAccess(DefaultOpenShiftInfraNamespace)
 	bootstrappedConstraints := GetBootstrapSecurityContextConstraints(groups, users)
@@ -33,7 +33,7 @@ func TestBootstrappedConstraints(t *testing.T) {
 		t.Errorf("unexpected number of constraints: found %d, wanted %d", len(bootstrappedConstraints), len(expectedConstraintNames))
 	}
 
-	sort.Sort(scc.ByPriority(bootstrappedConstraints))
+	sort.Sort(sccsort.ByPriority(bootstrappedConstraints))
 
 	for i, constraint := range bootstrappedConstraints {
 		if constraint.Name != expectedConstraintNames[i] {

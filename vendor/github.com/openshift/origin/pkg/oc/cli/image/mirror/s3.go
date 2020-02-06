@@ -2,6 +2,7 @@ package mirror
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -21,7 +22,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"github.com/docker/distribution"
-	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client/auth"
 	"github.com/docker/distribution/registry/client/transport"
@@ -52,7 +52,7 @@ func (s *s3CredentialStore) Retrieve() (credentials.Value, error) {
 		return credentials.Value{}, fmt.Errorf("no AWS credentials located for %s", s.url)
 	}
 	s.retrieved = true
-	glog.V(4).Infof("found credentials for %s", s.url)
+	klog.V(4).Infof("found credentials for %s", s.url)
 	return credentials.Value{
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
@@ -73,14 +73,19 @@ func (d *s3Driver) newObject(server *url.URL, region string, insecure bool, secu
 	creds = credentials.NewChainCredentials([]credentials.Provider{
 		&s3CredentialStore{store: d.Creds, url: securityDomain},
 		&credentials.EnvProvider{},
+		&credentials.SharedCredentialsProvider{},
 	})
 
-	awsConfig.WithS3ForcePathStyle(true)
-	awsConfig.WithEndpoint(server.String())
 	awsConfig.WithCredentials(creds)
 	awsConfig.WithRegion(region)
 	awsConfig.WithDisableSSL(insecure)
-	if glog.V(6) {
+
+	switch {
+	case bool(klog.V(10)):
+		awsConfig.WithLogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestErrors | aws.LogDebugWithSigning)
+	case bool(klog.V(8)):
+		awsConfig.WithLogLevel(aws.LogDebugWithRequestErrors)
+	case bool(klog.V(6)):
 		awsConfig.WithLogLevel(aws.LogDebug)
 	}
 
@@ -110,10 +115,16 @@ func (d *s3Driver) Repository(ctx context.Context, server *url.URL, repoName str
 	if err != nil {
 		return nil, err
 	}
-	named, err := reference.ParseNamed(parts[2])
+
+	ref, err := reference.Parse(parts[2])
 	if err != nil {
 		return nil, err
 	}
+	named, ok := ref.(reference.Named)
+	if !ok {
+		return nil, fmt.Errorf("%s is not a valid repository name", parts[2])
+	}
+
 	repo := &s3Repository{
 		ctx:      ctx,
 		s3:       s3obj,
@@ -172,7 +183,7 @@ func (r *s3Repository) attemptCopy(id string, bucket, key string) bool {
 			sourceKey = strings.TrimSuffix(copyFrom, "[store]")
 			d, err := godigest.Parse(id)
 			if err != nil {
-				glog.V(4).Infof("Object %q is not a valid digest, cannot perform [store] copy: %v", id, err)
+				klog.V(4).Infof("Object %q is not a valid digest, cannot perform [store] copy: %v", id, err)
 				continue
 			}
 			sourceKey = fmt.Sprintf("%s%s/%s/%s/data", sourceKey, d.Algorithm().String(), d.Hex()[:2], d.Hex())
@@ -185,14 +196,14 @@ func (r *s3Repository) attemptCopy(id string, bucket, key string) bool {
 			Key:        aws.String(key),
 		})
 		if err == nil {
-			glog.V(4).Infof("Copied existing object from %s to %s", sourceKey, key)
+			klog.V(4).Infof("Copied existing object from %s to %s", sourceKey, key)
 			return true
 		}
 		if a, ok := err.(awserr.Error); ok && a.Code() == "NoSuchKey" {
-			glog.V(4).Infof("No existing object matches source %s", sourceKey)
+			klog.V(4).Infof("No existing object matches source %s", sourceKey)
 			continue
 		}
-		glog.V(4).Infof("Unable to copy from %s to %s: %v", sourceKey, key, err)
+		klog.V(4).Infof("Unable to copy from %s to %s: %v", sourceKey, key, err)
 	}
 	return false
 }

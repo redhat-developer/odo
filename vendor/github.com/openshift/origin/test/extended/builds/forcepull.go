@@ -57,7 +57,7 @@ func checkPodFlag(bldPrefix string, oc *exutil.CLI) {
 /*
 If docker.io is not responding to requests in a timely manner, this test suite will be adversely affected.
 
-If you suspect such a situation, attempt pulling some openshift images other than ruby-22-centos7
+If you suspect such a situation, attempt pulling some openshift images other than ruby-25-centos7
 while this test is running and compare results.  Restarting your docker daemon, assuming you can ping docker.io quickly, could
 be a quick fix.
 */
@@ -69,7 +69,7 @@ var _ = g.Describe("[Feature:Builds] forcePull should affect pulling builder ima
 	g.Context("", func() {
 
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
+			exutil.PreTestDump()
 
 			g.By("granting system:build-strategy-custom")
 			binding := fmt.Sprintf("custombuildaccess-%s", oc.Username())
@@ -104,21 +104,13 @@ var _ = g.Describe("[Feature:Builds] forcePull should affect pulling builder ima
 
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 		})
 
-		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
-		})
-
 		g.It("ForcePull test case execution s2i", func() {
-
+			g.Skip("TODO: force pull is moot until/unless we go back to sharing the image filesystem")
 			g.By("when s2i force pull is true")
 			// run twice to ensure the builder image gets pulled even if it already exists on the node
 			scrapeLogs(buildPrefixTS, oc)
@@ -127,6 +119,7 @@ var _ = g.Describe("[Feature:Builds] forcePull should affect pulling builder ima
 		})
 
 		g.It("ForcePull test case execution docker", func() {
+			g.Skip("TODO: force pull is moot until/unless we go back to sharing the image filesystem")
 			g.By("docker when force pull is true")
 			// run twice to ensure the builder image gets pulled even if it already exists on the node
 			scrapeLogs(buildPrefixTD, oc)
@@ -134,6 +127,7 @@ var _ = g.Describe("[Feature:Builds] forcePull should affect pulling builder ima
 		})
 
 		g.It("ForcePull test case execution custom", func() {
+			g.Skip("TODO: force pull is moot until/unless we go back to sharing the image filesystem")
 			g.By("when custom force pull is true")
 			checkPodFlag(buildPrefixTC, oc)
 		})

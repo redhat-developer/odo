@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script is meant to be the entrypoint for OpenShift Bash scripts to import all of the support
 # libraries at once in order to make Bash script preambles as minimal as possible. This script recur-
@@ -51,7 +51,12 @@ os::log::stacktrace::install
 os::util::environment::update_path_var
 
 if [[ -z "${OS_TMP_ENV_SET-}" ]]; then
-	os::util::environment::setup_tmpdir_vars "$( basename "$0" ".sh" )"
+	# if this file is run via 'source', then $0 will be "-bash" and won't work with basename
+	if [[ "${0}" =~ .*\.sh ]]; then
+		os::util::environment::setup_tmpdir_vars "$( basename "${0}" ".sh" )"
+	else
+		os::util::environment::setup_tmpdir_vars "shell"
+	fi
 fi
 
 # Allow setting $JUNIT_REPORT to toggle output behavior

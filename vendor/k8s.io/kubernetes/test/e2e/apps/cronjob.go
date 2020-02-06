@@ -34,6 +34,7 @@ import (
 	batchinternal "k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/controller/job"
 	"k8s.io/kubernetes/test/e2e/framework"
+	imageutils "k8s.io/kubernetes/test/utils/image"
 )
 
 const (
@@ -249,8 +250,10 @@ var _ = SIGDescribe("CronJob", func() {
 		Expect(len(finishedJobs) == 1).To(BeTrue())
 
 		// Job should get deleted when the next job finishes the next minute
-		By("Ensuring this job does not exist anymore")
-		err = waitForJobNotExist(f.ClientSet, f.Namespace.Name, finishedJobs[0])
+		By("Ensuring this job and its pods does not exist anymore")
+		err = waitForJobToDisappear(f.ClientSet, f.Namespace.Name, finishedJobs[0])
+		Expect(err).NotTo(HaveOccurred())
+		err = waitForJobsPodToDisappear(f.ClientSet, f.Namespace.Name, finishedJobs[0])
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Ensuring there is 1 finished job by listing jobs explicitly")
@@ -298,7 +301,7 @@ func newTestCronJob(name, schedule string, concurrencyPolicy batchv1beta1.Concur
 							Containers: []v1.Container{
 								{
 									Name:  "c",
-									Image: "busybox",
+									Image: imageutils.GetE2EImage(imageutils.BusyBox),
 									VolumeMounts: []v1.VolumeMount{
 										{
 											MountPath: "/data",
@@ -379,8 +382,8 @@ func waitForJobNotActive(c clientset.Interface, ns, cronJobName, jobName string)
 	})
 }
 
-// Wait for a job to not exist by listing jobs explicitly.
-func waitForJobNotExist(c clientset.Interface, ns string, targetJob *batchv1.Job) error {
+// Wait for a job to disappear by listing them explicitly.
+func waitForJobToDisappear(c clientset.Interface, ns string, targetJob *batchv1.Job) error {
 	return wait.Poll(framework.Poll, cronJobTimeout, func() (bool, error) {
 		jobs, err := c.BatchV1().Jobs(ns).List(metav1.ListOptions{})
 		if err != nil {
@@ -393,6 +396,18 @@ func waitForJobNotExist(c clientset.Interface, ns string, targetJob *batchv1.Job
 			}
 		}
 		return true, nil
+	})
+}
+
+// Wait for a pod to disappear by listing them explicitly.
+func waitForJobsPodToDisappear(c clientset.Interface, ns string, targetJob *batchv1.Job) error {
+	return wait.Poll(framework.Poll, cronJobTimeout, func() (bool, error) {
+		options := metav1.ListOptions{LabelSelector: fmt.Sprintf("controller-uid=%s", targetJob.UID)}
+		pods, err := c.CoreV1().Pods(ns).List(options)
+		if err != nil {
+			return false, err
+		}
+		return len(pods.Items) == 0, nil
 	})
 }
 

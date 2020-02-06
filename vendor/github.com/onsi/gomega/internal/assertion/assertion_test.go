@@ -39,7 +39,7 @@ var _ = Describe("Assertion", func() {
 		a = assertion.New(input, fakeFailWrapper, 1)
 	})
 
-	Context("when called", func() {
+	When("called", func() {
 		It("should pass the provided input value to the matcher", func() {
 			a.Should(matcher)
 
@@ -67,7 +67,7 @@ var _ = Describe("Assertion", func() {
 		})
 	})
 
-	Context("when the matcher succeeds", func() {
+	When("the matcher succeeds", func() {
 		BeforeEach(func() {
 			matcher.MatchesToReturn = true
 			matcher.ErrToReturn = nil
@@ -95,9 +95,20 @@ var _ = Describe("Assertion", func() {
 				Expect(a.ShouldNot(matcher)).Should(BeFalse())
 			})
 		})
+
+		Context("and the optional description is a function", func() {
+			It("should not evaluate that function", func() {
+				evaluated := false
+				a.Should(matcher, func() string {
+					evaluated = true
+					return "A description"
+				})
+				Expect(evaluated).Should(BeFalse())
+			})
+		})
 	})
 
-	Context("when the matcher fails", func() {
+	When("the matcher fails", func() {
 		BeforeEach(func() {
 			matcher.MatchesToReturn = false
 			matcher.ErrToReturn = nil
@@ -148,6 +159,14 @@ var _ = Describe("Assertion", func() {
 				Expect(failureCallerSkip).Should(Equal(3))
 			})
 		})
+
+		Context("and the optional description is a function", func() {
+			It("should append the description to the failure message", func() {
+				a.Should(matcher, func() string { return "A description" })
+				Expect(failureMessage).Should(Equal("A description\npositive: The thing I'm testing"))
+				Expect(failureCallerSkip).Should(Equal(3))
+			})
+		})
 	})
 
 	Context("When the matcher returns an error", func() {
@@ -179,14 +198,14 @@ var _ = Describe("Assertion", func() {
 		})
 	})
 
-	Context("when there are extra parameters", func() {
+	When("there are extra parameters", func() {
 		It("(a simple example)", func() {
 			Expect(func() (string, int, error) {
 				return "foo", 0, nil
 			}()).Should(Equal("foo"))
 		})
 
-		Context("when the parameters are all nil or zero", func() {
+		When("the parameters are all nil or zero", func() {
 			It("should invoke the matcher", func() {
 				matcher.MatchesToReturn = true
 				matcher.ErrToReturn = nil
@@ -202,7 +221,7 @@ var _ = Describe("Assertion", func() {
 			})
 		})
 
-		Context("when any of the parameters are not nil or zero", func() {
+		When("any of the parameters are not nil or zero", func() {
 			It("should call the failure callback", func() {
 				matcher.MatchesToReturn = false
 				matcher.ErrToReturn = nil

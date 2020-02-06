@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kfake "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
-	kprinters "k8s.io/kubernetes/pkg/printers"
+	"k8s.io/kubernetes/pkg/kubectl/describe"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsfake "github.com/openshift/client-go/apps/clientset/versioned/fake"
@@ -48,12 +48,12 @@ func TestDeploymentConfigDescriber(t *testing.T) {
 	})
 
 	d := &DeploymentConfigDescriber{
-		appsClient: fake.Apps(),
+		appsClient: fake.AppsV1(),
 		kubeClient: kFake,
 	}
 
 	describe := func() string {
-		output, err := d.Describe("test", "deployment", kprinters.DescriberSettings{})
+		output, err := d.Describe("test", "deployment", describe.DescriberSettings{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 			return ""

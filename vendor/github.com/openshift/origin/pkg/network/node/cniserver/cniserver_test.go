@@ -62,7 +62,7 @@ func TestCNIServer(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 	socketPath := filepath.Join(tmpDir, CNIServerSocketName)
 
-	s := NewCNIServer(tmpDir, &Config{MTU: 1500, ServiceNetworkCIDR: "172.30.0.0/16", DNSIP: "172.30.0.1"})
+	s := NewCNIServer(tmpDir, &Config{MTU: 1500, ServiceNetworkCIDR: "172.30.0.0/16"})
 	if err := s.Start(serverHandleCNI); err != nil {
 		t.Fatalf("error starting CNI server: %v", err)
 	}
@@ -221,5 +221,75 @@ func TestCNIServer(t *testing.T) {
 				t.Fatalf("[%s] unexpected error message '%v'", tc.name, string(body))
 			}
 		}
+	}
+}
+
+func TestCNIServerDirectory(t *testing.T) {
+	tmpDir, err := utiltesting.MkTmpdir("cniserver")
+	if err != nil {
+		t.Fatalf("failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// If the rundir doesn't exist, it will create it, with the correct permissions
+	runDir := filepath.Join(tmpDir, "1")
+	s := NewCNIServer(runDir, &Config{MTU: 1500, ServiceNetworkCIDR: "172.30.0.0/16"})
+	if err := s.Start(serverHandleCNI); err != nil {
+		t.Fatalf("error starting CNI server: %v", err)
+	}
+	info, err := os.Stat(runDir)
+	if err != nil {
+		t.Fatalf("error statting runDir: %v", err)
+	}
+	if !info.IsDir() || info.Mode().Perm() != 0700 {
+		t.Fatalf("bad directory mode: %#v", info)
+	}
+
+	// If the rundir exists, and has the wrong mode, it will be deleted and recreated
+	runDir = filepath.Join(tmpDir, "2")
+	if err := os.MkdirAll(runDir, 0777); err != nil {
+		t.Fatalf("failed to create CNIServer directory: %v", err)
+	}
+	tmpFile := filepath.Join(runDir, "tmp")
+	if err := ioutil.WriteFile(tmpFile, []byte("foo"), 0444); err != nil {
+		t.Fatalf("could not write tmp file: %v", err)
+	}
+	s = NewCNIServer(runDir, &Config{MTU: 1500, ServiceNetworkCIDR: "172.30.0.0/16"})
+	if err := s.Start(serverHandleCNI); err != nil {
+		t.Fatalf("error starting CNI server: %v", err)
+	}
+	info, err = os.Stat(runDir)
+	if err != nil {
+		t.Fatalf("error statting runDir: %v", err)
+	}
+	if !info.IsDir() || info.Mode().Perm() != 0700 {
+		t.Fatalf("bad directory mode: %#v", info)
+	}
+	if _, err = os.Stat(tmpFile); !os.IsNotExist(err) {
+		t.Fatalf("rundir was not deleted")
+	}
+
+	// If the rundir exists, and has the right mode, it will not be deleted
+	runDir = filepath.Join(tmpDir, "3")
+	if err := os.MkdirAll(runDir, 0700); err != nil {
+		t.Fatalf("failed to create CNIServer directory: %v", err)
+	}
+	tmpFile = filepath.Join(runDir, "tmp")
+	if err := ioutil.WriteFile(tmpFile, []byte("foo"), 0444); err != nil {
+		t.Fatalf("could not write tmp file: %v", err)
+	}
+	s = NewCNIServer(runDir, &Config{MTU: 1500, ServiceNetworkCIDR: "172.30.0.0/16"})
+	if err := s.Start(serverHandleCNI); err != nil {
+		t.Fatalf("error starting CNI server: %v", err)
+	}
+	info, err = os.Stat(runDir)
+	if err != nil {
+		t.Fatalf("error statting runDir: %v", err)
+	}
+	if !info.IsDir() || info.Mode().Perm() != 0700 {
+		t.Fatalf("bad directory mode: %#v", info)
+	}
+	if _, err = os.Stat(tmpFile); err != nil {
+		t.Fatalf("rundir was deleted (%v)", err)
 	}
 }

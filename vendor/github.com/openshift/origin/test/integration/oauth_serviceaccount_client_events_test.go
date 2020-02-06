@@ -13,15 +13,15 @@ import (
 
 	"github.com/RangelReale/osincli"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	apiserverserviceaccount "k8s.io/apiserver/pkg/authentication/serviceaccount"
+	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/serviceaccount"
 
 	oauthapiv1 "github.com/openshift/api/oauth/v1"
@@ -35,7 +35,7 @@ import (
 )
 
 type testServer struct {
-	clusterAdminKubeClient   kclientset.Interface
+	clusterAdminKubeClient   kubernetes.Interface
 	clusterAdminClientConfig *restclient.Config
 	clusterAdminOAuthClient  *oauthclient.Clientset
 	authCodes                chan string
@@ -153,9 +153,9 @@ func TestOAuthServiceAccountClientEvent(t *testing.T) {
 		runTestOAuthFlow(t, testServer, sa, secret, redirect, testCase.expectBadRequest)
 
 		// Check events with a short poll to stop flakes
-		var evList *kapi.EventList
+		var evList *corev1.EventList
 		err = wait.Poll(time.Second, 5*time.Second, func() (bool, error) {
-			evList, err = testServer.clusterAdminKubeClient.Core().Events(projectName).List(metav1.ListOptions{})
+			evList, err = testServer.clusterAdminKubeClient.CoreV1().Events(projectName).List(metav1.ListOptions{})
 			if err != nil {
 				return false, err
 			}
@@ -179,15 +179,15 @@ func TestOAuthServiceAccountClientEvent(t *testing.T) {
 			t.Fatalf("%s: expected event message %s, got %s", tcName, testCase.expectedEventMsg, events[0].Message)
 		}
 
-		err = testServer.clusterAdminKubeClient.Core().Events(projectName).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{})
+		err = testServer.clusterAdminKubeClient.CoreV1().Events(projectName).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{})
 		if err != nil {
 			t.Fatalf("%s: error deleting events: %s", tcName, err)
 		}
 	}
 }
 
-func collectEventsWithReason(eventList *kapi.EventList, reason string) []kapi.Event {
-	var events []kapi.Event
+func collectEventsWithReason(eventList *corev1.EventList, reason string) []corev1.Event {
+	var events []corev1.Event
 	for _, ev := range eventList.Items {
 		if ev.Reason != reason {
 			continue
@@ -229,7 +229,7 @@ func setupTestOAuthServer() (*testServer, error) {
 		}
 	}))
 
-	clusterAdminKubeClientset, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
+	clusterAdminKubeClientset, err := testutil.GetClusterAdminKubeClient(clusterAdminKubeConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -260,13 +260,13 @@ func setupTestOAuthServer() (*testServer, error) {
 	}, nil
 }
 
-func setupTestSA(client kclientset.Interface, annotationPrefix, annotation string) (*kapi.ServiceAccount, error) {
-	var serviceAccount *kapi.ServiceAccount
+func setupTestSA(client kubernetes.Interface, annotationPrefix, annotation string) (*corev1.ServiceAccount, error) {
+	var serviceAccount *corev1.ServiceAccount
 
 	// retry this a couple times.  We seem to be flaking on update conflicts and missing secrets all together
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var err error
-		serviceAccount, err = client.Core().ServiceAccounts(projectName).Get(saName, metav1.GetOptions{})
+		serviceAccount, err = client.CoreV1().ServiceAccounts(projectName).Get(saName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -276,7 +276,7 @@ func setupTestSA(client kclientset.Interface, annotationPrefix, annotation strin
 
 		serviceAccount.Annotations[annotationPrefix] = annotation
 		serviceAccount.Annotations[saoauth.OAuthWantChallengesAnnotationPrefix] = "true"
-		serviceAccount, err = client.Core().ServiceAccounts(projectName).Update(serviceAccount)
+		serviceAccount, err = client.CoreV1().ServiceAccounts(projectName).Update(serviceAccount)
 		return err
 	})
 	if err != nil {
@@ -286,18 +286,17 @@ func setupTestSA(client kclientset.Interface, annotationPrefix, annotation strin
 	return serviceAccount, nil
 }
 
-func setupTestSecrets(client kclientset.Interface, sa *kapi.ServiceAccount) (*kapi.Secret, error) {
-	var oauthSecret *kapi.Secret
+func setupTestSecrets(client kubernetes.Interface, sa *corev1.ServiceAccount) (*corev1.Secret, error) {
+	var oauthSecret *corev1.Secret
 	// retry this a couple times.  We seem to be flaking on update conflicts and missing secrets all together
 	err := wait.PollImmediate(30*time.Millisecond, 10*time.Second, func() (done bool, err error) {
-		allSecrets, err := client.Core().Secrets(projectName).List(metav1.ListOptions{})
+		allSecrets, err := client.CoreV1().Secrets(projectName).List(metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
 		for i := range allSecrets.Items {
 			secret := &allSecrets.Items[i]
-
-			if serviceaccount.InternalIsServiceAccountToken(secret, sa) {
+			if serviceaccount.IsServiceAccountToken(secret, sa) {
 				oauthSecret = secret
 				return true, nil
 			}
@@ -313,14 +312,14 @@ func setupTestSecrets(client kclientset.Interface, sa *kapi.ServiceAccount) (*ka
 
 // Run through a standard OAuth sequence for a single test. The tests vary in modifications to the SA annotations so
 // the specific sequence does not matter, as long as it can generate the server_error that we expect.
-func runTestOAuthFlow(t *testing.T, ts *testServer, sa *kapi.ServiceAccount, secret *kapi.Secret, redirectURL string, expectBadRequest bool) {
+func runTestOAuthFlow(t *testing.T, ts *testServer, sa *corev1.ServiceAccount, secret *corev1.Secret, redirectURL string, expectBadRequest bool) {
 	oauthClientConfig := &osincli.ClientConfig{
-		ClientId:     apiserverserviceaccount.MakeUsername(sa.Namespace, sa.Name),
-		ClientSecret: string(secret.Data[kapi.ServiceAccountTokenKey]),
-		AuthorizeUrl: ts.clusterAdminClientConfig.Host + "/oauth/authorize",
-		TokenUrl:     ts.clusterAdminClientConfig.Host + "/oauth/token",
-		RedirectUrl:  redirectURL,
-		Scope:        scope.Join([]string{"user:info", "role:edit:" + projectName}),
+		ClientId:                 apiserverserviceaccount.MakeUsername(sa.Namespace, sa.Name),
+		ClientSecret:             string(secret.Data[corev1.ServiceAccountTokenKey]),
+		AuthorizeUrl:             ts.clusterAdminClientConfig.Host + "/oauth/authorize",
+		TokenUrl:                 ts.clusterAdminClientConfig.Host + "/oauth/token",
+		RedirectUrl:              redirectURL,
+		Scope:                    scope.Join([]string{"user:info", "role:edit:" + projectName}),
 		SendClientSecretInParams: true,
 	}
 

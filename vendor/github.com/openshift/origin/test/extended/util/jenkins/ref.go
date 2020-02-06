@@ -262,7 +262,7 @@ func (j *JenkinsRef) ProcessJenkinsJobUsingVars(filename, namespace string, vars
 	data, err := ioutil.ReadFile(post)
 	o.ExpectWithOffset(1, err).NotTo(o.HaveOccurred())
 
-	newfile, err := exutil.CreateTempFile(string(data))
+	newfile, err := CreateTempFile(string(data))
 	e2e.Logf("new temp file %s err %v", newfile, err)
 	if err != nil {
 		files, dbgerr := ioutil.ReadDir("/tmp")
@@ -319,7 +319,7 @@ func (j *JenkinsRef) GetJobConsoleLogsAndMatchViaBuildResult(br *exutil.BuildRes
 			return "", fmt.Errorf("BuildResult oc should have been set up during BuildResult construction")
 		}
 		var err error // interestingly, removing this line and using := on the next got a compile error
-		br.Build, err = br.Oc.BuildClient().Build().Builds(br.Oc.Namespace()).Get(br.BuildName, metav1.GetOptions{})
+		br.Build, err = br.Oc.BuildClient().BuildV1().Builds(br.Oc.Namespace()).Get(br.BuildName, metav1.GetOptions{})
 		if err != nil {
 			return "", err
 		}
@@ -369,6 +369,31 @@ func OverridePodTemplateImages(newAppArgs []string) []string {
 	return newAppArgs
 }
 
+// SetupDockerhubImage pull in a jenkins image from docker.io for aws-build testing;
+// at some point during 4.0 dev, the jenkins imagestream in the openshift namespace
+// will leverage the rhel images from the terms based registry at registry.redhat.io
+// where credentials will be needed; we want to test against pre-release images
+func SetupDockerhubImage(localImageName, snapshotImageStream string, newAppArgs []string, oc *exutil.CLI) []string {
+	g.By("Creating a Jenkins imagestream for overridding the default Jenkins imagestream in the openshift namespace")
+
+	// Create an imagestream based on the Jenkins' plugin PR-Testing image (https://github.com/openshift/jenkins-plugin/blob/master/PR-Testing/README).
+	err := oc.Run("new-build").Args("-D", fmt.Sprintf("FROM %s", localImageName), "--to", snapshotImageStream).Execute()
+	o.Expect(err).NotTo(o.HaveOccurred())
+
+	g.By("waiting for build to finish")
+	err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), snapshotImageStream+"-1", exutil.CheckBuildSuccess, exutil.CheckBuildFailed, exutil.CheckBuildCancelled)
+	if err != nil {
+		exutil.DumpBuildLogs(snapshotImageStream, oc)
+	}
+	o.Expect(err).NotTo(o.HaveOccurred())
+
+	// Supplant the normal imagestream with the local imagestream using template parameters
+	newAppArgs = append(newAppArgs, "-p", fmt.Sprintf("NAMESPACE=%s", oc.Namespace()))
+	newAppArgs = append(newAppArgs, "-p", fmt.Sprintf("JENKINS_IMAGE_STREAM_TAG=%s:latest", snapshotImageStream))
+
+	return newAppArgs
+}
+
 // pulls in a jenkins image built from a PR change for one of our plugins
 func SetupSnapshotImage(envVarName, localImageName, snapshotImageStream string, newAppArgs []string, oc *exutil.CLI) ([]string, bool) {
 	tag := []string{localImageName}
@@ -392,7 +417,7 @@ func SetupSnapshotImage(envVarName, localImageName, snapshotImageStream string, 
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		g.By("waiting for build to finish")
-		err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), snapshotImageStream+"-1", exutil.CheckBuildSuccess, exutil.CheckBuildFailed, exutil.CheckBuildCancelled)
+		err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), snapshotImageStream+"-1", exutil.CheckBuildSuccess, exutil.CheckBuildFailed, exutil.CheckBuildCancelled)
 		if err != nil {
 			exutil.DumpBuildLogs(snapshotImageStream, oc)
 		}
@@ -440,7 +465,7 @@ func ProcessLogURLAnnotations(oc *exutil.CLI, t *exutil.BuildResult) (*url.URL, 
 func DumpLogs(oc *exutil.CLI, t *exutil.BuildResult) (string, error) {
 	var err error
 	if t.Build == nil {
-		t.Build, err = oc.BuildClient().Build().Builds(oc.Namespace()).Get(t.BuildName, metav1.GetOptions{})
+		t.Build, err = oc.BuildClient().BuildV1().Builds(oc.Namespace()).Get(t.BuildName, metav1.GetOptions{})
 		if err != nil {
 			return "", fmt.Errorf("cannot retrieve build %s: %v", t.BuildName, err)
 		}
@@ -455,4 +480,21 @@ func DumpLogs(oc *exutil.CLI, t *exutil.BuildResult) (string, error) {
 		return "", fmt.Errorf("cannot get jenkins log: %v", err)
 	}
 	return log, nil
+}
+
+// CreateTempFile stores the specified data in a temp dir/temp file
+// for the test who calls it
+func CreateTempFile(data string) (string, error) {
+	testDir, err := ioutil.TempDir(os.TempDir(), "test-files")
+	if err != nil {
+		return "", err
+	}
+	testFile, err := ioutil.TempFile(testDir, "test-file")
+	if err != nil {
+		return "", err
+	}
+	if err := ioutil.WriteFile(testFile.Name(), []byte(data), 0666); err != nil {
+		return "", err
+	}
+	return testFile.Name(), nil
 }

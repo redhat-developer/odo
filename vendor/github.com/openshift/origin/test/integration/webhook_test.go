@@ -10,8 +10,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	restclient "k8s.io/client-go/rest"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
+	rest "k8s.io/client-go/rest"
 
 	buildv1 "github.com/openshift/api/build/v1"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -29,7 +28,7 @@ func TestWebhook(t *testing.T) {
 	}
 	defer testserver.CleanupMasterEtcd(t, masterConfig)
 
-	kubeClient, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
+	kubeClient, err := testutil.GetClusterAdminKubeClient(clusterAdminKubeConfig)
 	if err != nil {
 		t.Fatalf("unable to get kubeClient: %v", err)
 	}
@@ -37,9 +36,9 @@ func TestWebhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to get osClient: %v", err)
 	}
-	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).Build()
+	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).BuildV1()
 
-	kubeClient.Core().Namespaces().Create(&kapi.Namespace{
+	kubeClient.CoreV1().Namespaces().Create(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: testutil.Namespace()},
 	})
 
@@ -64,9 +63,9 @@ func TestWebhook(t *testing.T) {
 			Payload:    "generic/testdata/push-generic.json",
 			HeaderFunc: genericHeaderFunc,
 			URLs: []string{
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret200/generic",
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret201/generic",
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret202/generic",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret200/generic",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret201/generic",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret202/generic",
 			},
 		},
 		{
@@ -74,9 +73,9 @@ func TestWebhook(t *testing.T) {
 			Payload:    "github/testdata/pushevent.json",
 			HeaderFunc: githubHeaderFunc,
 			URLs: []string{
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret100/github",
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret101/github",
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret102/github",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret100/github",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret101/github",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret102/github",
 			},
 		},
 		{
@@ -84,9 +83,9 @@ func TestWebhook(t *testing.T) {
 			Payload:    "gitlab/testdata/pushevent.json",
 			HeaderFunc: gitlabHeaderFunc,
 			URLs: []string{
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret300/gitlab",
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret301/gitlab",
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret302/gitlab",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret300/gitlab",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret301/gitlab",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret302/gitlab",
 			},
 		},
 		{
@@ -94,9 +93,9 @@ func TestWebhook(t *testing.T) {
 			Payload:    "bitbucket/testdata/pushevent.json",
 			HeaderFunc: bitbucketHeaderFunc,
 			URLs: []string{
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret400/bitbucket",
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret401/bitbucket",
-				"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret402/bitbucket",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret400/bitbucket",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret401/bitbucket",
+				"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret402/bitbucket",
 			},
 		},
 	}
@@ -147,15 +146,15 @@ func TestWebhookGitHubPushWithImage(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	clusterAdminImageClient := imagev1client.NewForConfigOrDie(clusterAdminClientConfig).Image()
-	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).Build()
+	clusterAdminImageClient := imagev1client.NewForConfigOrDie(clusterAdminClientConfig).ImageV1()
+	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).BuildV1()
 
 	err = testutil.CreateNamespace(clusterAdminKubeConfig, testutil.Namespace())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	clusterAdminKubeClient, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
+	clusterAdminKubeClient, err := testutil.GetClusterAdminKubeClient(clusterAdminKubeConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,9 +205,9 @@ func TestWebhookGitHubPushWithImage(t *testing.T) {
 	}
 
 	for _, s := range []string{
-		"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret100/github",
-		"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret101/github",
-		"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret102/github",
+		"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret100/github",
+		"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret101/github",
+		"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret102/github",
 	} {
 
 		// trigger build event sending push notification
@@ -260,10 +259,10 @@ func TestWebhookGitHubPushWithImageStream(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	clusterAdminImageClient := imagev1client.NewForConfigOrDie(clusterAdminClientConfig).Image()
-	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).Build()
+	clusterAdminImageClient := imagev1client.NewForConfigOrDie(clusterAdminClientConfig).ImageV1()
+	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).BuildV1()
 
-	clusterAdminKubeClient, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
+	clusterAdminKubeClient, err := testutil.GetClusterAdminKubeClient(clusterAdminKubeConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -324,7 +323,7 @@ func TestWebhookGitHubPushWithImageStream(t *testing.T) {
 	}
 	defer watch.Stop()
 
-	s := "/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret101/github"
+	s := "/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret101/github"
 
 	// trigger build event sending push notification
 	postFile(clusterAdminBuildClient.RESTClient(), githubHeaderFunc, "github/testdata/pushevent.json", clusterAdminClientConfig.Host+s, http.StatusOK, t)
@@ -358,7 +357,7 @@ func TestWebhookGitHubPing(t *testing.T) {
 	}
 	defer testserver.CleanupMasterEtcd(t, masterConfig)
 
-	kubeClient, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
+	kubeClient, err := testutil.GetClusterAdminKubeClient(clusterAdminKubeConfig)
 	if err != nil {
 		t.Fatalf("unable to get kubeClient: %v", err)
 	}
@@ -366,9 +365,9 @@ func TestWebhookGitHubPing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to get osClient: %v", err)
 	}
-	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).Build()
+	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).BuildV1()
 
-	kubeClient.Core().Namespaces().Create(&kapi.Namespace{
+	kubeClient.CoreV1().Namespaces().Create(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: testutil.Namespace()},
 	})
 
@@ -385,9 +384,9 @@ func TestWebhookGitHubPing(t *testing.T) {
 	defer watch.Stop()
 
 	for _, s := range []string{
-		"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret101/github",
-		"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret100/github",
-		"/oapi/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret102/github",
+		"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret101/github",
+		"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret100/github",
+		"/apis/build.openshift.io/v1/namespaces/" + testutil.Namespace() + "/buildconfigs/pushbuild/webhooks/secret102/github",
 	} {
 		// trigger build event sending push notification
 		clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(clusterAdminKubeConfig)
@@ -409,7 +408,7 @@ func TestWebhookGitHubPing(t *testing.T) {
 	}
 }
 
-func postFile(client restclient.Interface, headerFunc func(*http.Header), filename, url string, expStatusCode int, t *testing.T) []byte {
+func postFile(client rest.Interface, headerFunc func(*http.Header), filename, url string, expStatusCode int, t *testing.T) []byte {
 	data, err := ioutil.ReadFile("../../pkg/build/webhook/" + filename)
 	if err != nil {
 		t.Fatalf("Failed to open %s: %v", filename, err)
@@ -419,7 +418,7 @@ func postFile(client restclient.Interface, headerFunc func(*http.Header), filena
 		t.Fatalf("Error creating POST request: %v", err)
 	}
 	headerFunc(&req.Header)
-	resp, err := client.(*restclient.RESTClient).Client.Do(req)
+	resp, err := client.(*rest.RESTClient).Client.Do(req)
 	if err != nil {
 		t.Fatalf("Failed posting webhook: %v", err)
 	}

@@ -2,19 +2,17 @@ package top
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/top"
 
-	kcmd "k8s.io/kubernetes/pkg/kubectl/cmd"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
+
+	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 )
 
 const (
 	TopRecommendedName = "top"
-
-	DefaultHeapsterNamespace = "openshift-infra"
-	DefaultHeapsterScheme    = "https"
-	DefaultHeapsterService   = "heapster"
 )
 
 var topLong = templates.LongDesc(`
@@ -23,30 +21,17 @@ var topLong = templates.LongDesc(`
 	This command analyzes resources managed by the platform and presents current
 	usage statistics.`)
 
-func NewCommandTop(name, fullName string, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCommandTop(name, fullName string, f kcmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	// Parent command to which all subcommands are added.
 	cmds := &cobra.Command{
 		Use:   name,
 		Short: "Show usage statistics of resources on the server",
 		Long:  topLong,
-		Run:   cmdutil.DefaultSubCommandRun(streams.ErrOut),
+		Run:   kcmdutil.DefaultSubCommandRun(streams.ErrOut),
 	}
 
-	ocHeapsterTopOpts := kcmd.HeapsterTopOptions{
-		Namespace: DefaultHeapsterNamespace,
-		Scheme:    DefaultHeapsterScheme,
-		Service:   DefaultHeapsterService,
-	}
-
-	cmdTopNodeOpts := &kcmd.TopNodeOptions{
-		HeapsterOptions: ocHeapsterTopOpts,
-	}
-	cmdTopNode := kcmd.NewCmdTopNode(f, cmdTopNodeOpts, streams)
-
-	cmdTopPodOpts := &kcmd.TopPodOptions{
-		HeapsterOptions: ocHeapsterTopOpts,
-	}
-	cmdTopPod := kcmd.NewCmdTopPod(f, cmdTopPodOpts, streams)
+	cmdTopNode := cmdutil.ReplaceCommandName("kubectl", fullName, top.NewCmdTopNode(f, nil, streams))
+	cmdTopPod := cmdutil.ReplaceCommandName("kubectl", fullName, top.NewCmdTopPod(f, nil, streams))
 
 	cmds.AddCommand(NewCmdTopImages(f, fullName, TopImagesRecommendedName, streams))
 	cmds.AddCommand(NewCmdTopImageStreams(f, fullName, TopImageStreamsRecommendedName, streams))

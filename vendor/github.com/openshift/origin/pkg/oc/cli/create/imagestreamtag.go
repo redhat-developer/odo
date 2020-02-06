@@ -8,13 +8,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	imagev1client "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
-	imageapi "github.com/openshift/origin/pkg/image/apis/image"
+	"github.com/openshift/library-go/pkg/image/reference"
 	utilenv "github.com/openshift/origin/pkg/oc/util/env"
 )
 
@@ -150,12 +150,12 @@ func (o *CreateImageStreamTagOptions) Run() error {
 		}
 	case len(o.From) > 0:
 		var name string
-		ref, err := imageapi.ParseDockerImageReference(o.From)
+		ref, err := reference.Parse(o.From)
 		if err != nil {
 			if !strings.HasPrefix(o.From, ":") {
 				return fmt.Errorf("Invalid --from, must be a valid image stream tag or image stream image: %v", err)
 			}
-			ref = imageapi.DockerImageReference{Tag: o.From[1:]}
+			ref = reference.DockerImageReference{Tag: o.From[1:]}
 			name = o.From[1:]
 		} else {
 			name = ref.NameString()

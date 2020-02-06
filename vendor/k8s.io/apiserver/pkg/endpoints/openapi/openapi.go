@@ -108,6 +108,18 @@ func (s groupVersionKinds) Less(i, j int) bool {
 	return s[i].Group < s[j].Group
 }
 
+func (s groupVersionKinds) JSON() []interface{} {
+	j := []interface{}{}
+	for _, gvk := range s {
+		j = append(j, map[string]interface{}{
+			"group":   gvk.Group,
+			"version": gvk.Version,
+			"kind":    gvk.Kind,
+		})
+	}
+	return j
+}
+
 // DefinitionNamer is the type to customize OpenAPI definition name.
 type DefinitionNamer struct {
 	typeGroupVersionKinds map[string]groupVersionKinds
@@ -121,7 +133,8 @@ func gvkConvert(gvk schema.GroupVersionKind) v1.GroupVersionKind {
 	}
 }
 
-func friendlyName(name string) string {
+// FriendlyName returns REST resource friendly naming
+func FriendlyName(name string) string {
 	nameParts := strings.Split(name, "/")
 	// Reverse first part. e.g., io.k8s... instead of k8s.io...
 	if len(nameParts) > 0 && strings.Contains(nameParts[0], ".") {
@@ -171,9 +184,9 @@ func NewDefinitionNamer(schemes ...*runtime.Scheme) *DefinitionNamer {
 // GetDefinitionName returns the name and tags for a given definition
 func (d *DefinitionNamer) GetDefinitionName(name string) (string, spec.Extensions) {
 	if groupVersionKinds, ok := d.typeGroupVersionKinds[name]; ok {
-		return friendlyName(name), spec.Extensions{
-			extensionGVK: []v1.GroupVersionKind(groupVersionKinds),
+		return FriendlyName(name), spec.Extensions{
+			extensionGVK: groupVersionKinds.JSON(),
 		}
 	}
-	return friendlyName(name), nil
+	return FriendlyName(name), nil
 }

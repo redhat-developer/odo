@@ -8,8 +8,8 @@ import (
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	clientgotesting "k8s.io/client-go/testing"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 
 	"github.com/openshift/api/image"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -26,7 +26,7 @@ func testData() []*imagev1.ImageStream {
 			ObjectMeta: metav1.ObjectMeta{Name: "rails", Namespace: "yourproject", ResourceVersion: "10", CreationTimestamp: metav1.Now()},
 			Spec: imagev1.ImageStreamSpec{
 				DockerImageRepository: "",
-				Tags: []imagev1.TagReference{},
+				Tags:                  []imagev1.TagReference{},
 			},
 		},
 		{
@@ -177,7 +177,7 @@ func TestTag(t *testing.T) {
 		})
 
 		test.opts.IOStreams = genericclioptions.NewTestIOStreamsDiscard()
-		test.opts.client = client.Image()
+		test.opts.client = client.ImageV1()
 
 		err := test.opts.Validate()
 		if (err == nil && len(test.validateErr) != 0) || (err != nil && err.Error() != test.validateErr) {
@@ -225,7 +225,7 @@ func TestRunTag_DeleteOld(t *testing.T) {
 	}{
 		opts: &TagOptions{
 			IOStreams:      genericclioptions.NewTestIOStreamsDiscard(),
-			client:         client.Image(),
+			client:         client.ImageV1(),
 			deleteTag:      true,
 			destNamespace:  []string{"yourproject"},
 			destNameAndTag: []string{"rails:tip"},
@@ -268,7 +268,7 @@ func TestRunTag_AddNew(t *testing.T) {
 	}{
 		opts: &TagOptions{
 			IOStreams: genericclioptions.NewTestIOStreamsDiscard(),
-			client:    client.Image(),
+			client:    client.ImageV1(),
 			ref: imagev1.DockerImageReference{
 				Namespace: "openshift",
 				Name:      "ruby",
@@ -316,7 +316,7 @@ func TestRunTag_AddRestricted(t *testing.T) {
 	}{
 		opts: &TagOptions{
 			IOStreams: genericclioptions.NewTestIOStreamsDiscard(),
-			client:    client.Image(),
+			client:    client.ImageV1(),
 			ref: imagev1.DockerImageReference{
 				Namespace: "openshift",
 				Name:      "ruby",
@@ -362,7 +362,7 @@ func TestRunTag_DeleteNew(t *testing.T) {
 	}{
 		opts: &TagOptions{
 			IOStreams:      genericclioptions.NewTestIOStreamsDiscard(),
-			client:         client.Image(),
+			client:         client.ImageV1(),
 			deleteTag:      true,
 			destNamespace:  []string{"yourproject"},
 			destNameAndTag: []string{"rails:tip"},

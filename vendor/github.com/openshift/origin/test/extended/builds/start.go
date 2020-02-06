@@ -36,17 +36,10 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 
 	g.Context("", func() {
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
+			exutil.PreTestDump()
 		})
 
 		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
-
 			oc.Run("create").Args("-f", buildFixture).Execute()
 		})
 
@@ -138,6 +131,10 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					o.Expect(err).NotTo(o.HaveOccurred())
 					g.By(fmt.Sprintf("verifying the build output is verbose"))
 					o.Expect(buildLog).To(o.ContainSubstring("Creating a new S2I builder"))
+					o.Expect(buildLog).To(o.ContainSubstring("openshift-builder v"))
+					// Bug 1694871: logging before flag.Parse error
+					g.By(fmt.Sprintf("verifying the build output has no error about flag.Parse"))
+					o.Expect(buildLog).NotTo(o.ContainSubstring("ERROR: logging before flag.Parse"))
 				})
 
 				g.It("BUILD_LOGLEVEL in buildconfig can be overridden by build-loglevel", func() {
@@ -148,6 +145,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					o.Expect(err).NotTo(o.HaveOccurred())
 					g.By(fmt.Sprintf("verifying the build output is not verbose"))
 					o.Expect(buildLog).NotTo(o.ContainSubstring("Creating a new S2I builder"))
+					o.Expect(buildLog).NotTo(o.ContainSubstring("openshift-builder v"))
 				})
 
 			})
@@ -171,7 +169,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("Uploading file"))
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("as binary input for the build ..."))
-					o.Expect(buildLog).To(o.ContainSubstring("Your bundle is complete"))
+					o.Expect(buildLog).To(o.ContainSubstring("Build complete"))
 				})
 
 				g.It("should accept --from-dir as input", func() {
@@ -183,7 +181,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					g.By(fmt.Sprintf("verifying the build %q status", br.BuildPath))
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("Uploading directory"))
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("as binary input for the build ..."))
-					o.Expect(buildLog).To(o.ContainSubstring("Your bundle is complete"))
+					o.Expect(buildLog).To(o.ContainSubstring("Build complete"))
 				})
 
 				g.It("should accept --from-repo as input", func() {
@@ -197,7 +195,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("Uploading"))
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring(`at commit "HEAD"`))
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("as binary input for the build ..."))
-					o.Expect(buildLog).To(o.ContainSubstring("Your bundle is complete"))
+					o.Expect(buildLog).To(o.ContainSubstring("Build complete"))
 				})
 
 				g.It("should accept --from-repo with --commit as input", func() {
@@ -217,11 +215,12 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring(fmt.Sprintf("at commit \"%s\"", commit)))
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("as binary input for the build ..."))
 					o.Expect(buildLog).To(o.ContainSubstring(fmt.Sprintf("\"commit\":\"%s\"", commit)))
-					o.Expect(buildLog).To(o.ContainSubstring("Your bundle is complete"))
+					o.Expect(buildLog).To(o.ContainSubstring("Build complete"))
 				})
 
 				// run one valid binary build so we can do --from-build later
 				g.It("should reject binary build requests without a --from-xxxx value", func() {
+					g.Skip("TODO: refactor such that we don't rely on external package managers (i.e. Rubygems)")
 					g.By("starting a valid build with a directory")
 					br, err := exutil.StartBuildAndWait(oc, "sample-build-binary", "--follow", fmt.Sprintf("--from-dir=%s", exampleBuild))
 					br.AssertSuccess()
@@ -229,7 +228,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("Uploading directory"))
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring("as binary input for the build ..."))
-					o.Expect(buildLog).To(o.ContainSubstring("Your bundle is complete"))
+					o.Expect(buildLog).To(o.ContainSubstring("Build complete"))
 
 					g.By("starting a build without a --from-xxxx value")
 					br, err = exutil.StartBuildAndWait(oc, "sample-build-binary")
@@ -243,16 +242,18 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 				})
 
 				g.It("shoud accept --from-file with https URL as an input", func() {
+					g.Skip("TODO: update https://github.com/openshift/ruby-hello-world to be compatible with ruby 2.5")
 					g.By("starting a valid build with input file served by https")
 					br, err := exutil.StartBuildAndWait(oc, "sample-build", fmt.Sprintf("--from-file=%s", exampleGemfileURL))
 					br.AssertSuccess()
 					buildLog, err := br.Logs()
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring(fmt.Sprintf("Uploading file from %q as binary input for the build", exampleGemfileURL)))
-					o.Expect(buildLog).To(o.ContainSubstring("Your bundle is complete"))
+					o.Expect(buildLog).To(o.ContainSubstring("Build complete"))
 				})
 
 				g.It("shoud accept --from-archive with https URL as an input", func() {
+					g.Skip("TODO: update https://github.com/openshift/ruby-hello-world to be compatible with ruby 2.5")
 					g.By("starting a valid build with input archive served by https")
 					// can't use sample-build-binary because we need contextDir due to github archives containing the top-level directory
 					br, err := exutil.StartBuildAndWait(oc, "sample-build-github-archive", fmt.Sprintf("--from-archive=%s", exampleArchiveURL))
@@ -260,7 +261,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					buildLog, err := br.Logs()
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(br.StartBuildStdErr).To(o.ContainSubstring(fmt.Sprintf("Uploading archive from %q as binary input for the build", exampleArchiveURL)))
-					o.Expect(buildLog).To(o.ContainSubstring("Your bundle is complete"))
+					o.Expect(buildLog).To(o.ContainSubstring("Build complete"))
 				})
 			})
 
@@ -275,10 +276,10 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 						build = b
 						return exutil.CheckBuildCancelled(b)
 					}
-					err := exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), "sample-build-binary-invalidnodeselector-1", nil, nil, cancelFn)
+					err := exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), "sample-build-binary-invalidnodeselector-1", nil, nil, cancelFn)
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(build.Status.Phase).To(o.Equal(buildv1.BuildPhaseCancelled))
-					exutil.CheckForBuildEvent(oc.KubeClient().Core(), build, buildutil.BuildCancelledEventReason,
+					exutil.CheckForBuildEvent(oc.KubeClient().CoreV1(), build, buildutil.BuildCancelledEventReason,
 						buildutil.BuildCancelledEventMessage)
 				})
 			})
@@ -311,7 +312,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					})
 
 					o.Expect(buildName).ToNot(o.BeEmpty())
-					build, err := oc.BuildClient().Build().Builds(oc.Namespace()).Get(buildName, metav1.GetOptions{})
+					build, err := oc.BuildClient().BuildV1().Builds(oc.Namespace()).Get(buildName, metav1.GetOptions{})
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(build).NotTo(o.BeNil(), "build object should exist")
 
@@ -319,7 +320,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					err = oc.Run("cancel-build").Args(buildName).Execute()
 					o.Expect(err).ToNot(o.HaveOccurred())
 					wg.Wait()
-					exutil.CheckForBuildEvent(oc.KubeClient().Core(), build, buildutil.BuildCancelledEventReason,
+					exutil.CheckForBuildEvent(oc.KubeClient().CoreV1(), build, buildutil.BuildCancelledEventReason,
 						buildutil.BuildCancelledEventMessage)
 
 				})
@@ -352,19 +353,18 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					buildLog, err := br.Logs()
 					o.Expect(err).NotTo(o.HaveOccurred())
 					g.By("verifying the build completed with a warning.")
-					o.Expect(buildLog).To(o.ContainSubstring("One or more build-args [bar] were not consumed"))
+					o.Expect(buildLog).To(o.ContainSubstring("one or more build args were not consumed: [bar]"))
 				})
 			})
 
 			g.Describe("Trigger builds with branch refs matching directories on master branch", func() {
-
 				g.It("Should checkout the config branch, not config directory", func() {
 					g.By("calling oc new-app")
 					_, err := oc.Run("new-app").Args("https://github.com/openshift/ruby-hello-world#config").Output()
 					o.Expect(err).NotTo(o.HaveOccurred())
 
 					g.By("waiting for the build to complete")
-					err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), "ruby-hello-world-1", nil, nil, nil)
+					err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), "ruby-hello-world-1", nil, nil, nil)
 					if err != nil {
 						exutil.DumpBuildLogs("ruby-hello-world", oc)
 					}
@@ -381,7 +381,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					g.By("clearing existing builds")
 					_, err := oc.Run("delete").Args("builds", "--all").Output()
 					o.Expect(err).NotTo(o.HaveOccurred())
-					builds, err := oc.BuildClient().Build().Builds(oc.Namespace()).List(metav1.ListOptions{})
+					builds, err := oc.BuildClient().BuildV1().Builds(oc.Namespace()).List(metav1.ListOptions{})
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(builds.Items).To(o.BeEmpty())
 
@@ -389,7 +389,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					out, err := oc.WithoutNamespace().Run("status").Args().Output()
 					o.Expect(err).NotTo(o.HaveOccurred())
 					e2e.Logf("got status value of: %s", out)
-					matcher := regexp.MustCompile("https?://.*?8443")
+					matcher := regexp.MustCompile("https?://.*?443")
 					apiServer := matcher.FindString(out)
 					o.Expect(apiServer).NotTo(o.BeEmpty())
 
@@ -406,14 +406,14 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					curlOut, err := exec.Command("curl", curlArgs...).Output()
 					o.Expect(err).NotTo(o.HaveOccurred())
 					e2e.Logf("curl cmd: %v, output: %s", curlArgs, string(curlOut))
-					builds, err = oc.BuildClient().Build().Builds(oc.Namespace()).List(metav1.ListOptions{})
+					builds, err = oc.BuildClient().BuildV1().Builds(oc.Namespace()).List(metav1.ListOptions{})
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(builds.Items).NotTo(o.BeEmpty())
 
 					g.By("clearing existing builds")
 					_, err = oc.Run("delete").Args("builds", "--all").Output()
 					o.Expect(err).NotTo(o.HaveOccurred())
-					builds, err = oc.BuildClient().Build().Builds(oc.Namespace()).List(metav1.ListOptions{})
+					builds, err = oc.BuildClient().BuildV1().Builds(oc.Namespace()).List(metav1.ListOptions{})
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(builds.Items).To(o.BeEmpty())
 
@@ -427,14 +427,14 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					curlOut, err = exec.Command("curl", curlArgs...).Output()
 					o.Expect(err).NotTo(o.HaveOccurred())
 					e2e.Logf("curl cmd: %s, output: %s", curlArgs, string(curlOut))
-					builds, err = oc.BuildClient().Build().Builds(oc.Namespace()).List(metav1.ListOptions{})
+					builds, err = oc.BuildClient().BuildV1().Builds(oc.Namespace()).List(metav1.ListOptions{})
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(builds.Items).NotTo(o.BeEmpty())
 
 					g.By("clearing existing builds")
 					_, err = oc.Run("delete").Args("builds", "--all").Output()
 					o.Expect(err).NotTo(o.HaveOccurred())
-					builds, err = oc.BuildClient().Build().Builds(oc.Namespace()).List(metav1.ListOptions{})
+					builds, err = oc.BuildClient().BuildV1().Builds(oc.Namespace()).List(metav1.ListOptions{})
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(builds.Items).To(o.BeEmpty())
 
@@ -448,7 +448,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					curlOut, err = exec.Command("curl", curlArgs...).Output()
 					o.Expect(err).NotTo(o.HaveOccurred())
 					e2e.Logf("curl cmd: %v, output: %s", curlArgs, string(curlOut))
-					builds, err = oc.BuildClient().Build().Builds(oc.Namespace()).List(metav1.ListOptions{})
+					builds, err = oc.BuildClient().BuildV1().Builds(oc.Namespace()).List(metav1.ListOptions{})
 					o.Expect(err).NotTo(o.HaveOccurred())
 					o.Expect(builds.Items).To(o.BeEmpty())
 
@@ -457,17 +457,17 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 
 			g.Describe("s2i build maintaining symlinks", func() {
 				g.It(fmt.Sprintf("should s2i build image and maintain symlinks"), func() {
-					g.By("initializing local repo")
+					g.By("initializing a local git repo")
 					repo, err := exutil.NewGitRepo("symlinks")
 					o.Expect(err).NotTo(o.HaveOccurred())
 					defer repo.Remove()
-					err = repo.AddAndCommit("package.json", "{}")
+					err = repo.AddAndCommit("package.json", "{\"scripts\" : {} }")
 					o.Expect(err).NotTo(o.HaveOccurred())
 
 					err = os.Symlink(repo.RepoPath+"/package.json", repo.RepoPath+"/link")
 					o.Expect(err).NotTo(o.HaveOccurred())
 
-					exutil.CheckOpenShiftNamespaceImageStreams(oc)
+					exutil.WaitForOpenShiftNamespaceImageStreams(oc)
 					g.By(fmt.Sprintf("calling oc create -f %q", symlinkFixture))
 					err = oc.Run("create").Args("-f", symlinkFixture).Execute()
 					o.Expect(err).NotTo(o.HaveOccurred())
@@ -477,7 +477,7 @@ var _ = g.Describe("[Feature:Builds][Slow] starting a build using CLI", func() {
 					o.Expect(err).NotTo(o.HaveOccurred())
 
 					g.By("waiting for build to finish")
-					err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), "symlink-bc-1", exutil.CheckBuildSuccess, exutil.CheckBuildFailed, nil)
+					err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), "symlink-bc-1", exutil.CheckBuildSuccess, exutil.CheckBuildFailed, nil)
 					if err != nil {
 						exutil.DumpBuildLogs("symlink-bc", oc)
 					}

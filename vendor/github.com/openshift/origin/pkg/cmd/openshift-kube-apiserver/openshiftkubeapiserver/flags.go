@@ -2,26 +2,19 @@ package openshiftkubeapiserver
 
 import (
 	"fmt"
-	"net"
-	"sort"
-
 	"io/ioutil"
+	"net"
+	"strings"
 
-	"bytes"
-
-	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
+	configv1 "github.com/openshift/api/config/v1"
+	kubecontrolplanev1 "github.com/openshift/api/kubecontrolplane/v1"
+	"github.com/openshift/origin/pkg/cmd/configflags"
 	configapilatest "github.com/openshift/origin/pkg/cmd/server/apis/config/latest"
-	originadmission "github.com/openshift/origin/pkg/cmd/server/origin/admission"
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/openshift/origin/pkg/configconversion"
 )
 
-func ConfigToFlags(kubeAPIServerConfig *configapi.KubeAPIServerConfig) ([]string, error) {
-	args := map[string][]string{}
-	for key, slice := range kubeAPIServerConfig.APIServerArguments {
-		for _, val := range slice {
-			args[key] = append(args[key], val)
-		}
-	}
+func ConfigToFlags(kubeAPIServerConfig *kubecontrolplanev1.KubeAPIServerConfig) ([]string, error) {
+	args := unmaskArgs(kubeAPIServerConfig.APIServerArguments)
 
 	host, portString, err := net.SplitHostPort(kubeAPIServerConfig.ServingInfo.BindAddress)
 	if err != nil {
@@ -100,150 +93,68 @@ func ConfigToFlags(kubeAPIServerConfig *configapi.KubeAPIServerConfig) ([]string
 
 	// TODO, we need to set these in order to enable the right admission plugins in each of the servers
 	// TODO this is needed for a viable cluster up
-	admissionFlags, err := admissionFlags(kubeAPIServerConfig.AdmissionPluginConfig)
+	admissionFlags, err := admissionFlags(kubeAPIServerConfig.AdmissionConfig)
 	if err != nil {
 		return nil, err
 	}
 	for flag, value := range admissionFlags {
-		setIfUnset(args, flag, value...)
+		configflags.SetIfUnset(args, flag, value...)
 	}
-	setIfUnset(args, "allow-privileged", "true")
-	setIfUnset(args, "anonymous-auth", "false")
-	setIfUnset(args, "authorization-mode", "RBAC", "Node") // overridden later, but this runs the poststarthook for bootstrapping RBAC
-	for flag, value := range auditFlags(kubeAPIServerConfig) {
-		setIfUnset(args, flag, value...)
+	configflags.SetIfUnset(args, "allow-privileged", "true")
+	configflags.SetIfUnset(args, "anonymous-auth", "false")
+	configflags.SetIfUnset(args, "authorization-mode", "RBAC", "Node") // overridden later, but this runs the poststarthook for bootstrapping RBAC
+	for flag, value := range configflags.AuditFlags(&kubeAPIServerConfig.AuditConfig, configflags.ArgsWithPrefix(args, "audit-")) {
+		configflags.SetIfUnset(args, flag, value...)
 	}
-	setIfUnset(args, "bind-address", host)
-	setIfUnset(args, "client-ca-file", kubeAPIServerConfig.ServingInfo.ClientCA)
-	setIfUnset(args, "cors-allowed-origins", kubeAPIServerConfig.CORSAllowedOrigins...)
-	setIfUnset(args, "enable-logs-handler", "false")
-	setIfUnset(args, "enable-swagger-ui", "true")
-	setIfUnset(args, "endpoint-reconciler-type", "lease")
-	setIfUnset(args, "etcd-cafile", kubeAPIServerConfig.EtcdClientInfo.CA)
-	setIfUnset(args, "etcd-certfile", kubeAPIServerConfig.EtcdClientInfo.ClientCert.CertFile)
-	setIfUnset(args, "etcd-keyfile", kubeAPIServerConfig.EtcdClientInfo.ClientCert.KeyFile)
-	setIfUnset(args, "etcd-prefix", kubeAPIServerConfig.StoragePrefix)
-	setIfUnset(args, "etcd-servers", kubeAPIServerConfig.EtcdClientInfo.URLs...)
-	setIfUnset(args, "insecure-port", "0")
-	setIfUnset(args, "kubelet-certificate-authority", kubeAPIServerConfig.KubeletClientInfo.CA)
-	setIfUnset(args, "kubelet-client-certificate", kubeAPIServerConfig.KubeletClientInfo.ClientCert.CertFile)
-	setIfUnset(args, "kubelet-client-key", kubeAPIServerConfig.KubeletClientInfo.ClientCert.KeyFile)
-	setIfUnset(args, "kubelet-https", "true")
-	setIfUnset(args, "kubelet-preferred-address-types", "Hostname", "InternalIP", "ExternalIP")
-	setIfUnset(args, "kubelet-read-only-port", "0")
-	setIfUnset(args, "kubernetes-service-node-port", "0")
-	setIfUnset(args, "max-mutating-requests-inflight", fmt.Sprintf("%d", kubeAPIServerConfig.ServingInfo.MaxRequestsInFlight/2))
-	setIfUnset(args, "max-requests-inflight", fmt.Sprintf("%d", kubeAPIServerConfig.ServingInfo.MaxRequestsInFlight))
-	setIfUnset(args, "min-request-timeout", fmt.Sprintf("%d", kubeAPIServerConfig.ServingInfo.RequestTimeoutSeconds))
-	setIfUnset(args, "proxy-client-cert-file", kubeAPIServerConfig.AggregatorConfig.ProxyClientInfo.CertFile)
-	setIfUnset(args, "proxy-client-key-file", kubeAPIServerConfig.AggregatorConfig.ProxyClientInfo.KeyFile)
-	setIfUnset(args, "requestheader-allowed-names", kubeAPIServerConfig.AuthConfig.RequestHeader.ClientCommonNames...)
-	setIfUnset(args, "requestheader-client-ca-file", kubeAPIServerConfig.AuthConfig.RequestHeader.ClientCA)
-	setIfUnset(args, "requestheader-extra-headers-prefix", kubeAPIServerConfig.AuthConfig.RequestHeader.ExtraHeaderPrefixes...)
-	setIfUnset(args, "requestheader-group-headers", kubeAPIServerConfig.AuthConfig.RequestHeader.GroupHeaders...)
-	setIfUnset(args, "requestheader-username-headers", kubeAPIServerConfig.AuthConfig.RequestHeader.UsernameHeaders...)
-	setIfUnset(args, "secure-port", portString)
-	setIfUnset(args, "service-cluster-ip-range", kubeAPIServerConfig.ServicesSubnet)
-	setIfUnset(args, "service-node-port-range", kubeAPIServerConfig.ServicesNodePortRange)
-	setIfUnset(args, "storage-backend", "etcd3")
-	setIfUnset(args, "storage-media-type", "application/vnd.kubernetes.protobuf")
-	setIfUnset(args, "tls-cert-file", kubeAPIServerConfig.ServingInfo.ServerCert.CertFile)
-	setIfUnset(args, "tls-cipher-suites", kubeAPIServerConfig.ServingInfo.CipherSuites...)
-	setIfUnset(args, "tls-min-version", kubeAPIServerConfig.ServingInfo.MinTLSVersion)
-	setIfUnset(args, "tls-private-key-file", kubeAPIServerConfig.ServingInfo.ServerCert.KeyFile)
-	// TODO re-enable SNI for cluster up
-	// tls-sni-cert-key
-	setIfUnset(args, "secure-port", portString)
+	configflags.SetIfUnset(args, "bind-address", host)
+	configflags.SetIfUnset(args, "client-ca-file", kubeAPIServerConfig.ServingInfo.ClientCA)
+	configflags.SetIfUnset(args, "cors-allowed-origins", kubeAPIServerConfig.CORSAllowedOrigins...)
+	configflags.SetIfUnset(args, "enable-logs-handler", "false")
+	configflags.SetIfUnset(args, "enable-swagger-ui", "true")
+	configflags.SetIfUnset(args, "endpoint-reconciler-type", "lease")
+	configflags.SetIfUnset(args, "etcd-cafile", kubeAPIServerConfig.StorageConfig.CA)
+	configflags.SetIfUnset(args, "etcd-certfile", kubeAPIServerConfig.StorageConfig.CertFile)
+	configflags.SetIfUnset(args, "etcd-keyfile", kubeAPIServerConfig.StorageConfig.KeyFile)
+	configflags.SetIfUnset(args, "etcd-prefix", kubeAPIServerConfig.StorageConfig.StoragePrefix)
+	configflags.SetIfUnset(args, "etcd-servers", kubeAPIServerConfig.StorageConfig.URLs...)
+	configflags.SetIfUnset(args, "event-ttl", "3h") // set a TTL long enough to last for our CI tests so we see the first set of events.
+	configflags.SetIfUnset(args, "insecure-port", "0")
+	configflags.SetIfUnset(args, "kubelet-certificate-authority", kubeAPIServerConfig.KubeletClientInfo.CA)
+	configflags.SetIfUnset(args, "kubelet-client-certificate", kubeAPIServerConfig.KubeletClientInfo.CertFile)
+	configflags.SetIfUnset(args, "kubelet-client-key", kubeAPIServerConfig.KubeletClientInfo.KeyFile)
+	configflags.SetIfUnset(args, "kubelet-https", "true")
+	configflags.SetIfUnset(args, "kubelet-preferred-address-types", "Hostname", "InternalIP", "ExternalIP")
+	configflags.SetIfUnset(args, "kubelet-read-only-port", "0")
+	configflags.SetIfUnset(args, "kubernetes-service-node-port", "0")
+	configflags.SetIfUnset(args, "max-mutating-requests-inflight", fmt.Sprintf("%d", kubeAPIServerConfig.ServingInfo.MaxRequestsInFlight/2))
+	configflags.SetIfUnset(args, "max-requests-inflight", fmt.Sprintf("%d", kubeAPIServerConfig.ServingInfo.MaxRequestsInFlight))
+	configflags.SetIfUnset(args, "min-request-timeout", fmt.Sprintf("%d", kubeAPIServerConfig.ServingInfo.RequestTimeoutSeconds))
+	configflags.SetIfUnset(args, "proxy-client-cert-file", kubeAPIServerConfig.AggregatorConfig.ProxyClientInfo.CertFile)
+	configflags.SetIfUnset(args, "proxy-client-key-file", kubeAPIServerConfig.AggregatorConfig.ProxyClientInfo.KeyFile)
+	configflags.SetIfUnset(args, "requestheader-allowed-names", kubeAPIServerConfig.AuthConfig.RequestHeader.ClientCommonNames...)
+	configflags.SetIfUnset(args, "requestheader-client-ca-file", kubeAPIServerConfig.AuthConfig.RequestHeader.ClientCA)
+	configflags.SetIfUnset(args, "requestheader-extra-headers-prefix", kubeAPIServerConfig.AuthConfig.RequestHeader.ExtraHeaderPrefixes...)
+	configflags.SetIfUnset(args, "requestheader-group-headers", kubeAPIServerConfig.AuthConfig.RequestHeader.GroupHeaders...)
+	configflags.SetIfUnset(args, "requestheader-username-headers", kubeAPIServerConfig.AuthConfig.RequestHeader.UsernameHeaders...)
+	configflags.SetIfUnset(args, "secure-port", portString)
+	configflags.SetIfUnset(args, "service-cluster-ip-range", kubeAPIServerConfig.ServicesSubnet)
+	configflags.SetIfUnset(args, "service-node-port-range", kubeAPIServerConfig.ServicesNodePortRange)
+	configflags.SetIfUnset(args, "storage-backend", "etcd3")
+	configflags.SetIfUnset(args, "storage-media-type", "application/vnd.kubernetes.protobuf")
+	configflags.SetIfUnset(args, "tls-cert-file", kubeAPIServerConfig.ServingInfo.CertFile)
+	configflags.SetIfUnset(args, "tls-cipher-suites", kubeAPIServerConfig.ServingInfo.CipherSuites...)
+	configflags.SetIfUnset(args, "tls-min-version", kubeAPIServerConfig.ServingInfo.MinTLSVersion)
+	configflags.SetIfUnset(args, "tls-private-key-file", kubeAPIServerConfig.ServingInfo.KeyFile)
+	configflags.SetIfUnset(args, "tls-sni-cert-key", sniCertKeys(kubeAPIServerConfig.ServingInfo.NamedCertificates)...)
+	configflags.SetIfUnset(args, "secure-port", portString)
 
-	var keys []string
-	for key := range args {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	var arguments []string
-	for _, key := range keys {
-		for _, token := range args[key] {
-			arguments = append(arguments, fmt.Sprintf("--%s=%v", key, token))
-		}
-	}
-	return arguments, nil
+	return configflags.ToFlagSlice(args), nil
 }
 
-// currently for cluster up, audit is just broken.
-// TODO fix this
-func auditFlags(kubeAPIServerConfig *configapi.KubeAPIServerConfig) map[string][]string {
-	args := map[string][]string{}
-	for key, slice := range kubeAPIServerConfig.APIServerArguments {
-		for _, val := range slice {
-			args[key] = append(args[key], val)
-		}
-	}
-
-	return args
-}
-
-func setIfUnset(cmdLineArgs map[string][]string, key string, value ...string) {
-	if _, ok := cmdLineArgs[key]; !ok {
-		cmdLineArgs[key] = value
-	}
-}
-
-func admissionFlags(admissionPluginConfig map[string]*configapi.AdmissionPluginConfig) (map[string][]string, error) {
+func admissionFlags(admissionConfig configv1.AdmissionConfig) (map[string][]string, error) {
 	args := map[string][]string{}
 
-	forceOn := []string{}
-	forceOff := []string{}
-	pluginConfig := map[string]*configapi.AdmissionPluginConfig{}
-	for pluginName, origConfig := range admissionPluginConfig {
-		config := origConfig.DeepCopy()
-		if len(config.Location) > 0 {
-			content, err := ioutil.ReadFile(config.Location)
-			if err != nil {
-				return nil, err
-			}
-			// if the config isn't a DefaultAdmissionConfig, then assume we're enabled (we were called out after all)
-			// if the config *is* a DefaultAdmissionConfig and it explicitly said to disable us, we are disabled
-			obj, err := configapilatest.ReadYAML(bytes.NewBuffer(content))
-			// if we can't read it, let the plugin deal with it
-			// if nothing was there, let the plugin deal with it
-			if err != nil || obj == nil {
-				forceOn = append(forceOn, pluginName)
-				config.Location = ""
-				config.Configuration = &runtime.Unknown{Raw: content}
-				pluginConfig[pluginName] = config
-				continue
-			}
-
-			if defaultConfig, ok := obj.(*configapi.DefaultAdmissionConfig); !ok {
-				forceOn = append(forceOn, pluginName)
-				config.Location = ""
-				config.Configuration = &runtime.Unknown{Raw: content}
-				pluginConfig[pluginName] = config
-
-			} else if defaultConfig.Disable {
-				forceOff = append(forceOff, pluginName)
-
-			} else {
-				forceOn = append(forceOn, pluginName)
-			}
-
-			continue
-		}
-		// if it wasn't a DefaultAdmissionConfig object, let the plugin deal with it
-		if defaultConfig, ok := config.Configuration.(*configapi.DefaultAdmissionConfig); !ok {
-			forceOn = append(forceOn, pluginName)
-			pluginConfig[pluginName] = config
-
-		} else if defaultConfig.Disable {
-			forceOff = append(forceOff, pluginName)
-
-		} else {
-			forceOn = append(forceOn, pluginName)
-		}
-
-	}
-	upstreamAdmissionConfig, err := originadmission.ConvertOpenshiftAdmissionConfigToKubeAdmissionConfig(pluginConfig)
+	upstreamAdmissionConfig, err := configconversion.ConvertOpenshiftAdmissionConfigToKubeAdmissionConfig(admissionConfig.PluginConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -261,9 +172,31 @@ func admissionFlags(admissionPluginConfig map[string]*configapi.AdmissionPluginC
 	}
 	tempFile.Close()
 
-	setIfUnset(args, "admission-control-config-file", tempFile.Name())
-	setIfUnset(args, "disable-admission-plugins", forceOff...)
-	setIfUnset(args, "enable-admission-plugins", forceOn...)
+	configflags.SetIfUnset(args, "admission-control-config-file", tempFile.Name())
+	configflags.SetIfUnset(args, "disable-admission-plugins", admissionConfig.DisabledAdmissionPlugins...)
+	configflags.SetIfUnset(args, "enable-admission-plugins", admissionConfig.EnabledAdmissionPlugins...)
 
 	return args, nil
+}
+
+func sniCertKeys(namedCertificates []configv1.NamedCertificate) []string {
+	args := []string{}
+	for _, nc := range namedCertificates {
+		names := ""
+		if len(nc.Names) > 0 {
+			names = ":" + strings.Join(nc.Names, ",")
+		}
+		args = append(args, fmt.Sprintf("%s,%s%s", nc.CertFile, nc.KeyFile, names))
+	}
+	return args
+}
+
+func unmaskArgs(args map[string]kubecontrolplanev1.Arguments) map[string][]string {
+	ret := map[string][]string{}
+	for key, slice := range args {
+		for _, val := range slice {
+			ret[key] = append(ret[key], val)
+		}
+	}
+	return ret
 }

@@ -79,7 +79,7 @@ whether deleting a broker should:
 
 #### Searching Services
 
-Consumers should be be able to search or filter their catalog by labels. For
+Consumers should be able to search or filter their catalog by labels. For
 example, if I search for all services with 'catalog=database' the catalog
 will return the list of services that match that label. This assumes, of
 course, that producers are able to label their service offerings.
@@ -165,7 +165,7 @@ TODO: How to deal with name conflicts for {broker, service}.
   service properly.
 * As an Application Operator I should be able to see what Service Instances my applications are
   bound to.
-* As an Application Operator I should be able to pass paramters when binding to a Service
+* As an Application Operator I should be able to pass parameters when binding to a Service
   ServiceInstance so that I may indicate what type of binding my application needs.
   (e.g. credential type, admin binding, ro binding, rw binding)
 
@@ -190,7 +190,7 @@ As an Application Operator, I should be able to accomplish the following sets of
 
 Consuming applications that need specific handling of credentials or
 configuration should be able to use additional Kubernetes facilities to
-adapt/transform the contents of the the credentials/configuration. This
+adapt/transform the contents of the credentials/configuration. This
 includes, but is not limited to, side-car and init containers.
 
 If the user were willing to change the application, then we could

@@ -6,9 +6,10 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -20,8 +21,8 @@ var (
 func executeWithLogging(e executor, cmd []string) error {
 	w := &bytes.Buffer{}
 	err := e.Execute(cmd, nil, w, w)
-	glog.V(4).Infof("%s", w.String())
-	glog.V(4).Infof("error: %v", err)
+	klog.V(4).Infof("%s", w.String())
+	klog.V(4).Infof("error: %v", err)
 	return err
 }
 
@@ -87,14 +88,31 @@ func rsyncFlagsFromOptions(o *RsyncOptions) []string {
 	return flags
 }
 
-func rsyncSpecificFlags(o *RsyncOptions) []string {
+func tarFlagsFromOptions(o *RsyncOptions) []string {
 	flags := []string{}
+	if !o.Quiet {
+		flags = append(flags, "-v")
+	}
 	if len(o.RsyncInclude) > 0 {
-		flags = append(flags, "--include")
+		for _, include := range o.RsyncInclude {
+			flags = append(flags, fmt.Sprintf("**/%s", include))
+		}
+
+		// if we have explicit files or a pattern of filenames to include,
+		// maintain similar behavior to tar, and include anything else
+		// that would have otherwise been included
+		flags = append(flags, "*")
 	}
 	if len(o.RsyncExclude) > 0 {
-		flags = append(flags, "--exclude")
+		for _, exclude := range o.RsyncExclude {
+			flags = append(flags, fmt.Sprintf("--exclude=%s", exclude))
+		}
 	}
+	return flags
+}
+
+func rsyncSpecificFlags(o *RsyncOptions) []string {
+	flags := []string{}
 	if o.RsyncProgress {
 		flags = append(flags, "--progress")
 	}
@@ -108,13 +126,13 @@ func rsyncSpecificFlags(o *RsyncOptions) []string {
 }
 
 type podAPIChecker struct {
-	client    kclientset.Interface
+	client    kubernetes.Interface
 	namespace string
 	podName   string
 }
 
 // CheckPods will check if pods exists in the provided context
 func (p podAPIChecker) CheckPod() error {
-	_, err := p.client.Core().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
+	_, err := p.client.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
 	return err
 }

@@ -10,11 +10,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	rbacv1client "k8s.io/client-go/kubernetes/typed/rbac/v1"
 	rbacv1helpers "k8s.io/kubernetes/pkg/apis/rbac/v1"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/origin/pkg/cmd/templates"
 )
@@ -36,7 +36,7 @@ func NewCmdPolicy(name, fullName string, f cmdutil.Factory, streams genericcliop
 	// Parent command to which all subcommands are added.
 	cmds := &cobra.Command{
 		Use:   name,
-		Short: "Manage policy",
+		Short: "Manage cluster authorization and security policy",
 		Long:  policyLong,
 		Run:   cmdutil.DefaultSubCommandRun(streams.ErrOut),
 	}
@@ -87,8 +87,6 @@ func NewCmdPolicy(name, fullName string, f cmdutil.Factory, streams genericcliop
 		{
 			Message: "Upgrade and repair system policy:",
 			Commands: []*cobra.Command{
-				NewCmdReconcileClusterRoles(ReconcileClusterRolesRecommendedName, fullName+" "+ReconcileClusterRolesRecommendedName, f, streams),
-				NewCmdReconcileClusterRoleBindings(ReconcileClusterRoleBindingsRecommendedName, fullName+" "+ReconcileClusterRoleBindingsRecommendedName, f, streams),
 				NewCmdReconcileSCC(ReconcileSCCRecommendedName, fullName+" "+ReconcileSCCRecommendedName, f, streams),
 			},
 		},
