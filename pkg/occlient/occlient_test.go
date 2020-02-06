@@ -270,21 +270,21 @@ func fakePlanExternalMetaDataRaw() ([][]byte, error) {
 	return data, nil
 }
 
-func fakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
-	planServiceInstanceCreateParameterSchema1 := make(map[string][]string)
-	planServiceInstanceCreateParameterSchema1["required"] = []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"}
+func fakePlanInstanceCreateParameterSchemasRaw() ([][]byte, error) {
+	planInstanceCreateParameterSchema1 := make(map[string][]string)
+	planInstanceCreateParameterSchema1["required"] = []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"}
 
-	planServiceInstanceCreateParameterSchema2 := make(map[string][]string)
-	planServiceInstanceCreateParameterSchema2["required"] = []string{"PLAN_DATABASE_USERNAME_2", "PLAN_DATABASE_PASSWORD"}
+	planInstanceCreateParameterSchema2 := make(map[string][]string)
+	planInstanceCreateParameterSchema2["required"] = []string{"PLAN_DATABASE_USERNAME_2", "PLAN_DATABASE_PASSWORD"}
 
-	planServiceInstanceCreateParameterSchemaRaw1, err := json.Marshal(planServiceInstanceCreateParameterSchema1)
+	planInstanceCreateParameterSchemaRaw1, err := json.Marshal(planInstanceCreateParameterSchema1)
 	if err != nil {
 		if err != nil {
 			return nil, errors.Wrap(err, "")
 		}
 	}
 
-	planServiceInstanceCreateParameterSchemaRaw2, err := json.Marshal(planServiceInstanceCreateParameterSchema2)
+	planInstanceCreateParameterSchemaRaw2, err := json.Marshal(planInstanceCreateParameterSchema2)
 	if err != nil {
 		if err != nil {
 			return nil, errors.Wrap(err, "")
@@ -292,8 +292,8 @@ func fakePlanServiceInstanceCreateParameterSchemasRaw() ([][]byte, error) {
 	}
 
 	var data [][]byte
-	data = append(data, planServiceInstanceCreateParameterSchemaRaw1)
-	data = append(data, planServiceInstanceCreateParameterSchemaRaw2)
+	data = append(data, planInstanceCreateParameterSchemaRaw1)
+	data = append(data, planInstanceCreateParameterSchemaRaw2)
 
 	return data, nil
 }
@@ -2755,7 +2755,7 @@ func TestGetClusterPlansFromServiceName(t *testing.T) {
 		return
 	}
 
-	planServiceInstanceCreateParameterSchemasRaw, err := fakePlanServiceInstanceCreateParameterSchemasRaw()
+	planInstanceCreateParameterSchemasRaw, err := fakePlanInstanceCreateParameterSchemasRaw()
 	if err != nil {
 		fmt.Printf("error occured %v during marshalling", err)
 		return
@@ -2784,10 +2784,10 @@ func TestGetClusterPlansFromServiceName(t *testing.T) {
 							Name: "1dda1477cace09730bd8ed7a6505607e",
 						},
 						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-							ExternalName:                         "dev",
-							Description:                          "this is a example description 1",
-							ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
-							ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[0]},
+							ExternalName:                  "dev",
+							Description:                   "this is a example description 1",
+							ExternalMetadata:              &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
+							InstanceCreateParameterSchema: &runtime.RawExtension{Raw: planInstanceCreateParameterSchemasRaw[0]},
 						},
 					},
 				},
@@ -2801,10 +2801,10 @@ func TestGetClusterPlansFromServiceName(t *testing.T) {
 							Name: "1dda1477cace09730bd8ed7a6505607e",
 						},
 						CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-							ExternalName:                         "prod",
-							Description:                          "this is a example description 2",
-							ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[1]},
-							ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[1]},
+							ExternalName:                  "prod",
+							Description:                   "this is a example description 2",
+							ExternalMetadata:              &runtime.RawExtension{Raw: planExternalMetaDataRaw[1]},
+							InstanceCreateParameterSchema: &runtime.RawExtension{Raw: planInstanceCreateParameterSchemasRaw[1]},
 						},
 					},
 				},
@@ -2829,10 +2829,10 @@ func TestGetClusterPlansFromServiceName(t *testing.T) {
 						Name: "1dda1477cace09730bd8ed7a6505607e",
 					},
 					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName:                         "dev",
-						Description:                          "this is a example description 1",
-						ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
-						ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[0]},
+						ExternalName:                  "dev",
+						Description:                   "this is a example description 1",
+						ExternalMetadata:              &runtime.RawExtension{Raw: planExternalMetaDataRaw[0]},
+						InstanceCreateParameterSchema: &runtime.RawExtension{Raw: planInstanceCreateParameterSchemasRaw[0]},
 					},
 				},
 			},
@@ -2846,10 +2846,10 @@ func TestGetClusterPlansFromServiceName(t *testing.T) {
 						Name: "1dda1477cace09730bd8ed7a6505607e",
 					},
 					CommonServicePlanSpec: scv1beta1.CommonServicePlanSpec{
-						ExternalName:                         "prod",
-						Description:                          "this is a example description 2",
-						ExternalMetadata:                     &runtime.RawExtension{Raw: planExternalMetaDataRaw[1]},
-						ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: planServiceInstanceCreateParameterSchemasRaw[1]},
+						ExternalName:                  "prod",
+						Description:                   "this is a example description 2",
+						ExternalMetadata:              &runtime.RawExtension{Raw: planExternalMetaDataRaw[1]},
+						InstanceCreateParameterSchema: &runtime.RawExtension{Raw: planInstanceCreateParameterSchemasRaw[1]},
 					},
 				},
 			},

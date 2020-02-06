@@ -9,8 +9,8 @@ import (
 	odolog "github.com/openshift/odo/pkg/log"
 	"github.com/openshift/origin/pkg/oc/cli/login"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )
 
 // Login takes of authentication part and returns error if there any

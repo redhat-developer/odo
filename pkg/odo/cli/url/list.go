@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 const listRecommendedCommandName = "list"

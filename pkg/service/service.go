@@ -299,7 +299,7 @@ func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (Servi
 	return service, plans, nil
 }
 
-type serviceInstanceCreateParameterSchema struct {
+type InstanceCreateParameterSchema struct {
 	Required   []string
 	Properties map[string]ServicePlanParameter
 }
@@ -323,8 +323,8 @@ func NewServicePlan(result scv1beta1.ClusterServicePlan) (plan ServicePlan, err 
 	}
 
 	// get the create parameters
-	schema := serviceInstanceCreateParameterSchema{}
-	paramBytes := result.Spec.ServiceInstanceCreateParameterSchema.Raw
+	schema := InstanceCreateParameterSchema{}
+	paramBytes := result.Spec.InstanceCreateParameterSchema.Raw
 	err = json.Unmarshal(paramBytes, &schema)
 	if err != nil {
 		return plan, errors.Wrapf(err, "unable to unmarshal data the given service: %s", string(paramBytes[:]))

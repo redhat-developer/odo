@@ -2263,7 +2263,8 @@ func (c *Client) CreateServiceBinding(bindingName string, namespace string) erro
 			},
 			Spec: scv1beta1.ServiceBindingSpec{
 				//ExternalID: UUID,
-				ServiceInstanceRef: scv1beta1.LocalObjectReference{
+
+				InstanceRef: scv1beta1.LocalObjectReference{
 					Name: bindingName,
 				},
 				SecretName: bindingName,

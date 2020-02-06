@@ -13,9 +13,9 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
+	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
-	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )
 
 // DefaultPortForwarder implements the SPDY based port forwarder

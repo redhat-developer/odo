@@ -20,7 +20,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 // ListRecommendedCommandName is the recommended watch command name

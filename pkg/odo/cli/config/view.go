@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 const viewCommandName = "view"
