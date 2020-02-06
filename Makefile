@@ -26,6 +26,11 @@ SLOW_SPEC_THRESHOLD := 120
 # To enable verbosity export or set env GINKGO_VERBOSE_MODE like "GINKGO_VERBOSE_MODE=-v"
 GINKGO_VERBOSE_MODE ?=
 
+# Env variable UNIT_TEST_VERBOSE_MODE is used to get control over enabling go test
+# verbose mode for unit test run. By default go test verbosity is not enabled.
+# To enable verbosity export or set env UNIT_TEST_VERBOSE_MODE like "UNIT_TEST_VERBOSE_MODE=-v"
+UNIT_TEST_VERBOSE_MODE ?=
+
 GINKGO_FLAGS_ALL = $(GINKGO_VERBOSE_MODE) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
 
 # Flags for tests that must not be run in parallel.
@@ -130,7 +135,7 @@ configure-installer-tests-cluster:
 
 .PHONY: test
 test:
-	go test -race $(PKGS)
+	go test $(UNIT_TEST_VERBOSE_MODE) -race $(PKGS)
 
 # Run generic integration tests
 .PHONY: test-generic
